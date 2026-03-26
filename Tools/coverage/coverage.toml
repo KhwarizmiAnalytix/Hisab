@@ -1,0 +1,112 @@
+# =============================================================================
+# Coverage Tool Configuration
+# =============================================================================
+# Place this file next to run_coverage.py, or at the project root.
+# All values shown here are the built-in defaults — only set what you need
+# to override.
+
+[coverage]
+# Force a specific compiler instead of auto-detecting.
+# Values: "gcc" | "clang" | "msvc"   — leave empty (or omit) for auto-detect.
+# Useful for Visual Studio .sln builds that have no CMakeCache.txt.
+compiler = ""
+
+# Subfolder within the project that contains modules to analyse
+filter = "Library"
+
+# Default source folder (passed to compiler-specific modules)
+source_folder = "Library"
+
+# Default output format: "json" | "html" | "html-and-json"
+output_format = "html-and-json"
+
+# Name of the coverage output directory (relative to build_dir)
+coverage_report_dir = "coverage_report"
+
+# ---------------------------------------------------------------------------
+# Exclusion patterns
+# ---------------------------------------------------------------------------
+[coverage.exclude]
+# lcov / genhtml / OpenCppCoverage glob-style patterns to exclude
+patterns = [
+    "*ThirdParty*",
+    "*Testing*",
+    "/usr/*",
+]
+
+# LLVM -ignore-filename-regex patterns (Clang only)
+llvm_ignore_regex = [
+    ".*Testing[/\\\\].*",
+    ".*Serialization[/\\\\].*",
+    ".*ThirdParty[/\\\\].*",
+    ".*quarismasys[/\\\\].*",
+]
+
+# ---------------------------------------------------------------------------
+# Project-root detection
+# ---------------------------------------------------------------------------
+[coverage.project]
+# Files/folders whose presence marks the project root (searched upward)
+markers = [".git", ".gitignore", "pyproject.toml"]
+
+# ---------------------------------------------------------------------------
+# Test-executable discovery
+# ---------------------------------------------------------------------------
+[coverage.tests]
+# Directories to search for test executables (relative to build_dir)
+search_dirs = [
+    "bin",
+    "bin/Debug",
+    "bin/Release",
+    "lib",
+    "tests",
+]
+
+# Glob patterns used to identify test executables
+patterns = ["*Test*", "*test*", "*CxxTests*"]
+
+# Name template for a module's test executable  ({module} is replaced at runtime)
+exe_pattern = "{module}CxxTests"
+
+# Name template for a module's .profraw file (Clang only)
+profraw_pattern = "{module}CxxTests.profraw"
+
+# Relative path template for the test working directory (Clang only)
+# {filter} and {module} are replaced at runtime
+test_dir_template = "{filter}/{module}/Testing/Cxx"
+
+# ---------------------------------------------------------------------------
+# GCC / lcov settings
+# ---------------------------------------------------------------------------
+[coverage.gcc]
+# Error types passed to lcov --ignore-errors (comma-joined at runtime)
+lcov_ignore_errors = ["mismatch", "negative", "gcov"]
+
+# ---------------------------------------------------------------------------
+# MSVC / OpenCppCoverage settings
+# ---------------------------------------------------------------------------
+[coverage.msvc]
+# Seconds to wait for the test-executable verification run
+verify_timeout = 30
+
+# Seconds to wait for each OpenCppCoverage instrumented run
+coverage_timeout = 120
+
+# Explicit path to OpenCppCoverage.exe — leave empty to auto-detect
+# (env var OPENCPPCOVERAGE_PATH and common install dirs are also checked)
+opencppcoverage_path = ""
+
+# ---------------------------------------------------------------------------
+# HTML report theme
+# Note: wiring these values into the HTML templates requires additional
+# changes to HtmlGenerator — the keys are defined here for future use.
+# ---------------------------------------------------------------------------
+[coverage.html]
+primary_color   = "#007bff"
+covered_color   = "#28a745"
+uncovered_color = "#dc3545"
+neutral_color   = "#6c757d"
+background_color = "#f5f5f5"
+max_width       = "1200px"
+font_family     = "Arial, sans-serif"
+code_font_family = "'Courier New', monospace"

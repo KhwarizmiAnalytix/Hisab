@@ -48,7 +48,7 @@ class DirectoryAggregator:
             ValueError: If file_path is not under source_root.
         """
         if not self.source_root:
-            return Path(file_path).name
+            return Path(Path(file_path).name)
 
         file_norm = self._normalize_path(file_path)
         root_norm = self._normalize_path(self.source_root)

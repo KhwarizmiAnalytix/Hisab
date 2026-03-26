@@ -13,7 +13,7 @@ from pathlib import Path
 import logging
 
 from common import (
-    CONFIG,
+    get_config,
     get_platform_config,
     find_opencppcoverage,
     discover_test_executables,
@@ -473,13 +473,13 @@ def generate_msvc_coverage(
     """Generate code coverage using opencppcoverage (for MSVC on Windows).
 
     Generates HTML reports in html/ folder and raw coverage data in raw/ folder.
-    Uses CONFIG dictionary for all configurable parameters including exclude patterns.
+    Uses coverage.toml / get_config() for all configurable parameters including exclude patterns.
 
     Args:
         build_dir: Path to build directory.
         modules: List of module names to analyze.
         source_folder: Path to source folder containing modules.
-        exclude_patterns: List of patterns to exclude from coverage. If None, uses CONFIG.
+        exclude_patterns: List of patterns to exclude from coverage. If None, read from config.
         verbose: Enable verbose output for debugging. Default: False.
         output_format: Output format - 'json', 'html', or 'html-and-json'
 
@@ -495,11 +495,14 @@ def generate_msvc_coverage(
     html_dir.mkdir(parents=True, exist_ok=True)
     raw_dir.mkdir(parents=True, exist_ok=True)
 
-    config = get_platform_config()
+    platform_cfg = get_platform_config()
+    cfg = get_config()
     if exclude_patterns is None:
-        excludes = CONFIG.get("exclude_patterns", [])
+        excludes = cfg.get("exclude_patterns", [])
     else:
         excludes = exclude_patterns
+    verify_timeout = cfg["msvc_verify_timeout"]
+    coverage_timeout = cfg["msvc_coverage_timeout"]
 
     if verbose:
         print(f"[VERBOSE] Build directory: {build_dir}")
@@ -614,7 +617,7 @@ def generate_msvc_coverage(
                 cwd=str(test_exe.parent),
                 capture_output=True,
                 text=True,
-                timeout=30,
+                timeout=verify_timeout,
                 check=False
             )
 
@@ -637,7 +640,7 @@ def generate_msvc_coverage(
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=120
+                timeout=coverage_timeout
             )
 
             # Print output for debugging

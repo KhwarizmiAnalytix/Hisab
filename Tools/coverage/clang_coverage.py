@@ -7,15 +7,12 @@ Handles coverage generation for Clang compiler using LLVM coverage tools
 
 import os
 import subprocess
-import platform
 import json
-import argparse
-import sys
 from pathlib import Path
-from typing import List, Optional, Dict, Set
+from typing import List, Dict
 import logging
 
-from common import CONFIG, get_platform_config, find_library
+from common import get_config, get_platform_config, find_library
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +70,7 @@ def _generate_json_export(build_dir: Path, coverage_dir: Path, binaries: List[st
         ]
 
         # Add ignore patterns from config
-        for pattern in CONFIG["llvm_ignore_regex"]:
+        for pattern in get_config()["llvm_ignore_regex"]:
             export_cmd.insert(-2, f"-ignore-filename-regex={pattern}")
 
         result = subprocess.run(export_cmd, capture_output=True, text=True, check=True)
@@ -366,17 +363,25 @@ def prepare_llvm_coverage(build_dir: Path, module_name: str, binaries_list: str,
     Returns:
         True if coverage data was successfully generated, False otherwise.
     """
-    config = get_platform_config()
-    exe_extension = config["exe_extension"]
-    bin_folder = config["lib_folder"]
-    dll_extension = config["dll_extension"]
-    coverage_dir = build_dir / "coverage_report"
+    platform_cfg = get_platform_config()
+    exe_extension = platform_cfg["exe_extension"]
+    bin_folder = platform_cfg["lib_folder"]
+    dll_extension = platform_cfg["dll_extension"]
+
+    cfg = get_config()
+    coverage_report_dir = cfg["coverage_report_dir"]
+    coverage_dir = build_dir / coverage_report_dir
     coverage_dir.mkdir(exist_ok=True)
 
     dll_path = find_library(build_dir, bin_folder, module_name, dll_extension)
-    test_dir = build_dir / "Library" / module_name / "Testing" / "Cxx"
-    test_executable = build_dir / "bin" / f"{module_name}CxxTests{exe_extension}"
-    profraw_file = build_dir / "coverage_report" / f"{module_name}CxxTests.profraw"
+    test_exe_name = cfg["test_exe_pattern"].format(module=module_name)
+    test_dir_rel = cfg["test_dir_template"].format(
+        filter=cfg["filter"], module=module_name
+    )
+    test_dir = build_dir / test_dir_rel
+    test_executable = build_dir / "bin" / f"{test_exe_name}{exe_extension}"
+    profraw_name = cfg["profraw_pattern"].format(module=module_name)
+    profraw_file = coverage_dir / profraw_name
 
     # Validate that library was found
     if dll_path is None:
@@ -429,16 +434,17 @@ def generate_llvm_coverage(
         build_dir: Path to build directory.
         modules: List of module names to analyze.
         source_folder: Path to source folder containing modules.
-        llvm_ignore_regex: List of regex patterns to ignore. If None, uses CONFIG.
-        exclude_patterns: List of file/folder patterns to exclude. If None, uses CONFIG.
+        llvm_ignore_regex: List of regex patterns to ignore. If None, read from config.
+        exclude_patterns: List of file/folder patterns to exclude. If None, read from config.
         verbose: Enable verbose output for debugging. Default: False.
         output_format: Output format - 'json', 'html', or 'html-and-json'
     """
+    cfg = get_config()
     if llvm_ignore_regex is None:
-        llvm_ignore_regex = CONFIG["llvm_ignore_regex"]
+        llvm_ignore_regex = cfg["llvm_ignore_regex"]
 
     if exclude_patterns is None:
-        exclude_patterns = CONFIG.get("exclude_patterns", [])
+        exclude_patterns = cfg.get("exclude_patterns", [])
 
     if verbose:
         print(f"[VERBOSE] Build directory: {build_dir}")

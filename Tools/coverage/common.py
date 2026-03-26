@@ -12,6 +12,14 @@ from pathlib import Path
 from typing import List, Optional
 import logging
 
+try:
+    import tomllib
+except ImportError:
+    try:
+        import tomli as tomllib  # type: ignore[no-redef]
+    except ImportError:
+        tomllib = None  # type: ignore[assignment]
+
 logger = logging.getLogger(__name__)
 
 # ============================================================================
@@ -21,6 +29,15 @@ logger = logging.getLogger(__name__)
 CONFIG = {
     # Default filter folder (subfolder within source containing modules)
     "filter": "Library",
+
+    # Default source folder
+    "source_folder": "Library",
+
+    # Default output format
+    "output_format": "html-and-json",
+
+    # Name of the coverage output directory (relative to build_dir)
+    "coverage_report_dir": "coverage_report",
 
     # File patterns to exclude from coverage reports
     "exclude_patterns": [
@@ -52,10 +69,161 @@ CONFIG = {
 
     # Test executable name patterns
     "test_patterns": ["*Test*", "*test*", "*CxxTests*"],
+
+    # Name template for a module's test executable ({module} replaced at runtime)
+    "test_exe_pattern": "{module}CxxTests",
+
+    # Name template for a module's .profraw file (Clang only)
+    "profraw_pattern": "{module}CxxTests.profraw",
+
+    # Relative-path template for the test working directory (Clang only)
+    # {filter} and {module} are replaced at runtime
+    "test_dir_template": "{filter}/{module}/Testing/Cxx",
+
+    # lcov --ignore-errors values (GCC only)
+    "lcov_ignore_errors": ["mismatch", "negative", "gcov"],
+
+    # Seconds to wait for the test-executable verification run (MSVC only)
+    "msvc_verify_timeout": 30,
+
+    # Seconds to wait for each OpenCppCoverage run (MSVC only)
+    "msvc_coverage_timeout": 120,
+
+    # Explicit path to OpenCppCoverage.exe; empty = auto-detect (MSVC only)
+    "opencppcoverage_path": "",
+
+    # Force a specific compiler instead of auto-detecting.
+    # Accepted values: "gcc" | "clang" | "msvc" | "" (empty = auto-detect)
+    "compiler": "",
 }
 
 # ============================================================================
 # END CONFIGURATION
+
+
+# ============================================================================
+# CONFIG FILE LOADER
+# ============================================================================
+
+_config_cache: Optional[dict] = None
+
+
+def _flatten_toml_config(toml_data: dict) -> dict:
+    """Flatten a nested coverage.toml dict to the flat CONFIG key format."""
+    cov = toml_data.get("coverage", {})
+    result: dict = {}
+
+    # [coverage]
+    for key in ("filter", "source_folder", "output_format", "coverage_report_dir", "compiler"):
+        if key in cov:
+            result[key] = cov[key]
+
+    # [coverage.exclude]
+    excl = cov.get("exclude", {})
+    if "patterns" in excl:
+        result["exclude_patterns"] = excl["patterns"]
+    if "llvm_ignore_regex" in excl:
+        result["llvm_ignore_regex"] = excl["llvm_ignore_regex"]
+
+    # [coverage.project]
+    proj = cov.get("project", {})
+    if "markers" in proj:
+        result["project_markers"] = proj["markers"]
+
+    # [coverage.tests]
+    tests = cov.get("tests", {})
+    _tests_map = {
+        "search_dirs": "test_search_dirs",
+        "patterns": "test_patterns",
+        "exe_pattern": "test_exe_pattern",
+        "profraw_pattern": "profraw_pattern",
+        "test_dir_template": "test_dir_template",
+    }
+    for toml_key, cfg_key in _tests_map.items():
+        if toml_key in tests:
+            result[cfg_key] = tests[toml_key]
+
+    # [coverage.gcc]
+    gcc = cov.get("gcc", {})
+    if "lcov_ignore_errors" in gcc:
+        result["lcov_ignore_errors"] = gcc["lcov_ignore_errors"]
+
+    # [coverage.msvc]
+    msvc = cov.get("msvc", {})
+    _msvc_map = {
+        "verify_timeout": "msvc_verify_timeout",
+        "coverage_timeout": "msvc_coverage_timeout",
+        "opencppcoverage_path": "opencppcoverage_path",
+    }
+    for toml_key, cfg_key in _msvc_map.items():
+        if toml_key in msvc:
+            result[cfg_key] = msvc[toml_key]
+
+    return result
+
+
+def load_config(config_path=None) -> dict:
+    """Load configuration from coverage.toml merged with built-in defaults.
+
+    Searches for coverage.toml in the script directory then the project root.
+    Falls back to built-in CONFIG if the file is not found or cannot be parsed.
+
+    Args:
+        config_path: Explicit path to coverage.toml. If None, auto-detected.
+
+    Returns:
+        Configuration dictionary.
+    """
+    global _config_cache
+
+    # Return cached result for repeated auto-detect calls
+    if config_path is None and _config_cache is not None:
+        return _config_cache
+
+    if tomllib is None:
+        logger.debug("No TOML parser available (needs Python 3.11+ or tomli); "
+                     "using built-in defaults")
+        return CONFIG
+
+    # Locate the config file
+    resolved_path: Optional[Path] = None
+    if config_path is not None:
+        resolved_path = Path(config_path)
+    else:
+        candidates = [Path(__file__).resolve().parent / "coverage.toml"]
+        try:
+            project_root = get_project_root()
+            candidates.append(project_root / "coverage.toml")
+            candidates.append(project_root / "Tools" / "coverage" / "coverage.toml")
+        except Exception:
+            pass
+        resolved_path = next((p for p in candidates if p.exists()), None)
+
+    if resolved_path is None or not resolved_path.exists():
+        logger.debug("coverage.toml not found; using built-in defaults")
+        return CONFIG
+
+    try:
+        with open(resolved_path, "rb") as f:
+            toml_data = tomllib.load(f)
+        overrides = _flatten_toml_config(toml_data)
+        merged = {**CONFIG, **overrides}
+        logger.debug("Loaded config from %s", resolved_path)
+        if config_path is None:
+            _config_cache = merged
+        return merged
+    except Exception as e:
+        logger.warning("Failed to load %s: %s; using built-in defaults", resolved_path, e)
+        return CONFIG
+
+
+def get_config() -> dict:
+    """Return the active configuration (auto-detected and cached).
+
+    Equivalent to load_config() with no arguments. Use load_config(path) to
+    load from an explicit path (e.g. from a --config CLI flag).
+    """
+    return load_config()
 
 
 # ============================================================================
@@ -89,7 +257,7 @@ def merge_exclude_patterns(
 
     # Add default patterns first
     if include_defaults:
-        for pattern in CONFIG.get("exclude_patterns", []):
+        for pattern in get_config().get("exclude_patterns", []):
             if pattern not in seen:
                 merged.append(pattern)
                 seen.add(pattern)
@@ -190,7 +358,7 @@ def find_opencppcoverage() -> Optional[str]:
 
     # Try system PATH
     try:
-        result = subprocess.run(
+        subprocess.run(
             ["OpenCppCoverage.exe", "--help"],
             capture_output=True,
             check=True,
@@ -234,8 +402,9 @@ def discover_test_executables(build_dir: Path) -> List[Path]:
     exe_ext = config["exe_extension"]
 
     # Use configured search directories and patterns
-    search_dirs = [build_dir / d for d in CONFIG["test_search_dirs"]]
-    test_patterns = CONFIG["test_patterns"]
+    cfg = get_config()
+    search_dirs = [build_dir / d for d in cfg["test_search_dirs"]]
+    test_patterns = cfg["test_patterns"]
 
     for search_dir in search_dirs:
         if not search_dir.exists():
@@ -390,70 +559,163 @@ def validate_build_structure(build_dir: Path, config: dict,
     return {"valid": len(issues) == 0, "issues": issues}
 
 
+def _detect_from_cmake_cache(cmake_cache: Path) -> Optional[str]:
+    """Extract compiler from QUARISMA_COMPILER_ID in CMakeCache.txt.
+
+    Args:
+        cmake_cache: Path to CMakeCache.txt.
+
+    Returns:
+        Compiler name, or None if not found / unrecognised.
+    """
+    try:
+        with open(cmake_cache, encoding='utf-8', errors='ignore') as f:
+            for line in f:
+                if 'QUARISMA_COMPILER_ID' not in line:
+                    continue
+                if '=' not in line:
+                    continue
+                compiler_id = line.split('=', 1)[-1].strip().lower()
+                print(f"QUARISMA_COMPILER_ID found: {compiler_id}")
+                if compiler_id in ("gcc", "clang", "msvc", "intel"):
+                    return compiler_id
+                logger.warning("Unknown QUARISMA_COMPILER_ID: %s", compiler_id)
+    except Exception as e:
+        logger.warning("Could not read CMakeCache.txt: %s", e)
+    return None
+
+
+def _detect_from_vs_project(search_dir: Path) -> Optional[str]:
+    """Detect MSVC by looking for .sln or .vcxproj files.
+
+    Searches the given directory and up to two levels of parent directories
+    so that both in-source and out-of-source layouts are covered.
+
+    Args:
+        search_dir: Directory to start searching (usually the build dir).
+
+    Returns:
+        "msvc" if a Visual Studio project file is found, otherwise None.
+    """
+    dirs_to_search = [search_dir]
+    # Also check immediate parent and grandparent — typical for out-of-source builds
+    parent = search_dir.parent
+    if parent != search_dir:
+        dirs_to_search.append(parent)
+        grandparent = parent.parent
+        if grandparent != parent:
+            dirs_to_search.append(grandparent)
+
+    for d in dirs_to_search:
+        if not d.is_dir():
+            continue
+        # Shallow glob — avoid walking entire trees
+        if any(d.glob("*.sln")) or any(d.glob("*.vcxproj")):
+            logger.info("Visual Studio project file found in %s → MSVC", d)
+            return "msvc"
+    return None
+
+
+def _detect_from_vs_env() -> Optional[str]:
+    """Detect MSVC from Visual Studio environment variables.
+
+    These variables are set by the VS Developer Command Prompt and
+    vcvarsall.bat / vsdevcmd.bat.
+
+    Returns:
+        "msvc" if a VS environment is active, otherwise None.
+    """
+    vs_env_vars = (
+        "VCINSTALLDIR",       # set by vcvarsall.bat
+        "VSCMD_ARG_TGT_ARCH", # set by vsdevcmd.bat
+        "VSAPPIDNAME",        # Visual Studio app identity
+        "VisualStudioVersion",# set by VS build environment
+    )
+    for var in vs_env_vars:
+        if os.environ.get(var):
+            logger.info("VS environment variable %s found → MSVC", var)
+            return "msvc"
+    return None
+
+
+def _detect_cl_in_path() -> Optional[str]:
+    """Detect MSVC by checking whether cl.exe is available in PATH.
+
+    Returns:
+        "msvc" if cl.exe is found, otherwise None.
+    """
+    import shutil
+    if shutil.which("cl.exe") or shutil.which("cl"):
+        logger.info("cl.exe found in PATH → MSVC")
+        return "msvc"
+    return None
+
+
 def detect_compiler(build_dir: Path | str) -> str:
     """Detect the compiler used in the build directory.
 
-    Looks for QUARISMA_COMPILER_ID in CMakeCache.txt to determine the compiler.
+    Detection order:
+    1. ``CMakeCache.txt`` — reads ``QUARISMA_COMPILER_ID`` (CMake builds).
+    2. ``.sln`` / ``.vcxproj`` files — indicates a Visual Studio / MSVC build.
+    3. Visual Studio environment variables (``VCINSTALLDIR`` etc.).
+    4. ``cl.exe`` present in ``PATH``.
+
+    For non-CMake Visual Studio solutions, steps 2–4 provide automatic
+    detection. You can also bypass detection entirely with the ``--compiler``
+    CLI flag or the ``compiler`` key in ``coverage.toml``.
 
     Args:
-        build_dir: Path to build directory.
+        build_dir: Path to the build (or solution output) directory.
 
     Returns:
-        Compiler name: "gcc", "clang", "msvc", or "intel".
+        Compiler name: ``"gcc"``, ``"clang"``, ``"msvc"``, or ``"intel"``.
 
     Raises:
-        RuntimeError: If compiler cannot be detected.
+        RuntimeError: If the compiler cannot be determined.
     """
     build_dir = Path(build_dir)
+
+    # 1. CMakeCache.txt (CMake builds)
     cmake_cache = build_dir / "CMakeCache.txt"
+    if cmake_cache.exists():
+        result = _detect_from_cmake_cache(cmake_cache)
+        if result:
+            return result
+        # CMakeCache exists but QUARISMA_COMPILER_ID is absent — fall through
+        logger.warning(
+            "CMakeCache.txt found but QUARISMA_COMPILER_ID is missing; "
+            "trying Visual Studio detection"
+        )
+    else:
+        logger.info("No CMakeCache.txt in %s; trying Visual Studio detection", build_dir)
 
-    if not cmake_cache.exists():
-        logger.error(f"CMakeCache.txt not found in {build_dir}")
-        raise RuntimeError(f"CMakeCache.txt not found in {build_dir}")
+    # 2. .sln / .vcxproj files
+    result = _detect_from_vs_project(build_dir)
+    if result:
+        return result
 
-    try:
-        with open(cmake_cache, 'r', encoding='utf-8', errors='ignore') as f:
-            content = f.read()
+    # 3. Visual Studio environment variables
+    result = _detect_from_vs_env()
+    if result:
+        return result
 
-            # Look for QUARISMA_COMPILER_ID
-            for line in content.split('\n'):
-                if 'QUARISMA_COMPILER_ID' in line:
-                    # Extract the value after the '='
-                    if '=' in line:
-                        compiler_id = line.split('=', 1)[-1].strip()
-                        
-                        # Normalize to lowercase for comparison
-                        compiler_id_lower = compiler_id.lower()
-                        
-                        # Map QUARISMA compiler IDs to supported compilers
-                        print(f"QUARISMA_COMPILER_ID found: {compiler_id}")
-                        if compiler_id_lower == "gcc":
-                            logger.info("GCC detected")
-                            return "gcc"
-                        elif compiler_id_lower == "clang":
-                            logger.info("Clang detected")
-                            return "clang"
-                        elif compiler_id_lower == "msvc":
-                            logger.info("MSVC detected")
-                            return "msvc"
-                        elif compiler_id_lower == "intel":
-                            logger.info("Intel compiler detected")
-                            return "intel"
-                        else:
-                            logger.warning(
-                                f"Unknown compiler ID found: {compiler_id}"
-                            )
+    # 4. cl.exe in PATH
+    result = _detect_cl_in_path()
+    if result:
+        return result
 
-    except Exception as e:
-        logger.error(f"Error reading CMakeCache.txt: {e}")
-        raise RuntimeError(f"Error reading CMakeCache.txt: {e}")
-
-    logger.error(
-        f"Could not determine compiler from CMakeCache.txt in {build_dir}. "
-        "QUARISMA_COMPILER_ID not found."
-    )
     raise RuntimeError(
-        "Could not determine compiler from CMakeCache.txt. "
-        "QUARISMA_COMPILER_ID not found. "
-        "Please ensure the build was configured with GCC, Clang, MSVC, or Intel."
+        f"Could not detect compiler for build directory: {build_dir}\n"
+        "\n"
+        "Tried:\n"
+        "  1. CMakeCache.txt  (QUARISMA_COMPILER_ID)\n"
+        "  2. .sln / .vcxproj files in or near the build directory\n"
+        "  3. Visual Studio environment variables (VCINSTALLDIR, etc.)\n"
+        "  4. cl.exe in PATH\n"
+        "\n"
+        "To fix this, pass the compiler explicitly:\n"
+        "  python run_coverage.py --build=<path> --compiler=msvc\n"
+        "Or set it in coverage.toml:\n"
+        "  [coverage]\n"
+        "  compiler = \"msvc\""
     )

@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional, Set
 import logging
-from common import CONFIG
+from common import get_config
 logger = logging.getLogger(__name__)
 
 
@@ -336,16 +336,18 @@ def generate_lcov_coverage(build_dir: Path, modules: List[str],
         print("\nFor WSL, run the Ubuntu/Debian command in your WSL terminal.")
         return
 
+    cfg = get_config()
+
     if exclude_patterns is None:
         exclude_patterns = []
 
     # Default exclusions
-    default_excludes = CONFIG["exclude_patterns"]
+    default_excludes = cfg["exclude_patterns"]
     exclude_patterns = list(set(default_excludes + exclude_patterns))
 
     coverage_info = build_dir / "coverage.info"
     coverage_filtered = build_dir / "coverage_filtered.info"
-    coverage_report_dir = build_dir / "coverage_report"
+    coverage_report_dir = build_dir / cfg["coverage_report_dir"]
 
     if verbose:
         print(f"[VERBOSE] Build directory: {build_dir}")
@@ -360,7 +362,7 @@ def generate_lcov_coverage(build_dir: Path, modules: List[str],
         "lcov",
         "--directory", str(build_dir),
         "--capture",
-        "--ignore-errors", "mismatch,negative,gcov",
+        "--ignore-errors", ",".join(cfg["lcov_ignore_errors"]),
         "--output-file", str(coverage_info)
     ]
 

@@ -21,7 +21,8 @@ from msvc_coverage import generate_msvc_coverage as msvc_generate_coverage
 
 # Import common utilities
 from common import (
-    CONFIG,
+    load_config,
+    get_config,
     get_platform_config,
     find_opencppcoverage,
     discover_test_executables,
@@ -240,12 +241,19 @@ def main() -> None:
     )
 
     parser.add_argument("--build", required=True, help="Build directory path")
-    parser.add_argument("--filter", default=CONFIG["filter"],
+    parser.add_argument("--compiler",
+                        choices=["gcc", "clang", "msvc", "auto"],
+                        default=None,
+                        help="Compiler to use. Overrides auto-detection. "
+                             "Use 'msvc' for Visual Studio .sln builds without CMake.")
+    parser.add_argument("--config", default=None,
+                        help="Path to coverage.toml config file (auto-detected if omitted)")
+    parser.add_argument("--filter", default=None,
                         help="Filter folder name (default: Library)")
     parser.add_argument("--output", "-o",
                         choices=["json", "html", "html-and-json"],
-                        default="html-and-json",
-                        help="Output format for all compilers: json, html, or html-and-json (default)")
+                        default=None,
+                        help="Output format: json, html, or html-and-json (default from config)")
     parser.add_argument("--exclude-patterns", default="",
                         help="Comma-separated patterns to exclude from coverage analysis")
     parser.add_argument("--verbose", action="store_true",
@@ -260,6 +268,9 @@ def main() -> None:
         return
 
     try:
+        # Load config first so all subsequent calls pick it up from cache
+        cfg = load_config(args.config)
+
         project_root = get_project_root()
         if args.verbose:
             print(f"Project root detected at: {project_root}")
@@ -268,14 +279,22 @@ def main() -> None:
         if args.verbose:
             print(f"Resolved build directory: {build_dir}")
 
-        source_dir = project_root / args.filter
+        filter_folder = args.filter if args.filter is not None else cfg["filter"]
+        source_dir = project_root / filter_folder
         if args.verbose:
-            print(f"Filter folder: {args.filter}")
+            print(f"Filter folder: {filter_folder}")
             print(f"Source directory: {source_dir}")
 
-        # Detect compiler
-        compiler = detect_compiler(build_dir)
-        print(f"Detected compiler: {compiler.upper()}")
+        # Resolve compiler: CLI flag → coverage.toml → auto-detect
+        if args.compiler and args.compiler != "auto":
+            compiler = args.compiler
+            print(f"Compiler (from --compiler flag): {compiler.upper()}")
+        elif cfg.get("compiler"):
+            compiler = cfg["compiler"]
+            print(f"Compiler (from coverage.toml): {compiler.upper()}")
+        else:
+            compiler = detect_compiler(build_dir)
+            print(f"Detected compiler: {compiler.upper()}")
 
         # Discover modules from filter directory
         modules = [d.name for d in source_dir.iterdir()
@@ -291,6 +310,8 @@ def main() -> None:
         user_patterns = parse_exclude_patterns_string(args.exclude_patterns)
         merged_patterns = merge_exclude_patterns(user_patterns, include_defaults=True)
 
+        output_format = args.output if args.output is not None else cfg["output_format"]
+
         if args.verbose and user_patterns:
             print(f"User exclude patterns: {user_patterns}")
             print(f"Merged exclude patterns: {merged_patterns}")
@@ -302,20 +323,20 @@ def main() -> None:
                 build_dir, modules, source_dir,
                 exclude_patterns=merged_patterns,
                 verbose=args.verbose,
-                output_format=args.output)
+                output_format=output_format)
         elif compiler == "clang":
             print("Using LLVM coverage tools...")
             clang_generate_coverage(
                 build_dir, modules, source_dir,
                 exclude_patterns=merged_patterns,
                 verbose=args.verbose,
-                output_format=args.output)
+                output_format=output_format)
         elif compiler == "gcc":
             print("Using lcov coverage tool...")
             gcc_generate_coverage(
                 build_dir, modules, verbose=args.verbose,
                 exclude_patterns=merged_patterns,
-                output_format=args.output)
+                output_format=output_format)
         else:
             raise RuntimeError(f"Unsupported compiler: {compiler}")
 
