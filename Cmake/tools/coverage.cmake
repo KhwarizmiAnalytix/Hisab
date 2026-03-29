@@ -25,6 +25,20 @@ if(QUARISMA_ENABLE_COVERAGE)
     string(APPEND CMAKE_C_FLAGS " -g -O0  -fprofile-instr-generate -fcoverage-mapping")
     string(APPEND CMAKE_CXX_FLAGS " -g -O0  -fprofile-instr-generate -fcoverage-mapping")
     message("Enabling Clang code coverage ${CMAKE_CXX_FLAGS}")
+  elseif(MSVC)
+    # OpenCppCoverage reads PDB files at runtime — no compiler instrumentation needed.
+    # /Zi  : emit full debug info into a separate PDB (compatible with optimized builds)
+    # /DEBUG: instruct the linker to produce a PDB next to each binary
+    # /OPT:REF /OPT:ICF: keep Release optimisations while writing the PDB
+    string(APPEND CMAKE_C_FLAGS_RELEASE   " /Zi")
+    string(APPEND CMAKE_CXX_FLAGS_RELEASE " /Zi")
+    string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE    " /DEBUG /OPT:REF /OPT:ICF")
+    string(APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " /DEBUG /OPT:REF /OPT:ICF")
+    # Place linker PDBs alongside the executables/DLLs so OpenCppCoverage finds them.
+    if(NOT CMAKE_PDB_OUTPUT_DIRECTORY)
+      set(CMAKE_PDB_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+    endif()
+    message(STATUS "MSVC coverage: /Zi + /DEBUG added to Release flags; PDBs → ${CMAKE_PDB_OUTPUT_DIRECTORY}")
   else()
     message(
       WARNING " Code coverage for compiler ${CMAKE_CXX_COMPILER_ID} is unsupported natively. "

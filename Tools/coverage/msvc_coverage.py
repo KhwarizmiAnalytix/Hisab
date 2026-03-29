@@ -510,7 +510,7 @@ def generate_msvc_coverage(
         print(f"[VERBOSE] Exclusion patterns: {excludes}")
         print(f"[VERBOSE] Output format: {output_format}")
 
-    if config["os_name"] != "Windows":
+    if platform_cfg["os_name"] != "Windows":
         raise RuntimeError("MSVC coverage only supported on Windows")
 
     # Find OpenCppCoverage
@@ -562,6 +562,7 @@ def generate_msvc_coverage(
         # Build OpenCppCoverage command
         cov_cmd = [
             str(opencpp_path),
+            "--optimized_build",  # suppress false-zero lines caused by inlining in Release builds
         ]
 
         # Add HTML export
