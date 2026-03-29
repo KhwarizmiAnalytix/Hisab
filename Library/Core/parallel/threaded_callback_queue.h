@@ -628,7 +628,7 @@ public:
     void operator()() override
     {
         assert(
-            this->status_.load(std::memory_order_relaxed) == RUNNING && "Status should be RUNNING");
+            this->status_.load(std::memory_order_acquire) == RUNNING && "Status should be RUNNING");
         invoker_impl::invoker_helper<invoke_result<FT>>::invoke(impl_, this);
     }
 
