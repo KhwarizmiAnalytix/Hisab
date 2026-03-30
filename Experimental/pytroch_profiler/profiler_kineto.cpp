@@ -83,7 +83,7 @@ class QUARISMA_VISIBILITY OpArgData
     bool                              hasData;
     std::vector<shape>                shapes;
     std::vector<std::string>          dtypes;
-    std::vector<quarisma::IValue>       concreteInputs;
+    std::vector<quarisma::IValue>     concreteInputs;
     std::vector<std::vector<int64_t>> shapesForKinetoEvent;
     std::vector<shape>                strides;
 };
@@ -100,7 +100,7 @@ auto parseArgData(
     std::vector<shape>                strides(input_shapes.size());
     std::vector<std::vector<int64_t>> shapesForKinetoEvent(input_shapes.size());
 
-    std::vector<std::string>    dtypes(input_shapes.size());
+    std::vector<std::string>      dtypes(input_shapes.size());
     std::vector<quarisma::IValue> concrete_inputs_list;
 
     for (const auto& i : quarisma::irange(input_shapes.size()))
@@ -314,7 +314,7 @@ class QUARISMA_VISIBILITY AddGenericMetadata : public MetadataBase
             if (isStringList)
             {
                 // For list of strings, use ivalueListToStr
-                auto                        list = val.toListRef();
+                auto                          list = val.toListRef();
                 std::vector<quarisma::IValue> stringList(list.begin(), list.end());
                 addMetadata(key, ivalueListToStr(stringList));
             }
@@ -400,7 +400,8 @@ struct KinetoThreadLocalState : public ProfilerStateBase
     static KinetoThreadLocalState* get(bool global)
     {
         auto* state = ProfilerStateBase::get(/*global=*/global);
-        QUARISMA_CHECK_DEBUG(state == nullptr || state->profilerType() == ActiveProfilerType::KINETO);
+        QUARISMA_CHECK_DEBUG(
+            state == nullptr || state->profilerType() == ActiveProfilerType::KINETO);
         return static_cast<KinetoThreadLocalState*>(state);
     }
 
@@ -415,10 +416,10 @@ struct KinetoThreadLocalState : public ProfilerStateBase
     }
 
     void reportMemoryUsage(
-        void*                 ptr,
-        int64_t               alloc_size,
-        size_t                total_allocated,
-        size_t                total_reserved,
+        void*                   ptr,
+        int64_t                 alloc_size,
+        size_t                  total_allocated,
+        size_t                  total_reserved,
         quarisma::device_option device) override
     {
         if (config_.profile_memory && !config_.disabled())
@@ -435,9 +436,9 @@ struct KinetoThreadLocalState : public ProfilerStateBase
     }
 
     void reportOutOfMemory(
-        int64_t               alloc_size,
-        size_t                total_allocated,
-        size_t                total_reserved,
+        int64_t                 alloc_size,
+        size_t                  total_allocated,
+        size_t                  total_reserved,
         quarisma::device_option device) override
     {
         if (config_.profile_memory && !config_.disabled())
@@ -520,11 +521,11 @@ struct KinetoThreadLocalState : public ProfilerStateBase
         }
     }
 
-    uint64_t                                    startTime;
+    uint64_t                                      startTime;
     quarisma::ApproximateClockToUnixTimeConverter clockConverter;
     quarisma::profiler::impl::RecordQueue         recordQueue;
-    std::vector<KinetoEvent>                    kinetoEvents;
-    std::vector<experimental_event_t>           eventTree;
+    std::vector<KinetoEvent>                      kinetoEvents;
+    std::vector<experimental_event_t>             eventTree;
     // Optional, if event post-processing is enabled.
     post_process_t eventPostProcessCb;
 };
@@ -627,7 +628,7 @@ void pushProfilingCallbacks(const std::unordered_set<quarisma::RecordScope>& sco
 
 struct ProfilerStateInfo
 {
-    std::shared_ptr<KinetoThreadLocalState> state_ptr;
+    std::shared_ptr<KinetoThreadLocalState>   state_ptr;
     std::unordered_set<quarisma::RecordScope> scopes;
 };
 std::shared_ptr<ProfilerStateInfo> profiler_state_info_ptr{nullptr};
@@ -635,12 +636,12 @@ std::shared_ptr<ProfilerStateInfo> profiler_state_info_ptr{nullptr};
 }  // namespace
 
 void reportBackendEventToActiveKinetoProfiler(
-    const int64_t             start_time_us,
-    const int64_t             end_time_us,
-    const int64_t             debug_handle,
+    const int64_t               start_time_us,
+    const int64_t               end_time_us,
+    const int64_t               debug_handle,
     const quarisma::RecordScope scope,
-    const std::string&        event_name,
-    const std::string&        backend_name)
+    const std::string&          event_name,
+    const std::string&          backend_name)
 {
     QUARISMA_CHECK(
         KinetoThreadLocalState::get(/*global=*/true) == nullptr,
@@ -815,7 +816,7 @@ void toggleCollectionDynamic(
 void enableProfilerWithEventPostProcess(
     const quarisma::profiler::impl::ProfilerConfig&         config,
     const std::set<quarisma::profiler::impl::ActivityType>& activities,
-    post_process_t&&                                      cb,
+    post_process_t&&                                        cb,
     const std::unordered_set<quarisma::RecordScope>&        scopes)
 {
     QUARISMA_CHECK(
@@ -1219,7 +1220,7 @@ FORWARD_FROM_RESULT(deviceResourceId, kineto_info_.resource)
     {                                                                                            \
         using out_t = decltype(std::declval<KinetoEvent>().method_name());                       \
         return result_->visit(                                                                   \
-            quarisma::overloaded(                                                                  \
+            quarisma::overloaded(                                                                \
                 [](const ExtraFields<EventType::event_type>& e) -> out_t { return expression; }, \
                 [](const auto&) -> out_t { return default_value; }));                            \
     }
@@ -1253,10 +1254,10 @@ TYPED_ATTR(
 #undef TYPED_ATTR_WITH_DEFAULT
 
 ProfilerResult::ProfilerResult(
-    uint64_t                                                                start_time,
-    std::vector<KinetoEvent>                                                events,
+    uint64_t                                                                  start_time,
+    std::vector<KinetoEvent>                                                  events,
     std::unique_ptr<quarisma::profiler::impl::kineto::ActivityTraceWrapper>&& trace,
-    std::vector<experimental_event_t>&&                                     event_tree)
+    std::vector<experimental_event_t>&&                                       event_tree)
     : trace_start_ns_(start_time),
       events_(std::move(events)),
       trace_(std::move(trace)),

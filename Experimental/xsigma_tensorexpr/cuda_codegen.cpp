@@ -1,6 +1,8 @@
 #include <Quarisma/cuda/CUDAContext.h>
 #include <Quarisma/cuda/CUDAGeneratorImpl.h>
 #include <Quarisma/native/cuda/jit_utils.h>
+#include <quarisma/cuda/CUDAFunctions.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/codegen/fuser/cuda/fused_kernel.h>
 #include <torch/csrc/jit/codegen/fuser/cuda/resource_strings.h>
 #include <torch/csrc/jit/jit_log.h>
@@ -12,8 +14,6 @@
 #include <torch/csrc/jit/tensorexpr/half_support.h>
 #include <torch/csrc/jit/tensorexpr/ir_simplifier.h>
 #include <torch/csrc/jit/tensorexpr/registerizer.h>
-#include <quarisma/cuda/CUDAFunctions.h>
-#include <quarisma/util/irange.h>
 
 #ifndef AT_PER_OPERATOR_HEADERS
 #include <Quarisma/NativeFunctions.h>
@@ -1445,7 +1445,7 @@ quarisma::Tensor CudaCodeGen::empty_strided(
     std::optional<quarisma::ScalarType> dtype_opt,
     std::optional<quarisma::Layout>     layout_opt,
     std::optional<quarisma::Device>     device_opt,
-    std::optional<bool>               pin_memory_opt)
+    std::optional<bool>                 pin_memory_opt)
 {
     quarisma::DeviceGuard device_guard(device_opt.value());
     return quarisma::native::empty_strided_cuda(

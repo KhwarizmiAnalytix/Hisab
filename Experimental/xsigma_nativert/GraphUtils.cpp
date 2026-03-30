@@ -1,6 +1,6 @@
+#include <quarisma/core/Device.h>
 #include <torch/nativert/graph/Graph.h>
 #include <torch/nativert/graph/GraphUtils.h>
-#include <quarisma/core/Device.h>
 
 namespace torch::nativert
 {

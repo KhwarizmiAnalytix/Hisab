@@ -1,11 +1,11 @@
 #include <Quarisma/core/interned_strings.h>
 #include <Quarisma/core/jit_type.h>
+#include <quarisma/core/Device.h>
+#include <quarisma/util/ArrayRef.h>
 #include <torch/csrc/jit/ir/ir.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/passes/device_type_analysis.h>
 #include <torch/csrc/jit/passes/shape_analysis.h>
-#include <quarisma/core/Device.h>
-#include <quarisma/util/ArrayRef.h>
 
 #include <memory>
 #include <optional>

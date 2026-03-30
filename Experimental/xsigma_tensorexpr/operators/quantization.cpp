@@ -1,8 +1,8 @@
+#include <quarisma/core/ScalarType.h>
 #include <torch/csrc/jit/tensorexpr/ir_simplifier.h>
 #include <torch/csrc/jit/tensorexpr/operators/misc.h>
 #include <torch/csrc/jit/tensorexpr/operators/pointwise.h>
 #include <torch/csrc/jit/tensorexpr/operators/quantization.h>
-#include <quarisma/core/ScalarType.h>
 
 using namespace torch::jit::tensorexpr;
 
@@ -330,7 +330,7 @@ Tensor computeQuantizedConv1d(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     const BufHandle& qx         = std::get<BufHandle>(inputs[0]);
     const BufHandle& prepacked  = std::get<BufHandle>(inputs[1]);
@@ -353,7 +353,7 @@ Tensor computeQuantizedConv2d(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     const BufHandle& qx         = std::get<BufHandle>(inputs[0]);
     const BufHandle& prepacked  = std::get<BufHandle>(inputs[1]);
@@ -376,7 +376,7 @@ Tensor computeQuantizedConv2dRelu(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     const BufHandle& qx         = std::get<BufHandle>(inputs[0]);
     const BufHandle& prepacked  = std::get<BufHandle>(inputs[1]);
@@ -399,7 +399,7 @@ Tensor computeQuantizedLinear(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     const BufHandle& qx         = std::get<BufHandle>(inputs[0]);
     const BufHandle& prepacked  = std::get<BufHandle>(inputs[1]);
@@ -422,7 +422,7 @@ Tensor computeQuantizedLinearRelu(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     const BufHandle& qx         = std::get<BufHandle>(inputs[0]);
     const BufHandle& prepacked  = std::get<BufHandle>(inputs[1]);
@@ -445,7 +445,7 @@ Tensor computeQuantizedAddExternalCall(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     const BufHandle& qa         = std::get<BufHandle>(inputs[0]);
     const BufHandle& qb         = std::get<BufHandle>(inputs[1]);
@@ -481,7 +481,7 @@ Tensor computeQuantizedMul(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     const BufHandle& qa         = std::get<BufHandle>(inputs[0]);
     const BufHandle& qb         = std::get<BufHandle>(inputs[1]);
@@ -511,7 +511,7 @@ Tensor computeQuantizedMulScalar(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     const BufHandle& qa     = std::get<BufHandle>(inputs[0]);
     const auto       scalar = std::get<double>(inputs[1]);
@@ -533,7 +533,7 @@ Tensor computeQuantizedRelu(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     const BufHandle& qa               = std::get<BufHandle>(inputs[0]);
     const auto       out_qdtype       = immQDType(qa);
@@ -557,7 +557,7 @@ Tensor computeQuantizedCat(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     auto const& inputList = std::get<BufList>(inputs[0]);
     auto        argDim    = std::get<int64_t>(inputs[1]);

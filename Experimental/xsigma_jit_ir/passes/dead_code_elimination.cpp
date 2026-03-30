@@ -1,8 +1,8 @@
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/ir/alias_analysis.h>
 #include <torch/csrc/jit/ir/ir_views.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/passes/dead_code_elimination.h>
-#include <quarisma/util/irange.h>
 
 #include <unordered_map>
 
@@ -449,7 +449,11 @@ private:
             node->inputs().quarisma(i)->debugName(),
             " will be removed");
         GRAPH_UPDATE(
-            "Dead ", i, "-th output ", node->outputs().quarisma(i)->debugName(), " will be removed");
+            "Dead ",
+            i,
+            "-th output ",
+            node->outputs().quarisma(i)->debugName(),
+            " will be removed");
         GRAPH_UPDATE(
             "\tDead block input ",
             loop_body->inputs().quarisma(loop_body_offset + i)->debugName(),

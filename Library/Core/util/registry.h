@@ -63,7 +63,7 @@ public:
 
 private:
     quarisma_map<KeyType, Function> registry_{};
-    std::mutex                    register_mutex_;
+    std::mutex                      register_mutex_;
 };
 
 template <class KeyType, typename Function>
@@ -131,7 +131,7 @@ public:
 
 private:
     quarisma_map<KeyType, Function> registry_{};
-    std::mutex                    register_mutex_;
+    std::mutex                      register_mutex_;
 };
 
 template <class KeyType, class ReturnType, class... Args>
@@ -160,9 +160,9 @@ public:
 
 #define QUARISMA_DEFINE_FUNCTION_REGISTRY(RegistryName, Function)                \
     quarisma::Registry<std::string, Function>* RegistryName()                    \
-    {                                                                          \
+    {                                                                            \
         static auto* registry = new quarisma::Registry<std::string, Function>(); \
-        return registry;                                                       \
+        return registry;                                                         \
     }
 
 #define QUARISMA_REGISTER_FUNCTION(RegistryName, type, Function)                   \
@@ -171,15 +171,15 @@ public:
 
 #define QUARISMA_DECLARE_TYPED_REGISTRY(RegistryName, KeyType, ObjectType, PtrType, ...)      \
     quarisma::creator::Registry<KeyType, PtrType<ObjectType>, ##__VA_ARGS__>* RegistryName(); \
-    using Registerer##RegistryName =                                                        \
+    using Registerer##RegistryName =                                                          \
         quarisma::creator::Registerer<KeyType, PtrType<ObjectType>, ##__VA_ARGS__>;
 
 #define QUARISMA_DEFINE_TYPED_REGISTRY(RegistryName, KeyType, ObjectType, PtrType, ...)      \
     quarisma::creator::Registry<KeyType, PtrType<ObjectType>, ##__VA_ARGS__>* RegistryName() \
-    {                                                                                      \
-        static auto* registry =                                                            \
+    {                                                                                        \
+        static auto* registry =                                                              \
             new quarisma::creator::Registry<KeyType, PtrType<ObjectType>, ##__VA_ARGS__>();  \
-        return registry;                                                                   \
+        return registry;                                                                     \
     }
 
 // The __VA_ARGS__ below allows one to specify a templated

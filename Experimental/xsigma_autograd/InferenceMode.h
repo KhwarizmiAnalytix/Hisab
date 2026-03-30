@@ -1,7 +1,7 @@
 #pragma once
 
-#include <torch/csrc/Export.h>
 #include <quarisma/core/InferenceMode.h>
+#include <torch/csrc/Export.h>
 
 namespace torch::autograd
 {

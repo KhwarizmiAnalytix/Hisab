@@ -20,7 +20,7 @@ private:
     void process(const quarisma::Warning& warning) override;
 
     std::vector<quarisma::Warning> warnings_;
-    std::mutex                   mutex_;
+    std::mutex                     mutex_;
 };
 
 }  // namespace torch::autograd::utils

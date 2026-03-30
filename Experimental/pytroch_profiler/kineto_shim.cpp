@@ -173,7 +173,8 @@ void ActivityTraceWrapper::save(const std::string& path)
 #else
     QUARISMA_CHECK(
         false,
-        "Saving a trace requires using quarisma.profiler with Kineto support (QUARISMA_HAS_KINETO=1)");
+        "Saving a trace requires using quarisma.profiler with Kineto support "
+        "(QUARISMA_HAS_KINETO=1)");
 #endif  // QUARISMA_HAS_KINETO
 }
 
@@ -270,10 +271,10 @@ static const std::string appendCustomConfig(
 #endif
 
 void prepareTrace(
-    const bool                                        cpuOnly,
-    const ActivitySet&                                activities,
+    const bool                                          cpuOnly,
+    const ActivitySet&                                  activities,
     const quarisma::profiler::impl::ExperimentalConfig& config,
-    const std::string&                                trace_id)
+    const std::string&                                  trace_id)
 {
 #if QUARISMA_HAS_KINETO
     libkineto::api().resetKinetoTLS();

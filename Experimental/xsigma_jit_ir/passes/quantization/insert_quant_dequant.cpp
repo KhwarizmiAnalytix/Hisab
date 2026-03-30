@@ -1,3 +1,5 @@
+#include <quarisma/core/QScheme.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/frontend/schema_matching.h>
 #include <torch/csrc/jit/ir/subgraph_matcher.h>
 #include <torch/csrc/jit/jit_log.h>
@@ -8,8 +10,6 @@
 #include <torch/csrc/jit/passes/quantization/helper.h>
 #include <torch/csrc/jit/passes/quantization/insert_quant_dequant.h>
 #include <torch/csrc/jit/passes/subgraph_rewrite.h>
-#include <quarisma/core/QScheme.h>
-#include <quarisma/util/irange.h>
 
 #include <stack>
 #include <utility>
@@ -28,7 +28,7 @@ std::string kScalarType = "_scalar_type";
 
 struct QuantOpParams
 {
-    quarisma::QScheme     qscheme{quarisma::kPerTensorAffine};
+    quarisma::QScheme   qscheme{quarisma::kPerTensorAffine};
     std::vector<Value*> qparams;
     // This is only so that insertQuantizationOps can be templatized
     // and subsequently significant portion of that code can be reused.
@@ -265,7 +265,7 @@ quarisma::ScalarType getObserverDtype(Module& module, Value* v)
     auto observer_name = findObserverName(v);
     if (observer_name.has_value())
     {
-        auto               observer_module = module.attr(observer_name.value()).toModule();
+        auto                 observer_module = module.attr(observer_name.value()).toModule();
         quarisma::ScalarType scalar_type     = observer_module.attr("dtype").toScalarType();
         return scalar_type;
     }
@@ -831,10 +831,11 @@ private:
 
     // Propagate quantization parameters from other quantized tensors
     void propagateQParams(
-        Value*                                                          original_output,
-        const std::vector<Value*>&                                      inputs,
-        bool                                                            is_scalar   = false,
-        const std::optional<std::tuple<quarisma::QScheme, QParamVector>>& qparams_opt = std::nullopt);
+        Value*                                                            original_output,
+        const std::vector<Value*>&                                        inputs,
+        bool                                                              is_scalar = false,
+        const std::optional<std::tuple<quarisma::QScheme, QParamVector>>& qparams_opt =
+            std::nullopt);
 
     bool isQuantized(Value* v) { return quantized_values_.count(v) != 0; }
 
@@ -1129,7 +1130,7 @@ std::tuple<quarisma::QScheme, QParamVector> InsertQuantDeQuantHelper::getQScheme
         "getQSchemeAndParamMap expects the corresponding observer for ",
         v->debugName(),
         " exists.");
-    QParamVector    qparams;
+    QParamVector      qparams;
     quarisma::QScheme qscheme = quarisma::kPerTensorAffine;
 
     auto observer_module = module.attr(observer_name.value()).toModule();
@@ -1153,7 +1154,7 @@ std::tuple<quarisma::QScheme, QParamVector> InsertQuantDeQuantHelper::getQScheme
     QUARISMA_CHECK(
         scalar_type.toScalarType() != quarisma::ScalarType::Undefined,
         "dtype of observer can't be undefined");
-    auto           tp         = result.toTuple();
+    auto             tp         = result.toTuple();
     quarisma::Tensor scale      = tp->elements()[0].toTensor().to(quarisma::kFloat);
     quarisma::Tensor zero_point = tp->elements()[1].toTensor().to(quarisma::kInt);
     // quantization parameters should appear in the same order as
@@ -1222,9 +1223,9 @@ ModuleMethodVector InsertQuantDeQuantHelper::getInvokedMethods(
 }
 
 void InsertQuantDeQuantHelper::propagateQParams(
-    Value*                                                          original_output,
-    const std::vector<Value*>&                                      inputs,
-    bool                                                            is_scalar,
+    Value*                                                            original_output,
+    const std::vector<Value*>&                                        inputs,
+    bool                                                              is_scalar,
     const std::optional<std::tuple<quarisma::QScheme, QParamVector>>& qparams_opt)
 {
     Node*  n     = original_output->node();

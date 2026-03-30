@@ -55,7 +55,7 @@ public:
             /*with_stack=*/withStack_,
             /*with_flops=*/withFlops_,
             /*with_modules=*/withModules_};
-        std::set<ActivityType>                  activities{ActivityType::CPU};
+        std::set<ActivityType>                    activities{ActivityType::CPU};
         std::unordered_set<quarisma::RecordScope> scopes;
         scopes.insert(quarisma::RecordScope::FUNCTION);
         scopes.insert(quarisma::RecordScope::USER_SCOPE);

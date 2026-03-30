@@ -1,7 +1,5 @@
 #pragma once
 
-#include <torch/csrc/utils/generated_serialization_types.h>
-#include <torch/nativert/executor/Placement.h>
 #include <quarisma/core/Device.h>
 #include <quarisma/core/Layout.h>
 #include <quarisma/core/MemoryFormat.h>
@@ -9,6 +7,8 @@
 #include <quarisma/core/TensorOptions.h>
 #include <quarisma/util/ArrayRef.h>
 #include <quarisma/util/Logging.h>
+#include <torch/csrc/utils/generated_serialization_types.h>
+#include <torch/nativert/executor/Placement.h>
 
 namespace torch::nativert
 {
@@ -83,7 +83,7 @@ private:
 
     quarisma::ScalarType dtype_;
     quarisma::Layout     layout_;
-    bool               requiresGrad_;
+    bool                 requiresGrad_;
 
     quarisma::Device device_;
 };

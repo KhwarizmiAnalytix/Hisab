@@ -1,12 +1,12 @@
 #pragma once
 
 #include <Quarisma/core/jit_type.h>
-#include <torch/csrc/Export.h>
-#include <torch/csrc/jit/ir/ir.h>
-#include <torch/csrc/jit/ir/type_hashing.h>
 #include <quarisma/util/ArrayRef.h>
 #include <quarisma/util/flat_hash_map.h>
 #include <quarisma/util/sparse_bitset.h>
+#include <torch/csrc/Export.h>
+#include <torch/csrc/jit/ir/ir.h>
+#include <torch/csrc/jit/ir/type_hashing.h>
 
 #include <memory>
 #include <optional>
@@ -126,9 +126,9 @@ public:
     // Adding wildcards can trigger extremely expensive cache invalidations. This
     // method adds them in a more efficient cache-aware way.
     void setWildcards(
-        const std::unordered_set<const Value*>&              wildcards,
+        const std::unordered_set<const Value*>&                wildcards,
         const quarisma::flat_hash_map<const Value*, Element*>& elementMap,
-        const std::function<Element*(const Value*)>&         getWildcardElement);
+        const std::function<Element*(const Value*)>&           getWildcardElement);
     Element* unsafeMakeFreshValue(const Value* v);
 
 private:

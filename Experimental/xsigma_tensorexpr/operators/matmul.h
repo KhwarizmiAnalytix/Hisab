@@ -10,12 +10,12 @@ Tensor computeMatmul(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device);
+    quarisma::Device                 device);
 Tensor computeAddMM(
     const std::vector<ArgValue>&     inputs,
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device);
+    quarisma::Device                 device);
 
 }  // namespace torch::jit::tensorexpr

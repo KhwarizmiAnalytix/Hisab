@@ -1,6 +1,7 @@
 #include <Quarisma/LegacyBatchedTensorImpl.h>
 #include <Quarisma/LegacyVmapMode.h>
 #include <pybind11/pybind11.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/DynamicTypes.h>
 #include <torch/csrc/THP.h>
 #include <torch/csrc/autograd/edge.h>
@@ -14,7 +15,6 @@
 #include <torch/csrc/autograd/python_saved_variable_hooks.h>
 #include <torch/csrc/utils/pybind.h>
 #include <torch/csrc/utils/pycfunction_helpers.h>
-#include <quarisma/util/irange.h>
 
 #ifndef _WIN32
 #include <pthread.h>

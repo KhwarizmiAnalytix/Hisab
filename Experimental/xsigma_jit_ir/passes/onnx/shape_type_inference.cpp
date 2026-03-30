@@ -1,4 +1,5 @@
 #include <onnx/shape_inference/implementation.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/passes/onnx/constant_fold.h>
 #include <torch/csrc/jit/passes/onnx/constant_map.h>
@@ -10,7 +11,6 @@
 #include <torch/csrc/jit/serialization/export.h>
 #include <torch/csrc/jit/serialization/onnx.h>
 #include <torch/csrc/utils/python_strings.h>
-#include <quarisma/util/irange.h>
 
 #include <algorithm>
 #include <cmath>
@@ -147,7 +147,7 @@ TensorTypePtr TorchTensorTypeFromONNX(
     if (onnx_tensor_type.has_shape())
     {
         std::vector<quarisma::ShapeSymbol> sizes;
-        const auto&                      onnx_shape = onnx_tensor_type.shape();
+        const auto&                        onnx_shape = onnx_tensor_type.shape();
 
         for (const auto i : quarisma::irange(onnx_shape.dim_size()))
         {
@@ -303,7 +303,7 @@ Value* CloneValueFromListConstruct(
     // special case, and change from list type to tensor type. The scalar type
     // is preserved. If the elemtype is Int, insert a onnx::Concat node into
     // the graph.
-    TypePtr                           elem = v->type()->castRaw<ListType>()->getElementType();
+    TypePtr                             elem = v->type()->castRaw<ListType>()->getElementType();
     std::optional<quarisma::ScalarType> scalar_type = std::nullopt;
     if (elem->cast<IntType>())
     {
@@ -387,7 +387,7 @@ Node* CloneNodeToGraph(
                 // If the input value is unknown, set it to graph input in the new
                 // graph, and copy over metadata, such as datatype and shape.
                 ::std::optional<quarisma::Tensor> val = ::std::nullopt;
-                auto                            v0  = params_dict.find(v->debugName());
+                auto                              v0  = params_dict.find(v->debugName());
                 if (v0 != params_dict.end())
                 {
                     val = v0->second.toTensor();
@@ -400,8 +400,8 @@ Node* CloneNodeToGraph(
                 if (val.has_value())
                 {
                     return n_graph
-                        ->insertNode(
-                            n_graph->create(::quarisma::onnx::Constant)->t_(attr::value, val.value()))
+                        ->insertNode(n_graph->create(::quarisma::onnx::Constant)
+                                         ->t_(attr::value, val.value()))
                         ->output();
                 }
                 auto input = n_graph->addInput();
@@ -523,10 +523,10 @@ std::optional<quarisma::Tensor> ComputeConstantFolding(const Node* n, int opset_
 
 // Similar to the function above, but for symbolic shapes.
 std::optional<::quarisma::SymbolicShape> ComputeShapeFromReshape(
-    Node*                        n,
+    Node*                          n,
     const quarisma::SymbolicShape& input_shape,
     const quarisma::SymbolicShape& shape,
-    int                          opset_version)
+    int                            opset_version)
 {
     std::vector<quarisma::ShapeSymbol> input_shape_vector = input_shape.sizes().value();
     std::vector<quarisma::ShapeSymbol> shape_vector       = shape.sizes().value();
@@ -570,7 +570,7 @@ std::optional<::quarisma::SymbolicShape> ComputeShapeFromReshape(
     {
         return shape;
     }
-    std::vector<quarisma::ShapeSymbol>     final_shape;
+    std::vector<quarisma::ShapeSymbol>   final_shape;
     uint64_t                             shape_ratio = 1;
     std::unordered_map<int64_t, int64_t> sym_map;
     for (const quarisma::ShapeSymbol& input_shape : input_shape_vector)
@@ -848,10 +848,10 @@ std::vector<::quarisma::ShapeSymbol> Broadcast(
     const std::vector<::quarisma::ShapeSymbol>& input_shape_value_0,
     const std::vector<::quarisma::ShapeSymbol>& input_shape_value_1)
 {
-    size_t                             rank_0   = input_shape_value_0.size();
-    size_t                             rank_1   = input_shape_value_1.size();
-    size_t                             rank_max = std::max(rank_0, rank_1);
-    size_t                             rank_min = std::min(rank_0, rank_1);
+    size_t                               rank_0   = input_shape_value_0.size();
+    size_t                               rank_1   = input_shape_value_1.size();
+    size_t                               rank_max = std::max(rank_0, rank_1);
+    size_t                               rank_min = std::min(rank_0, rank_1);
     std::vector<::quarisma::ShapeSymbol> final_shape;
     final_shape.reserve(rank_max);
     std::generate_n(std::back_inserter(final_shape), rank_max, ::quarisma::ShapeSymbol::newSymbol);
@@ -859,9 +859,9 @@ std::vector<::quarisma::ShapeSymbol> Broadcast(
     {
         const quarisma::ShapeSymbol& ss_shape_0  = input_shape_value_0[rank_0 - 1 - idx];
         const quarisma::ShapeSymbol& ss_shape_1  = input_shape_value_1[rank_1 - 1 - idx];
-        bool                       is_static_0 = ss_shape_0.is_static();
-        bool                       is_static_1 = ss_shape_1.is_static();
-        size_t                     shape_idx   = rank_max - 1 - idx;
+        bool                         is_static_0 = ss_shape_0.is_static();
+        bool                         is_static_1 = ss_shape_1.is_static();
+        size_t                       shape_idx   = rank_max - 1 - idx;
         if (is_static_0 && is_static_1)
         {
             int64_t static_0_sz = ss_shape_0.static_size();
@@ -986,7 +986,8 @@ void ProcessShapeForConcatNode(Node* n)
                         if (shape_symbol.is_static())
                         {
                             final_shape.emplace_back(
-                                ::quarisma::ShapeSymbol::fromStaticSize(shape_symbol.static_size()));
+                                ::quarisma::ShapeSymbol::fromStaticSize(
+                                    shape_symbol.static_size()));
                             flag = true;
                             break;
                         }
@@ -1004,7 +1005,7 @@ void ProcessShapeForConcatNode(Node* n)
 
 void ProcessShapeValueForConcatNode(Node* n)
 {
-    auto                             rank = n->inputs().size();
+    auto                               rank = n->inputs().size();
     std::vector<quarisma::ShapeSymbol> shape_size;
     for (const auto& input : n->inputs())
     {
@@ -1099,7 +1100,7 @@ void ProcessReduceNode(Node* n)
         auto   input_shape_value_0 = input_shape_0.value().sizes();
         size_t rank_0              = input_shape_value_0.value().size();
         std::vector<::quarisma::ShapeSymbol> final_shape;
-        std::vector<int64_t>               axes_vector(rank_0);
+        std::vector<int64_t>                 axes_vector(rank_0);
         if (n->hasAttributeS("axes"))
         {
             axes_vector = n->is(attr::axes);
@@ -1224,10 +1225,10 @@ void ProcessReshapeNode(Node* n, int opset_version)
 
 quarisma::SymbolicShape ComputeShapeForSlice(
     const std::vector<quarisma::ShapeSymbol>& input_shape,
-    const std::vector<int64_t>&             start_vector,
-    const std::vector<int64_t>&             end_vector,
-    const std::vector<int64_t>&             axes_vector,
-    const std::vector<int64_t>&             step_vector)
+    const std::vector<int64_t>&               start_vector,
+    const std::vector<int64_t>&               end_vector,
+    const std::vector<int64_t>&               axes_vector,
+    const std::vector<int64_t>&               step_vector)
 {
     TORCH_INTERNAL_ASSERT(axes_vector.size() <= input_shape.size());
     TORCH_INTERNAL_ASSERT(axes_vector.size() == start_vector.size());
@@ -1411,8 +1412,8 @@ void ProcessTimeSeriesNode(Node* n)
     {
         return;
     }
-    auto                input0_shape_value = input0_shape.value().sizes();
-    auto                input1_shape_value = input1_shape.value().sizes();
+    auto                  input0_shape_value = input0_shape.value().sizes();
+    auto                  input1_shape_value = input1_shape.value().sizes();
     quarisma::ShapeSymbol seq_length;
     quarisma::ShapeSymbol num_directions;
     quarisma::ShapeSymbol batch_size;
@@ -1496,7 +1497,8 @@ void ComputeConstant(Node* n, int opset_version)
         if (n->kindOf(attr::value) == AttributeKind::t)
         {
             const quarisma::Tensor& const_val = n->t(attr::value);
-            quarisma::Tensor const_val_copy   = quarisma::empty(const_val.sizes(), const_val.options());
+            quarisma::Tensor        const_val_copy =
+                quarisma::empty(const_val.sizes(), const_val.options());
             const_val_copy.copy_(const_val);
             ConstantValueMap::SetValue(n->output()->debugName(), const_val_copy);
         }
@@ -1579,7 +1581,7 @@ void ComputeConstant(Node* n, int opset_version)
                     ConstantValueMap::GetShape(n->input(0)->debugName()).value().sizes();
                 if (shape_size_0.has_value())
                 {
-                    auto                               shape_vector_0 = shape_size_0.value();
+                    auto                                 shape_vector_0 = shape_size_0.value();
                     std::vector<::quarisma::ShapeSymbol> final_shape_vector(
                         shape_vector_0.size(), ::quarisma::ShapeSymbol());
                     if (is_default_perm)
@@ -1936,7 +1938,8 @@ void ProcessConstantValueMap(Node* n, int opset_version)
             if (lc_vector_optional.has_value())
             {
                 auto lc_vector = lc_vector_optional.value();
-                auto options   = quarisma::TensorOptions().dtype(quarisma::kLong).device(quarisma::kCPU);
+                auto options =
+                    quarisma::TensorOptions().dtype(quarisma::kLong).device(quarisma::kCPU);
                 auto lc_vector_size = static_cast<int64_t>(lc_vector.size());
                 auto f = quarisma::from_blob(lc_vector.data(), {lc_vector_size}, quarisma::kLong)
                              .to(quarisma::kCPU);
@@ -2249,8 +2252,9 @@ void ONNXShapeTypeInference(Block* b, const ParamMap& params_dict, int opset_ver
         }
         else if (key->node()->kind() == ::quarisma::onnx::Constant)
         {
-            quarisma::Tensor const_val      = key->node()->t(attr::value);
-            quarisma::Tensor const_val_copy = quarisma::empty(const_val.sizes(), const_val.options());
+            quarisma::Tensor const_val = key->node()->t(attr::value);
+            quarisma::Tensor const_val_copy =
+                quarisma::empty(const_val.sizes(), const_val.options());
             const_val_copy.copy_(const_val);
             ConstantValueMap::SetValue(value.first, const_val_copy);
         }
@@ -2564,8 +2568,8 @@ void ONNXShapeTypeInference(Node* n, const ParamMap& params_dict, int opset_vers
             inferred_shape_data.find(torch_to_onnx_output[output->debugName()]);
         if (inferred_shape_pair != inferred_shape_data.end())
         {
-            const auto&                        inferred_shape = inferred_shape_pair->second;
-            int                                rank           = inferred_shape.dim_size();
+            const auto&                          inferred_shape = inferred_shape_pair->second;
+            int                                  rank           = inferred_shape.dim_size();
             std::vector<::quarisma::ShapeSymbol> final_shape(rank);
             for (int i = 0; i < rank; ++i)
             {
@@ -2674,8 +2678,8 @@ static bool HasSequenceTypeOutput(const Node* node)
         node->kind() == ::quarisma::onnx::SequenceInsert ||
         node->kind() == ::quarisma::onnx::SequenceEmpty ||
         node->kind() == ::quarisma::onnx::SequenceErase ||
-        node->kind() == ::quarisma::onnx::SequenceConstruct || node->kind() == ::quarisma::onnx::Loop ||
-        node->kind() == ::quarisma::onnx::If)
+        node->kind() == ::quarisma::onnx::SequenceConstruct ||
+        node->kind() == ::quarisma::onnx::Loop || node->kind() == ::quarisma::onnx::If)
         return true;
     return false;
 }
@@ -2717,7 +2721,8 @@ static size_t ONNXAssignOutputShape(
     if (THPVariable_Check(output_obj))
     {
         const quarisma::Tensor& var = THPVariable_Unpack(output_obj);
-        ONNXUpdateTypeFromTensor(graph->outputs().quarisma(outputs_index), var, onnx_shape_inference);
+        ONNXUpdateTypeFromTensor(
+            graph->outputs().quarisma(outputs_index), var, onnx_shape_inference);
         outputs_index++;
     }
     else if (PyTuple_Check(output_obj))
@@ -2894,12 +2899,12 @@ void ReplaceGraphOutputNoneWithOptional(std::shared_ptr<Graph>& graph, size_t ou
 }
 
 void ONNXAssignOutputShape(
-    std::shared_ptr<Graph>&          graph,
+    std::shared_ptr<Graph>&              graph,
     quarisma::ArrayRef<quarisma::Tensor> outputs,
-    const python::IODescriptor&      desc,
-    bool                             onnx_shape_inference,
-    bool                             is_script,
-    int                              opset_version)
+    const python::IODescriptor&          desc,
+    bool                                 onnx_shape_inference,
+    bool                                 is_script,
+    int                                  opset_version)
 {
     size_t    outputs_index = 0;
     PyObject* py_obj        = unflatten(outputs, desc);

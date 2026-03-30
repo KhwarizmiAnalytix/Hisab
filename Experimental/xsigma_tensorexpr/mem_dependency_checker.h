@@ -1,11 +1,11 @@
 #pragma once
+#include <quarisma/core/ScalarType.h>
 #include <torch/csrc/Export.h>
 #include <torch/csrc/jit/tensorexpr/bounds_overlap.h>
 #include <torch/csrc/jit/tensorexpr/ir_mutator.h>
 #include <torch/csrc/jit/tensorexpr/ir_simplifier.h>
 #include <torch/csrc/jit/tensorexpr/ir_visitor.h>
 #include <torch/csrc/jit/tensorexpr/stmt.h>
-#include <quarisma/core/ScalarType.h>
 
 #include <utility>
 #include <vector>

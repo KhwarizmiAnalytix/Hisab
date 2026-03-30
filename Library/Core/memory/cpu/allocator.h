@@ -271,8 +271,8 @@ public:
      * ```
      */
     virtual void* allocate_raw(
-        size_t                                     alignment,
-        size_t                                     num_bytes,
+        size_t                                       alignment,
+        size_t                                       num_bytes,
         QUARISMA_UNUSED const allocation_attributes& allocation_attr)
     {
         // Default implementation ignores attributes and delegates to simple version

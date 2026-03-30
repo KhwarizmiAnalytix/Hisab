@@ -1,6 +1,7 @@
 #include <Quarisma/DeviceGuard.h>
 #include <Quarisma/ExpandUtils.h>
 #include <Quarisma/core/symbol.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/autograd/variable.h>
 #include <torch/csrc/jit/frontend/error_report.h>
 #include <torch/csrc/jit/ir/alias_analysis.h>
@@ -11,7 +12,6 @@
 #include <torch/csrc/jit/passes/utils/op_registry.h>
 #include <torch/csrc/jit/runtime/exception_message.h>
 #include <torch/csrc/jit/runtime/operator.h>
-#include <quarisma/util/irange.h>
 
 #include "util/exception.h"
 
@@ -535,7 +535,7 @@ private:
 
     void PropagateCatShape(Node* cat_node)
     {
-        static const auto propagate_complete = [](Node*                    node,
+        static const auto propagate_complete = [](Node*                      node,
                                                   quarisma::ArrayRef<Value*> tensors) -> bool
         {
             auto input_types =
@@ -622,7 +622,8 @@ private:
             list_type       = input_base_type->cast<ListType>();
         }
 
-        std::optional<quarisma::ScalarType> default_type = tryScalarTypeFromJitType(*input_base_type);
+        std::optional<quarisma::ScalarType> default_type =
+            tryScalarTypeFromJitType(*input_base_type);
         if (auto grad_index = node->schema().argumentIndexWithName("dtype"))
         {
             auto inp = toIValue(node->inputs().quarisma(*grad_index));
@@ -885,7 +886,7 @@ private:
 
     bool PropagateTensorShapeOnNode(Node* node, bool insert_expands)
     {
-        static const auto broadcast = [](std::vector<TensorTypePtr>&       tensor_types,
+        static const auto broadcast = [](std::vector<TensorTypePtr>&         tensor_types,
                                          std::optional<quarisma::ScalarType> t) -> TensorTypePtr
         {
             if (tensor_types.size() == 1)
@@ -1980,7 +1981,8 @@ private:
         {
             if (node->matches("aten::type_as(Tensor self, Tensor other) -> Tensor"))
             {
-                return tensor_types.quarisma(0)->withScalarType(tensor_types.quarisma(1)->scalarType());
+                return tensor_types.quarisma(0)->withScalarType(
+                    tensor_types.quarisma(1)->scalarType());
             }
             else if (
                 node->matches("aten::view_as(Tensor(a) self, Tensor other) -> Tensor(a)") ||
@@ -2465,8 +2467,8 @@ private:
         else if (node->kind() == ::quarisma::onnx::Shape)
         {
             SHAPE_ASSERT(node->inputs().size() == 1 && node->outputs().size() == 1);
-            std::vector<int64_t> dim_vec = {(int64_t)*tensor_types.quarisma(0)->sizes().size()};
-            quarisma::IntArrayRef  dims(dim_vec);
+            std::vector<int64_t>  dim_vec = {(int64_t)*tensor_types.quarisma(0)->sizes().size()};
+            quarisma::IntArrayRef dims(dim_vec);
             node->output()->setType(
                 TensorType::createContiguous(quarisma::kLong, quarisma::kCPU, dims));
             return true;

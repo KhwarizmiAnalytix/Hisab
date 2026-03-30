@@ -199,9 +199,9 @@ namespace detail
 {
 #if QUARISMA_HAS_LOGURU
 using scope_pair = std::pair<std::string, std::shared_ptr<loguru::LogScopeRAII>>;
-static std::mutex                                           g_mutex;
+static std::mutex                                             g_mutex;
 static quarisma_map<std::thread::id, std::vector<scope_pair>> g_vectors;
-static std::vector<scope_pair>&                             get_vector()
+static std::vector<scope_pair>&                               get_vector()
 {
     const std::scoped_lock guard(g_mutex);
     return g_vectors[std::this_thread::get_id()];

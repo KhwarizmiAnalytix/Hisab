@@ -7,11 +7,11 @@
 #include <Quarisma/ops/ones_like.h>
 #endif
 
+#include <quarisma/util/irange.h>
 #include <torch/csrc/autograd/edge.h>
 #include <torch/csrc/autograd/engine.h>
 #include <torch/csrc/autograd/function.h>
 #include <torch/csrc/autograd/functions/basic_ops.h>
-#include <quarisma/util/irange.h>
 
 namespace torch::autograd
 {
@@ -41,7 +41,8 @@ static variable_list _make_grads(const variable_list& outputs, const variable_li
                     quarisma::isFloatingType(output.scalar_type()),
                     "grad can be computed only for real scalar outputs but got ",
                     output.scalar_type());
-                new_grads.emplace_back(quarisma::ones_like(output, LEGACY_CONTIGUOUS_MEMORY_FORMAT));
+                new_grads.emplace_back(
+                    quarisma::ones_like(output, LEGACY_CONTIGUOUS_MEMORY_FORMAT));
             }
         }
     }

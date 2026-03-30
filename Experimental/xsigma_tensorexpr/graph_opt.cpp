@@ -186,7 +186,7 @@ bool OptimizeCat(const std::shared_ptr<Graph>& graph)
 }
 
 void annotateInputShapes(
-    const std::shared_ptr<Graph>&                     graph,
+    const std::shared_ptr<Graph>&                       graph,
     const std::vector<std::optional<quarisma::Tensor>>& example_inputs)
 {
     TORCH_INTERNAL_ASSERT(
@@ -330,7 +330,9 @@ bool isGraphCompilable(const std::shared_ptr<Graph>& graph)
 }
 
 static void fixupTypeInfoForValue(
-    Value* v, std::optional<quarisma::ScalarType> scalar_type, std::optional<quarisma::Device> device)
+    Value*                              v,
+    std::optional<quarisma::ScalarType> scalar_type,
+    std::optional<quarisma::Device>     device)
 {
     Node*       n = v->node();
     auto const& t = v->type();

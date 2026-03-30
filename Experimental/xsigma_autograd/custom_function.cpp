@@ -1,8 +1,8 @@
+#include <quarisma/util/irange.h>
 #include <torch/csrc/autograd/VariableTypeUtils.h>
 #include <torch/csrc/autograd/autograd.h>
 #include <torch/csrc/autograd/custom_function.h>
 #include <torch/csrc/autograd/functions/accumulate_grad.h>
-#include <quarisma/util/irange.h>
 
 #include <utility>
 
@@ -28,13 +28,13 @@ namespace torch::autograd
 //    forward grad was also modified inplace and already present on the
 //    corresponding output.
 static void _process_forward_mode_AD(
-    const variable_list&                            inputs,
+    const variable_list&                              inputs,
     std::unordered_map<quarisma::TensorImpl*, size_t> inputs_mapping,
     const quarisma::ArrayRef<std::optional<Variable>> raw_outputs,
-    const optional_variable_list&                   outputs,
+    const optional_variable_list&                     outputs,
     const std::unordered_set<quarisma::TensorImpl*>&  non_differentiable,
     const std::unordered_set<quarisma::TensorImpl*>&  dirty_inputs,
-    const _jvp_fn_t&                                jvp_user_function)
+    const _jvp_fn_t&                                  jvp_user_function)
 {
     // TODO handle multiple levels here
     uint64_t level = 0;
@@ -45,8 +45,8 @@ static void _process_forward_mode_AD(
     // The tracking info below are used to perform the view and inplace checks.
     // They are lazily initialized to reduce the cost of this function in the
     // common case where the user is not using forward mode AD.
-    variable_list                                   input_grads;
-    std::vector<int64_t>                            grad_versions;
+    variable_list                                     input_grads;
+    std::vector<int64_t>                              grad_versions;
     std::vector<quarisma::TensorImpl*>                grad_impls;
     std::unordered_map<quarisma::TensorImpl*, size_t> inputs_bases;
 
@@ -277,7 +277,7 @@ static quarisma::Tensor _view_as_self_with_no_grad(
     // this view, but it would mean that the user defined jvp may be silently
     // ignored.
     quarisma::AutoFwGradMode fw_grad_mode(false);
-    AutoGradMode           grad_mode(false);
+    AutoGradMode             grad_mode(false);
     // We thread through this view_as_self_fn lambda so that in the case we are a
     // Python custom function (rather than a cpp one), we can properly call the
     // view_as from python so that torch function logic can still trigger.
@@ -289,10 +289,10 @@ static optional_variable_list _process_backward_mode_ad(
     const std::unordered_set<quarisma::TensorImpl*>&         non_differentiable,
     const std::unordered_set<quarisma::TensorImpl*>&         dirty_inputs,
     const quarisma::ArrayRef<std::optional<Variable>>        raw_outputs,
-    const std::shared_ptr<Node>&                           cdata,
+    const std::shared_ptr<Node>&                             cdata,
     const std::unordered_set<quarisma::TensorImpl*>&         to_save_if_setup_context,
-    const _view_as_self_fn_t&                              view_as_self_fn,
-    bool                                                   pure_view)
+    const _view_as_self_fn_t&                                view_as_self_fn,
+    bool                                                     pure_view)
 {
     auto num_outputs = raw_outputs.size();
 
@@ -402,7 +402,7 @@ static optional_variable_list _process_backward_mode_ad(
         }
     };
 
-    optional_variable_list                  outputs;
+    optional_variable_list                    outputs;
     std::unordered_set<quarisma::TensorImpl*> outputs_impl;  // For dirty_inputs check
     outputs.reserve(num_outputs);
     int num_diff_outputs = 0;
@@ -501,15 +501,15 @@ static optional_variable_list _process_backward_mode_ad(
 }
 
 optional_variable_list _wrap_outputs(
-    const variable_list&                            input_vars,
+    const variable_list&                              input_vars,
     const std::unordered_set<quarisma::TensorImpl*>&  non_differentiable,
     const std::unordered_set<quarisma::TensorImpl*>&  dirty_inputs,
     const quarisma::ArrayRef<std::optional<Variable>> raw_outputs,
-    const std::shared_ptr<Node>&                    cdata,
-    const _jvp_fn_t&                                jvp_user_function,
+    const std::shared_ptr<Node>&                      cdata,
+    const _jvp_fn_t&                                  jvp_user_function,
     const std::unordered_set<quarisma::TensorImpl*>&  to_save_if_setup_context,
-    const _view_as_self_fn_t&                       view_as_self_fn,
-    bool                                            pure_view)
+    const _view_as_self_fn_t&                         view_as_self_fn,
+    bool                                              pure_view)
 {
     std::unordered_map<quarisma::TensorImpl*, size_t> inputs_mapping;
     inputs_mapping.reserve(input_vars.size());
@@ -552,7 +552,7 @@ optional_variable_list _wrap_outputs(
 void check_variable_result(
     const quarisma::TensorBase& original,
     const quarisma::TensorBase& result,
-    const std::string&        hook_name)
+    const std::string&          hook_name)
 {
     QUARISMA_CHECK(
         original.options().type_equal(result.options()),

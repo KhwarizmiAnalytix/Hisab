@@ -73,8 +73,8 @@ public:
     {
     public:
         QUARISMA_API ~proxy();
-        proxy(const proxy&)                       = delete;
-        proxy&            operator=(const proxy&) = delete;
+        proxy(const proxy&)                         = delete;
+        proxy&              operator=(const proxy&) = delete;
         QUARISMA_API        proxy(proxy&&) noexcept;
         QUARISMA_API proxy& operator=(proxy&&) noexcept;
 

@@ -55,13 +55,13 @@
 #include <Quarisma/NamedTensorUtils.h>
 #include <Quarisma/NumericUtils.h>
 #include <Quarisma/Parallel.h>
+#include <Quarisma/Quarisma.h>
 #include <Quarisma/TensorIterator.h>
 #include <Quarisma/TensorMeta.h>
 #include <Quarisma/TensorOperators.h>
 #include <Quarisma/TensorSubclassLikeUtils.h>
 #include <Quarisma/TensorUtils.h>
 #include <Quarisma/WrapDimUtils.h>
-#include <Quarisma/Quarisma.h>
 #include <Quarisma/core/IListRef.h>
 #include <Quarisma/core/Tensor.h>
 #include <Quarisma/native/BinaryOps.h>

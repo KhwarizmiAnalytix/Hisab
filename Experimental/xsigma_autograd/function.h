@@ -3,6 +3,7 @@
 #include <Quarisma/SequenceNumber.h>
 #include <Quarisma/core/Tensor.h>
 #include <Quarisma/record_function.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/autograd/anomaly_mode.h>
 #include <torch/csrc/autograd/edge.h>
 #include <torch/csrc/autograd/grad_mode.h>
@@ -12,7 +13,6 @@
 #include <torch/csrc/autograd/variable.h>
 #include <torch/csrc/utils/python_stub.h>
 #include <torch/csrc/utils/variadic.h>
-#include <quarisma/util/irange.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -181,7 +181,8 @@ public:
                 std::vector<quarisma::IValue> inputs_vec(inputs.begin(), inputs.end());
                 guard.before(
                     name(),
-                    quarisma::ArrayRef<const quarisma::IValue>(inputs_vec.data(), inputs_vec.size()),
+                    quarisma::ArrayRef<const quarisma::IValue>(
+                        inputs_vec.data(), inputs_vec.size()),
                     static_cast<int64_t>(sequence_nr()));
             }
             else
@@ -212,8 +213,8 @@ public:
     uint32_t add_input_metadata(
         const quarisma::TensorOptions&      options,
         quarisma::SymIntArrayRef            shape,
-        bool                              is_tensor_subclass,
-        bool                              is_nested,
+        bool                                is_tensor_subclass,
+        bool                                is_nested,
         std::optional<quarisma::ScalarType> grad_dtype) noexcept
     {
         uint32_t input_nr   = input_metadata_.size();
@@ -715,7 +716,7 @@ protected:
     std::vector<std::unique_ptr<FunctionPreHook>>                tensor_pre_hooks_;
     std::unordered_map<size_t, std::unique_ptr<FunctionPreHook>> retains_grad_hooks_;
     std::vector<std::unique_ptr<FunctionPostHook>>               post_hooks_;
-    quarisma::SmallVector<InputMetadata, 2>                        input_metadata_;
+    quarisma::SmallVector<InputMetadata, 2>                      input_metadata_;
 };
 
 /// See Node::is_traceable() for definition.

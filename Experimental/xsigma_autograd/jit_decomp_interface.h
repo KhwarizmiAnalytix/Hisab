@@ -32,7 +32,7 @@ namespace torch::autograd::impl
 
 struct TORCH_API JitDecompInterface
 {
-    virtual ~JitDecompInterface()                                                  = default;
+    virtual ~JitDecompInterface()                                                    = default;
     virtual bool has_jit_decomposition(const quarisma::FunctionSchema& schema) const = 0;
     virtual void run_jit_decomposition(
         const quarisma::OperatorHandle& op, jit::Stack* stack) const = 0;

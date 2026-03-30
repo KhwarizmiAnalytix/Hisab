@@ -34,7 +34,7 @@ public:
     static void SetValue(const std::string& tensorName, const quarisma::Tensor& value);
     static bool HasValue(const std::string& tensorName);
     static std::optional<quarisma::Tensor> GetValue(const std::string& tensorName);
-    static void                          EraseValue(const std::string& tensorName);
+    static void                            EraseValue(const std::string& tensorName);
 
     static std::vector<int64_t> GetCompleteShapeInto1DInt64Vector(
         const quarisma::SymbolicShape& shape);
@@ -54,7 +54,7 @@ public:
 
     static void SetShapeValue(
         const std::string& tensorName, const quarisma::SymbolicShape& shapeValue);
-    static bool                                 HasShapeValue(const std::string& tensorName);
+    static bool                                   HasShapeValue(const std::string& tensorName);
     static std::optional<quarisma::SymbolicShape> GetShapeValue(const std::string& tensorName);
 
     static ShapeDataMap& GetInferredShapeData();
@@ -73,7 +73,7 @@ public:
 private:
     ConstantValueMap() = default;
 
-    std::unordered_map<std::string, size_t>                rankMap;
+    std::unordered_map<std::string, size_t>                  rankMap;
     std::unordered_map<std::string, quarisma::SymbolicShape> shapeMap;
     std::unordered_map<std::string, quarisma::Tensor>        tensorValueMap;
     // This map indicates whether the current type is reliably estimated or not.

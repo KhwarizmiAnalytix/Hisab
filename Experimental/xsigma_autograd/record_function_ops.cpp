@@ -24,7 +24,8 @@ static void record_function_enter(
     {
         if (rec.needsInputs() && args.has_value())
         {
-            rec.before(name, quarisma::ArrayRef<const quarisma::IValue>{quarisma::IValue{args.value()}});
+            rec.before(
+                name, quarisma::ArrayRef<const quarisma::IValue>{quarisma::IValue{args.value()}});
         }
         else
         {
@@ -121,7 +122,7 @@ static quarisma::intrusive_ptr<quarisma::ivalue::Future> _call_end_callbacks_on_
 
 // New signature using custom_class
 quarisma::intrusive_ptr<quarisma::ivalue::Future> _call_end_callbacks_on_fut_new(
-    const quarisma::intrusive_ptr<PythonRecordFunction>&   record,
+    const quarisma::intrusive_ptr<PythonRecordFunction>&     record,
     const quarisma::intrusive_ptr<quarisma::ivalue::Future>& fut)
 {
     return _call_end_callbacks_on_fut(

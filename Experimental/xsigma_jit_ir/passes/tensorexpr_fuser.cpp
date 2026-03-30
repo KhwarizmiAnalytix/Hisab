@@ -1,6 +1,8 @@
 #include <Quarisma/core/interned_strings.h>
 #include <Quarisma/core/symbol.h>
 #include <Quarisma/record_function.h>
+#include <quarisma/util/FunctionRef.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/codegen/cuda/interface.h>
 #include <torch/csrc/jit/codegen/fuser/interface.h>
 #include <torch/csrc/jit/ir/alias_analysis.h>
@@ -20,8 +22,6 @@
 #include <torch/csrc/jit/runtime/symbolic_shape_registry.h>
 #include <torch/csrc/jit/runtime/symbolic_shape_registry_util.h>
 #include <torch/csrc/jit/tensorexpr/kernel.h>
-#include <quarisma/util/FunctionRef.h>
-#include <quarisma/util/irange.h>
 
 #include <utility>
 

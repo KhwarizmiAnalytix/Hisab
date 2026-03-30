@@ -1,4 +1,5 @@
 #include <Quarisma/core/ivalue.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/autograd/edge.h>
 #include <torch/csrc/autograd/function.h>
 #include <torch/csrc/autograd/grad_mode.h>
@@ -40,7 +41,6 @@
 #include <torch/csrc/jit/runtime/profiling_graph_executor_impl.h>
 #include <torch/csrc/jit/runtime/profiling_record.h>
 #include <torch/csrc/jit/runtime/simple_graph_executor_impl.h>
-#include <quarisma/util/irange.h>
 
 #include <cstdint>
 #include <iterator>

@@ -1,7 +1,7 @@
+#include <quarisma/util/irange.h>
 #include <torch/csrc/autograd/cpp_hook.h>
 #include <torch/csrc/autograd/custom_function.h>
 #include <torch/csrc/autograd/variable.h>
-#include <quarisma/util/irange.h>
 
 #include <utility>
 
@@ -9,7 +9,9 @@ namespace
 {
 using torch::autograd::Variable;
 void check_single_result(
-    const quarisma::TensorBase& value, const quarisma::TensorBase& result, const std::string& hook_name)
+    const quarisma::TensorBase& value,
+    const quarisma::TensorBase& result,
+    const std::string&          hook_name)
 {
     QUARISMA_CHECK(value.defined(), "can't replace a empty gradient with a non-empty value");
     torch::autograd::check_variable_result(value, result, hook_name);

@@ -24,7 +24,7 @@ TORCH_API quarisma::intrusive_ptr<PythonRecordFunction> record_function_enter_ne
 
 // Schedules record_function's end callbacks to be run on completion of a future.
 TORCH_API quarisma::intrusive_ptr<quarisma::ivalue::Future> _call_end_callbacks_on_fut_new(
-    const quarisma::intrusive_ptr<PythonRecordFunction>&   record,
+    const quarisma::intrusive_ptr<PythonRecordFunction>&     record,
     const quarisma::intrusive_ptr<quarisma::ivalue::Future>& fut);
 
 }  // namespace torch::autograd::profiler

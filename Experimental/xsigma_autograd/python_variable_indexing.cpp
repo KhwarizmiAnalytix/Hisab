@@ -5,6 +5,9 @@
 #include <Quarisma/TracerMode.h>
 #include <Quarisma/core/LegacyTypeDispatch.h>
 #include <fmt/format.h>
+#include <quarisma/core/Layout.h>
+#include <quarisma/core/TensorOptions.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/DynamicTypes.h>
 #include <torch/csrc/Exceptions.h>
 #include <torch/csrc/Export.h>
@@ -23,9 +26,6 @@
 #include <torch/csrc/utils/tensor_new.h>
 #include <torch/csrc/utils/tensor_numpy.h>
 #include <torch/csrc/utils/tensor_types.h>
-#include <quarisma/core/Layout.h>
-#include <quarisma/core/TensorOptions.h>
-#include <quarisma/util/irange.h>
 
 #include "util/exception.h"
 
@@ -167,7 +167,7 @@ inline Variable valueToTensor(
     }
     quarisma::AutoDispatchBelowADInplaceOrView   guard;  // TODO: remove
     quarisma::tracer::impl::NoTracerDispatchMode tracer_guard;
-    Scalar                                     scalar;
+    Scalar                                       scalar;
     if (THPUtils_checkLong(value) || PyBool_Check(value))
     {
         scalar = Scalar(THPUtils_unpackLong(value));
@@ -248,7 +248,7 @@ static Variable applySlicing(
     PyObject*                     index,
     variable_list&                outIndices,
     bool                          is_tracing,
-    const quarisma::Device&         self_device,
+    const quarisma::Device&       self_device,
     const std::optional<int64_t>& self_ndim,
     int64_t                       specified_dims)
 {
@@ -562,10 +562,10 @@ PyObject* THPVariable_getitem(PyObject* self, PyObject* index)
 }
 
 static void dispatch_set_item(
-    const Tensor&                           self,
+    const Tensor&                             self,
     ArrayRef<quarisma::indexing::TensorIndex> indices,
-    const Tensor&                           value,
-    bool                                    disable_slice_optimization = false)
+    const Tensor&                             value,
+    bool                                      disable_slice_optimization = false)
 {
     pybind11::gil_scoped_release no_gil;
     quarisma::indexing::set_item(self, indices, value, disable_slice_optimization);
@@ -600,7 +600,7 @@ int THPVariable_setitem(PyObject* self, PyObject* index, PyObject* py_value)
         TORCH_CHECK_TYPE(false, "Cannot assign to a sparse tensor");
     }
     OptionalDeviceGuard device_guard(device_of(self_));
-    quarisma::Device      self_device = self_.device();
+    quarisma::Device    self_device = self_.device();
     Variable            value;
     // TODO: This qint special case looks very suspicious...
     if (isQIntType(self_.scalar_type()))
@@ -631,7 +631,8 @@ int THPVariable_setitem(PyObject* self, PyObject* index, PyObject* py_value)
     }
     else if (index == Py_None)
     {
-        dispatch_set_item(self_, {quarisma::indexing::TensorIndex(quarisma::indexing::None)}, value);
+        dispatch_set_item(
+            self_, {quarisma::indexing::TensorIndex(quarisma::indexing::None)}, value);
         return 0;
     }
     else if (index == Py_True)
@@ -665,7 +666,8 @@ int THPVariable_setitem(PyObject* self, PyObject* index, PyObject* py_value)
         // indexing functions from Python ]
         dispatch_set_item(
             self_,
-            {quarisma::indexing::TensorIndex(quarisma::indexing::Slice(val.start, val.stop, val.step))},
+            {quarisma::indexing::TensorIndex(
+                quarisma::indexing::Slice(val.start, val.stop, val.step))},
             value,
             /*disable_slice_optimization=*/is_tracing);
         return 0;

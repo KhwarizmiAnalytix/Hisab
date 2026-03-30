@@ -193,26 +193,26 @@ namespace quarisma::gpu::memory_allocator
 
 // CUDA error checking helper macros
 #if QUARISMA_HAS_CUDA
-#define CUDA_CHECK_RETURN_NULL(call)                                                    \
-    do                                                                                  \
-    {                                                                                   \
-        cudaError_t error = call;                                                       \
-        if (error != cudaSuccess)                                                       \
-        {                                                                               \
+#define CUDA_CHECK_RETURN_NULL(call)                                                      \
+    do                                                                                    \
+    {                                                                                     \
+        cudaError_t error = call;                                                         \
+        if (error != cudaSuccess)                                                         \
+        {                                                                                 \
             QUARISMA_LOG_ERROR("CUDA error in {}: {}", #call, cudaGetErrorString(error)); \
-            return nullptr;                                                             \
-        }                                                                               \
+            return nullptr;                                                               \
+        }                                                                                 \
     } while (0)
 
-#define CUDA_CHECK_RETURN_FALSE(call)                                                   \
-    do                                                                                  \
-    {                                                                                   \
-        const cudaError_t error = call;                                                 \
-        if (error != cudaSuccess)                                                       \
-        {                                                                               \
+#define CUDA_CHECK_RETURN_FALSE(call)                                                     \
+    do                                                                                    \
+    {                                                                                     \
+        const cudaError_t error = call;                                                   \
+        if (error != cudaSuccess)                                                         \
+        {                                                                                 \
             QUARISMA_LOG_ERROR("CUDA error in {}: {}", #call, cudaGetErrorString(error)); \
-            return false;                                                               \
-        }                                                                               \
+            return false;                                                                 \
+        }                                                                                 \
     } while (0)
 #else
 #define CUDA_CHECK_RETURN_NULL(call) return nullptr
@@ -221,26 +221,26 @@ namespace quarisma::gpu::memory_allocator
 
 // HIP error checking helper macros
 #if QUARISMA_HAS_HIP
-#define HIP_CHECK_RETURN_NULL(call)                                                   \
-    do                                                                                \
-    {                                                                                 \
-        hipError_t error = call;                                                      \
-        if (error != hipSuccess)                                                      \
-        {                                                                             \
+#define HIP_CHECK_RETURN_NULL(call)                                                     \
+    do                                                                                  \
+    {                                                                                   \
+        hipError_t error = call;                                                        \
+        if (error != hipSuccess)                                                        \
+        {                                                                               \
             QUARISMA_LOG_ERROR("HIP error in {}: {}", #call, hipGetErrorString(error)); \
-            return nullptr;                                                           \
-        }                                                                             \
+            return nullptr;                                                             \
+        }                                                                               \
     } while (0)
 
-#define HIP_CHECK_RETURN_FALSE(call)                                                  \
-    do                                                                                \
-    {                                                                                 \
-        hipError_t error = call;                                                      \
-        if (error != hipSuccess)                                                      \
-        {                                                                             \
+#define HIP_CHECK_RETURN_FALSE(call)                                                    \
+    do                                                                                  \
+    {                                                                                   \
+        hipError_t error = call;                                                        \
+        if (error != hipSuccess)                                                        \
+        {                                                                               \
             QUARISMA_LOG_ERROR("HIP error in {}: {}", #call, hipGetErrorString(error)); \
-            return false;                                                             \
-        }                                                                             \
+            return false;                                                               \
+        }                                                                               \
     } while (0)
 #else
 #define HIP_CHECK_RETURN_NULL(call) return nullptr
@@ -248,7 +248,10 @@ namespace quarisma::gpu::memory_allocator
 #endif
 
 void* allocate(
-    std::size_t nbytes, int device_id, QUARISMA_UNUSED void* stream, QUARISMA_UNUSED void* memory_pool)
+    std::size_t           nbytes,
+    int                   device_id,
+    QUARISMA_UNUSED void* stream,
+    QUARISMA_UNUSED void* memory_pool)
 {
     QUARISMA_CHECK(
         static_cast<std::ptrdiff_t>(nbytes) > 0,
@@ -416,7 +419,10 @@ void* allocate(
 }
 
 void free(
-    void* ptr, QUARISMA_UNUSED std::size_t nbytes, int device_id, QUARISMA_UNUSED void* stream) noexcept
+    void*           ptr,
+    QUARISMA_UNUSED std::size_t nbytes,
+    int                         device_id,
+    QUARISMA_UNUSED void*       stream) noexcept
 {
     if (ptr == nullptr)
     {

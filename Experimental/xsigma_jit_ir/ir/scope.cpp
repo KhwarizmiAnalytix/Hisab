@@ -37,9 +37,9 @@ std::string get_module_info(const ModuleInstanceInfo& module_instance_info)
 ScopePtr Scope::intrusive_from_this()
 {
     quarisma::raw::intrusive_ptr::incref(this);  // we are creating a new pointer
-                                               // from a raw `this` pointer
-                                               // so we need to bump the refcount
-                                               // to account for this ownership
+                                                 // from a raw `this` pointer
+                                                 // so we need to bump the refcount
+                                                 // to account for this ownership
     return quarisma::intrusive_ptr<Scope>::reclaim(this);
 }
 
@@ -117,9 +117,9 @@ std::string Scope::namesFromRoot(const std::string& separator) const
 InlinedCallStackPtr InlinedCallStack::intrusive_from_this()
 {
     quarisma::raw::intrusive_ptr::incref(this);  // we are creating a new pointer
-                                               // from a raw `this` pointer
-                                               // so we need to bump the refcount
-                                               // to account for this ownership
+                                                 // from a raw `this` pointer
+                                                 // so we need to bump the refcount
+                                                 // to account for this ownership
     return quarisma::intrusive_ptr<InlinedCallStack>::reclaim(this);
 }
 
@@ -228,7 +228,8 @@ std::vector<InlinedCallStackEntry> InlinedCallStack::vec()
     return r;
 }
 
-ModuleInstanceInfo::ModuleInstanceInfo(quarisma::ClassTypePtr module_type, std::string instance_name)
+ModuleInstanceInfo::ModuleInstanceInfo(
+    quarisma::ClassTypePtr module_type, std::string instance_name)
     : module_type_(std::move(module_type)), instance_name_(std::move(instance_name))
 {
 }

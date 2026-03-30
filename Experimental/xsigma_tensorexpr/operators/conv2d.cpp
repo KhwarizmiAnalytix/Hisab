@@ -334,7 +334,7 @@ Tensor computeConv2d(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     Dtype dtype = kFloat;
     if (outputType)
@@ -378,7 +378,7 @@ Tensor computeConv1d(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     Dtype dtype = kFloat;
     if (outputType)
@@ -411,7 +411,7 @@ Tensor computePrepackedConv2dClampRun(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     Dtype dtype = kFloat;
     if (outputType)
@@ -432,7 +432,7 @@ Tensor computePrepackedLinearClampRun(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     Dtype dtype = kFloat;
     if (outputType)
@@ -453,7 +453,7 @@ Tensor computeMkldnnPrepackedConvRun(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     Dtype dtype = kFloat;
     if (outputType)

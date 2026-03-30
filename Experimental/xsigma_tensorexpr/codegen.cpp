@@ -11,7 +11,7 @@ namespace torch::jit::tensorexpr
 CodeGen::CodeGen(
     StmtPtr                stmt,
     std::vector<BufferArg> buffer_args,
-    quarisma::Device         device,
+    quarisma::Device       device,
     std::string            kernel_func_name)
     : stmt_(std::move(stmt)),
       buffer_args_(std::move(buffer_args)),
@@ -64,7 +64,7 @@ std::unique_ptr<CodeGen> CreateCodeGen(
     const std::string&                     name,
     StmtPtr                                stmt,
     const std::vector<CodeGen::BufferArg>& params,
-    quarisma::Device                         device,
+    quarisma::Device                       device,
     const std::string&                     kernel_func_name)
 {
     RegisterCodeGenList::StmtFactoryMethod method =

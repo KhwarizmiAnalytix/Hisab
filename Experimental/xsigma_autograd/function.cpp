@@ -1,8 +1,8 @@
 #include <Quarisma/Quarisma.h>
+#include <quarisma/util/ThreadLocal.h>
 #include <torch/csrc/autograd/engine.h>
 #include <torch/csrc/autograd/function.h>
 #include <torch/csrc/autograd/variable.h>
-#include <quarisma/util/ThreadLocal.h>
 
 #include <memory>
 #include <string>

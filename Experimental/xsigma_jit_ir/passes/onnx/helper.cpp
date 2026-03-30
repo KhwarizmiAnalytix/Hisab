@@ -184,7 +184,8 @@ Node* createONNXUnsqueeze(
         Node* unsqueeze_axes = graph->create(onnx::Constant, 1);
         unsqueeze_axes->insertBefore(unsqueeze_node);
         unsqueeze_axes->t_(
-            attr::value, quarisma::unsqueeze(quarisma::scalar_to_tensor(quarisma::Scalar(axis)), 0));
+            attr::value,
+            quarisma::unsqueeze(quarisma::scalar_to_tensor(quarisma::Scalar(axis)), 0));
         unsqueeze_node->addInput(unsqueeze_axes->output());
     }
     else

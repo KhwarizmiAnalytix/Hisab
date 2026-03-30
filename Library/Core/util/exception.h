@@ -238,20 +238,20 @@ private:
  * @param error_cat Error category enum value
  * @param msg Error message string
  */
-#define QUARISMA_THROW_IMPL(error_cat, msg)                                             \
-    do                                                                                \
-    {                                                                                 \
-        quarisma::source_location loc;                                                  \
-        loc.function = __func__;                                                      \
-        loc.file     = __FILE__;                                                      \
-        loc.line     = static_cast<int>(__LINE__);                                    \
+#define QUARISMA_THROW_IMPL(error_cat, msg)                                               \
+    do                                                                                    \
+    {                                                                                     \
+        quarisma::source_location loc;                                                    \
+        loc.function = __func__;                                                          \
+        loc.file     = __FILE__;                                                          \
+        loc.line     = static_cast<int>(__LINE__);                                        \
         if (quarisma::get_exception_mode() == quarisma::exception_mode::THROW)            \
-        {                                                                             \
+        {                                                                                 \
             throw quarisma::exception(loc, msg, quarisma::exception_category::error_cat); \
-        }                                                                             \
-        {                                                                             \
-            QUARISMA_LOG_FATAL("Fatal error ({}): {}", #error_cat, msg);                \
-        }                                                                             \
+        }                                                                                 \
+        {                                                                                 \
+            QUARISMA_LOG_FATAL("Fatal error ({}): {}", #error_cat, msg);                  \
+        }                                                                                 \
     } while (0)
 
 /**
@@ -322,33 +322,33 @@ inline std::string format_check_msg(const char* cond_str)
  */
 #define QUARISMA_CHECK(cond, ...)                                                    \
     if QUARISMA_UNLIKELY (!(cond))                                                   \
-    {                                                                              \
+    {                                                                                \
         std::string msg = quarisma::details::format_check_msg(#cond, ##__VA_ARGS__); \
         QUARISMA_THROW("{}", msg);                                                   \
     }
 
-#define QUARISMA_CHECK_ALL_POSITIVE(V)                                   \
-    QUARISMA_CHECK(                                                      \
+#define QUARISMA_CHECK_ALL_POSITIVE(V)                                 \
+    QUARISMA_CHECK(                                                    \
         std::all_of(V.begin(), V.end(), [](auto x) { return x > 0; }), \
         "All elements must be positive");
 
-#define QUARISMA_CHECK_ALL_FINITE(V)                                                               \
-    QUARISMA_CHECK(                                                                                \
+#define QUARISMA_CHECK_ALL_FINITE(V)                                                             \
+    QUARISMA_CHECK(                                                                              \
         std::none_of(V.begin(), V.end(), [](auto x) { return std::isnan(x) || std::isinf(x); }), \
         "All elements must be finite numbers");
 
-#define QUARISMA_CHECK_STRICTLY_INCREASING(V)                                                       \
-    QUARISMA_CHECK(                                                                                 \
+#define QUARISMA_CHECK_STRICTLY_INCREASING(V)                                                     \
+    QUARISMA_CHECK(                                                                               \
         std::adjacent_find(V.begin(), V.end(), [](auto a, auto b) { return a >= b; }) == V.end(), \
         "Elements must be in strictly increasing order");
 
-#define QUARISMA_CHECK_STRICTLY_DECREASING(V)                                                       \
-    QUARISMA_CHECK(                                                                                 \
+#define QUARISMA_CHECK_STRICTLY_DECREASING(V)                                                     \
+    QUARISMA_CHECK(                                                                               \
         std::adjacent_find(V.begin(), V.end(), [](auto a, auto b) { return a <= b; }) == V.end(), \
         "Elements must be in strictly decreasing order");
 
-#define QUARISMA_CHECK_STRICTLY_ORDERED(V)                                                   \
-    QUARISMA_CHECK(                                                                          \
+#define QUARISMA_CHECK_STRICTLY_ORDERED(V)                                                 \
+    QUARISMA_CHECK(                                                                        \
         ((std::adjacent_find(V.begin(), V.end(), [](auto a, auto b) { return a >= b; }) == \
           V.end()) ||                                                                      \
          (std::adjacent_find(V.begin(), V.end(), [](auto a, auto b) { return a <= b; }) == \
@@ -391,18 +391,18 @@ inline std::string format_check_msg(const char* cond_str)
 #define QUARISMA_CHECK_DEBUG(condition, ...)
 #else
 #define QUARISMA_CHECK_DEBUG(condition, ...)      \
-    do                                          \
-    {                                           \
+    do                                            \
+    {                                             \
         QUARISMA_CHECK(condition, ##__VA_ARGS__); \
     } while (0)
 #endif
 
-#define QUARISMA_WARN_ONCE(msg)                   \
+#define QUARISMA_WARN_ONCE(msg)                 \
     do                                          \
     {                                           \
         static std::atomic<bool> warned{false}; \
         if (!warned.exchange(true))             \
         {                                       \
-            QUARISMA_LOG_WARNING(msg);            \
+            QUARISMA_LOG_WARNING(msg);          \
         }                                       \
     } while (0)

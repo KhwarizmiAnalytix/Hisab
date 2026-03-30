@@ -177,7 +177,8 @@ TORCH_API const quarisma::VariableVersion& version_counter(const Variable& /*sel
 
 TORCH_API void set_name(const Variable& /*self*/, const std::string& name);
 
-TORCH_API void add_hook(const quarisma::TensorBase& /*self*/, std::unique_ptr<FunctionPreHook> hook);
+TORCH_API void add_hook(
+    const quarisma::TensorBase& /*self*/, std::unique_ptr<FunctionPreHook> hook);
 TORCH_API std::vector<std::unique_ptr<FunctionPreHook>>& hooks(const Variable& /*self*/);
 TORCH_API void clear_hooks(const quarisma::TensorBase& /*self*/);
 
@@ -288,8 +289,8 @@ struct TORCH_API AutogradMeta : public quarisma::AutogradMetaInterface
     void set_fw_grad(
         const quarisma::TensorBase& new_grad,
         const quarisma::TensorBase& self,
-        uint64_t                  level,
-        bool                      is_inplace_op) override;
+        uint64_t                    level,
+        bool                        is_inplace_op) override;
 
     std::optional<quarisma::ScalarType> grad_dtype(const quarisma::TensorBase& self) const;
 
@@ -298,8 +299,8 @@ struct TORCH_API AutogradMeta : public quarisma::AutogradMetaInterface
 
     AutogradMeta(
         quarisma::TensorImpl* self_impl     = nullptr,
-        bool                requires_grad = false,
-        Edge                gradient_edge = Edge())
+        bool                  requires_grad = false,
+        Edge                  gradient_edge = Edge())
         : grad_fn_(std::move(gradient_edge.function)),
 
           output_nr_(gradient_edge.input_nr)
@@ -763,7 +764,7 @@ public:
     }
 
     DifferentiableViewMeta(
-        quarisma::TensorImpl*     self_impl,
+        quarisma::TensorImpl*   self_impl,
         std::optional<ViewInfo> backward_info,
         std::optional<ViewInfo> forward_info,
         bool                    shared_view_info,
@@ -793,7 +794,7 @@ public:
 // See NOTE [ Autograd View Variables ] for details.
 // Differentiable view. Track history with DifferentiableViewMeta.
 inline Variable make_variable_differentiable_view(
-    const quarisma::Tensor&   data,
+    const quarisma::Tensor& data,
     std::optional<ViewInfo> backward_info,
     std::optional<ViewInfo> forward_info,
     bool                    shared_view_info,
@@ -830,10 +831,10 @@ inline Variable make_variable_differentiable_view(
 // See NOTE [ Autograd View Variables ] for details.
 // Non-differentiable view. Just share version counter.
 inline Variable make_variable_non_differentiable_view(
-    const Variable&       base,
+    const Variable&         base,
     const quarisma::Tensor& data,
-    bool                  allow_tensor_metadata_change = true,
-    bool                  is_fresh_tensor              = false)
+    bool                    allow_tensor_metadata_change = true,
+    bool                    is_fresh_tensor              = false)
 {
     if (data.defined())
     {
@@ -927,8 +928,10 @@ inline Variable make_variable(
 
 struct VariableHooks final : quarisma::impl::VariableHooksInterface
 {
-    quarisma::TensorBase tensor_data(const quarisma::TensorBase& /*self*/ /*unused*/) const override;
-    quarisma::TensorBase variable_data(const quarisma::TensorBase& /*self*/ /*unused*/) const override;
+    quarisma::TensorBase tensor_data(
+        const quarisma::TensorBase& /*self*/ /*unused*/) const override;
+    quarisma::TensorBase variable_data(
+        const quarisma::TensorBase& /*self*/ /*unused*/) const override;
     const std::shared_ptr<torch::autograd::Node>& grad_fn(
         const quarisma::TensorBase& /*self*/ /*unused*/) const override;
     unsigned _register_hook(
@@ -936,27 +939,28 @@ struct VariableHooks final : quarisma::impl::VariableHooksInterface
         std::function<quarisma::TensorBase(const quarisma::TensorBase&)> hook) const override;
     void remove_hook(const quarisma::TensorBase& /*self*/ /*unused*/, unsigned pos) const override;
     bool is_view(const quarisma::TensorBase& /*self*/ /*unused*/) const override;
-    const quarisma::TensorBase& base(const quarisma::TensorBase& /*self*/ /*unused*/) const override;
-    const std::string&        name(const quarisma::TensorBase& /*self*/ /*unused*/) const override;
-    bool                      is_leaf(const quarisma::TensorBase& /*self*/ /*unused*/) const override;
-    int64_t output_nr(const quarisma::TensorBase& /*self*/ /*unused*/) const override;
-    void    set_data(
-           const quarisma::TensorBase& self, const quarisma::TensorBase& new_data) const override;
+    const quarisma::TensorBase& base(
+        const quarisma::TensorBase& /*self*/ /*unused*/) const override;
+    const std::string& name(const quarisma::TensorBase& /*self*/ /*unused*/) const override;
+    bool               is_leaf(const quarisma::TensorBase& /*self*/ /*unused*/) const override;
+    int64_t            output_nr(const quarisma::TensorBase& /*self*/ /*unused*/) const override;
+    void               set_data(
+                      const quarisma::TensorBase& self, const quarisma::TensorBase& new_data) const override;
     quarisma::TensorBase data(const quarisma::TensorBase& self) const override;
-    int64_t            _version(const quarisma::TensorBase& self) const override;
-    void               retain_grad(const quarisma::TensorBase& self) const override;
-    bool               retains_grad(const quarisma::TensorBase& self) const override;
-    void               _backward(
-                      const quarisma::Tensor&                self,
-                      quarisma::TensorList                   inputs,
-                      const std::optional<quarisma::Tensor>& gradient,
-                      std::optional<bool>                  keep_graph,
-                      bool                                 create_graph) const override;
+    int64_t              _version(const quarisma::TensorBase& self) const override;
+    void                 retain_grad(const quarisma::TensorBase& self) const override;
+    bool                 retains_grad(const quarisma::TensorBase& self) const override;
+    void                 _backward(
+                        const quarisma::Tensor&                self,
+                        quarisma::TensorList                   inputs,
+                        const std::optional<quarisma::Tensor>& gradient,
+                        std::optional<bool>                    keep_graph,
+                        bool                                   create_graph) const override;
     void requires_grad_(const quarisma::TensorBase& self, bool _requires_grad) const override;
     void basic_autograd_not_implemented_fallback(
         const quarisma::OperatorHandle& op,
         quarisma::DispatchKeySet        dispatch_keys,
-        torch::jit::Stack*            stack) const override;
+        torch::jit::Stack*              stack) const override;
     std::optional<quarisma::ScalarType> grad_dtype(
         const quarisma::TensorBase& /*self*/ /*unused*/) const override;
     void set_grad_dtype(

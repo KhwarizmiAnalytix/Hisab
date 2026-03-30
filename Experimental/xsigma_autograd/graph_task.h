@@ -1,9 +1,9 @@
 #pragma once
 #include <Quarisma/ThreadLocalState.h>
 #include <Quarisma/core/Tensor.h>
+#include <quarisma/util/ThreadLocal.h>
 #include <torch/csrc/autograd/input_buffer.h>
 #include <torch/csrc/autograd/utils/warnings.h>
-#include <quarisma/util/ThreadLocal.h>
 
 #include <vector>
 
@@ -34,7 +34,7 @@ struct GraphTask : std::enable_shared_from_this<GraphTask>
     std::unordered_map<Node*, int>         dependencies_;
 
     // Records the nodes that are in the graph
-    std::unordered_set<Node*>     nodes_in_graph_;
+    std::unordered_set<Node*>       nodes_in_graph_;
     quarisma::SmallVector<Node*, 4> graph_roots_;
     // Note [Exec info]
     // Exec info is created for each GraphTask, which allows filtering paths on
@@ -67,7 +67,7 @@ struct GraphTask : std::enable_shared_from_this<GraphTask>
             // grad will be replaced by the return value of the hook.
             struct GradCaptureHook
             {
-                virtual ~GradCaptureHook()                                    = default;
+                virtual ~GradCaptureHook()                                        = default;
                 virtual quarisma::Tensor operator()(const quarisma::Tensor& grad) = 0;
             };
             // NOTE [Deprecated capture hooks]
@@ -194,12 +194,12 @@ struct GraphTask : std::enable_shared_from_this<GraphTask>
     uint64_t id_;
 
     GraphTask(
-        bool                          keep_graph,
-        bool                          grad_mode,
-        int                           reentrant_depth,
-        std::shared_ptr<ReadyQueue>   cpu_ready_queue,
+        bool                            keep_graph,
+        bool                            grad_mode,
+        int                             reentrant_depth,
+        std::shared_ptr<ReadyQueue>     cpu_ready_queue,
         quarisma::SmallVector<Node*, 4> graph_roots,
-        bool                          exit_on_error = false);
+        bool                            exit_on_error = false);
 
 private:
     // run GraphTask post processing

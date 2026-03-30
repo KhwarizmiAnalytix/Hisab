@@ -85,7 +85,8 @@ int parallel_tools_impl<backend_type::std_thread>::estimated_number_of_threads()
 {
     return specified_num_threads_std > 0
                ? specified_num_threads_std
-               : parallel_tools_impl<backend_type::std_thread>::estimated_default_number_of_threads();
+               : parallel_tools_impl<
+                     backend_type::std_thread>::estimated_default_number_of_threads();
 }
 
 //------------------------------------------------------------------------------

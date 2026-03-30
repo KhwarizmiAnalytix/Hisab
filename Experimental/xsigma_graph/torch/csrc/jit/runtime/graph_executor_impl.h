@@ -70,7 +70,7 @@ struct GraphExecutorImplBase
     }
 
     // entry point where execution begins
-    void                          run(Stack& stack);
+    void                            run(Stack& stack);
     quarisma::intrusive_ptr<Future> runAsync(
         Stack& stack, TaskLauncher taskLauncher = quarisma::launch);
 

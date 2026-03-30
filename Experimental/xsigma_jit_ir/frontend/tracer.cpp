@@ -3,6 +3,7 @@
 #include <Quarisma/TracerMode.h>
 #include <Quarisma/core/Dict.h>
 #include <Quarisma/core/functional.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/autograd/engine.h>
 #include <torch/csrc/autograd/function.h>
 #include <torch/csrc/autograd/variable.h>
@@ -18,7 +19,6 @@
 #include <torch/csrc/jit/passes/remove_expands.h>
 #include <torch/csrc/utils/variadic.h>
 #include <torch/custom_class.h>
-#include <quarisma/util/irange.h>
 
 #include <memory>
 #include <sstream>
@@ -313,7 +313,8 @@ Value* TracingState::getOutput(const IValue& iv, size_t i)
     {
         if (tracing_mode_strict)
         {
-            tracer::warn("Encountering a list quarisma the output of the tracer", STRICT_TRACER_MSG);
+            tracer::warn(
+                "Encountering a list quarisma the output of the tracer", STRICT_TRACER_MSG);
         }
         return graph
             ->insertNode(graph->createList(
@@ -884,10 +885,10 @@ TORCH_API void addInputs(
     n->addInput(list_node->output());
 }
 void addInputs(
-    Node*                                                   n,
-    const char*                                             name,
+    Node*                                                       n,
+    const char*                                                 name,
     ArrayRef<quarisma::intrusive_ptr<quarisma::ivalue::Object>> value,
-    const ClassTypePtr&                                     class_type)
+    const ClassTypePtr&                                         class_type)
 {
     Graph* g         = n->owningGraph();
     Node*  list_node = g->insertNode(g->createList(class_type, fmap(value, getValueTrace)));
@@ -978,12 +979,14 @@ void addInputs(Node* n, const char* name, ArrayRef<double> value)
     n->addInput(g->insertNode(g->createList(jit::FloatType::get(), info))->output());
 }
 
-void addInputs(Node* n, const char* name, const std::optional<quarisma::ArrayRef<double>>& opt_value)
+void addInputs(
+    Node* n, const char* name, const std::optional<quarisma::ArrayRef<double>>& opt_value)
 {
     detail::genericAddOptionalInput(n, name, opt_value);
 }
 
-void addInputs(Node* n, const char* name, const quarisma::intrusive_ptr<quarisma::ivalue::Object>& obj)
+void addInputs(
+    Node* n, const char* name, const quarisma::intrusive_ptr<quarisma::ivalue::Object>& obj)
 {
     Value* v = getValueTrace(obj);
     n->addInput(v);

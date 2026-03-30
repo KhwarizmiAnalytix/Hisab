@@ -24,7 +24,7 @@ std::tuple<quarisma::Tensor, quarisma::Tensor> computeUpdatedConvWeightAndBias(
     const ConvBNParameters& p)
 {
     quarisma::Tensor    bn_var_rsqrt = quarisma::rsqrt(p.bn_rv + p.bn_eps);
-    const int64_t     ndim         = p.conv_w.dim();
+    const int64_t       ndim         = p.conv_w.dim();
     quarisma::DimVector sizes(ndim, 1);
     sizes.quarisma(0) = -1;
 
@@ -207,7 +207,8 @@ bool extractOptionalBNParams(const script::Module& bn, ConvBNParameters& r)
     }
     else
     {
-        auto optional_bn_weight = toIValue(matches[0].values_map.quarisma(bn_vmap.quarisma("weight")));
+        auto optional_bn_weight =
+            toIValue(matches[0].values_map.quarisma(bn_vmap.quarisma("weight")));
         if (!optional_bn_weight)
         {
             return false;

@@ -1,3 +1,4 @@
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/frontend/schema_matching.h>
 #include <torch/csrc/jit/ir/subgraph_matcher.h>
 #include <torch/csrc/jit/jit_log.h>
@@ -9,7 +10,6 @@
 #include <torch/csrc/jit/passes/quantization/helper.h>
 #include <torch/csrc/jit/passes/quantization/insert_observers.h>
 #include <torch/csrc/jit/passes/remove_mutation.h>
-#include <quarisma/util/irange.h>
 
 #include <memory>
 #include <stack>
@@ -137,7 +137,7 @@ private:
         else
         {
             Module new_module(*type->name(), module._ivalue()->compilation_unit(), true);
-            r                                                             = new_module;
+            r                                                               = new_module;
             type_remap[type][module_qconfig_map.quarisma(module._ivalue())] = r.type();
         }
         // Copy slots. If a slot is a module - recursively clone it.
@@ -294,10 +294,14 @@ private:
         graph->inputs()[0]->setType(target.type());
         // we only support %self being Module in the arguments of function
         auto schema_type_remap_fn = [&](TypePtr type_ptr)
-        { return type_remap_fn(std::move(type_ptr), module_qconfig_map.quarisma(source._ivalue())); };
+        {
+            return type_remap_fn(
+                std::move(type_ptr), module_qconfig_map.quarisma(source._ivalue()));
+        };
         auto       schema = method.getSchema().cloneWithRemappedTypes(schema_type_remap_fn);
-        const auto this_method_name = quarisma::QualifiedName(*target.type()->name(), method.name());
-        auto       copied           = target._ivalue()->compilation_unit()->create_function(
+        const auto this_method_name =
+            quarisma::QualifiedName(*target.type()->name(), method.name());
+        auto copied = target._ivalue()->compilation_unit()->create_function(
             this_method_name, std::move(graph));
         target.type()->addMethod(copied);
         copied->setSchema(std::move(schema));

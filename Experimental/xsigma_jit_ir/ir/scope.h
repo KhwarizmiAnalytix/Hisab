@@ -1,9 +1,9 @@
 #pragma once
 #include <Quarisma/core/jit_type.h>
 #include <Quarisma/core/symbol.h>
+#include <quarisma/util/intrusive_ptr.h>
 #include <torch/csrc/Export.h>
 #include <torch/csrc/jit/frontend/source_range.h>
-#include <quarisma/util/intrusive_ptr.h>
 
 #include <optional>
 #include <unordered_map>
@@ -73,14 +73,14 @@ struct ModuleInstanceInfo
 {
 private:
     quarisma::ClassTypePtr module_type_{nullptr};
-    std::string          instance_name_;
+    std::string            instance_name_;
 
 public:
     ModuleInstanceInfo() = default;
     ModuleInstanceInfo(quarisma::ClassTypePtr module_type, std::string instance_name);
     quarisma::ClassTypePtr class_type() { return module_type_; }
     quarisma::ClassTypePtr class_type() const { return module_type_; }
-    std::string          instance_name() const { return instance_name_; }
+    std::string            instance_name() const { return instance_name_; }
 
     bool operator==(const ModuleInstanceInfo& rhs) const
     {

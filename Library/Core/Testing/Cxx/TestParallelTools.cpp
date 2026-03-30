@@ -310,7 +310,10 @@ QUARISMATEST(ParallelTools, test)
         // Test 5: Check parallel scope inside parallel region
         std::atomic<bool> inside_scope_result{false};
         auto              check_scope = [&inside_scope_result](size_t, size_t)
-        { inside_scope_result.store(parallel_tools::is_parallel_scope(), std::memory_order_relaxed); };
+        {
+            inside_scope_result.store(
+                parallel_tools::is_parallel_scope(), std::memory_order_relaxed);
+        };
         parallel_tools::parallel_for(0, 10, 5, check_scope);
         SUCCEED();  // Backend-dependent, just ensure no crash
 

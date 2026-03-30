@@ -41,7 +41,7 @@ static std::unique_ptr<ViewFunc> create_view_func_matching(const Variable& t)
 }
 
 DifferentiableViewMeta::DifferentiableViewMeta(
-    quarisma::TensorImpl*     self_impl,
+    quarisma::TensorImpl*   self_impl,
     std::optional<ViewInfo> backward_info,
     std::optional<ViewInfo> forward_info,
     bool                    shared_view_info,
@@ -193,7 +193,7 @@ AutogradMeta* materialize_autograd_meta(const quarisma::TensorBase& self)
 }
 
 static void update_tensor_hooks_on_new_gradfn(
-    const quarisma::TensorBase&                     self,
+    const quarisma::TensorBase&                   self,
     const std::shared_ptr<torch::autograd::Node>& old_fn,
     const std::shared_ptr<torch::autograd::Node>& new_fn)
 {
@@ -474,7 +474,7 @@ DifferentiableViewMeta* get_view_autograd_meta(const quarisma::TensorBase& self)
 
 using quarisma::Tensor;
 
-VariableHooks                         variableHooks;
+VariableHooks                           variableHooks;
 quarisma::impl::VariableHooksRegisterer registerVariableHooks(&variableHooks);
 
 quarisma::TensorBase VariableHooks::variable_data(const quarisma::TensorBase& self) const
@@ -525,9 +525,9 @@ void VariableHooks::set_data(
     const quarisma::TensorBase& self_base, const quarisma::TensorBase& new_data_base) const
 {
     quarisma::OptionalTensorRef self_ref(self_base);
-    const Tensor&             self = *self_ref;
+    const Tensor&               self = *self_ref;
     quarisma::OptionalTensorRef new_data_ref(new_data_base);
-    const Tensor&             new_data = *new_data_ref;
+    const Tensor&               new_data = *new_data_ref;
 
     // `var.set_data(new_data)` shallow-copies all non-autograd TensorImpl fields
     // from `new_data` to `var`. It requires that `new_data` and `var` have
@@ -584,7 +584,8 @@ int64_t VariableHooks::_version(const quarisma::TensorBase& self) const
 
 void VariableHooks::retain_grad(const quarisma::TensorBase& self) const
 {
-    QUARISMA_CHECK(self.requires_grad(), "can't retain_grad on Tensor that has requires_grad=False");
+    QUARISMA_CHECK(
+        self.requires_grad(), "can't retain_grad on Tensor that has requires_grad=False");
 
     // temporary hack to improve functorch UX.
     const auto& functorch_tls = quarisma::functorch::functorchTLSAccessor();
@@ -650,7 +651,7 @@ bool VariableHooks::retains_grad(const quarisma::TensorBase& self) const
 
 void VariableHooks::_backward(
     const Tensor&                self,
-    quarisma::TensorList           inputs,
+    quarisma::TensorList         inputs,
     const std::optional<Tensor>& gradient,
     std::optional<bool>          keep_graph,
     bool                         create_graph) const
@@ -828,7 +829,7 @@ void VariableHooks::remove_hook(const quarisma::TensorBase& self, unsigned pos) 
 }
 
 unsigned VariableHooks::_register_hook(
-    const quarisma::TensorBase&                                    self,
+    const quarisma::TensorBase&                                      self,
     std::function<quarisma::TensorBase(const quarisma::TensorBase&)> hook) const
 {
     QUARISMA_CHECK(
@@ -1026,7 +1027,8 @@ std::unique_ptr<ViewFunc> ChainedViewFunc::clone_and_set(
         second->clone_and_set(second_symints, second_tensors));
 }
 
-std::optional<quarisma::ScalarType> VariableHooks::grad_dtype(const quarisma::TensorBase& self) const
+std::optional<quarisma::ScalarType> VariableHooks::grad_dtype(
+    const quarisma::TensorBase& self) const
 {
     if (auto* meta = impl::get_autograd_meta(self))
     {

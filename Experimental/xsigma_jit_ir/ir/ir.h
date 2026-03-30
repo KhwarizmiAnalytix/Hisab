@@ -8,6 +8,7 @@
 #include <Quarisma/core/interned_strings.h>
 #include <Quarisma/core/ivalue.h>
 #include <Quarisma/core/jit_type.h>
+#include <quarisma/util/ArrayRef.h>
 #include <torch/csrc/Export.h>
 #include <torch/csrc/jit/ir/attributes.h>
 #include <torch/csrc/jit/ir/graph_node_list.h>
@@ -16,7 +17,6 @@
 #include <torch/csrc/jit/runtime/operator.h>
 #include <torch/csrc/utils/python_stub.h>
 #include <torch/csrc/utils/schema_info.h>
-#include <quarisma/util/ArrayRef.h>
 
 #include <functional>
 #include <iosfwd>
@@ -1238,8 +1238,8 @@ public:
     TORCH_API Node* createList(const TypePtr& contained_type, quarisma::ArrayRef<Value*> values);
     TORCH_API Node* createListUnpack(Value* v, size_t size);
     TORCH_API Node* createDict(
-        const TypePtr&           key_type,
-        const TypePtr&           value_type,
+        const TypePtr&             key_type,
+        const TypePtr&             value_type,
         quarisma::ArrayRef<Value*> keys,
         quarisma::ArrayRef<Value*> values);
     TORCH_API Node* createNumToTensor(Value* value);
@@ -1287,8 +1287,8 @@ public:
     // is a correctly-formed invocation of opname
     TORCH_API Value* insert(
         Symbol                            opname,
-        quarisma::ArrayRef<NamedValue>      args,
-        quarisma::ArrayRef<NamedValue>      kwargs = {},
+        quarisma::ArrayRef<NamedValue>    args,
+        quarisma::ArrayRef<NamedValue>    kwargs = {},
         const std::optional<SourceRange>& range  = {});
 
     Node* appendNode(Node* n) { return block_->appendNode(n); }

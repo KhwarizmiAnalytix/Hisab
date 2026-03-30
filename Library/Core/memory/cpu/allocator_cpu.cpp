@@ -42,9 +42,9 @@
 #include "memory/helper/memory_allocator.h"
 #include "memory/helper/memory_info.h"
 #if QUARISMA_HAS_NATIVE_PROFILER
-#include "profiler/native/memory/scoped_memory_debug_annotation.h"
-#include "profiler/native/tracing/traceme.h"
-#include "profiler/native/tracing/traceme_encode.h"
+#include "native/memory/scoped_memory_debug_annotation.h"
+#include "native/tracing/traceme.h"
+#include "native/tracing/traceme_encode.h"
 #endif
 
 namespace quarisma
@@ -197,7 +197,8 @@ void* allocator_cpu::allocate_raw(size_t alignment, size_t num_bytes)
     void* p = cpu::memory_allocator::allocate(num_bytes, alignment);  //NOLINT
 
     // Collect statistics if enabled (fast path when disabled)
-    if QUARISMA_UNLIKELY (cpu_allocator_collect_stats.load(std::memory_order_relaxed) && p != nullptr)
+    if QUARISMA_UNLIKELY (
+        cpu_allocator_collect_stats.load(std::memory_order_relaxed) && p != nullptr)
     {
         const auto alloc_size = 0;
 

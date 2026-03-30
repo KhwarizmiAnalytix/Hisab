@@ -1,6 +1,8 @@
 #include <Quarisma/Parallel.h>
 #include <Quarisma/core/ivalue.h>
 #include <Quarisma/record_function.h>
+#include <quarisma/core/thread_pool.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/autograd/edge.h>
 #include <torch/csrc/autograd/grad_mode.h>
 #include <torch/csrc/autograd/profiler.h>
@@ -23,8 +25,6 @@
 #include <torch/csrc/jit/runtime/script_profile.h>
 #include <torch/csrc/jit/runtime/vararg_functions.h>
 #include <torch/csrc/utils/cpp_stacktraces.h>
-#include <quarisma/core/thread_pool.h>
-#include <quarisma/util/irange.h>
 
 #include <string>
 

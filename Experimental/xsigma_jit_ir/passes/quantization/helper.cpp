@@ -195,8 +195,8 @@ static std::tuple<quarisma::QScheme, QParamVector> _per_tensor_sym_qparam = std:
 
 // Map from aten op symbol to the quantization parameters
 // for the ops with fixed quantization parameters
-static std::unordered_map<NodeKind, std::tuple<quarisma::QScheme, QParamVector>> _fixed_qparams_map =
-    {
+static std::unordered_map<NodeKind, std::tuple<quarisma::QScheme, QParamVector>>
+    _fixed_qparams_map = {
         {Symbol::aten("hardsigmoid"), _per_tensor_asym_qparam},
         {Symbol::aten("hardsigmoid_"), _per_tensor_asym_qparam},
         {Symbol::aten("sigmoid"), _per_tensor_asym_qparam},

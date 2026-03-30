@@ -1094,7 +1094,7 @@ template <typename T>
 inline T* make_weak(T* self)
 {
     // NB: 'this' is a strong pointer, but we return a weak pointer
-    auto                          ptr = quarisma::intrusive_ptr<T>::reclaim(self);
+    auto                            ptr = quarisma::intrusive_ptr<T>::reclaim(self);
     quarisma::weak_intrusive_ptr<T> wptr(ptr);
     ptr.release();
     return wptr.release();

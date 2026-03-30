@@ -23,8 +23,8 @@
 #include <thread>
 #include <vector>
 
-#include "util/exception.h"
 #include "baseTest.h"
+#include "util/exception.h"
 
 using namespace quarisma;
 
@@ -230,7 +230,8 @@ QUARISMATEST(Exception, categories_and_stack_traces)
     try
     {
         quarisma::source_location loc{__func__, __FILE__, __LINE__};
-        throw quarisma::exception(loc, "Value error test", quarisma::exception_category::VALUE_ERROR);
+        throw quarisma::exception(
+            loc, "Value error test", quarisma::exception_category::VALUE_ERROR);
     }
     catch (const quarisma::exception& e)
     {
@@ -354,7 +355,7 @@ QUARISMATEST(Exception, constructors_and_accessors)
     ASSERT_EQ(ex1.category(), quarisma::exception_category::VALUE_ERROR);
 
     // Test base constructor with caller pointer
-    int               dummy_obj = 42;
+    int                 dummy_obj = 42;
     quarisma::exception ex2(
         "Test message", "Test backtrace", &dummy_obj, quarisma::exception_category::RUNTIME_ERROR);
 
@@ -441,7 +442,7 @@ QUARISMATEST(Exception, what_methods)
 
     // Test what_without_backtrace
     quarisma::source_location loc2{__func__, __FILE__, __LINE__};
-    quarisma::exception       ex2(loc2, "Test error message", quarisma::exception_category::GENERIC);
+    quarisma::exception ex2(loc2, "Test error message", quarisma::exception_category::GENERIC);
 
     // Get what_without_backtrace
     const char* msg_without_backtrace = ex2.what_without_backtrace();

@@ -1,10 +1,10 @@
 #pragma once
 
+#include <quarisma/core/SymInt.h>
 #include <torch/csrc/autograd/python_variable.h>
 #include <torch/csrc/python_headers.h>
 #include <torch/csrc/utils/pybind.h>
 #include <torch/csrc/utils/python_symnode.h>
-#include <quarisma/core/SymInt.h>
 
 namespace torch::autograd
 {
@@ -95,8 +95,8 @@ inline UnpackedSlice __PySlice_Unpack(PyObject* _r)
     }
     else if (r->stop == Py_None)
     {
-        stop_sym =
-            quarisma::SymInt(step_sym < 0 ? quarisma::SymInt::min_representable_int() : PY_SSIZE_T_MAX);
+        stop_sym = quarisma::SymInt(
+            step_sym < 0 ? quarisma::SymInt::min_representable_int() : PY_SSIZE_T_MAX);
     }
     else
     {

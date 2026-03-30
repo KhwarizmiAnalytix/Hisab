@@ -13,7 +13,7 @@ package(default_visibility = ["//visibility:public"])
 # Test Files
 # =============================================================================
 
-# Core test files (non-GPU, non-profiler specific)
+# Core test files (non-GPU; profiler tests live under //Library/Profiler/Testing/Cxx)
 _CORE_TEST_FILES = [
     "TestAllocatorBfc.cpp",
     "TestAllocatorPool.cpp",
@@ -35,37 +35,16 @@ _CORE_TEST_FILES = [
     "TestParallelGuard.cpp",
     "TestParallelReduce.cpp",
     "TestPointer.cpp",
-    "TestProfiler.cpp",
-    "TestProfilerAnalysis.cpp",
-    "TestProfilerAnnotationParsing.cpp",
-    "TestProfilerAnnotationStack.cpp",
-    "TestProfilerBackendIntegration.cpp",
-    "TestProfilerChromeTraceHierarchical.cpp",
-    "TestProfilerExporters.cpp",
-    "TestProfilerFormatUtils.cpp",
-    "TestProfilerMemoryAndStats.cpp",
-    "TestProfilerPlatform.cpp",
-    "TestProfilerStatsCalculator.cpp",
-    "TestProfilerTimespan.cpp",
-    "TestProfilerUtils.cpp",
-    "TestProfilerXPlane.cpp",
-    "TestProfilerXPlaneVisitor.cpp",
     "TestSMP.cpp",
     "TestSMPComprehensive.cpp",
     "TestSMPEnhanced.cpp",
     "TestSMPTransformFillSort.cpp",
     "TestSanitizers.cpp",
-    "TestScopedMemoryDebugAnnotation.cpp",
     "TestParallelAdvancedParallelThreadPoolNative.cpp",
     "TestParallelAdvancedThreadName.cpp",
     "TestParallelAdvancedThreadPool.cpp",
     "TestStringUtil.cpp",
     "TestThreadPool.cpp",
-    "TestTraceme.cpp",
-    "TestXPlaneBuilder.cpp",
-    "TestXPlaneSchema.cpp",
-    "TestXPlaneUtils.cpp",
-    "TestQuarismaProfiler.cpp",
 ]
 
 # =============================================================================
@@ -75,7 +54,7 @@ _CORE_TEST_FILES = [
 cc_test(
     name = "CoreCxxTests",
     size = "large",
-    timeout = "long",  # Increase timeout for profiler tests
+    timeout = "long",
     srcs = _CORE_TEST_FILES,
     copts = quarisma_copts(),
     defines = quarisma_defines() + [
@@ -102,4 +81,3 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
-

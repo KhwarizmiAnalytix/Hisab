@@ -299,7 +299,7 @@ private:
     }
 
     // sorted by load_bias
-    std::vector<LibraryInfo>                  all_libraries_;
+    std::vector<LibraryInfo>                    all_libraries_;
     quarisma::flat_hash_map<uint64_t, Unwinder> ip_cache_;
 
     quarisma::unwind::Stats stats_;
@@ -430,7 +430,7 @@ private:
     };
     quarisma::flat_hash_map<std::string, Entry> entries_;
     quarisma::flat_hash_map<void*, Frame>       frame_map_;
-    bool                                      has_pending_results_ = true;
+    bool                                        has_pending_results_ = true;
 
     Entry& getOrCreate(const std::string& name)
     {
@@ -468,7 +468,7 @@ private:
 
 static std::vector<Frame> symbolize_fast(const std::vector<void*>& frames, Mode mode)
 {
-    static std::mutex                                         cache_mutex;
+    static std::mutex                                           cache_mutex;
     static std::array<quarisma::flat_hash_map<void*, Frame>, 2> frame_maps;
     auto& frame_map = frame_maps[mode == Mode::fast ? 0 : 1];
 
@@ -567,7 +567,7 @@ Stats stats()
 
 extern "C" QUARISMA_USED void unwind_c(std::vector<void*>* result, int64_t rsp, int64_t rbp)
 {
-    std::shared_lock            lock(quarisma::unwind::cache_mutex_);
+    std::shared_lock              lock(quarisma::unwind::cache_mutex_);
     quarisma::unwind::UnwindState state{};
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     state.rip = *(int64_t*)(rsp);

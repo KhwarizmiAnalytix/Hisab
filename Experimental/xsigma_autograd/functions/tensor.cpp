@@ -1,4 +1,5 @@
 #include <Quarisma/Quarisma.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/autograd/function.h>
 #include <torch/csrc/autograd/functions/basic_ops.h>
 #include <torch/csrc/autograd/functions/tensor.h>
@@ -6,7 +7,6 @@
 #include <torch/csrc/autograd/graph_task.h>
 #include <torch/csrc/autograd/variable.h>
 #include <torch/csrc/dynamo/compiled_autograd.h>
-#include <quarisma/util/irange.h>
 
 #include <memory>
 #include <stdexcept>
@@ -18,8 +18,8 @@ namespace torch::autograd
 using torch::dynamo::autograd::IValuePacker;
 
 static variable_list CopyBackwards_apply_functional(
-    variable_list&&              grads,
-    std::array<bool, 2>          needs_input_grad,
+    variable_list&&                grads,
+    std::array<bool, 2>            needs_input_grad,
     const quarisma::TensorOptions& src_options)
 {
     check_input_variables("CopyBackwards", grads, 1, -1, true);
@@ -109,7 +109,7 @@ variable_list CopyBackwards::apply_with_saved(
 
 CopySlices::CopySlices(
     const Variable&           base_var,
-    quarisma::TensorGeometry    view_,
+    quarisma::TensorGeometry  view_,
     std::unique_ptr<ViewFunc> view_fn_,
     std::shared_ptr<Node>     fn_)
     : base(base_var), view(std::move(view_)), view_fn(std::move(view_fn_)), fn(std::move(fn_))

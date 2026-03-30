@@ -1,10 +1,10 @@
 #pragma once
 
 #include <Quarisma/core/Tensor.h>
+#include <quarisma/core/SafePyObject.h>
 #include <torch/csrc/Export.h>
 #include <torch/csrc/autograd/forward_grad.h>
 #include <torch/csrc/autograd/saved_variable_hooks.h>
-#include <quarisma/core/SafePyObject.h>
 
 #include <cstdint>
 #include <memory>
@@ -63,8 +63,8 @@ public:
     }
 
     // Used by compiled autograd
-    std::optional<std::pair<quarisma::SafePyObject, quarisma::SafePyObject>> retrieve_unpack_hook_data()
-        const
+    std::optional<std::pair<quarisma::SafePyObject, quarisma::SafePyObject>>
+    retrieve_unpack_hook_data() const
     {
         if (!hooks_)
         {

@@ -26,7 +26,7 @@ public:
     CodeGen(
         StmtPtr                stmt,
         std::vector<BufferArg> buffer_args,
-        quarisma::Device         device           = quarisma::kCPU,
+        quarisma::Device       device           = quarisma::kCPU,
         std::string            kernel_func_name = "func");
 
     virtual ~CodeGen() = default;
@@ -71,7 +71,7 @@ public:
         std::optional<quarisma::ScalarType> dtype_opt,
         std::optional<quarisma::Layout>     layout_opt,
         std::optional<quarisma::Device>     device_opt,
-        std::optional<bool>               pin_memory_opt)
+        std::optional<bool>                 pin_memory_opt)
     {
         return quarisma::empty_strided(
             size, stride, dtype_opt, layout_opt, device_opt, pin_memory_opt);
@@ -87,7 +87,7 @@ protected:
 private:
     StmtPtr                stmt_;
     std::vector<BufferArg> buffer_args_;
-    quarisma::Device         device_           = quarisma::kCPU;
+    quarisma::Device       device_           = quarisma::kCPU;
     std::string            kernel_func_name_ = "func";
 };
 
@@ -209,7 +209,7 @@ public:
     using StmtFactoryMethod = std::function<std::unique_ptr<CodeGen>(
         StmtPtr stmt,
         const std::vector<CodeGen::BufferArg>&,
-        quarisma::Device     device,
+        quarisma::Device   device,
         const std::string& kernel_func_name)>;
 
     TORCH_API StmtFactoryMethod FindStmtFactoryMethod(const std::string& name);
@@ -237,7 +237,7 @@ public:
             name,
             [](const StmtPtr&                         stmt,
                const std::vector<CodeGen::BufferArg>& params,
-               quarisma::Device                         device,
+               quarisma::Device                       device,
                const std::string&                     kernel_func_name)
             { return std::make_unique<CodeGenType>(stmt, params, device, kernel_func_name); });
     }
@@ -247,7 +247,7 @@ TORCH_API std::unique_ptr<CodeGen> CreateCodeGen(
     const std::string&                     name,
     StmtPtr                                stmt,
     const std::vector<CodeGen::BufferArg>& params,
-    quarisma::Device                         device           = quarisma::kCPU,
+    quarisma::Device                       device           = quarisma::kCPU,
     const std::string&                     kernel_func_name = "func");
 
 class TORCH_API GenericIntrinsicsExpander : public IRMutator

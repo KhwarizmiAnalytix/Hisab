@@ -87,16 +87,16 @@ struct ParsedLiteral
 
     AttributeKind k = AttributeKind::t;
 
-    int64_t                              i = 0;
-    std::string                          s;
-    double                               f = 0.0;
+    int64_t                                i = 0;
+    std::string                            s;
+    double                                 f = 0.0;
     quarisma::complex<double>              c = quarisma::complex<double>(0, 0);
-    TypePtr                              ty;
-    std::vector<int64_t>                 is;
-    std::vector<std::string>             ss;
-    std::vector<double>                  fs;
+    TypePtr                                ty;
+    std::vector<int64_t>                   is;
+    std::vector<std::string>               ss;
+    std::vector<double>                    fs;
     std::vector<quarisma::complex<double>> cs;
-    std::vector<TypePtr>                 tys;
+    std::vector<TypePtr>                   tys;
 };
 
 struct VarWithType
@@ -185,10 +185,10 @@ void IRParser::parseOperatorOutputs(std::vector<VarWithType>* outs)
 // Parse string or numeric literal and return it along with its type.
 ParsedLiteral IRParser::parseScalarLiteral(Node* n)
 {
-    auto                                                 token = L.cur();
-    std::string                                          str;
+    auto                                                   token = L.cur();
+    std::string                                            str;
     std::pair<TypePtr, std::optional<quarisma::AliasInfo>> type_alias;
-    ParsedLiteral                                        r;
+    ParsedLiteral                                          r;
     switch (token.kind)
     {
     case TK_STRINGLITERAL:
@@ -375,13 +375,13 @@ void IRParser::parseAttr(Node* n)
     if (L.cur().kind == '[')
     {
         // list
-        AttributeKind                         k = AttributeKind::ts;
-        quarisma::List<int64_t>                 is;
-        quarisma::List<std::string>             ss;
-        quarisma::List<double>                  fs;
+        AttributeKind                             k = AttributeKind::ts;
+        quarisma::List<int64_t>                   is;
+        quarisma::List<std::string>               ss;
+        quarisma::List<double>                    fs;
         quarisma::List<quarisma::complex<double>> cs;
-        std::vector<TypePtr>                  tys;
-        int                                   elem_num = 0;
+        std::vector<TypePtr>                      tys;
+        int                                       elem_num = 0;
         parseList(
             '[',
             ',',

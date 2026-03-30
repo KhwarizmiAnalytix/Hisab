@@ -58,7 +58,7 @@ namespace torch::jit::tensorexpr
 bool OptimizeCat(const std::shared_ptr<Graph>& graph);
 
 TORCH_API void annotateInputShapes(
-    const std::shared_ptr<Graph>&                     graph,
+    const std::shared_ptr<Graph>&                       graph,
     const std::vector<std::optional<quarisma::Tensor>>& example_inputs);
 TORCH_API std::shared_ptr<Graph> removeUnusedSelfArgument(const std::shared_ptr<Graph>& graph);
 TORCH_API std::shared_ptr<Graph> removeGraphOutput(const std::shared_ptr<Graph>& graph, size_t idx);

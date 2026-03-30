@@ -1,8 +1,8 @@
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/tensorexpr/eval.h>
 #include <torch/csrc/jit/tensorexpr/external_functions_core.h>
 #include <torch/csrc/jit/tensorexpr/external_functions_registry.h>
-#include <quarisma/util/irange.h>
 
 #include <utility>
 
@@ -781,7 +781,7 @@ public:
     {                                                          \
         Type*             ptr##Name = static_cast<Type*>(ptr); \
         std::vector<Type> val(index.size());                   \
-        for (const auto i : quarisma::irange(index.size()))      \
+        for (const auto i : quarisma::irange(index.size()))    \
         {                                                      \
             val[i] = ptr##Name[index[i]];                      \
             GRAPH_DEBUG(                                       \
@@ -835,7 +835,7 @@ public:
             throw malformed_input("value size mismatch in Store", v); \
         }                                                             \
         Type* ptr##Name = static_cast<Type*>(ptr);                    \
-        for (const auto i : quarisma::irange(index.size()))             \
+        for (const auto i : quarisma::irange(index.size()))           \
         {                                                             \
             GRAPH_DEBUG(                                              \
                 "STORE: ptr=",                                        \
@@ -1341,7 +1341,7 @@ private:
 SimpleIREvaluator::SimpleIREvaluator(
     StmtPtr                       stmt,
     const std::vector<BufferArg>& buffer_args,
-    quarisma::Device                device,
+    quarisma::Device              device,
     const std::string&            kernel_func_name)
     : CodeGen(std::move(stmt), buffer_args, device, kernel_func_name)
 {

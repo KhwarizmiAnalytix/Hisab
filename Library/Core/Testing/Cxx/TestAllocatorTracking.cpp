@@ -18,12 +18,12 @@
 #include <thread>
 #include <vector>
 
+#include "baseTest.h"
 #include "common/pointer.h"
 #include "memory/backend/allocator_pool.h"
 #include "memory/backend/allocator_tracking.h"
 #include "memory/cpu/allocator_cpu.h"
 #include "memory/helper/memory_allocator.h"
-#include "baseTest.h"
 
 using namespace quarisma;
 
@@ -353,8 +353,8 @@ TEST(AllocatorTracking, local_size_tracking)
         }
 
         void* allocate_raw(
-            size_t                                     alignment,
-            size_t                                     num_bytes,
+            size_t                                       alignment,
+            size_t                                       num_bytes,
             QUARISMA_UNUSED const allocation_attributes& attrs) override
         {
             return allocate_raw(alignment, num_bytes);

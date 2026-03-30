@@ -24,8 +24,8 @@
 #include <string>
 #include <thread>
 
-#include "logging/logger.h"
 #include "baseTest.h"
+#include "logging/logger.h"
 
 // Control the order of operations between the threads
 std::atomic_bool wait1;

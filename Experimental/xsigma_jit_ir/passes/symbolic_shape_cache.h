@@ -43,8 +43,8 @@ TORCH_API std::optional<std::vector<quarisma::SymbolicShape>> get_cached_shape_f
     const FunctionSchema* schema, const std::vector<SSAInput>& arg_vec);
 
 TORCH_API void cache_shape_function(
-    const FunctionSchema*                     schema,
-    const std::vector<SSAInput>&              arg_vec,
+    const FunctionSchema*                       schema,
+    const std::vector<SSAInput>&                arg_vec,
     const std::vector<quarisma::SymbolicShape>& ret_vec);
 
 // For use in test code

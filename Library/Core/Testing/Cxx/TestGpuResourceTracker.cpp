@@ -17,9 +17,9 @@
  * Website: https://www.quarisma.co.uk
  */
 #if 0
+#include "baseTest.h"
 #include "common/configure.h"
 #include "common/macros.h"
-#include "baseTest.h"
 
 #if QUARISMA_HAS_CUDA
 

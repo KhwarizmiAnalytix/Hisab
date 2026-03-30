@@ -124,8 +124,8 @@ public:
     }
 
     // disable copying
-    parallel_tools_api(parallel_tools_api const&)  = delete;
-    void operator=(parallel_tools_api const&) = delete;
+    parallel_tools_api(parallel_tools_api const&) = delete;
+    void operator=(parallel_tools_api const&)     = delete;
 
 private:
     //--------------------------------------------------------------------------------

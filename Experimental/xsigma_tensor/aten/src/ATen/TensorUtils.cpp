@@ -1,6 +1,6 @@
 #include <Quarisma/Config.h>
-#include <Quarisma/TensorUtils.h>
 #include <Quarisma/Quarisma.h>
+#include <Quarisma/TensorUtils.h>
 #include <c10/util/accumulate.h>
 #include <c10/util/irange.h>
 

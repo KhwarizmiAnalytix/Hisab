@@ -122,7 +122,7 @@ QUARISMATEST(ParallelToolsApi, singleton_and_backend_identification)
 
     {
         parallel_tools_api& api             = parallel_tools_api::instance();
-        const char*    current_backend = parallel_tools_api::get_backend();
+        const char*         current_backend = parallel_tools_api::get_backend();
 
         // Test 1: Setting to current backend should succeed
         bool result = api.set_backend(current_backend);

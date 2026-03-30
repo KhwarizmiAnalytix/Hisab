@@ -39,9 +39,9 @@ struct TORCH_API InputMetadata
     InputMetadata() = default;
     InputMetadata(
         const quarisma::TensorOptions&      options,
-        MetadataShape                     input_shape,
-        bool                              is_tensor_subclass,
-        bool                              is_nested,
+        MetadataShape                       input_shape,
+        bool                                is_tensor_subclass,
+        bool                                is_nested,
         std::optional<quarisma::ScalarType> grad_dtype);
     InputMetadata(const quarisma::Tensor& t);
 
@@ -67,7 +67,7 @@ struct TORCH_API InputMetadata
 
     quarisma::Tensor maybe_reduce(
         const size_t                                          index,
-        quarisma::Tensor                                        grad,
+        quarisma::Tensor                                      grad,
         const std::function<std::string(const std::string&)>& format_error) const;
 
     std::stringstream incompatible_shape_error_message(
@@ -98,18 +98,18 @@ struct TORCH_API InputMetadata
 
 private:
     quarisma::Tensor shape_as_tensor() const;
-    bool           is_nestedness_same(const quarisma::Tensor& grad) const;
-    bool           maybe_expandable_to(const quarisma::Tensor& grad) const;
+    bool             is_nestedness_same(const quarisma::Tensor& grad) const;
+    bool             maybe_expandable_to(const quarisma::Tensor& grad) const;
 
     // NB: The engine does not use the dtype from the options, but rather the
     //     grad_dtype_ field to validate grad_output dtype.
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
     const quarisma::TensorOptions options_;
-    MetadataShape               shape_;
-    quarisma::Stream stream_             = quarisma::Stream(quarisma::Stream::Default::DEFAULT, device());
-    bool           is_tensor_subclass_ = false;
-    bool           is_nested_          = false;
-    bool           was_default_constructed_ = true;
+    MetadataShape                 shape_;
+    quarisma::Stream stream_ = quarisma::Stream(quarisma::Stream::Default::DEFAULT, device());
+    bool             is_tensor_subclass_      = false;
+    bool             is_nested_               = false;
+    bool             was_default_constructed_ = true;
 
     // The grad_dtype_ field is the dtype that the engine expects the grad to be.
     // When nullopt, grad_dtype_ is allowed to be any dtype.

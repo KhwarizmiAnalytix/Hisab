@@ -61,13 +61,13 @@ struct TORCH_API Code
     const std::vector<GraphExecutor*>& grad_executors();
     const std::vector<GraphExecutor*>& diff_graph_op_executors();
 
-    explicit                            operator bool() const { return pImpl != nullptr; }
-    size_t                              num_inputs() const;
-    size_t                              num_outputs() const;
-    size_t                              num_bailouts() const;
+    explicit                              operator bool() const { return pImpl != nullptr; }
+    size_t                                num_inputs() const;
+    size_t                                num_outputs() const;
+    size_t                                num_bailouts() const;
     const std::vector<quarisma::IValue>&  constant_table() const;
     const std::vector<quarisma::TypePtr>& type_table() const;
-    const std::vector<Instruction>&     instructions() const;
+    const std::vector<Instruction>&       instructions() const;
     const std::unordered_map<std::string, size_t>& op_to_num_specified_args() const;
     const std::vector<Node*>&                      instructions_source() const;
     void                                           request_bailout(size_t index);
@@ -123,9 +123,9 @@ struct Suspend : public std::exception
 struct InterpreterContinuation
 {
     InterpreterContinuation(
-        InterpreterState                        state_,
-        Stack                                   stack_,
-        int64_t                                 dist_autograd_context_id = 0,
+        InterpreterState                          state_,
+        Stack                                     stack_,
+        int64_t                                   dist_autograd_context_id = 0,
         std::optional<quarisma::ThreadLocalState> tls_state                = std::nullopt)
         : state(std::move(state_)),
           stack(std::move(stack_)),
@@ -140,8 +140,8 @@ struct InterpreterContinuation
     void operator()();
 
 private:
-    InterpreterState                        state;
-    Stack                                   stack;
+    InterpreterState                          state;
+    Stack                                     stack;
     std::optional<quarisma::ThreadLocalState> tls_state_ = std::nullopt;
 #ifdef USE_DISTRIBUTED
     int64_t dist_autograd_context_id_;

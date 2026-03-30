@@ -1,6 +1,10 @@
 #include <Quarisma/core/interned_strings.h>
 #include <Quarisma/core/jit_type.h>
 #include <caffe2/serialize/versions.h>
+#include <quarisma/util/StringUtil.h>
+#include <quarisma/util/env.h>
+#include <quarisma/util/hash.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/api/function_impl.h>
 #include <torch/csrc/jit/frontend/canonicalize_modified_loop.h>
 #include <torch/csrc/jit/frontend/convert_to_ssa.h>
@@ -29,10 +33,6 @@
 #include <torch/csrc/jit/runtime/operator.h>
 #include <torch/csrc/jit/runtime/slice_indices_adjust.h>
 #include <torch/csrc/jit/testing/hooks_for_testing.h>
-#include <quarisma/util/StringUtil.h>
-#include <quarisma/util/env.h>
-#include <quarisma/util/hash.h>
-#include <quarisma/util/irange.h>
 
 #include <climits>
 #include <optional>
@@ -3272,10 +3272,10 @@ private:
     }
 
     void emitExprsAssign(
-        const List<Expr>&                       lhs_exprs,
+        const List<Expr>&                         lhs_exprs,
         const quarisma::ArrayRef<SugaredValuePtr> outputs,
-        const SourceRange&                      rhs_loc,
-        size_t                                  n_binders)
+        const SourceRange&                        rhs_loc,
+        size_t                                    n_binders)
     {
         size_t i = 0;
         for (auto assignee : lhs_exprs)
@@ -4513,8 +4513,8 @@ private:
     std::shared_ptr<SugaredValue> emitForkExpr(
         SourceRange                          loc,
         const std::shared_ptr<SugaredValue>& forked,
-        quarisma::ArrayRef<NamedValue>         args,
-        quarisma::ArrayRef<NamedValue>         kwargs)
+        quarisma::ArrayRef<NamedValue>       args,
+        quarisma::ArrayRef<NamedValue>       kwargs)
     {
         auto    g = method.graph();
         TypePtr out_type;
@@ -4554,8 +4554,8 @@ private:
     std::shared_ptr<SugaredValue> emitAwaitableExpr(
         SourceRange                          loc,
         const std::shared_ptr<SugaredValue>& awaited,
-        quarisma::ArrayRef<NamedValue>         args,
-        quarisma::ArrayRef<NamedValue>         kwargs)
+        quarisma::ArrayRef<NamedValue>       args,
+        quarisma::ArrayRef<NamedValue>       kwargs)
     {
         auto    g = method.graph();
         TypePtr out_type{};
@@ -5378,7 +5378,8 @@ private:
                 // Always create index tensor as LongTensor.
                 // This is to match Pytorch eager frontend behavior which accepts
                 // indexing with float list.
-                index = graph->insert(aten::tensor, {index}, {NamedValue("dtype", quarisma::kLong)});
+                index =
+                    graph->insert(aten::tensor, {index}, {NamedValue("dtype", quarisma::kLong)});
             }
 
             exprs[expr_idx] = index;
@@ -5846,7 +5847,7 @@ struct CompilationUnit::PropertyPair
 };
 
 CompilationUnit::PropertyPair CompilationUnit::define_property(
-    const std::optional<quarisma::QualifiedName>&       prefix,
+    const std::optional<quarisma::QualifiedName>&     prefix,
     const Property&                                   prop,
     const ResolverPtr&                                resolver,
     const Self*                                       self,
@@ -5946,13 +5947,13 @@ std::unique_ptr<Function> CompilationUnit::define(
 
 std::vector<Function*> CompilationUnit::define(
     const std::optional<quarisma::QualifiedName>& prefix,
-    const std::vector<Property>&                properties,
-    const std::vector<ResolverPtr>&             propResolvers,
-    const std::vector<Def>&                     definitions,
-    const std::vector<ResolverPtr>&             defResolvers,
-    const Self*                                 self,
-    bool                                        shouldMangle,
-    std::optional<size_t>                       operator_set_version)
+    const std::vector<Property>&                  properties,
+    const std::vector<ResolverPtr>&               propResolvers,
+    const std::vector<Def>&                       definitions,
+    const std::vector<ResolverPtr>&               defResolvers,
+    const Self*                                   self,
+    bool                                          shouldMangle,
+    std::optional<size_t>                         operator_set_version)
 {
     TORCH_INTERNAL_ASSERT(definitions.size() == defResolvers.size());
     TORCH_INTERNAL_ASSERT(properties.size() == propResolvers.size());
@@ -6020,12 +6021,12 @@ std::vector<Function*> CompilationUnit::define(
 
 void CompilationUnit::define_hooks(
     const std::optional<quarisma::QualifiedName>& prefix,
-    const std::vector<Def>&                     hookDefs,
-    const std::vector<ResolverPtr>&             hookResolvers,
-    const std::vector<Def>&                     preHookDefs,
-    const std::vector<ResolverPtr>&             preHookResolvers,
-    const Self*                                 self,
-    bool                                        shouldMangle)
+    const std::vector<Def>&                       hookDefs,
+    const std::vector<ResolverPtr>&               hookResolvers,
+    const std::vector<Def>&                       preHookDefs,
+    const std::vector<ResolverPtr>&               preHookResolvers,
+    const Self*                                   self,
+    bool                                          shouldMangle)
 {
     TORCH_INTERNAL_ASSERT(hookDefs.size() == hookResolvers.size());
     TORCH_INTERNAL_ASSERT(preHookDefs.size() == preHookResolvers.size());
@@ -6232,12 +6233,13 @@ bool meaningfulName(const std::string& name)
 
 void CompilationUnit::define_interface(
     const quarisma::QualifiedName& qualifiedName,
-    const ClassDef&              classDef,
-    ResolverPtr                  rcb,
-    bool                         is_module)
+    const ClassDef&                classDef,
+    ResolverPtr                    rcb,
+    bool                           is_module)
 {
     ScriptTypeParser typeParser(std::move(rcb));
-    InterfaceTypePtr iface = InterfaceType::create(quarisma::QualifiedName(qualifiedName), is_module);
+    InterfaceTypePtr iface =
+        InterfaceType::create(quarisma::QualifiedName(qualifiedName), is_module);
     for (const Stmt& stmt : classDef.body())
     {
         if (stmt.kind() != TK_DEF)

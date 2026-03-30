@@ -1,8 +1,8 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
+#include <quarisma/util/Logging.h>
 #include <torch/csrc/utils/generated_serialization_types.h>
 #include <torch/nativert/graph/GraphSignature.h>
-#include <quarisma/util/Logging.h>
 
 #include <algorithm>
 #include <array>
@@ -134,7 +134,8 @@ void checkInputOrders(const std::vector<torch::_export::InputSpec>& inputSpecs)
 }
 
 void checkInputNames(
-    const quarisma::FastSet<std::string>& sigNames, const quarisma::FastSet<std::string>& graphNames)
+    const quarisma::FastSet<std::string>& sigNames,
+    const quarisma::FastSet<std::string>& graphNames)
 {
     if (sigNames == graphNames)
     {
@@ -180,8 +181,8 @@ void checkOutputNames(
 
 void replaceInMap(
     quarisma::FastMap<std::string, std::string>& map,
-    std::string_view                           old,
-    std::string_view                           replacement)
+    std::string_view                             old,
+    std::string_view                             replacement)
 {
     auto it = map.find(std::string{old});
     if (it == map.end())
@@ -369,7 +370,7 @@ quarisma::FastSet<std::string> GraphSignature::inputNames() const
 quarisma::FastSet<std::optional<std::string>> GraphSignature::outputNames() const
 {
     quarisma::FastSet<std::optional<std::string>> ret;
-    size_t                                      numOutputs =
+    size_t                                        numOutputs =
         userOutputs().size() + buffersToMutate().size() + userInputsToMutate().size() +
         (hasBackward() ? gradientsToParameters().size() + gradientsToUserInputs().size() +
                              (lossOutput().empty() ? 0 : 1)

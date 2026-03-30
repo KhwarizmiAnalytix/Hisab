@@ -66,7 +66,8 @@ void parallel_tools_impl<backend_type::std_thread>::parallel_for(
             grain                 = (estimate_grain > 0) ? estimate_grain : 1;
         }
 
-        auto proxy = detail::parallel::parallel_thread_pool::instance().allocate_threads(thread_number);
+        auto proxy =
+            detail::parallel::parallel_thread_pool::instance().allocate_threads(thread_number);
 
         for (size_t from = first; from < last; from += grain)
         {
@@ -88,7 +89,8 @@ QUARISMA_API int parallel_tools_impl<backend_type::std_thread>::estimated_number
 
 //--------------------------------------------------------------------------------
 template <>
-QUARISMA_API int parallel_tools_impl<backend_type::std_thread>::estimated_default_number_of_threads();
+QUARISMA_API int
+parallel_tools_impl<backend_type::std_thread>::estimated_default_number_of_threads();
 
 //--------------------------------------------------------------------------------
 template <>

@@ -1,9 +1,9 @@
 #include <Quarisma/core/functional.h>
 #include <Quarisma/core/jit_type.h>
 #include <Quarisma/core/qualified_name.h>
+#include <quarisma/util/hash.h>
 #include <torch/csrc/jit/ir/ir.h>
 #include <torch/csrc/jit/ir/type_hashing.h>
-#include <quarisma/util/hash.h>
 
 namespace torch::jit
 {

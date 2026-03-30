@@ -12,8 +12,8 @@ namespace torch::jit
 struct Slot
 {
     quarisma::intrusive_ptr<quarisma::ivalue::Object> obj;
-    size_t                                        offset;
-    bool                                          operator==(const Slot& other) const
+    size_t                                            offset;
+    bool                                              operator==(const Slot& other) const
     {
         return (this->obj == other.obj && this->offset == other.offset);
     }

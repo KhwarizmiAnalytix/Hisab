@@ -1,27 +1,18 @@
 # =============================================================================
 # Quarisma Core Library BUILD Configuration
 # =============================================================================
-# Core library containing parallel computing, memory management, and profiling
-# Equivalent to Library/Core/CMakeLists.txt
+# Core library containing parallel computing and memory management.
+# Profiler lives under //Library/Profiler and is linked into the public Core target.
 # =============================================================================
 
-load("@bazel_skylib//lib:selects.bzl", "selects")
 load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
 
 package(default_visibility = ["//visibility:public"])
 
 # =============================================================================
-# Generated Configuration Headers
+# Source Files (Core without profiler sources; profiler is //Library/Profiler)
 # =============================================================================
 
-# Note: quarisma_version_macros.h and quarisma_threads.h have been removed
-# Version and threading configuration is now handled differently
-
-# =============================================================================
-# Source Files
-# =============================================================================
-
-# Collect all headers
 filegroup(
     name = "core_hdrs",
     srcs = glob(
@@ -31,8 +22,6 @@ filegroup(
             "logging/*.h",
             "memory/*.h",
             "memory/**/*.h",
-            "profiler/*.h",
-            "profiler/**/*.h",
             "parallel/*.h",
             "parallel/**/*.h",
             "c17/*.h",
@@ -41,7 +30,6 @@ filegroup(
     ),
 )
 
-# Collect all template implementation files
 filegroup(
     name = "core_templates",
     srcs = glob(
@@ -51,8 +39,6 @@ filegroup(
             "logging/*.hxx",
             "memory/*.hxx",
             "memory/**/*.hxx",
-            "profiler/*.hxx",
-            "profiler/**/*.hxx",
             "parallel/*.hxx",
             "parallel/**/*.hxx",
         ],
@@ -60,7 +46,6 @@ filegroup(
     ),
 )
 
-# Collect all source files
 filegroup(
     name = "core_srcs",
     srcs = glob(
@@ -70,26 +55,14 @@ filegroup(
             "logging/*.cpp",
             "memory/*.cpp",
             "memory/**/*.cpp",
-            "profiler/*.cpp",
-            "profiler/**/*.cpp",
             "parallel/*.cpp",
             "parallel/**/*.cpp",
         ],
         exclude = [
-            # Exclude GPU files if CUDA/HIP not enabled
             "memory/gpu/*.cpp",
             "memory/cpu/allocator_device.cpp",
-            # Exclude native profiler if not enabled
-            "profiler/native/**/*.cpp",
-            # Exclude common profiler files (require kineto/native)
-            "profiler/common/**/*.cpp",
-            # Exclude TBB or STDThread based on configuration
             "parallel/TBB/*.cpp",
             "parallel/STDThread/*.cpp",
-            # Exclude Kineto files if not enabled
-            "profiler/kineto_*.cpp",
-            "profiler/kineto/**/*.cpp",
-            # Exclude logging.cpp for native backend
             "logging/logging.cpp",
         ],
         allow_empty = True,
@@ -97,11 +70,11 @@ filegroup(
 )
 
 # =============================================================================
-# Core Library Target
+# Core implementation library (linked by //Library/Profiler:Profiler)
 # =============================================================================
 
 cc_library(
-    name = "Core",
+    name = "core_lib",
     srcs = [
         ":core_srcs",
         ":core_templates",
@@ -110,25 +83,8 @@ cc_library(
         "//bazel:enable_hip": glob(["memory/gpu/*.cpp", "memory/cpu/allocator_device.cpp"], allow_empty = True),
         "//conditions:default": [],
     }) + select({
-        "//bazel:enable_native_profiler": glob(["profiler/native/**/*.cpp"], allow_empty = True),
-        "//conditions:default": [],
-    }) + select({
         "//bazel:enable_tbb": glob(["parallel/TBB/*.cpp"], allow_empty = True),
         "//conditions:default": glob(["parallel/STDThread/*.cpp"], allow_empty = True),
-    }) + select({
-        "//bazel:enable_kineto": glob(
-            [
-                "profiler/kineto_*.cpp",
-                "profiler/kineto/**/*.cpp",
-                "profiler/common/**/*.cpp",
-                "profiler/native/**/*.cpp",
-            ],
-            exclude = [
-                "profiler/common/unwind/**/*.cpp",
-            ],
-            allow_empty = True,
-        ),
-        "//conditions:default": [],
     }),
     hdrs = [
         ":core_hdrs",
@@ -137,14 +93,8 @@ cc_library(
         "//bazel:enable_hip": glob(["memory/gpu/*.h", "memory/cpu/allocator_device.h"], allow_empty = True),
         "//conditions:default": [],
     }) + select({
-        "//bazel:enable_native_profiler": glob(["profiler/native/**/*.h", "profiler/native/**/*.hxx"], allow_empty = True),
-        "//conditions:default": [],
-    }) + select({
         "//bazel:enable_tbb": glob(["parallel/TBB/*.h", "parallel/TBB/*.hxx"], allow_empty = True),
         "//conditions:default": glob(["parallel/STDThread/*.h", "parallel/STDThread/*.hxx"], allow_empty = True),
-    }) + select({
-        "//bazel:enable_kineto": glob(["profiler/kineto_*.h", "profiler/native/**/*.h", "profiler/native/**/*.hxx"], allow_empty = True),
-        "//conditions:default": [],
     }),
     copts = quarisma_copts(),
     defines = quarisma_defines() + select({
@@ -157,10 +107,7 @@ cc_library(
     includes = [
         ".",
         "Testing",
-    ] + select({
-        "//bazel:enable_kineto": ["profiler/kineto"],
-        "//conditions:default": [],
-    }),
+    ],
     linkopts = quarisma_linkopts() + select({
         "@platforms//os:windows": [],
         "@platforms//os:macos": ["-framework Security"],
@@ -200,10 +147,21 @@ cc_library(
         "//conditions:default": [],
     }),
     alwayslink = False,
+    visibility = [
+        "//Library/Profiler:__pkg__",
+        "//Library/Core:__pkg__",
+    ],
 )
 
 # =============================================================================
-# Tests (if enabled)
+# Public Core target: core implementation + Profiler
 # =============================================================================
 
-# Test configuration would go in Library/Core/Testing/Cxx/BUILD.bazel
+cc_library(
+    name = "Core",
+    deps = [
+        ":core_lib",
+        "//Library/Profiler:Profiler",
+    ],
+    visibility = ["//visibility:public"],
+)

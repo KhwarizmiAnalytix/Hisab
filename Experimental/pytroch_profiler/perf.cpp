@@ -81,7 +81,8 @@ void PerfEvent::Init()
     fd_ = static_cast<int>(perf_event_open(&attr, pid, cpu, group_fd, flags));
     if (fd_ == -1)
     {
-        QUARISMA_CHECK(false, "perf_event_open() failed, error: ", quarisma::utils::str_error(errno));
+        QUARISMA_CHECK(
+            false, "perf_event_open() failed, error: ", quarisma::utils::str_error(errno));
     }
     Reset();
 }

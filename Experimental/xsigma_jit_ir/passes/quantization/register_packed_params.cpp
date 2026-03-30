@@ -31,7 +31,8 @@ std::pair<Value*, std::string> findFPWeight(Node* prepack_node)
     bool is_quantize_node =
         (n->kind() == Symbol::fromQualString("aten::quantize_per_tensor") ||
          n->kind() == Symbol::fromQualString("aten::quantize_per_channel"));
-    QUARISMA_CHECK(is_quantize_node, "Input to prepack node must be output of weight quantization.");
+    QUARISMA_CHECK(
+        is_quantize_node, "Input to prepack node must be output of weight quantization.");
     // First input of quantize node is FP32 weight
     n                    = n->input(0)->node();
     bool is_getattr_node = (n->kind() == prim::GetAttr);

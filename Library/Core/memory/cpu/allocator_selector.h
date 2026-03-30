@@ -152,7 +152,8 @@ public:
      * **Use Cases**: Evaluating alternatives, A/B testing
      * **Performance**: O(n) where n is number of allocator types
      */
-    QUARISMA_API static std::vector<recommendation> compare_allocators(const allocation_context& ctx);
+    QUARISMA_API static std::vector<recommendation> compare_allocators(
+        const allocation_context& ctx);
 
     /**
      * @brief Validate allocator choice against context

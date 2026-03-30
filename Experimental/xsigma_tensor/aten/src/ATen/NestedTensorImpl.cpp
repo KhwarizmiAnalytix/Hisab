@@ -1,7 +1,7 @@
 #include <Quarisma/NamedTensorUtils.h>
 #include <Quarisma/NestedTensorImpl.h>
-#include <Quarisma/WrapDimUtils.h>
 #include <Quarisma/Quarisma.h>
+#include <Quarisma/WrapDimUtils.h>
 #include <c10/core/DispatchKey.h>
 #include <c10/core/DispatchKeySet.h>
 #include <c10/core/TensorImpl.h>

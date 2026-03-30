@@ -1,6 +1,6 @@
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/ir/ir_views.h>
 #include <torch/csrc/jit/passes/canonicalize.h>
-#include <quarisma/util/irange.h>
 
 namespace torch::jit
 {

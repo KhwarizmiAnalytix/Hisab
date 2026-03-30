@@ -588,9 +588,9 @@ T* gpu_allocator_tracking::allocate(
     std::shared_ptr<gpu_memory_pool> pool,
     const std::string&               tag,
     void*                            stream,
-    QUARISMA_UNUSED const char*        source_file,
-    QUARISMA_UNUSED int                source_line,
-    QUARISMA_UNUSED const char*        function_name)
+    QUARISMA_UNUSED const char*      source_file,
+    QUARISMA_UNUSED int              source_line,
+    QUARISMA_UNUSED const char*      function_name)
 {
     if (count == 0)
         return nullptr;

@@ -32,7 +32,7 @@ static void convertSubgraphToSubBlock(Block* block)
                 for (size_t i = 0; i < n->outputs().size(); ++i)
                 {
                     env[n->outputs().quarisma(i)] = cloned_n->outputs().quarisma(i);
-                    auto it                     = std::find(
+                    auto it                       = std::find(
                         subgraph->outputs().begin(), subgraph->outputs().end(), n->outputs()[i]);
                     if (it != subgraph->outputs().end())
                     {

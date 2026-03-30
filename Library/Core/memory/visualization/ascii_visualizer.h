@@ -128,7 +128,8 @@ public:
      *     0.30 |        1.00 | FREE 512000 bytes
      * ```
      */
-    QUARISMA_API std::string create_timeline(const std::vector<timeline_point>& timeline_data) const;
+    QUARISMA_API std::string create_timeline(
+        const std::vector<timeline_point>& timeline_data) const;
 
     /**
      * @brief Create fragmentation analysis visualization

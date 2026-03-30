@@ -1,12 +1,12 @@
 #pragma once
 
 #include <Quarisma/core/ivalue.h>
+#include <quarisma/util/IntrusiveList.h>
+#include <quarisma/util/Logging.h>
 #include <torch/csrc/utils/generated_serialization_types.h>
 #include <torch/nativert/executor/Placement.h>
 #include <torch/nativert/graph/GraphSignature.h>
 #include <torch/nativert/graph/TensorMeta.h>
-#include <quarisma/util/IntrusiveList.h>
-#include <quarisma/util/Logging.h>
 
 #include <memory>
 #include <string>
@@ -621,7 +621,7 @@ private:
     // maintained intrusively using nodes_.
     // This is to facilitate quick insertion before/after a given Node*.
     std::vector<std::unique_ptr<Node>> nodesOwner_;
-    quarisma::IntrusiveList<Node>        nodes_;
+    quarisma::IntrusiveList<Node>      nodes_;
     // The current insertion point. New nodes are inserted before this node.
     // Defaults to prim.Output.
     quarisma::IntrusiveList<Node>::iterator insertBefore_;

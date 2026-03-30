@@ -223,7 +223,7 @@ static std::pair<std::vector<ExprHandle>, bool> broadcastShapesImpl(
     const std::vector<ExprHandle>& a, const std::vector<ExprHandle>& b)
 {
     auto                    quarisma = a.rbegin();
-    auto                    bt     = b.rbegin();
+    auto                    bt       = b.rbegin();
     std::vector<ExprHandle> ret;
     bool                    hasBroadcast = false;
     while (quarisma != a.rend() || bt != b.rend())
@@ -382,7 +382,7 @@ Tensor computeChunk(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     return Compute(
         "prim_constantchunk",
@@ -422,7 +422,7 @@ Tensor computeTranspose(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     auto A = std::get<BufHandle>(inputs[0]);
     // Trivial case of 0-dim and 1-dim tensors: transpose is just a copy
@@ -456,7 +456,7 @@ Tensor computeExpand(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     auto A = std::get<BufHandle>(inputs[0]);
     return Compute(
@@ -474,7 +474,7 @@ Tensor computeReshape(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     auto A = std::get<BufHandle>(inputs[0]);
     if (A.ndim() == 0)
@@ -555,7 +555,7 @@ Tensor computeFlatten(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     std::vector<int64_t> outputShapeVec;
     for (const auto dim : quarisma::irange(outputShape.size()))
@@ -726,7 +726,7 @@ Tensor computeCat(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     if (device == quarisma::kCPU && getCatWoConditionals())
     {
@@ -793,7 +793,7 @@ Tensor computeEmbedding(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     Dtype dtype = kFloat;
     if (outputType)

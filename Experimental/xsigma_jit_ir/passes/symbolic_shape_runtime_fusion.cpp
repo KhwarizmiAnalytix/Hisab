@@ -1,5 +1,7 @@
 #include <Quarisma/core/functional.h>
 #include <Quarisma/core/interned_strings.h>
+#include <quarisma/core/MemoryFormat.h>
+#include <quarisma/core/ScalarType.h>
 #include <torch/csrc/jit/ir/ir.h>
 #include <torch/csrc/jit/ir/ir_views.h>
 #include <torch/csrc/jit/jit_log.h>
@@ -9,8 +11,6 @@
 #include <torch/csrc/jit/runtime/graph_iterator.h>
 #include <torch/csrc/jit/runtime/register_ops_utils.h>
 #include <torch/csrc/jit/runtime/static/ops.h>
-#include <quarisma/core/MemoryFormat.h>
-#include <quarisma/core/ScalarType.h>
 
 #include <sstream>
 #include <utility>
@@ -131,8 +131,8 @@ StrideInput strideInputFromString(const std::string& si)
 // vector. stride_inputs_offset indexes into that vector
 // where the strides of this tensor begin
 static inline StrideInput summarizeStrideDim(
-    const quarisma::IntArrayRef       sizes,
-    const quarisma::IntArrayRef       strides,
+    const quarisma::IntArrayRef     sizes,
+    const quarisma::IntArrayRef     strides,
     size_t                          dim,
     const std::vector<StrideInput>& stride_inputs,
     size_t                          stride_inputs_offset)
@@ -223,7 +223,7 @@ TryGeneralizeInputDimensionsToSymbolicShapes(const std::shared_ptr<Graph>& tenso
         }
         input_striding.push_back(summarizeInputStrides(tt));
         std::vector<quarisma::ShapeSymbol> shape_vec = *tt.symbolic_sizes().sizes();
-        auto                             new_sizes = quarisma::fmap(
+        auto                               new_sizes = quarisma::fmap(
             shape_vec,
             [&](const quarisma::ShapeSymbol& shape)
             {
@@ -566,7 +566,7 @@ static Operation StaticRuntimeCopyOuts(const Node* node)
             quarisma::ArrayRef<IValue> outputs = last(stack, num_ten_inputs);
             for (size_t i = 0; i < inputs.size(); ++i)
             {
-                IValue          out   = outputs[i];
+                IValue            out   = outputs[i];
                 quarisma::Tensor& out_t = out.toTensor();
                 fastResizeToZero(out_t);
                 out_t.resize_as_(inputs[i].toTensor());
@@ -719,7 +719,8 @@ static RegisterOperators reg_guard({
                     // property than iterating over dimensions and checking yourself
                     if (striding == StrideInput::TENSOR_CONT)
                     {
-                        if QUARISMA_UNLIKELY (!tensor.is_contiguous(quarisma::MemoryFormat::Contiguous)))
+                        if QUARISMA_UNLIKELY (!tensor.is_contiguous(
+                                                  quarisma::MemoryFormat::Contiguous)))
                             {
                                 push(stack, false);
                                 return;
@@ -730,7 +731,7 @@ static RegisterOperators reg_guard({
                     {
                         // TODO: 5D channels last
                         if QUARISMA_UNLIKELY (!tensor.is_contiguous(
-                                                quarisma::MemoryFormat::ChannelsLast)))
+                                                  quarisma::MemoryFormat::ChannelsLast)))
                             {
                                 push(stack, false);
                                 return;

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <torch/nativert/graph/Graph.h>
 #include <quarisma/util/Logging.h>
+#include <torch/nativert/graph/Graph.h>
 
 #include <functional>
 #include <map>

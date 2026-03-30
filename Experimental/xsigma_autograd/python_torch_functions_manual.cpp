@@ -815,7 +815,8 @@ void initTorchFunctions(PyObject* module)
                     "multiple layers of mode-style functionalization nesting is not"
                     " currently supported, outside of the functionalize() transform");
             }
-            quarisma::impl::tls_set_dispatch_key_included(quarisma::DispatchKey::Functionalize, true);
+            quarisma::impl::tls_set_dispatch_key_included(
+                quarisma::DispatchKey::Functionalize, true);
             if (reapply_views)
             {
                 quarisma::functionalization::impl::setFunctionalizationReapplyViewsTLS(true);
@@ -826,7 +827,8 @@ void initTorchFunctions(PyObject* module)
         "_disable_functionalization",
         []()
         {
-            quarisma::impl::tls_set_dispatch_key_included(quarisma::DispatchKey::Functionalize, false);
+            quarisma::impl::tls_set_dispatch_key_included(
+                quarisma::DispatchKey::Functionalize, false);
             quarisma::functionalization::impl::setFunctionalizationReapplyViewsTLS(false);
         });
     py_module.def(

@@ -39,10 +39,10 @@
 #include "memory/cpu/allocator_device.h"  // for allocator_device
 #endif
 
+#include "baseTest.h"  // for QUARISMATEST_CALL, QUARISMATEST, END_TEST, QUARISMATEST
 #include "memory/helper/memory_allocator.h"  // for free, allocate
 #include "memory/helper/process_state.h"     // for process_state
 #include "memory/unified_memory_stats.h"  // for atomic_timing_stats, unified_resource_stats, memory_fragment...
-#include "baseTest.h"                   // for QUARISMATEST_CALL, QUARISMATEST, END_TEST, QUARISMATEST
 
 using namespace quarisma;
 
@@ -416,7 +416,7 @@ QUARISMATEST(AllocationAttributesTest, ConstructionAndBehavior)
     EXPECT_EQ(nullptr, default_attrs.freed_by_func);
 
     // Test parameterized construction
-    std::function<uint64_t()>     timing_func = []() { return 12345; };
+    std::function<uint64_t()>       timing_func = []() { return 12345; };
     quarisma::allocation_attributes custom_attrs(true, true, &timing_func);
     EXPECT_TRUE(custom_attrs.retry_on_failure);
     EXPECT_TRUE(custom_attrs.allocation_will_be_logged);
@@ -435,7 +435,8 @@ QUARISMATEST(AllocationAttributesTest, ConstructionAndBehavior)
     EXPECT_TRUE(assigned_attrs.allocation_will_be_logged);
     EXPECT_EQ(&timing_func, assigned_attrs.freed_by_func);
 
-    QUARISMA_LOG_INFO("Allocation attributes construction and behavior tests completed successfully");
+    QUARISMA_LOG_INFO(
+        "Allocation attributes construction and behavior tests completed successfully");
 }
 
 // Test allocation attributes with timing constraints
@@ -708,7 +709,8 @@ QUARISMATEST(AllocatorTracking, StatisticsCollection)
     // Properly cleanup tracking allocator by releasing reference
     tracker->GetRecordsAndUnRef();
 
-    QUARISMA_LOG_INFO("Allocation statistics collection and reporting tests completed successfully");
+    QUARISMA_LOG_INFO(
+        "Allocation statistics collection and reporting tests completed successfully");
 }
 
 // Test memory usage monitoring and bounds checking
@@ -845,8 +847,8 @@ QUARISMATEST(AllocatorTracking, EnhancedTrackingAnalytics)
         std::move(sub_allocator), 2 * 1024ULL * 1024ULL, "test_enhanced_bfc", opts);
 
     // Create tracking allocator with enhanced tracking enabled
-    auto tracker =
-        new quarisma::allocator_tracking(&underlying_alloc, true, true);  // Enhanced tracking enabled
+    auto tracker = new quarisma::allocator_tracking(
+        &underlying_alloc, true, true);  // Enhanced tracking enabled
 
     // Test enhanced timing statistics
     auto initial_timing = tracker->GetTimingStats();
@@ -1421,6 +1423,7 @@ QUARISMATEST(AllocatorBenchmark, PerformanceBenchmark)
     std::cout << "                              BENCHMARK COMPLETED SUCCESSFULLY\n";
     std::cout << std::string(120, '=') << "\n\n";
 
-    QUARISMA_LOG_INFO("Comprehensive Memory Allocator Performance Benchmark completed successfully!");
+    QUARISMA_LOG_INFO(
+        "Comprehensive Memory Allocator Performance Benchmark completed successfully!");
 }
 #endif

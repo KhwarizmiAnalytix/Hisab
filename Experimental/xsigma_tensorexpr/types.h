@@ -1,9 +1,9 @@
 #pragma once
 
-#include <torch/csrc/Export.h>
-#include <torch/csrc/jit/tensorexpr/exceptions.h>
 #include <quarisma/core/ScalarType.h>
 #include <quarisma/util/Logging.h>
+#include <torch/csrc/Export.h>
+#include <torch/csrc/jit/tensorexpr/exceptions.h>
 
 #include <cstdint>
 #include <iosfwd>

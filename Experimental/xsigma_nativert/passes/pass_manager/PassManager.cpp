@@ -1,7 +1,7 @@
+#include <quarisma/util/CallOnce.h>
 #include <torch/nativert/graph/Graph.h>
 #include <torch/nativert/graph/passes/pass_manager/GraphPasses.h>
 #include <torch/nativert/graph/passes/pass_manager/PassManager.h>
-#include <quarisma/util/CallOnce.h>
 
 namespace torch::nativert
 {

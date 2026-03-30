@@ -2,10 +2,10 @@
 
 #include <Quarisma/NativeFunctions.h>
 #include <Quarisma/Parallel.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/tensorexpr/analysis.h>
 #include <torch/csrc/jit/tensorexpr/llvm_codegen.h>
 #include <torch/csrc/jit/tensorexpr/llvm_jit.h>
-#include <quarisma/util/irange.h>
 
 #include "util/exception.h"
 
@@ -130,13 +130,17 @@ QUARISMA_DEFINE_bool(
         case CompareSelectOperation::kNE:
             return llvm::ICmpInst::ICMP_NE;
         case CompareSelectOperation::kGT:
-            return quarisma::isSignedType(type) ? llvm::ICmpInst::ICMP_SGT : llvm::ICmpInst::ICMP_UGT;
+            return quarisma::isSignedType(type) ? llvm::ICmpInst::ICMP_SGT
+                                                : llvm::ICmpInst::ICMP_UGT;
         case CompareSelectOperation::kGE:
-            return quarisma::isSignedType(type) ? llvm::ICmpInst::ICMP_SGE : llvm::ICmpInst::ICMP_UGE;
+            return quarisma::isSignedType(type) ? llvm::ICmpInst::ICMP_SGE
+                                                : llvm::ICmpInst::ICMP_UGE;
         case CompareSelectOperation::kLT:
-            return quarisma::isSignedType(type) ? llvm::ICmpInst::ICMP_SLT : llvm::ICmpInst::ICMP_ULT;
+            return quarisma::isSignedType(type) ? llvm::ICmpInst::ICMP_SLT
+                                                : llvm::ICmpInst::ICMP_ULT;
         case CompareSelectOperation::kLE:
-            return quarisma::isSignedType(type) ? llvm::ICmpInst::ICMP_SLE : llvm::ICmpInst::ICMP_ULE;
+            return quarisma::isSignedType(type) ? llvm::ICmpInst::ICMP_SLE
+                                                : llvm::ICmpInst::ICMP_ULE;
         default:
             // TODO: change to a proper error report
             throw std::runtime_error("invalid operator type");
@@ -302,7 +306,7 @@ QUARISMA_DEFINE_bool(
         LLVMCodeGenImpl(
             StmtPtr                                stmt,
             const std::vector<CodeGen::BufferArg>& args,
-            quarisma::Device                         device,
+            quarisma::Device                       device,
             Dtype                                  dtype,
             std::string                            kernel_func_name,
             std::optional<std::string>             triple,
@@ -385,7 +389,7 @@ LLVMCodeGen::LLVMCodeGen(StmtPtr stmt) : LLVMCodeGen(stmt, std::vector<CodeGen::
 LLVMCodeGen::LLVMCodeGen(
     StmtPtr                       stmt,
     const std::vector<BufferArg>& args,
-    quarisma::Device                device,
+    quarisma::Device              device,
     const std::string&            kernel_func_name,
     Dtype                         dtype,
     std::optional<std::string>    triple,
@@ -422,7 +426,7 @@ void LLVMCodeGen::call(const std::vector<CallArg>& args)
         throw malformed_input("wrong number of args in call");
     }
 
-    constexpr unsigned                nargs = 8;
+    constexpr unsigned                  nargs = 8;
     quarisma::SmallVector<void*, nargs> argv;
     argv.resize(buf_args.size());
     for (size_t i = 0, e = buf_args.size(); i < e; i++)
@@ -440,7 +444,7 @@ quarisma::Tensor LLVMCodeGen::empty_strided(
     std::optional<quarisma::ScalarType> dtype_opt,
     std::optional<quarisma::Layout>     layout_opt,
     std::optional<quarisma::Device>     device_opt,
-    std::optional<bool>               pin_memory_opt)
+    std::optional<bool>                 pin_memory_opt)
 {
     return quarisma::native::empty_strided_cpu(
         size, stride, dtype_opt, layout_opt, device_opt, pin_memory_opt);
@@ -455,7 +459,8 @@ std::string LLVMCodeGen::getCodeText(const std::string& attr /*=""*/)
 {
     TORCH_INTERNAL_ASSERT(
         impl_.get(),
-        "LLVMCodeGen memory has been cleaned up. So, code text is not available quarisma this point");
+        "LLVMCodeGen memory has been cleaned up. So, code text is not available quarisma this "
+        "point");
     if (attr == "asm")
     {
         return impl_->getASMCodeText();
@@ -486,7 +491,7 @@ static std::mutex llvmInitMutex;
 LLVMCodeGenImpl::LLVMCodeGenImpl(
     StmtPtr                                stmt,
     const std::vector<CodeGen::BufferArg>& args,
-    quarisma::Device                         device,
+    quarisma::Device                       device,
     Dtype                                  dtype,
     std::string                            kernel_func_name,
     std::optional<std::string>             triple,
@@ -1392,7 +1397,8 @@ void LLVMCodeGenImpl::visit(const BitCastPtr& v)
         return;
     }
 
-    QUARISMA_CHECK(llvm::CastInst::isBitCastable(srcType->getScalarType(), dstType->getScalarType()));
+    QUARISMA_CHECK(
+        llvm::CastInst::isBitCastable(srcType->getScalarType(), dstType->getScalarType()));
     value_ = irb_.CreateBitOrPointerCast(value_, dstType);
 }
 

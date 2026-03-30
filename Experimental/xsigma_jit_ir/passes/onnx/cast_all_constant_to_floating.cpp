@@ -31,9 +31,9 @@ static void CastAllConstantToFloating(Block* block)
 
         if (node->kind() == onnx::Constant)
         {
-            auto               val      = node->t(attr::value);
+            auto                 val      = node->t(attr::value);
             quarisma::ScalarType dtype    = val.scalar_type();
-            auto               val_type = TensorType::create(val);
+            auto                 val_type = TensorType::create(val);
             if (dtype != quarisma::ScalarType::Double && dtype != quarisma::ScalarType::Float &&
                 dtype != quarisma::ScalarType::Half)
             {

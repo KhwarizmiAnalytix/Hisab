@@ -1,5 +1,6 @@
 #include <Quarisma/core/functional.h>
 #include <Quarisma/core/ivalue.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/autograd/variable.h>
 #include <torch/csrc/jit/ir/alias_analysis.h>
 #include <torch/csrc/jit/ir/constants.h>
@@ -10,7 +11,6 @@
 #include <torch/csrc/jit/passes/dead_code_elimination.h>
 #include <torch/csrc/jit/runtime/operator.h>
 #include <torch/csrc/jit/runtime/vararg_functions.h>
-#include <quarisma/util/irange.h>
 
 #include <utility>
 
@@ -254,7 +254,8 @@ private:
         auto loop_input_offset = 2;  // offset of loop carried deps in input list
         for (size_t i = 0; i < n->outputs().size(); ++i)
         {
-            n->outputs().quarisma(i)->replaceAllUsesWith(n->inputs().quarisma(i + loop_input_offset));
+            n->outputs().quarisma(i)->replaceAllUsesWith(
+                n->inputs().quarisma(i + loop_input_offset));
         }
         made_change_ = true;
         n->destroy();

@@ -338,9 +338,9 @@ public:
      */
     QUARISMA_API allocator_bfc(
         std::unique_ptr<quarisma::sub_allocator> sub_allocator,
-        size_t                                 total_memory,
-        std::string                            name,
-        const Options&                         opts);
+        size_t                                   total_memory,
+        std::string                              name,
+        const Options&                           opts);
 
     /**
      * @brief Destructor that releases all managed memory back to sub_allocator.
@@ -2126,7 +2126,8 @@ private:
      * **Thread Safety**: Requires mutex protection
      * **Use Cases**: Performance analysis, memory usage debugging, optimization
      */
-    std::array<BinDebugInfo, kNumBins> get_bin_debug_info() QUARISMA_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+    std::array<BinDebugInfo, kNumBins> get_bin_debug_info()
+        QUARISMA_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
     // ========== Immutable Configuration (Set During Construction) ==========
     /**

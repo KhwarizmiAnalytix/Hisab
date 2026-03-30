@@ -1,11 +1,11 @@
 #include <fmt/ostream.h>
 #include <fmt/ranges.h>
-#include <torch/nativert/executor/Placement.h>
-#include <torch/nativert/graph/Graph.h>
-#include <torch/nativert/graph/TensorMeta.h>
 #include <quarisma/util/Enumerate.h>
 #include <quarisma/util/FbcodeMaps.h>
 #include <quarisma/util/StringUtil.h>
+#include <torch/nativert/executor/Placement.h>
+#include <torch/nativert/graph/Graph.h>
+#include <torch/nativert/graph/TensorMeta.h>
 
 #include <limits>
 #include <queue>
@@ -1325,7 +1325,7 @@ quarisma::Device convertDevice(std::string_view symbol)
     const auto index = symbol.substr(indexStart, indexEnd - indexStart);
 
     quarisma::Device device((std::string(type)));
-    auto           indexValue = quarisma::tryToNumber<int64_t>(std::string{index});
+    auto             indexValue = quarisma::tryToNumber<int64_t>(std::string{index});
     QUARISMA_CHECK(indexValue.has_value(), "Invalid device index format");
     int64_t deviceIndex = indexValue.value();
     QUARISMA_CHECK(

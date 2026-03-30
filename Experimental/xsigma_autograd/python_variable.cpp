@@ -1,6 +1,12 @@
 #include <Quarisma/NamedTensorUtils.h>
 #include <Quarisma/Quarisma.h>
 #include <pybind11/pytypes.h>
+#include <quarisma/core/DeviceType.h>
+#include <quarisma/core/SymIntArrayRef.h>
+#include <quarisma/core/impl/GPUTrace.h>
+#include <quarisma/core/impl/HermeticPyObjectTLS.h>
+#include <quarisma/core/impl/PythonDispatcherTLS.h>
+#include <quarisma/util/irange.h>
 #include <structmember.h>
 #include <torch/csrc/Device.h>
 #include <torch/csrc/DynamicTypes.h>
@@ -31,12 +37,6 @@
 #include <torch/csrc/utils/tensor_new.h>
 #include <torch/csrc/utils/tensor_numpy.h>
 #include <torch/csrc/utils/torch_dispatch_mode.h>
-#include <quarisma/core/DeviceType.h>
-#include <quarisma/core/SymIntArrayRef.h>
-#include <quarisma/core/impl/GPUTrace.h>
-#include <quarisma/core/impl/HermeticPyObjectTLS.h>
-#include <quarisma/core/impl/PythonDispatcherTLS.h>
-#include <quarisma/util/irange.h>
 
 #include <cstdint>
 #include <memory>
@@ -50,7 +50,8 @@ using namespace torch::autograd;
 std::pair<py::object, py::dict> parseIValuesToPyArgsKwargs(
     const quarisma::OperatorHandle& op, const std::vector<quarisma::IValue>& arguments)
 {
-    QUARISMA_CHECK(PyGILState_Check(), "GIL must be held before you call parseIValuesToPyArgsKwargs");
+    QUARISMA_CHECK(
+        PyGILState_Check(), "GIL must be held before you call parseIValuesToPyArgsKwargs");
     const auto& schema = op.schema();
     py::dict    kwargs;
     // About all the pointers:
@@ -218,10 +219,10 @@ PyObject* THPVariableClass = nullptr;
 PyObject* ParameterClass = nullptr;
 
 static PyObject* THPVariable_NewWithVar(
-    PyTypeObject*             type,
+    PyTypeObject*               type,
     const quarisma::TensorBase& _var,
-    bool                      allow_preexisting_pyobj     = false,
-    std::optional<bool>       has_torch_dispatch_if_known = std::nullopt);
+    bool                        allow_preexisting_pyobj     = false,
+    std::optional<bool>         has_torch_dispatch_if_known = std::nullopt);
 
 // clang-tidy gets confused by static const
 static constexpr const char* VOLATILE_WARNING =
@@ -378,7 +379,7 @@ static bool THPVariable_tryResurrect(THPVariable* self)
     TORCH_INTERNAL_ASSERT(!tensor.unsafeGetTensorImpl()->pyobj_slot()->owns_pyobj());
 
     quarisma::TensorImpl* tensor_impl = tensor.unsafeGetTensorImpl();
-    auto                maybe_pyobj = tensor_impl->pyobj_slot()->check_pyobj(
+    auto                  maybe_pyobj = tensor_impl->pyobj_slot()->check_pyobj(
         /*ignore_hermetic_tls=*/false);
 
     TORCH_INTERNAL_ASSERT(
@@ -489,7 +490,7 @@ static PyObject* view_func_impl(
 
     // Ensure that self is indeed a backward differentiable view
     // If not, we return an undefined Tensor (None) and let the user handle it.
-    auto           diff_view_meta = torch::autograd::impl::get_view_autograd_meta(self);
+    auto             diff_view_meta = torch::autograd::impl::get_view_autograd_meta(self);
     quarisma::Tensor out;
     if (diff_view_meta && diff_view_meta->has_bw_view())
     {
@@ -558,7 +559,7 @@ static PyObject* rev_view_func_impl(PyObject* self_, PyObject* arg)
 
     // Ensure that self is indeed a backward differentiable view
     // If not, we return an undefined Tensor (None) and let the user handle it.
-    auto           diff_view_meta = torch::autograd::impl::get_view_autograd_meta(self);
+    auto             diff_view_meta = torch::autograd::impl::get_view_autograd_meta(self);
     quarisma::Tensor out;
     if (diff_view_meta && diff_view_meta->has_bw_view())
     {
@@ -591,7 +592,7 @@ static PyObject* THPVariable_as_subclass(PyObject* _self, PyObject* args, PyObje
     // guard completely turns off torch dispatch modes, doesn't just pop off the
     // stack
     torch_dispatch_mode::StashTorchDispatchStackGuard td_g;
-    quarisma::impl::DisablePythonDispatcher             dpd_g;
+    quarisma::impl::DisablePythonDispatcher           dpd_g;
     return THPVariable_NewWithVar((PyTypeObject*)cls, self.alias());
     END_HANDLE_TH_ERRORS
 }
@@ -611,7 +612,7 @@ static PyObject* THPVariable_make_subclass(PyObject* _ignored, PyObject* args, P
     // guard completely turns off torch dispatch modes, doesn't just pop off the
     // stack
     torch_dispatch_mode::StashTorchDispatchStackGuard td_g;
-    quarisma::impl::DisablePythonDispatcher             dpd_g;
+    quarisma::impl::DisablePythonDispatcher           dpd_g;
     auto data = r.tensor(1).detach();  // creates a fresh Tensor (DEFINITELY_UNINITIALIZED)
     // We set `data`'s `allow_tensor_metadata_change` to true here, because we
     // want to allow the following use case for backward compatibility:
@@ -650,18 +651,18 @@ static PyObject* THPVariable_make_subclass(PyObject* _ignored, PyObject* args, P
 // Shared code factored out of THPVariable_make_wrapper_subclass and
 // THPVariable_dtensor__new__.
 static Tensor make_tensor_for_subclass_helper(
-    SymIntArrayRef                       sym_sizes,
-    OptionalSymIntArrayRef               sym_strides,
+    SymIntArrayRef                         sym_sizes,
+    OptionalSymIntArrayRef                 sym_strides,
     const std::optional<quarisma::SymInt>& sym_storage_offset,
-    const TensorOptions&                 options,
+    const TensorOptions&                   options,
     const std::optional<quarisma::SymInt>& storage_size,
-    std::optional<DispatchKeySet>        extra_dispatch_keys)
+    std::optional<DispatchKeySet>          extra_dispatch_keys)
 {
     AutoDispatchBelowADInplaceOrView   guard{};  // TODO: Remove.
     tracer::impl::NoTracerDispatchMode tracer_guard{};
 
     quarisma::SymInt size_bytes;
-    auto           dtype_itemsize = static_cast<int64_t>(options.dtype().itemsize());
+    auto             dtype_itemsize = static_cast<int64_t>(options.dtype().itemsize());
 
     if (storage_size.has_value())
     {
@@ -887,7 +888,7 @@ static DTensorInternedStrings dtensor_interned_strings;
 static bool intern_dtensor_strings()
 {
 #define INTERN_DTENSOR_STRING(s)                                 \
-    QUARISMA_CHECK_DEBUG(dtensor_interned_strings.s == nullptr);   \
+    QUARISMA_CHECK_DEBUG(dtensor_interned_strings.s == nullptr); \
     dtensor_interned_strings.s = PyUnicode_InternFromString(#s); \
     if (dtensor_interned_strings.s == nullptr)                   \
     {                                                            \
@@ -913,7 +914,7 @@ static quarisma::SymDimVector tuple_to_symintlist(PyObject* obj)
 {
     QUARISMA_CHECK_DEBUG(PyTuple_Check(obj));
     quarisma::SymDimVector res;
-    const auto           size = PyTuple_GET_SIZE(obj);
+    const auto             size = PyTuple_GET_SIZE(obj);
     res.reserve(size);
     for (const auto idx : quarisma::irange(size))
     {
@@ -1032,7 +1033,7 @@ static bool DTensor_OpSchema_recompute_comparison_key_impl(
         static_kwargkey = schema_info.attr(dtensor_interned_strings.static_kwargkey);
     }
     quarisma::SmallVector<py::object, 8> args_to_hash;
-    size_t                             idx = 0;
+    size_t                               idx = 0;
     for (const auto& e : args_schema)
     {
         if (idx >= static_argnum || arg_type_tensor_or_tensor_list_like(e))
@@ -2565,10 +2566,10 @@ static void THPVariable_subclass_dealloc(PyObject* self)
 
 // Creates a new Python object for a Variable.
 static PyObject* THPVariable_NewWithVar(
-    PyTypeObject*             type,
+    PyTypeObject*               type,
     const quarisma::TensorBase& _var,
-    bool                      allow_preexisting_pyobj,
-    std::optional<bool>       has_torch_dispatch_if_known)
+    bool                        allow_preexisting_pyobj,
+    std::optional<bool>         has_torch_dispatch_if_known)
 {
     // Make sure that the reinterpret into a THPVariable* will be valid
     QUARISMA_CHECK(

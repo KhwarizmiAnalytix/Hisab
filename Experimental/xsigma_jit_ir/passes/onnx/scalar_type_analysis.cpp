@@ -1,8 +1,8 @@
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/passes/dead_code_elimination.h>
 #include <torch/csrc/jit/passes/onnx/helper.h>
 #include <torch/csrc/jit/passes/onnx/scalar_type_analysis.h>
-#include <quarisma/util/irange.h>
 
 namespace torch::jit
 {
@@ -289,7 +289,7 @@ static std::optional<quarisma::ScalarType> InferExpectedScalarType(const Node* n
         });
 
     std::optional<quarisma::ScalarType> st        = std::nullopt;
-    const auto                        output_st = get_scalar_type(n->output());
+    const auto                          output_st = get_scalar_type(n->output());
 
     if (IsComparisonOp(n->kind()))
     {
@@ -374,7 +374,7 @@ static void UpdateScalarTypeForInputs(Node* n, const quarisma::ScalarType& scala
                 // default.
                 quarisma::Tensor val        = input->node()->t(attr::value);
                 quarisma::Tensor new_val    = val.to(scalar_type);
-                Node*          const_node = n->owningGraph()->create(onnx::Constant);
+                Node*            const_node = n->owningGraph()->create(onnx::Constant);
                 const_node->t_(attr::value, new_val);
                 const_node->insertBefore(n);
                 const_node->output()->setType(TensorType::create(new_val));

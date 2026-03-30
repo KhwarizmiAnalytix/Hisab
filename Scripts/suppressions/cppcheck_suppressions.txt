@@ -9,11 +9,11 @@
 unknownMacro:QUARISMA_UNLIKELY
 unknownMacro:QUARISMA_LIKELY
 unknownMacro:QUARISMA_CHECK
-unknownMacro:Library/Core/profiler/kineto/kineto_shim.cpp:171
+unknownMacro:Library/Profiler/kineto/kineto_shim.cpp:171
 syntaxError:Library/Core/parallel/parallel.h:267
-syntaxError:Library/Core/profiler/common/record_function.cpp:316
-syntaxError:Library/Core/profiler/native/core/profiler_lock.cpp:75
-syntaxError:Library/Core/profiler/native/cpu/annotation_stack.cpp:107
+syntaxError:Library/Profiler/common/record_function.cpp:316
+syntaxError:Library/Profiler/native/core/profiler_lock.cpp:75
+syntaxError:Library/Profiler/native/cpu/annotation_stack.cpp:107
 
 # Suppress missing include warnings
 missingIncludeSystem:*
@@ -21,7 +21,7 @@ missingInclude:*
 
 # Suppress false positives for intentional design patterns
 # Virtual call in destructor is intentional (stop() is final in host_tracer)
-#virtualCallInConstructor:Library/Core/profiler/cpu/host_tracer.cpp:71
+#virtualCallInConstructor:Library/Profiler/native/cpu/host_tracer.cpp:71
 
 # Test helper function - pointer is not modified
 #constParameterPointer:Library/Core/Testing/baseTest.h:234
@@ -32,7 +32,7 @@ missingInclude:*
 noExplicitConstructor:Library/Core/parallel/parallel_tools.h
 noExplicitConstructor:Library/Core/parallel/std_thread/parallel_thread_pool.cpp
 noExplicitConstructor:Library/Core/parallel/threaded_callback_queue.h
-noExplicitConstructor:Library/Core/profiler/kineto/profiler_kineto.cpp
+noExplicitConstructor:Library/Profiler/kineto/profiler_kineto.cpp
 
 # Destructor deletes members - making loop variable const would be misleading
 constVariableReference:Library/Core/parallel/multi_threader.cpp:145
@@ -44,12 +44,12 @@ redundantAssignment:Library/Core/parallel/multi_threader.cpp:107
 unusedStructMember:Library/Core/util/small_vector.cpp
 
 # Future use or API compatibility
-unusedStructMember:Library/Core/profiler/common/standalone/execution_trace_observer.cpp:177
-unusedStructMember:Library/Core/profiler/common/standalone/execution_trace_observer.cpp:178
+unusedStructMember:Library/Profiler/common/standalone/execution_trace_observer.cpp:177
+unusedStructMember:Library/Profiler/common/standalone/execution_trace_observer.cpp:178
 
 # Intentional state machine condition
 knownConditionTrueFalse:Library/Core/parallel/threaded_callback_queue.h:108
-knownConditionTrueFalse:Library/Core/profiler/common/standalone/execution_trace_observer.cpp:851
+knownConditionTrueFalse:Library/Profiler/common/standalone/execution_trace_observer.cpp:851
 
 # Functor may need to modify state - cannot be const
 constVariableReference:Library/Core/parallel/threaded_callback_queue.h:584
@@ -63,15 +63,15 @@ useStlAlgorithm:Library/Core/parallel/std_thread/parallel_thread_pool.cpp:615
 useStlAlgorithm:Library/Core/parallel/threaded_callback_queue.h:671
 
 # Profiler code - const correctness suggestions for imported/adapted code
-constVariableReference:Library/Core/profiler/common/collection.cpp
-constParameterReference:Library/Core/profiler/common/standalone/execution_trace_observer.cpp
-constParameterPointer:Library/Core/profiler/kineto/kineto_shim.cpp
-constVariablePointer:Library/Core/profiler/common/standalone/execution_trace_observer.cpp
-cstyleCast:Library/Core/profiler/common/standalone/execution_trace_observer.cpp
-unreadVariable:Library/Core/profiler/kineto/kineto_shim.cpp
+constVariableReference:Library/Profiler/common/collection.cpp
+constParameterReference:Library/Profiler/common/standalone/execution_trace_observer.cpp
+constParameterPointer:Library/Profiler/kineto/kineto_shim.cpp
+constVariablePointer:Library/Profiler/common/standalone/execution_trace_observer.cpp
+cstyleCast:Library/Profiler/common/standalone/execution_trace_observer.cpp
+unreadVariable:Library/Profiler/kineto/kineto_shim.cpp
 
 # Portability - localtime vs localtime_r in profiler code
-localtimeCalled:Library/Core/profiler/common/standalone/execution_trace_observer.cpp
+localtimeCalled:Library/Profiler/common/standalone/execution_trace_observer.cpp
 
 # Examples and test code - unused results are acceptable
 unreadVariable:Examples/*

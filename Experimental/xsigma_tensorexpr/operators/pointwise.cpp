@@ -196,7 +196,7 @@ Tensor computeNoop(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     return computeOneOperand(
         "copy",

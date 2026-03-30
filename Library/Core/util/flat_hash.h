@@ -73,8 +73,8 @@ struct functor_storage<Result, Result (*)(Args...)>
     function_ptr function;
     functor_storage(function_ptr function) : function(function) {}
     Result operator()(Args... args) const { return function(std::forward<Args>(args)...); }
-           operator function_ptr&() { return function; }
-           operator const function_ptr&() { return function; }
+    operator function_ptr&() { return function; }
+    operator const function_ptr&() { return function; }
 };
 
 template <typename key_type, typename value_type, typename hasher>
@@ -1765,4 +1765,3 @@ using forecast_map_t = container_map_t;
 #if defined(_MSC_VER) && !defined(__clang__)
 #pragma warning(pop)
 #endif
-

@@ -213,7 +213,7 @@ inline constexpr int QUARISMA_COMPILE_TIME_MAX_GPUS = 16;
 //----------------------------------------------------------------------------
 #define MACRO_CORE_TYPE_ID_NAME(x) typeid(x).name()
 
-#define QUARISMA_DELETE_CLASS(type)            \
+#define QUARISMA_DELETE_CLASS(type)          \
     type()                         = delete; \
     type(const type&)              = delete; \
     type& operator=(const type& a) = delete; \
@@ -221,7 +221,7 @@ inline constexpr int QUARISMA_COMPILE_TIME_MAX_GPUS = 16;
     type& operator=(type&&)        = delete; \
     ~type()                        = delete;
 
-#define QUARISMA_DELETE_COPY_AND_MOVE(type)    \
+#define QUARISMA_DELETE_COPY_AND_MOVE(type)  \
 private:                                     \
     type(const type&)              = delete; \
     type& operator=(const type& a) = delete; \
@@ -230,7 +230,7 @@ private:                                     \
                                              \
 public:
 
-#define QUARISMA_DELETE_COPY(type)             \
+#define QUARISMA_DELETE_COPY(type)           \
     type(const type&)              = delete; \
     type& operator=(const type& a) = delete;
 
@@ -371,7 +371,8 @@ using void_t = std::void_t<>;
 //----------------------------------------------------------------------------
 // Thread safety - exclusive locks required
 #if QUARISMA_HAVE_ATTRIBUTE(exclusive_locks_required)
-#define QUARISMA_EXCLUSIVE_LOCKS_REQUIRED(...) __attribute__((exclusive_locks_required(__VA_ARGS__)))
+#define QUARISMA_EXCLUSIVE_LOCKS_REQUIRED(...) \
+    __attribute__((exclusive_locks_required(__VA_ARGS__)))
 #else
 #define QUARISMA_EXCLUSIVE_LOCKS_REQUIRED(...)
 #endif

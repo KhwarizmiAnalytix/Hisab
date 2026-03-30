@@ -78,8 +78,8 @@ ScopePtr ForwardCallScope(Graph& graph, Node* call_node)
     const std::string& method_name = call_node->s(attr::name);
     if (method_name == "forward")
     {
-        const auto        type          = call_node->input(0)->type()->expect<quarisma::NamedType>();
-        const std::string class_name    = TidyClassNameFromTorchScript(type->name());
+        const auto        type       = call_node->input(0)->type()->expect<quarisma::NamedType>();
+        const std::string class_name = TidyClassNameFromTorchScript(type->name());
         const std::string variable_name = GetCallNodeVariableName(call_node);
         const std::string scope_name =
             onnx::ONNXScopeName::createFullScopeName(class_name, variable_name);

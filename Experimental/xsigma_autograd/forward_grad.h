@@ -215,7 +215,7 @@ struct TORCH_API ForwardGrad : std::enable_shared_from_this<ForwardGrad>
 private:
     // TODO(albanD): replace this with a SmallVector
     std::unordered_map<uint64_t, quarisma::Tensor> content_;
-    mutable std::mutex                           mutex_;
+    mutable std::mutex                             mutex_;
 };
 
 }  // namespace torch::autograd

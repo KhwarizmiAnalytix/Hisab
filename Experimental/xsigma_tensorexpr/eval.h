@@ -1,5 +1,6 @@
 #pragma once
 
+#include <quarisma/util/Logging.h>
 #include <torch/csrc/jit/tensorexpr/codegen.h>
 #include <torch/csrc/jit/tensorexpr/exceptions.h>
 #include <torch/csrc/jit/tensorexpr/ir.h>
@@ -7,7 +8,6 @@
 #include <torch/csrc/jit/tensorexpr/tensor.h>
 #include <torch/csrc/jit/tensorexpr/types.h>
 #include <torch/csrc/jit/tensorexpr/var_substitutor.h>
-#include <quarisma/util/Logging.h>
 
 #include <cmath>
 #include <cstring>
@@ -43,7 +43,10 @@ public:
     AT_FORALL_SCALAR_TYPES_AND3(Bool, Half, BFloat16, VALUE_CTOR)
 #undef VALUE_CTOR
 
-    explicit InterpValue(quarisma::quint8 v) : dtype_(kQUInt8) { QUInt8values.emplace_back(v.val_); }
+    explicit InterpValue(quarisma::quint8 v) : dtype_(kQUInt8)
+    {
+        QUInt8values.emplace_back(v.val_);
+    }
 
     explicit InterpValue(quarisma::qint8 v) : dtype_(kQInt8) { QInt8values.emplace_back(v.val_); }
 
@@ -139,7 +142,7 @@ public:
     SimpleIREvaluator(
         StmtPtr                       stmt,
         const std::vector<BufferArg>& buffer_args,
-        quarisma::Device                device           = quarisma::kCPU,
+        quarisma::Device              device           = quarisma::kCPU,
         const std::string&            kernel_func_name = "func");
 
     ~SimpleIREvaluator() override;

@@ -9,7 +9,7 @@ Tensor computeBatchNorm(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     bool hasWeight = true;
     bool hasBias   = true;

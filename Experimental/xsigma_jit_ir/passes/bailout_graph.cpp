@@ -1,4 +1,5 @@
 #include <Quarisma/core/function.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/ir/alias_analysis.h>
 #include <torch/csrc/jit/ir/ir_views.h>
 #include <torch/csrc/jit/jit_log.h>
@@ -6,7 +7,6 @@
 #include <torch/csrc/jit/passes/clear_profiling.h>
 #include <torch/csrc/jit/passes/constant_pooling.h>
 #include <torch/csrc/jit/passes/liveness.h>
-#include <quarisma/util/irange.h>
 
 #include <memory>
 #include <unordered_set>
@@ -126,7 +126,8 @@ struct BailOutGraphBuilderForNode
     }
 
     void mapValues(
-        const quarisma::ArrayRef<Value*> block_outputs, const quarisma::ArrayRef<Value*> carried_deps)
+        const quarisma::ArrayRef<Value*> block_outputs,
+        const quarisma::ArrayRef<Value*> carried_deps)
     {
         TORCH_INTERNAL_ASSERT(block_outputs.size() == carried_deps.size());
         for (const auto i : quarisma::irange(block_outputs.size()))

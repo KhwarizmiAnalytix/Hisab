@@ -1,8 +1,8 @@
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/passes/onnx/eval_peephole.h>
 #include <torch/csrc/jit/passes/onnx/helper.h>
 #include <torch/torch.h>
-#include <quarisma/util/irange.h>
 
 #include <algorithm>
 
@@ -14,9 +14,10 @@ namespace onnx
 using namespace ::quarisma::onnx;
 }
 
-static std::vector<quarisma::Tensor> getValues(Node* node, const ValueToParamPairMap& valsToParamsMap)
+static std::vector<quarisma::Tensor> getValues(
+    Node* node, const ValueToParamPairMap& valsToParamsMap)
 {
-    size_t                      numInputs = node->inputs().size();
+    size_t                        numInputs = node->inputs().size();
     std::vector<quarisma::Tensor> inputTensorValues;
     inputTensorValues.reserve(numInputs);
     for (auto val : node->inputs())
@@ -94,7 +95,7 @@ static void fuseConvBatchNorm(Block* b, ValueToParamPairMap& valsToParamsMap)
             auto bnMean  = bnInputVals[2].clone();
             auto bnVar   = bnInputVals[3].clone();
             // See https://github.com/onnx/onnx/blob/master/docs/Operators.md#Conv
-            auto           convW = convInputVals[0].clone();
+            auto             convW = convInputVals[0].clone();
             quarisma::Tensor convB;
 
             if (!bnScale.is_floating_point() || !bnB.is_floating_point() ||

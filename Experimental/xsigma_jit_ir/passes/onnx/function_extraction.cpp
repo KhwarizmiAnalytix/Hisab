@@ -145,12 +145,12 @@ FunctionExtractor::FunctionContext::FunctionContext(
         for (const auto i : quarisma::irange(ns_a.size()))
         {
             TORCH_INTERNAL_ASSERT(ns_a[i]->kind() == ns_b[i]->kind());
-            auto                        n_a = ns_a[i];
-            auto                        n_b = ns_b[i];
+            auto                          n_a = ns_a[i];
+            auto                          n_b = ns_b[i];
             std::vector<quarisma::Symbol> diff_attrs;
             std::vector<quarisma::Symbol> same_attrs;
-            auto                        n_a_attr_names = n_a->attributeNames();
-            auto                        n_b_attr_names = n_b->attributeNames();
+            auto                          n_a_attr_names = n_a->attributeNames();
+            auto                          n_b_attr_names = n_b->attributeNames();
             std::sort(n_a_attr_names.begin(), n_a_attr_names.end());
             std::sort(n_b_attr_names.begin(), n_b_attr_names.end());
             std::set_difference(
@@ -1085,7 +1085,8 @@ static bool HasSameAttribute(const Node* a, const Node* b, const quarisma::Symbo
             a_v.end(),
             b_v.begin(),
             b_v.end(),
-            [](const quarisma::Tensor& a_t, const quarisma::Tensor& b_t) { return a_t.equal(b_t); });
+            [](const quarisma::Tensor& a_t, const quarisma::Tensor& b_t)
+            { return a_t.equal(b_t); });
     }
     case AttributeKind::ival:
     case AttributeKind::g:

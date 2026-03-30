@@ -1,4 +1,5 @@
 #include <Quarisma/core/symbol.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/ir/alias_analysis.h>
 #include <torch/csrc/jit/ir/constants.h>
 #include <torch/csrc/jit/ir/ir.h>
@@ -21,7 +22,6 @@
 #include <torch/csrc/jit/passes/tensorexpr_fuser.h>
 #include <torch/csrc/jit/runtime/exception_message.h>
 #include <torch/csrc/jit/runtime/symbolic_shape_registry.h>
-#include <quarisma/util/irange.h>
 
 #include <algorithm>
 #include <memory>
@@ -345,7 +345,10 @@ struct SymbolicShapeOpAnalyzer
                         ->setType(opt_type->getElementType());
                 }
             }
-            else if (shape_compute_graph_->inputs().quarisma(op_in_index)->type()->cast<NumberType>())
+            else if (shape_compute_graph_->inputs()
+                         .quarisma(op_in_index)
+                         ->type()
+                         ->cast<NumberType>())
             {
                 shape_compute_graph_->inputs().quarisma(op_in_index)->setType(type);
             }
@@ -695,7 +698,7 @@ public:
 
 SSArgument tensorShapeArg(Value* tensor_v)
 {
-    auto                  tt              = tensor_v->type()->expect<TensorType>();
+    auto                    tt              = tensor_v->type()->expect<TensorType>();
     quarisma::SymbolicShape symbolic_shapes = tt->symbolic_sizes();
 
     // for testing, we don't insert complete tensor shapes and rely on our
@@ -1046,9 +1049,9 @@ struct SymbolicShapeGraphAnalyzer
                 {
                     continue;
                 }
-                bool                             changed   = false;
+                bool                               changed   = false;
                 std::vector<quarisma::ShapeSymbol> shape_vec = *tt->symbolic_sizes().sizes();
-                auto                             new_sizes = quarisma::fmap(
+                auto                               new_sizes = quarisma::fmap(
                     shape_vec,
                     [&](const quarisma::ShapeSymbol& shape)
                     {

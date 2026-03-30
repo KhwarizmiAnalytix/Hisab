@@ -148,19 +148,19 @@ public:
     //  * pre_alloc
     //      - a flag to control pre-allocation of buffers.
     explicit TensorExprKernel(
-        const std::shared_ptr<Graph>&                           subgraph,
-        std::string                                             kernel_func_name,
+        const std::shared_ptr<Graph>&                             subgraph,
+        std::string                                               kernel_func_name,
         std::unordered_map<quarisma::Symbol, NNCLoweringFunction> custom_lowerings      = {},
-        std::vector<int64_t>                                    symbolic_shape_inputs = {},
-        bool                                                    pre_alloc             = false,
+        std::vector<int64_t>                                      symbolic_shape_inputs = {},
+        bool                                                      pre_alloc             = false,
         std::unordered_map<const torch::jit::Value*, std::vector<torch::jit::StrideInput>>
             symbolic_strides = {});
 
     explicit TensorExprKernel(
-        const std::shared_ptr<Graph>&                           subgraph,
+        const std::shared_ptr<Graph>&                             subgraph,
         std::unordered_map<quarisma::Symbol, NNCLoweringFunction> custom_lowerings      = {},
-        std::vector<int64_t>                                    symbolic_shape_inputs = {},
-        bool                                                    pre_alloc             = false,
+        std::vector<int64_t>                                      symbolic_shape_inputs = {},
+        bool                                                      pre_alloc             = false,
         std::unordered_map<const torch::jit::Value*, std::vector<torch::jit::StrideInput>>
             symbolic_strides = {})
         : TensorExprKernel(
@@ -239,7 +239,7 @@ private:
     std::string getCodeGenName(BackendType backendType);
 
     void getStaticOutputSizesAndStrides(
-        const quarisma::ArrayRef<IValue>&    inputs,
+        const quarisma::ArrayRef<IValue>&  inputs,
         std::vector<std::vector<int64_t>>* static_sizes,
         std::vector<std::vector<int64_t>>* static_strides) const;
 
@@ -288,7 +288,7 @@ private:
         std::optional<quarisma::ScalarType> dtype;
         std::optional<quarisma::Layout>     layout;
         std::optional<quarisma::Device>     device;
-        std::optional<bool>               pinned_memory;
+        std::optional<bool>                 pinned_memory;
 
         UnpackedTensorOptions(const quarisma::TensorOptions& opts)
             : dtype(quarisma::optTypeMetaToScalarType(opts.dtype_opt())),
@@ -326,7 +326,7 @@ private:
     std::unordered_map<const torch::jit::Value*, VarHandle>   scalars_;
     std::unordered_map<const torch::jit::Value*, std::string> input_name_map_;
     std::unique_ptr<CodeGen>                                  codegen_;
-    quarisma::Device                                            device_ = quarisma::kCPU;
+    quarisma::Device                                          device_ = quarisma::kCPU;
     std::shared_ptr<Graph>                                    graph_;
     Code                                                      code_;
     bool                                                      allow_fallback_{false};
@@ -346,12 +346,12 @@ private:
     bool                 has_symbolic_shapes_{false};
 
     std::vector<quarisma::Tensor> unpacked_constant_tensors_;
-    std::vector<ConstantDescr>  constants_;
+    std::vector<ConstantDescr>    constants_;
 
     std::unordered_map<quarisma::Symbol, NNCLoweringFunction> custom_lowerings_;
-    StmtPtr                                                 stmt_ = nullptr;
-    bool                                                    pre_alloc_{false};
-    std::string                                             kernel_func_name_;
+    StmtPtr                                                   stmt_ = nullptr;
+    bool                                                      pre_alloc_{false};
+    std::string                                               kernel_func_name_;
 
     // index of stack, stride index of tensor that will be appended as a codegen
     // arg
@@ -380,6 +380,6 @@ TORCH_API std::optional<quarisma::Device> pickDeviceType(
 
 bool isContiguous(
     const torch::jit::Value* v,
-    quarisma::MemoryFormat     memory_format = quarisma::MemoryFormat::Contiguous);
+    quarisma::MemoryFormat   memory_format = quarisma::MemoryFormat::Contiguous);
 
 }  // namespace torch::jit::tensorexpr

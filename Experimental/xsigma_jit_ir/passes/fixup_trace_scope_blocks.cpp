@@ -1,10 +1,10 @@
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/frontend/schema_matching.h>
 #include <torch/csrc/jit/passes/canonicalize.h>
 #include <torch/csrc/jit/passes/dead_code_elimination.h>
 #include <torch/csrc/jit/passes/fixup_trace_scope_blocks.h>
 #include <torch/csrc/jit/passes/inliner.h>
 #include <torch/csrc/jit/passes/lower_tuples.h>
-#include <quarisma/util/irange.h>
 
 #include <algorithm>
 
@@ -202,7 +202,7 @@ private:
     void replaceTracedAttrInputOnNode(
         Node*                               n,
         size_t                              inp_idx,
-        const quarisma::QualifiedName&        prefix,
+        const quarisma::QualifiedName&      prefix,
         Value*                              self,
         std::unordered_map<Value*, Value*>& local_remaps,
         std::vector<Value*>&                unresolved_tracedattrs)

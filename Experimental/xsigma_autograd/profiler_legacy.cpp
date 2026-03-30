@@ -1,16 +1,16 @@
 #include <Quarisma/code_template.h>
 #include <Quarisma/core/op_registration/op_registration.h>
 #include <Quarisma/record_function.h>
+#include <quarisma/core/Allocator.h>
+#include <quarisma/profiler/base/thread_local_debug_info.h>
+#include <quarisma/util/ApproximateClock.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/autograd/function.h>
 #include <torch/csrc/autograd/profiler_legacy.h>
 #include <torch/csrc/jit/frontend/tracer.h>
 #include <torch/csrc/jit/runtime/interpreter.h>
 #include <torch/csrc/jit/runtime/operator.h>
 #include <torch/library.h>
-#include <quarisma/core/Allocator.h>
-#include <quarisma/profiler/base/thread_local_debug_info.h>
-#include <quarisma/util/ApproximateClock.h>
-#include <quarisma/util/irange.h>
 
 #include <fstream>
 #include <iostream>
@@ -139,7 +139,7 @@ struct ProfilerLegacyThreadLocalState : public ProfilerStateBase
     void setOrAddRemoteProfiledEvents(std::vector<LegacyEvent>&& remoteProfiledEvents);
 
     void pushRange(
-        const quarisma::record_function&      fn,
+        const quarisma::record_function&    fn,
         const bool                          record_cuda,
         std::vector<std::vector<int64_t>>&& shapes = {});
 
@@ -223,7 +223,7 @@ void ProfilerLegacyThreadLocalState::setOrAddRemoteProfiledEvents(
 }
 
 void ProfilerLegacyThreadLocalState::pushRange(
-    const quarisma::record_function&      fn,
+    const quarisma::record_function&    fn,
     const bool                          record_cuda,
     std::vector<std::vector<int64_t>>&& shapes)
 {
@@ -543,20 +543,20 @@ void LegacyEvent::record(bool record_cuda)
     }
 
     LegacyEvent evt(
-        static_cast<EventKind>(ivalues.get(EventIValueIdx::KIND).toInt()),    // EventKind
+        static_cast<EventKind>(ivalues.get(EventIValueIdx::KIND).toInt()),      // EventKind
         quarisma::StringView(ivalues.get(EventIValueIdx::NAME).toStringRef()),  // name
-        ivalues.get(EventIValueIdx::THREAD_ID).toInt(),                       // thread_id
+        ivalues.get(EventIValueIdx::THREAD_ID).toInt(),                         // thread_id
         static_cast<quarisma::RecordFunctionHandle>(
-            ivalues.get(EventIValueIdx::HANDLE).toDouble()),                    // handle
-        std::move(shapes),                                                      // input shapes
-        ivalues.get(EventIValueIdx::NODE_ID).toInt(),                           // node id
-        true,                                                                   // is remote
-        ivalues.get(EventIValueIdx::CPU_MEM_USAGE).toInt(),                     // cpu_mem_usage
-        ivalues.get(EventIValueIdx::CPU_NS).toInt(),                            // cpu_ns
-        ivalues.get(EventIValueIdx::CUDA_RECORDED).toBool(),                    // was cuda recorded
-        ivalues.get(EventIValueIdx::CUDA_MEM_USAGE).toInt(),                    // cuda memory usage
+            ivalues.get(EventIValueIdx::HANDLE).toDouble()),  // handle
+        std::move(shapes),                                    // input shapes
+        ivalues.get(EventIValueIdx::NODE_ID).toInt(),         // node id
+        true,                                                 // is remote
+        ivalues.get(EventIValueIdx::CPU_MEM_USAGE).toInt(),   // cpu_mem_usage
+        ivalues.get(EventIValueIdx::CPU_NS).toInt(),          // cpu_ns
+        ivalues.get(EventIValueIdx::CUDA_RECORDED).toBool(),  // was cuda recorded
+        ivalues.get(EventIValueIdx::CUDA_MEM_USAGE).toInt(),  // cuda memory usage
         quarisma::DeviceIndex(ivalues.get(EventIValueIdx::CUDA_DEVICE).toInt()),  // device
-        static_cast<double>(ivalues.get(EventIValueIdx::CUDA_US).toInt())       // cuda_us
+        static_cast<double>(ivalues.get(EventIValueIdx::CUDA_US).toInt())         // cuda_us
     );
     return evt;
 }

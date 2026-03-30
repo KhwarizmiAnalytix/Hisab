@@ -45,7 +45,8 @@ CanonicalArgVec cannonicalizeVec(
 }
 
 std::vector<CanonicalizedSymbolicShape> cannonicalizeVec(
-    const std::vector<quarisma::SymbolicShape>& ret_vec, std::unordered_map<int64_t, int64_t>& ss_map)
+    const std::vector<quarisma::SymbolicShape>& ret_vec,
+    std::unordered_map<int64_t, int64_t>&       ss_map)
 {
     std::vector<CanonicalizedSymbolicShape> canonical_rets;
     canonical_rets.reserve(ret_vec.size());
@@ -118,8 +119,8 @@ ShapeCacheKey get_cache_key(
 }  // namespace
 
 TORCH_API void cache_shape_function(
-    const FunctionSchema*                     schema,
-    const std::vector<SSAInput>&              arg_vec,
+    const FunctionSchema*                       schema,
+    const std::vector<SSAInput>&                arg_vec,
     const std::vector<quarisma::SymbolicShape>& ret_vec)
 {
     // TODO: compare perf using std::vector<std::tuple<int64_t, int64_t>>

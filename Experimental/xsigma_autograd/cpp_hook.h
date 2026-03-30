@@ -27,7 +27,7 @@ struct CppFunctionSingleTensorPreHook : public FunctionPreHook
     void compiled_args(torch::dynamo::autograd::CompiledNodeArgs& args) const override;
 
     std::function<quarisma::TensorBase(const quarisma::TensorBase&)> hook_;
-    size_t                                                       value_idx_;
+    size_t                                                           value_idx_;
 };
 
 }  // namespace torch::autograd

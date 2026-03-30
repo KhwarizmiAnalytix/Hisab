@@ -12,7 +12,7 @@ namespace
 struct ITTMethods : public ProfilerStubs
 {
     void record(
-        QUARISMA_UNUSED quarisma::device_enum*   device,
+        QUARISMA_UNUSED quarisma::device_enum* device,
         QUARISMA_UNUSED ProfilerVoidEventStub* event,
         QUARISMA_UNUSED int64_t*               cpu_ns) const override
     {
@@ -25,7 +25,10 @@ struct ITTMethods : public ProfilerStubs
         return 0;
     }
 
-    void mark(QUARISMA_UNUSED const char* name) const override { quarisma::profiler::itt_mark(name); }
+    void mark(QUARISMA_UNUSED const char* name) const override
+    {
+        quarisma::profiler::itt_mark(name);
+    }
 
     void rangePush(QUARISMA_UNUSED const char* name) const override
     {

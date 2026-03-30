@@ -48,18 +48,18 @@
 #include "logging/logger.h"
 #include "memory/helper/memory_allocator.h"
 #if QUARISMA_HAS_NATIVE_PROFILER
-#include "profiler/native/tracing/traceme.h"
+#include "native/tracing/traceme.h"
 #endif
 #include "util/exception.h"
 
 namespace quarisma
 {
 allocator_pool::allocator_pool(
-    size_t                                 pool_size_limit,
-    bool                                   auto_resize,
+    size_t                                   pool_size_limit,
+    bool                                     auto_resize,
     std::unique_ptr<quarisma::sub_allocator> allocator,
-    std::unique_ptr<round_up_interface>    size_rounder,
-    std::string                            name)
+    std::unique_ptr<round_up_interface>      size_rounder,
+    std::string                              name)
     : name_(std::move(name)),
       has_size_limit_(pool_size_limit > 0),
       auto_resize_(auto_resize),
@@ -284,9 +284,8 @@ void allocator_pool::EvictOne()
     PtrRecord* prec = lru_tail_;
     RemoveFromList(prec);
     auto range = pool_.equal_range(prec->num_bytes);
-    auto iter  = std::find_if(range.first, range.second, [prec](const auto& p) {
-        return p.second == prec;
-    });
+    auto iter =
+        std::find_if(range.first, range.second, [prec](const auto& p) { return p.second == prec; });
     QUARISMA_CHECK(iter != range.second);
     pool_.erase(iter);
     allocator_->Free(prec->ptr, prec->num_bytes);

@@ -1,8 +1,8 @@
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/passes/constant_propagation.h>
 #include <torch/csrc/jit/passes/normalize_ops.h>
 #include <torch/csrc/jit/passes/utils/check_alias_annotation.h>
 #include <torch/csrc/jit/runtime/operator.h>
-#include <quarisma/util/irange.h>
 
 namespace torch::jit
 {
@@ -110,7 +110,7 @@ struct AliasAndIValue
     }
 
     const quarisma::AliasInfo* aliasInfo;
-    const IValue             iValue;
+    const IValue               iValue;
 };
 
 // No inputs should alias each other

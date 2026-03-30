@@ -37,7 +37,7 @@ namespace gpu
 
 /**
  * @brief GPU resource allocation information
- * 
+ *
  * Contains detailed information about a GPU resource allocation
  * including timing, location, and usage statistics for debugging
  * and performance analysis.
@@ -140,11 +140,11 @@ struct QUARISMA_VISIBILITY leak_detection_config
 
 /**
  * @brief GPU resource tracker for memory usage monitoring and leak detection
- * 
+ *
  * Provides comprehensive GPU resource tracking capabilities including
  * memory allocation monitoring, leak detection, performance profiling,
  * and detailed usage statistics for debugging and optimization.
- * 
+ *
  * Key features:
  * - Real-time memory allocation tracking with call stack capture
  * - Automatic memory leak detection with configurable thresholds
@@ -153,31 +153,31 @@ struct QUARISMA_VISIBILITY leak_detection_config
  * - Thread-safe operations with minimal performance overhead
  * - Integration with existing GPU memory management systems
  * - Detailed reporting and visualization capabilities
- * 
+ *
  * The tracker uses efficient data structures to minimize overhead
  * while providing comprehensive monitoring capabilities. It can be
  * configured to operate in different modes from lightweight monitoring
  * to full debugging with call stack capture.
- * 
+ *
  * @example
  * ```cpp
  * auto& tracker = gpu_resource_tracker::instance();
- * 
+ *
  * // Configure leak detection
  * leak_detection_config config;
  * config.leak_threshold_ms = 30000.0; // 30 seconds
  * tracker.configure_leak_detection(config);
- * 
+ *
  * // Track allocation
  * void* ptr = allocate_gpu_memory(1024ULL);
  * tracker.track_allocation(ptr, 1024ULL, device_enum::CUDA, 0, "simulation_data");
- * 
+ *
  * // ... use memory ...
- * 
+ *
  * // Track deallocation
  * tracker.track_deallocation(ptr);
  * free_gpu_memory(ptr);
- * 
+ *
  * // Get statistics
  * auto stats = tracker.get_statistics();
  * std::cout << "Peak memory usage: " << stats.peak_bytes_in_use / 1024 / 1024 << " MB\n";
@@ -279,8 +279,8 @@ public:
      * @param device_index Device index
      * @return Vector of allocations on specified device
      */
-    QUARISMA_API virtual std::vector<std::shared_ptr<gpu_allocation_info>> get_allocations_by_device(
-        device_enum device_type, int device_index) const = 0;
+    QUARISMA_API virtual std::vector<std::shared_ptr<gpu_allocation_info>>
+    get_allocations_by_device(device_enum device_type, int device_index) const = 0;
 
     /**
      * @brief Clear all tracking data

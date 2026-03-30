@@ -1,5 +1,6 @@
 #pragma once
 
+#include <quarisma/core/DeviceGuard.h>
 #include <torch/csrc/Exceptions.h>
 #include <torch/csrc/Export.h>
 #include <torch/csrc/autograd/custom_function.h>
@@ -8,7 +9,6 @@
 #include <torch/csrc/autograd/variable.h>
 #include <torch/csrc/python_headers.h>
 #include <torch/csrc/utils/object_ptr.h>
-#include <quarisma/core/DeviceGuard.h>
 
 #include <memory>
 #include <optional>
@@ -118,7 +118,7 @@ struct THPFunction
     // https://github.com/pytorch/pytorch/pull/98659#pullrequestreview-1376822560
     bool materialize_non_diff_grads;
 
-    PyObject*                   compiled_autograd_backward_state;
+    PyObject*                     compiled_autograd_backward_state;
     std::vector<quarisma::SymInt> compiled_autograd_symints;
 
     std::vector<torch::autograd::VariableInfo>  output_info;

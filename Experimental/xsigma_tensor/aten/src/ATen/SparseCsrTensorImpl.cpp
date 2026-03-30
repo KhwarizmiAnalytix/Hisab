@@ -1,8 +1,8 @@
 #include <Quarisma/InitialTensorOptions.h>
+#include <Quarisma/Quarisma.h>
 #include <Quarisma/SparseCsrTensorImpl.h>
 #include <Quarisma/SparseCsrTensorUtils.h>
 #include <Quarisma/SparseTensorImpl.h>
-#include <Quarisma/Quarisma.h>
 #include <Quarisma/core/LegacyTypeDispatch.h>
 #include <Quarisma/native/Resize.h>
 

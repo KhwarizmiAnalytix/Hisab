@@ -38,9 +38,9 @@
 #include <string_view>  // for string_view
 #include <vector>       // for vector, _Vector_const_iterato
 
+#include "baseTest.h"       // for END_TEST, QUARISMATEST
 #include "common/macros.h"  // for QUARISMA_UNUSED
 #include "util/string_util.h"  // for is_float, is_integer, exclude_file_extension, file_extension, strip_basename
-#include "baseTest.h"  // for END_TEST, QUARISMATEST
 
 namespace quarisma
 {

@@ -47,12 +47,12 @@ TORCH_API void ONNXSetDynamicInputShape(
 // merged with inferred types. It is possible that inferred types contain
 // dynamic axes, hence it takes precedence over types of output Tensors.
 TORCH_API void ONNXAssignOutputShape(
-    std::shared_ptr<Graph>&          graph,
+    std::shared_ptr<Graph>&              graph,
     quarisma::ArrayRef<quarisma::Tensor> outputs,
-    const python::IODescriptor&      desc,
-    bool                             onnx_shape_inference,
-    bool                             is_script,
-    int                              opset_version);
+    const python::IODescriptor&          desc,
+    bool                                 onnx_shape_inference,
+    bool                                 is_script,
+    int                                  opset_version);
 
 // Replace None in output with Optional node (opset > 15) if it's
 // script model. This helps align the output format in ONNX internal tests

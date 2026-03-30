@@ -1,10 +1,10 @@
 #include <Quarisma/core/functional.h>
 #include <Quarisma/core/symbol.h>
+#include <quarisma/util/hash.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/ir/ir.h>
 #include <torch/csrc/jit/ir/node_hashing.h>
 #include <torch/csrc/jit/passes/common_subexpression_elimination.h>
-#include <quarisma/util/hash.h>
-#include <quarisma/util/irange.h>
 
 #include <algorithm>
 #include <unordered_map>
@@ -65,7 +65,8 @@ bool attributesEqual(const quarisma::Tensor& a1, const quarisma::Tensor& a2)
 
 bool ivaluesEqual(const IValue& a1, const IValue& a2);
 
-bool attributesEqual(const std::vector<quarisma::Tensor>& lhs, const std::vector<quarisma::Tensor>& rhs)
+bool attributesEqual(
+    const std::vector<quarisma::Tensor>& lhs, const std::vector<quarisma::Tensor>& rhs)
 {
     if (lhs.size() != rhs.size())
         return false;

@@ -1,13 +1,13 @@
 #pragma once
 
 #include <Quarisma/core/ivalue.h>
+#include <quarisma/core/SymInt.h>
+#include <quarisma/util/flat_hash_map.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/autograd/function.h>
 #include <torch/csrc/autograd/variable.h>
 #include <torch/csrc/autograd/variable_info.h>
 #include <torch/csrc/dynamo/compiled_autograd.h>
-#include <quarisma/core/SymInt.h>
-#include <quarisma/util/flat_hash_map.h>
-#include <quarisma/util/irange.h>
 
 #include <vector>
 
@@ -19,20 +19,20 @@ using _jvp_fn_t              = std::function<variable_list(variable_list, variab
 using _view_as_self_fn_t     = std::function<quarisma::Tensor(quarisma::Tensor)>;
 
 TORCH_API std::vector<std::optional<Variable>> _wrap_outputs(
-    const variable_list&                            input_vars,
+    const variable_list&                              input_vars,
     const std::unordered_set<quarisma::TensorImpl*>&  non_differentiable,
     const std::unordered_set<quarisma::TensorImpl*>&  dirty_inputs,
     const quarisma::ArrayRef<std::optional<Variable>> raw_outputs,
-    const std::shared_ptr<Node>&                    cdata,
-    const _jvp_fn_t&                                jvp_user_function,
+    const std::shared_ptr<Node>&                      cdata,
+    const _jvp_fn_t&                                  jvp_user_function,
     const std::unordered_set<quarisma::TensorImpl*>&  to_save_if_setup_context,
-    const _view_as_self_fn_t&                       view_as_self_fn,
-    bool                                            pure_view);
+    const _view_as_self_fn_t&                         view_as_self_fn,
+    bool                                              pure_view);
 
 TORCH_API void check_variable_result(
     const quarisma::TensorBase& original,
     const quarisma::TensorBase& result,
-    const std::string&        hook_name);
+    const std::string&          hook_name);
 
 // Get the return type of the forward function of the custom Function class X
 template <typename X, typename... Args>
@@ -154,7 +154,7 @@ struct TORCH_API AutogradContext
     /// Get the list of variables that were saved in `forward` using
     /// `save_for_backward()`. Before returning them to the user, a check is made
     /// to ensure that they were not modified by any in-place operations.
-    variable_list                                  get_saved_variables() const;
+    variable_list                                    get_saved_variables() const;
     const std::unordered_set<quarisma::TensorImpl*>& get_and_bump_dirty() const;
     const std::unordered_set<quarisma::TensorImpl*>& get_non_differentiable() const;
 
@@ -164,8 +164,8 @@ struct TORCH_API AutogradContext
     bool needs_input_grad(std::initializer_list<IndexRange> idxs) const;
 
 private:
-    std::unordered_set<quarisma::TensorImpl*>     non_differentiable_;
-    std::unordered_set<quarisma::TensorImpl*>     dirty_inputs_;
+    std::unordered_set<quarisma::TensorImpl*>   non_differentiable_;
+    std::unordered_set<quarisma::TensorImpl*>   dirty_inputs_;
     std::vector<torch::autograd::SavedVariable> saved_variables_;
     variable_list                               to_save_;
     bool                                        materialize_grads_{true};
@@ -537,7 +537,8 @@ auto Function<T>::apply(Args&&... args)
             "Please open a feature request on GitHub if you need this.");
     };
 
-    auto view_as_self_fn = [](const quarisma::Tensor& x) -> quarisma::Tensor { return x.view_as(x); };
+    auto view_as_self_fn = [](const quarisma::Tensor& x) -> quarisma::Tensor
+    { return x.view_as(x); };
 
     auto wrapped_outputs = _wrap_outputs(
         input_vars,

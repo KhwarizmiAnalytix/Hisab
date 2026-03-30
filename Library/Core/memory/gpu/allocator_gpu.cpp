@@ -13,7 +13,7 @@
 #include "logging/logger.h"
 #include "memory/helper/memory_allocator.h"
 #if QUARISMA_HAS_NATIVE_PROFILER
-#include "profiler/native/tracing/traceme.h"
+#include "native/tracing/traceme.h"
 #endif
 #include "util/exception.h"
 
@@ -39,7 +39,7 @@ basic_gpu_allocator::basic_gpu_allocator(
     int                         device_id,
     const std::vector<Visitor>& alloc_visitors,
     const std::vector<Visitor>& free_visitors,
-    QUARISMA_UNUSED int           numa_node)
+    QUARISMA_UNUSED int         numa_node)
     : sub_allocator(alloc_visitors, free_visitors), device_id_(device_id)
 {
     // Verify device is accessible by attempting to set it
@@ -114,7 +114,8 @@ void basic_gpu_allocator::Free(void* ptr, size_t num_bytes)
         // Update statistics
         total_allocated_.fetch_sub(num_bytes);
 
-        QUARISMA_LOG_INFO_DEBUG("GPU freed {} bytes at {} on device {}", num_bytes, ptr, device_id_);
+        QUARISMA_LOG_INFO_DEBUG(
+            "GPU freed {} bytes at {} on device {}", num_bytes, ptr, device_id_);
     }
 }
 
@@ -208,7 +209,7 @@ void* allocator_gpu::allocate_raw(size_t alignment, size_t num_bytes)
 
 void* allocator_gpu::allocate_raw(
     QUARISMA_UNUSED size_t                       alignment,
-    size_t                                     num_bytes,
+    size_t                                       num_bytes,
     QUARISMA_UNUSED const allocation_attributes& allocation_attr)
 {
 #if QUARISMA_HAS_NATIVE_PROFILER

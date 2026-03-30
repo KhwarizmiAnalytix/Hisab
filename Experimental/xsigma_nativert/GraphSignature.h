@@ -1,8 +1,8 @@
 #pragma once
 
-#include <torch/csrc/utils/generated_serialization_types.h>
 #include <quarisma/util/FbcodeMaps.h>
 #include <quarisma/util/Logging.h>
+#include <torch/csrc/utils/generated_serialization_types.h>
 
 #include <string>
 

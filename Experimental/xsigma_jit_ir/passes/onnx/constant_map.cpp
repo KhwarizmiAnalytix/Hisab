@@ -1,7 +1,7 @@
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/passes/onnx/constant_map.h>
 #include <torch/csrc/jit/passes/onnx/helper.h>
-#include <quarisma/util/irange.h>
 
 #include <iostream>
 #include <sstream>
@@ -243,7 +243,8 @@ bool ConstantValueMap::HasShapeValue(const std::string& tensorName)
            ConstantValueMap::getInstance().shapeValueMap.end();
 }
 
-std::optional<quarisma::SymbolicShape> ConstantValueMap::GetShapeValue(const std::string& tensorName)
+std::optional<quarisma::SymbolicShape> ConstantValueMap::GetShapeValue(
+    const std::string& tensorName)
 {
     if (!HasShapeValue(tensorName))
     {

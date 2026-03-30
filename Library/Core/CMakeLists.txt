@@ -1,9 +1,9 @@
 # Core module CMakeLists.txt
 cmake_minimum_required(VERSION 3.16)
 
-# Note: Threading configuration is now handled centrally by Cmake/tools/threads.cmake
-# The variables QUARISMA_USE_PTHREADS, QUARISMA_USE_WIN32_THREADS, and QUARISMA_MAX_THREADS
-# are set by the threads.cmake module and available here for configure_file()
+# Note: Threading configuration is now handled centrally by Cmake/tools/threads.cmake The variables
+# QUARISMA_USE_PTHREADS, QUARISMA_USE_WIN32_THREADS, and QUARISMA_MAX_THREADS are set by the
+# threads.cmake module and available here for configure_file()
 
 # Configure header files
 set(quarisma_headers)
@@ -17,7 +17,6 @@ file(
   "${CMAKE_CURRENT_SOURCE_DIR}/common/*.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/logging/*.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/memory/*.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/profiler/*.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/c17/*.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/parallel/*.h"
   ${quarisma_headers}
@@ -30,29 +29,10 @@ file(
   "${CMAKE_CURRENT_SOURCE_DIR}/util/*.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/logging/*.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/memory/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/profiler/*.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/c17/*.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/parallel/*.cpp"
   ${quarisma_sources}
 )
-
-if(NOT QUARISMA_ENABLE_NATIVE_PROFILER)
-  file(
-    GLOB_RECURSE profiler_native_source_files
-    LIST_DIRECTORIES false
-    "${CMAKE_CURRENT_SOURCE_DIR}/profiler/native/*.cpp"
-  )
-  file(
-    GLOB_RECURSE profiler_native_header_files
-    LIST_DIRECTORIES false
-    "${CMAKE_CURRENT_SOURCE_DIR}/profiler/native/*.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/profiler/native/*.hxx"
-  )
-
-  list(REMOVE_ITEM sources ${profiler_native_source_files})
-  list(REMOVE_ITEM headers ${profiler_native_header_files})
-  message(STATUS "Native profiler disabled: excluding profiler/native source/header files")
-endif()
 
 file(
   GLOB_RECURSE templates
@@ -61,7 +41,6 @@ file(
   "${CMAKE_CURRENT_SOURCE_DIR}/logging/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/memory/*.hxx"
   ${quarisma_templates}
 )
-
 # Remove GPU files if neither CUDA nor HIP is enabled
 if(NOT QUARISMA_ENABLE_CUDA OR QUARISMA_ENABLE_HIP)
   file(GLOB_RECURSE GPU_SOURCE_FILES memory/gpu/*.cpp)
@@ -89,18 +68,9 @@ if(QUARISMA_USE_NATIVE_LOGGING)
   )
 endif()
 
-# Remove Kineto files if Kineto is disabled
-if(NOT QUARISMA_ENABLE_KINETO)
-  file(GLOB_RECURSE KINETO_SOURCE_FILES profiler/kineto_*.cpp)
-  file(GLOB_RECURSE KINETO_HEADER_FILES profiler/kineto_*.h)
-  list(REMOVE_ITEM sources ${KINETO_SOURCE_FILES})
-  list(REMOVE_ITEM headers ${KINETO_HEADER_FILES})
-  message(STATUS "Kineto disabled: Excluding Kineto source files from build")
-endif()
-
-# Remove TBB SMP files if TBB is not enabled
-# The TBB backend requires TBB headers and libraries, so we must exclude these files
-# when TBB is disabled to avoid compilation errors (missing tbb/blocked_range.h, etc.)
+# Remove TBB SMP files if TBB is not enabled The TBB backend requires TBB headers and libraries, so
+# we must exclude these files when TBB is disabled to avoid compilation errors (missing
+# tbb/blocked_range.h, etc.)
 if(NOT QUARISMA_ENABLE_TBB)
   file(GLOB_RECURSE TBB_PARALLEL_SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/parallel/tbb/*.cpp")
   file(GLOB_RECURSE TBB_PARALLEL_HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/parallel/tbb/*.h")
@@ -109,11 +79,13 @@ if(NOT QUARISMA_ENABLE_TBB)
   message(STATUS "TBB disabled: Excluding TBB SMP source files from build")
 endif()
 
-# Remove OpenMP SMP files if OpenMP is not enabled
-# The OpenMP backend requires OpenMP headers and libraries, so we must exclude these files
-# when OpenMP is disabled to avoid compilation errors (missing omp.h, etc.)
+# Remove OpenMP SMP files if OpenMP is not enabled The OpenMP backend requires OpenMP headers and
+# libraries, so we must exclude these files when OpenMP is disabled to avoid compilation errors
+# (missing omp.h, etc.)
 if(NOT QUARISMA_ENABLE_OPENMP)
-  file(GLOB_RECURSE OPENMP_PARALLEL_SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/parallel/openmp/*.cpp")
+  file(GLOB_RECURSE OPENMP_PARALLEL_SOURCE_FILES
+       "${CMAKE_CURRENT_SOURCE_DIR}/parallel/openmp/*.cpp"
+  )
   file(GLOB_RECURSE OPENMP_PARALLEL_HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/parallel/openmp/*.h")
   list(REMOVE_ITEM sources ${OPENMP_PARALLEL_SOURCE_FILES})
   list(REMOVE_ITEM headers ${OPENMP_PARALLEL_HEADER_FILES})
@@ -180,7 +152,8 @@ target_include_directories(
   Core
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Testing> $<INSTALL_INTERFACE:include>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Testing>
+         $<INSTALL_INTERFACE:include>
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
@@ -195,12 +168,7 @@ endif()
 target_link_libraries(Core PUBLIC Quarisma::build)
 if(COMMAND quarisma_target_clang_tidy)
   quarisma_target_clang_tidy(Core)
-  # Disable clang-tidy for kineto profiler files that crash the analyzer
-  set_source_files_properties(
-    profiler/kineto/profiler_kineto.cpp
-    profiler/kineto/kineto_shim.cpp
-    PROPERTIES SKIP_LINTING ON
-  )
+  set_source_files_properties(PROPERTIES SKIP_LINTING ON)
 endif()
 
 # ============================================================================= Link with
@@ -229,9 +197,9 @@ endif()
 # for Optional Features
 # =============================================================================
 # Feature-related compile definitions are now centrally managed via
-# QUARISMA_DEPENDENCY_COMPILE_DEFINITIONS, which is populated by Cmake/tools/dependencies.cmake based
-# on enabled feature flags. These definitions are PUBLIC to propagate to dependent targets, ensuring
-# feature macros are available in test files and other dependent code.
+# QUARISMA_DEPENDENCY_COMPILE_DEFINITIONS, which is populated by Cmake/tools/dependencies.cmake
+# based on enabled feature flags. These definitions are PUBLIC to propagate to dependent targets,
+# ensuring feature macros are available in test files and other dependent code.
 
 # Apply centralized compile definitions
 if(QUARISMA_DEPENDENCY_COMPILE_DEFINITIONS)
@@ -243,7 +211,6 @@ endif()
 if(QUARISMA_ENABLE_MIMALLOC AND TARGET Quarisma::mimalloc)
   add_dependencies(Core Quarisma::mimalloc)
 endif()
-
 # Install targets
 install(
   TARGETS Core

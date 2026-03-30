@@ -126,9 +126,9 @@ struct ArgumentStash
     // to regular Value*'s in the graph. i.e. they don't require special
     // handling like in the case of IntArrayRefs
     TORCH_API static void stashValue(
-        const std::string&     arg_name,
-        size_t                 idx,
-        const Variable&        var,
+        const std::string&       arg_name,
+        size_t                   idx,
+        const Variable&          var,
         const quarisma::TypePtr& type = nullptr);
 
     static bool hasValue(const std::string& arg_name) { return stash.values.count(arg_name) > 0; }
@@ -251,19 +251,19 @@ TORCH_API void addInputs(
 TORCH_API void addInputs(
     Node* n, const char* name, ArrayRef<quarisma::Tensor> value, bool allow_undefined = false);
 TORCH_API void addInputs(
-    Node*                              n,
-    const char*                        name,
+    Node*                                n,
+    const char*                          name,
     const std::vector<quarisma::Tensor>& value,
-    bool                               allow_undefined = false);
+    bool                                 allow_undefined = false);
 TORCH_API void addInputs(
     Node* n, const char* name, quarisma::ITensorListRef value, bool allow_undefined = false);
 TORCH_API void addInputs(
     Node* n, const char* name, const List<std::optional<quarisma::Tensor>>& value);
 TORCH_API void addInputs(
-    Node*                                                   n,
-    const char*                                             name,
+    Node*                                                       n,
+    const char*                                                 name,
     ArrayRef<quarisma::intrusive_ptr<quarisma::ivalue::Object>> value,
-    const quarisma::ClassTypePtr&                             class_type);
+    const quarisma::ClassTypePtr&                               class_type);
 TORCH_API void addInputs(Node* n, const char* name, ArrayRef<double> value);
 TORCH_API void addInputs(Node* n, const char* name, const std::optional<ArrayRef<double>>& value);
 TORCH_API void addInputs(Node* n, const char* name, const std::string_view value);
@@ -272,14 +272,16 @@ TORCH_API void addInputs(Node* n, const char* name, quarisma::Device value);
 TORCH_API void addInputs(Node* n, const char* name, quarisma::Stream stream);
 TORCH_API void addInputs(Node* n, const char* name, quarisma::Layout value);
 TORCH_API void addInputs(Node* n, const char* name, quarisma::ScalarType value);
-TORCH_API void addInputs(Node* n, const char* name, const std::optional<quarisma::ScalarType>& value);
+TORCH_API void addInputs(
+    Node* n, const char* name, const std::optional<quarisma::ScalarType>& value);
 TORCH_API void addInputs(Node* n, const char* name, const std::optional<quarisma::Device>& value);
 TORCH_API void addInputs(Node* n, const char* name, const std::optional<quarisma::Layout>& value);
 TORCH_API void addInputs(Node* n, const char* name, quarisma::MemoryFormat value);
 TORCH_API void addInputs(Node* n, const char* name, std::optional<quarisma::DimnameList> value);
 TORCH_API void addInputs(
     Node* n, const char* name, const std::optional<quarisma::MemoryFormat>& value);
-TORCH_API void addInputs(Node* n, const char* name, const std::optional<quarisma::Generator>& value);
+TORCH_API void addInputs(
+    Node* n, const char* name, const std::optional<quarisma::Generator>& value);
 
 inline void addInputs(Node* n, const char* name, const std::vector<bool>& value)
 {
@@ -317,7 +319,8 @@ template <
         (!std::is_convertible_v<std::decay_t<T>, quarisma::TensorList> &&
          !std::is_convertible_v<std::decay_t<T>, quarisma::List<quarisma::Tensor>> &&
          !std::is_convertible_v<std::decay_t<T>, quarisma::Tensor> &&
-         !std::is_convertible_v<std::decay_t<T>, quarisma::intrusive_ptr<quarisma::ivalue::Object>>)>>
+         !std::
+             is_convertible_v<std::decay_t<T>, quarisma::intrusive_ptr<quarisma::ivalue::Object>>)>>
 void addOutput(Node* node, T&& /*unused*/)
 {
     QUARISMA_CHECK(
@@ -330,7 +333,8 @@ TORCH_API void addOutput(Node* node, const quarisma::Tensor& tensor);
 TORCH_API void setOutput(Value* value, const quarisma::Tensor& output);
 TORCH_API void addOutput(Node* node, const std::vector<quarisma::Tensor>& list);
 TORCH_API void addOutput(Node* node, const quarisma::List<quarisma::Tensor>& list);
-TORCH_API void addOutput(Node* node, const quarisma::intrusive_ptr<quarisma::ivalue::Object>& output);
+TORCH_API void addOutput(
+    Node* node, const quarisma::intrusive_ptr<quarisma::ivalue::Object>& output);
 
 TORCH_API autograd::Variable getSizeOf(const autograd::Variable& var, int64_t dim);
 

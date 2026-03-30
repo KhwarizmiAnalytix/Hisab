@@ -11,7 +11,7 @@ struct TORCH_API LinearBNParameters
     quarisma::Tensor linear_b;
     quarisma::Tensor bn_rm;
     quarisma::Tensor bn_rv;
-    double         bn_eps = 0.0;
+    double           bn_eps = 0.0;
     quarisma::Tensor bn_w;
     quarisma::Tensor bn_b;
 };

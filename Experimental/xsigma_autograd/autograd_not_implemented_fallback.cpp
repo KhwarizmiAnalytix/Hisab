@@ -1,14 +1,14 @@
 #include <Quarisma/core/TorchDispatchUtils.h>
 #include <Quarisma/core/dispatch/Dispatcher.h>
 #include <Quarisma/core/ivalue.h>
+#include <quarisma/core/impl/TorchDispatchModeTLS.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/autograd/VariableTypeUtils.h>
 #include <torch/csrc/autograd/autograd.h>
 #include <torch/csrc/autograd/autograd_not_implemented_fallback.h>
 #include <torch/csrc/autograd/function.h>
 #include <torch/csrc/autograd/functions/basic_ops.h>
 #include <torch/csrc/autograd/functions/utils.h>
-#include <quarisma/core/impl/TorchDispatchModeTLS.h>
-#include <quarisma/util/irange.h>
 
 #include <optional>
 #include <utility>
@@ -105,7 +105,7 @@ auto WarnNotImplemented::apply(variable_list&& inputs) -> variable_list
 static void basicAutogradNotImplementedFallbackImpl(
     const quarisma::OperatorHandle& op,
     quarisma::DispatchKeySet        dispatch_keys,
-    torch::jit::Stack*            stack)
+    torch::jit::Stack*              stack)
 {
     const auto& schema        = op.schema();
     const auto& op_name       = schema.operator_name().name;
@@ -239,7 +239,7 @@ torch::CppFunction basicAutogradNotImplementedFallback()
 void VariableHooks::basic_autograd_not_implemented_fallback(
     const quarisma::OperatorHandle& op,
     quarisma::DispatchKeySet        dispatch_keys,
-    torch::jit::Stack*            stack) const
+    torch::jit::Stack*              stack) const
 {
     basicAutogradNotImplementedFallbackImpl(op, dispatch_keys, stack);
 }
@@ -247,16 +247,16 @@ void VariableHooks::basic_autograd_not_implemented_fallback(
 static void autogradNotImplementedFallbackImpl(
     const quarisma::OperatorHandle& op,
     quarisma::DispatchKeySet        dispatch_keys,
-    torch::jit::Stack*            stack)
+    torch::jit::Stack*              stack)
 {
     // Mimics a subset of the logic of a VariableType NotImplemented kernel
     // See gen_variable_type.py
-    const auto&                        schema        = op.schema();
-    const auto&                        op_name       = schema.operator_name().name;
-    const auto                         num_arguments = schema.arguments().size();
-    const auto                         num_returns   = schema.returns().size();
-    const auto                         stack_start   = stack->size() - num_arguments;
-    const bool                         grad_mode     = GradMode::is_enabled();
+    const auto&                          schema        = op.schema();
+    const auto&                          op_name       = schema.operator_name().name;
+    const auto                           num_arguments = schema.arguments().size();
+    const auto                           num_returns   = schema.returns().size();
+    const auto                           stack_start   = stack->size() - num_arguments;
+    const bool                           grad_mode     = GradMode::is_enabled();
     std::vector<const quarisma::Tensor*> tensors_requiring_grad_on_stack;
 
     // Keep track of which outputs are output of in-place modification
@@ -525,7 +525,9 @@ torch::CppFunction autogradNotImplementedFallback()
 struct GenericViewFunc : public ViewFunc
 {
     GenericViewFunc(
-        torch::jit::Stack non_tensor_stack, size_t aliased_input_idx_val, quarisma::OperatorHandle op)
+        torch::jit::Stack        non_tensor_stack,
+        size_t                   aliased_input_idx_val,
+        quarisma::OperatorHandle op)
         : non_tensor_stack_(non_tensor_stack),
           aliased_input_idx_val_(aliased_input_idx_val),
           op_(op)
@@ -554,7 +556,7 @@ struct GenericViewFunc : public ViewFunc
 
     quarisma::Tensor operator()(const quarisma::Tensor& new_base) const override
     {
-        torch::jit::Stack local_stack              = non_tensor_stack_;
+        torch::jit::Stack local_stack                = non_tensor_stack_;
         local_stack.quarisma(aliased_input_idx_val_) = quarisma::IValue(new_base);
 
         op_.callBoxed(local_stack);
@@ -572,15 +574,15 @@ struct GenericViewFunc : public ViewFunc
     }
 
 private:
-    torch::jit::Stack      non_tensor_stack_;
-    size_t                 aliased_input_idx_val_;
+    torch::jit::Stack        non_tensor_stack_;
+    size_t                   aliased_input_idx_val_;
     quarisma::OperatorHandle op_;
 };
 
 static void autogradNotImplementedInplaceOrViewFallbackImpl(
     const quarisma::OperatorHandle& op,
     quarisma::DispatchKeySet        dispatch_keys,
-    torch::jit::Stack*            stack)
+    torch::jit::Stack*              stack)
 {
     // Mimics a subset of the logic from ADInplaceOrViewType kernel:
     // - see gen_inplace_or_view_type.py
@@ -729,7 +731,7 @@ static void autogradNotImplementedInplaceOrViewFallbackImpl(
                     InferenceMode::is_enabled()
                         ? CreationMeta::INFERENCE_MODE
                         : (quarisma::GradMode::is_enabled() ? CreationMeta::MULTI_OUTPUT_NODE
-                                                          : CreationMeta::NO_GRAD_MODE));
+                                                            : CreationMeta::NO_GRAD_MODE));
             }
             auto result = std::move(aliased_output);
             stack->quarisma(stack->size() - num_returns + aliased_output_idx) = result;
@@ -769,7 +771,7 @@ static void autogradNotImplementedInplaceOrViewFallbackImpl(
                 InferenceMode::is_enabled()
                     ? CreationMeta::INFERENCE_MODE
                     : (quarisma::GradMode::is_enabled() ? CreationMeta::DEFAULT
-                                                      : CreationMeta::NO_GRAD_MODE));
+                                                        : CreationMeta::NO_GRAD_MODE));
             stack->quarisma(stack->size() - num_returns + aliased_output_idx) = std::move(result);
         }
     }

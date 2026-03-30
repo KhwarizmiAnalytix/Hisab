@@ -2,6 +2,7 @@
 
 #include <Quarisma/core/boxing/KernelFunction.h>
 #include <Quarisma/core/dispatch/Dispatcher.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/autograd/edge.h>
 #include <torch/csrc/autograd/function.h>
 #include <torch/csrc/autograd/functions/basic_ops.h>
@@ -12,7 +13,6 @@
 #include <torch/csrc/autograd/saved_variable.h>
 #include <torch/csrc/autograd/variable.h>
 #include <torch/csrc/utils/variadic.h>
-#include <quarisma/util/irange.h>
 
 #include <cstddef>
 #include <functional>
@@ -203,14 +203,14 @@ inline variable_list flatten_tensor_args(Args&&... args)
 
 // See NOTE [ Autograd View Variables ] for details.
 inline quarisma::Tensor as_view(
-    const quarisma::Tensor&                                base,
-    const quarisma::Tensor&                                tensor,
-    bool                                                 is_bw_differentiable,
-    bool                                                 is_fw_differentiable,
-    std::unique_ptr<ViewFunc>                            view_func     = nullptr,
+    const quarisma::Tensor&                                  base,
+    const quarisma::Tensor&                                  tensor,
+    bool                                                     is_bw_differentiable,
+    bool                                                     is_fw_differentiable,
+    std::unique_ptr<ViewFunc>                                view_func     = nullptr,
     std::function<quarisma::Tensor(const quarisma::Tensor&)> rev_view_func = nullptr,
-    CreationMeta                                         creation_meta = CreationMeta::DEFAULT,
-    bool                                                 allow_tensor_metadata_change = true)
+    CreationMeta                                             creation_meta = CreationMeta::DEFAULT,
+    bool                                                     allow_tensor_metadata_change = true)
 {
     // Note [View of inference tensor]
     // For inference tensor this code can only be hit outside InferenceMode
@@ -318,9 +318,9 @@ inline quarisma::Tensor as_view(
 
 inline void check_no_requires_grad(
     const quarisma::Tensor& tensor,
-    const char*           name,
-    const char*           fn_name         = "",
-    bool                  check_grad_mode = true)
+    const char*             name,
+    const char*             fn_name         = "",
+    bool                    check_grad_mode = true)
 {
     QUARISMA_CHECK(
         !(tensor.defined() && tensor.requires_grad()) ||
@@ -357,8 +357,8 @@ inline void check_no_requires_grad(
 
 inline void check_no_requires_grad(
     const quarisma::List<std::optional<quarisma::Tensor>>& tensors,
-    const char*                                        name,
-    const char*                                        fn_name = "")
+    const char*                                            name,
+    const char*                                            fn_name = "")
 {
     // GradMode check is expensive, so check it only once for TensorLists
     if (!GradMode::is_enabled())
@@ -414,10 +414,11 @@ inline std::vector<std::vector<int64_t>> to_args_sizes(quarisma::ITensorListRef 
     return args_sizes;
 }
 
-inline std::vector<std::vector<quarisma::SymInt>> to_args_sizes_symint(quarisma::ITensorListRef tensors)
+inline std::vector<std::vector<quarisma::SymInt>> to_args_sizes_symint(
+    quarisma::ITensorListRef tensors)
 {
     std::vector<std::vector<quarisma::SymInt>> args_sizes(tensors.size());
-    size_t                                   i = 0;
+    size_t                                     i = 0;
     for (const auto& t : tensors)
     {
         args_sizes[i++] = t.sym_sizes().vec();
@@ -428,7 +429,7 @@ inline std::vector<std::vector<quarisma::SymInt>> to_args_sizes_symint(quarisma:
 inline std::vector<quarisma::ScalarType> to_args_scalartypes(quarisma::ITensorListRef tensors)
 {
     std::vector<quarisma::ScalarType> args_scalartypes(tensors.size());
-    size_t                          i = 0;
+    size_t                            i = 0;
     for (const auto& t : tensors)
     {
         args_scalartypes[i++] = t.scalar_type();
@@ -463,7 +464,7 @@ public:
 
 template <class Return, class... Args>
 Return run_jit_decomposition_with_args_for_jvp(
-    std::string_view              name,
+    std::string_view                name,
     const quarisma::OperatorHandle& opHandle,
     quarisma::DispatchKeySet        dispatchKeySet,
     Args&&... args)

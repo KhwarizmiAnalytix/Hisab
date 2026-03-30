@@ -5,10 +5,10 @@
 #include <Quarisma/TensorSubclassLikeUtils.h>
 #include <Quarisma/core/grad_mode.h>
 #include <Quarisma/native/SparseTensorUtils.h>
-#include <torch/csrc/autograd/input_buffer.h>
 #include <quarisma/core/DeviceGuard.h>
 #include <quarisma/core/Event.h>
 #include <quarisma/core/StreamGuard.h>
+#include <torch/csrc/autograd/input_buffer.h>
 
 #include <cstddef>
 #include <optional>
@@ -201,8 +201,8 @@ static void accumulate(std::vector<Variable>& buffer, const size_t pos, Variable
 // know that we won't need to wait on it, saving on the order of microseconds.
 //
 void InputBuffer::add(
-    size_t                               pos,
-    Variable&&                           var,
+    size_t                                 pos,
+    Variable&&                             var,
     const std::optional<quarisma::Stream>& opt_producer_stream_,
     const std::optional<quarisma::Stream>& opt_consumer_stream_)
 {

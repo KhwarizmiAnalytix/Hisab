@@ -509,11 +509,11 @@ class QUARISMA_VISIBILITY StealOrDefault
 static constexpr std::string_view profilerStepString = "ProfilerStep#";
 
 void ThreadLocalSubqueue::TorchOpStorage::materialize(
-    std::vector<std::shared_ptr<Result>>&                       out,
-    std::vector<ProfilerStepInfo>&                              step_info,
+    std::vector<std::shared_ptr<Result>>&                           out,
+    std::vector<ProfilerStepInfo>&                                  step_info,
     const std::function<quarisma::time_t(quarisma::approx_time_t)>& time_converter,
-    const uint64_t                                              tid,
-    const kineto::DeviceAndResource&                            kineto_info)
+    const uint64_t                                                  tid,
+    const kineto::DeviceAndResource&                                kineto_info)
 {
     // Plumb Autograd info to the top level annotation.
     auto it = op_events_.begin();
@@ -591,7 +591,7 @@ template <size_t BlockSize>
 static void materialize_vulkan(
     std::vector<std::shared_ptr<Result>>&                                   out,
     AppendOnlyList<ExtraFields<EventType::Vulkan>::raw_event_t, BlockSize>& raw_events,
-    const std::function<quarisma::time_t(quarisma::approx_time_t)>&             time_converter,
+    const std::function<quarisma::time_t(quarisma::approx_time_t)>&         time_converter,
     const uint64_t                                                          tid,
     const kineto::DeviceAndResource&                                        kineto_info)
 {
@@ -650,7 +650,7 @@ std::string toString(const ExtraFields<EventType::PyCall>& e)
 auto scopeToType(quarisma::RecordScope scope)
 {
     return scope == quarisma::RecordScope::USER_SCOPE ? libkineto::ActivityType::USER_ANNOTATION
-                                                    : libkineto::ActivityType::CPU_OP;
+                                                      : libkineto::ActivityType::CPU_OP;
 }
 
 int64_t torchOpEndNS(
@@ -926,7 +926,7 @@ void generateForwardBackwardLink(
 
 void generateForwardBackwardLinks(
     std::unique_ptr<quarisma::profiler::impl::kineto::trace_t>& cpu_trace,
-    const std::vector<std::shared_ptr<Result>>&               results)
+    const std::vector<std::shared_ptr<Result>>&                 results)
 {
 #ifndef QUARISMA_HAS_KINETO
 }
@@ -1336,9 +1336,9 @@ private:
 
     static constexpr long long unmatchedIndex = -1;
     static constexpr auto      noTID          = std::numeric_limits<uint64_t>::max();
-    std::reference_wrapper<std::vector<std::shared_ptr<Result>>>    results_;
-    const ProfilerConfig&                                           config_;
-    std::vector<const itrace_t*>                                    trace_activities_;
+    std::reference_wrapper<std::vector<std::shared_ptr<Result>>>      results_;
+    const ProfilerConfig&                                             config_;
+    std::vector<const itrace_t*>                                      trace_activities_;
     quarisma::flat_hash_map<const itrace_t*, std::shared_ptr<Result>> kineto_events_;
 };
 #else
@@ -1400,7 +1400,7 @@ void build_tree(std::vector<std::shared_ptr<Result>>& sorted_events)
     set_in_tree_building(sorted_events, true);
 
     using op_fields = ExtraFields<EventType::TorchOp>;
-    quarisma::flat_hash_map<uint64_t, std::shared_ptr<Result>>                    stacks;
+    quarisma::flat_hash_map<uint64_t, std::shared_ptr<Result>>                  stacks;
     std::priority_queue<result_ptr_t, std::vector<result_ptr_t>, ResultGreater> end_events_;
 
     auto push_event = [&stacks, &end_events_](std::shared_ptr<Result>& event)
@@ -1643,8 +1643,8 @@ std::pair<
     std::unique_ptr<quarisma::profiler::impl::kineto::ActivityTraceWrapper>>
 RecordQueue::getRecords(
     std::function<quarisma::time_t(quarisma::approx_time_t)> time_converter,
-    uint64_t                                             start_time_ns,
-    uint64_t                                             end_time_ns)
+    uint64_t                                                 start_time_ns,
+    uint64_t                                                 end_time_ns)
 {
     auto converter = [&](quarisma::approx_time_t t)
     {

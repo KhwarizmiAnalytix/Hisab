@@ -1,7 +1,7 @@
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/ir/irparser.h>
 #include <torch/csrc/jit/ir/subgraph_matcher.h>
 #include <torch/csrc/jit/passes/subgraph_rewrite.h>
-#include <quarisma/util/irange.h>
 
 #include <utility>
 
@@ -113,7 +113,8 @@ void SubgraphRewriter::rewriteSinglePatternOnGraph(
         Node*       replacement_value_node = it.second->node();
         if (pattern.value_name_map.count(replacement_value_name))
         {
-            const auto& pattern_value_name = pattern.value_name_map.quarisma(replacement_value_name);
+            const auto& pattern_value_name =
+                pattern.value_name_map.quarisma(replacement_value_name);
             QUARISMA_CHECK(
                 vmap.count(pattern_value_name), "Value must be found in the replacement graph.");
             Node* pattern_value_node = vmap.quarisma(pattern_value_name)->node();

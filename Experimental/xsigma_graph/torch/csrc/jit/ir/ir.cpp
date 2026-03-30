@@ -1,5 +1,7 @@
 #include <Quarisma/core/builtin_function.h>
 #include <Quarisma/core/function.h>
+#include <quarisma/util/StringUtil.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/api/function_impl.h>
 #include <torch/csrc/jit/frontend/error_report.h>
 #include <torch/csrc/jit/frontend/schema_matching.h>
@@ -7,8 +9,6 @@
 #include <torch/csrc/jit/ir/ir.h>
 #include <torch/csrc/jit/runtime/operator.h>
 #include <torch/csrc/jit/serialization/python_print.h>
-#include <quarisma/util/StringUtil.h>
-#include <quarisma/util/irange.h>
 
 #include <algorithm>
 #include <iostream>
@@ -475,9 +475,9 @@ std::ostream& operator<<(std::ostream& out, const Graph& g)
 
 static void checkSameDevice(const Node* node)
 {
-    bool                          has_device = false;
+    bool                            has_device = false;
     std::optional<quarisma::Device> device     = std::nullopt;
-    auto                          checkValue = [&](const Value* v)
+    auto                            checkValue = [&](const Value* v)
     {
         if (TensorTypePtr type = v->type()->cast<TensorType>())
         {
@@ -1166,7 +1166,7 @@ bool Node::matches(const FunctionSchema& schema) const
         return false;
     }
     quarisma::ArrayRef<const Value*> actuals = inputs();
-    const auto&                    formals = schema.arguments();
+    const auto&                      formals = schema.arguments();
 
     // not enough inputs
     if (actuals.size() < formals.size())
@@ -1830,8 +1830,8 @@ void Node::permuteInputs(const std::vector<size_t>& new_order)
     {
         TORCH_INTERNAL_ASSERT(inputs_.quarisma(new_order[i]) != nullptr, "Repeated index");
         new_inputs.push_back(inputs_.quarisma(new_order[i]));
-        auto it                      = findUseForInput(new_order[i]);
-        it->offset                   = i;
+        auto it                        = findUseForInput(new_order[i]);
+        it->offset                     = i;
         inputs_.quarisma(new_order[i]) = nullptr;
     }
     inputs_ = std::move(new_inputs);
@@ -1946,8 +1946,8 @@ static inline const SourceRange& fakeRange()
 
 Value* Graph::insert(
     Symbol                            opname,
-    quarisma::ArrayRef<NamedValue>      args,
-    quarisma::ArrayRef<NamedValue>      kwargs,
+    quarisma::ArrayRef<NamedValue>    args,
+    quarisma::ArrayRef<NamedValue>    kwargs,
     const std::optional<SourceRange>& range)
 {
     return emitBuiltinCall(range.value_or(fakeRange()), *this, opname, args, kwargs);
@@ -2101,8 +2101,8 @@ Node* Graph::createListUnpack(Value* v, size_t size)
 }
 
 Node* Graph::createDict(
-    const TypePtr&           key_type,
-    const TypePtr&           value_type,
+    const TypePtr&             key_type,
+    const TypePtr&             value_type,
     quarisma::ArrayRef<Value*> keys,
     quarisma::ArrayRef<Value*> values)
 {
@@ -2381,8 +2381,8 @@ void inlineCallStackOfNode(
         }
         else
         {
-            new_cs_entries[raw_callstack_ptr] =
-                quarisma::make_intrusive<InlinedCallStack>(callee, to_replace->sourceRange(), m_info);
+            new_cs_entries[raw_callstack_ptr] = quarisma::make_intrusive<InlinedCallStack>(
+                callee, to_replace->sourceRange(), m_info);
         }
     }
     new_node->setCallStack(new_cs_entries.quarisma(raw_callstack_ptr));

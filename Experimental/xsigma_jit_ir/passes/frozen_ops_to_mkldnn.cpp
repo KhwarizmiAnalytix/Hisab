@@ -1,9 +1,11 @@
 #include <Quarisma/Config.h>
 #include <Quarisma/NativeFunctions.h>
-#include <Quarisma/Utils.h>
 #include <Quarisma/Quarisma.h>
+#include <Quarisma/Utils.h>
 #include <Quarisma/core/symbol.h>
 #include <Quarisma/native/layer_norm.h>
+#include <quarisma/core/ScalarType.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/ir/alias_analysis.h>
 #include <torch/csrc/jit/ir/constants.h>
 #include <torch/csrc/jit/ir/ir.h>
@@ -21,8 +23,6 @@
 #include <torch/csrc/jit/runtime/custom_operator.h>
 #include <torch/csrc/jit/runtime/operator_options.h>
 #include <torch/csrc/jit/tensorexpr/types.h>
-#include <quarisma/core/ScalarType.h>
-#include <quarisma/util/irange.h>
 
 #include "util/exception.h"
 // clang-format off
@@ -267,11 +267,11 @@ void InplaceMKLDNNSubgraph(const std::shared_ptr<Graph>& graph)
 // allows us to avoid any special casing of padded elements.
 Operation createUnaryOp(
     const std::function<void(quarisma::Tensor output, quarisma::Tensor input)>& aten_op,
-    bool                                                                    inplace = false)
+    bool                                                                        inplace = false)
 {
     return [aten_op, inplace](Stack& stack)
     {
-        auto                                  a = pop(stack).toTensor();
+        auto                                    a = pop(stack).toTensor();
         quarisma::impl::ExcludeDispatchKeyGuard edkg(quarisma::autograd_dispatch_keyset);
         // we cast `a` to an `ideep::tensor`, so we can get quarisma its descriptor
         // which we then use to set up `out` tensor w/ the same props as a
@@ -455,7 +455,8 @@ static std::function<void(quarisma::Tensor output, quarisma::Tensor input)> hard
     { quarisma::cpu::hardtanh_out(output, input, min_val, max_val); };
 }
 
-static std::function<void(quarisma::Tensor output, quarisma::Tensor input)> clamp_helper(const Node* n)
+static std::function<void(quarisma::Tensor output, quarisma::Tensor input)> clamp_helper(
+    const Node* n)
 {
     auto min_val = n->f(attr::min_val);
     auto max_val = n->f(attr::max_val);
@@ -619,9 +620,9 @@ jit::RegisterOperators reg_fut_ops({
         [](jit::Stack& stack)
         {
             quarisma::impl::ExcludeDispatchKeyGuard edkg(quarisma::autograd_dispatch_keyset);
-            float                                 other = pop(stack).toScalar().toFloat();
-            Tensor                                self  = pop(stack).toTensor();
-            auto                                  out   = quarisma::native::empty_mkldnn(
+            float                                   other = pop(stack).toScalar().toFloat();
+            Tensor                                  self  = pop(stack).toTensor();
+            auto                                    out   = quarisma::native::empty_mkldnn(
                 self.sizes(),
                 quarisma::optTypeMetaToScalarType(self.options().dtype_opt()),
                 self.options().layout_opt(),
@@ -637,8 +638,8 @@ jit::RegisterOperators reg_fut_ops({
         [](jit::Stack& stack)
         {
             quarisma::impl::ExcludeDispatchKeyGuard edkg(quarisma::autograd_dispatch_keyset);
-            float                                 other = pop(stack).toScalar().toFloat();
-            Tensor                                self  = pop(stack).toTensor();
+            float                                   other = pop(stack).toScalar().toFloat();
+            Tensor                                  self  = pop(stack).toTensor();
             mkldnn_tensor_scalar_mul(self, self, other);
             push(stack, self);
         },
@@ -748,7 +749,8 @@ void moveWeightsToMKLDNN(Node* n)
     }
 }
 
-static void clamp_node_creator(Node* body_node, quarisma::Symbol kind, double min_val, double max_val)
+static void clamp_node_creator(
+    Node* body_node, quarisma::Symbol kind, double min_val, double max_val)
 {
     WithInsertPoint insert_guard{body_node};
     auto            out_node = body_node->owningGraph()->create({kind}, {body_node->input(0)}, 1);

@@ -594,7 +594,8 @@ void allocator_tracking::SetLoggingLevel(tracking_log_level level) noexcept
 
     if (level >= tracking_log_level::INFO)
     {
-        QUARISMA_LOG_INFO("allocator_tracking logging level changed to: {}", static_cast<int>(level));
+        QUARISMA_LOG_INFO(
+            "allocator_tracking logging level changed to: {}", static_cast<int>(level));
     }
 }
 

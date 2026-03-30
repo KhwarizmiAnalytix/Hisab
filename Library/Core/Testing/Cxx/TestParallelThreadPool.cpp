@@ -40,8 +40,10 @@ namespace quarisma
 QUARISMATEST(ParallelThreadPool, singleton_lifecycle_and_state)
 {
     // Test 1: Singleton access - ensure same instance is returned
-    detail::parallel::parallel_thread_pool& pool1 = detail::parallel::parallel_thread_pool::instance();
-    detail::parallel::parallel_thread_pool& pool2 = detail::parallel::parallel_thread_pool::instance();
+    detail::parallel::parallel_thread_pool& pool1 =
+        detail::parallel::parallel_thread_pool::instance();
+    detail::parallel::parallel_thread_pool& pool2 =
+        detail::parallel::parallel_thread_pool::instance();
     EXPECT_EQ(&pool1, &pool2);
 
     // Test 2: Initial state - should not be in parallel scope
@@ -62,7 +64,8 @@ QUARISMATEST(ParallelThreadPool, singleton_lifecycle_and_state)
 
 QUARISMATEST(ParallelThreadPool, thread_allocation_and_proxy_management)
 {
-    detail::parallel::parallel_thread_pool& pool = detail::parallel::parallel_thread_pool::instance();
+    detail::parallel::parallel_thread_pool& pool =
+        detail::parallel::parallel_thread_pool::instance();
 
     // Test 1: Allocate with default thread count (0 = auto)
     {
@@ -128,7 +131,8 @@ QUARISMATEST(ParallelThreadPool, thread_allocation_and_proxy_management)
 
 QUARISMATEST(ParallelThreadPool, job_execution_and_distribution)
 {
-    detail::parallel::parallel_thread_pool& pool = detail::parallel::parallel_thread_pool::instance();
+    detail::parallel::parallel_thread_pool& pool =
+        detail::parallel::parallel_thread_pool::instance();
 
     // Test 1: Basic job execution
     {
@@ -202,7 +206,8 @@ QUARISMATEST(ParallelThreadPool, job_execution_and_distribution)
 
 QUARISMATEST(ParallelThreadPool, thread_identification)
 {
-    detail::parallel::parallel_thread_pool& pool = detail::parallel::parallel_thread_pool::instance();
+    detail::parallel::parallel_thread_pool& pool =
+        detail::parallel::parallel_thread_pool::instance();
 
     // Test 1: Verify external_thread_id constant
     EXPECT_EQ(detail::parallel::parallel_thread_pool::external_thread_id, 1u);
@@ -236,7 +241,8 @@ QUARISMATEST(ParallelThreadPool, thread_identification)
 
 QUARISMATEST(ParallelThreadPool, parallel_scope_detection)
 {
-    detail::parallel::parallel_thread_pool& pool = detail::parallel::parallel_thread_pool::instance();
+    detail::parallel::parallel_thread_pool& pool =
+        detail::parallel::parallel_thread_pool::instance();
 
     // Test 1: Outside parallel region should return false
     EXPECT_FALSE(pool.is_parallel_scope());
@@ -266,7 +272,8 @@ QUARISMATEST(ParallelThreadPool, parallel_scope_detection)
 
 QUARISMATEST(ParallelThreadPool, nested_proxies_and_top_level)
 {
-    detail::parallel::parallel_thread_pool& pool = detail::parallel::parallel_thread_pool::instance();
+    detail::parallel::parallel_thread_pool& pool =
+        detail::parallel::parallel_thread_pool::instance();
 
     std::atomic<int> outer_counter{0};
     std::atomic<int> inner_counter{0};
@@ -311,7 +318,8 @@ QUARISMATEST(ParallelThreadPool, nested_proxies_and_top_level)
 
 QUARISMATEST(ParallelThreadPool, thread_reuse_and_sequential_allocation)
 {
-    detail::parallel::parallel_thread_pool& pool = detail::parallel::parallel_thread_pool::instance();
+    detail::parallel::parallel_thread_pool& pool =
+        detail::parallel::parallel_thread_pool::instance();
 
     std::atomic<int> counter{0};
 
@@ -334,7 +342,8 @@ QUARISMATEST(ParallelThreadPool, thread_reuse_and_sequential_allocation)
 
 QUARISMATEST(ParallelThreadPool, edge_cases_and_error_handling)
 {
-    detail::parallel::parallel_thread_pool& pool = detail::parallel::parallel_thread_pool::instance();
+    detail::parallel::parallel_thread_pool& pool =
+        detail::parallel::parallel_thread_pool::instance();
 
     // Test 1: Allocate zero threads (should use default)
     {
@@ -382,7 +391,8 @@ QUARISMATEST(ParallelThreadPool, edge_cases_and_error_handling)
 
 QUARISMATEST(ParallelThreadPool, thread_safety_and_concurrency)
 {
-    detail::parallel::parallel_thread_pool& pool = detail::parallel::parallel_thread_pool::instance();
+    detail::parallel::parallel_thread_pool& pool =
+        detail::parallel::parallel_thread_pool::instance();
 
     // Test 1: Concurrent job execution
     {
@@ -464,7 +474,8 @@ QUARISMATEST(ParallelThreadPool, thread_safety_and_concurrency)
 
 QUARISMATEST(ParallelThreadPool, integration_tests)
 {
-    detail::parallel::parallel_thread_pool& pool = detail::parallel::parallel_thread_pool::instance();
+    detail::parallel::parallel_thread_pool& pool =
+        detail::parallel::parallel_thread_pool::instance();
 
     // Test 1: Full workflow - typical parallel computation
     {

@@ -1,3 +1,4 @@
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/passes/add_if_then_else.h>
 #include <torch/csrc/jit/passes/bailout_graph.h>
@@ -32,7 +33,6 @@
 #include <torch/csrc/jit/passes/update_differentiable_graph_requires_grad.h>
 #include <torch/csrc/jit/passes/utils/subgraph_utils.h>
 #include <torch/csrc/jit/runtime/profiling_graph_executor_impl.h>
-#include <quarisma/util/irange.h>
 
 #include <chrono>
 #include <mutex>

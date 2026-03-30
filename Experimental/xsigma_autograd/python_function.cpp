@@ -1,8 +1,9 @@
 #include <Quarisma/FuncTorchTLS.h>
-#include <Quarisma/SequenceNumber.h>
 #include <Quarisma/Quarisma.h>
+#include <Quarisma/SequenceNumber.h>
 #include <Quarisma/functorch/DynamicLayer.h>
 #include <pybind11/pybind11.h>
+#include <quarisma/util/irange.h>
 #include <structmember.h>
 #include <torch/csrc/DynamicTypes.h>
 #include <torch/csrc/Exceptions.h>
@@ -30,7 +31,6 @@
 #include <torch/csrc/utils/python_numbers.h>
 #include <torch/csrc/utils/python_strings.h>
 #include <torch/csrc/utils/tensor_dtypes.h>
-#include <quarisma/util/irange.h>
 
 #include <functional>
 #include <memory>
@@ -41,7 +41,7 @@
 #include <utility>
 #include <vector>
 
-#include "profiler/pytorch_profiler/api.h"
+#include "pytorch_profiler/api.h"
 
 using namespace torch;
 using namespace torch::autograd;
@@ -167,9 +167,9 @@ namespace torch::autograd
 // NOLINTNEXTLINE(*-rvalue-reference*)
 auto PyNode::apply(variable_list&& inputs) -> variable_list
 {
-    pybind11::gil_scoped_acquire gil;
-    quarisma::OptionalDeviceGuard  _device_guard;
-    THPFunction*                 py_fn = (THPFunction*)obj;
+    pybind11::gil_scoped_acquire  gil;
+    quarisma::OptionalDeviceGuard _device_guard;
+    THPFunction*                  py_fn = (THPFunction*)obj;
 
     // Massage a C++ variable_list into a Python arguments tuple
     THPObjectPtr pyInputs(to_py_args(inputs, &_device_guard));
@@ -221,9 +221,9 @@ auto PyNode::apply(variable_list&& inputs) -> variable_list
 auto PyNode::apply_with_saved_impl(const variable_list& inputs, const SwapSavedVariables& saved)
     -> variable_list
 {
-    pybind11::gil_scoped_acquire gil;
-    quarisma::OptionalDeviceGuard  _device_guard;
-    THPFunction*                 py_fn = (THPFunction*)obj;
+    pybind11::gil_scoped_acquire  gil;
+    quarisma::OptionalDeviceGuard _device_guard;
+    THPFunction*                  py_fn = (THPFunction*)obj;
 
     // Massage a C++ variable_list into a Python arguments tuple
     THPObjectPtr pyInputs(to_py_args(inputs, &_device_guard));
@@ -386,7 +386,7 @@ void PyNode::compiled_args(CompiledNodeArgs& args) const
     Py_INCREF(obj);
     quarisma::SafePyObject                backward_obj(obj, getPyInterpreter());
     std::optional<quarisma::SafePyObject> backward_state_obj;
-    PyObject*                           bw_state = f->compiled_autograd_backward_state;
+    PyObject*                             bw_state = f->compiled_autograd_backward_state;
     if (args.cond(bw_state != nullptr))
     {
         Py_INCREF(bw_state);
@@ -414,7 +414,8 @@ variable_list PyNode::apply_with_saved(const variable_list& inputs, SwapSavedVar
     return result;
 }
 
-PyObject* PyNode::to_py_args(const variable_list& inputs, quarisma::OptionalDeviceGuard* device_guard)
+PyObject* PyNode::to_py_args(
+    const variable_list& inputs, quarisma::OptionalDeviceGuard* device_guard)
 {
     THPFunction* py_fn = (THPFunction*)obj;
 
@@ -627,12 +628,12 @@ static std::unordered_set<quarisma::TensorImpl*> _parse_non_differentiable(THPFu
 // do in this case.  After this method is run, t2var is extended with
 // mappings for output tensors as well.
 static void _wrap_outputs(
-    const std::shared_ptr<PyNode>&                 cdata,
-    THPFunction*                                   self,
-    const variable_list&                           input_vars,
-    PyObject*                                      raw_output,
-    PyObject*                                      outputs,
-    bool                                           is_executable,
+    const std::shared_ptr<PyNode>&                   cdata,
+    THPFunction*                                     self,
+    const variable_list&                             input_vars,
+    PyObject*                                        raw_output,
+    PyObject*                                        outputs,
+    bool                                             is_executable,
     const std::unordered_set<quarisma::TensorImpl*>& to_save_if_setup_context)
 {
     auto       cdata_if_executable = is_executable ? cdata : nullptr;
@@ -800,11 +801,11 @@ static void _wrap_outputs(
 }
 
 static void _get_tensors_to_save(
-    THPFunction*                                self,
+    THPFunction*                                  self,
     std::unordered_set<quarisma::TensorImpl*>&    to_save_if_setup_context,
     std::vector<std::optional<quarisma::Tensor>>& tensors_to_save,
-    bool                                        overridden_setup_context,
-    bool                                        is_executable)
+    bool                                          overridden_setup_context,
+    bool                                          is_executable)
 {
     if (self->saved_for_forward && overridden_setup_context)
     {
@@ -877,10 +878,10 @@ static void _get_tensors_to_save(
 // Save any variables that requested by to_save
 static void _save_variables(
     const std::vector<std::optional<quarisma::Tensor>>& tensors_to_save,
-    const std::shared_ptr<PyNode>&                    cdata_ptr,
-    THPFunction*                                      self,
-    PyObject*                                         outputs,
-    int64_t                                           num_outputs)
+    const std::shared_ptr<PyNode>&                      cdata_ptr,
+    THPFunction*                                        self,
+    PyObject*                                           outputs,
+    int64_t                                             num_outputs)
 {
     if (tensors_to_save.empty())
         return;
@@ -1463,9 +1464,9 @@ PyObject* THPFunction_apply(PyObject* cls, PyObject* inputs)
     // Call forward
     THPObjectPtr output;
     {
-        AutoGradMode           grad_mode(false);
+        AutoGradMode             grad_mode(false);
         quarisma::AutoFwGradMode fw_grad_mode(false);
-        THPObjectPtr           forward_fn(PyObject_GetAttrString(cls, "forward"));
+        THPObjectPtr             forward_fn(PyObject_GetAttrString(cls, "forward"));
         if (!forward_fn)
             return nullptr;
         if (overridden_setup_context)

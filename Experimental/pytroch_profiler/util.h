@@ -16,28 +16,28 @@
 #include <vector>
 
 // TODO: replace with pytorch/rfcs#43 when it is ready.
-#define SOFT_ASSERT(cond, ...)                              \
-    [&]() -> bool                                           \
-    {                                                       \
+#define SOFT_ASSERT(cond, ...)                                \
+    [&]() -> bool                                             \
+    {                                                         \
         if QUARISMA_UNLIKELY (!(cond))                        \
-        {                                                   \
+        {                                                     \
             quarisma::profiler::impl::logSoftAssert(          \
-                __func__,                                   \
-                __FILE__,                                   \
-                static_cast<uint32_t>(__LINE__),            \
-                #cond,                                      \
+                __func__,                                     \
+                __FILE__,                                     \
+                static_cast<uint32_t>(__LINE__),              \
+                #cond,                                        \
                 ::quarisma::str(__VA_ARGS__));                \
             if (quarisma::profiler::impl::softAssertRaises()) \
-            {                                               \
+            {                                                 \
                 QUARISMA_CHECK(cond, __VA_ARGS__);            \
-            }                                               \
-            else                                            \
-            {                                               \
+            }                                                 \
+            else                                              \
+            {                                                 \
                 QUARISMA_WARN_ONCE(__VA_ARGS__);              \
-            }                                               \
-            return false;                                   \
-        }                                                   \
-        return true;                                        \
+            }                                                 \
+            return false;                                     \
+        }                                                     \
+        return true;                                          \
     }()
     
 namespace quarisma::detail 

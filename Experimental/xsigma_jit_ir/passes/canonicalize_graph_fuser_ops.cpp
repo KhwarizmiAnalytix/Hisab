@@ -1,7 +1,7 @@
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/passes/canonicalize_graph_fuser_ops.h>
 #include <torch/csrc/jit/passes/dead_code_elimination.h>
-#include <quarisma/util/irange.h>
 
 namespace torch::jit
 {
@@ -67,7 +67,7 @@ static void CanonicalizeOps(Block* block)
                     auto                graph     = it->owningGraph();
                     auto                new_other = graph->insertConstant(other->item());
                     std::vector<Value*> inputs    = it->inputs().vec();
-                    inputs.quarisma(1)              = new_other;
+                    inputs.quarisma(1)            = new_other;
                     Value* new_output =
                         graph->insertNode(graph->create(it->kind(), inputs))->output();
                     new_output->node()->copyMetadata(*it);

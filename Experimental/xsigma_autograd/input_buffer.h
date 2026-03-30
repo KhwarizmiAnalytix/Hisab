@@ -5,8 +5,8 @@
 // values in-place (adding an input twice will accumulate the result).
 // This behaviour is needed and used only in backward graphs.
 
-#include <torch/csrc/autograd/variable.h>
 #include <quarisma/core/Stream.h>
+#include <torch/csrc/autograd/variable.h>
 
 #include <optional>
 #include <utility>
@@ -30,8 +30,8 @@ struct InputBuffer
     // The optional CUDA streams determine which stream the accumulation
     // is run on and how the addition is synchronized.
     TORCH_API void add(
-        size_t                               pos,
-        Variable&&                           var,
+        size_t                                 pos,
+        Variable&&                             var,
         const std::optional<quarisma::Stream>& opt_producer_stream,
         const std::optional<quarisma::Stream>& opt_consumer_stream);
 

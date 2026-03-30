@@ -1,10 +1,10 @@
 
 #include <Quarisma/autocast_mode.h>
+#include <quarisma/core/ScalarType.h>
 #include <torch/csrc/jit/ir/ir.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/passes/autocast.h>
 #include <torch/csrc/jit/passes/quantization/helper.h>
-#include <quarisma/core/ScalarType.h>
 
 #include <atomic>
 #include <optional>
@@ -24,8 +24,8 @@ std::atomic<bool> autocast_enabled = true;
 
 struct AutocastContext
 {
-    bool               gpu_enabled     = false;
-    bool               cpu_enabled     = false;
+    bool                 gpu_enabled     = false;
+    bool                 cpu_enabled     = false;
     quarisma::ScalarType gpu_scalar_type = quarisma::ScalarType::Undefined;
     quarisma::ScalarType cpu_scalar_type = quarisma::ScalarType::Undefined;
 
@@ -75,9 +75,9 @@ std::optional<AutocastScope> parseAutocast(Value* value, const AutocastContext& 
         AutocastScope scope;
         scope.instance = value;
         scope.context  = context;
-        std::optional<bool> enabled;
-        std::string         device;
-        quarisma::ScalarType  dtype = quarisma::ScalarType::Undefined;
+        std::optional<bool>  enabled;
+        std::string          device;
+        quarisma::ScalarType dtype = quarisma::ScalarType::Undefined;
         for (Use use : value->uses())
         {
             // TODO: support runtime flag
@@ -85,7 +85,8 @@ std::optional<AutocastScope> parseAutocast(Value* value, const AutocastContext& 
             {
                 // Search for `prim::SetAttr[name="_enabled"]`
                 enabled = constant_as<bool>(use.user->input(1));
-                QUARISMA_CHECK(enabled.has_value(), "Autocast _enabled argument must be a constant");
+                QUARISMA_CHECK(
+                    enabled.has_value(), "Autocast _enabled argument must be a constant");
             }
             else if (use.user->kind() == prim::SetAttr && use.user->s(attr::name) == "device")
             {

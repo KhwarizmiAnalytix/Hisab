@@ -133,10 +133,10 @@ public:
 private:
     std::atomic<int64_t> total_alloc_time_{0};
     std::atomic<int64_t> total_dealloc_time_{0};
-    std::atomic<size_t> total_allocations_{0};
-    std::atomic<size_t> total_deallocations_{0};
-    std::atomic<size_t> total_bytes_allocated_{0};
-    double              total_time_ms_{0.0};
+    std::atomic<size_t>  total_allocations_{0};
+    std::atomic<size_t>  total_deallocations_{0};
+    std::atomic<size_t>  total_bytes_allocated_{0};
+    double               total_time_ms_{0.0};
 };
 
 /**

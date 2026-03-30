@@ -67,10 +67,10 @@ parallel_tools_impl_tbb_initialize::parallel_tools_impl_tbb_initialize()
 {
     if (++parallel_tools_impl_tbb_initialize_count == 1)
     {
-        task_arena           = std::make_unique<tbb::task_arena>();
-        quarisma_parallel_tools_cs  = std::make_unique<std::mutex>();
-        thread_id_stack      = std::make_unique<std::stack<int>>();
-        thread_id_stack_lock = std::make_unique<std::mutex>();
+        task_arena                 = std::make_unique<tbb::task_arena>();
+        quarisma_parallel_tools_cs = std::make_unique<std::mutex>();
+        thread_id_stack            = std::make_unique<std::stack<int>>();
+        thread_id_stack_lock       = std::make_unique<std::mutex>();
     }
 }
 
@@ -113,7 +113,8 @@ void parallel_tools_impl<backend_type::TBB>::initialize(int num_threads)
         }
     }
     if (num_threads > 0 &&
-        num_threads <= parallel_tools_impl<backend_type::TBB>::estimated_default_number_of_threads())
+        num_threads <=
+            parallel_tools_impl<backend_type::TBB>::estimated_default_number_of_threads())
     {
         if (task_arena->is_active())
         {

@@ -3,10 +3,10 @@
 #include <string>
 #include <vector>
 
-#include "profiler/pytorch_profiler/api.h"
-#include "profiler/pytorch_profiler/base.h"
-#include "profiler/pytorch_profiler/events.h"
-#include "profiler/pytorch_profiler/util.h"
+#include "pytorch_profiler/api.h"
+#include "pytorch_profiler/base.h"
+#include "pytorch_profiler/events.h"
+#include "pytorch_profiler/util.h"
 
 namespace torch
 {
@@ -30,43 +30,43 @@ struct TORCH_API KinetoEvent
     KinetoEvent(
         const std::shared_ptr<const torch::profiler::impl::Result>& /*result*/, const bool verbose);
 
-    uint64_t                                              startThreadId() const;
-    uint64_t                                              endThreadId() const;
-    uint8_t                                               activityType() const;
-    uint64_t                                              fwdThreadId() const;
-    bool                                                  hasShapes() const;
+    uint64_t                                                startThreadId() const;
+    uint64_t                                                endThreadId() const;
+    uint8_t                                                 activityType() const;
+    uint64_t                                                fwdThreadId() const;
+    bool                                                    hasShapes() const;
     const quarisma::ArrayRef<std::vector<int64_t>>          shapes() const;
-    bool                                                  hasTypes() const;
+    bool                                                    hasTypes() const;
     const quarisma::ArrayRef<std::string>                   dtypes() const;
-    bool                                                  hasConcreteInputs() const;
-    const quarisma::ArrayRef<quarisma::IValue>                concreteInputs() const;
-    bool                                                  hasKwinputs() const;
-    bool                                                  isHiddenEvent() const;
+    bool                                                    hasConcreteInputs() const;
+    const quarisma::ArrayRef<quarisma::IValue>              concreteInputs() const;
+    bool                                                    hasKwinputs() const;
+    bool                                                    isHiddenEvent() const;
     const std::unordered_map<std::string, quarisma::IValue> kwinputs() const;
-    uint64_t                                              flops() const;
-    int64_t                                               sequenceNr() const;
-    bool                                                  hasStack() const;
+    uint64_t                                                flops() const;
+    int64_t                                                 sequenceNr() const;
+    bool                                                    hasStack() const;
     const quarisma::ArrayRef<std::string>                   stack() const;
-    uint8_t                                               scope() const;
-    bool                                                  hasModuleHierarchy() const;
+    uint8_t                                                 scope() const;
+    bool                                                    hasModuleHierarchy() const;
     const quarisma::ArrayRef<std::string>                   moduleHierarchy() const;
-    int64_t                                               debugHandle() const;
-    std::string                                           name() const;
-    std::string                                           overload_name() const;
+    int64_t                                                 debugHandle() const;
+    std::string                                             name() const;
+    std::string                                             overload_name() const;
     quarisma::DeviceType                                    deviceType() const;
-    int                                                   deviceIndex() const;
-    int64_t                                               nBytes() const;
-    uint64_t                                              startNs() const;
-    uint64_t                                              endNs() const;
-    uint64_t                                              durationNs() const;
-    bool                                                  isAsync() const;
-    uint64_t                                              correlationId() const;
-    uint64_t                                              linkedCorrelationId() const;
-    int64_t                                               deviceResourceId() const;
-    std::string                                           backend() const;
-    bool                                                  isPythonFunction() const;
-    int64_t                                               cudaElapsedUs() const;
-    int64_t                                               privateuse1ElapsedUs() const;
+    int                                                     deviceIndex() const;
+    int64_t                                                 nBytes() const;
+    uint64_t                                                startNs() const;
+    uint64_t                                                endNs() const;
+    uint64_t                                                durationNs() const;
+    bool                                                    isAsync() const;
+    uint64_t                                                correlationId() const;
+    uint64_t                                                linkedCorrelationId() const;
+    int64_t                                                 deviceResourceId() const;
+    std::string                                             backend() const;
+    bool                                                    isPythonFunction() const;
+    int64_t                                                 cudaElapsedUs() const;
+    int64_t                                                 privateuse1ElapsedUs() const;
     void         getPerfEventCounters(torch::profiler::perf_counters_t& /*in*/) const;
     extra_meta_t extraMeta() const;
     std::string  metadataJson() const;
@@ -79,8 +79,8 @@ private:
     std::vector<std::string>                             python_stack_;
 
     // Copy fields from result so we can return ArrayRefs.
-    std::vector<std::vector<int64_t>>               shapes_;
-    std::vector<std::string>                        dtypes_;
+    std::vector<std::vector<int64_t>>                 shapes_;
+    std::vector<std::string>                          dtypes_;
     std::vector<quarisma::IValue>                     concrete_inputs_;
     std::unordered_map<std::string, quarisma::IValue> kwinputs_;
 };
@@ -135,17 +135,17 @@ private:
  * @param backend_name: name of the backend where the event took place.
  */
 TORCH_API void reportBackendEventToActiveKinetoProfiler(
-    const int64_t             start_time_us,
-    const int64_t             end_time_us,
-    const int64_t             debug_handle,
+    const int64_t               start_time_us,
+    const int64_t               end_time_us,
+    const int64_t               debug_handle,
     const quarisma::RecordScope scope,
-    const std::string&        event_name,
-    const std::string&        backend_name);
+    const std::string&          event_name,
+    const std::string&          backend_name);
 
 TORCH_API void enableProfiler(
     const torch::profiler::impl::profiler_config&              config,
     const std::set<torch::profiler::impl::activity_type_enum>& activities,
-    const std::unordered_set<quarisma::RecordScope>&             scopes = {});
+    const std::unordered_set<quarisma::RecordScope>&           scopes = {});
 
 /*
  * Same as enableProfiler but with callback to do post-processing of
@@ -173,7 +173,7 @@ TORCH_API void enableProfilerWithEventPostProcess(
     const torch::profiler::impl::profiler_config&              config,
     const std::set<torch::profiler::impl::activity_type_enum>& activities,
     post_process_t&&                                           cb,
-    const std::unordered_set<quarisma::RecordScope>&             scopes = {});
+    const std::unordered_set<quarisma::RecordScope>&           scopes = {});
 
 TORCH_API std::unique_ptr<ProfilerResult> disableProfiler();
 

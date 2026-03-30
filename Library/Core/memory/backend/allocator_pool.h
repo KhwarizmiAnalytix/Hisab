@@ -229,11 +229,11 @@ public:
      * **Exception Safety**: Strong guarantee - no partial construction
      */
     QUARISMA_API allocator_pool(
-        size_t                                 pool_size_limit,
-        bool                                   auto_resize,
+        size_t                                   pool_size_limit,
+        bool                                     auto_resize,
         std::unique_ptr<quarisma::sub_allocator> allocator,
-        std::unique_ptr<round_up_interface>    size_rounder,
-        std::string                            name);
+        std::unique_ptr<round_up_interface>      size_rounder,
+        std::string                              name);
 
     /**
      * @brief Destructor that cleans up pool and releases all resources.
@@ -389,7 +389,7 @@ private:
     const bool                                    has_size_limit_;
     const bool                                    auto_resize_;
     size_t                                        pool_size_limit_;
-    std::unique_ptr<quarisma::sub_allocator>        allocator_;
+    std::unique_ptr<quarisma::sub_allocator>      allocator_;
     std::unique_ptr<round_up_interface>           size_rounder_;
     std::mutex                                    mutex_;
     std::multimap<const size_t, PtrRecord*> pool_ QUARISMA_GUARDED_BY(mutex_);

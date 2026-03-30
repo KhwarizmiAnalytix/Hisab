@@ -1,7 +1,7 @@
 #pragma once
 
-#include <torch/csrc/jit/ir/ir.h>
 #include <quarisma/util/irange.h>
+#include <torch/csrc/jit/ir/ir.h>
 
 namespace torch::jit
 {

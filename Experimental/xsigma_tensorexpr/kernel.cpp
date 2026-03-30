@@ -1,6 +1,8 @@
 #include <Quarisma/ExpandUtils.h>
 #include <Quarisma/Parallel.h>
 #include <Quarisma/TensorGeometry.h>
+#include <quarisma/core/ScalarTypeToTypeMeta.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/passes/graph_rewrite_helper.h>
 #include <torch/csrc/jit/passes/mkldnn_rewrite.h>
@@ -14,8 +16,6 @@
 #include <torch/csrc/jit/tensorexpr/loopnest.h>
 #include <torch/csrc/jit/tensorexpr/loopnest_randomization.h>
 #include <torch/csrc/jit/tensorexpr/operators/operators.h>
-#include <quarisma/core/ScalarTypeToTypeMeta.h>
-#include <quarisma/util/irange.h>
 
 #include <utility>
 
@@ -594,7 +594,8 @@ ExprHandle TensorExprKernel::getVarForShape(const quarisma::ShapeSymbol& ss)
     return it->second;
 }
 
-std::vector<ExprHandle> TensorExprKernel::sizesFromSymbolicShape(const quarisma::SymbolicShape& shape)
+std::vector<ExprHandle> TensorExprKernel::sizesFromSymbolicShape(
+    const quarisma::SymbolicShape& shape)
 {
     std::vector<ExprHandle> dims;
     auto                    maybe_rank = shape.rank();
@@ -1575,10 +1576,11 @@ Tensor TensorExprKernel::convertStaticShapeOutputToCorrectStrides(torch::jit::Va
 
     TORCH_INTERNAL_ASSERT(
         tt->sizes().concrete_sizes(), buildErrorMessage("Output shapes are unknown."));
-    auto                 sizes         = *tt->sizes().concrete_sizes();
-    quarisma::MemoryFormat memory_format = (memory_layout_policy_ == MemoryLayoutPolicy::kContiguous)
-                                             ? quarisma::MemoryFormat::Contiguous
-                                             : quarisma::MemoryFormat::ChannelsLast;
+    auto                   sizes = *tt->sizes().concrete_sizes();
+    quarisma::MemoryFormat memory_format =
+        (memory_layout_policy_ == MemoryLayoutPolicy::kContiguous)
+            ? quarisma::MemoryFormat::Contiguous
+            : quarisma::MemoryFormat::ChannelsLast;
     std::vector<int64_t> default_strides = TensorType::contiguousStridesOf(sizes, memory_format);
     if (!tt->strides().concrete_sizes())
     {
@@ -2114,11 +2116,11 @@ void TensorExprKernel::recompile()
 }
 
 TensorExprKernel::TensorExprKernel(
-    const std::shared_ptr<Graph>&                           subgraph,
-    std::string                                             kernel_func_name,
+    const std::shared_ptr<Graph>&                             subgraph,
+    std::string                                               kernel_func_name,
     std::unordered_map<quarisma::Symbol, NNCLoweringFunction> custom_lowerings,
-    std::vector<int64_t>                                    symbolic_shape_inputs,
-    bool                                                    pre_alloc /*= false*/,
+    std::vector<int64_t>                                      symbolic_shape_inputs,
+    bool                                                      pre_alloc /*= false*/,
     std::unordered_map<const torch::jit::Value*, std::vector<torch::jit::StrideInput>>
         symbolic_strides)
     : graph_(subgraph),
@@ -2179,7 +2181,7 @@ void TensorExprKernel::run(Stack& stack) const
 }
 
 void TensorExprKernel::getStaticOutputSizesAndStrides(
-    const quarisma::ArrayRef<IValue>&    inputs,
+    const quarisma::ArrayRef<IValue>&  inputs,
     std::vector<std::vector<int64_t>>* sizes,
     std::vector<std::vector<int64_t>>* strides) const
 {
@@ -2316,7 +2318,7 @@ StmtPtr TensorExprKernel::getCodeGenStmt()
 void TensorExprKernel::runKernel(Stack& stack) const
 {
     // Set up arguments (inputs, then outputs) for kernel call.
-    auto                        inputs = last(stack, nInputs_);
+    auto                          inputs = last(stack, nInputs_);
     std::vector<quarisma::Tensor> outputs;
 
     std::vector<CodeGen::CallArg> runArgs = prepareRunArgs(inputs, outputs);

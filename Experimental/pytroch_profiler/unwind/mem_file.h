@@ -9,10 +9,10 @@
 #include <elf.h>
 #include <fcntl.h>
 #include <fmt/format.h>
+#include <quarisma/util/error.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <quarisma/util/error.h>
 
 #include <cerrno>
 #include <cstdio>

@@ -1,6 +1,6 @@
+#include <quarisma/util/Backtrace.h>
 #include <torch/csrc/autograd/anomaly_mode.h>
 #include <torch/csrc/autograd/function.h>
-#include <quarisma/util/Backtrace.h>
 
 #include <mutex>
 

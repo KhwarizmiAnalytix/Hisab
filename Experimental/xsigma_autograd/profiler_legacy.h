@@ -9,9 +9,9 @@
 #include <string>
 #include <vector>
 
-#include "profiler/pytorch_profiler/api.h"
-#include "profiler/pytorch_profiler/base.h"
-#include "profiler/pytorch_profiler/util.h"
+#include "pytorch_profiler/api.h"
+#include "pytorch_profiler/base.h"
+#include "pytorch_profiler/util.h"
 
 namespace torch::autograd::profiler
 {
@@ -29,10 +29,10 @@ struct TORCH_API LegacyEvent
 {
     LegacyEvent(
         EventKind                           kind,
-        quarisma::StringView                  name,
+        quarisma::StringView                name,
         uint16_t                            thread_id,
         bool                                record_cuda,
-        quarisma::RecordFunctionHandle        handle   = 0,
+        quarisma::RecordFunctionHandle      handle   = 0,
         std::vector<std::vector<int64_t>>&& shapes   = {},
         int64_t                             node_id  = -1,
         bool                                is_async = false)
@@ -50,9 +50,9 @@ struct TORCH_API LegacyEvent
     // Constructor to be used in conjunction with LegacyEvent::fromIValue.
     LegacyEvent(
         EventKind                           kind,
-        quarisma::StringView                  name,
+        quarisma::StringView                name,
         uint16_t                            thread_id,
-        quarisma::RecordFunctionHandle        handle,
+        quarisma::RecordFunctionHandle      handle,
         std::vector<std::vector<int64_t>>&& shapes,
         int64_t                             node_id,
         bool                                is_remote,
@@ -60,7 +60,7 @@ struct TORCH_API LegacyEvent
         int64_t                             cpu_ns,
         bool                                cuda_recorded,
         int64_t                             cuda_memory_usage = 0,
-        quarisma::DeviceIndex                 device            = -1,
+        quarisma::DeviceIndex               device            = -1,
         double                              cuda_us           = -1)
         : cpu_ns_(cpu_ns),
           name_(std::move(name)),
@@ -188,7 +188,10 @@ struct TORCH_API LegacyEvent
 
     void setScope(uint8_t scope) { scope_ = scope; }
 
-    const std::unordered_map<std::string, quarisma::IValue>& extraArgs() const { return extra_args_; }
+    const std::unordered_map<std::string, quarisma::IValue>& extraArgs() const
+    {
+        return extra_args_;
+    }
 
     void setExtraArgs(std::unordered_map<std::string, quarisma::IValue>&& save_args)
     {
@@ -204,15 +207,15 @@ struct TORCH_API LegacyEvent
 private:
     // signed to allow for negative intervals, initialized for safety.
     int64_t                                      cpu_ns_ = 0;
-    quarisma::StringView                           name_;
+    quarisma::StringView                         name_;
     EventKind                                    kind_;
     uint64_t                                     thread_id_;
     uint64_t                                     fwd_thread_id_{0};
-    quarisma::RecordFunctionHandle                 handle_{0};
+    quarisma::RecordFunctionHandle               handle_{0};
     std::vector<std::vector<int64_t>>            shapes_;
     int64_t                                      cpu_memory_usage_  = 0;
     int64_t                                      cuda_memory_usage_ = 0;
-    quarisma::DeviceIndex                          device_            = -1;
+    quarisma::DeviceIndex                        device_            = -1;
     torch::profiler::impl::ProfilerVoidEventStub cuda_event         = nullptr;
     int64_t                                      node_id_           = 0;
     bool                                         is_remote_         = false;
@@ -225,7 +228,7 @@ private:
     uint64_t                 correlation_id_{0};
     // Extra arguments for computing op flops
     std::unordered_map<std::string, quarisma::IValue> extra_args_;
-    uint64_t                                        flops_ = 0;
+    uint64_t                                          flops_ = 0;
 };
 
 // a linked-list of fixed sized vectors, to avoid

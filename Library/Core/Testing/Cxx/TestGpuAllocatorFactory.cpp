@@ -21,9 +21,9 @@
  * This file is kept for testing the remaining factory functionality (caching allocator creation).
  */
 
+#include "baseTest.h"
 #include "common/configure.h"
 #include "common/macros.h"
-#include "baseTest.h"
 
 #if QUARISMA_HAS_CUDA
 

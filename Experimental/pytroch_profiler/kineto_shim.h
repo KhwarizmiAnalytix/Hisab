@@ -104,10 +104,10 @@ private:
 
 using ActivitySet = std::set<quarisma::autograd::profiler::ActivityType>;
 void prepareTrace(
-    const bool                                        cpuOnly,
-    const ActivitySet&                                activities,
+    const bool                                          cpuOnly,
+    const ActivitySet&                                  activities,
     const quarisma::profiler::impl::ExperimentalConfig& config,
-    const std::string&                                trace_id = "");
+    const std::string&                                  trace_id = "");
 
 void                 toggleCollectionDynamic(const bool enable);
 void                 startTrace();

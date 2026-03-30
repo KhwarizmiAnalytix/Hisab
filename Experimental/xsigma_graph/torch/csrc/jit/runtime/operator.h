@@ -9,10 +9,10 @@
 #include <Quarisma/core/op_registration/op_allowlist.h>
 #include <Quarisma/core/stack.h>
 #include <Quarisma/core/symbol.h>
+#include <quarisma/util/overloaded.h>
 #include <torch/csrc/jit/frontend/function_schema_parser.h>
 #include <torch/csrc/jit/runtime/operator_options.h>
 #include <torch/library.h>
-#include <quarisma/util/overloaded.h>
 
 #include <functional>
 #include <initializer_list>
@@ -65,11 +65,11 @@ private:
     struct C10Operator final
     {
         quarisma::OperatorHandle handle_;
-        Operation              op_;
+        Operation                op_;
     };
     struct UnparsedFunctionSchema final
     {
-        std::string                                      schema_string_;
+        std::string                                        schema_string_;
         mutable std::optional<quarisma::AliasAnalysisKind> alias_analysis_;
     };
     struct JitOnlyOperator final
@@ -94,11 +94,11 @@ public:
     }
 
     Operator(
-        std::string               name,
-        std::string               overload_name,
-        std::vector<Argument>     arguments,
-        std::vector<Argument>     returns,
-        Operation                 op,
+        std::string                 name,
+        std::string                 overload_name,
+        std::vector<Argument>       arguments,
+        std::vector<Argument>       returns,
+        Operation                   op,
         quarisma::AliasAnalysisKind alias_analysis)
         : op_(JitOnlyOperator{
               FunctionSchema(varArgSchemaWithName(
@@ -157,7 +157,8 @@ public:
                 },
                 [](const JitOnlyOperator& op)
                 {
-                    QUARISMA_CHECK(false, "calling a JIT operator for dispatch key is not supported");
+                    QUARISMA_CHECK(
+                        false, "calling a JIT operator for dispatch key is not supported");
                     return Operation(nullptr);
                 }),
             op_);
@@ -208,7 +209,7 @@ public:
 
     quarisma::AliasAnalysisKind aliasAnalysisKind() const
     {
-        const FunctionSchema&     schemaRef      = schema();
+        const FunctionSchema&       schemaRef      = schema();
         quarisma::AliasAnalysisKind alias_analysis = schemaRef.aliasAnalysis();
 
         QUARISMA_CHECK(
@@ -321,12 +322,12 @@ std::optional<Operator> OperatorGenerator(
 
 template <typename Func>
 std::optional<Operator> OperatorGenerator(
-    const std::string                   name,
-    const std::string                   overload_name,
+    const std::string                     name,
+    const std::string                     overload_name,
     const std::vector<quarisma::Argument> arguments,
     const std::vector<quarisma::Argument> returns,
-    Func&&                              op,
-    AliasAnalysisKind                   alias_analysis)
+    Func&&                                op,
+    AliasAnalysisKind                     alias_analysis)
 {
     return std::optional<Operator>(
         Operator(name, overload_name, arguments, returns, std::forward<Func>(op), alias_analysis));

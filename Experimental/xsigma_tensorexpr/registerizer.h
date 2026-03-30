@@ -1,11 +1,11 @@
 #pragma once
+#include <quarisma/core/ScalarType.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/Export.h>
 #include <torch/csrc/jit/tensorexpr/hash_provider.h>
 #include <torch/csrc/jit/tensorexpr/ir_mutator.h>
 #include <torch/csrc/jit/tensorexpr/ir_simplifier.h>
 #include <torch/csrc/jit/tensorexpr/ir_visitor.h>
-#include <quarisma/core/ScalarType.h>
-#include <quarisma/util/irange.h>
 
 #include <utility>
 #include <vector>

@@ -1,7 +1,7 @@
 #pragma once
+#include <quarisma/util/Flags.h>
 #include <torch/csrc/jit/api/module.h>
 #include <torch/csrc/jit/runtime/graph_executor_impl.h>
-#include <quarisma/util/Flags.h>
 
 TORCH_DECLARE_bool(torch_jit_static_then_dynamic);
 

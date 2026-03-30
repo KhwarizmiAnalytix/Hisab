@@ -1,4 +1,5 @@
 #include <pybind11/pybind11.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/DynamicTypes.h>
 #include <torch/csrc/Exceptions.h>
 #include <torch/csrc/autograd/python_anomaly_mode.h>
@@ -10,7 +11,6 @@
 #include <torch/csrc/utils/pybind.h>
 #include <torch/csrc/utils/python_numbers.h>
 #include <torch/csrc/utils/python_strings.h>
-#include <quarisma/util/irange.h>
 
 #include <cstdio>
 #include <memory>

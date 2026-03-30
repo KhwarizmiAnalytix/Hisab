@@ -23,12 +23,12 @@
 #include "memory/backend/allocator_pool.h"
 #include "memory/helper/memory_allocator.h"
 #if QUARISMA_HAS_NATIVE_PROFILER
-#include "profiler/native/analysis/statistical_analyzer.h"
-#include "profiler/native/memory/memory_tracker.h"
-#include "profiler/native/session/profiler.h"
-#include "profiler/native/tracing/traceme.h"
-#include "profiler/native/tracing/traceme_encode.h"
-#include "profiler/native/tracing/traceme_recorder.h"
+#include "native/analysis/statistical_analyzer.h"
+#include "native/memory/memory_tracker.h"
+#include "native/session/profiler.h"
+#include "native/tracing/traceme.h"
+#include "native/tracing/traceme_encode.h"
+#include "native/tracing/traceme_recorder.h"
 #endif
 
 using namespace quarisma;

@@ -1,9 +1,9 @@
 #include <Quarisma/core/jit_type.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/ir/ir_views.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/passes/peephole.h>
 #include <torch/csrc/jit/passes/peephole_non_tensor.h>
-#include <quarisma/util/irange.h>
 
 namespace torch::jit
 {
@@ -197,7 +197,8 @@ struct PeepholeOptimizeNonTensorImpl
                 AT_ASSERT(node->inputs().size() == 2);
                 for (size_t check_none_index : {0, 1})
                 {
-                    bool input_must_be_none = node->inputs().quarisma(check_none_index)->mustBeNone();
+                    bool input_must_be_none =
+                        node->inputs().quarisma(check_none_index)->mustBeNone();
                     bool other_must_not_be_none =
                         node->inputs().quarisma(1 - check_none_index)->mustNotBeNone();
                     if (input_must_be_none && other_must_not_be_none)

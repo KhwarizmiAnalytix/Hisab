@@ -472,7 +472,8 @@ static ExecutionTraceObserver::ID getObjectID(ExecutionTraceObserver& ob, const 
     return iter->second;
 }
 
-static void dumpTensorData2File(std::string& tensor_dump_file_name, quarisma::Tensor& tensor_on_host)
+static void dumpTensorData2File(
+    std::string& tensor_dump_file_name, quarisma::Tensor& tensor_on_host)
 {
     std::fstream fs;
     fs.open(tensor_dump_file_name, std::fstream::out | std::fstream::binary);
@@ -493,7 +494,7 @@ static std::tuple<std::string, std::string, std::string, std::string> convertIVa
     int&                                  tensorIndex,
     std::map<int, std::pair<long, long>>& tensor_index_min_max_map,
     bool                                  isInput,
-    const quarisma::IValue&                 val,
+    const quarisma::IValue&               val,
     const bool                            baseType    = true,
     const size_t                          maxArrayLen = kMaxNumElements)
 {
@@ -530,11 +531,11 @@ static std::tuple<std::string, std::string, std::string, std::string> convertIVa
         if (tensor_impl->has_storage() && !tensor_impl->has_symbolic_sizes_strides())
         {
             const quarisma::Storage& t_storage = tensor_impl->storage();
-            storage_id                       = ob.get_tensor_storage_ID(t_storage);
-            offset                           = tensor_impl->storage_offset();
-            numel                            = tensor_impl->numel();
-            itemsize                         = tensor_impl->itemsize();
-            device_str                       = tensor_impl->device().str();
+            storage_id                         = ob.get_tensor_storage_ID(t_storage);
+            offset                             = tensor_impl->storage_offset();
+            numel                              = tensor_impl->numel();
+            itemsize                           = tensor_impl->itemsize();
+            device_str                         = tensor_impl->device().str();
 
             if (isInput && quarisma::isIntegralType(tensor.scalar_type(), false) &&
                 tensor.numel() != 0)
@@ -657,7 +658,7 @@ static void appendValueInfo(
     int&                                  tensorIndex,
     std::map<int, std::pair<long, long>>& tensor_index_min_max_map,
     bool                                  isInput,
-    const quarisma::IValue&                 val,
+    const quarisma::IValue&               val,
     std::vector<std::string>&             shapes,
     std::vector<std::string>&             strides,
     std::vector<std::string>&             types,
@@ -1018,8 +1019,8 @@ bool addExecutionTraceObserver(const std::string& output_file_path)
 
         // check if the environment variable is set to force recording integer
         // tensors
-        auto env_variable =
-            quarisma::utils::get_env("ENABLE_PYQUARISMA_EXECUTION_TRACE_SAVE_INTEGRAL_TENSOR_RANGE");
+        auto env_variable = quarisma::utils::get_env(
+            "ENABLE_PYQUARISMA_EXECUTION_TRACE_SAVE_INTEGRAL_TENSOR_RANGE");
         if (env_variable.has_value())
         {
             ob.record_integral_tensor_range = true;

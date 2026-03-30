@@ -1,9 +1,9 @@
 #include <Quarisma/ScalarOps.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/passes/dead_code_elimination.h>
 #include <torch/csrc/jit/passes/onnx/helper.h>
 #include <torch/csrc/jit/passes/onnx/peephole.h>
-#include <quarisma/util/irange.h>
 
 #include "util/exception.h"
 
@@ -323,7 +323,8 @@ static void pushPackingPastRnn(Block* b)
 
         // Packing only has an effect on a network when its outputs are actually
         // used, so we can remove it here.
-        if (rnn->outputs().quarisma(0)->uses().empty() && n->outputs().quarisma(1)->uses().size() == 1)
+        if (rnn->outputs().quarisma(0)->uses().empty() &&
+            n->outputs().quarisma(1)->uses().size() == 1)
         {
             n->outputs().quarisma(0)->replaceAllUsesWith(n->inputs().quarisma(0));
             n->outputs().quarisma(1)->replaceFirstUseWith(n->inputs().quarisma(1));

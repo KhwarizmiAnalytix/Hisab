@@ -17,9 +17,9 @@
  * Website: https://www.quarisma.co.uk
  */
 
+#include "baseTest.h"
 #include "common/configure.h"
 #include "common/macros.h"
-#include "baseTest.h"
 
 #if QUARISMA_HAS_CUDA
 
@@ -80,7 +80,8 @@ QUARISMATEST(GpuMemoryWrapper, allocates_typed_memory)
     }
     catch (const std::exception& e)
     {
-        QUARISMA_LOG_INFO("GPU memory wrapper allocation failed (expected if no GPU): {}", e.what());
+        QUARISMA_LOG_INFO(
+            "GPU memory wrapper allocation failed (expected if no GPU): {}", e.what());
     }
 }
 
@@ -330,7 +331,8 @@ QUARISMATEST(GpuMemoryWrapper, resets_wrapper_state)
     }
     catch (const std::exception& e)
     {
-        QUARISMA_LOG_INFO("GPU memory wrapper reset test failed (expected if no GPU): {}", e.what());
+        QUARISMA_LOG_INFO(
+            "GPU memory wrapper reset test failed (expected if no GPU): {}", e.what());
     }
 }
 

@@ -174,11 +174,11 @@ struct TORCH_API AccumulateGrad : public Node
     //              is used to set a new value for the grad.
     template <typename T>
     static void accumulateGrad(
-        const Variable&       variable,
+        const Variable&         variable,
         quarisma::Tensor&       variable_grad,
         const quarisma::Tensor& new_grad,
-        size_t                num_expected_refs,
-        const T&              update_grad)
+        size_t                  num_expected_refs,
+        const T&                update_grad)
     {
         if (!variable_grad.defined())
         {

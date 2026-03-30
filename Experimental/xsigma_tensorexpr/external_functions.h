@@ -65,8 +65,8 @@ namespace torch::jit::tensorexpr
 {
 struct QIData final
 {
-    double             scale;
-    int64_t            zero;
+    double               scale;
+    int64_t              zero;
     quarisma::ScalarType scalarType;
 };
 std::vector<quarisma::Tensor> constructTensors(

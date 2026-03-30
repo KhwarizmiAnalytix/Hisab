@@ -1,4 +1,5 @@
 #include <Quarisma/native/quantized/PackedParams.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/ir/constants.h>
 #include <torch/csrc/jit/ir/irparser.h>
 #include <torch/csrc/jit/ir/subgraph_matcher.h>
@@ -6,7 +7,6 @@
 #include <torch/csrc/jit/passes/onnx/helper.h>
 #include <torch/csrc/jit/passes/onnx/unpack_quantized_weights.h>
 #include <torch/csrc/jit/passes/subgraph_rewrite.h>
-#include <quarisma/util/irange.h>
 
 // TODO: Switch to per operator headers after
 // https://github.com/pytorch/pytorch/pull/68693 is merged
@@ -24,7 +24,7 @@ using namespace ::quarisma::onnx;
 
 static std::vector<Node*> CreateQuantizedWeights(
     std::shared_ptr<Graph>&     graph,
-    const quarisma::Tensor&       weight,
+    const quarisma::Tensor&     weight,
     int8_t*                     data,
     const std::vector<int64_t>& shapes,
     const std::vector<int64_t>& strides)
@@ -89,10 +89,10 @@ static std::vector<Node*> CreateQuantizedWeights(
     // Need clone because quarisma::from_blob does not take ownership of data.
     data_node->t_(Symbol::attr("value"), data_value.clone());
 
-    Node* scale_node = graph->create(prim::Constant);
-    auto  scale_value =
-        quarisma::from_blob(scale_data.data(), quarisma::IntArrayRef(scale_shapes), quarisma::kFloat)
-            .to(quarisma::kCPU);
+    Node* scale_node  = graph->create(prim::Constant);
+    auto  scale_value = quarisma::from_blob(
+                           scale_data.data(), quarisma::IntArrayRef(scale_shapes), quarisma::kFloat)
+                           .to(quarisma::kCPU);
     scale_node->t_(Symbol::attr("value"), scale_value.clone());
 
     Node* zero_point_node = graph->create(prim::Constant);
@@ -123,9 +123,10 @@ static Node* CreateQuantizedBias(
     std::vector<float> data, std::shared_ptr<Graph>& graph, const std::vector<int64_t>& shapes)
 {
     Node* const_node_1 = graph->create(prim::Constant);
-    auto  const_bias   = quarisma::from_blob(data.data(), quarisma::IntArrayRef(shapes), quarisma::kFloat)
-                          .to(quarisma::kCPU);
-    auto           options = quarisma::TensorOptions().dtype(quarisma::kFloat).device(quarisma::kCPU);
+    auto  const_bias =
+        quarisma::from_blob(data.data(), quarisma::IntArrayRef(shapes), quarisma::kFloat)
+            .to(quarisma::kCPU);
+    auto options = quarisma::TensorOptions().dtype(quarisma::kFloat).device(quarisma::kCPU);
     quarisma::Tensor const_bias_copy = quarisma::empty(quarisma::IntArrayRef(shapes), options);
     const_bias_copy.copy_(const_bias);
     const_node_1->t_(Symbol::attr("value"), const_bias_copy);
@@ -212,11 +213,11 @@ static void unpackQuantizedWeightsHelper(
         }
         quarisma::Tensor                unpacked_weight;
         std::optional<quarisma::Tensor> bias;
-        constexpr int64_t             stride_idx         = 2;
-        constexpr int64_t             padding_idx        = 3;
-        int64_t                       output_padding_idx = 0;
-        int64_t                       dilation_idx       = 0;
-        int64_t                       groups_idx         = 0;
+        constexpr int64_t               stride_idx         = 2;
+        constexpr int64_t               padding_idx        = 3;
+        int64_t                         output_padding_idx = 0;
+        int64_t                         dilation_idx       = 0;
+        int64_t                         groups_idx         = 0;
         if (expect_output_padding)
         {
             output_padding_idx = 4;
@@ -316,7 +317,7 @@ static void unpackQuantizedWeightsHelper(
                 std::vector<quarisma::Tensor> non_optional = elements[1].toTensorVector();
 
                 const quarisma::Tensor& conv_params_packed = non_optional[0];
-                unpacked_weight                          = non_optional[1];
+                unpacked_weight                            = non_optional[1];
 
                 const int64_t kSpatialDim = conv_params_packed[0].item<int64_t>();
                 // skip kSpatialDim
@@ -368,7 +369,7 @@ static void unpackQuantizedWeightsHelper(
                     conv_params_packed.numel());
 
                 torch::List<quarisma::IValue> optional = elements[2].toList();
-                bias                                 = optional.get(0).toOptional<quarisma::Tensor>();
+                bias = optional.get(0).toOptional<quarisma::Tensor>();
 
                 if (params_type == QuantizedParamsType::CONV1D)
                 {
@@ -430,7 +431,7 @@ static void unpackQuantizedWeightsHelper(
         {
             TORCH_INTERNAL_ASSERT(itr->second.isTensor());
             quarisma::Tensor packed_weight = itr->second.toTensor();
-            auto           op            = Dispatcher::singleton()
+            auto             op            = Dispatcher::singleton()
                           .findSchemaOrThrow(unpack_fn.c_str(), "")
                           .typed<std::tuple<quarisma::Tensor, std::optional<quarisma::Tensor>>(
                               quarisma::Tensor)>();

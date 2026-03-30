@@ -11,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-#include "util/array_ref.h"
+//#include "util/array_ref.h"
 #include "util/exception.h"
 //#include "util/complex.h"
 
@@ -372,26 +372,26 @@ struct hash<std::pair<T1, T2>>
     }
 };
 
-template <typename T>
-struct hash<quarisma::array_ref<T>>
-{
-    size_t operator()(quarisma::array_ref<T> v) const
-    {
-        size_t seed = 0;
-        for (const auto& elem : v)
-        {
-            seed = hash_combine(seed, _hash_detail::simple_get_hash(elem));
-        }
-        return seed;
-    }
-};
+// template <typename T>
+// struct hash<quarisma::array_ref<T>>
+// {
+//     size_t operator()(quarisma::array_ref<T> v) const
+//     {
+//         size_t seed = 0;
+//         for (const auto& elem : v)
+//         {
+//             seed = hash_combine(seed, _hash_detail::simple_get_hash(elem));
+//         }
+//         return seed;
+//     }
+// };
 
 // Specialization for std::vector
-template <typename T>
-struct hash<std::vector<T>>
-{
-    size_t operator()(const std::vector<T>& v) const { return hash<quarisma::array_ref<T>>()(v); }
-};
+// template <typename T>
+// struct hash<std::vector<T>>
+// {
+//     size_t operator()(const std::vector<T>& v) const { return hash<quarisma::array_ref<T>>()(v); }
+// };
 
 // Specialization for device_option
 template <>

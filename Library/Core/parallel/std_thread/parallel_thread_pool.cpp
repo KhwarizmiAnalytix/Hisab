@@ -106,7 +106,7 @@ struct parallel_thread_pool::proxy_thread_data
  */
 struct parallel_thread_pool::proxy_data
 {
-    parallel_thread_pool*               pool_{};         ///< Owning thread pool
+    parallel_thread_pool*          pool_{};         ///< Owning thread pool
     proxy_data*                    parent_{};       ///< Parent proxy (for nested scopes)
     std::vector<proxy_thread_data> threads_;        ///< Allocated physical threads
     std::size_t                    next_thread_{};  ///< Round-robin index for job distribution
@@ -190,7 +190,7 @@ parallel_thread_pool::proxy::~proxy()
     }
 }
 
-parallel_thread_pool::proxy::proxy(proxy&&) noexcept                             = default;
+parallel_thread_pool::proxy::proxy(proxy&&) noexcept                                  = default;
 parallel_thread_pool::proxy& parallel_thread_pool::proxy::operator=(proxy&&) noexcept = default;
 
 /**
@@ -313,7 +313,8 @@ void parallel_thread_pool::proxy::do_job(std::function<void()> job)
  *
  * @return Vector of std::thread references
  */
-std::vector<std::reference_wrapper<std::thread>> parallel_thread_pool::proxy::get_threads() const  // NOLINT(readability-convert-member-functions-to-static)
+std::vector<std::reference_wrapper<std::thread>> parallel_thread_pool::proxy::get_threads()
+    const  // NOLINT(readability-convert-member-functions-to-static)
 {
     std::vector<std::reference_wrapper<std::thread>> output;
 
@@ -538,7 +539,8 @@ std::size_t parallel_thread_pool::thread_count() const noexcept
  *
  * @note This is a linear search, but pool size is typically small (< 100 threads)
  */
-parallel_thread_pool::thread_data* parallel_thread_pool::get_caller_thread_data() const noexcept  // NOLINT(readability-convert-member-functions-to-static)
+parallel_thread_pool::thread_data* parallel_thread_pool::get_caller_thread_data()
+    const noexcept  // NOLINT(readability-convert-member-functions-to-static)
 {
     for (const auto& thread_data_ptr : threads_)
     {

@@ -3,7 +3,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "profiler/pytorch_profiler/combined_traceback.h"
+#include "pytorch_profiler/combined_traceback.h"
 
 namespace quarisma
 {

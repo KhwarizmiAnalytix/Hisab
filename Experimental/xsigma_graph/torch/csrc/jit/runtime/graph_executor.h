@@ -71,7 +71,7 @@ struct TORCH_API GraphExecutor
         std::string                   function_name,
         ExecutorExecutionMode         executor_mode);
 
-    void                          run(Stack& inputs);
+    void                            run(Stack& inputs);
     quarisma::intrusive_ptr<Future> runAsync(
         Stack& stack, TaskLauncher taskLauncher = quarisma::launch);
 

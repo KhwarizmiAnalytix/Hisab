@@ -31,43 +31,43 @@ struct QUARISMA_API KinetoEvent
         const std::shared_ptr<const quarisma::profiler::impl::Result>& /*result*/,
         const bool verbose);
 
-    uint64_t                                              startThreadId() const;
-    uint64_t                                              endThreadId() const;
-    uint8_t                                               activityType() const;
-    uint64_t                                              fwdThreadId() const;
-    bool                                                  hasShapes() const;
+    uint64_t                                                startThreadId() const;
+    uint64_t                                                endThreadId() const;
+    uint8_t                                                 activityType() const;
+    uint64_t                                                fwdThreadId() const;
+    bool                                                    hasShapes() const;
     const quarisma::array_ref<std::vector<int64_t>>         shapes() const;
-    bool                                                  hasTypes() const;
+    bool                                                    hasTypes() const;
     const quarisma::array_ref<std::string>                  dtypes() const;
-    bool                                                  hasConcreteInputs() const;
-    const quarisma::array_ref<quarisma::IValue>               concreteInputs() const;
-    bool                                                  hasKwinputs() const;
-    bool                                                  isHiddenEvent() const;
+    bool                                                    hasConcreteInputs() const;
+    const quarisma::array_ref<quarisma::IValue>             concreteInputs() const;
+    bool                                                    hasKwinputs() const;
+    bool                                                    isHiddenEvent() const;
     const std::unordered_map<std::string, quarisma::IValue> kwinputs() const;
-    uint64_t                                              flops() const;
-    int64_t                                               sequenceNr() const;
-    bool                                                  hasStack() const;
+    uint64_t                                                flops() const;
+    int64_t                                                 sequenceNr() const;
+    bool                                                    hasStack() const;
     const quarisma::array_ref<std::string>                  stack() const;
-    uint8_t                                               scope() const;
-    bool                                                  hasModuleHierarchy() const;
+    uint8_t                                                 scope() const;
+    bool                                                    hasModuleHierarchy() const;
     const quarisma::array_ref<std::string>                  moduleHierarchy() const;
-    int64_t                                               debugHandle() const;
-    std::string                                           name() const;
-    std::string                                           overload_name() const;
+    int64_t                                                 debugHandle() const;
+    std::string                                             name() const;
+    std::string                                             overload_name() const;
     quarisma::device_enum                                   deviceType() const;
-    int                                                   deviceIndex() const;
-    int64_t                                               nBytes() const;
-    uint64_t                                              startNs() const;
-    uint64_t                                              endNs() const;
-    uint64_t                                              durationNs() const;
-    bool                                                  isAsync() const;
-    uint64_t                                              correlationId() const;
-    uint64_t                                              linkedCorrelationId() const;
-    int64_t                                               deviceResourceId() const;
-    std::string                                           backend() const;
-    bool                                                  isPythonFunction() const;
-    int64_t                                               cudaElapsedUs() const;
-    int64_t                                               privateuse1ElapsedUs() const;
+    int                                                     deviceIndex() const;
+    int64_t                                                 nBytes() const;
+    uint64_t                                                startNs() const;
+    uint64_t                                                endNs() const;
+    uint64_t                                                durationNs() const;
+    bool                                                    isAsync() const;
+    uint64_t                                                correlationId() const;
+    uint64_t                                                linkedCorrelationId() const;
+    int64_t                                                 deviceResourceId() const;
+    std::string                                             backend() const;
+    bool                                                    isPythonFunction() const;
+    int64_t                                                 cudaElapsedUs() const;
+    int64_t                                                 privateuse1ElapsedUs() const;
     void         getPerfEventCounters(quarisma::profiler::perf_counters_t& /*in*/) const;
     extra_meta_t extraMeta() const;
     std::string  metadataJson() const;
@@ -77,11 +77,11 @@ private:
     quarisma::profiler::impl::ProfilerVoidEventStub fallbackEnd() const;
 
     std::shared_ptr<const quarisma::profiler::impl::Result> result_;
-    std::vector<std::string>                              python_stack_;
+    std::vector<std::string>                                python_stack_;
 
     // Copy fields from result so we can return ArrayRefs.
-    std::vector<std::vector<int64_t>>               shapes_;
-    std::vector<std::string>                        dtypes_;
+    std::vector<std::vector<int64_t>>                 shapes_;
+    std::vector<std::string>                          dtypes_;
     std::vector<quarisma::IValue>                     concrete_inputs_;
     std::unordered_map<std::string, quarisma::IValue> kwinputs_;
 };
@@ -93,10 +93,10 @@ struct QUARISMA_API ProfilerResult
 {
     ProfilerResult();
     ProfilerResult(
-        uint64_t                                                                start_time,
-        std::vector<KinetoEvent>                                                events,
+        uint64_t                                                                  start_time,
+        std::vector<KinetoEvent>                                                  events,
         std::unique_ptr<quarisma::profiler::impl::kineto::ActivityTraceWrapper>&& trace,
-        std::vector<experimental_event_t>&&                                     event_tree);
+        std::vector<experimental_event_t>&&                                       event_tree);
     ~ProfilerResult();
 
     uint64_t trace_start_ns() const { return trace_start_ns_; }
@@ -108,10 +108,10 @@ struct QUARISMA_API ProfilerResult
     void save(const std::string& path);
 
 private:
-    uint64_t                                                              trace_start_ns_ = 0;
-    std::vector<KinetoEvent>                                              events_;
+    uint64_t                                                                trace_start_ns_ = 0;
+    std::vector<KinetoEvent>                                                events_;
     std::unique_ptr<quarisma::profiler::impl::kineto::ActivityTraceWrapper> trace_;
-    std::vector<experimental_event_t>                                     event_tree_;
+    std::vector<experimental_event_t>                                       event_tree_;
 };
 
 /*
@@ -136,12 +136,12 @@ private:
  * @param backend_name: name of the backend where the event took place.
  */
 QUARISMA_API void reportBackendEventToActiveKinetoProfiler(
-    const int64_t             start_time_us,
-    const int64_t             end_time_us,
-    const int64_t             debug_handle,
+    const int64_t               start_time_us,
+    const int64_t               end_time_us,
+    const int64_t               debug_handle,
     const quarisma::RecordScope scope,
-    const std::string&        event_name,
-    const std::string&        backend_name);
+    const std::string&          event_name,
+    const std::string&          backend_name);
 
 QUARISMA_API void enableProfiler(
     const quarisma::profiler::impl::ProfilerConfig&         config,
@@ -173,7 +173,7 @@ using post_process_t = std::function<void(
 QUARISMA_API void enableProfilerWithEventPostProcess(
     const quarisma::profiler::impl::ProfilerConfig&         config,
     const std::set<quarisma::profiler::impl::ActivityType>& activities,
-    post_process_t&&                                      cb,
+    post_process_t&&                                        cb,
     const std::unordered_set<quarisma::RecordScope>&        scopes = {});
 
 QUARISMA_API std::unique_ptr<ProfilerResult> disableProfiler();

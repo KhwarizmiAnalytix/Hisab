@@ -59,8 +59,8 @@ void setInputTensorTypes(
     Graph& g, const Stack& stack, bool complete, const std::vector<int>& param_count_list)
 {
     quarisma::ArrayRef<Value*> input_values = g.inputs();
-    auto                     s_iter       = stack.begin();
-    size_t                   list_idx     = 0;
+    auto                       s_iter       = stack.begin();
+    size_t                     list_idx     = 0;
     if (!param_count_list.empty())
     {
         TORCH_INTERNAL_ASSERT(

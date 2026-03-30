@@ -1,4 +1,7 @@
 #include <Quarisma/Utils.h>
+#include <quarisma/core/ScalarType.h>
+#include <quarisma/util/accumulate.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/ir/constants.h>
 #include <torch/csrc/jit/ir/ir.h>
 #include <torch/csrc/jit/jit_log.h>
@@ -8,9 +11,6 @@
 #include <torch/csrc/jit/passes/frozen_conv_folding.h>
 #include <torch/csrc/jit/passes/utils/optimization_utils.h>
 #include <torch/csrc/jit/tensorexpr/types.h>
-#include <quarisma/core/ScalarType.h>
-#include <quarisma/util/accumulate.h>
-#include <quarisma/util/irange.h>
 
 #include "util/exception.h"
 

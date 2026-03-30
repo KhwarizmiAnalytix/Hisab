@@ -42,7 +42,7 @@ static std::unordered_map<std::string, quarisma::IValue> getConvParams(
     const Match& match, const std::unordered_map<std::string, Value*>& vmap)
 {
     std::unordered_map<std::string, quarisma::IValue> calc_values;
-    const auto&                                     match_vmap = match.values_map;
+    const auto&                                       match_vmap = match.values_map;
     auto transposed_value         = getIValue("transposed", match_vmap, vmap).value();
     calc_values["transposed"]     = transposed_value;
     auto output_padding_value     = getIValue("output_padding", match_vmap, vmap).value();

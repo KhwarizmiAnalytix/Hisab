@@ -2,13 +2,13 @@
 #include <Quarisma/Dispatch.h>
 #include <Quarisma/ExpandUtils.h>
 #include <Quarisma/LegacyBatchedTensorImpl.h>
+#include <Quarisma/Quarisma.h>
 #include <Quarisma/ScalarOps.h>
 #include <Quarisma/SparseCsrTensorUtils.h>
 #include <Quarisma/TensorSubclassLikeUtils.h>
 #include <Quarisma/Utils.h>
 #include <Quarisma/WrapDimUtils.h>
 #include <Quarisma/WrapDimUtilsMulti.h>
-#include <Quarisma/Quarisma.h>
 #include <Quarisma/core/Reduction.h>
 #include <Quarisma/core/grad_mode.h>
 #include <Quarisma/native/Activation.h>
@@ -16,15 +16,15 @@
 #include <Quarisma/native/LinearAlgebraUtils.h>
 #include <Quarisma/native/SparseTensorUtils.h>
 #include <Quarisma/native/nested/NestedTensorUtils.h>
-#include <torch/csrc/autograd/FunctionsManual.h>
-#include <torch/csrc/autograd/functions/basic_ops.h>
-#include <torch/csrc/autograd/functions/utils.h>
-#include <torch/csrc/autograd/variable.h>
 #include <quarisma/core/TensorOptions.h>
 #include <quarisma/util/OptionalArrayRef.h>
 #include <quarisma/util/SmallBuffer.h>
 #include <quarisma/util/accumulate.h>
 #include <quarisma/util/irange.h>
+#include <torch/csrc/autograd/FunctionsManual.h>
+#include <torch/csrc/autograd/functions/basic_ops.h>
+#include <torch/csrc/autograd/functions/utils.h>
+#include <torch/csrc/autograd/variable.h>
 
 #include <algorithm>
 #include <ciso646>
@@ -213,7 +213,7 @@ Tensor restore_reduced_dims(const Tensor& output, IntArrayRef dims, bool keepdim
     {
         return output;
     }
-    auto                        total_dims = output.dim() + dims.size();
+    auto                          total_dims = output.dim() + dims.size();
     std::vector<quarisma::SymInt> target_shape(total_dims, 0);
     for (int64_t i : dims)
     {
@@ -387,7 +387,8 @@ Tensor norm_jvp(
         {
             nb_max = unsqueeze_multiple(nb_max, dim, ndim);
         }
-        return (quarisma::real(self_p.sgn() * self_t.conj()) * is_eq_max / nb_max).sum(dim, keepdim);
+        return (quarisma::real(self_p.sgn() * self_t.conj()) * is_eq_max / nb_max)
+            .sum(dim, keepdim);
     }
     else if (p < 1.0)
     {
@@ -489,12 +490,12 @@ std::tuple<Tensor, Tensor, Tensor> linear_double_backward(
 }
 
 Tensor linalg_vector_norm_jvp(
-    const Tensor&                      self_p,
-    const Tensor&                      self_t,
-    const Scalar&                      scalar_ord,
-    Tensor                             norm,
+    const Tensor&                        self_p,
+    const Tensor&                        self_t,
+    const Scalar&                        scalar_ord,
+    Tensor                               norm,
     const quarisma::OptionalIntArrayRef& opt_dim,
-    bool                               keepdim)
+    bool                                 keepdim)
 {
     // No need to handle the dtype arg as it's handled via broadcasting in the
     // function
@@ -503,12 +504,12 @@ Tensor linalg_vector_norm_jvp(
 }
 
 Tensor linalg_vector_norm_backward(
-    Tensor                             grad,
-    const Tensor&                      self,
-    const Scalar&                      scalar_ord,
-    Tensor                             norm,
+    Tensor                               grad,
+    const Tensor&                        self,
+    const Scalar&                        scalar_ord,
+    Tensor                               norm,
     const quarisma::OptionalIntArrayRef& opt_dim,
-    bool                               keepdim)
+    bool                                 keepdim)
 {
     // No need to handle the dtype arg as it's handled via broadcasting in the
     // function
@@ -567,8 +568,9 @@ Tensor pow_backward_exponent(
     auto self_ = self.to(promoted_dtype);
 
     auto out =
-        grad * quarisma::where(
-                   cond, quarisma::scalar_tensor(0.0, grad.options()), (result * self_.log()).conj());
+        grad *
+        quarisma::where(
+            cond, quarisma::scalar_tensor(0.0, grad.options()), (result * self_.log()).conj());
     return handle_r_to_c(exponent, std::move(out));
 }
 
@@ -783,11 +785,11 @@ Tensor nansum_backward(
 }
 
 Tensor mean_backward(
-    const Tensor&          grad,
+    const Tensor&            grad,
     quarisma::SymIntArrayRef shape,
-    OptionalIntArrayRef    opt_dim,
+    OptionalIntArrayRef      opt_dim,
     quarisma::SymInt         numel,
-    bool                   keepdim)
+    bool                     keepdim)
 {
     bool is_all_reduce = !opt_dim.has_value() || opt_dim.value().empty();
     auto n             = is_all_reduce ? std::move(numel) : _safe_size(shape, opt_dim.value());
@@ -838,9 +840,10 @@ Tensor prod_safe_zeros_backward(const Tensor& grad, const Tensor& inp, int64_t d
         quarisma::cat({ones, inp.narrow_symint(dim, 0, inp.sym_size(dim) - 1)}, dim);
     Tensor exclusive_normal = exclusive_normal_nocp.cumprod(dim);
 
-    Tensor narrow_reverse         = inp.narrow_symint(dim, 1, inp.sym_size(dim) - 1).flip(dim);
-    Tensor exclusive_reverse_nocp = quarisma::cat({std::move(ones), std::move(narrow_reverse)}, dim);
-    Tensor exclusive_reverse      = exclusive_reverse_nocp.cumprod(dim).flip(dim);
+    Tensor narrow_reverse = inp.narrow_symint(dim, 1, inp.sym_size(dim) - 1).flip(dim);
+    Tensor exclusive_reverse_nocp =
+        quarisma::cat({std::move(ones), std::move(narrow_reverse)}, dim);
+    Tensor exclusive_reverse = exclusive_reverse_nocp.cumprod(dim).flip(dim);
 
     return grad * (exclusive_normal * exclusive_reverse).conj();
 }
@@ -1049,9 +1052,9 @@ Tensor unbind_backward(const variable_list& grads, int64_t dim)
 }
 
 Tensor unbind_backward_nested(
-    const variable_list&         grads,
-    const Tensor&                nt_sizes,
-    int64_t                      dim,
+    const variable_list&           grads,
+    const Tensor&                  nt_sizes,
+    int64_t                        dim,
     const quarisma::TensorOptions& options)
 {
     std::vector<Tensor> grads_tensors;
@@ -1063,7 +1066,7 @@ Tensor unbind_backward_nested(
         }
         else
         {
-            const auto                component_size = nt_sizes[i].contiguous();
+            const auto                  component_size = nt_sizes[i].contiguous();
             const quarisma::IntArrayRef grad_size(
                 component_size.data_ptr<int64_t>(), component_size.size(0));
             grads_tensors.push_back(quarisma::zeros(grad_size, options));
@@ -1126,17 +1129,17 @@ Tensor unsqueeze_to(const Tensor& self, int64_t dim, quarisma::SymIntArrayRef sy
 }
 
 std::vector<Tensor> cat_tensors_backward(
-    const Tensor&                                   grad,
+    const Tensor&                                     grad,
     const std::vector<std::vector<quarisma::SymInt>>& sizes,
-    const std::vector<ScalarType>&                  dtypes,
-    int64_t                                         dim)
+    const std::vector<ScalarType>&                    dtypes,
+    int64_t                                           dim)
 {
     std::vector<Tensor> grad_inputs(sizes.size());
     if (!grad.defined())
     {
         return grad_inputs;
     }
-    dim                       = quarisma::legacy_cat_wrap_dim_symint(dim, sizes);
+    dim                         = quarisma::legacy_cat_wrap_dim_symint(dim, sizes);
     quarisma::SymInt accumulate = 0;
 
     Tensor grad_;
@@ -1395,16 +1398,16 @@ quarisma::Tensor clamp_jvp(
 }
 
 Tensor convolution_jvp(
-    const Tensor&          input_p,
-    const Tensor&          input_t,
-    const Tensor&          weight_p,
-    const Tensor&          weight_t,
-    const Tensor&          bias_p,
-    const Tensor&          bias_t,
+    const Tensor&            input_p,
+    const Tensor&            input_t,
+    const Tensor&            weight_p,
+    const Tensor&            weight_t,
+    const Tensor&            bias_p,
+    const Tensor&            bias_t,
     quarisma::SymIntArrayRef stride,
     quarisma::SymIntArrayRef padding,
     quarisma::SymIntArrayRef dilation,
-    bool                   transposed,
+    bool                     transposed,
     quarisma::SymIntArrayRef output_padding,
     const quarisma::SymInt&  groups)
 {
@@ -1433,22 +1436,22 @@ Tensor convolution_jvp(
 }
 
 Tensor _convolution_jvp(
-    const Tensor&          input_p,
-    const Tensor&          input_t,
-    const Tensor&          weight_p,
-    const Tensor&          weight_t,
-    const Tensor&          bias_p,
-    const Tensor&          bias_t,
+    const Tensor&            input_p,
+    const Tensor&            input_t,
+    const Tensor&            weight_p,
+    const Tensor&            weight_t,
+    const Tensor&            bias_p,
+    const Tensor&            bias_t,
     quarisma::SymIntArrayRef stride,
     quarisma::SymIntArrayRef padding,
     quarisma::SymIntArrayRef dilation,
-    bool                   transposed,
+    bool                     transposed,
     quarisma::SymIntArrayRef output_padding,
     const quarisma::SymInt&  groups,
-    bool                   benchmark,
-    bool                   deterministic,
-    bool                   cudnn_enabled,
-    bool                   allow_tf32)
+    bool                     benchmark,
+    bool                     deterministic,
+    bool                     cudnn_enabled,
+    bool                     allow_tf32)
 {
     auto bias_t_opt = bias_t.defined() ? std::optional<quarisma::Tensor>(bias_t) : std::nullopt;
     return (
@@ -1549,12 +1552,12 @@ quarisma::SymIntArrayRef strides_or_error(const Tensor& input, std::string_view 
 }
 
 Tensor mm_mat1_backward(
-    const Tensor&          grad,
-    const Tensor&          mat2,
+    const Tensor&            grad,
+    const Tensor&            mat2,
     quarisma::SymIntArrayRef mat1_sizes,
     quarisma::SymIntArrayRef mat1_strides,
     quarisma::Layout         mat1_layout,
-    const Scalar&          alpha)
+    const Scalar&            alpha)
 {
     if (grad.layout() == quarisma::kStrided && mat2.layout() == quarisma::kStrided &&
         mat1_layout == quarisma::kStrided)
@@ -1571,12 +1574,12 @@ Tensor mm_mat1_backward(
 }
 
 Tensor mm_mat2_backward(
-    const Tensor&          grad,
-    const Tensor&          mat1,
+    const Tensor&            grad,
+    const Tensor&            mat1,
     quarisma::SymIntArrayRef mat2_sizes,
     quarisma::SymIntArrayRef mat2_strides,
     quarisma::Layout         mat2_layout,
-    const Scalar&          alpha)
+    const Scalar&            alpha)
 {
     if (grad.layout() == quarisma::kStrided && mat1.layout() == quarisma::kStrided &&
         mat2_layout == quarisma::kStrided)
@@ -1593,13 +1596,13 @@ Tensor mm_mat2_backward(
 }
 
 Tensor _grouped_mm_mat1_backward(
-    const Tensor&          grad,
-    const Tensor&          mat2,
+    const Tensor&            grad,
+    const Tensor&            mat2,
     quarisma::SymIntArrayRef mat1_sizes,
     quarisma::SymIntArrayRef mat1_strides,
     quarisma::Layout         mat1_layout,
-    std::optional<Tensor>  offs,
-    const Scalar&          alpha)
+    std::optional<Tensor>    offs,
+    const Scalar&            alpha)
 {
     QUARISMA_CHECK(
         grad.layout() == quarisma::kStrided && mat2.layout() == quarisma::kStrided &&
@@ -1613,7 +1616,8 @@ Tensor _grouped_mm_mat1_backward(
     auto mat1_dim = mat1_sizes.size();
     if (mat1_strides[mat1_dim - 2] == 1 && mat1_strides[mat1_dim - 1] == mat1_sizes[mat1_dim - 2])
     {
-        auto grad_inp = (quarisma::_grouped_mm(mat2, grad.transpose(-2, -1), offs)).transpose(-2, -1);
+        auto grad_inp =
+            (quarisma::_grouped_mm(mat2, grad.transpose(-2, -1), offs)).transpose(-2, -1);
         return maybe_multiply(grad_inp, alpha.conj());
     }
     else
@@ -1624,13 +1628,13 @@ Tensor _grouped_mm_mat1_backward(
 }
 
 Tensor _grouped_mm_mat2_backward(
-    const Tensor&          grad,
-    const Tensor&          mat1,
+    const Tensor&            grad,
+    const Tensor&            mat1,
     quarisma::SymIntArrayRef mat2_sizes,
     quarisma::SymIntArrayRef mat2_strides,
     quarisma::Layout         mat2_layout,
-    std::optional<Tensor>  offs,
-    const Scalar&          alpha)
+    std::optional<Tensor>    offs,
+    const Scalar&            alpha)
 {
     QUARISMA_CHECK(
         grad.layout() == quarisma::kStrided && mat1.layout() == quarisma::kStrided &&
@@ -1657,7 +1661,8 @@ Tensor _grouped_mm_mat2_backward(
 Tensor mm_mat1_sparse_backward(
     const Tensor& grad, const Tensor& mat1, const Tensor& mat2, const Scalar& alpha)
 {
-    if (grad.layout() == quarisma::kStrided && mat2.layout() == quarisma::kStrided && mat1.is_sparse())
+    if (grad.layout() == quarisma::kStrided && mat2.layout() == quarisma::kStrided &&
+        mat1.is_sparse())
     {
         auto   sparse      = mat1.coalesce();
         Tensor grad_sparse = maybe_multiply(grad.mm(mat2.conj().t()), alpha);
@@ -2016,11 +2021,11 @@ Tensor evenly_read_jvp(const Tensor& fw_grad, const Tensor& input, const Tensor&
 }
 
 Tensor var_backward(
-    Tensor                               grad,
-    const Tensor&                        self,
+    Tensor                                 grad,
+    const Tensor&                          self,
     quarisma::OptionalIntArrayRef          dim_opt,
     const std::optional<quarisma::Scalar>& correction_opt,
-    bool                                 keepdim)
+    bool                                   keepdim)
 {
     const auto correction = correction_opt.value_or(1).toSymFloat();
     if (self.dim() == 0 || !dim_opt.has_value())
@@ -2053,24 +2058,24 @@ Tensor var_backward(
 }
 
 Tensor std_backward(
-    const Tensor&                        result,
-    const Tensor&                        grad,
-    const Tensor&                        self,
+    const Tensor&                          result,
+    const Tensor&                          grad,
+    const Tensor&                          self,
     quarisma::OptionalIntArrayRef          dim,
     const std::optional<quarisma::Scalar>& correction_opt,
-    bool                                 keepdim)
+    bool                                   keepdim)
 {
     auto grad_var = (grad / (result * 2)).masked_fill_(result == 0, 0);
     return var_backward(std::move(grad_var), self, dim, correction_opt, keepdim);
 }
 
 Tensor var_mean_backward(
-    const Tensor&                        gvar,
-    const Tensor&                        gmean,
-    const Tensor&                        self,
+    const Tensor&                          gvar,
+    const Tensor&                          gmean,
+    const Tensor&                          self,
     quarisma::OptionalIntArrayRef          dim_opt,
     const std::optional<quarisma::Scalar>& correction_opt,
-    bool                                 keepdim)
+    bool                                   keepdim)
 {
     Tensor gself;
     if (gvar.defined())
@@ -2087,13 +2092,13 @@ Tensor var_mean_backward(
 }
 
 Tensor std_mean_backward(
-    const Tensor&                        gstd,
-    const Tensor&                        gmean,
-    const Tensor&                        self,
-    const Tensor&                        std,
+    const Tensor&                          gstd,
+    const Tensor&                          gmean,
+    const Tensor&                          self,
+    const Tensor&                          std,
     quarisma::OptionalIntArrayRef          dim_opt,
     const std::optional<quarisma::Scalar>& correction_opt,
-    bool                                 keepdim)
+    bool                                   keepdim)
 {
     Tensor gself;
     if (gstd.defined())
@@ -2164,7 +2169,7 @@ Tensor cholesky_inverse_backward(
     const Tensor& grad, const Tensor& L, bool upper, const Tensor& inverse)
 {
     quarisma::NoTF32Guard disable_tf32;
-    Tensor              grad_L;
+    Tensor                grad_L;
     if (grad.defined())
     {
         Tensor common_term = grad + grad.mH();
@@ -2194,9 +2199,9 @@ Tensor cholesky_inverse_backward(
 Tensor cholesky_inverse_jvp(const Tensor& F, const Tensor& dF, const Tensor& X, bool upper)
 {
     quarisma::NoTF32Guard disable_tf32;
-    const auto          CF         = upper ? F : F.mH();
-    const auto          dCF        = upper ? dF.mH() : dF;
-    const auto          partial_dX = -X.matmul(dCF).matmul(X).matmul(CF);
+    const auto            CF         = upper ? F : F.mH();
+    const auto            dCF        = upper ? dF.mH() : dF;
+    const auto            partial_dX = -X.matmul(dCF).matmul(X).matmul(CF);
     return partial_dX + partial_dX.mH();
 }
 
@@ -2242,10 +2247,10 @@ Tensor cholesky_inverse_jvp(const Tensor& F, const Tensor& dF, const Tensor& X, 
 Tensor pinv_jvp(const Tensor& A, const Tensor& pinvA, const Tensor& dA)
 {
     quarisma::NoTF32Guard disable_tf32;
-    auto                m      = A.size(-2);
-    auto                n      = A.size(-1);
-    auto                dAh    = dA.mH();
-    auto                pinvAh = pinvA.mH();
+    auto                  m      = A.size(-2);
+    auto                  n      = A.size(-1);
+    auto                  dAh    = dA.mH();
+    auto                  pinvAh = pinvA.mH();
     // optimization to produce matrices of the smallest dimension
     if (m <= n)
     {
@@ -2265,10 +2270,10 @@ Tensor pinv_jvp(const Tensor& A, const Tensor& pinvA, const Tensor& dA)
 Tensor pinv_backward(const Tensor& grad, const Tensor& pinvA, const Tensor& A)
 {
     quarisma::NoTF32Guard disable_tf32;
-    auto                m      = A.sym_size(-2);
-    auto                n      = A.sym_size(-1);
-    auto                pinvAh = pinvA.mH();
-    auto                gradh  = grad.mH();
+    auto                  m      = A.sym_size(-2);
+    auto                  n      = A.sym_size(-1);
+    auto                  pinvAh = pinvA.mH();
+    auto                  gradh  = grad.mH();
     // optimization to produce matrices of the smallest dimension
     if (m <= n)
     {
@@ -2309,10 +2314,10 @@ Tensor chunk_backward_nested(
 
 Tensor split_with_sizes_backward(
     const std::vector<torch::autograd::Variable>& grads,
-    quarisma::SymIntArrayRef                        split_sizes,
+    quarisma::SymIntArrayRef                      split_sizes,
     int64_t                                       dim,
-    quarisma::SymIntArrayRef                        sizes,
-    const quarisma::TensorOptions&                  options)
+    quarisma::SymIntArrayRef                      sizes,
+    const quarisma::TensorOptions&                options)
 {
     dim = quarisma::maybe_wrap_dim(dim, static_cast<int64_t>(sizes.size()));
 
@@ -2340,10 +2345,10 @@ Tensor split_with_sizes_backward(
 
 Tensor _nested_split_with_sizes_backward(
     const std::vector<torch::autograd::Variable>& grads,
-    quarisma::SymIntArrayRef                        split_sizes,
+    quarisma::SymIntArrayRef                      split_sizes,
     int64_t                                       dim,
     const Tensor&                                 nt_sizes,
-    const quarisma::TensorOptions&                  options)
+    const quarisma::TensorOptions&                options)
 {
     // add 1 to account for batch dim
     dim = quarisma::maybe_wrap_dim(dim, nt_sizes.size(1) + 1);
@@ -2379,14 +2384,14 @@ Tensor _nested_split_with_sizes_backward(
 
 Tensor split_backward(
     const std::vector<torch::autograd::Variable>& grads,
-    const quarisma::SymInt&                         split_size,
+    const quarisma::SymInt&                       split_size,
     int64_t                                       dim,
-    quarisma::SymIntArrayRef                        sym_sizes,
-    const quarisma::TensorOptions&                  options)
+    quarisma::SymIntArrayRef                      sym_sizes,
+    const quarisma::TensorOptions&                options)
 {
     dim = quarisma::maybe_wrap_dim(dim, static_cast<int64_t>(sym_sizes.size()));
-    const auto&                 dim_size   = sym_sizes[dim];
-    auto                        num_splits = grads.size();
+    const auto&                   dim_size   = sym_sizes[dim];
+    auto                          num_splits = grads.size();
     std::vector<quarisma::SymInt> split_sizes(num_splits, split_size);
     split_sizes[num_splits - 1] = split_size - (split_size * num_splits - dim_size);
     return split_with_sizes_backward(grads, split_sizes, dim, sym_sizes, options);
@@ -3334,7 +3339,8 @@ Tensor softplus_double_backward(
 // This implements steps (2)~(4) of the algorithm in
 // NOTE [ Detecting Memory Overlap Within A Strided Tensor ]
 // Helper for as_strided_backward
-static bool _maybe_overlapping_memory(quarisma::SymIntArrayRef sizes, quarisma::SymIntArrayRef strides)
+static bool _maybe_overlapping_memory(
+    quarisma::SymIntArrayRef sizes, quarisma::SymIntArrayRef strides)
 {
     if (!sizes.empty())
     {
@@ -3362,10 +3368,12 @@ static bool _maybe_overlapping_memory(quarisma::SymIntArrayRef sizes, quarisma::
 // Returns the minimum storage size needed to contain a tensor of sizes,
 // strides, and storage_offset Helper for as_strided_backward
 static quarisma::SymInt _min_storage_size(
-    quarisma::SymIntArrayRef sizes, quarisma::SymIntArrayRef strides, quarisma::SymInt storage_offset)
+    quarisma::SymIntArrayRef sizes,
+    quarisma::SymIntArrayRef strides,
+    quarisma::SymInt         storage_offset)
 {
     quarisma::SymInt storage_size = storage_offset + 1;
-    auto           dim          = sizes.size();
+    auto             dim          = sizes.size();
     for (const auto i : quarisma::irange(dim))
     {
         const auto& size_i = sizes[i];
@@ -3381,8 +3389,8 @@ static quarisma::SymInt _min_storage_size(
 // See NOTE [ as_strided Backward and layout-aware/agnostic autograd ] for
 // explanation
 Tensor as_strided_backward(
-    Tensor                               grad,
-    const TensorGeometry&                input_geometry,
+    Tensor                                 grad,
+    const TensorGeometry&                  input_geometry,
     quarisma::SymIntArrayRef               sym_sizes,
     quarisma::SymIntArrayRef               sym_strides,
     const std::optional<quarisma::SymInt>& sym_storage_offset_)
@@ -3511,7 +3519,8 @@ Tensor as_strided_backward(
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             flatten_full_indices->as_strided_symint(inp_sizes_, inp_strides_, inp_effective_offset)
                 .reshape(-1);
-        count.index_add_(0, inp_indices, quarisma::ones({1}, grad.options()).expand_as(inp_indices));
+        count.index_add_(
+            0, inp_indices, quarisma::ones({1}, grad.options()).expand_as(inp_indices));
         storage.div_(count);  // this will give nan outside visible range
     }
     // Step (4): return as_strided view of the storage tensor with input geometry
@@ -3519,9 +3528,9 @@ Tensor as_strided_backward(
 }
 
 Tensor as_strided_scatter_backward(
-    const Tensor&                 grad,
-    const TensorGeometry&         input_geometry,
-    const TensorGeometry&         src_geometry,
+    const Tensor&                   grad,
+    const TensorGeometry&           input_geometry,
+    const TensorGeometry&           src_geometry,
     quarisma::SymIntArrayRef        sizes,
     quarisma::SymIntArrayRef        strides,
     std::optional<quarisma::SymInt> storage_offset)
@@ -3628,7 +3637,7 @@ Tensor elu_double_backward(
 Tensor slice_backward_wrapper(
     const quarisma::Tensor&         grad,
     const quarisma::SymIntArrayRef& input_sizes,
-    int64_t                       dim,
+    int64_t                         dim,
     std::optional<quarisma::SymInt> start,
     std::optional<quarisma::SymInt> end,
     quarisma::SymInt                step)
@@ -3981,8 +3990,8 @@ Tensor svd_backward(
         //   gA = U[gA V^H + S^{-1} (gV)^H (I_n - VV^H)]
         gA                 = quarisma::matmul(gA, Vh);
         const auto SinvgVh = gVh / S.unsqueeze(-1);
-        gA                 = gA + SinvgVh - quarisma::matmul(quarisma::matmul(SinvgVh, Vh.mH()), Vh);
-        gA                 = quarisma::matmul(U, gA);
+        gA = gA + SinvgVh - quarisma::matmul(quarisma::matmul(SinvgVh, Vh.mH()), Vh);
+        gA = quarisma::matmul(U, gA);
     }
     else
     {
@@ -4153,8 +4162,8 @@ std::tuple<Tensor, Tensor> linalg_eig_jvp(
         }
         else
         {
-            return dX -
-                   V * quarisma::real(quarisma::matmul(V.mH(), dX).diagonal(0, -2, -1)).unsqueeze(-2);
+            return dX - V * quarisma::real(quarisma::matmul(V.mH(), dX).diagonal(0, -2, -1))
+                                .unsqueeze(-2);
         }
     }();
     return std::make_pair(std::move(dL), std::move(dV));
@@ -4164,8 +4173,8 @@ Tensor linalg_lstsq_solution_jvp(
     const Tensor& A, const Tensor& B_, const Tensor& dA, const Tensor& dB_)
 {
     quarisma::NoTF32Guard disable_tf32;
-    const bool          vector_case      = quarisma::native::linalg_solve_is_vector_rhs(A, B_);
-    const auto          vector_to_matrix = [vector_case](const Tensor& X)
+    const bool            vector_case      = quarisma::native::linalg_solve_is_vector_rhs(A, B_);
+    const auto            vector_to_matrix = [vector_case](const Tensor& X)
     { return vector_case ? X.unsqueeze(-1) : X; };
     const auto matrix_to_vector = [vector_case](const Tensor& X)
     { return vector_case ? X.squeeze(-1) : X; };
@@ -4212,8 +4221,8 @@ std::tuple<Tensor, Tensor> linalg_lstsq_backward(
     const std::array<bool, 2>& grad_input_mask)
 {
     quarisma::NoTF32Guard disable_tf32;
-    auto                A_requires_grad = grad_input_mask[0];
-    auto                B_requires_grad = grad_input_mask[1];
+    auto                  A_requires_grad = grad_input_mask[0];
+    auto                  B_requires_grad = grad_input_mask[1];
     if ((!gX_.defined() && !gL_.numel()) ||  // gL_ undefined or have shape [0]
         (!A_requires_grad && !B_requires_grad))
     {
@@ -4520,7 +4529,8 @@ static Tensor differential_analytic_matrix_function(
     if (areAnyTensorSubclassLike({A, grad}))
     {
         meta_grad = quarisma::cat(
-            {quarisma::cat({A, grad}, -1), quarisma::cat({quarisma::zeros_like(A), std::move(A)}, -1)},
+            {quarisma::cat({A, grad}, -1),
+             quarisma::cat({quarisma::zeros_like(A), std::move(A)}, -1)},
             -2);
     }
     else
@@ -4616,7 +4626,8 @@ Tensor linalg_det_backward(
         // is invertible det is C^1, so if it's not invertible, we can apply a
         // perturbation to the LU decomposition and use the resulting matrix as a
         // non-singular approximation
-        auto LU_ = LU + quarisma::diag_embed(quarisma::where(LU.diagonal(0, -2, -1) == 0., eps, 0.));
+        auto LU_ =
+            LU + quarisma::diag_embed(quarisma::where(LU.diagonal(0, -2, -1) == 0., eps, 0.));
         auto use_A_T = A.is_contiguous() && !A.is_complex();
         return quarisma::linalg_lu_solve(LU_, pivots, d, /*left=*/true, /*adjoint=*/!use_A_T);
     }
@@ -4667,8 +4678,9 @@ std::tuple<Tensor, Tensor> slogdet_jvp(
 {
     // No need to handle the singular case separately as we do in det since
     // this function is not differentiable on singular matrices
-    auto trAinvE =
-        quarisma::linalg_lu_solve(LU, pivots, dA, /*left*/ true, use_A_T).diagonal(0, -2, -1).sum(-1);
+    auto trAinvE = quarisma::linalg_lu_solve(LU, pivots, dA, /*left*/ true, use_A_T)
+                       .diagonal(0, -2, -1)
+                       .sum(-1);
     if (LU.is_complex())
     {
         auto i = quarisma::complex<double>{0.0, 1.0};
@@ -4676,7 +4688,8 @@ std::tuple<Tensor, Tensor> slogdet_jvp(
     }
     else
     {
-        return std::make_tuple(quarisma::_efficientzerotensor(sign.sizes(), sign.options()), trAinvE);
+        return std::make_tuple(
+            quarisma::_efficientzerotensor(sign.sizes(), sign.options()), trAinvE);
     }
 }
 
@@ -4772,7 +4785,7 @@ std::tuple<Tensor, Tensor> triangular_solve_backward(
     std::array<bool, 2> output_mask)
 {
     quarisma::NoTF32Guard disable_tf32;
-    Tensor              grad_b, grad_a;
+    Tensor                grad_b, grad_a;
     if (grad_x.defined() || grad_m.defined())
     {
         if (grad_x.defined())
@@ -4858,8 +4871,8 @@ std::tuple<Tensor, Tensor> linalg_solve_triangular_backward(
     std::array<bool, 2> output_mask)
 {
     quarisma::NoTF32Guard disable_tf32;
-    const bool          A_requires_grad = output_mask[0];
-    const bool          B_requires_grad = output_mask[1];
+    const bool            A_requires_grad = output_mask[0];
+    const bool            B_requires_grad = output_mask[1];
     // [Note: Forward / Backward AD solve_triangular]
     // Assume left=true for simplicity.
     // Remark: A solver computes A^{-1}B
@@ -4919,7 +4932,7 @@ std::tuple<Tensor, Tensor> cholesky_solve_backward(
     std::array<bool, 2> output_mask)
 {
     quarisma::NoTF32Guard disable_tf32;
-    Tensor              grad_self, grad_input2;
+    Tensor                grad_self, grad_input2;
     if (grad_x.defined())
     {
         grad_self = grad_x.cholesky_solve(input2, /*upper=*/upper);
@@ -4946,8 +4959,8 @@ Tensor cholesky_solve_jvp(
     const Tensor& X, const Tensor& U, const Tensor& dU, const Tensor& dB, const bool upper)
 {
     quarisma::NoTF32Guard disable_tf32;
-    auto                dK = upper ? dU.mH().matmul(U) : dU.matmul(U.mH());
-    auto                dA = dK + dK.mH();
+    auto                  dK = upper ? dU.mH().matmul(U) : dU.matmul(U.mH());
+    auto                  dA = dK + dK.mH();
     return generic_solve_jvp(
         [&](const Tensor& A, const Tensor& dB, const Tensor& dA_contrib)
         { return quarisma::cholesky_solve(dB - dA_contrib, A, upper); },
@@ -4997,10 +5010,10 @@ Tensor fft_c2r_backward(const Tensor& grad, IntArrayRef dim, int64_t normalizati
 }
 
 Tensor fft_r2c_backward(
-    const Tensor&         grad,
+    const Tensor&           grad,
     quarisma::IntArrayRef   dim,
-    int64_t               normalization,
-    bool                  onesided,
+    int64_t                 normalization,
+    bool                    onesided,
     const quarisma::SymInt& last_dim_size)
 {
     if (!onesided)
@@ -5018,9 +5031,9 @@ Tensor fft_r2c_backward(
     //        (C2C ifft only take twosided inputs so we need to fill here)
     //     2. inverse C2C ifft
     //     3. discard the complex dim
-    auto                        half_sizes = grad.sym_sizes();
+    auto                          half_sizes = grad.sym_sizes();
     std::vector<quarisma::SymInt> new_grad_shape(half_sizes.begin(), half_sizes.end());
-    const auto                  last_dim =
+    const auto                    last_dim =
         quarisma::maybe_wrap_dim(dim.back(), static_cast<int64_t>(half_sizes.size()));
     new_grad_shape[last_dim] = last_dim_size;
 
@@ -5030,7 +5043,8 @@ Tensor fft_r2c_backward(
     {
         complex_full_grad.slice_symint(last_dim, 0, half_sizes[last_dim]).copy_(grad);
     }
-    return quarisma::real(quarisma::_fft_c2c(complex_full_grad, dim, normalization, /*forward=*/false));
+    return quarisma::real(
+        quarisma::_fft_c2c(complex_full_grad, dim, normalization, /*forward=*/false));
 }
 
 // Helper for batchnorm_double_backward
@@ -5240,14 +5254,15 @@ std::tuple<Tensor, Tensor, Tensor> layer_norm_double_backward(
     const Tensor&                gO_t,
     const Tensor&                save_mean_t,
     const Tensor&                save_invstd_t,
-    quarisma::SymIntArrayRef       normalized_shape,
+    quarisma::SymIntArrayRef     normalized_shape,
     std::array<bool, 3>          output_mask)
 {
     const auto    normalized_ndim = normalized_shape.size();
     const auto    input_shape     = input_t.sizes();
     const auto    input_ndim      = input_t.dim();
     const auto    axis            = input_ndim - normalized_ndim;
-    const int64_t M = quarisma::multiply_integers(input_shape.cbegin(), input_shape.cbegin() + axis);
+    const int64_t M =
+        quarisma::multiply_integers(input_shape.cbegin(), input_shape.cbegin() + axis);
     const int64_t N = quarisma::multiply_integers(input_shape.cbegin() + axis, input_shape.cend());
     // printf("M: %ld, N: %ld", M, N);
 
@@ -5347,7 +5362,8 @@ std::tuple<Tensor, Tensor, Tensor> layer_norm_double_backward(
     Tensor gG;
     if (affine && ggI.defined())
     {
-        gG = first_bwd_fn_grad_input(ggI_expanded, quarisma::ones({}, sigma2_eps_neg_1_2.options()));
+        gG =
+            first_bwd_fn_grad_input(ggI_expanded, quarisma::ones({}, sigma2_eps_neg_1_2.options()));
         gG = (gO * gG).sum(0);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         gG = gG.reshape_as(*gamma);
@@ -5508,25 +5524,25 @@ std::tuple<Tensor, Tensor, Tensor> infinitely_differentiable_native_group_norm_b
     const Tensor&                mean,
     const Tensor&                rstd,
     const std::optional<Tensor>& gamma,
-    quarisma::SymInt               N,
-    const quarisma::SymInt&        C,
-    quarisma::SymInt               HxW,
+    quarisma::SymInt             N,
+    const quarisma::SymInt&      C,
+    quarisma::SymInt             HxW,
     int64_t                      group,
     double                       eps,
     std::array<bool, 3>          grad_input_mask)
 {
-    const int64_t    G = group;
-    const auto       D = C / G;
+    const int64_t      G = group;
+    const auto         D = C / G;
     quarisma::SymFloat s = quarisma::SymFloat(1.0) / quarisma::SymFloat(D * HxW);
-    Tensor           dX;
-    Tensor           dgamma;
-    Tensor           dbeta;
-    const Tensor     X_tensor    = X.reshape_symint({N, G, D, HxW});
-    const Tensor     mean_tensor = mean.reshape_symint({N, G, 1, 1});
-    const Tensor     rstd_tensor = rstd.reshape_symint({N, G, 1, 1});
-    Tensor           dY_tensor;
-    Tensor           ds;
-    Tensor           db;
+    Tensor             dX;
+    Tensor             dgamma;
+    Tensor             dbeta;
+    const Tensor       X_tensor    = X.reshape_symint({N, G, D, HxW});
+    const Tensor       mean_tensor = mean.reshape_symint({N, G, 1, 1});
+    const Tensor       rstd_tensor = rstd.reshape_symint({N, G, 1, 1});
+    Tensor             dY_tensor;
+    Tensor             ds;
+    Tensor             db;
     if (dY.defined())
     {
         dY_tensor = dY.reshape_symint({N, G, D, std::move(HxW)});
@@ -5662,7 +5678,8 @@ Tensor sinc_backward(const Tensor& grad, const Tensor& self)
     auto self_pi         = self * M_PI;
     auto self_squared_pi = self * self * M_PI;
     auto out = grad * ((self_pi * self_pi.cos() - self_pi.sin()) / self_squared_pi).conj();
-    return quarisma::where(self_squared_pi == 0.0, quarisma::scalar_tensor(0.0, grad.options()), out);
+    return quarisma::where(
+        self_squared_pi == 0.0, quarisma::scalar_tensor(0.0, grad.options()), out);
 }
 
 // Because the backward of pad(input, pads) is just pad(grad_output, [-p for p
@@ -5791,13 +5808,13 @@ bool any_variable_defined(const variable_list& variables)
 static Tensor apply_simple_transformation(
     const quarisma::SymInt& m,
     const quarisma::SymInt& k,
-    const Tensor&         u_full,
-    const Tensor&         v_full,
-    const Tensor&         t,
-    Tensor&               K,
-    bool                  modify_K_in_place = true,
-    bool                  condition_with_I  = true,
-    bool                  left              = true)
+    const Tensor&           u_full,
+    const Tensor&           v_full,
+    const Tensor&           t,
+    Tensor&                 K,
+    bool                    modify_K_in_place = true,
+    bool                    condition_with_I  = true,
+    bool                    left              = true)
 {
     // we assume u_full is a vector of dimension (..., m, 1), t is a scalar of
     // dimension (..., 1)
@@ -6080,7 +6097,8 @@ Tensor householder_product_jvp(
 
     auto        H_plus = prod.detach().clone();
     IntArrayRef batch_vector_shape(V.sizes().data(), V.dim() - 1);
-    auto H_minus = quarisma::diag_embed(quarisma::ones({1}, V.options()).expand(batch_vector_shape));
+    auto        H_minus =
+        quarisma::diag_embed(quarisma::ones({1}, V.options()).expand(batch_vector_shape));
 
     auto dprod = quarisma::zeros_like(prod);
     for (const auto i : quarisma::irange(k))
@@ -6213,11 +6231,12 @@ Tensor i1_backward(const Tensor& grad, const Tensor& self, const Tensor& result)
             // even for the part which didn't affect the output.
             // Look quarisma https://github.com/pytorch/pytorch/issues/52248
             // Update if and when this is fixed.
-            auto safe_self =
-                quarisma::where(self_is_not_tiny, self, quarisma::scalar_tensor(eps, self.options()));
+            auto safe_self = quarisma::where(
+                self_is_not_tiny, self, quarisma::scalar_tensor(eps, self.options()));
             auto gradx = (safe_self.i0() - (result * safe_self.reciprocal()));
-            return grad * quarisma::where(
-                              self_is_not_tiny, gradx, quarisma::scalar_tensor(0.5, self.options()));
+            return grad *
+                   quarisma::where(
+                       self_is_not_tiny, gradx, quarisma::scalar_tensor(0.5, self.options()));
         });
 }
 
@@ -6238,13 +6257,14 @@ Tensor i1e_backward(const Tensor& grad, const Tensor& self, const Tensor& result
             // even for the part which didn't affect the output.
             // Look quarisma https://github.com/pytorch/pytorch/issues/52248
             // Update if and when this is fixed.
-            auto safe_self =
-                quarisma::where(self_is_not_tiny, self, quarisma::scalar_tensor(eps, self.options()));
+            auto safe_self = quarisma::where(
+                self_is_not_tiny, self, quarisma::scalar_tensor(eps, self.options()));
             auto gradx =
                 (quarisma::special_i0e(safe_self) -
                  result * (safe_self.sgn() + safe_self.reciprocal()));
-            return grad * quarisma::where(
-                              self_is_not_tiny, gradx, quarisma::scalar_tensor(0.5, self.options()));
+            return grad *
+                   quarisma::where(
+                       self_is_not_tiny, gradx, quarisma::scalar_tensor(0.5, self.options()));
         });
 }
 
@@ -6392,7 +6412,7 @@ Tensor linalg_lu_solve_jvp(
     // dX = op_2(op_1(-U^{-1}(dUU^{-1} + L^{-1}dL)L^{-1} P^T)op_3(B)) + S
 
     quarisma::NoTF32Guard disable_tf32;
-    auto                S = quarisma::linalg_lu_solve(LU, pivots, dB, left, adjoint);
+    auto                  S = quarisma::linalg_lu_solve(LU, pivots, dB, left, adjoint);
     if (left != adjoint)
     {
         // We see that when left != adjoint, op_1(A) = A, and we can substitute
@@ -6482,7 +6502,7 @@ std::tuple<Tensor, Tensor> linalg_solve_backward(
     // gB = A^{-H}gX
     // gA = -gB X^H
     quarisma::NoTF32Guard disable_tf32;
-    const auto          A_requires_grad = A.requires_grad();
+    const auto            A_requires_grad = A.requires_grad();
     if (!gX.defined() || (!A_requires_grad && !B_requires_grad))
     {
         return {};
@@ -6507,7 +6527,8 @@ std::tuple<Tensor, Tensor> linalg_solve_backward(
     else
     {
         const auto use_A_T = A.is_contiguous() && !A.is_complex();
-        gB_ = quarisma::linalg_lu_solve(LU, pivots, vector_to_matrix(gX), left, /*adjoint*/ !use_A_T);
+        gB_ =
+            quarisma::linalg_lu_solve(LU, pivots, vector_to_matrix(gX), left, /*adjoint*/ !use_A_T);
     }
 
     Tensor gA_;
@@ -6533,7 +6554,10 @@ Tensor solve_jvp(const Tensor& X, const Tensor& A, const Tensor& dA, const Tenso
 }
 
 Tensor lu_unpack_backward(
-    const Tensor& L_grad, const Tensor& U_grad, const quarisma::SymInt& m, const quarisma::SymInt& n)
+    const Tensor&           L_grad,
+    const Tensor&           U_grad,
+    const quarisma::SymInt& m,
+    const quarisma::SymInt& n)
 {
     if (!L_grad.defined() && !U_grad.defined())
     {
@@ -6861,8 +6885,9 @@ Tensor batch_norm_jvp(
                 !running_var.value()._fw_grad(/*level=*/0).defined(),
             "batch_norm is not differentiable wrt running_mean and running_var, they cannot have "
             "forward grad defined");
-        mean_p   = running_mean.value().view(view_size);
-        invstd_p = (1 / quarisma::sqrt(running_var.value() + quarisma::Scalar(eps))).view(view_size);
+        mean_p = running_mean.value().view(view_size);
+        invstd_p =
+            (1 / quarisma::sqrt(running_var.value() + quarisma::Scalar(eps))).view(view_size);
         result_t = input_t * invstd_p;
     }
 
@@ -6877,14 +6902,14 @@ Tensor batch_norm_jvp(
 }
 
 Tensor layer_norm_jvp(
-    const Tensor&          input_p,
-    const Tensor&          input_t,
-    const Tensor&          weight_p,
-    const Tensor&          weight_t,
-    const Tensor&          bias_p,
-    const Tensor&          bias_t,
-    const Tensor&          saved_mean,
-    const Tensor&          saved_invstd,
+    const Tensor&            input_p,
+    const Tensor&            input_t,
+    const Tensor&            weight_p,
+    const Tensor&            weight_t,
+    const Tensor&            bias_p,
+    const Tensor&            bias_t,
+    const Tensor&            saved_mean,
+    const Tensor&            saved_invstd,
     quarisma::SymIntArrayRef normalized_shape)
 {
     auto dims             = std::vector<int64_t>{};
@@ -7406,7 +7431,7 @@ std::tuple<Tensor, Tensor> linalg_lu_jvp(
         // dL2 := PdA2 U^{-1} - L2 dK.triu()
         const auto PdA2 = PdA.narrow(-2, k, m - k);
         const auto L2   = L.narrow(-2, k, m - k);
-        auto       dL2 = quarisma::linalg_solve_triangular(U1, PdA2, /*upper=*/true, /*left=*/false) -
+        auto dL2 = quarisma::linalg_solve_triangular(U1, PdA2, /*upper=*/true, /*left=*/false) -
                    L2.matmul(dK.triu());
         return std::make_tuple(
             quarisma::cat({std::move(dL1), std::move(dL2)}, /*dim=*/-2), std::move(dU1));
@@ -7503,9 +7528,9 @@ std::tuple<Tensor, Tensor> _cudnn_convolution_backward(
     quarisma::SymIntArrayRef output_padding,
     quarisma::SymIntArrayRef stride,
     quarisma::SymIntArrayRef dilation,
-    bool                   transposed,
+    bool                     transposed,
     quarisma::SymInt         groups,
-    ::std::array<bool, 2>  output_mask)
+    ::std::array<bool, 2>    output_mask)
 {
     if (!grad_output.defined())
     {
@@ -7789,8 +7814,8 @@ Tensor take_backward(const Tensor& grad, const Tensor& self, const Tensor& indic
 }
 
 Tensor to_sparse_backward(
-    const Tensor&                                   grad,
-    const quarisma::Layout                            self_layout,
+    const Tensor&                                       grad,
+    const quarisma::Layout                              self_layout,
     const quarisma::OptionalArrayRef<quarisma::SymInt>& self_blocksize)
 {
     // Path for strided and nested
@@ -7831,9 +7856,9 @@ mkldnn_rnn_layer_differentiable_backward(
     bool                         has_biases,
     bool                         train,
     bool                         bidirectional,
-    quarisma::IntArrayRef          batch_sizes,
+    quarisma::IntArrayRef        batch_sizes,
     bool                         batch_first,
-    const quarisma::Tensor&        workspace)
+    const quarisma::Tensor&      workspace)
 {
     const Tensor& grad_output_r = grad_output_r_opt.value_or(Tensor());
     const Tensor& grad_hy_r     = grad_hy_r_opt.value_or(Tensor());
@@ -7861,8 +7886,10 @@ mkldnn_rnn_layer_differentiable_backward(
     }
     else
     {
-        bias_ih = quarisma::zeros({4 /* num_bias_gates of LSTM */ * hidden_size}, weight0.options());
-        bias_hh = quarisma::zeros({4 /* num_bias_gates of LSTM */ * hidden_size}, weight0.options());
+        bias_ih =
+            quarisma::zeros({4 /* num_bias_gates of LSTM */ * hidden_size}, weight0.options());
+        bias_hh =
+            quarisma::zeros({4 /* num_bias_gates of LSTM */ * hidden_size}, weight0.options());
     }
     const auto& input_  = input;
     auto        hx_prev = hx_;
@@ -7894,8 +7921,8 @@ mkldnn_rnn_layer_differentiable_backward(
         cx_prev              = cy;
     }
 
-    Tensor                      dx, dWx, dWh, db, db_, dprev_h, dprev_c, dWh_, dWx_;
-    Tensor                      new_grad_hy, d1, dgp, dip, dfp, dop, do_, dg, df, di, da;
+    Tensor                        dx, dWx, dWh, db, db_, dprev_h, dprev_c, dWh_, dWx_;
+    Tensor                        new_grad_hy, d1, dgp, dip, dfp, dop, do_, dg, df, di, da;
     std::vector<quarisma::Tensor> layer_dx(seq_length);
     for (int64_t seq = seq_length - 1; seq >= 0; seq--)
     {

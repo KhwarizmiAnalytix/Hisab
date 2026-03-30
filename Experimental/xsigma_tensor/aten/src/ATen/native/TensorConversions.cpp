@@ -1,8 +1,8 @@
 // #define TORCH_ASSERT_ONLY_METHOD_OPERATORS
 #include <Quarisma/Dispatch.h>
 #include <Quarisma/Parallel.h>
-#include <Quarisma/TensorOperators.h>
 #include <Quarisma/Quarisma.h>
+#include <Quarisma/TensorOperators.h>
 #include <Quarisma/core/Tensor.h>
 #include <Quarisma/quantized/Quantizer.h>
 

@@ -32,7 +32,8 @@ void NUMABind(QUARISMA_UNUSED int numa_node_id)
     {
         return;
     }
-    QUARISMA_CHECK(numa_node_id <= numa_max_node(), "NUMA node id ", numa_node_id, " is unavailable");
+    QUARISMA_CHECK(
+        numa_node_id <= numa_max_node(), "NUMA node id ", numa_node_id, " is unavailable");
 
     auto* bm = numa_allocate_nodemask();
     numa_bitmask_setbit(bm, numa_node_id);

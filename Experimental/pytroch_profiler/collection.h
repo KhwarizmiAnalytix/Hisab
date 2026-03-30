@@ -48,10 +48,10 @@ struct QUARISMA_API RawTensorMetadataBase
     RawTensorMetadataBase() = default;
     explicit RawTensorMetadataBase(const quarisma::Tensor& t);
 
-    StorageImplData    data_;
+    StorageImplData      data_;
     quarisma::ScalarType dtype_{quarisma::ScalarType::Undefined};
     quarisma::Layout     layout_{quarisma::Layout::Strided};
-    uint32_t           size_dim_{0};
+    uint32_t             size_dim_{0};
 };
 
 // Collected during profiling.
@@ -67,7 +67,7 @@ struct QUARISMA_API RawTensorMetadata : RawTensorMetadataBase
 
     // Wrap `weak_self_` in `std::optional` and split device into components to
     // keep struct default constructable. (which the std::array initializer needs)
-    std::optional<WeakTensor>    weak_self_;
+    std::optional<WeakTensor>      weak_self_;
     quarisma::device_enum          device_type_{quarisma::device_enum::CPU};
     quarisma::device_option::int_t device_index_{-1};
 };
@@ -80,10 +80,10 @@ struct QUARISMA_API TensorMetadata : public RawTensorMetadataBase
 
     TensorImplAddress impl() const { return weak_self_.get(); }
 
-    WeakTensor            weak_self_;
+    WeakTensor              weak_self_;
     quarisma::device_option device_;
-    std::vector<int64_t>  sizes_;
-    std::vector<int64_t>  strides_;
+    std::vector<int64_t>    sizes_;
+    std::vector<int64_t>    strides_;
 
     // Set during `calculateUniqueTensorIDs`.
     std::optional<TensorID>     id_;
@@ -115,14 +115,14 @@ struct ExtraFields;
 
 class QUARISMA_VISIBILITY TorchOpBasicFields
 {
-    int64_t             sequence_number_{0};
-    uint64_t            forward_tid_{0};
+    int64_t               sequence_number_{0};
+    uint64_t              forward_tid_{0};
     quarisma::RecordScope scope_{};
-    bool                is_async_{false};
-    uint64_t            record_function_id_{0};
-    int64_t             debug_handle_{0};
-    std::string         name_;
-    std::string         overload_name_;
+    bool                  is_async_{false};
+    uint64_t              record_function_id_{0};
+    int64_t               debug_handle_{0};
+    std::string           name_;
+    std::string           overload_name_;
 
     // Set in the exit callback.
     uint64_t end_tid_{0};
@@ -146,7 +146,7 @@ struct ExtraFields<EventType::TorchOp> : TorchOpBasicFields
     ExtraFields(
         TorchOpBasicFields&&               f,
         uint64_t                           correlation_id,
-        quarisma::time_t                     end_time_ns,
+        quarisma::time_t                   end_time_ns,
         std::vector<op_input_t>&&          inputs,
         std::vector<op_input_t>&&          concrete_inputs,
         jit_stack_t&&                      jit_stack,
@@ -173,7 +173,7 @@ struct ExtraFields<EventType::TorchOp> : TorchOpBasicFields
     {
     }
     uint64_t                         correlation_id_;
-    quarisma::time_t                   end_time_ns_;
+    quarisma::time_t                 end_time_ns_;
     std::vector<op_input_t>          inputs_;
     std::vector<op_input_t>          concrete_inputs_;
     jit_stack_t                      jit_stack_;
@@ -190,14 +190,14 @@ struct ExtraFields<EventType::TorchOp> : TorchOpBasicFields
 template <>
 struct ExtraFields<EventType::Backend>
 {
-    int64_t             start_time_us_;
-    int64_t             end_time_us_;
-    int64_t             debug_handle_;
+    int64_t               start_time_us_;
+    int64_t               end_time_us_;
+    int64_t               debug_handle_;
     quarisma::RecordScope scope_;
-    std::string         name_;
-    std::string         backend_;
-    jit_stack_t         jit_stack_;
-    jit_modules_t       jit_modules_;
+    std::string           name_;
+    std::string           backend_;
+    jit_stack_t           jit_stack_;
+    jit_modules_t         jit_modules_;
 };
 
 template <>
@@ -221,10 +221,10 @@ struct ExtraFields<EventType::Vulkan>
 class QUARISMA_VISIBILITY RawAllocation
 {
     quarisma::approx_time_t        start_time_;
-    void*                        ptr_;
-    int64_t                      alloc_size_;
-    size_t                       total_allocated_;
-    size_t                       total_reserved_;
+    void*                          ptr_;
+    int64_t                        alloc_size_;
+    size_t                         total_allocated_;
+    size_t                         total_reserved_;
     quarisma::device_enum          device_type_;
     quarisma::device_option::int_t device_index_;
 };
@@ -247,9 +247,9 @@ template <>
 struct ExtraFields<EventType::OutOfMemory>
 {
     quarisma::approx_time_t        start_time_;
-    int64_t                      alloc_size_;
-    size_t                       total_allocated_;
-    size_t                       total_reserved_;
+    int64_t                        alloc_size_;
+    size_t                         total_allocated_;
+    size_t                         total_reserved_;
     quarisma::device_enum          device_type_;
     quarisma::device_option::int_t device_index_;
 };
@@ -431,7 +431,7 @@ struct QUARISMA_API Result : public std::enable_shared_from_this<Result>
     uint64_t                correlationID() const;
     int64_t                 endTimeNS() const;
     uint64_t                endTID() const;
-    quarisma::device_enum     deviceType() const;
+    quarisma::device_enum   deviceType() const;
 
     int64_t                   start_time_ns_;
     uint64_t                  start_tid_;
@@ -448,10 +448,10 @@ struct QUARISMA_API Result : public std::enable_shared_from_this<Result>
         ExtraFields<EventType::PythonGC>>
         extra_fields_;
 
-    std::weak_ptr<Result>                             parent_;
-    std::vector<std::shared_ptr<Result>>              children_;
-    bool                                              finished_{false};
-    bool                                              hidden_{false};
+    std::weak_ptr<Result>                               parent_;
+    std::vector<std::shared_ptr<Result>>                children_;
+    bool                                                finished_{false};
+    bool                                                hidden_{false};
     const quarisma::profiler::impl::kineto::activity_t* kineto_activity_{nullptr};
 
 private:
@@ -479,7 +479,7 @@ class QUARISMA_VISIBILITY KinetoObserverContext : public quarisma::ObserverConte
 {
     struct Event
     {
-        TorchOpBasicFields    basic_fields_;
+        TorchOpBasicFields      basic_fields_;
         quarisma::approx_time_t start_time_;
 
         // Set in the exit callback.
@@ -553,7 +553,7 @@ private:
     AppendOnlyList<Tag, IO_ENCODER_DEFAULT_BLOCK_SIZE>               tags_;
     AppendOnlyList<RawTensorMetadata, IO_ENCODER_DEFAULT_BLOCK_SIZE> tensor_metadata_;
     AppendOnlyList<int64_t, IO_ENCODER_DEFAULT_BLOCK_SIZE>           tensor_sizes_strides_;
-    AppendOnlyList<quarisma::IValue, IO_ENCODER_DEFAULT_BLOCK_SIZE>    ivalues_;
+    AppendOnlyList<quarisma::IValue, IO_ENCODER_DEFAULT_BLOCK_SIZE>  ivalues_;
 };
 
 using perf_profiler_t = quarisma::profiler::impl::linux_perf::PerfProfiler;
@@ -624,11 +624,11 @@ private:
     {
         // NB: This is a destructive operation.
         void materialize(
-            std::vector<std::shared_ptr<Result>>&                       out,
-            std::vector<ProfilerStepInfo>&                              step_info,
+            std::vector<std::shared_ptr<Result>>&                           out,
+            std::vector<ProfilerStepInfo>&                                  step_info,
             const std::function<quarisma::time_t(quarisma::approx_time_t)>& time_converter,
-            const uint64_t                                              tid,
-            const kineto::DeviceAndResource&                            kineto_info);
+            const uint64_t                                                  tid,
+            const kineto::DeviceAndResource&                                kineto_info);
 
         template <typename T, size_t ChunkSize>
         class EventBlock : public std::array<T, ChunkSize>
@@ -686,7 +686,8 @@ private:
     AppendOnlyList<ExtraFields<EventType::OutOfMemory>, BlockSize> ooms_;
 
     // with_stack (Python)
-    AppendOnlyList<std::pair<python_tracer::TraceKey, quarisma::approx_time_t>, BlockSize> py_calls_;
+    AppendOnlyList<std::pair<python_tracer::TraceKey, quarisma::approx_time_t>, BlockSize>
+        py_calls_;
     // gc with_stack (Python)
     AppendOnlyList<std::pair<std::string, quarisma::approx_time_t>, BlockSize> pythongc_;
 };
@@ -708,16 +709,16 @@ public:
         std::unique_ptr<quarisma::profiler::impl::kineto::ActivityTraceWrapper>>
     getRecords(
         std::function<quarisma::time_t(quarisma::approx_time_t)> time_converter,
-        uint64_t                                             start_time_ns,
-        uint64_t                                             end_time_ns);
+        uint64_t                                                 start_time_ns,
+        uint64_t                                                 end_time_ns);
 
 private:
-    uint32_t                                                              id_;
-    ProfilerConfig                                                        config_;
-    std::set<ActivityType>                                                activities_;
+    uint32_t                                                                id_;
+    ProfilerConfig                                                          config_;
+    std::set<ActivityType>                                                  activities_;
     quarisma::flat_hash_map<uint64_t, std::unique_ptr<ThreadLocalSubqueue>> sub_queues_;
-    std::mutex                                                            sub_queue_mutex_;
-    std::unique_ptr<python_tracer::PythonTracerBase>                      python_tracer_;
+    std::mutex                                                              sub_queue_mutex_;
+    std::unique_ptr<python_tracer::PythonTracerBase>                        python_tracer_;
 };
 
 QUARISMA_API bool get_record_concrete_inputs_enabled();

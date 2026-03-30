@@ -1,14 +1,14 @@
 #include <Quarisma/core/function_schema.h>
 #include <Quarisma/core/jit_type.h>
 #include <Quarisma/core/symbol.h>
+#include <quarisma/core/ScalarType.h>
+#include <quarisma/util/ArrayRef.h>
 #include <torch/csrc/jit/ir/alias_analysis.h>
 #include <torch/csrc/jit/ir/ir.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/passes/dtype_analysis.h>
 #include <torch/csrc/jit/passes/utils/op_registry.h>
 #include <torch/library.h>
-#include <quarisma/core/ScalarType.h>
-#include <quarisma/util/ArrayRef.h>
 
 #include <optional>
 
@@ -48,7 +48,8 @@ std::unique_ptr<Stack> MTensorArgumentCreator(Node* n)
             auto tensor_size = std::vector<int64_t>(rank.value(), 1);
             stack->emplace_back(
                 quarisma::empty(
-                    tensor_size, quarisma::TensorOptions(quarisma::kMeta).dtype(*tp->scalarType())));
+                    tensor_size,
+                    quarisma::TensorOptions(quarisma::kMeta).dtype(*tp->scalarType())));
             continue;
         }
         // Someday Todo: Fill in concrete values that we know.

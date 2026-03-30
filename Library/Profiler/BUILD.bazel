@@ -1,0 +1,112 @@
+# =============================================================================
+# Quarisma Profiler Library (sources under Library/Profiler: base/, common/, kineto/, native/, …)
+# =============================================================================
+load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "profiler_hdrs",
+    srcs = glob(
+        [
+            "*.h",
+            "**/*.h",
+        ],
+        exclude = [
+            "Testing/**",
+        ],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "profiler_templates",
+    srcs = glob(
+        [
+            "*.hxx",
+            "**/*.hxx",
+        ],
+        exclude = [
+            "Testing/**",
+        ],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "profiler_srcs",
+    srcs = glob(
+        [
+            "*.cpp",
+            "**/*.cpp",
+        ],
+        exclude = [
+            "native/**/*.cpp",
+            "bespoke/common/**/*.cpp",
+            "kineto_*.cpp",
+            "kineto/**/*.cpp",
+            "bespoke/kineto/**/*.cpp",
+            "Testing/**",
+        ],
+        allow_empty = True,
+    ),
+)
+
+cc_library(
+    name = "Profiler",
+    srcs = [
+        ":profiler_srcs",
+        ":profiler_templates",
+    ] + select({
+        "//bazel:enable_native_profiler": glob(["native/**/*.cpp"], exclude = ["Testing/**"], allow_empty = True),
+        "//conditions:default": [],
+    }) + select({
+        "//bazel:enable_kineto": glob(
+            [
+                "kineto_*.cpp",
+                "kineto/**/*.cpp",
+                "bespoke/kineto/**/*.cpp",
+                "bespoke/common/**/*.cpp",
+                "native/**/*.cpp",
+            ],
+            exclude = [
+                "bespoke/common/unwind/**/*.cpp",
+                "Testing/**",
+            ],
+            allow_empty = True,
+        ),
+        "//conditions:default": [],
+    }),
+    hdrs = [
+        ":profiler_hdrs",
+    ] + select({
+        "//bazel:enable_native_profiler": glob(["native/**/*.h", "native/**/*.hxx"], exclude = ["Testing/**"], allow_empty = True),
+        "//conditions:default": [],
+    }) + select({
+        "//bazel:enable_kineto": glob(["kineto_*.h", "native/**/*.h", "native/**/*.hxx"], exclude = ["Testing/**"], allow_empty = True),
+        "//conditions:default": [],
+    }),
+    copts = quarisma_copts(),
+    defines = quarisma_defines() + select({
+        "//bazel:shared_libs": ["QUARISMA_SHARED_DEFINE", "QUARISMA_BUILDING_DLL"],
+        "//conditions:default": ["QUARISMA_STATIC_DEFINE"],
+    }) + select({
+        "//bazel:enable_kineto": ["QUARISMA_HAS_KINETO=1"],
+        "//conditions:default": [],
+    }),
+    includes = [
+        ".",
+    ] + select({
+        "//bazel:enable_kineto": ["kineto"],
+        "//conditions:default": [],
+    }),
+    linkopts = quarisma_linkopts(),
+    linkstatic = select({
+        "//bazel:shared_libs": False,
+        "//conditions:default": True,
+    }),
+    deps = [
+        "//Library/Core:core_lib",
+    ],
+    alwayslink = False,
+)

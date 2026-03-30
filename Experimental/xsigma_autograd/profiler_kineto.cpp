@@ -9,18 +9,18 @@
 #include <stdexcept>
 #include <utility>
 
-#include "profiler/pytorch_profiler/api.h"
-#include "profiler/pytorch_profiler/collection.h"
-#include "profiler/pytorch_profiler/containers.h"
-#include "profiler/pytorch_profiler/events.h"
-#include "profiler/pytorch_profiler/itt_observer.h"
-#include "profiler/pytorch_profiler/kineto_shim.h"
-#include "profiler/pytorch_profiler/nvtx_observer.h"
-#include "profiler/pytorch_profiler/observer.h"
-#include "profiler/pytorch_profiler/perf.h"
-#include "profiler/pytorch_profiler/privateuse1_observer.h"
-#include "profiler/pytorch_profiler/profiler_kineto.h"
-#include "profiler/pytorch_profiler/util.h"
+#include "pytorch_profiler/api.h"
+#include "pytorch_profiler/collection.h"
+#include "pytorch_profiler/containers.h"
+#include "pytorch_profiler/events.h"
+#include "pytorch_profiler/itt_observer.h"
+#include "pytorch_profiler/kineto_shim.h"
+#include "pytorch_profiler/nvtx_observer.h"
+#include "pytorch_profiler/observer.h"
+#include "pytorch_profiler/perf.h"
+#include "pytorch_profiler/privateuse1_observer.h"
+#include "pytorch_profiler/profiler_kineto.h"
+#include "pytorch_profiler/util.h"
 #include "util/exception.h"
 
 #if QUARISMA_HAS_KINETO
@@ -84,7 +84,7 @@ struct OpArgData
     bool                              hasData;
     std::vector<shape>                shapes;
     std::vector<std::string>          dtypes;
-    std::vector<quarisma::IValue>       concreteInputs;
+    std::vector<quarisma::IValue>     concreteInputs;
     std::vector<std::vector<int64_t>> shapesForKinetoEvent;
     std::vector<shape>                strides;
 };
@@ -101,7 +101,7 @@ auto parseArgData(
     std::vector<shape>                strides(input_shapes.size());
     std::vector<std::vector<int64_t>> shapesForKinetoEvent(input_shapes.size());
 
-    std::vector<std::string>    dtypes(input_shapes.size());
+    std::vector<std::string>      dtypes(input_shapes.size());
     std::vector<quarisma::IValue> concrete_inputs_list;
 
     for (const auto& i : quarisma::irange(input_shapes.size()))
@@ -315,7 +315,7 @@ struct AddGenericMetadata : public MetadataBase
             if (isStringList)
             {
                 // For list of strings, use ivalueListToStr
-                auto                        list = val.toListRef();
+                auto                          list = val.toListRef();
                 std::vector<quarisma::IValue> stringList(list.begin(), list.end());
                 addMetadata(key, ivalueListToStr(stringList));
             }
@@ -402,7 +402,8 @@ struct KinetoThreadLocalState : public ProfilerStateBase
     static KinetoThreadLocalState* get(bool global)
     {
         auto* state = ProfilerStateBase::get(/*global=*/global);
-        QUARISMA_CHECK_DEBUG(state == nullptr || state->profilerType() == ActiveProfilerType::KINETO);
+        QUARISMA_CHECK_DEBUG(
+            state == nullptr || state->profilerType() == ActiveProfilerType::KINETO);
         return static_cast<KinetoThreadLocalState*>(state);
     }
 
@@ -417,10 +418,10 @@ struct KinetoThreadLocalState : public ProfilerStateBase
     }
 
     void reportMemoryUsage(
-        void*          ptr,
-        int64_t        alloc_size,
-        size_t         total_allocated,
-        size_t         total_reserved,
+        void*            ptr,
+        int64_t          alloc_size,
+        size_t           total_allocated,
+        size_t           total_reserved,
         quarisma::Device device) override
     {
         if (config_.profile_memory && !config_.disabled())
@@ -437,9 +438,9 @@ struct KinetoThreadLocalState : public ProfilerStateBase
     }
 
     void reportOutOfMemory(
-        int64_t        alloc_size,
-        size_t         total_allocated,
-        size_t         total_reserved,
+        int64_t          alloc_size,
+        size_t           total_allocated,
+        size_t           total_reserved,
         quarisma::Device device) override
     {
         if (config_.profile_memory && !config_.disabled())
@@ -522,11 +523,11 @@ struct KinetoThreadLocalState : public ProfilerStateBase
         }
     }
 
-    uint64_t                                    startTime;
+    uint64_t                                      startTime;
     quarisma::ApproximateClockToUnixTimeConverter clockConverter;
-    torch::profiler::impl::RecordQueue          recordQueue;
-    std::vector<KinetoEvent>                    kinetoEvents;
-    std::vector<experimental_event_t>           eventTree;
+    torch::profiler::impl::RecordQueue            recordQueue;
+    std::vector<KinetoEvent>                      kinetoEvents;
+    std::vector<experimental_event_t>             eventTree;
     // Optional, if event post-processing is enabled.
     post_process_t eventPostProcessCb;
 };
@@ -629,7 +630,7 @@ void pushProfilingCallbacks(const std::unordered_set<quarisma::RecordScope>& sco
 
 struct ProfilerStateInfo
 {
-    std::shared_ptr<KinetoThreadLocalState> state_ptr;
+    std::shared_ptr<KinetoThreadLocalState>   state_ptr;
     std::unordered_set<quarisma::RecordScope> scopes;
 };
 std::shared_ptr<ProfilerStateInfo> profiler_state_info_ptr{nullptr};
@@ -637,12 +638,12 @@ std::shared_ptr<ProfilerStateInfo> profiler_state_info_ptr{nullptr};
 }  // namespace
 
 void reportBackendEventToActiveKinetoProfiler(
-    const int64_t             start_time_us,
-    const int64_t             end_time_us,
-    const int64_t             debug_handle,
+    const int64_t               start_time_us,
+    const int64_t               end_time_us,
+    const int64_t               debug_handle,
     const quarisma::RecordScope scope,
-    const std::string&        event_name,
-    const std::string&        backend_name)
+    const std::string&          event_name,
+    const std::string&          backend_name)
 {
     TORCH_INTERNAL_ASSERT(
         KinetoThreadLocalState::get(/*global=*/true) == nullptr,
@@ -818,7 +819,7 @@ void enableProfilerWithEventPostProcess(
     const torch::profiler::impl::profiler_config&              config,
     const std::set<torch::profiler::impl::activity_type_enum>& activities,
     post_process_t&&                                           cb,
-    const std::unordered_set<quarisma::RecordScope>&             scopes)
+    const std::unordered_set<quarisma::RecordScope>&           scopes)
 {
     QUARISMA_CHECK(
         config.state != profiler_state_enum::NVTX,
@@ -837,7 +838,7 @@ void enableProfilerWithEventPostProcess(
 void enableProfiler(
     const torch::profiler::impl::profiler_config&              config,
     const std::set<torch::profiler::impl::activity_type_enum>& activities,
-    const std::unordered_set<quarisma::RecordScope>&             scopes)
+    const std::unordered_set<quarisma::RecordScope>&           scopes)
 {
     const auto has_cpu = activities.count(activity_type_enum::CPU);
     QUARISMA_CHECK(
@@ -1224,7 +1225,7 @@ FORWARD_FROM_RESULT(deviceResourceId, kineto_info_.resource)
     {                                                                                            \
         using out_t = decltype(std::declval<KinetoEvent>().method_name());                       \
         return result_->visit(                                                                   \
-            quarisma::overloaded(                                                                  \
+            quarisma::overloaded(                                                                \
                 [](const ExtraFields<EventType::event_type>& e) -> out_t { return expression; }, \
                 [](const auto&) -> out_t { return default_value; }));                            \
     }

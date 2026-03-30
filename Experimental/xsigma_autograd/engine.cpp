@@ -703,12 +703,12 @@ std::atomic<uint64_t> graph_task_id{0};
 }
 
 GraphTask::GraphTask(
-    bool                          keep_graph,
-    bool                          grad_mode,
-    int                           reentrant_depth,
-    std::shared_ptr<ReadyQueue>   cpu_ready_queue,
+    bool                            keep_graph,
+    bool                            grad_mode,
+    int                             reentrant_depth,
+    std::shared_ptr<ReadyQueue>     cpu_ready_queue,
     quarisma::SmallVector<Node*, 4> graph_roots,
-    bool                          exit_on_error)
+    bool                            exit_on_error)
     : keep_graph_(keep_graph),
       graph_roots_(std::move(graph_roots)),
       owner_(NO_DEVICE),
@@ -911,8 +911,8 @@ void set_device(int device)
     // device is reset. This is fine because the device is thread local.
     if (device != CPU_DEVICE)
     {
-        for (const auto i :
-             quarisma::irange(static_cast<size_t>(quarisma::DeviceType::COMPILE_TIME_MAX_DEVICE_TYPES)))
+        for (const auto i : quarisma::irange(
+                 static_cast<size_t>(quarisma::DeviceType::COMPILE_TIME_MAX_DEVICE_TYPES)))
         {
             auto* impl = quarisma::impl::device_guard_impl_registry[i].load();
             if (impl && device < impl->deviceCount())
@@ -1167,7 +1167,7 @@ void Engine::evaluate_function(
     const std::shared_ptr<ReadyQueue>& cpu_ready_queue)
 {
     // Locally set the current stream to func's associated stream
-    auto                        opt_parent_stream = (*func).stream();
+    auto                          opt_parent_stream = (*func).stream();
     quarisma::OptionalStreamGuard parent_stream_guard{opt_parent_stream};
 
     // Ensure that the incoming gradients are ready
@@ -1262,7 +1262,7 @@ void Engine::evaluate_function(
         AutoGradMode grad_mode(false);
         for (const auto i : quarisma::irange(num_outputs))
         {
-            auto&                       output = outputs[i];
+            auto&                         output = outputs[i];
             quarisma::OptionalDeviceGuard guard(device_of(output));
             QUARISMA_CHECK(
                 !output.defined() || !isnan(output)._is_any_true().item<bool>(),
@@ -1646,7 +1646,8 @@ void Engine::set_compiled_autograd(Engine::compiled_autograd_fn fn)
 
 void Engine::queue_callback(std::function<void()> callback)
 {
-    QUARISMA_CHECK(current_graph_task, "Final callbacks can only be installed during backward pass.");
+    QUARISMA_CHECK(
+        current_graph_task, "Final callbacks can only be installed during backward pass.");
 
     std::lock_guard<std::mutex> lock(current_graph_task->final_callbacks_lock_);
     current_graph_task->final_callbacks_.emplace_back(std::move(callback));

@@ -26,7 +26,7 @@ class QUARISMA_VISIBILITY CompressedEvent
     TraceKey                  key_;
     uint64_t                  system_tid_{};
     kineto::DeviceAndResource kineto_info_{};
-    quarisma::time_t            enter_t_{};
+    quarisma::time_t          enter_t_{};
 };
 
 /*
@@ -50,8 +50,8 @@ struct QUARISMA_API PythonTracerBase
     virtual void                                 register_gc_callback() = 0;
     virtual std::vector<std::shared_ptr<Result>> getEvents(
         std::function<quarisma::time_t(quarisma::approx_time_t)> time_converter,
-        std::vector<CompressedEvent>&                        enters,
-        quarisma::time_t                                       end_time_ns) = 0;
+        std::vector<CompressedEvent>&                            enters,
+        quarisma::time_t                                         end_time_ns) = 0;
 };
 
 using MakeFn = std::unique_ptr<PythonTracerBase> (*)(RecordQueue*);

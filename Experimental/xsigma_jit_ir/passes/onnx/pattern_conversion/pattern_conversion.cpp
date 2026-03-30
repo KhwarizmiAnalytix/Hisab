@@ -1,10 +1,10 @@
 #include <Quarisma/ScalarOps.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/passes/dead_code_elimination.h>
 #include <torch/csrc/jit/passes/erase_number_types.h>
 #include <torch/csrc/jit/passes/onnx.h>
 #include <torch/csrc/jit/passes/onnx/pattern_conversion/common.h>
 #include <torch/csrc/jit/passes/onnx/pattern_conversion/pattern_conversion.h>
-#include <quarisma/util/irange.h>
 
 #include <iostream>
 
@@ -40,10 +40,10 @@ Value* ConvertSliceToIndex(Node* slice, Value* size, Node* insertBefore)
     auto            graph = slice->owningGraph();
     WithInsertPoint guard(insertBefore);
     TORCH_INTERNAL_ASSERT((slice->inputs()).size() == 5);
-    auto start          = slice->inputs()[2];
-    auto end            = slice->inputs()[3];
-    auto step           = slice->inputs()[4];
-    auto index          = graph->insert(aten::arange, {size}, {NamedValue("dtype", quarisma::kLong)});
+    auto start = slice->inputs()[2];
+    auto end   = slice->inputs()[3];
+    auto step  = slice->inputs()[4];
+    auto index = graph->insert(aten::arange, {size}, {NamedValue("dtype", quarisma::kLong)});
     auto sliced_index_n = graph->create(
         aten::slice,
         {index,
@@ -64,7 +64,7 @@ struct ConvertedIndex
     {
     }
 
-    Value*         index = nullptr;
+    Value*           index = nullptr;
     quarisma::Symbol orig_node_kind;
 };
 

@@ -1,8 +1,8 @@
 #include <string>
 #include <vector>
 
-#include "logging/back_trace.h"
 #include "baseTest.h"
+#include "logging/back_trace.h"
 
 namespace quarisma
 {

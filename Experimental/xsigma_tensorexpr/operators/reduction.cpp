@@ -25,7 +25,7 @@ Tensor computeSum(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     std::vector<size_t> axes;
     bool                keepdim = false;
@@ -128,7 +128,7 @@ Tensor computeMean(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     Dtype dtype = kFloat;
     if (outputType)
@@ -166,7 +166,7 @@ Tensor computeMax(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     Dtype dtype = kFloat;
     if (outputType)
@@ -188,7 +188,7 @@ Tensor computeAdaptiveAvgPool2d(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device)
+    quarisma::Device                 device)
 {
     Dtype dtype = kFloat;
     if (outputType)

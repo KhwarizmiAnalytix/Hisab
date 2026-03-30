@@ -1,3 +1,4 @@
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/frontend/error_report.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/passes/dead_code_elimination.h>
@@ -6,7 +7,6 @@
 #include <torch/csrc/jit/passes/onnx/remove_inplace_ops_for_onnx.h>
 #include <torch/csrc/jit/passes/remove_inplace_ops.h>
 #include <torch/csrc/jit/passes/remove_mutation.h>
-#include <quarisma/util/irange.h>
 
 namespace torch::jit
 {

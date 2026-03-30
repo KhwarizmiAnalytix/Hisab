@@ -38,8 +38,8 @@ QUARISMA_DIAGNOSTIC_PUSH_AND_IGNORED_IF_DEFINED("-Wextra-semi")
 #include <llvm/Target/TargetMachine.h>
 QUARISMA_DIAGNOSTIC_POP()
 
-#include <torch/csrc/jit/tensorexpr/external_functions_registry.h>
 #include <quarisma/util/Half.h>
+#include <torch/csrc/jit/tensorexpr/external_functions_registry.h>
 
 #include <algorithm>
 #include <memory>

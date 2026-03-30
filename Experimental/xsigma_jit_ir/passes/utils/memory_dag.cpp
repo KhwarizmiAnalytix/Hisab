@@ -1,5 +1,5 @@
-#include <torch/csrc/jit/passes/utils/memory_dag.h>
 #include <quarisma/util/flat_hash_map.h>
+#include <torch/csrc/jit/passes/utils/memory_dag.h>
 
 #include <algorithm>
 #include <queue>
@@ -192,9 +192,9 @@ const MemoryLocations& MemoryDAG::getMemoryLocations(const Element* e) const
 }
 
 void MemoryDAG::setWildcards(
-    const std::unordered_set<const Value*>&              wildcards,
+    const std::unordered_set<const Value*>&                wildcards,
     const quarisma::flat_hash_map<const Value*, Element*>& elementMap,
-    const std::function<Element*(const Value*)>&         getWildcardElement)
+    const std::function<Element*(const Value*)>&           getWildcardElement)
 {
     std::unordered_map<Element*, MemoryLocations> cacheUpdates;
     // If an element is set as a wildcard, that means that all its memory

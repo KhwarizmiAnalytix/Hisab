@@ -1,17 +1,17 @@
-#include "profiler/pytorch_profiler/profiler_python.h"
+#include "pytorch_profiler/profiler_python.h"
 
 #include <Python.h>
 #include <Quarisma/core/TensorBase.h>
 #include <frameobject.h>
+#include <quarisma/util/ApproximateClock.h>
+#include <quarisma/util/Logging.h>
+#include <quarisma/util/flat_hash_map.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/autograd/python_variable.h>
 #include <torch/csrc/utils/pybind.h>
 #include <torch/csrc/utils/python_compat.h>
 #include <torch/csrc/utils/python_numbers.h>
 #include <torch/csrc/utils/python_strings.h>
-#include <quarisma/util/ApproximateClock.h>
-#include <quarisma/util/Logging.h>
-#include <quarisma/util/flat_hash_map.h>
-#include <quarisma/util/irange.h>
 
 #include <atomic>
 #include <cstdint>
@@ -25,10 +25,10 @@
 #include <vector>
 
 #include "common/macros.h"
-#include "profiler/pytorch_profiler/collection.h"
-#include "profiler/pytorch_profiler/containers.h"
-#include "profiler/pytorch_profiler/python_tracer.h"
-#include "profiler/pytorch_profiler/util.h"
+#include "pytorch_profiler/collection.h"
+#include "pytorch_profiler/containers.h"
+#include "pytorch_profiler/python_tracer.h"
+#include "pytorch_profiler/util.h"
 #include "util/exception.h"
 
 namespace py = pybind11;
@@ -234,8 +234,8 @@ struct ExtendedPyCallConfig
     struct Cache
     {
         // `nn.Module.forward` or `optim.Optimizer._optimizer_step_code`
-        std::optional<CodeLocation>                      location_;
-        quarisma::flat_hash_map<key_t, ClsAndParameters>   cls_and_parameters_;
+        std::optional<CodeLocation>                          location_;
+        quarisma::flat_hash_map<key_t, ClsAndParameters>     cls_and_parameters_;
         quarisma::flat_hash_map<cls_t, quarisma::StringView> cls_names_;
     };
     using cache_t = Cache;
@@ -716,11 +716,11 @@ struct ThreadLocalResults
 
     static constexpr size_t BLOCK_SIZE = 1024;
 
-    PyThreadState*                                    thread_state_;
-    TraceContext*                                     ctx_;
-    ValueCache*                                       value_cache_;
-    PythonTracer*                                     active_tracer_;
-    CallTypeHelper<TraceKeyCacheState>::tuple_type    trace_keys_;
+    PyThreadState*                                      thread_state_;
+    TraceContext*                                       ctx_;
+    ValueCache*                                         value_cache_;
+    PythonTracer*                                       active_tracer_;
+    CallTypeHelper<TraceKeyCacheState>::tuple_type      trace_keys_;
     AppendOnlyList<quarisma::approx_time_t, BLOCK_SIZE> exit_times_;
     AppendOnlyList<quarisma::approx_time_t, BLOCK_SIZE> c_exit_times_;
 
@@ -752,12 +752,12 @@ public:
     void       restart() override;
     std::vector<std::shared_ptr<Result>> getEvents(
         std::function<quarisma::time_t(quarisma::approx_time_t)> time_converter,
-        std::vector<python_tracer::CompressedEvent>&         enters,
-        quarisma::time_t                                       end_time_ns) override;
+        std::vector<python_tracer::CompressedEvent>&             enters,
+        quarisma::time_t                                         end_time_ns) override;
 
     struct StartFrame
     {
-        TraceKey              trace_key_;
+        TraceKey                trace_key_;
         quarisma::approx_time_t start_time{};
     };
 
@@ -1344,7 +1344,7 @@ struct Exit
     bool operator>(const Exit& other) const { return t_ > other.t_; }
 
     quarisma::time_t t_;
-    size_t         python_tid_;
+    size_t           python_tid_;
 };
 
 class PostProcess
@@ -1352,9 +1352,9 @@ class PostProcess
 public:
     PostProcess(
         std::function<quarisma::time_t(quarisma::approx_time_t)> time_converter,
-        std::deque<ThreadLocalResults>&                      tls,
-        const ValueCache&                                    value_cache,
-        quarisma::time_t                                       end_time_ns)
+        std::deque<ThreadLocalResults>&                          tls,
+        const ValueCache&                                        value_cache,
+        quarisma::time_t                                         end_time_ns)
         : end_time_{end_time_ns}, time_converter_{std::move(time_converter)}
     {
         for (size_t python_tid : quarisma::irange(tls.size()))
@@ -1438,7 +1438,7 @@ private:
         };
 
         quarisma::flat_hash_map<size_t, stack_t> stacks;
-        auto&                                  state = get_state<E>();
+        auto&                                    state = get_state<E>();
         // We already own the GIL quarisma this point
         for (const auto& enter : enters)
         {
@@ -1492,7 +1492,7 @@ private:
     template <EventType E>
     struct State
     {
-        quarisma::flat_hash_map<TraceKey, ExtraFields<E>>              fields_;
+        quarisma::flat_hash_map<TraceKey, ExtraFields<E>>            fields_;
         std::priority_queue<Exit, std::vector<Exit>, std::greater<>> exits_;
     };
 
@@ -1502,8 +1502,8 @@ private:
         return std::get<E == EventType::PyCall ? 0 : 1>(state_);
     }
 
-    quarisma::time_t                                                  end_time_;
-    std::function<quarisma::time_t(quarisma::approx_time_t)>            time_converter_;
+    quarisma::time_t                                                end_time_;
+    std::function<quarisma::time_t(quarisma::approx_time_t)>        time_converter_;
     std::tuple<State<EventType::PyCall>, State<EventType::PyCCall>> state_;
 };
 
@@ -1536,8 +1536,8 @@ struct PythonIDVisitor
 
 std::vector<std::shared_ptr<Result>> PythonTracer::getEvents(
     std::function<quarisma::time_t(quarisma::approx_time_t)> time_converter,
-    std::vector<python_tracer::CompressedEvent>&         enters,
-    quarisma::time_t                                       end_time_ns)
+    std::vector<python_tracer::CompressedEvent>&             enters,
+    quarisma::time_t                                         end_time_ns)
 {
     value_cache_.trimPrefixes();
     PostProcess post_process(

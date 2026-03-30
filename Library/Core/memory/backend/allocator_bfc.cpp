@@ -51,9 +51,9 @@
 #include "logging/logger.h"
 #include "memory/cpu/allocator.h"
 #if QUARISMA_HAS_NATIVE_PROFILER
-#include "profiler/native/memory/scoped_memory_debug_annotation.h"
-#include "profiler/native/tracing/traceme.h"
-#include "profiler/native/tracing/traceme_encode.h"
+#include "native/memory/scoped_memory_debug_annotation.h"
+#include "native/tracing/traceme.h"
+#include "native/tracing/traceme_encode.h"
 #endif
 #include "util/exception.h"
 #include "util/flat_hash.h"
@@ -256,9 +256,9 @@ private:
 
 allocator_bfc::allocator_bfc(
     std::unique_ptr<quarisma::sub_allocator> sub_allocator,
-    size_t                                 total_memory,
-    std::string                            name,
-    const Options&                         opts)
+    size_t                                   total_memory,
+    std::string                              name,
+    const Options&                           opts)
     : opts_(opts),
       coalesce_regions_(sub_allocator->SupportsCoalescing()),
       sub_allocator_(std::move(sub_allocator)),
@@ -315,7 +315,8 @@ allocator_bfc::~allocator_bfc()
     std::scoped_lock const l(mutex_);
 
     // Return memory back.
-    QUARISMA_LOG_INFO_DEBUG_BFC("Number of regions allocated: {}", region_manager_.regions().size());
+    QUARISMA_LOG_INFO_DEBUG_BFC(
+        "Number of regions allocated: {}", region_manager_.regions().size());
     for (const auto& region : region_manager_.regions())
     {
         sub_allocator_->Free(region.ptr(), region.memory_size());
@@ -1138,7 +1139,8 @@ void allocator_bfc::RemoveFreeChunkFromBin(allocator_bfc::ChunkHandle h)
 {
     Chunk* c = ChunkFromHandle(h);
     QUARISMA_CHECK(!c->in_use() && (c->bin_num != kInvalidBinNum));  //NOLINT
-    QUARISMA_CHECK(BinFromIndex(c->bin_num)->free_chunks.erase(h) > 0, "Could not find chunk in bin");
+    QUARISMA_CHECK(
+        BinFromIndex(c->bin_num)->free_chunks.erase(h) > 0, "Could not find chunk in bin");
     c->bin_num = kInvalidBinNum;
 }
 

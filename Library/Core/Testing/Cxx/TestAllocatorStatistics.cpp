@@ -22,6 +22,7 @@
 #include <sstream>
 #include <vector>
 
+#include "baseTest.h"
 #include "common/pointer.h"
 #include "logging/logger.h"
 #include "memory/backend/allocator_bfc.h"
@@ -31,7 +32,6 @@
 #include "memory/cpu/allocator_cpu.h"
 #include "memory/unified_memory_stats.h"
 #include "memory/visualization/ascii_visualizer.h"
-#include "baseTest.h"
 
 using namespace quarisma;
 
@@ -117,13 +117,14 @@ void display_allocator_stats(const std::string& allocator_name, const allocator_
     {
         QUARISMA_LOG_INFO("\nBFC Allocator Specific:");
         QUARISMA_LOG_INFO("Bytes Reserved:       {}", format_bytes(stats.bytes_reserved.load()));
-        QUARISMA_LOG_INFO("Peak Bytes Reserved:  {}", format_bytes(stats.peak_bytes_reserved.load()));
+        QUARISMA_LOG_INFO(
+            "Peak Bytes Reserved:  {}", format_bytes(stats.peak_bytes_reserved.load()));
         QUARISMA_LOG_INFO(
             "Largest Free Block:   {}", format_bytes(stats.largest_free_block_bytes.load()));
     }
 
     // Efficiency metrics
-    int64_t               total_allocs   = stats.num_allocs.load();
+    int64_t                 total_allocs   = stats.num_allocs.load();
     QUARISMA_UNUSED int64_t total_deallocs = stats.num_deallocs.load();
     if (total_allocs > 0)
     {

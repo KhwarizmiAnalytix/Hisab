@@ -598,15 +598,15 @@ void record_function_with_scope_and_debug_handle(
 }  // namespace detail
 
 // optional argument - function's seq_no
-#define RECORD_FUNCTION_WITH_SCOPE(scope, fn, inputs, ...)                              \
+#define RECORD_FUNCTION_WITH_SCOPE(scope, fn, inputs, ...)                                \
     quarisma::RecordFunction guard(scope);                                                \
-    if (guard.isActive())                                                               \
-    {                                                                                   \
+    if (guard.isActive())                                                                 \
+    {                                                                                     \
         ::quarisma::detail::record_function_with_scope(guard, fn, inputs, ##__VA_ARGS__); \
     }
 
 #define RECORD_FUNCTION_WITH_SCOPE_INPUTS_OUTPUTS(scope, fn, inputs, outputs, ...) \
-    quarisma::RecordFunction guard(scope);                                           \
+    quarisma::RecordFunction guard(scope);                                         \
     if (guard.isActive())                                                          \
     {                                                                              \
         if (guard.needsInputs())                                                   \
@@ -644,15 +644,18 @@ void record_function_with_scope_and_debug_handle(
 
 #define RECORD_USER_SCOPE_WITH_KWARGS_ONLY(fn, kwargs) \
     RECORD_FUNCTION_WITH_SCOPE(                        \
-        quarisma::RecordScope::USER_SCOPE, fn, quarisma::array_ref<const quarisma::IValue>{}, kwargs)
+        quarisma::RecordScope::USER_SCOPE,             \
+        fn,                                            \
+        quarisma::array_ref<const quarisma::IValue>{}, \
+        kwargs)
 
 // Helper macro to pass in debug handle that is used to
 // post process events
 #define RECORD_WITH_SCOPE_DEBUG_HANDLE_AND_INPUTS(scope, fn, debug_handle, inputs, ...) \
-    quarisma::RecordFunction guard(scope);                                                \
+    quarisma::RecordFunction guard(scope);                                              \
     if (guard.isActive())                                                               \
     {                                                                                   \
-        ::quarisma::detail::record_function_with_scope_and_debug_handle(                  \
+        ::quarisma::detail::record_function_with_scope_and_debug_handle(                \
             guard, fn, debug_handle, inputs, ##__VA_ARGS__);                            \
     }
 
@@ -665,9 +668,9 @@ void record_function_with_scope_and_debug_handle(
 // launch to let the profiler bind the outputs to the op that produced
 // them.  Note that guard is declared by RECORD_FUNCTION so this macro
 // needs to be called from the same scope as RECORD_FUNCTION
-#define RECORD_OUTPUTS(outputs)                                                        \
-    if (guard.needsOutputs())                                                          \
-    {                                                                                  \
+#define RECORD_OUTPUTS(outputs)                                                          \
+    if (guard.needsOutputs())                                                            \
+    {                                                                                    \
         guard.setOutputs(std::vector<quarisma::IValue>(outputs.begin(), outputs.end())); \
     }
 

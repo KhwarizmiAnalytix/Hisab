@@ -270,7 +270,7 @@ void SavedVariable::set_hooks_and_pack_data(
 {
     hooks_ = std::move(hooks);
     quarisma::NoGradGuard guard;
-    const auto          version = impl::version_counter(data).current_version();
+    const auto            version = impl::version_counter(data).current_version();
     hooks_->call_pack_hook(saved_original_ ? data.detach() : data);
     QUARISMA_CHECK(
         version == impl::version_counter(data).current_version(),

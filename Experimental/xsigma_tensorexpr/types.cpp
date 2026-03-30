@@ -1,7 +1,7 @@
+#include <quarisma/util/Logging.h>
 #include <torch/csrc/Export.h>
 #include <torch/csrc/jit/tensorexpr/exceptions.h>
 #include <torch/csrc/jit/tensorexpr/types.h>
-#include <quarisma/util/Logging.h>
 
 namespace torch::jit::tensorexpr
 {

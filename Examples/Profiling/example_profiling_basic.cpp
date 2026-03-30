@@ -18,15 +18,15 @@
 #include <random>
 #include <vector>
 
-#include "profiler/session/profiler.h"
+#include "native/session/profiler.h"
 
 #if QUARISMA_HAS_KINETO
 #include <ActivityTrace.h>
 
-#include "profiler/kineto/kineto_shim.h"
+#include "kineto/kineto_shim.h"
 #endif
 
-#include "profiler/itt/itt_wrapper.h"
+#include "itt/itt_wrapper.h"
 
 namespace quarisma::examples::profiling
 {
@@ -278,7 +278,7 @@ void example_kineto_profiler()
 
     // Export traces
     std::string const quarisma_file = "kineto_quarisma_trace.json";
-    std::string const kineto_file = "kineto_only_trace.json";
+    std::string const kineto_file   = "kineto_only_trace.json";
 
     session.write_chrome_trace(quarisma_file);
 

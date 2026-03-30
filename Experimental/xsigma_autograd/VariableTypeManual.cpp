@@ -1,6 +1,8 @@
 #include <Quarisma/RedispatchFunctions.h>
 #include <Quarisma/TracerMode.h>
 #include <Quarisma/core/op_registration/op_registration.h>
+#include <quarisma/core/ScalarType.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/autograd/FunctionsManual.h>
 #include <torch/csrc/autograd/VariableTypeUtils.h>
 #include <torch/csrc/autograd/autograd.h>
@@ -8,8 +10,6 @@
 #include <torch/csrc/autograd/generated/VariableType.h>
 #include <torch/csrc/autograd/generated/ViewFuncs.h>
 #include <torch/library.h>
-#include <quarisma/core/ScalarType.h>
-#include <quarisma/util/irange.h>
 
 #include <optional>
 #include <utility>
@@ -224,7 +224,8 @@ Tensor& copy_(quarisma::DispatchKeySet ks, Tensor& self, const Tensor& src, bool
     }
     {
         quarisma::AutoDispatchBelowAutograd mode;
-        quarisma::redispatch::copy_(ks & quarisma::after_autograd_keyset, self_, src_, non_blocking);
+        quarisma::redispatch::copy_(
+            ks & quarisma::after_autograd_keyset, self_, src_, non_blocking);
     }
     rebase_history(self, std::move(grad_fn));
 
@@ -262,7 +263,7 @@ Tensor& copy_(quarisma::DispatchKeySet ks, Tensor& self, const Tensor& src, bool
 }
 
 const Tensor& resize_(
-    quarisma::DispatchKeySet      ks,
+    quarisma::DispatchKeySet    ks,
     const Tensor&               self,
     SymIntArrayRef              size,
     std::optional<MemoryFormat> optional_memory_format)
@@ -287,7 +288,7 @@ const Tensor& resize_(
 }
 
 const Tensor& resize_as_(
-    quarisma::DispatchKeySet      ks,
+    quarisma::DispatchKeySet    ks,
     const Tensor&               self,
     const Tensor&               the_template,
     std::optional<MemoryFormat> optional_memory_format)
@@ -400,7 +401,8 @@ namespace ADInplaceOrView
         ? CreationMeta::INFERENCE_MODE \
         : (quarisma::GradMode::is_enabled() ? CreationMeta::DEFAULT : CreationMeta::NO_GRAD_MODE)
 
-static Tensor& copy_(quarisma::DispatchKeySet ks, Tensor& self, const Tensor& src, bool non_blocking)
+static Tensor& copy_(
+    quarisma::DispatchKeySet ks, Tensor& self, const Tensor& src, bool non_blocking)
 {
     {
         quarisma::AutoDispatchBelowADInplaceOrView guard;
@@ -412,7 +414,7 @@ static Tensor& copy_(quarisma::DispatchKeySet ks, Tensor& self, const Tensor& sr
 }
 
 static const Tensor& resize_(
-    quarisma::DispatchKeySet      ks,
+    quarisma::DispatchKeySet    ks,
     const Tensor&               self,
     SymIntArrayRef              size,
     std::optional<MemoryFormat> optional_memory_format)
@@ -435,7 +437,7 @@ static const Tensor& resize_(
 }
 
 static const Tensor& resize_as_(
-    quarisma::DispatchKeySet      ks,
+    quarisma::DispatchKeySet    ks,
     const Tensor&               self,
     const Tensor&               the_template,
     std::optional<MemoryFormat> optional_memory_format)
@@ -447,7 +449,10 @@ static const Tensor& resize_as_(
     {
         quarisma::AutoDispatchBelowADInplaceOrView guard;
         quarisma::redispatch::resize_as_(
-            ks & quarisma::after_ADInplaceOrView_keyset, self, the_template, optional_memory_format);
+            ks & quarisma::after_ADInplaceOrView_keyset,
+            self,
+            the_template,
+            optional_memory_format);
     }
 
     // If `self` was resized, increment the version.
@@ -486,7 +491,7 @@ static Tensor _fw_primal(quarisma::DispatchKeySet ks, const Tensor& self, int64_
     quarisma::AutoDispatchBelowADInplaceOrView guard;
     return quarisma::alias(self);
   })();
-    std::unique_ptr<torch::autograd::ViewFunc>           func(nullptr);
+    std::unique_ptr<torch::autograd::ViewFunc>               func(nullptr);
     std::function<quarisma::Tensor(const quarisma::Tensor&)> rev_func = nullptr;
     if (!self.unsafeGetTensorImpl()->support_as_strided())
     {
@@ -518,7 +523,7 @@ static Tensor _make_dual(
     quarisma::AutoDispatchBelowADInplaceOrView guard;
     return quarisma::alias(primal);
   })();
-    std::unique_ptr<torch::autograd::ViewFunc>           func(nullptr);
+    std::unique_ptr<torch::autograd::ViewFunc>               func(nullptr);
     std::function<quarisma::Tensor(const quarisma::Tensor&)> rev_func = nullptr;
     if (!primal.unsafeGetTensorImpl()->support_as_strided())
     {

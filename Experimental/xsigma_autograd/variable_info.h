@@ -16,8 +16,8 @@ struct TORCH_API VariableInfo
     quarisma::Device              device      = quarisma::kCPU;
     quarisma::ScalarType          scalar_type = quarisma::kFloat;
     std::vector<quarisma::SymInt> size;
-    bool                        requires_grad;
-    bool                        is_empty;
+    bool                          requires_grad;
+    bool                          is_empty;
     // needed for e.g. NJTs since they only support zeros_like()
     std::optional<Variable> the_var;
 };

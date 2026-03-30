@@ -680,7 +680,11 @@ void initTensorExprBindings(PyObject* module)
                 std::vector<ExprHandle> outputStrides =
                     quarisma::fmap<ExprHandle>(make_channels_last_strides(outputShape));
                 return lowering(
-                    argInputs, outputShape, outputStrides, outputType.scalar_type(), quarisma::kCPU);
+                    argInputs,
+                    outputShape,
+                    outputStrides,
+                    outputType.scalar_type(),
+                    quarisma::kCPU);
             }
             std::string msg =
                 std::string("Unhandled node kind (in te.lower): ") + op.toQualString();

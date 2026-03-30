@@ -21,9 +21,9 @@
 
 #include <vector>
 
+#include "baseTest.h"        // for END_TEST, QUARISMATEST
 #include "logging/logger.h"  // for END_LOG_TO_FILE_NAME, START_LOG_TO_FILE_NAME
 #include "util/cpu_info.h"   // for cpu_info
-#include "baseTest.h"      // for END_TEST, QUARISMATEST
 
 QUARISMATEST(CPUinfo, CPUinfo)
 {

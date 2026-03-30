@@ -21,8 +21,8 @@
 #include <string>
 #include <vector>
 
-#include "util/flat_hash.h"
 #include "baseTest.h"
+#include "util/flat_hash.h"
 
 using namespace quarisma;
 
@@ -697,23 +697,23 @@ QUARISMATEST(FlatHash, prime_number_hash_policy_comprehensive)
 
     // ===== NEXT SIZE OVER SMALL =====
     quarisma::prime_number_hash_policy policy3;
-    uint64_t                         small_size = 1;
-    auto                             f          = policy3.next_size_over(small_size);
+    uint64_t                           small_size = 1;
+    auto                               f          = policy3.next_size_over(small_size);
     EXPECT_GT(small_size, 1ULL);
     EXPECT_EQ(f(small_size), 0ULL);  // n % n == 0
 
     // ===== NEXT SIZE OVER BETWEEN PRIMES =====
     quarisma::prime_number_hash_policy policy4;
-    uint64_t                         between_size = 6;
-    auto                             f2           = policy4.next_size_over(between_size);
+    uint64_t                           between_size = 6;
+    auto                               f2           = policy4.next_size_over(between_size);
     EXPECT_GE(between_size, 6ULL);
     EXPECT_EQ(f2(between_size), 0ULL);
     EXPECT_EQ(f2(between_size + 1), 1ULL);
 
     // ===== COMMIT AND INDEX FOR HASH =====
     quarisma::prime_number_hash_policy policy5;
-    uint64_t                         commit_size = 1000;
-    auto                             f3          = policy5.next_size_over(commit_size);
+    uint64_t                           commit_size = 1000;
+    auto                               f3          = policy5.next_size_over(commit_size);
     policy5.commit(f3);
 
     uint64_t h = 1234567890123456789ULL;
@@ -726,8 +726,8 @@ QUARISMATEST(FlatHash, prime_number_hash_policy_comprehensive)
 
     // ===== RESET RESTORES MOD0 =====
     quarisma::prime_number_hash_policy policy6;
-    uint64_t                         reset_size = 50;
-    auto                             f4         = policy6.next_size_over(reset_size);
+    uint64_t                           reset_size = 50;
+    auto                               f4         = policy6.next_size_over(reset_size);
     policy6.commit(f4);
     uint64_t h2 = 987654321ULL;
     EXPECT_EQ(policy6.index_for_hash(h2, 0), f4(h2));
@@ -738,9 +738,9 @@ QUARISMATEST(FlatHash, prime_number_hash_policy_comprehensive)
 
     // ===== NEXT SIZE OVER LARGE =====
     quarisma::prime_number_hash_policy policy7;
-    uint64_t                         requested  = std::numeric_limits<uint64_t>::max() - 12345ULL;
-    uint64_t                         large_size = requested;
-    auto                             f5         = policy7.next_size_over(large_size);
+    uint64_t                           requested  = std::numeric_limits<uint64_t>::max() - 12345ULL;
+    uint64_t                           large_size = requested;
+    auto                               f5         = policy7.next_size_over(large_size);
     EXPECT_GE(large_size, requested);
     EXPECT_EQ(f5(large_size), 0ULL);
 
@@ -750,12 +750,12 @@ QUARISMATEST(FlatHash, prime_number_hash_policy_comprehensive)
 
     // ===== KEEP IN RANGE =====
     quarisma::prime_number_hash_policy policy8;
-    uint64_t                         range_index = policy8.keep_in_range(12345, 100);
+    uint64_t                           range_index = policy8.keep_in_range(12345, 100);
     EXPECT_LE(range_index, 100);
 
     // ===== SEQUENTIAL NEXT SIZE OVER =====
     quarisma::prime_number_hash_policy policy9;
-    uint64_t                         seq_size1 = 5;
+    uint64_t                           seq_size1 = 5;
     policy9.next_size_over(seq_size1);
     uint64_t first_prime = seq_size1;
 
@@ -766,8 +766,8 @@ QUARISMATEST(FlatHash, prime_number_hash_policy_comprehensive)
 
     // ===== INDEX FOR HASH AFTER COMMIT =====
     quarisma::prime_number_hash_policy policy10;
-    uint64_t                         iah_size = 20;
-    auto                             mod_func = policy10.next_size_over(iah_size);
+    uint64_t                           iah_size = 20;
+    auto                               mod_func = policy10.next_size_over(iah_size);
     policy10.commit(mod_func);
 
     uint64_t iah_index1 = policy10.index_for_hash(12345, 0);
@@ -777,8 +777,8 @@ QUARISMATEST(FlatHash, prime_number_hash_policy_comprehensive)
 
     // ===== KEEP IN RANGE AFTER COMMIT =====
     quarisma::prime_number_hash_policy policy11;
-    uint64_t                         kir_size     = 30;
-    auto                             kir_mod_func = policy11.next_size_over(kir_size);
+    uint64_t                           kir_size     = 30;
+    auto                               kir_mod_func = policy11.next_size_over(kir_size);
     policy11.commit(kir_mod_func);
 
     uint64_t kir_index1 = policy11.keep_in_range(100, 50);
@@ -812,8 +812,8 @@ QUARISMATEST(FlatHash, prime_number_hash_policy_comprehensive)
 
     // ===== RESET AFTER OPERATIONS =====
     quarisma::prime_number_hash_policy policy12;
-    uint64_t                         rao_size     = 50;
-    auto                             rao_mod_func = policy12.next_size_over(rao_size);
+    uint64_t                           rao_size     = 50;
+    auto                               rao_mod_func = policy12.next_size_over(rao_size);
     policy12.commit(rao_mod_func);
 
     policy12.reset();

@@ -1,12 +1,12 @@
 #include <Quarisma/core/interned_strings.h>
+#include <quarisma/util/flat_hash_map.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/api/function_impl.h>
 #include <torch/csrc/jit/ir/alias_analysis.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/passes/inliner.h>
 #include <torch/csrc/jit/passes/utils/subgraph_utils.h>
 #include <torch/csrc/jit/runtime/operator.h>
-#include <quarisma/util/flat_hash_map.h>
-#include <quarisma/util/irange.h>
 
 #include <fstream>
 #include <iostream>
@@ -31,7 +31,8 @@ quarisma::MaybeOwned<TypePtr> toSingleType(const AliasTypeSet& mut_types)
 class MutableTypePtrHelper
 {
 public:
-    explicit MutableTypePtrHelper(quarisma::flat_hash_map<TypePtr, AliasTypeSet>* mutable_type_cache)
+    explicit MutableTypePtrHelper(
+        quarisma::flat_hash_map<TypePtr, AliasTypeSet>* mutable_type_cache)
         : mutable_type_cache_(mutable_type_cache)
     {
     }
@@ -962,7 +963,7 @@ void AliasDb::analyzeImpl(Node* node)
     for (const auto i : quarisma::irange(schema.arguments().size()))
     {
         const quarisma::AliasInfo* formal      = schema.arguments()[i].alias_info();
-        const auto&              actualValue = node->inputs().quarisma(i);
+        const auto&                actualValue = node->inputs().quarisma(i);
 
         // Skip if there's no alias annotation
         if (!formal)
@@ -1028,7 +1029,7 @@ void AliasDb::analyzeImpl(Node* node)
     // Use the formal-actual mapping to give aliases to the outputs
     for (const auto i : quarisma::irange(schema.returns().size()))
     {
-        const auto               actual = node->outputs().quarisma(i);
+        const auto                 actual = node->outputs().quarisma(i);
         const quarisma::AliasInfo* formal = schema.returns()[i].alias_info();
         if (!formal)
         {

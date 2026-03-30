@@ -58,12 +58,14 @@ class mimalloc_benchmark_allocator : public allocator_benchmark_interface
 {
 public:
     void* allocate(
-        QUARISMA_UNUSED std::size_t size, QUARISMA_UNUSED std::size_t alignment = 64) noexcept override
+        QUARISMA_UNUSED std::size_t size,
+        QUARISMA_UNUSED std::size_t alignment = 64) noexcept override
     {
         return quarisma::cpu::memory_allocator::allocate_mi(size, alignment);
     }
 
-    void deallocate(QUARISMA_UNUSED void* ptr, QUARISMA_UNUSED std::size_t size = 0) noexcept override
+    void deallocate(
+        QUARISMA_UNUSED void* ptr, QUARISMA_UNUSED std::size_t size = 0) noexcept override
     {
         quarisma::cpu::memory_allocator::free_mi(ptr, size);
     }
@@ -75,12 +77,14 @@ class tbb_scalable_benchmark_allocator : public allocator_benchmark_interface
 {
 public:
     void* allocate(
-        QUARISMA_UNUSED std::size_t size, QUARISMA_UNUSED std::size_t alignment = 64) noexcept override
+        QUARISMA_UNUSED std::size_t size,
+        QUARISMA_UNUSED std::size_t alignment = 64) noexcept override
     {
         return quarisma::cpu::memory_allocator::allocate_tbb(size, alignment);
     }
 
-    void deallocate(QUARISMA_UNUSED void* ptr, QUARISMA_UNUSED std::size_t size = 0) noexcept override
+    void deallocate(
+        QUARISMA_UNUSED void* ptr, QUARISMA_UNUSED std::size_t size = 0) noexcept override
     {
         quarisma::cpu::memory_allocator::free_tbb(ptr, size);
     }
@@ -128,7 +132,10 @@ public:
         return malloc(size);
     }
 
-    void deallocate(void* ptr, QUARISMA_UNUSED std::size_t size = 0) noexcept override { free(ptr); }
+    void deallocate(void* ptr, QUARISMA_UNUSED std::size_t size = 0) noexcept override
+    {
+        free(ptr);
+    }
 
     const char* name() const noexcept override { return "standard_malloc"; }
 };

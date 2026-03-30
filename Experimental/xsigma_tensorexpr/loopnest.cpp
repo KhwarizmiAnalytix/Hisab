@@ -1,4 +1,6 @@
 #include <Quarisma/core/functional.h>
+#include <quarisma/util/Logging.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/tensorexpr/analysis.h>
 #include <torch/csrc/jit/tensorexpr/bounds_inference.h>
@@ -12,8 +14,6 @@
 #include <torch/csrc/jit/tensorexpr/ir_verifier.h>
 #include <torch/csrc/jit/tensorexpr/loopnest.h>
 #include <torch/csrc/jit/tensorexpr/tensor.h>
-#include <quarisma/util/Logging.h>
-#include <quarisma/util/irange.h>
 
 #include <algorithm>
 #include <iostream>

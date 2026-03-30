@@ -21,8 +21,8 @@
 #include <string>
 #include <utility>
 
-#include "logging/logger.h"
 #include "baseTest.h"
+#include "logging/logger.h"
 
 namespace
 {

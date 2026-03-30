@@ -1,4 +1,4 @@
-#include "profiler/pytorch_profiler/python/combined_traceback.h"
+#include "pytorch_profiler/python/combined_traceback.h"
 
 #include <quarisma/csrc/python_headers.h>
 #include <quarisma/csrc/utils/pybind.h>

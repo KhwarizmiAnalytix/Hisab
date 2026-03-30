@@ -1,6 +1,6 @@
 #include <Quarisma/InitialTensorOptions.h>
-#include <Quarisma/SparseTensorImpl.h>
 #include <Quarisma/Quarisma.h>
+#include <Quarisma/SparseTensorImpl.h>
 #include <Quarisma/core/LegacyTypeDispatch.h>
 
 namespace at

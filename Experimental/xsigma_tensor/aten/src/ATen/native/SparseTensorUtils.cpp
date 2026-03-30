@@ -1,6 +1,6 @@
 #include <Quarisma/Parallel.h>
-#include <Quarisma/SparseTensorImpl.h>
 #include <Quarisma/Quarisma.h>
+#include <Quarisma/SparseTensorImpl.h>
 #include <Quarisma/native/SparseTensorUtils.h>
 #include <Quarisma/native/sparse/SparseStubs.h>
 #include <c10/util/irange.h>

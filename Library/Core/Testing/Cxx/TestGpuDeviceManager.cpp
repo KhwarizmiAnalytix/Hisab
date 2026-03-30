@@ -17,9 +17,9 @@
  * Website: https://www.quarisma.co.uk
  */
 
+#include "baseTest.h"
 #include "common/configure.h"
 #include "common/macros.h"
-#include "baseTest.h"
 
 #if QUARISMA_HAS_CUDA
 
@@ -92,7 +92,8 @@ QUARISMATEST(GpuDeviceManager, provides_runtime_information)
     QUARISMA_LOG_INFO("CUDA available: {}", runtime_info.cuda_available);
     QUARISMA_LOG_INFO("CUDA runtime version: {}", runtime_info.cuda_runtime_version);
     QUARISMA_LOG_INFO("CUDA device count: {}", runtime_info.cuda_device_count);
-    QUARISMA_LOG_INFO("Recommended backend: {}", static_cast<int>(runtime_info.recommended_backend));
+    QUARISMA_LOG_INFO(
+        "Recommended backend: {}", static_cast<int>(runtime_info.recommended_backend));
 
     QUARISMA_LOG_INFO("GPU device manager runtime information test passed");
 }

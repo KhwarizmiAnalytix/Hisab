@@ -158,7 +158,7 @@ struct TORCH_API CopySlices : public Node
 {
     CopySlices(
         const Variable&           base_var,
-        quarisma::TensorGeometry    view_,
+        quarisma::TensorGeometry  view_,
         std::unique_ptr<ViewFunc> view_fn_,
         std::shared_ptr<Node>     fn_);
 
@@ -175,7 +175,7 @@ struct TORCH_API CopySlices : public Node
     quarisma::TensorGeometry base;
     // view and view_fn are redundant and view_fn will be used if available.
     // See Note [View + Inplace update for base tensor] for details.
-    quarisma::TensorGeometry    view;
+    quarisma::TensorGeometry  view;
     std::unique_ptr<ViewFunc> view_fn;
     std::shared_ptr<Node>     fn;
 };

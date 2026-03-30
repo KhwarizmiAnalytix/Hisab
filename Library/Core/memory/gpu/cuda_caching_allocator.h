@@ -128,8 +128,8 @@ public:
     QUARISMA_API int device() const;
 
     // Non-copyable but movable
-    cuda_caching_allocator(const cuda_caching_allocator&)                       = delete;
-    cuda_caching_allocator&            operator=(const cuda_caching_allocator&) = delete;
+    cuda_caching_allocator(const cuda_caching_allocator&)                         = delete;
+    cuda_caching_allocator&              operator=(const cuda_caching_allocator&) = delete;
     QUARISMA_API                         cuda_caching_allocator(cuda_caching_allocator&&) noexcept;
     QUARISMA_API cuda_caching_allocator& operator=(cuda_caching_allocator&&) noexcept;
 

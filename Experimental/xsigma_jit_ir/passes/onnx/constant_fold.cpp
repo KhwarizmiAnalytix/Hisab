@@ -1,8 +1,8 @@
 #include <Quarisma/Functions.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/passes/onnx/constant_fold.h>
 #include <torch/csrc/jit/passes/onnx/helper.h>
-#include <quarisma/util/irange.h>
 
 #include <algorithm>
 #include <optional>
@@ -232,7 +232,7 @@ static quarisma::Tensor runTorchArange_opset11(
     const Node* node, const std::vector<quarisma::Tensor>& inputTensorValues)
 {
     TORCH_INTERNAL_ASSERT(inputTensorValues.size() == 3);
-    auto           dtype = inputTensorValues[0].scalar_type();
+    auto             dtype = inputTensorValues[0].scalar_type();
     quarisma::Tensor updated_val;
     switch (dtype)
     {
@@ -588,7 +588,7 @@ std::optional<quarisma::Tensor> runTorchBackendForOnnx(
         // It needs to be adjusted (+= dim sizes) for aten op
         axis += axis < 0 ? inputTensorValues[0].sizes().size() : 0;
         quarisma::Tensor indices = inputTensorValues[1];
-        auto           q       = indices.dim();
+        auto             q       = indices.dim();
         // quarisma::index_select only supports indices with rank <= 1.
         // See https://pytorch.org/docs/main/generated/torch.index_select.html
         if (q > 1)
@@ -695,9 +695,10 @@ static bool hasParamInput(Node* n, const ValueToParamPairMap& valsToParamsMap)
     return false;
 }
 
-static std::vector<quarisma::Tensor> getValues(Node* node, const ValueToParamPairMap& valsToParamsMap)
+static std::vector<quarisma::Tensor> getValues(
+    Node* node, const ValueToParamPairMap& valsToParamsMap)
 {
-    size_t                      numInputs = node->inputs().size();
+    size_t                        numInputs = node->inputs().size();
     std::vector<quarisma::Tensor> inputTensorValues;
     inputTensorValues.reserve(numInputs);
     for (auto val : node->inputs())
@@ -803,7 +804,7 @@ static void ConstantFoldONNX(Block* b, ParamMap& paramsDict, int opset_version)
         }
 
         quarisma::Tensor updatedVal          = *updatedValWrapped;
-        auto           newSourceNodeOutput = [&]() -> Value*
+        auto             newSourceNodeOutput = [&]() -> Value*
         {
             if (onnx_constant_fold::hasParamInput(node, valsToParamsMap))
             {

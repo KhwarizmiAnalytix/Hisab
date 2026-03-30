@@ -1,8 +1,8 @@
 #define TORCH_ASSERT_ONLY_METHOD_OPERATORS
+#include <quarisma/util/irange.h>
 #include <torch/csrc/autograd/function.h>
 #include <torch/csrc/autograd/input_metadata.h>
 #include <torch/csrc/autograd/variable.h>
-#include <quarisma/util/irange.h>
 
 #ifndef AT_PER_OPERATOR_HEADERS
 #include <Quarisma/Functions.h>
@@ -161,8 +161,8 @@ bool has_same_meta(const Variable& base, const Variable& other)
 void AutogradMeta::set_fw_grad(
     const quarisma::TensorBase& new_grad_base,
     const quarisma::TensorBase& self_base,
-    uint64_t                  level,
-    bool                      is_inplace_op)
+    uint64_t                    level,
+    bool                        is_inplace_op)
 {
     QUARISMA_CHECK(
         !new_grad_base._fw_grad(level).defined(),
@@ -204,9 +204,9 @@ void AutogradMeta::set_fw_grad(
     else
     {
         // TODO(alband) remove this spurious version counter bump
-        Tensor                    new_grad(new_grad_base);
+        Tensor                      new_grad(new_grad_base);
         quarisma::OptionalTensorRef self_ref(self_base);
-        const Tensor&             self = *self_ref;
+        const Tensor&               self = *self_ref;
 
         QUARISMA_CHECK(
             self.is_same_size(new_grad),

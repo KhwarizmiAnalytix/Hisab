@@ -1,3 +1,4 @@
+#include <quarisma/util/ssize.h>
 #include <torch/csrc/jit/ir/alias_analysis.h>
 #include <torch/csrc/jit/ir/ir.h>
 #include <torch/csrc/jit/ir/named_value.h>
@@ -7,7 +8,6 @@
 #include <torch/csrc/jit/passes/dead_code_elimination.h>
 #include <torch/csrc/jit/passes/remove_mutation.h>
 #include <torch/csrc/jit/runtime/graph_iterator.h>
-#include <quarisma/util/ssize.h>
 
 #include <algorithm>
 #include <deque>

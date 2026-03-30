@@ -4,6 +4,10 @@
 #include <Quarisma/autocast_mode.h>
 #include <Quarisma/core/PythonFallbackKernel.h>
 #include <Quarisma/record_function.h>
+#include <quarisma/core/DeviceType.h>
+#include <quarisma/core/InferenceMode.h>
+#include <quarisma/core/ScalarType.h>
+#include <quarisma/core/impl/PythonDispatcherTLS.h>
 #include <torch/csrc/Exceptions.h>
 #include <torch/csrc/autograd/VariableTypeUtils.h>
 #include <torch/csrc/autograd/autograd.h>
@@ -29,17 +33,13 @@
 #include <torch/csrc/utils/pycfunction_helpers.h>
 #include <torch/csrc/utils/python_raii.h>
 #include <torch/csrc/utils/python_torch_function_mode.h>
-#include <quarisma/core/DeviceType.h>
-#include <quarisma/core/InferenceMode.h>
-#include <quarisma/core/ScalarType.h>
-#include <quarisma/core/impl/PythonDispatcherTLS.h>
 
 #include <set>
 #include <unordered_set>
 #include <utility>
 
-#include "profiler/pytorch_profiler/collection.h"
-#include "profiler/pytorch_profiler/kineto_shim.h"
+#include "pytorch_profiler/collection.h"
+#include "pytorch_profiler/kineto_shim.h"
 
 using torch::impl::py_context_manager;
 using torch::impl::py_context_manager_DEPRECATED;
@@ -353,7 +353,8 @@ PyObject* THPAutograd_initExtension(PyObject* _unused, PyObject* unused)
                     }
                     rec->before(
                         name,
-                        quarisma::ArrayRef<const quarisma::IValue>(iv_inputs.data(), iv_inputs.size()));
+                        quarisma::ArrayRef<const quarisma::IValue>(
+                            iv_inputs.data(), iv_inputs.size()));
                 }
                 else
                 {
@@ -657,7 +658,7 @@ static PyObject* set_autocast_enabled(PyObject* _unused, PyObject* args, PyObjec
     auto          r = parser.parse(args, kwargs, parsed_args);
     // Set quarisma::kCUDA as default value to prevent BC-breaking changes.
     quarisma::DeviceType device_type = quarisma::kCUDA;
-    int                enabled_id  = 0;
+    int                  enabled_id  = 0;
     if (r.idx == 0)
     {
         device_type = quarisma::Device(r.string(0)).type();
@@ -701,7 +702,7 @@ static PyObject* get_autocast_dtype(PyObject* _unused, PyObject* args, PyObject*
     ParsedArgs<1>          parsed_args;
     auto                   r             = parser.parse(args, kwargs, parsed_args);
     auto                   device_type   = quarisma::Device(r.string(0)).type();
-    quarisma::ScalarType     current_dtype = quarisma::autocast::get_autocast_dtype(device_type);
+    quarisma::ScalarType   current_dtype = quarisma::autocast::get_autocast_dtype(device_type);
     return utils::wrap(current_dtype);
     END_HANDLE_TH_ERRORS
 }
@@ -1430,7 +1431,8 @@ static PyObject* push_on_torch_dispatch_stack(PyObject* _unused, PyObject* arg)
         {
             mode_key = py::cast<quarisma::impl::TorchDispatchModeKey>(maybe_mode_key_obj);
             quarisma::impl::TorchDispatchModeTLS::set_mode(
-                std::make_shared<quarisma::impl::PyObject_TorchDispatchMode>(arg, getPyInterpreter()),
+                std::make_shared<quarisma::impl::PyObject_TorchDispatchMode>(
+                    arg, getPyInterpreter()),
                 mode_key.value());
         }
         else
@@ -1449,7 +1451,7 @@ static PyObject* pop_torch_dispatch_stack(PyObject* _unused, PyObject* maybe_mod
 {
     HANDLE_TH_ERRORS
     std::optional<quarisma::impl::TorchDispatchModeKey> mode_key;
-    PyObject*                                         r = nullptr;
+    PyObject*                                           r = nullptr;
     if (maybe_mode_key != Py_None)
     {
         mode_key        = py::cast<quarisma::impl::TorchDispatchModeKey>(maybe_mode_key);

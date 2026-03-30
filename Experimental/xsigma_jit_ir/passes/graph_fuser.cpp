@@ -1,3 +1,4 @@
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/codegen/fuser/interface.h>
 #include <torch/csrc/jit/frontend/ir_emitter.h>
 #include <torch/csrc/jit/ir/alias_analysis.h>
@@ -10,7 +11,6 @@
 #include <torch/csrc/jit/runtime/autodiff.h>
 #include <torch/csrc/jit/runtime/custom_operator.h>
 #include <torch/csrc/jit/runtime/operator.h>
-#include <quarisma/util/irange.h>
 
 #include <queue>
 #include <unordered_map>

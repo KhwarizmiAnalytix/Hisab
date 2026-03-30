@@ -333,6 +333,7 @@ add_subdirectory(ThirdParty)
 # Add subdirectories
 add_subdirectory(Library/Security)
 add_subdirectory(Library/Core)
+add_subdirectory(Library/Profiler)
 
 # Add examples if enabled
 if(QUARISMA_ENABLE_EXAMPLES)

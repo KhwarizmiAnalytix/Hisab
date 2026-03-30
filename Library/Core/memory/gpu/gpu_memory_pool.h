@@ -234,7 +234,8 @@ public:
      * @param config Configuration parameters for the memory pool
      * @return Unique pointer to the created memory pool
      */
-    QUARISMA_API static std::unique_ptr<gpu_memory_pool> create(const gpu_memory_pool_config& config);
+    QUARISMA_API static std::unique_ptr<gpu_memory_pool> create(
+        const gpu_memory_pool_config& config);
 
     /**
      * @brief Virtual destructor for proper cleanup

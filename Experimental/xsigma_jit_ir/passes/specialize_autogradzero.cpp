@@ -1,10 +1,10 @@
 #include <Quarisma/core/symbol.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/ir/ir.h>
 #include <torch/csrc/jit/jit_log.h>
 #include <torch/csrc/jit/passes/specialize_autogradzero.h>
 #include <torch/csrc/jit/runtime/graph_executor.h>
 #include <torch/csrc/jit/runtime/profiling_record.h>
-#include <quarisma/util/irange.h>
 
 #include "util/exception.h"
 
@@ -59,7 +59,8 @@ static void insertProfileNodesForSpecializeAutogradZero(Block* block, ProfilingR
                     pop(stack, value);
                     if (value.isNone())
                     {
-                        noneCounts.insert_or_assign("num_none", noneCounts.quarisma("num_none") + 1);
+                        noneCounts.insert_or_assign(
+                            "num_none", noneCounts.quarisma("num_none") + 1);
                     }
                     else
                     {
@@ -497,7 +498,8 @@ private:
 
                         for (size_t i = 0; i < n->outputs().size(); ++i)
                         {
-                            n->outputs().quarisma(i)->replaceAllUsesWith(body->outputs().quarisma(i));
+                            n->outputs().quarisma(i)->replaceAllUsesWith(
+                                body->outputs().quarisma(i));
                             state_[body->outputs().quarisma(i)] = State::Nonzero;
                         }
                         it.destroyCurrent();

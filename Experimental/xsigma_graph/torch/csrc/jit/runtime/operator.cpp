@@ -1,8 +1,8 @@
 #include <Quarisma/Quarisma.h>
 #include <Quarisma/core/interned_strings.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/frontend/edit_distance.h>
 #include <torch/csrc/jit/runtime/operator.h>
-#include <quarisma/util/irange.h>
 
 #include <queue>
 #include <utility>
@@ -235,8 +235,8 @@ bool printerHasSpecialCaseFor(Symbol sym)
     // to be correctly printed for export (a process that happens before
     // optimization passes run)
     const static std::unordered_set<Symbol> unneeded = {
-        quarisma::onnx::Reshape,         // only used in onnx
-        quarisma::onnx::Shape,           // only used in onnx
+        quarisma::onnx::Reshape,       // only used in onnx
+        quarisma::onnx::Shape,         // only used in onnx
         prim::AutogradZero,            // temporarily inserted by autograd
         prim::AutogradAnyNonZero,      // temporarily inserted by autograd
         prim::AutogradAllNonZero,      // temporarily inserted by autograd

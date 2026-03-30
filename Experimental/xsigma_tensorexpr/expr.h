@@ -5,11 +5,11 @@
  */
 #pragma once
 
+#include <quarisma/core/MemoryFormat.h>
 #include <torch/csrc/jit/tensorexpr/fwd_decls.h>
 #include <torch/csrc/jit/tensorexpr/ir_mutator.h>
 #include <torch/csrc/jit/tensorexpr/ir_visitor.h>
 #include <torch/csrc/jit/tensorexpr/types.h>
-#include <quarisma/core/MemoryFormat.h>
 
 #include <optional>
 #include <utility>
@@ -263,7 +263,8 @@ public:
         return true;
     }
 
-    bool is_contiguous(quarisma::MemoryFormat memory_format = quarisma::MemoryFormat::Contiguous) const;
+    bool is_contiguous(
+        quarisma::MemoryFormat memory_format = quarisma::MemoryFormat::Contiguous) const;
 
     // The channels-last 1d can benefit the performance of some operators like
     // conv1d. But the MemoryFormat enum has not covered this layout yet. Hence,
@@ -345,7 +346,8 @@ public:
 
     ExprHandle dim(size_t index) const { return ExprHandle(node()->dim(index)); }
 
-    bool is_contiguous(quarisma::MemoryFormat memory_format = quarisma::MemoryFormat::Contiguous) const
+    bool is_contiguous(
+        quarisma::MemoryFormat memory_format = quarisma::MemoryFormat::Contiguous) const
     {
         return node()->is_contiguous(memory_format);
     }

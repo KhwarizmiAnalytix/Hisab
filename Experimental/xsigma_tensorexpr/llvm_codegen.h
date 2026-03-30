@@ -26,7 +26,7 @@ public:
     explicit LLVMCodeGen(
         StmtPtr                       stmt,
         const std::vector<BufferArg>& args,
-        quarisma::Device                device           = quarisma::kCPU,
+        quarisma::Device              device           = quarisma::kCPU,
         const std::string&            kernel_func_name = "func",
         Dtype                         dtype            = kInt,
         std::optional<std::string>    triple           = std::nullopt,
@@ -53,7 +53,7 @@ public:
         std::optional<quarisma::ScalarType> dtype_opt,
         std::optional<quarisma::Layout>     layout_opt,
         std::optional<quarisma::Device>     device_opt,
-        std::optional<bool>               pin_memory_opt) override;
+        std::optional<bool>                 pin_memory_opt) override;
 
     template <typename T>
     T value()
@@ -138,7 +138,7 @@ struct TORCH_API LLVMCodeGenBuilder
 private:
     StmtPtr                    stmt_;
     std::vector<BufferArg>     args_;
-    quarisma::Device             device_         = quarisma::kCPU;
+    quarisma::Device           device_         = quarisma::kCPU;
     std::string                kernelFuncName_ = "func";
     Dtype                      dtype_          = kInt;
     std::optional<std::string> triple_         = std::nullopt;

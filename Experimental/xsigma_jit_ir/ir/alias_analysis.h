@@ -1,11 +1,11 @@
 #pragma once
 
 #include <Quarisma/core/alias_info.h>
+#include <quarisma/util/flat_hash_map.h>
 #include <torch/csrc/jit/ir/ir.h>
 #include <torch/csrc/jit/ir/type_hashing.h>
 #include <torch/csrc/jit/passes/create_functional_graphs.h>
 #include <torch/csrc/jit/passes/utils/memory_dag.h>
-#include <quarisma/util/flat_hash_map.h>
 
 namespace torch::jit
 {

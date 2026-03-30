@@ -1,4 +1,5 @@
 #include <Quarisma/core/jit_type.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/ir/alias_analysis.h>
 #include <torch/csrc/jit/ir/ir_views.h>
 #include <torch/csrc/jit/jit_log.h>
@@ -10,7 +11,6 @@
 #include <torch/csrc/jit/passes/peephole_list_idioms.h>
 #include <torch/csrc/jit/passes/peephole_non_tensor.h>
 #include <torch/csrc/jit/runtime/graph_executor.h>
-#include <quarisma/util/irange.h>
 
 namespace torch::jit
 {
@@ -243,9 +243,9 @@ struct PeepholeOptimizeImpl
                 if (auto maybe_dtype = ptt->scalarType())
                 {
                     quarisma::ScalarType dtype = *maybe_dtype;
-                    WithInsertPoint    guard(node);
-                    IValue             ival(quarisma::isFloatingType(dtype));
-                    auto               new_constant = node->owningGraph()->insertConstant(ival);
+                    WithInsertPoint      guard(node);
+                    IValue               ival(quarisma::isFloatingType(dtype));
+                    auto                 new_constant = node->owningGraph()->insertConstant(ival);
                     node->output()->replaceAllUsesWith(new_constant);
                     GRAPH_UPDATE(
                         getHeader(node),
@@ -260,9 +260,9 @@ struct PeepholeOptimizeImpl
                 if (auto maybe_dtype = ptt->scalarType())
                 {
                     quarisma::ScalarType dtype = *maybe_dtype;
-                    WithInsertPoint    guard(node);
-                    IValue             ival(quarisma::isComplexType(dtype));
-                    auto               new_constant = node->owningGraph()->insertConstant(ival);
+                    WithInsertPoint      guard(node);
+                    IValue               ival(quarisma::isComplexType(dtype));
+                    auto                 new_constant = node->owningGraph()->insertConstant(ival);
                     node->output()->replaceAllUsesWith(new_constant);
                     GRAPH_UPDATE(
                         getHeader(node),
@@ -311,7 +311,7 @@ struct PeepholeOptimizeImpl
                 if (string_type)
                 {
                     WithInsertPoint guard(node);
-                    std::string     type_str    = node->inputs().quarisma(0)->node()->s(attr::value);
+                    std::string     type_str = node->inputs().quarisma(0)->node()->s(attr::value);
                     auto            maybe_index = toIValue(node->inputs().quarisma(1));
                     int64_t         index       = 0;
                     if (maybe_index)

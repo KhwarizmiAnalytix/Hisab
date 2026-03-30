@@ -1,6 +1,6 @@
 #ifdef TORCH_ENABLE_LLVM
-#include <torch/csrc/jit/tensorexpr/intrinsic_symbols.h>
 #include <quarisma/util/Half.h>
+#include <torch/csrc/jit/tensorexpr/intrinsic_symbols.h>
 
 #include <cmath>
 

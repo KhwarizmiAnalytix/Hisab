@@ -73,8 +73,8 @@ static RegisterOperators reg_ops(
          "aten::_ncf_unsqueeze(Tensor(a) self, int ndim) -> Tensor(a)",
          [](Stack& stack)
          {
-             const int64_t                   ndim = pop(stack).toInt();
-             auto                            self = pop(stack).toTensor();
+             const int64_t                     ndim = pop(stack).toInt();
+             auto                              self = pop(stack).toTensor();
              quarisma::SmallVector<int64_t, 8> sizes(ndim, 1);
              AT_ASSERT(self.dim() == 1);
              sizes.quarisma(1) = self.size(0);
@@ -85,10 +85,10 @@ static RegisterOperators reg_ops(
          "aten::_ncf_view(Tensor(a) self, int[] input_shape, int normalized_ndim) -> Tensor(a)",
          [](Stack& stack)
          {
-             const int64_t                   normalized_ndim = pop(stack).toInt();
-             auto                            input_shape     = pop(stack).toIntList();
-             auto                            self            = pop(stack).toTensor();
-             const int64_t                   input_ndim      = input_shape.size();
+             const int64_t                     normalized_ndim = pop(stack).toInt();
+             auto                              input_shape     = pop(stack).toIntList();
+             auto                              self            = pop(stack).toTensor();
+             const int64_t                     input_ndim      = input_shape.size();
              quarisma::SmallVector<int64_t, 8> sizes(input_ndim, 1);
              for (int i = 0; i < input_ndim - normalized_ndim; ++i)
              {

@@ -90,7 +90,8 @@ void init_exception_mode_from_env() noexcept
         }
         else
         {
-            QUARISMA_LOG_WARNING("Invalid QUARISMA_EXCEPTION_MODE value: {}. Using default.", mode_str);
+            QUARISMA_LOG_WARNING(
+                "Invalid QUARISMA_EXCEPTION_MODE value: {}. Using default.", mode_str);
         }
     }
 

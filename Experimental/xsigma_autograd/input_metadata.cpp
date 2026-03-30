@@ -33,9 +33,9 @@ bool is_cpp_nested_tensor(const quarisma::Tensor& tensor)
 
 InputMetadata::InputMetadata(
     const quarisma::TensorOptions&      options,
-    MetadataShape                     input_shape,
-    bool                              is_tensor_subclass,
-    bool                              is_nested,
+    MetadataShape                       input_shape,
+    bool                                is_tensor_subclass,
+    bool                                is_nested,
     std::optional<quarisma::ScalarType> grad_dtype)
     : options_{options},
       shape_{std::move(input_shape)},
@@ -66,7 +66,7 @@ quarisma::Tensor InputMetadata::zeros_like() const
 
 quarisma::Tensor InputMetadata::maybe_reduce(
     const size_t                                          i,
-    quarisma::Tensor                                        grad,
+    quarisma::Tensor                                      grad,
     const std::function<std::string(const std::string&)>& format_error) const
 {
     auto fail = [&]()

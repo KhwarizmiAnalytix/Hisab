@@ -21,8 +21,8 @@
 #include <string>
 #include <vector>
 
-#include "util/lazy.h"
 #include "baseTest.h"
+#include "util/lazy.h"
 
 using namespace quarisma;
 

@@ -1,4 +1,5 @@
 #include <pybind11/pybind11.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/Exceptions.h>
 #include <torch/csrc/PyInterpreter.h>
 #include <torch/csrc/THP.h>
@@ -8,7 +9,6 @@
 #include <torch/csrc/utils/object_ptr.h>
 #include <torch/csrc/utils/pybind.h>
 #include <torch/csrc/utils/python_strings.h>
-#include <quarisma/util/irange.h>
 
 #include <iostream>
 #include <sstream>

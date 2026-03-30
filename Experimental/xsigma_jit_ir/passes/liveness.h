@@ -4,9 +4,9 @@
 #include <Quarisma/core/ivalue.h>
 #include <Quarisma/core/jit_type.h>
 #include <Quarisma/core/stack.h>
+#include <quarisma/util/sparse_bitset.h>
 #include <torch/csrc/Export.h>
 #include <torch/csrc/jit/ir/ir.h>
-#include <quarisma/util/sparse_bitset.h>
 
 #include <list>
 #include <unordered_map>

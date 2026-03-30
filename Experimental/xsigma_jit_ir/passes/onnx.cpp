@@ -1,4 +1,5 @@
 #include <Quarisma/core/functional.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/autograd/function.h>
 #include <torch/csrc/autograd/symbolic.h>
 #include <torch/csrc/jit/ir/constants.h>
@@ -11,7 +12,6 @@
 #include <torch/csrc/jit/passes/onnx/shape_type_inference.h>
 #include <torch/csrc/jit/python/python_ir.h>
 #include <torch/csrc/utils/pybind.h>
-#include <quarisma/util/irange.h>
 
 #include <sstream>
 
@@ -80,7 +80,8 @@ static void checkONNXCompatibility(const quarisma::FunctionSchema& schema)
             if (elem_type->isSubtypeOf(*TensorType::get()))
             {
                 TORCH_INTERNAL_ASSERT(
-                    !has_tensor_list, "ONNX export supports quarisma most one TensorList as input.");
+                    !has_tensor_list,
+                    "ONNX export supports quarisma most one TensorList as input.");
                 has_tensor_list = true;
             }
         }

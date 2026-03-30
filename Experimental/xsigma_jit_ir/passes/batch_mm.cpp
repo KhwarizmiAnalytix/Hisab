@@ -1,6 +1,7 @@
 #include <Quarisma/Quarisma.h>
 #include <Quarisma/core/functional.h>
 #include <Quarisma/core/symbol.h>
+#include <quarisma/util/irange.h>
 #include <torch/csrc/jit/ir/alias_analysis.h>
 #include <torch/csrc/jit/ir/constants.h>
 #include <torch/csrc/jit/passes/batch_mm.h>
@@ -8,7 +9,6 @@
 #include <torch/csrc/jit/passes/peephole.h>
 #include <torch/csrc/jit/runtime/custom_operator.h>
 #include <torch/csrc/jit/runtime/graph_iterator.h>
-#include <quarisma/util/irange.h>
 
 #include <algorithm>
 #include <unordered_map>
@@ -120,7 +120,7 @@ static RegisterOperators mm_tree_reduction_reg({Operator(
     "prim::MMTreeReduce(...) -> Tensor",
     [](Stack& stack)
     {
-        auto                        num_inputs = pop(stack).toInt();
+        auto                          num_inputs = pop(stack).toInt();
         std::vector<quarisma::Tensor> inputs;
         inputs.reserve(num_inputs);
         for (auto it = stack.end() - num_inputs; it != stack.end(); ++it)
@@ -142,8 +142,8 @@ static RegisterOperators mm_tree_reduction_reg({Operator(
             // sometimes lhs_inputs or rhs_inputs are not contiguous, and that
             // causes quarisma::cat to go through slow path view them as contiguous if
             // possible by transposing
-            bool           lhs_input_transposed = should_be_transposed(lhs_inputs);
-            bool           rhs_input_transposed = should_be_transposed(rhs_inputs);
+            bool             lhs_input_transposed = should_be_transposed(lhs_inputs);
+            bool             rhs_input_transposed = should_be_transposed(rhs_inputs);
             quarisma::Tensor lhs, rhs;
             if (lhs_input_transposed)
             {

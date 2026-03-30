@@ -65,29 +65,29 @@ Tensor computeConv2d(
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device);
+    quarisma::Device                 device);
 Tensor computeConv1d(
     const std::vector<ArgValue>&     inputs,
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device);
+    quarisma::Device                 device);
 Tensor computePrepackedConv2dClampRun(
     const std::vector<ArgValue>&     inputs,
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device);
+    quarisma::Device                 device);
 Tensor computePrepackedLinearClampRun(
     const std::vector<ArgValue>&     inputs,
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device);
+    quarisma::Device                 device);
 Tensor computeMkldnnPrepackedConvRun(
     const std::vector<ArgValue>&     inputs,
     const std::vector<ExprHandle>&   outputShape,
     const std::vector<ExprHandle>&   outputStrides,
     const std::optional<ScalarType>& outputType,
-    quarisma::Device                   device);
+    quarisma::Device                 device);
 }  // namespace torch::jit::tensorexpr

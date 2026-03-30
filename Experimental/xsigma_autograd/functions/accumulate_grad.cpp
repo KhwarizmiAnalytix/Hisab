@@ -20,12 +20,12 @@ namespace
 {
 
 void AccumulateGrad_apply_impl(
-    variable_list&&                              grads,
+    variable_list&&                                grads,
     quarisma::Tensor&                              variable,
     quarisma::Tensor&                              variable_grad,
-    int64_t                                      num_expected_refs,
+    int64_t                                        num_expected_refs,
     const std::function<void(quarisma::Tensor&&)>& grad_update,
-    std::mutex*                                  mutex = nullptr)
+    std::mutex*                                    mutex = nullptr)
 {
     check_input_variables("AccumulateGrad", grads, 1, 0);
 
@@ -116,7 +116,8 @@ auto AccumulateGrad::apply(variable_list&& grads) -> variable_list
         variable,
         variable_grad,
         1 + !post_hooks().empty() /* num_expected_refs */,
-        [&variable_grad](quarisma::Tensor&& grad_update) { variable_grad = std::move(grad_update); },
+        [&variable_grad](quarisma::Tensor&& grad_update)
+        { variable_grad = std::move(grad_update); },
         &mutex_);
 
     auto& hook = tensor_post_acc_grad_hooks();

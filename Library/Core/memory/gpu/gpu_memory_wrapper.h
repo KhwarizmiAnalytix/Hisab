@@ -93,11 +93,11 @@ enum class pool_ownership_mode
 
 /**
  * @brief RAII GPU memory wrapper with automatic resource management
- * 
+ *
  * Provides exception-safe GPU memory management using RAII principles.
  * Automatically handles allocation, deallocation, and resource tracking
  * with support for both raw pointers and typed arrays.
- * 
+ *
  * Key features:
  * - Automatic memory deallocation on destruction
  * - Exception-safe resource management
@@ -106,27 +106,27 @@ enum class pool_ownership_mode
  * - Move semantics for efficient transfers
  * - Custom deleter support for specialized cleanup
  * - Alignment-aware allocation for optimal performance
- * 
+ *
  * The wrapper ensures that GPU memory is properly released even in
  * the presence of exceptions, preventing memory leaks in complex
  * Monte Carlo simulations and PDE solver computations.
- * 
+ *
  * @tparam T Element type (void for raw memory)
- * 
+ *
  * @example
  * ```cpp
  * // Allocate typed GPU memory
  * auto gpu_array = gpu_memory_wrapper<float>::allocate(1000, device_enum::CUDA, 0);
- * 
+ *
  * // Use memory
  * float* ptr = gpu_array.get();
  * // ... perform GPU computations ...
- * 
+ *
  * // Memory is automatically freed when gpu_array goes out of scope
- * 
+ *
  * // Transfer ownership
  * auto moved_array = std::move(gpu_array);
- * 
+ *
  * // Create from existing memory with custom deleter
  * auto custom_wrapper = gpu_memory_wrapper<double>::wrap(
  *     existing_ptr, 500, device_enum::CUDA, 0,
@@ -220,8 +220,8 @@ private:
      */
     static bool is_pool_compatible_with_device(
         std::shared_ptr<gpu_memory_pool> pool,
-        QUARISMA_UNUSED device_enum        device_type,
-        QUARISMA_UNUSED int                device_index)
+        QUARISMA_UNUSED device_enum      device_type,
+        QUARISMA_UNUSED int              device_index)
     {
         if (!pool)
             return false;
@@ -516,7 +516,7 @@ public:
         device_enum                      device_type,
         int                              device_index = 0,
         std::shared_ptr<gpu_memory_pool> pool         = nullptr,
-        QUARISMA_UNUSED const std::string& tag          = "")
+        QUARISMA_UNUSED const std::string& tag        = "")
     {
         if (count == 0)
         {
@@ -605,11 +605,11 @@ public:
      * @return GPU memory wrapper managing the existing memory
      */
     QUARISMA_NODISCARD static gpu_memory_wrapper wrap(
-        pointer             ptr,
-        size_type           count,
-        device_enum         device_type,
-        int                 device_index     = 0,
-        deleter_type        deleter          = nullptr,
+        pointer               ptr,
+        size_type             count,
+        device_enum           device_type,
+        int                   device_index     = 0,
+        deleter_type          deleter          = nullptr,
         QUARISMA_UNUSED const std::string& tag = "")
     {
         device_option device(device_type, device_index);
