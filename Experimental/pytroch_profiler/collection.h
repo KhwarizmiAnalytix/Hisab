@@ -24,7 +24,7 @@
 #include <utility>
 #include <variant>
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 enum class EventType : uint8_t
@@ -452,7 +452,7 @@ struct QUARISMA_API Result : public std::enable_shared_from_this<Result>
     std::vector<std::shared_ptr<Result>>                children_;
     bool                                                finished_{false};
     bool                                                hidden_{false};
-    const quarisma::profiler::impl::kineto::activity_t* kineto_activity_{nullptr};
+    const quarisma::profiler_impl::impl::kineto::activity_t* kineto_activity_{nullptr};
 
 private:
     template <EventType E>
@@ -556,7 +556,7 @@ private:
     AppendOnlyList<quarisma::IValue, IO_ENCODER_DEFAULT_BLOCK_SIZE>  ivalues_;
 };
 
-using perf_profiler_t = quarisma::profiler::impl::linux_perf::PerfProfiler;
+using perf_profiler_t = quarisma::profiler_impl::impl::linux_perf::PerfProfiler;
 
 class QUARISMA_API ThreadLocalSubqueue
 {
@@ -706,7 +706,7 @@ public:
     // NB: This is a destructive operation.
     std::pair<
         std::vector<std::shared_ptr<Result>>,
-        std::unique_ptr<quarisma::profiler::impl::kineto::ActivityTraceWrapper>>
+        std::unique_ptr<quarisma::profiler_impl::impl::kineto::ActivityTraceWrapper>>
     getRecords(
         std::function<quarisma::time_t(quarisma::approx_time_t)> time_converter,
         uint64_t                                                 start_time_ns,
@@ -739,4 +739,4 @@ QUARISMA_API bool get_record_tensor_addrs_enabled();
 QUARISMA_API void set_record_tensor_addrs_enabled_fn(std::function<bool()> /*fn*/);
 QUARISMA_API void set_record_tensor_addrs_enabled_val(bool /*val*/);
 
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl

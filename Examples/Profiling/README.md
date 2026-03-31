@@ -279,12 +279,12 @@ void my_function() {
 
 void my_function() {
     // Initialize Kineto
-    quarisma::profiler::kineto_init(false, true);
+    quarisma::profiler_impl::kineto_init(false, true);
     
     std::set<libkineto::ActivityType> activities;
     activities.insert(libkineto::ActivityType::CPU_OP);
-    quarisma::profiler::kineto_prepare_trace(activities);
-    quarisma::profiler::kineto_start_trace();
+    quarisma::profiler_impl::kineto_prepare_trace(activities);
+    quarisma::profiler_impl::kineto_start_trace();
 
     // Start Quarisma profiler
     profiler_options opts;
@@ -302,7 +302,7 @@ void my_function() {
 
     // Stop both profilers
     session.stop();
-    auto kineto_trace = quarisma::profiler::kineto_stop_trace();
+    auto kineto_trace = quarisma::profiler_impl::kineto_stop_trace();
 
     // Export traces
     session.write_chrome_trace("quarisma_trace.json");
@@ -320,8 +320,8 @@ void my_function() {
 
 void my_function() {
     // Initialize ITT
-    quarisma::profiler::itt_init();
-    bool const itt_available = (quarisma::profiler::itt_get_domain() != nullptr);
+    quarisma::profiler_impl::itt_init();
+    bool const itt_available = (quarisma::profiler_impl::itt_get_domain() != nullptr);
 
     // Start Quarisma profiler
     profiler_options opts;
@@ -334,14 +334,14 @@ void my_function() {
     // Instrument with both ITT and Quarisma
     {
         if (itt_available) {
-            quarisma::profiler::itt_range_push("my_operation");
+            quarisma::profiler_impl::itt_range_push("my_operation");
         }
         QUARISMA_PROFILE_SCOPE("my_operation");
 
         // ... your code ...
 
         if (itt_available) {
-            quarisma::profiler::itt_range_pop();
+            quarisma::profiler_impl::itt_range_pop();
         }
     }
 

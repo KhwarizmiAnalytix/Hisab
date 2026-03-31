@@ -45,7 +45,7 @@ limitations under the License.
 
 namespace quarisma
 {
-namespace profiler
+namespace profiler_impl
 {
 namespace
 {
@@ -273,5 +273,5 @@ std::vector<annotation> parse_annotation_stack(std::string_view annotation_stack
     return annotations;
 }
 
-}  // namespace profiler
+}  // namespace profiler_impl
 }  // namespace quarisma

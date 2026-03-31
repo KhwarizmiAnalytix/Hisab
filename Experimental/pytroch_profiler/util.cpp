@@ -16,7 +16,7 @@
 #include <quarisma/csrc/distributed/quarismad/ParamCommsUtils.hpp>
 #endif  // USE_DISTRIBUTED
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 namespace
@@ -1141,5 +1141,5 @@ bool checkFunctionInputsForLogging(const quarisma::RecordFunction& fn)
     }
     return true;
 }
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl
 #endif

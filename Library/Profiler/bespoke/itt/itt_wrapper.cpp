@@ -16,7 +16,7 @@
 
 namespace quarisma
 {
-namespace profiler
+namespace profiler_impl
 {
 
 #if QUARISMA_HAS_ITT
@@ -89,5 +89,5 @@ __itt_domain* itt_get_domain()
 
 #endif  // QUARISMA_HAS_ITT
 
-}  // namespace profiler
+}  // namespace profiler_impl
 }  // namespace quarisma

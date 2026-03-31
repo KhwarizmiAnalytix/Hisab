@@ -42,7 +42,7 @@ limitations under the License.
 
 namespace quarisma
 {
-namespace profiler
+namespace profiler_impl
 {
 
 /**
@@ -100,7 +100,7 @@ inline bool has_metadata(std::string_view annotation_str)
  */
 PROFILER_API std::vector<annotation> parse_annotation_stack(std::string_view annotation_stack);
 
-}  // namespace profiler
+}  // namespace profiler_impl
 }  // namespace quarisma
 
 #endif  // QUARISMA_PROFILER_UTILS_PARSE_ANNOTATION_H_

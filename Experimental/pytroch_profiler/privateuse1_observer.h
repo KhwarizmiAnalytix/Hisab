@@ -3,7 +3,7 @@
 #if 0
 #include "api.h"
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 using CallBackFnPtr =
@@ -45,5 +45,5 @@ class QUARISMA_VISIBILITY RegisterPRIVATEUSE1Observer
 
 #define REGISTER_PRIVATEUSE1_OBSERVER(name, fn) \
     static RegisterPRIVATEUSE1Observer name##__register(name, fn);
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl
 #endif

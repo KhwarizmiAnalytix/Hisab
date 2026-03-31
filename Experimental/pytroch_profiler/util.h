@@ -21,13 +21,13 @@
     {                                                         \
         if QUARISMA_UNLIKELY (!(cond))                        \
         {                                                     \
-            quarisma::profiler::impl::logSoftAssert(          \
+            quarisma::profiler_impl::impl::logSoftAssert(          \
                 __func__,                                     \
                 __FILE__,                                     \
                 static_cast<uint32_t>(__LINE__),              \
                 #cond,                                        \
                 ::quarisma::str(__VA_ARGS__));                \
-            if (quarisma::profiler::impl::softAssertRaises()) \
+            if (quarisma::profiler_impl::impl::softAssertRaises()) \
             {                                                 \
                 QUARISMA_CHECK(cond, __VA_ARGS__);            \
             }                                                 \
@@ -53,7 +53,7 @@ struct CompileTimeEmptyString {
 };
 } // namespace quarisma::detail
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 QUARISMA_API bool softAssertRaises();
 QUARISMA_API void setSoftAssertRaises(std::optional<bool> value);
@@ -220,5 +220,5 @@ constexpr auto kInTensorsStart   = "Input Tensors start";
 constexpr auto kOutTensorsStart  = "Output Tensors start";
 #endif  // USE_DISTRIBUTED
 
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl
 #endif

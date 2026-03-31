@@ -19,13 +19,13 @@
 namespace quarisma
 {
 
-namespace profiler::impl
+namespace profiler_impl::impl
 {
 
 namespace
 {
 
-using namespace quarisma::autograd::profiler;
+using namespace quarisma::autograd::profiler_impl;
 
 class QUARISMA_VISIBILITY LibKinetoClient : public libkineto::ClientInterface
 {
@@ -91,7 +91,7 @@ private:
 
 }  // namespace
 
-}  // namespace profiler::impl
+}  // namespace profiler_impl::impl
 
 void global_kineto_init()
 {

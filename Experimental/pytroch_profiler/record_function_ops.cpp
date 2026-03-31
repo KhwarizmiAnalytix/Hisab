@@ -14,7 +14,7 @@ namespace caffe2
 CAFFE_KNOWN_TYPE(quarisma::RecordFunction)
 }  // namespace caffe2
 
-namespace quarisma::autograd::profiler
+namespace quarisma::autograd::profiler_impl
 {
 
 // Creates a new profiling scope using RecordFunction and invokes its starting
@@ -174,5 +174,5 @@ QUARISMA_LIBRARY_FRAGMENT(profiler, m)
             quarisma::AliasAnalysisKind::FROM_SCHEMA));
 }
 
-}  // namespace quarisma::autograd::profiler
+}  // namespace quarisma::autograd::profiler_impl
 #endif

@@ -43,7 +43,7 @@ limitations under the License.
 
 namespace quarisma
 {
-namespace profiler
+namespace profiler_impl
 {
 
 /**
@@ -65,7 +65,7 @@ namespace profiler
 PROFILER_API void convert_complete_events_to_xplane(
     uint64_t start_timestamp_ns, traceme_recorder::Events&& events, xplane* raw_plane);
 
-}  // namespace profiler
+}  // namespace profiler_impl
 }  // namespace quarisma
 
 #endif  // QUARISMA_PROFILER_CPU_HOST_TRACER_UTILS_H_

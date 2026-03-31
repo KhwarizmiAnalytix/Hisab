@@ -11,7 +11,7 @@
 #include "Testing/baseTest.h"
 #include "native/cpu/annotation_stack.h"
 
-using namespace quarisma::profiler;
+using namespace quarisma::profiler_impl;
 
 // Test push_annotation single level
 QUARISMATEST(Profiler, annotation_stack_push_single)

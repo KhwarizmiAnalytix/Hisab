@@ -43,7 +43,7 @@ limitations under the License.
 
 namespace quarisma
 {
-namespace profiler
+namespace profiler_impl
 {
 
 /**
@@ -154,7 +154,7 @@ static inline std::optional<uint32_t> parse_device_ordinal(std::string_view devi
     return std::nullopt;
 }
 
-}  // namespace profiler
+}  // namespace profiler_impl
 }  // namespace quarisma
 
 #endif  // QUARISMA_PROFILER_UTILS_TRACE_UTILS_H_

@@ -87,8 +87,8 @@ Implementation-level details:
 #include <quarisma/csrc/autograd/profiler_kineto.h>
 
 // 1. Configure profiler
-quarisma::profiler::impl::ProfilerConfig config(
-    quarisma::profiler::impl::ProfilerState::KINETO,
+quarisma::profiler_impl::impl::ProfilerConfig config(
+    quarisma::profiler_impl::impl::ProfilerState::KINETO,
     true,   // report_input_shapes
     true,   // profile_memory
     true,   // with_stack
@@ -97,18 +97,18 @@ quarisma::profiler::impl::ProfilerConfig config(
 );
 
 // 2. Specify activities to profile
-std::set<quarisma::profiler::impl::ActivityType> activities{
-    quarisma::profiler::impl::ActivityType::CPU
+std::set<quarisma::profiler_impl::impl::ActivityType> activities{
+    quarisma::profiler_impl::impl::ActivityType::CPU
 };
 
 // 3. Start profiling
-quarisma::autograd::profiler::enableProfiler(config, activities);
+quarisma::autograd::profiler_impl::enableProfiler(config, activities);
 
 // 4. Run code to profile
 // ... your code here ...
 
 // 5. Stop profiling and get results
-auto result = quarisma::autograd::profiler::disableProfiler();
+auto result = quarisma::autograd::profiler_impl::disableProfiler();
 
 // 6. Save trace
 result->save("profile_trace.json");

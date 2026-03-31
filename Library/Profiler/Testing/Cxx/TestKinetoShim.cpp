@@ -27,7 +27,7 @@
 #include "bespoke/common/orchestration/observer.h"
 #include "bespoke/kineto/kineto_shim.h"
 
-using namespace quarisma::profiler;
+using namespace quarisma::profiler_impl;
 
 // ============================================================================
 // Kineto Initialization Tests

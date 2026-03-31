@@ -11,7 +11,7 @@
 #include "util/array_ref.h"
 #include "util/exception.h"
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 // ============================================================================
@@ -211,4 +211,4 @@ protected:
     typename std::forward_list<array_t>::iterator buffer_last_;
 };
 
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl

@@ -7,7 +7,7 @@
 #include "common/TensorImpl.h"
 #include "util/strong_type.h"
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 // Identity is a complex concept in Quarisma. A Tensor might not have a
@@ -84,4 +84,4 @@ struct Result;
 
 void calculateUniqueTensorIDs(std::vector<std::shared_ptr<Result>>& sorted_results);
 
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl

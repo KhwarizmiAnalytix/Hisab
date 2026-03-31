@@ -42,7 +42,7 @@ limitations under the License.
 
 namespace quarisma
 {
-namespace profiler
+namespace profiler_impl
 {
 
 /**
@@ -116,7 +116,7 @@ inline void spin_for_micros(int64_t us)
     spin_for_nanos(us * 1000);
 }
 
-}  // namespace profiler
+}  // namespace profiler_impl
 }  // namespace quarisma
 
 #endif  // QUARISMA_PROFILER_UTILS_TIME_UTILS_H_

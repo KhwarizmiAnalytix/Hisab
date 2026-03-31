@@ -19,7 +19,7 @@
 #include "profiler_api.h"
 #include "profiler_guard.h"
 
-using namespace quarisma::profiler;
+using namespace quarisma::profiler_impl;
 
 // ============================================================================
 // Test Fixture for profiler_session Tests

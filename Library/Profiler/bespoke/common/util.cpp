@@ -17,7 +17,7 @@
 #include <quarisma/csrc/distributed/c10d/ParamCommsUtils.hpp>
 #endif  // USE_DISTRIBUTED
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 namespace
@@ -1229,4 +1229,4 @@ bool checkFunctionInputsForLogging(const quarisma::RecordFunction& fn)
     // QUARISMA_CHECK(num_inputs <= inputs.size());
     return num_inputs <= inputs.size();
 }
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl

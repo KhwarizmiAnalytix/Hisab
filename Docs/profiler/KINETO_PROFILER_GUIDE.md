@@ -15,8 +15,8 @@ The Kineto profiler is a high-performance profiling system integrated into Quari
 
 ```cpp
 void enableProfiler(
-    const quarisma::profiler::impl::ProfilerConfig& config,
-    const std::set<quarisma::profiler::impl::ActivityType>& activities,
+    const quarisma::profiler_impl::impl::ProfilerConfig& config,
+    const std::set<quarisma::profiler_impl::impl::ActivityType>& activities,
     const std::unordered_set<quarisma::RecordScope>& scopes = {});
 ```
 
@@ -68,7 +68,7 @@ std::unique_ptr<ProfilerResult> disableProfiler();
 struct KinetoThreadLocalState : public ProfilerStateBase {
     uint64_t startTime;
     quarisma::ApproximateClockToUnixTimeConverter clockConverter;
-    quarisma::profiler::impl::RecordQueue recordQueue;
+    quarisma::profiler_impl::impl::RecordQueue recordQueue;
     std::vector<KinetoEvent> kinetoEvents;
     std::vector<experimental_event_t> eventTree;
     post_process_t eventPostProcessCb;  // Optional post-processing
@@ -313,8 +313,8 @@ result->save("trace.json");
 
 ```cpp
 // Configure profiler
-quarisma::profiler::impl::ProfilerConfig config(
-    quarisma::profiler::impl::ProfilerState::KINETO,
+quarisma::profiler_impl::impl::ProfilerConfig config(
+    quarisma::profiler_impl::impl::ProfilerState::KINETO,
     true,   // report_input_shapes
     true,   // profile_memory
     true,   // with_stack
@@ -323,17 +323,17 @@ quarisma::profiler::impl::ProfilerConfig config(
 );
 
 // Specify activities
-std::set<quarisma::profiler::impl::ActivityType> activities{
-    quarisma::profiler::impl::ActivityType::CPU
+std::set<quarisma::profiler_impl::impl::ActivityType> activities{
+    quarisma::profiler_impl::impl::ActivityType::CPU
 };
 
 // Start profiling
-quarisma::autograd::profiler::enableProfiler(config, activities);
+quarisma::autograd::profiler_impl::enableProfiler(config, activities);
 
 // ... code to profile ...
 
 // Stop and get results
-auto result = quarisma::autograd::profiler::disableProfiler();
+auto result = quarisma::autograd::profiler_impl::disableProfiler();
 
 // Save trace
 result->save("profile_trace.json");

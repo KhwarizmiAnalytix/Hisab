@@ -972,8 +972,8 @@ std::pair<UnpackedInput, InputFlags> unpack_input(PyObject* args)
     auto num_args            = PyTuple_GET_SIZE(args);
     unpacked.input_tuple     = PyTuple_New(num_args);
     flags.needs_input_grad   = PyTuple_New(num_args);
-    bool profiler_need_input = torch::autograd::profiler::profilerEnabled() &&
-                               torch::autograd::profiler::getProfilerConfig().report_input_shapes;
+    bool profiler_need_input = torch::autograd::profiler_impl::profilerEnabled() &&
+                               torch::autograd::profiler_impl::getProfilerConfig().report_input_shapes;
 
     for (const auto i : quarisma::irange(num_args))
     {

@@ -11,24 +11,24 @@
 namespace torch
 {
 
-namespace profiler::impl
+namespace profiler_impl::impl
 {
 struct Result;
 namespace kineto
 {
 struct ActivityTraceWrapper;
 }  // namespace kineto
-}  // namespace profiler::impl
+}  // namespace profiler_impl::impl
 
-namespace autograd::profiler
+namespace autograd::profiler_impl
 {
-using experimental_event_t = std::shared_ptr<torch::profiler::impl::Result>;
+using experimental_event_t = std::shared_ptr<torch::profiler_impl::impl::Result>;
 using extra_meta_t         = std::unordered_map<std::string, std::string>;
 
 struct TORCH_API KinetoEvent
 {
     KinetoEvent(
-        const std::shared_ptr<const torch::profiler::impl::Result>& /*result*/, const bool verbose);
+        const std::shared_ptr<const torch::profiler_impl::impl::Result>& /*result*/, const bool verbose);
 
     uint64_t                                                startThreadId() const;
     uint64_t                                                endThreadId() const;
@@ -67,15 +67,15 @@ struct TORCH_API KinetoEvent
     bool                                                    isPythonFunction() const;
     int64_t                                                 cudaElapsedUs() const;
     int64_t                                                 privateuse1ElapsedUs() const;
-    void         getPerfEventCounters(torch::profiler::perf_counters_t& /*in*/) const;
+    void         getPerfEventCounters(torch::profiler_impl::perf_counters_t& /*in*/) const;
     extra_meta_t extraMeta() const;
     std::string  metadataJson() const;
 
 private:
-    torch::profiler::impl::ProfilerVoidEventStub fallbackStart() const;
-    torch::profiler::impl::ProfilerVoidEventStub fallbackEnd() const;
+    torch::profiler_impl::impl::ProfilerVoidEventStub fallbackStart() const;
+    torch::profiler_impl::impl::ProfilerVoidEventStub fallbackEnd() const;
 
-    std::shared_ptr<const torch::profiler::impl::Result> result_;
+    std::shared_ptr<const torch::profiler_impl::impl::Result> result_;
     std::vector<std::string>                             python_stack_;
 
     // Copy fields from result so we can return ArrayRefs.
@@ -94,7 +94,7 @@ struct TORCH_API ProfilerResult
     ProfilerResult(
         uint64_t                                                               start_time,
         std::vector<KinetoEvent>                                               events,
-        std::unique_ptr<torch::profiler::impl::kineto::ActivityTraceWrapper>&& trace,
+        std::unique_ptr<torch::profiler_impl::impl::kineto::ActivityTraceWrapper>&& trace,
         std::vector<experimental_event_t>&&                                    event_tree);
     ~ProfilerResult();
 
@@ -109,7 +109,7 @@ struct TORCH_API ProfilerResult
 private:
     uint64_t                                                             trace_start_ns_ = 0;
     std::vector<KinetoEvent>                                             events_;
-    std::unique_ptr<torch::profiler::impl::kineto::ActivityTraceWrapper> trace_;
+    std::unique_ptr<torch::profiler_impl::impl::kineto::ActivityTraceWrapper> trace_;
     std::vector<experimental_event_t>                                    event_tree_;
 };
 
@@ -143,8 +143,8 @@ TORCH_API void reportBackendEventToActiveKinetoProfiler(
     const std::string&          backend_name);
 
 TORCH_API void enableProfiler(
-    const torch::profiler::impl::profiler_config&              config,
-    const std::set<torch::profiler::impl::activity_type_enum>& activities,
+    const torch::profiler_impl::impl::profiler_config&              config,
+    const std::set<torch::profiler_impl::impl::activity_type_enum>& activities,
     const std::unordered_set<quarisma::RecordScope>&           scopes = {});
 
 /*
@@ -170,19 +170,19 @@ using post_process_t = std::function<void(
     /*jit_stack    */ std::vector<std::string>&,
     /*jit_modules  */ std::vector<std::string>&)>;
 TORCH_API void enableProfilerWithEventPostProcess(
-    const torch::profiler::impl::profiler_config&              config,
-    const std::set<torch::profiler::impl::activity_type_enum>& activities,
+    const torch::profiler_impl::impl::profiler_config&              config,
+    const std::set<torch::profiler_impl::impl::activity_type_enum>& activities,
     post_process_t&&                                           cb,
     const std::unordered_set<quarisma::RecordScope>&           scopes = {});
 
 TORCH_API std::unique_ptr<ProfilerResult> disableProfiler();
 
 TORCH_API void prepareProfiler(
-    const torch::profiler::impl::profiler_config&              config,
-    const std::set<torch::profiler::impl::activity_type_enum>& activities);
+    const torch::profiler_impl::impl::profiler_config&              config,
+    const std::set<torch::profiler_impl::impl::activity_type_enum>& activities);
 
 TORCH_API void toggleCollectionDynamic(
-    const bool enable, const std::set<torch::profiler::impl::activity_type_enum>& activities);
+    const bool enable, const std::set<torch::profiler_impl::impl::activity_type_enum>& activities);
 
 TORCH_API void startMemoryProfile();
 TORCH_API void stopMemoryProfile();
@@ -195,7 +195,7 @@ TORCH_API void exportMemoryProfile(const std::string& path);
  * Without calling these functions, the symptom may be "not seeing GPU events
  * from some child C++ threads". This is an example on how to use them,
  *
- *    using namespace torch::autograd::profiler;
+ *    using namespace torch::autograd::profiler_impl;
  *    bool enabled = isProfilerEnabledInMainThread();
  *    if (enabled != saved_enabled_state) {
  *      if (enabled) {
@@ -210,14 +210,14 @@ TORCH_API bool isProfilerEnabledInMainThread();
 TORCH_API void enableProfilerInChildThread();
 TORCH_API void disableProfilerInChildThread();
 
-}  // namespace autograd::profiler
+}  // namespace autograd::profiler_impl
 
-namespace profiler::impl
+namespace profiler_impl::impl
 {
 
 // Experimental.
 TORCH_API void _reportVulkanEventToProfiler(vulkan_id_t id);
 
-}  // namespace profiler::impl
+}  // namespace profiler_impl::impl
 
 }  // namespace torch

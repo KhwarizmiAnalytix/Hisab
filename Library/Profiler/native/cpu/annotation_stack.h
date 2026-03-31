@@ -45,7 +45,7 @@ limitations under the License.
 
 namespace quarisma
 {
-namespace profiler
+namespace profiler_impl
 {
 
 /**
@@ -141,7 +141,7 @@ private:
     PROFILER_API static std::atomic<int> generation_;
 };
 
-}  // namespace profiler
+}  // namespace profiler_impl
 }  // namespace quarisma
 
 #endif  // QUARISMA_PROFILER_CPU_ANNOTATION_STACK_H_

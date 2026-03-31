@@ -10,7 +10,7 @@
 #include "Testing/baseTest.h"
 #include "native/utils/format_utils.h"
 
-using namespace quarisma::profiler;
+using namespace quarisma::profiler_impl;
 
 // ============================================================================
 // format_utils tests

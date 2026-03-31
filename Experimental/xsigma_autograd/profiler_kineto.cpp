@@ -48,7 +48,7 @@ extern "C"
 
 namespace torch
 {
-namespace autograd::profiler
+namespace autograd::profiler_impl
 {
 
 namespace
@@ -62,22 +62,22 @@ inline int64_t getTimeNs()
 #endif  // QUARISMA_HAS_KINETO
 }
 
-using torch::profiler::impl::ActiveProfilerType;
-using torch::profiler::impl::EventType;
-using torch::profiler::impl::ExtraFields;
-using torch::profiler::impl::get_record_concrete_inputs_enabled;
-//using torch::profiler::impl::ivalueListToStr;
-//using torch::profiler::impl::ivalueToStr;
-using torch::profiler::impl::op_input_t;
-using torch::profiler::impl::ProfilerStateBase;
-//using torch::profiler::impl::PyExtraFieldsBase;
-using torch::profiler::impl::Result;
-//using torch::profiler::impl::shape;
-//using torch::profiler::impl::shapesToStr;
-//using torch::profiler::impl::stacksToStr;
-//using torch::profiler::impl::strListToStr;
-using torch::profiler::impl::TensorMetadata;
-//using torch::profiler::impl::variantShapesToStr;
+using torch::profiler_impl::impl::ActiveProfilerType;
+using torch::profiler_impl::impl::EventType;
+using torch::profiler_impl::impl::ExtraFields;
+using torch::profiler_impl::impl::get_record_concrete_inputs_enabled;
+//using torch::profiler_impl::impl::ivalueListToStr;
+//using torch::profiler_impl::impl::ivalueToStr;
+using torch::profiler_impl::impl::op_input_t;
+using torch::profiler_impl::impl::ProfilerStateBase;
+//using torch::profiler_impl::impl::PyExtraFieldsBase;
+using torch::profiler_impl::impl::Result;
+//using torch::profiler_impl::impl::shape;
+//using torch::profiler_impl::impl::shapesToStr;
+//using torch::profiler_impl::impl::stacksToStr;
+//using torch::profiler_impl::impl::strListToStr;
+using torch::profiler_impl::impl::TensorMetadata;
+//using torch::profiler_impl::impl::variantShapesToStr;
 
 struct OpArgData
 {
@@ -187,9 +187,9 @@ struct MetadataBase
     {
         if (kinetoActivity_ && !value.empty() && value != "\"\"")
         {
-            torch::profiler::impl::kineto::addMetadata(
+            torch::profiler_impl::impl::kineto::addMetadata(
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-                const_cast<torch::profiler::impl::kineto::activity_t*>(kinetoActivity_),
+                const_cast<torch::profiler_impl::impl::kineto::activity_t*>(kinetoActivity_),
                 key,
                 value);
         }
@@ -198,7 +198,7 @@ struct MetadataBase
     bool hasKinetoActivity() const { return kinetoActivity_ != nullptr; }
 
 private:
-    const torch::profiler::impl::kineto::activity_t* kinetoActivity_{nullptr};
+    const torch::profiler_impl::impl::kineto::activity_t* kinetoActivity_{nullptr};
 };
 
 struct AddTensorboardFields : public MetadataBase
@@ -245,7 +245,7 @@ struct AddTensorboardFields : public MetadataBase
 struct AddGenericMetadata : public MetadataBase
 {
     AddGenericMetadata(
-        std::shared_ptr<Result>& result, const torch::profiler::impl::profiler_config* config)
+        std::shared_ptr<Result>& result, const torch::profiler_impl::impl::profiler_config* config)
         : MetadataBase(result), config_(config)
     {
         result->visit(*this);
@@ -384,14 +384,14 @@ struct AddGenericMetadata : public MetadataBase
 
 private:
     /* To get names of the performance events */
-    const torch::profiler::impl::profiler_config* config_;
+    const torch::profiler_impl::impl::profiler_config* config_;
 };
 
 struct KinetoThreadLocalState : public ProfilerStateBase
 {
     explicit KinetoThreadLocalState(
         const profiler_config&                              config,
-        std::set<torch::profiler::impl::activity_type_enum> activities)
+        std::set<torch::profiler_impl::impl::activity_type_enum> activities)
         : ProfilerStateBase(config),
           startTime(getTimeNs()),
           recordQueue(config, std::move(activities))
@@ -409,7 +409,7 @@ struct KinetoThreadLocalState : public ProfilerStateBase
 
     ActiveProfilerType profilerType() override { return ActiveProfilerType::KINETO; }
 
-    void reportVulkanEventToProfiler(torch::profiler::impl::vulkan_id_t id)
+    void reportVulkanEventToProfiler(torch::profiler_impl::impl::vulkan_id_t id)
     {
         if (!config_.disabled())
         {
@@ -461,7 +461,7 @@ struct KinetoThreadLocalState : public ProfilerStateBase
 
     void resumePython() { recordQueue.restart(); }
 
-    std::unique_ptr<torch::profiler::impl::kineto::ActivityTraceWrapper> finalizeTrace()
+    std::unique_ptr<torch::profiler_impl::impl::kineto::ActivityTraceWrapper> finalizeTrace()
     {
         auto end_time = getTimeNs();
         recordQueue.stop();
@@ -525,7 +525,7 @@ struct KinetoThreadLocalState : public ProfilerStateBase
 
     uint64_t                                      startTime;
     quarisma::ApproximateClockToUnixTimeConverter clockConverter;
-    torch::profiler::impl::RecordQueue            recordQueue;
+    torch::profiler_impl::impl::RecordQueue            recordQueue;
     std::vector<KinetoEvent>                      kinetoEvents;
     std::vector<experimental_event_t>             eventTree;
     // Optional, if event post-processing is enabled.
@@ -553,7 +553,7 @@ void onFunctionExit(const quarisma::record_function& fn, quarisma::ObserverConte
         return;
     }
     const auto& config   = state_ptr->config();
-    auto* kineto_ctx_ptr = static_cast<torch::profiler::impl::KinetoObserverContext*>(ctx_ptr);
+    auto* kineto_ctx_ptr = static_cast<torch::profiler_impl::impl::KinetoObserverContext*>(ctx_ptr);
     TORCH_INTERNAL_ASSERT(kineto_ctx_ptr != nullptr);
     kineto_ctx_ptr->event_->end_time_ = quarisma::getApproximateTime();
     if (!config.experimental_config.performance_events.empty())
@@ -566,8 +566,8 @@ void onFunctionExit(const quarisma::record_function& fn, quarisma::ObserverConte
     {
         auto& extra_meta = *(kineto_ctx_ptr->event_->extra_nccl_meta_);
         // Record only the outputs in this exit callback of the record function
-        torch::profiler::impl::SaveNcclMetaConfig ncclMetaConfig{true, false, false, true};
-        auto additonal_nccl_meta = torch::profiler::impl::saveNcclMeta(fn, ncclMetaConfig);
+        torch::profiler_impl::impl::SaveNcclMetaConfig ncclMetaConfig{true, false, false, true};
+        auto additonal_nccl_meta = torch::profiler_impl::impl::saveNcclMeta(fn, ncclMetaConfig);
         extra_meta.insert(additonal_nccl_meta.begin(), additonal_nccl_meta.end());
     }
     if (config.state == profiler_state_enum::KINETO_GPU_FALLBACK)
@@ -576,7 +576,7 @@ void onFunctionExit(const quarisma::record_function& fn, quarisma::ObserverConte
         {
             auto fallback = kineto_ctx_ptr->fallback_;
             TORCH_INTERNAL_ASSERT(fallback != nullptr);
-            torch::profiler::impl::cudaStubs()->record(
+            torch::profiler_impl::impl::cudaStubs()->record(
                 nullptr, &fallback->device_event_end_, nullptr);
         }
         catch (const std::exception& e)
@@ -588,7 +588,7 @@ void onFunctionExit(const quarisma::record_function& fn, quarisma::ObserverConte
     {
         auto fallback = kineto_ctx_ptr->fallback_;
         TORCH_INTERNAL_ASSERT(fallback != nullptr);
-        torch::profiler::impl::privateuse1Stubs()->record(
+        torch::profiler_impl::impl::privateuse1Stubs()->record(
             nullptr, &fallback->device_event_end_, nullptr);
     }
 
@@ -596,11 +596,11 @@ void onFunctionExit(const quarisma::record_function& fn, quarisma::ObserverConte
     {
         if (fn.scope() == quarisma::RecordScope::USER_SCOPE)
         {
-            torch::profiler::impl::kineto::popUserCorrelationId();
+            torch::profiler_impl::impl::kineto::popUserCorrelationId();
         }
         else
         {
-            torch::profiler::impl::kineto::popCorrelationId();
+            torch::profiler_impl::impl::kineto::popCorrelationId();
         }
     }
 }
@@ -667,8 +667,8 @@ void reportBackendEventToActiveKinetoProfiler(
 }
 
 void prepareProfiler(
-    const torch::profiler::impl::profiler_config&              config,
-    const std::set<torch::profiler::impl::activity_type_enum>& activities)
+    const torch::profiler_impl::impl::profiler_config&              config,
+    const std::set<torch::profiler_impl::impl::activity_type_enum>& activities)
 {
     if (config.state == profiler_state_enum::NVTX || config.state == profiler_state_enum::ITT)
     {
@@ -679,7 +679,7 @@ void prepareProfiler(
             config.state == profiler_state_enum::KINETO_GPU_FALLBACK ||
             config.state == profiler_state_enum::KINETO_PRIVATEUSE1_FALLBACK,
         "Supported only in Kineto profiler");
-    torch::profiler::impl::kineto::prepareTrace(
+    torch::profiler_impl::impl::kineto::prepareTrace(
         /*cpuOnly=*/!(
             quarisma::hasCUDA() || quarisma::hasXPU() || quarisma::hasMTIA() ||
             quarisma::get_privateuse1_backend() != "privateuseone"),
@@ -691,7 +691,7 @@ void prepareProfiler(
     {
         /* For now only CPU activity is supported */
         QUARISMA_CHECK(
-            activities.count(torch::autograd::profiler::activity_type_enum::CPU),
+            activities.count(torch::autograd::profiler_impl::activity_type_enum::CPU),
             "Cannot run cpu hardware profiler without CPU activities, please only use CPU activity "
             "type");
         /*
@@ -702,7 +702,7 @@ void prepareProfiler(
      */
         auto is_standard_event = [](const std::string& event) -> bool
         {
-            for (auto e : torch::profiler::ProfilerPerfEvents)
+            for (auto e : torch::profiler_impl::ProfilerPerfEvents)
             {
                 if (!std::strcmp(event.c_str(), e))
                 {
@@ -777,31 +777,31 @@ static void toggleCPUCollectionDynamic(bool enable)
 }
 
 void toggleCollectionDynamic(
-    const bool enable, const std::set<torch::profiler::impl::activity_type_enum>& activities)
+    const bool enable, const std::set<torch::profiler_impl::impl::activity_type_enum>& activities)
 {
-    if (activities.count(torch::autograd::profiler::activity_type_enum::CPU) > 0 &&
-        (activities.count(torch::autograd::profiler::activity_type_enum::CUDA) == 0 ||
-         activities.count(torch::autograd::profiler::activity_type_enum::XPU) == 0))
+    if (activities.count(torch::autograd::profiler_impl::activity_type_enum::CPU) > 0 &&
+        (activities.count(torch::autograd::profiler_impl::activity_type_enum::CUDA) == 0 ||
+         activities.count(torch::autograd::profiler_impl::activity_type_enum::XPU) == 0))
     {
         LOG(WARNING) << "Toggling CPU activity with GPU activity on may result in traces with GPU "
                         "events on artibrary tracks";
     }
     else if (
-        (activities.count(torch::autograd::profiler::activity_type_enum::CUDA) > 0 ||
-         activities.count(torch::autograd::profiler::activity_type_enum::XPU) > 0) &&
-        activities.count(torch::autograd::profiler::activity_type_enum::CPU) == 0)
+        (activities.count(torch::autograd::profiler_impl::activity_type_enum::CUDA) > 0 ||
+         activities.count(torch::autograd::profiler_impl::activity_type_enum::XPU) > 0) &&
+        activities.count(torch::autograd::profiler_impl::activity_type_enum::CPU) == 0)
     {
         LOG(WARNING) << "Toggling GPU activity with CPU activity on may result in traces with "
                         "incorrect correlation between CPU and GPU events";
     }
     for (auto act : activities)
     {
-        if (act == torch::autograd::profiler::activity_type_enum::CUDA ||
-            act == torch::autograd::profiler::activity_type_enum::XPU)
+        if (act == torch::autograd::profiler_impl::activity_type_enum::CUDA ||
+            act == torch::autograd::profiler_impl::activity_type_enum::XPU)
         {
-            torch::profiler::impl::kineto::toggleCollectionDynamic(enable);
+            torch::profiler_impl::impl::kineto::toggleCollectionDynamic(enable);
         }
-        else if (act == torch::autograd::profiler::activity_type_enum::CPU)
+        else if (act == torch::autograd::profiler_impl::activity_type_enum::CPU)
         {
             toggleCPUCollectionDynamic(enable);
         }
@@ -816,8 +816,8 @@ void toggleCollectionDynamic(
 }
 
 void enableProfilerWithEventPostProcess(
-    const torch::profiler::impl::profiler_config&              config,
-    const std::set<torch::profiler::impl::activity_type_enum>& activities,
+    const torch::profiler_impl::impl::profiler_config&              config,
+    const std::set<torch::profiler_impl::impl::activity_type_enum>& activities,
     post_process_t&&                                           cb,
     const std::unordered_set<quarisma::RecordScope>&           scopes)
 {
@@ -836,8 +836,8 @@ void enableProfilerWithEventPostProcess(
 }
 
 void enableProfiler(
-    const torch::profiler::impl::profiler_config&              config,
-    const std::set<torch::profiler::impl::activity_type_enum>& activities,
+    const torch::profiler_impl::impl::profiler_config&              config,
+    const std::set<torch::profiler_impl::impl::activity_type_enum>& activities,
     const std::unordered_set<quarisma::RecordScope>&           scopes)
 {
     const auto has_cpu = activities.count(activity_type_enum::CPU);
@@ -848,17 +848,17 @@ void enableProfiler(
 
     if (config.state == profiler_state_enum::NVTX)
     {
-        torch::profiler::impl::pushNVTXCallbacks(config, scopes);
+        torch::profiler_impl::impl::pushNVTXCallbacks(config, scopes);
         return;
     }
     else if (config.state == profiler_state_enum::ITT)
     {
-        torch::profiler::impl::pushITTCallbacks(config, scopes);
+        torch::profiler_impl::impl::pushITTCallbacks(config, scopes);
         return;
     }
     else if (config.state == profiler_state_enum::PRIVATEUSE1)
     {
-        torch::profiler::impl::pushPRIVATEUSE1CallbacksStub(config, scopes);
+        torch::profiler_impl::impl::pushPRIVATEUSE1CallbacksStub(config, scopes);
         return;
     }
 
@@ -881,7 +881,7 @@ void enableProfiler(
 
     if (!config.global())
     {
-        torch::profiler::impl::kineto::startTrace();
+        torch::profiler_impl::impl::kineto::startTrace();
     }
 
     if (has_cpu)
@@ -967,7 +967,7 @@ std::unique_ptr<ProfilerResult> disableProfiler()
 
     return result;
 }
-namespace tracer = torch::profiler::impl::python_tracer;
+namespace tracer = torch::profiler_impl::impl::python_tracer;
 static std::unique_ptr<tracer::PythonMemoryTracerBase> memory_tracer;
 void                                                   startMemoryProfile()
 {
@@ -989,7 +989,7 @@ void exportMemoryProfile(const std::string& filename)
 }
 
 KinetoEvent::KinetoEvent(
-    const std::shared_ptr<const torch::profiler::impl::Result>& result, const bool verbose)
+    const std::shared_ptr<const torch::profiler_impl::impl::Result>& result, const bool verbose)
     : result_{result}
 {
     TORCH_INTERNAL_ASSERT(result != nullptr);
@@ -1145,7 +1145,7 @@ int64_t KinetoEvent::cudaElapsedUs() const
     }
     try
     {
-        return (int64_t)torch::profiler::impl::cudaStubs()->elapsed(
+        return (int64_t)torch::profiler_impl::impl::cudaStubs()->elapsed(
             &cuda_event_start, &cuda_event_end);
     }
     catch (std::exception& e)
@@ -1163,7 +1163,7 @@ int64_t KinetoEvent::privateuse1ElapsedUs() const
     {
         return -1;
     }
-    return (int64_t)torch::profiler::impl::privateuse1Stubs()->elapsed(
+    return (int64_t)torch::profiler_impl::impl::privateuse1Stubs()->elapsed(
         &privateuse1_event_start, &privateuse1_event_end);
     return -1;
 }
@@ -1244,7 +1244,7 @@ TYPED_ATTR(TorchOp, fallbackEnd, e.device_fallback_.device_event_end_)
 TYPED_ATTR(
     TorchOp,
     flops,
-    !e.extra_args_.empty() ? torch::profiler::impl::computeFlops(e.name_, e.extra_args_) : 0)
+    !e.extra_args_.empty() ? torch::profiler_impl::impl::computeFlops(e.name_, e.extra_args_) : 0)
 TYPED_ATTR(Backend, backend, e.backend_)
 TYPED_ATTR(Allocation, nBytes, e.alloc_size_)
 TYPED_ATTR(
@@ -1261,7 +1261,7 @@ TYPED_ATTR(
 ProfilerResult::ProfilerResult(
     uint64_t                                                               start_time,
     std::vector<KinetoEvent>                                               events,
-    std::unique_ptr<torch::profiler::impl::kineto::ActivityTraceWrapper>&& trace,
+    std::unique_ptr<torch::profiler_impl::impl::kineto::ActivityTraceWrapper>&& trace,
     std::vector<experimental_event_t>&&                                    event_tree)
     : trace_start_ns_(start_time),
       events_(std::move(events)),
@@ -1277,19 +1277,19 @@ void ProfilerResult::save(const std::string& path)
     trace_->save(path);
 }
 
-}  // namespace autograd::profiler
+}  // namespace autograd::profiler_impl
 
-namespace profiler::impl
+namespace profiler_impl::impl
 {
 void _reportVulkanEventToProfiler(vulkan_id_t id)
 {
-    auto state_ptr = ::torch::autograd::profiler::KinetoThreadLocalState::get(
+    auto state_ptr = ::torch::autograd::profiler_impl::KinetoThreadLocalState::get(
         /*global=*/false);
     if (state_ptr)
     {
         state_ptr->reportVulkanEventToProfiler(id);
     }
 }
-}  // namespace profiler::impl
+}  // namespace profiler_impl::impl
 
 }  // namespace torch

@@ -5,8 +5,8 @@
 ### `enableProfiler()` - Start Profiling
 ```cpp
 void enableProfiler(
-    const quarisma::profiler::impl::ProfilerConfig& config,
-    const std::set<quarisma::profiler::impl::ActivityType>& activities,
+    const quarisma::profiler_impl::impl::ProfilerConfig& config,
+    const std::set<quarisma::profiler_impl::impl::ActivityType>& activities,
     const std::unordered_set<quarisma::RecordScope>& scopes = {});
 ```
 **File:** `Library/Core/profiler/pytroch_profiler/profiler_kineto.cpp:834`
@@ -19,11 +19,11 @@ void enableProfiler(
 
 **Example:**
 ```cpp
-quarisma::profiler::impl::ProfilerConfig config(
-    quarisma::profiler::impl::ProfilerState::KINETO);
-std::set<quarisma::profiler::impl::ActivityType> activities{
-    quarisma::profiler::impl::ActivityType::CPU};
-quarisma::autograd::profiler::enableProfiler(config, activities);
+quarisma::profiler_impl::impl::ProfilerConfig config(
+    quarisma::profiler_impl::impl::ProfilerState::KINETO);
+std::set<quarisma::profiler_impl::impl::ActivityType> activities{
+    quarisma::profiler_impl::impl::ActivityType::CPU};
+quarisma::autograd::profiler_impl::enableProfiler(config, activities);
 ```
 
 ---
@@ -42,7 +42,7 @@ std::unique_ptr<ProfilerResult> disableProfiler();
 
 **Example:**
 ```cpp
-auto result = quarisma::autograd::profiler::disableProfiler();
+auto result = quarisma::autograd::profiler_impl::disableProfiler();
 result->save("trace.json");
 ```
 
@@ -248,8 +248,8 @@ void recordThreadInfo();
 ### Basic Profiling
 ```cpp
 // 1. Configure
-quarisma::profiler::impl::ProfilerConfig config(
-    quarisma::profiler::impl::ProfilerState::KINETO,
+quarisma::profiler_impl::impl::ProfilerConfig config(
+    quarisma::profiler_impl::impl::ProfilerState::KINETO,
     true,   // report_input_shapes
     true,   // profile_memory
     true,   // with_stack
@@ -258,24 +258,24 @@ quarisma::profiler::impl::ProfilerConfig config(
 );
 
 // 2. Set activities
-std::set<quarisma::profiler::impl::ActivityType> activities{
-    quarisma::profiler::impl::ActivityType::CPU
+std::set<quarisma::profiler_impl::impl::ActivityType> activities{
+    quarisma::profiler_impl::impl::ActivityType::CPU
 };
 
 // 3. Start
-quarisma::autograd::profiler::enableProfiler(config, activities);
+quarisma::autograd::profiler_impl::enableProfiler(config, activities);
 
 // 4. Run code to profile
 // ... your code ...
 
 // 5. Stop and save
-auto result = quarisma::autograd::profiler::disableProfiler();
+auto result = quarisma::autograd::profiler_impl::disableProfiler();
 result->save("profile.json");
 ```
 
 ### Accessing Events
 ```cpp
-auto result = quarisma::autograd::profiler::disableProfiler();
+auto result = quarisma::autograd::profiler_impl::disableProfiler();
 for (const auto& event : result->events()) {
     std::cout << "Event: " << event.name() << "\n"
               << "  Duration: " << event.durationNs() << " ns\n"
@@ -285,8 +285,8 @@ for (const auto& event : result->events()) {
 
 ### Memory Profiling
 ```cpp
-quarisma::profiler::impl::ProfilerConfig config(
-    quarisma::profiler::impl::ProfilerState::KINETO,
+quarisma::profiler_impl::impl::ProfilerConfig config(
+    quarisma::profiler_impl::impl::ProfilerState::KINETO,
     false,  // report_input_shapes
     true,   // profile_memory ← Enable memory tracking
     false,  // with_stack

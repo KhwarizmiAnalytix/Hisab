@@ -44,7 +44,7 @@ limitations under the License.
 
 namespace quarisma
 {
-namespace profiler
+namespace profiler_impl
 {
 namespace
 {
@@ -128,6 +128,6 @@ std::unique_ptr<ProfilerInterface> CreatePythonTracer(
     return std::make_unique<PythonTracer>(pyhooks_options);
 }
 
-}  // namespace profiler
+}  // namespace profiler_impl
 }  // namespace quarisma
 #endif

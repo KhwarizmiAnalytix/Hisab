@@ -9,7 +9,7 @@
 
 struct CUevent_st;
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 // ----------------------------------------------------------------------------
@@ -40,4 +40,4 @@ QUARISMA_API const ProfilerStubs* ittStubs();
 QUARISMA_API void                 registerPrivateUse1Methods(ProfilerStubs* stubs);
 QUARISMA_API const ProfilerStubs* privateuse1Stubs();
 
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl

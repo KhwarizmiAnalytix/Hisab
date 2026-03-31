@@ -40,7 +40,7 @@ limitations under the License.
 
 namespace quarisma
 {
-namespace profiler
+namespace profiler_impl
 {
 
 struct python_tracer_options
@@ -59,7 +59,7 @@ struct python_tracer_options
 std::unique_ptr<profiler_interface> create_python_tracer(
     const python_tracer_options& options);
 
-}  // namespace profiler
+}  // namespace profiler_impl
 }  // namespace quarisma
 
 #endif  // 0 (python tracer stub disabled)

@@ -12,7 +12,7 @@ namespace caffe2
 CAFFE_KNOWN_TYPE(quarisma::record_function)
 }  // namespace caffe2
 
-namespace torch::autograd::profiler
+namespace torch::autograd::profiler_impl
 {
 
 // Creates a new profiling scope using record_function and invokes its starting
@@ -173,4 +173,4 @@ TORCH_LIBRARY_FRAGMENT(profiler, m)
             quarisma::AliasAnalysisKind::FROM_SCHEMA));
 }
 
-}  // namespace torch::autograd::profiler
+}  // namespace torch::autograd::profiler_impl

@@ -4,7 +4,7 @@
 #include "base.h"
 #include "util.h"
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 struct ITTThreadLocalState : ProfilerStateBase
@@ -43,7 +43,7 @@ static std::unique_ptr<quarisma::ObserverContext> enterITT(const quarisma::Recor
 {
     if (ITTThreadLocalState::getTLS() != nullptr)
     {
-        quarisma::profiler::impl::ittStubs()->rangePush(fn.name());
+        quarisma::profiler_impl::impl::ittStubs()->rangePush(fn.name());
     }
     return nullptr;
 }
@@ -52,7 +52,7 @@ void pushITTCallbacks(
     const ProfilerConfig& config, const std::unordered_set<quarisma::RecordScope>& scopes)
 {
     QUARISMA_CHECK(
-        quarisma::profiler::impl::ittStubs()->enabled(),
+        quarisma::profiler_impl::impl::ittStubs()->enabled(),
         "Can't use ITT profiler - PyTorch was compiled without ITT");
 
     quarisma::thread_local_debug_info::_push(
@@ -66,11 +66,11 @@ void pushITTCallbacks(
             state_ptr->config().report_input_shapes ? &enterITT</*report_input_shapes=*/true>
                                                     : &enterITT</*report_input_shapes=*/false>,
             [](const quarisma::RecordFunction&, quarisma::ObserverContext*)
-            { quarisma::profiler::impl::ittStubs()->rangePop(); })
+            { quarisma::profiler_impl::impl::ittStubs()->rangePop(); })
             .needsInputs(config.report_input_shapes)
             .scopes(scopes));
     state_ptr->setCallbackHandle(handle);
 }
 
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl
 #endif

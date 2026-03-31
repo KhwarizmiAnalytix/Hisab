@@ -4,7 +4,7 @@
 #include "bespoke/base/thread_local_debug_info.h"
 #include "bespoke/common/util.h"
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 struct NVTXThreadLocalState : ProfilerStateBase
@@ -154,11 +154,11 @@ static std::unique_ptr<quarisma::ObserverContext> enterNVTX(const quarisma::Reco
     if (NVTXThreadLocalState::getTLS() != nullptr)
     {
         auto input_op_ids = getInputTensorOpIds();
-        quarisma::profiler::impl::cudaStubs()->rangePush(
-            quarisma::profiler::impl::getNvtxStr(
+        quarisma::profiler_impl::impl::cudaStubs()->rangePush(
+            quarisma::profiler_impl::impl::getNvtxStr(
                 fn.name(),
                 fn.seqNr(),
-                report_input_shapes ? quarisma::profiler::impl::inputSizes(fn, true)
+                report_input_shapes ? quarisma::profiler_impl::impl::inputSizes(fn, true)
                                     : std::vector<std::vector<int64_t>>(),
                 fn.handle(),
                 report_input_shapes ? input_op_ids
@@ -172,7 +172,7 @@ void pushNVTXCallbacks(
     const ProfilerConfig& config, const std::unordered_set<quarisma::RecordScope>& scopes)
 {
     // QUARISMA_CHECK(
-        // quarisma::profiler::impl::cudaStubs()->enabled(),
+        // quarisma::profiler_impl::impl::cudaStubs()->enabled(),
         // "Can't use NVTX profiler - Quarisma was compiled without CUDA");
 
     quarisma::thread_local_debug_info::_push(
@@ -187,7 +187,7 @@ void pushNVTXCallbacks(
                                                     : &enterNVTX</*report_input_shapes=*/false>,
             [](const quarisma::RecordFunction& /*fn*/, quarisma::ObserverContext* /*ctx*/)
             {
-                quarisma::profiler::impl::cudaStubs()->rangePop();
+                quarisma::profiler_impl::impl::cudaStubs()->rangePop();
                 //updateOutputTensorTracker(fn);
             })
             .needsInputs(config.report_input_shapes)
@@ -197,4 +197,4 @@ void pushNVTXCallbacks(
     state_ptr->setCallbackHandle(handle);
 }
 
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl

@@ -19,11 +19,11 @@
 
 #pragma once
 
-namespace quarisma::profiler::threadpool_listener
+namespace quarisma::profiler_impl::threadpool_listener
 {
 
 bool IsEnabled();
 void Activate();
 void Deactivate();
 
-}  // namespace quarisma::profiler::threadpool_listener
+}  // namespace quarisma::profiler_impl::threadpool_listener

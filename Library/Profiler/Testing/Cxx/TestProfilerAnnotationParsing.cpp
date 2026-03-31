@@ -10,7 +10,7 @@
 #include "Testing/baseTest.h"
 #include "native/utils/parse_annotation.h"
 
-using namespace quarisma::profiler;
+using namespace quarisma::profiler_impl;
 using namespace std::literals;
 
 // ============================================================================

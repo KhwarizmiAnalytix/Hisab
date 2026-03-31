@@ -78,7 +78,7 @@ constexpr auto kETProcessGroupName = "pg_name";
 constexpr auto kETProcessGroupDesc = "pg_desc";
 #endif  // USE_DISTRIBUTED
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 //******************************************************************************
@@ -1231,4 +1231,4 @@ void disableExecutionTraceObserver()
         // LOG(WARNING) << "Trying to disable Execution Trace Observer when it's already disabled.";
     }
 }
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl

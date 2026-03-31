@@ -394,7 +394,7 @@ merge_sort,25.15,524288,0x7f8a1c000000,2
 
 ```cpp
 // Enable verbose logging for debugging
-quarisma::profiler::ProfilerConfig config;
+quarisma::profiler_impl::ProfilerConfig config;
 config.verbose = true;  // Enables detailed logging
 
 // Or for native profiler
@@ -546,7 +546,7 @@ Quarisma provides a Quarisma-compatible profiler API for seamless integration:
 ```cpp
 #include "profiler/profiler_api.h"
 
-using namespace quarisma::profiler;
+using namespace quarisma::profiler_impl;
 
 // Configure profiler
 ProfilerConfig config;
@@ -787,8 +787,8 @@ cmake --build .
 
 void itt_profiling_example() {
     // Initialize ITT
-    quarisma::profiler::itt_init();
-    bool itt_available = (quarisma::profiler::itt_get_domain() != nullptr);
+    quarisma::profiler_impl::itt_init();
+    bool itt_available = (quarisma::profiler_impl::itt_get_domain() != nullptr);
 
     // Start Quarisma profiler
     auto session = profiler_session_builder()
@@ -800,14 +800,14 @@ void itt_profiling_example() {
     // Profile with both ITT and Quarisma
     {
         if (itt_available) {
-            quarisma::profiler::itt_range_push("my_operation");
+            quarisma::profiler_impl::itt_range_push("my_operation");
         }
         QUARISMA_PROFILE_SCOPE("my_operation");
 
         // Your code here
 
         if (itt_available) {
-            quarisma::profiler::itt_range_pop();
+            quarisma::profiler_impl::itt_range_pop();
         }
     }
 
@@ -857,15 +857,15 @@ cmake --build .
 
 void kineto_profiling_example() {
     // Initialize Kineto
-    quarisma::profiler::kineto_init(false, true);
+    quarisma::profiler_impl::kineto_init(false, true);
 
     // Prepare trace
     std::set<libkineto::ActivityType> activities;
     activities.insert(libkineto::ActivityType::CPU_OP);
     activities.insert(libkineto::ActivityType::CUDA_RUNTIME);
 
-    quarisma::profiler::kineto_prepare_trace(activities);
-    quarisma::profiler::kineto_start_trace();
+    quarisma::profiler_impl::kineto_prepare_trace(activities);
+    quarisma::profiler_impl::kineto_start_trace();
 
     // Start Quarisma profiler
     auto session = profiler_session_builder()
@@ -884,7 +884,7 @@ void kineto_profiling_example() {
 
     std::unique_ptr<libkineto::ActivityTraceInterface> trace(
         static_cast<libkineto::ActivityTraceInterface*>(
-            quarisma::profiler::kineto_stop_trace()));
+            quarisma::profiler_impl::kineto_stop_trace()));
 
     // Export Quarisma trace
     session->write_chrome_trace("quarisma_trace.json");

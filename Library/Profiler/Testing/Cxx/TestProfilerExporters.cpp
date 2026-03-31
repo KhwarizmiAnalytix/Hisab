@@ -18,7 +18,7 @@
 #include "native/exporters/xplane/xplane_builder.h"
 
 using namespace quarisma;
-using namespace quarisma::profiler;
+using namespace quarisma::profiler_impl;
 
 // ============================================================================
 // Chrome Trace Exporter Tests

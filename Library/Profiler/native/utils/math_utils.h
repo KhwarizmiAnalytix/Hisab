@@ -39,7 +39,7 @@ limitations under the License.
 
 namespace quarisma
 {
-namespace profiler
+namespace profiler_impl
 {
 
 /**
@@ -202,7 +202,7 @@ inline double gibibytes_per_second(double bytes, double ns)
     return giga_to_gibi(safe_divide(bytes, ns));
 }
 
-}  // namespace profiler
+}  // namespace profiler_impl
 }  // namespace quarisma
 
 #endif  // QUARISMA_PROFILER_UTILS_MATH_UTILS_H_

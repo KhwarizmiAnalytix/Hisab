@@ -14,7 +14,7 @@
 #include "native/utils/time_utils.h"
 
 using namespace quarisma;
-using namespace quarisma::profiler;
+using namespace quarisma::profiler_impl;
 
 // ============================================================================
 // Time Utilities Tests

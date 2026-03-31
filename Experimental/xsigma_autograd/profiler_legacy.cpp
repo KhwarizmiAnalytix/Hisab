@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-namespace torch::autograd::profiler
+namespace torch::autograd::profiler_impl
 {
 
 // We decompose the profiler logic into the following components:
@@ -114,12 +114,12 @@ namespace torch::autograd::profiler
 
 namespace
 {
-using torch::profiler::impl::ActiveProfilerType;
-using torch::profiler::impl::ProfilerStateBase;
+using torch::profiler_impl::impl::ActiveProfilerType;
+using torch::profiler_impl::impl::ProfilerStateBase;
 
 struct ProfilerLegacyThreadLocalState : public ProfilerStateBase
 {
-    explicit ProfilerLegacyThreadLocalState(const torch::profiler::impl::profiler_config& config)
+    explicit ProfilerLegacyThreadLocalState(const torch::profiler_impl::impl::profiler_config& config)
         : ProfilerStateBase(config), remoteProfiledEvents_{std::nullopt}
     {
     }
@@ -191,9 +191,9 @@ void ProfilerLegacyThreadLocalState::mark(std::string name, bool include_cuda)
     {
         return;
     }
-    if (config_.state == torch::profiler::impl::profiler_state_enum::NVTX)
+    if (config_.state == torch::profiler_impl::impl::profiler_state_enum::NVTX)
     {
-        torch::profiler::impl::cudaStubs()->mark(name.c_str());
+        torch::profiler_impl::impl::cudaStubs()->mark(name.c_str());
     }
     else
     {
@@ -201,7 +201,7 @@ void ProfilerLegacyThreadLocalState::mark(std::string name, bool include_cuda)
             EventKind::Mark,
             quarisma::StringView(std::move(name)),
             quarisma::record_function::currentThreadId(),
-            include_cuda && config_.state == torch::profiler::impl::profiler_state_enum::CUDA);
+            include_cuda && config_.state == torch::profiler_impl::impl::profiler_state_enum::CUDA);
         evt.setNodeId(quarisma::record_function::getDefaultNodeId());
         getEventList().record(std::move(evt));
     }
@@ -231,10 +231,10 @@ void ProfilerLegacyThreadLocalState::pushRange(
     {
         return;
     }
-    if (config_.state == torch::profiler::impl::profiler_state_enum::NVTX)
+    if (config_.state == torch::profiler_impl::impl::profiler_state_enum::NVTX)
     {
-        torch::profiler::impl::cudaStubs()->rangePush(
-            torch::profiler::impl::getNvtxStr(fn.name(), fn.seqNr(), shapes).c_str());
+        torch::profiler_impl::impl::cudaStubs()->rangePush(
+            torch::profiler_impl::impl::getNvtxStr(fn.name(), fn.seqNr(), shapes).c_str());
     }
     else
     {
@@ -252,9 +252,9 @@ void ProfilerLegacyThreadLocalState::pushRange(
         evt.setScope((uint8_t)fn.scope());
         if (config_.with_flops)
         {
-            evt.setExtraArgs(torch::profiler::impl::saveExtraArgs(fn));
+            evt.setExtraArgs(torch::profiler_impl::impl::saveExtraArgs(fn));
             evt.setFlops(
-                torch::profiler::impl::computeFlops(std::string(fn.name()), evt.extraArgs()));
+                torch::profiler_impl::impl::computeFlops(std::string(fn.name()), evt.extraArgs()));
         }
 
 // TODO: will unify the two macros BUILD_LITE_INTERPRETER and QUARISMA_MOBILE soon.
@@ -263,10 +263,10 @@ void ProfilerLegacyThreadLocalState::pushRange(
         // TODO: consider using C++ stack trace
         if (config_.with_stack && fn.scope() != quarisma::RecordScope::BACKWARD_FUNCTION)
         {
-            auto cs = torch::profiler::impl::prepareCallstack(jit::currentCallstack());
+            auto cs = torch::profiler_impl::impl::prepareCallstack(jit::currentCallstack());
             if (cs.empty())
             {
-                cs = torch::profiler::impl::prepareCallstack(jit::tracer::pythonCallstack());
+                cs = torch::profiler_impl::impl::prepareCallstack(jit::tracer::pythonCallstack());
             }
             evt.setStack(callstackStr(cs));
         }
@@ -282,9 +282,9 @@ void ProfilerLegacyThreadLocalState::popRange(
     {
         return;
     }
-    if (config_.state == torch::profiler::impl::profiler_state_enum::NVTX)
+    if (config_.state == torch::profiler_impl::impl::profiler_state_enum::NVTX)
     {
-        torch::profiler::impl::cudaStubs()->rangePop();
+        torch::profiler_impl::impl::cudaStubs()->rangePop();
     }
     else
     {
@@ -317,7 +317,7 @@ void ProfilerLegacyThreadLocalState::reportMemoryUsage(
             EventKind::MemoryAlloc,
             quarisma::StringView(""),
             thread_id,
-            config_.state == torch::profiler::impl::profiler_state_enum::CUDA);
+            config_.state == torch::profiler_impl::impl::profiler_state_enum::CUDA);
         evt.updateMemoryStats(alloc_size, device);
         getEventList(thread_id).record(std::move(evt));
     }
@@ -393,7 +393,7 @@ void pushProfilingCallbacksLegacy()
                     return nullptr;
                 }
                 bool record_cuda =
-                    state_ptr->config().state == torch::profiler::impl::profiler_state_enum::CUDA;
+                    state_ptr->config().state == torch::profiler_impl::impl::profiler_state_enum::CUDA;
                 if (record_cuda &&
                     disable_cuda_profiling.find(fn.name()) != disable_cuda_profiling.end())
                 {
@@ -402,7 +402,7 @@ void pushProfilingCallbacksLegacy()
 
                 if (state_ptr->config().report_input_shapes)
                 {
-                    auto sizes = torch::profiler::impl::inputSizes(fn);
+                    auto sizes = torch::profiler_impl::impl::inputSizes(fn);
                     state_ptr->pushRange(fn, record_cuda, std::move(sizes));
                 }
                 else
@@ -420,7 +420,7 @@ void pushProfilingCallbacksLegacy()
                     return;
                 }
                 bool record_cuda =
-                    state_ptr->config().state == torch::profiler::impl::profiler_state_enum::CUDA;
+                    state_ptr->config().state == torch::profiler_impl::impl::profiler_state_enum::CUDA;
                 if (record_cuda &&
                     disable_cuda_profiling.find(fn.name()) != disable_cuda_profiling.end())
                 {
@@ -435,14 +435,14 @@ void pushProfilingCallbacksLegacy()
 
 }  // namespace
 
-void enableProfilerLegacy(const torch::profiler::impl::profiler_config& new_config)
+void enableProfilerLegacy(const torch::profiler_impl::impl::profiler_config& new_config)
 {
     QUARISMA_CHECK(
-        new_config.state != torch::profiler::impl::profiler_state_enum::NVTX ||
-            torch::profiler::impl::cudaStubs()->enabled(),
+        new_config.state != torch::profiler_impl::impl::profiler_state_enum::NVTX ||
+            torch::profiler_impl::impl::cudaStubs()->enabled(),
         "Can't use NVTX profiler - PyTorch was compiled without CUDA");
 
-    QUARISMA_CHECK(new_config.state != torch::profiler::impl::profiler_state_enum::KINETO);
+    QUARISMA_CHECK(new_config.state != torch::profiler_impl::impl::profiler_state_enum::KINETO);
 
     auto state_ptr = ProfilerLegacyThreadLocalState::getTLS();
     QUARISMA_CHECK(!state_ptr, "Profiler is already enabled on this thread");
@@ -478,7 +478,7 @@ thread_event_lists disableProfilerLegacy(
 
     cleanupTLSState ? state_ptr->removeCallback() : state_ptr->leakHandle();
     if (!consolidate ||
-        state_ptr->config().state == torch::profiler::impl::profiler_state_enum::NVTX)
+        state_ptr->config().state == torch::profiler_impl::impl::profiler_state_enum::NVTX)
     {
         return thread_event_lists();
     }
@@ -499,7 +499,7 @@ void LegacyEvent::record(bool record_cuda)
 {
     if (record_cuda)
     {
-        torch::profiler::impl::cudaStubs()->record(&device_, &cuda_event, &cpu_ns_);
+        torch::profiler_impl::impl::cudaStubs()->record(&device_, &cuda_event, &cpu_ns_);
         return;
     }
     cpu_ns_ = quarisma::getTime();
@@ -608,7 +608,7 @@ double LegacyEvent::cudaElapsedUs(const LegacyEvent& e) const
         TORCH_INTERNAL_ASSERT(cuda_us_ >= 0 && e.cuda_us_ >= 0);
         return static_cast<double>(e.cuda_us_ - cuda_us_);
     }
-    return torch::profiler::impl::cudaStubs()->elapsed(&cuda_event, &e.cuda_event);
+    return torch::profiler_impl::impl::cudaStubs()->elapsed(&cuda_event, &e.cuda_event);
 }
 
 static const quarisma::jit::CodeTemplate event_template(R"(
@@ -691,7 +691,7 @@ RecordProfile::RecordProfile(const std::string& filename)
 void RecordProfile::init()
 {
     enableProfilerLegacy(
-        torch::profiler::impl::profiler_config(torch::profiler::impl::profiler_state_enum::CPU));
+        torch::profiler_impl::impl::profiler_config(torch::profiler_impl::impl::profiler_state_enum::CPU));
 }
 
 RecordProfile::~RecordProfile()
@@ -724,4 +724,4 @@ void RecordProfile::processEvents(const std::vector<LegacyEvent*>& events)
     writeProfilerEventsToStream(out_, events);
 }
 
-}  // namespace torch::autograd::profiler
+}  // namespace torch::autograd::profiler_impl

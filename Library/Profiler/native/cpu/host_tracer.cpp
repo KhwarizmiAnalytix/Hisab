@@ -52,7 +52,7 @@ limitations under the License.
 #include "native/tracing/traceme.h"
 #include "native/tracing/traceme_recorder.h"
 
-namespace quarisma::profiler
+namespace quarisma::profiler_impl
 {
 namespace
 {
@@ -178,4 +178,4 @@ std::unique_ptr<profiler_interface> create_host_tracer(const host_tracer_options
     }
     return std::make_unique<profiler_collection>(std::move(profilers));
 }
-}  // namespace quarisma::profiler
+}  // namespace quarisma::profiler_impl

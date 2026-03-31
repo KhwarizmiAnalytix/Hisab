@@ -15,7 +15,7 @@
 namespace quarisma
 {
 
-namespace profiler::impl::kineto
+namespace profiler_impl::impl::kineto
 {
 
 // Here lies pain and `#if QUARISMA_HAS_KINETO`
@@ -184,7 +184,7 @@ namespace
 class QUARISMA_VISIBILITY ExperimentalConfigWrapper
 {
 public:
-    explicit ExperimentalConfigWrapper(const quarisma::profiler::impl::ExperimentalConfig& config)
+    explicit ExperimentalConfigWrapper(const quarisma::profiler_impl::impl::ExperimentalConfig& config)
         : config_(config)
     {
     }
@@ -230,7 +230,7 @@ public:
 
 private:
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
-    const quarisma::profiler::impl::ExperimentalConfig& config_;
+    const quarisma::profiler_impl::impl::ExperimentalConfig& config_;
 };
 }  // namespace
 
@@ -273,7 +273,7 @@ static const std::string appendCustomConfig(
 void prepareTrace(
     const bool                                          cpuOnly,
     const ActivitySet&                                  activities,
-    const quarisma::profiler::impl::ExperimentalConfig& config,
+    const quarisma::profiler_impl::impl::ExperimentalConfig& config,
     const std::string&                                  trace_id)
 {
 #if QUARISMA_HAS_KINETO
@@ -290,25 +290,25 @@ void prepareTrace(
     }
 
     std::set<libkineto::ActivityType> k_activities;
-    bool has_cpu_activity = activities.count(quarisma::autograd::profiler::ActivityType::CPU);
+    bool has_cpu_activity = activities.count(quarisma::autograd::profiler_impl::ActivityType::CPU);
 
     if (has_cpu_activity)
     {
         k_activities.insert(kCpuTypes.begin(), kCpuTypes.end());
     }
-    if (activities.count(quarisma::autograd::profiler::ActivityType::XPU))
+    if (activities.count(quarisma::autograd::profiler_impl::ActivityType::XPU))
     {
         k_activities.insert(kXpuTypes.begin(), kXpuTypes.end());
     }
-    if (activities.count(quarisma::autograd::profiler::ActivityType::MTIA))
+    if (activities.count(quarisma::autograd::profiler_impl::ActivityType::MTIA))
     {
         k_activities.insert(kMtiaTypes.begin(), kMtiaTypes.end());
     }
-    if (activities.count(quarisma::autograd::profiler::ActivityType::HPU))
+    if (activities.count(quarisma::autograd::profiler_impl::ActivityType::HPU))
     {
         k_activities.insert(hpuTypes.begin(), hpuTypes.end());
     }
-    if (activities.count(quarisma::autograd::profiler::ActivityType::CUDA))
+    if (activities.count(quarisma::autograd::profiler_impl::ActivityType::CUDA))
     {
         k_activities.insert(kCudaTypes.begin(), kCudaTypes.end());
         if (config.enable_cuda_sync_events || get_cuda_sync_enabled())
@@ -321,7 +321,7 @@ void prepareTrace(
     {
         k_activities.insert(libkineto::ActivityType::COLLECTIVE_COMM);
     }
-    if (activities.count(quarisma::autograd::profiler::ActivityType::PrivateUse1))
+    if (activities.count(quarisma::autograd::profiler_impl::ActivityType::PrivateUse1))
     {
         k_activities.insert(kPrivateUse1Types.begin(), kPrivateUse1Types.end());
     }
@@ -421,9 +421,9 @@ void logInvariantViolation(
 #endif  // QUARISMA_HAS_KINETO
 }
 
-}  // namespace profiler::impl::kineto
+}  // namespace profiler_impl::impl::kineto
 
-namespace autograd::profiler
+namespace autograd::profiler_impl
 {
 quarisma::device_enum deviceTypeFromActivity(libkineto::ActivityType activity_type)
 {
@@ -507,6 +507,6 @@ void profilerStep()
 #endif  // QUARISMA_HAS_KINETO
 }
 
-}  // namespace autograd::profiler
+}  // namespace autograd::profiler_impl
 
 }  // namespace quarisma

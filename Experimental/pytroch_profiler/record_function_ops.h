@@ -7,7 +7,7 @@
 
 #include "record_function.h"
 
-namespace quarisma::autograd::profiler
+namespace quarisma::autograd::profiler_impl
 {
 
 class QUARISMA_VISIBILITY PythonRecordFunction : public quarisma::CustomClassHolder
@@ -29,5 +29,5 @@ QUARISMA_API quarisma::intrusive_ptr<quarisma::ivalue::Future> _call_end_callbac
     const quarisma::intrusive_ptr<PythonRecordFunction>&   record,
     const quarisma::intrusive_ptr<quarisma::ivalue::Future>& fut);
 
-}  // namespace quarisma::autograd::profiler
+}  // namespace quarisma::autograd::profiler_impl
 #endif

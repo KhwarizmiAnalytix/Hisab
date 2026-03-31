@@ -41,7 +41,7 @@ limitations under the License.
 
 namespace quarisma
 {
-namespace profiler
+namespace profiler_impl
 {
 namespace internal
 {
@@ -111,7 +111,7 @@ inline std::string max_precision(double d)
     return internal::format_double("%.17g", d);
 }
 
-}  // namespace profiler
+}  // namespace profiler_impl
 }  // namespace quarisma
 
 #endif  // QUARISMA_PROFILER_UTILS_FORMAT_UTILS_H_

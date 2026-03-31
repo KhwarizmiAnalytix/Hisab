@@ -20,7 +20,7 @@ class ActivityTraceInterface;
 
 namespace quarisma
 {
-namespace profiler
+namespace profiler_impl
 {
 
 #if QUARISMA_HAS_KINETO
@@ -102,11 +102,11 @@ private:
 #endif
 };
 
-using ActivitySet = std::set<quarisma::autograd::profiler::ActivityType>;
+using ActivitySet = std::set<quarisma::autograd::profiler_impl::ActivityType>;
 void prepareTrace(
     const bool                                          cpuOnly,
     const ActivitySet&                                  activities,
-    const quarisma::profiler::impl::ExperimentalConfig& config,
+    const quarisma::profiler_impl::impl::ExperimentalConfig& config,
     const std::string&                                  trace_id = "");
 
 void                 toggleCollectionDynamic(const bool enable);
@@ -127,9 +127,9 @@ void logInvariantViolation(
 
 }  // namespace impl::kineto
 
-}  // namespace profiler
+}  // namespace profiler_impl
 
-namespace autograd::profiler
+namespace autograd::profiler_impl
 {
 quarisma::device_enum deviceTypeFromActivity(libkineto::ActivityType activity_type);
 
@@ -137,6 +137,6 @@ QUARISMA_API void addMetadataJson(const std::string& key, const std::string& val
 
 QUARISMA_API void profilerStep();
 
-}  // namespace autograd::profiler
+}  // namespace autograd::profiler_impl
 
 }  // namespace quarisma

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace torch::autograd::profiler::python_tracer
+namespace torch::autograd::profiler_impl::python_tracer
 {
 
 void init();

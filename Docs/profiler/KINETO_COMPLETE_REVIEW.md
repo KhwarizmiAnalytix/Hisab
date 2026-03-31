@@ -54,8 +54,8 @@ This document provides a complete review of the Kineto profiler architecture, en
 
 ```cpp
 void enableProfiler(
-    const quarisma::profiler::impl::ProfilerConfig& config,
-    const std::set<quarisma::profiler::impl::ActivityType>& activities,
+    const quarisma::profiler_impl::impl::ProfilerConfig& config,
+    const std::set<quarisma::profiler_impl::impl::ActivityType>& activities,
     const std::unordered_set<quarisma::RecordScope>& scopes = {});
 ```
 
@@ -383,8 +383,8 @@ Complete documentation available in `Docs/`:
 
 ```cpp
 // 1. Configure
-quarisma::profiler::impl::ProfilerConfig config(
-    quarisma::profiler::impl::ProfilerState::KINETO,
+quarisma::profiler_impl::impl::ProfilerConfig config(
+    quarisma::profiler_impl::impl::ProfilerState::KINETO,
     true,   // report_input_shapes
     true,   // profile_memory
     true,   // with_stack
@@ -393,18 +393,18 @@ quarisma::profiler::impl::ProfilerConfig config(
 );
 
 // 2. Set activities
-std::set<quarisma::profiler::impl::ActivityType> activities{
-    quarisma::profiler::impl::ActivityType::CPU
+std::set<quarisma::profiler_impl::impl::ActivityType> activities{
+    quarisma::profiler_impl::impl::ActivityType::CPU
 };
 
 // 3. Start
-quarisma::autograd::profiler::enableProfiler(config, activities);
+quarisma::autograd::profiler_impl::enableProfiler(config, activities);
 
 // 4. Run code
 // ... your code to profile ...
 
 // 5. Stop and save
-auto result = quarisma::autograd::profiler::disableProfiler();
+auto result = quarisma::autograd::profiler_impl::disableProfiler();
 result->save("profile_trace.json");
 
 // 6. Analyze

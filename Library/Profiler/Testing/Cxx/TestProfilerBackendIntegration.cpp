@@ -44,10 +44,10 @@ std::unordered_set<quarisma::RecordScope> user_scopes()
 namespace
 {
 
-quarisma::autograd::profiler::ProfilerConfig make_kineto_config(bool with_stack = false)
+quarisma::autograd::profiler_impl::ProfilerConfig make_kineto_config(bool with_stack = false)
 {
-    return quarisma::autograd::profiler::ProfilerConfig(
-        quarisma::autograd::profiler::ProfilerState::KINETO,
+    return quarisma::autograd::profiler_impl::ProfilerConfig(
+        quarisma::autograd::profiler_impl::ProfilerState::KINETO,
         /*report_input_shapes=*/false,
         /*profile_memory=*/false,
         /*with_stack=*/with_stack,
@@ -63,15 +63,15 @@ namespace
 struct kineto_session_guard
 {
     kineto_session_guard(
-        quarisma::autograd::profiler::ProfilerConfig         cfg,
-        std::set<quarisma::autograd::profiler::ActivityType> activities,
+        quarisma::autograd::profiler_impl::ProfilerConfig         cfg,
+        std::set<quarisma::autograd::profiler_impl::ActivityType> activities,
         std::unordered_set<quarisma::RecordScope>            scopes = user_scopes())
         : config_{std::move(cfg)}, activities_{std::move(activities)}, scopes_{std::move(scopes)}
     {
         try
         {
-            quarisma::autograd::profiler::prepareProfiler(config_, activities_);
-            quarisma::autograd::profiler::enableProfiler(config_, activities_, scopes_);
+            quarisma::autograd::profiler_impl::prepareProfiler(config_, activities_);
+            quarisma::autograd::profiler_impl::enableProfiler(config_, activities_, scopes_);
             active_ = true;
         }
         catch (const std::exception& ex)
@@ -91,7 +91,7 @@ struct kineto_session_guard
         {
             try
             {
-                quarisma::autograd::profiler::disableProfiler();
+                quarisma::autograd::profiler_impl::disableProfiler();
             }
             catch (...)
             {
@@ -104,26 +104,26 @@ struct kineto_session_guard
 
     const std::string& error() const { return error_message_; }
 
-    std::unique_ptr<quarisma::autograd::profiler::ProfilerResult> stop()
+    std::unique_ptr<quarisma::autograd::profiler_impl::ProfilerResult> stop()
     {
         if (!active_)
         {
             return nullptr;
         }
         active_ = false;
-        return quarisma::autograd::profiler::disableProfiler();
+        return quarisma::autograd::profiler_impl::disableProfiler();
     }
 
 private:
-    quarisma::autograd::profiler::ProfilerConfig         config_;
-    std::set<quarisma::autograd::profiler::ActivityType> activities_;
+    quarisma::autograd::profiler_impl::ProfilerConfig         config_;
+    std::set<quarisma::autograd::profiler_impl::ActivityType> activities_;
     std::unordered_set<quarisma::RecordScope>            scopes_;
     bool                                                 active_{false};
     std::string                                          error_message_;
 };
 
-const quarisma::autograd::profiler::KinetoEvent* find_event_by_name(
-    const std::vector<quarisma::autograd::profiler::KinetoEvent>& events, const std::string& name)
+const quarisma::autograd::profiler_impl::KinetoEvent* find_event_by_name(
+    const std::vector<quarisma::autograd::profiler_impl::KinetoEvent>& events, const std::string& name)
 {
     for (const auto& event : events)
     {
@@ -140,7 +140,7 @@ const quarisma::autograd::profiler::KinetoEvent* find_event_by_name(
 //QUARISMATEST(KinetoIntegration, captures_basic_scope_lifecycle)
 //{
 //    kineto_session_guard session(
-//        make_kineto_config(), {quarisma::autograd::profiler::ActivityType::CPU});
+//        make_kineto_config(), {quarisma::autograd::profiler_impl::ActivityType::CPU});
 //    if (!session.active())
 //    {
 //        GTEST_SKIP() << "Kineto profiler unavailable: " << session.error();
@@ -168,7 +168,7 @@ const quarisma::autograd::profiler::KinetoEvent* find_event_by_name(
 //QUARISMATEST(KinetoIntegration, nested_scopes_preserve_parent_child_timing)
 //{
 //    kineto_session_guard session(
-//        make_kineto_config(/*with_stack=*/true), {quarisma::autograd::profiler::ActivityType::CPU});
+//        make_kineto_config(/*with_stack=*/true), {quarisma::autograd::profiler_impl::ActivityType::CPU});
 //    if (!session.active())
 //    {
 //        GTEST_SKIP() << "Kineto profiler unavailable: " << session.error();
@@ -206,7 +206,7 @@ const quarisma::autograd::profiler::KinetoEvent* find_event_by_name(
 //QUARISMATEST(KinetoIntegration, thread_local_participation_requires_opt_in)
 //{
 //    kineto_session_guard session(
-//        make_kineto_config(), {quarisma::autograd::profiler::ActivityType::CPU});
+//        make_kineto_config(), {quarisma::autograd::profiler_impl::ActivityType::CPU});
 //    if (!session.active())
 //    {
 //        GTEST_SKIP() << "Kineto profiler unavailable: " << session.error();
@@ -225,10 +225,10 @@ const quarisma::autograd::profiler::KinetoEvent* find_event_by_name(
 //    std::thread attached_thread(
 //        [attached_scope_name]()
 //        {
-//            quarisma::autograd::profiler::enableProfilerInChildThread();
+//            quarisma::autograd::profiler_impl::enableProfilerInChildThread();
 //            RECORD_USER_SCOPE(attached_scope_name);
 //            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-//            quarisma::autograd::profiler::disableProfilerInChildThread();
+//            quarisma::autograd::profiler_impl::disableProfilerInChildThread();
 //        });
 //
 //    detached_thread.join();
@@ -263,22 +263,22 @@ const quarisma::autograd::profiler::KinetoEvent* find_event_by_name(
 //QUARISMATEST(KinetoIntegration, enable_disable_cycles_reset_global_state)
 //{
 //    kineto_session_guard first_session(
-//        make_kineto_config(), {quarisma::autograd::profiler::ActivityType::CPU});
+//        make_kineto_config(), {quarisma::autograd::profiler_impl::ActivityType::CPU});
 //    if (!first_session.active())
 //    {
 //        GTEST_SKIP() << "Kineto profiler unavailable: " << first_session.error();
 //    }
 //
-//    EXPECT_TRUE(quarisma::autograd::profiler::isProfilerEnabledInMainThread());
+//    EXPECT_TRUE(quarisma::autograd::profiler_impl::isProfilerEnabledInMainThread());
 //    first_session.stop();
-//    EXPECT_FALSE(quarisma::autograd::profiler::isProfilerEnabledInMainThread());
+//    EXPECT_FALSE(quarisma::autograd::profiler_impl::isProfilerEnabledInMainThread());
 //
 //    kineto_session_guard second_session(
-//        make_kineto_config(), {quarisma::autograd::profiler::ActivityType::CPU});
+//        make_kineto_config(), {quarisma::autograd::profiler_impl::ActivityType::CPU});
 //    ASSERT_TRUE(second_session.active());
-//    EXPECT_TRUE(quarisma::autograd::profiler::isProfilerEnabledInMainThread());
+//    EXPECT_TRUE(quarisma::autograd::profiler_impl::isProfilerEnabledInMainThread());
 //    auto result = second_session.stop();
-//    EXPECT_FALSE(quarisma::autograd::profiler::isProfilerEnabledInMainThread());
+//    EXPECT_FALSE(quarisma::autograd::profiler_impl::isProfilerEnabledInMainThread());
 //    EXPECT_NE(result, nullptr);
 //}
 
@@ -289,19 +289,19 @@ const quarisma::autograd::profiler::KinetoEvent* find_event_by_name(
 namespace
 {
 
-class recording_itt_stub : public quarisma::profiler::impl::ProfilerStubs
+class recording_itt_stub : public quarisma::profiler_impl::impl::ProfilerStubs
 {
 public:
     void record(
         quarisma::device_option::int_t*,
-        quarisma::profiler::impl::ProfilerVoidEventStub*,
+        quarisma::profiler_impl::impl::ProfilerVoidEventStub*,
         int64_t*) const override
     {
     }
 
     float elapsed(
-        const quarisma::profiler::impl::ProfilerVoidEventStub*,
-        const quarisma::profiler::impl::ProfilerVoidEventStub*) const override
+        const quarisma::profiler_impl::impl::ProfilerVoidEventStub*,
+        const quarisma::profiler_impl::impl::ProfilerVoidEventStub*) const override
     {
         return 0.0F;
     }
@@ -356,10 +356,10 @@ class scoped_itt_stub
 public:
     explicit scoped_itt_stub(recording_itt_stub& stub)
         : stub_(stub),
-          previous_(const_cast<quarisma::profiler::impl::ProfilerStubs*>(
-              quarisma::profiler::impl::ittStubs()))
+          previous_(const_cast<quarisma::profiler_impl::impl::ProfilerStubs*>(
+              quarisma::profiler_impl::impl::ittStubs()))
     {
-        quarisma::profiler::impl::registerITTMethods(&stub_);
+        quarisma::profiler_impl::impl::registerITTMethods(&stub_);
     }
 
     scoped_itt_stub(const scoped_itt_stub&)            = delete;
@@ -367,11 +367,11 @@ public:
     scoped_itt_stub& operator=(const scoped_itt_stub&) = delete;
     scoped_itt_stub& operator=(scoped_itt_stub&&)      = delete;
 
-    ~scoped_itt_stub() { quarisma::profiler::impl::registerITTMethods(previous_); }
+    ~scoped_itt_stub() { quarisma::profiler_impl::impl::registerITTMethods(previous_); }
 
 private:
     recording_itt_stub&                            stub_;
-    quarisma::profiler::impl::ProfilerStubs* const previous_;
+    quarisma::profiler_impl::impl::ProfilerStubs* const previous_;
 };
 
 }  // namespace
@@ -381,12 +381,12 @@ QUARISMATEST(ITTIntegration, records_basic_scope_sequence)
     recording_itt_stub stub;
     scoped_itt_stub    stub_guard(stub);
 
-    quarisma::autograd::profiler::ProfilerConfig config(
-        quarisma::autograd::profiler::ProfilerState::ITT);
+    quarisma::autograd::profiler_impl::ProfilerConfig config(
+        quarisma::autograd::profiler_impl::ProfilerState::ITT);
     try
     {
-        quarisma::autograd::profiler::enableProfiler(
-            config, {quarisma::autograd::profiler::ActivityType::CPU}, user_scopes());
+        quarisma::autograd::profiler_impl::enableProfiler(
+            config, {quarisma::autograd::profiler_impl::ActivityType::CPU}, user_scopes());
     }
     catch (const std::exception& ex)
     {
@@ -398,7 +398,7 @@ QUARISMATEST(ITTIntegration, records_basic_scope_sequence)
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
-    QUARISMA_UNUSED auto result = quarisma::autograd::profiler::disableProfiler();
+    QUARISMA_UNUSED auto result = quarisma::autograd::profiler_impl::disableProfiler();
 
     ASSERT_FALSE(stub.pushes_.empty());
     EXPECT_EQ(stub.pushes_.front(), "itt_basic_scope");
@@ -410,12 +410,12 @@ QUARISMATEST(ITTIntegration, nested_scopes_close_in_lifo_order)
     recording_itt_stub stub;
     scoped_itt_stub    stub_guard(stub);
 
-    quarisma::autograd::profiler::ProfilerConfig config(
-        quarisma::autograd::profiler::ProfilerState::ITT);
+    quarisma::autograd::profiler_impl::ProfilerConfig config(
+        quarisma::autograd::profiler_impl::ProfilerState::ITT);
     try
     {
-        quarisma::autograd::profiler::enableProfiler(
-            config, {quarisma::autograd::profiler::ActivityType::CPU}, user_scopes());
+        quarisma::autograd::profiler_impl::enableProfiler(
+            config, {quarisma::autograd::profiler_impl::ActivityType::CPU}, user_scopes());
     }
     catch (const std::exception& ex)
     {
@@ -431,7 +431,7 @@ QUARISMATEST(ITTIntegration, nested_scopes_close_in_lifo_order)
         }
     }
 
-    QUARISMA_UNUSED auto result = quarisma::autograd::profiler::disableProfiler();
+    QUARISMA_UNUSED auto result = quarisma::autograd::profiler_impl::disableProfiler();
 
     ASSERT_GE(stub.closed_.size(), 2U);
     EXPECT_EQ(stub.closed_.front(), "itt_child_scope");
@@ -443,12 +443,12 @@ QUARISMATEST(ITTIntegration, nested_scopes_close_in_lifo_order)
 //    recording_itt_stub stub;
 //    scoped_itt_stub    stub_guard(stub);
 //
-//    quarisma::autograd::profiler::ProfilerConfig config(
-//        quarisma::autograd::profiler::ProfilerState::ITT);
+//    quarisma::autograd::profiler_impl::ProfilerConfig config(
+//        quarisma::autograd::profiler_impl::ProfilerState::ITT);
 //    try
 //    {
-//        quarisma::autograd::profiler::enableProfiler(
-//            config, {quarisma::autograd::profiler::ActivityType::CPU}, user_scopes());
+//        quarisma::autograd::profiler_impl::enableProfiler(
+//            config, {quarisma::autograd::profiler_impl::ActivityType::CPU}, user_scopes());
 //    }
 //    catch (const std::exception& ex)
 //    {
@@ -472,7 +472,7 @@ QUARISMATEST(ITTIntegration, nested_scopes_close_in_lifo_order)
 //
 //    worker.join();
 //
-//    QUARISMA_UNUSED auto result = quarisma::autograd::profiler::disableProfiler();
+//    QUARISMA_UNUSED auto result = quarisma::autograd::profiler_impl::disableProfiler();
 //
 //    bool saw_main_scope   = false;
 //    bool saw_worker_scope = false;
@@ -497,12 +497,12 @@ QUARISMATEST(ITTIntegration, handles_empty_and_null_range_names)
     recording_itt_stub stub;
     scoped_itt_stub    stub_guard(stub);
 
-    quarisma::autograd::profiler::ProfilerConfig config(
-        quarisma::autograd::profiler::ProfilerState::ITT);
+    quarisma::autograd::profiler_impl::ProfilerConfig config(
+        quarisma::autograd::profiler_impl::ProfilerState::ITT);
     try
     {
-        quarisma::autograd::profiler::enableProfiler(
-            config, {quarisma::autograd::profiler::ActivityType::CPU}, user_scopes());
+        quarisma::autograd::profiler_impl::enableProfiler(
+            config, {quarisma::autograd::profiler_impl::ActivityType::CPU}, user_scopes());
     }
     catch (const std::exception& ex)
     {
@@ -514,10 +514,10 @@ QUARISMATEST(ITTIntegration, handles_empty_and_null_range_names)
         busy_wait_for(std::chrono::milliseconds(1));
     }
 
-    quarisma::profiler::impl::ittStubs()->rangePush(nullptr);
-    quarisma::profiler::impl::ittStubs()->rangePop();
+    quarisma::profiler_impl::impl::ittStubs()->rangePush(nullptr);
+    quarisma::profiler_impl::impl::ittStubs()->rangePop();
 
-    QUARISMA_UNUSED auto result = quarisma::autograd::profiler::disableProfiler();
+    QUARISMA_UNUSED auto result = quarisma::autograd::profiler_impl::disableProfiler();
 
     bool saw_empty_name = false;
     for (const auto& name : stub.pushes_)

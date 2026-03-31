@@ -37,7 +37,7 @@ limitations under the License.
 #include <chrono>
 #include <thread>
 
-namespace quarisma::profiler
+namespace quarisma::profiler_impl
 {
 
 int64_t get_current_time_nanos()
@@ -70,4 +70,4 @@ void spin_for_nanos(int64_t ns)
     }
 }
 
-}  // namespace quarisma::profiler
+}  // namespace quarisma::profiler_impl

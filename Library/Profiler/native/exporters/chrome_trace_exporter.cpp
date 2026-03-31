@@ -26,7 +26,7 @@
 #include "logging/logger.h"
 #include "native/exporters/xplane/xplane.h"
 
-namespace quarisma::profiler
+namespace quarisma::profiler_impl
 {
 
 namespace
@@ -250,4 +250,4 @@ bool export_to_chrome_trace_json_file(
     }
 }
 
-}  // namespace quarisma::profiler
+}  // namespace quarisma::profiler_impl

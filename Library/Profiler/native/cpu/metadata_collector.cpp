@@ -40,7 +40,7 @@ limitations under the License.
 #include "native/core/profiler_options.h"    // for profile_options
 #include "native/exporters/xplane/xplane.h"  // for x_space
 
-namespace quarisma::profiler
+namespace quarisma::profiler_impl
 {
 namespace
 {
@@ -88,4 +88,4 @@ static auto register_metadata_collector_factory = []
     register_profiler_factory(&CreatMetadataCollector);
     return 0;
 }();
-}  // namespace quarisma::profiler
+}  // namespace quarisma::profiler_impl

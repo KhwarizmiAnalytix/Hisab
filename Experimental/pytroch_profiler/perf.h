@@ -12,7 +12,7 @@
 #include "events.h"
 #include "util/exception.h"
 
-namespace quarisma::profiler::impl::linux_perf
+namespace quarisma::profiler_impl::impl::linux_perf
 {
 
 /*
@@ -101,4 +101,4 @@ private:
     std::vector<PerfEvent>      events_;
     std::stack<perf_counters_t> start_values_;
 };
-}  // namespace quarisma::profiler::impl::linux_perf
+}  // namespace quarisma::profiler_impl::impl::linux_perf

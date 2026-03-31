@@ -39,7 +39,7 @@ struct AddGenericMetadata : public MetadataBase
 {
     AddGenericMetadata(
         std::shared_ptr<Result>& result,
-        const quarisma::profiler::impl::ProfilerConfig* config)
+        const quarisma::profiler_impl::impl::ProfilerConfig* config)
         : MetadataBase(result), config_(config)
     {
         result->visit(*this);

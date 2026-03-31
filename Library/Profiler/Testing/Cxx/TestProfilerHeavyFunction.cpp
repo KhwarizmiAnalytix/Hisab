@@ -101,10 +101,10 @@
 //
 // void my_function() {
 //     // Initialize Kineto profiler
-//     quarisma::profiler::kineto_init(false, true);
+//     quarisma::profiler_impl::kineto_init(false, true);
 //
 //     // Check if Kineto is available
-//     if (!quarisma::profiler::kineto_is_profiler_registered()) {
+//     if (!quarisma::profiler_impl::kineto_is_profiler_registered()) {
 //         std::cout << "Kineto profiler not available\n";
 //         return;
 //     }
@@ -112,10 +112,10 @@
 //     // Prepare trace with activity types
 //     std::set<libkineto::ActivityType> activities;
 //     activities.insert(libkineto::ActivityType::CPU_OP);
-//     quarisma::profiler::kineto_prepare_trace(activities);
+//     quarisma::profiler_impl::kineto_prepare_trace(activities);
 //
 //     // Start Kineto profiling
-//     quarisma::profiler::kineto_start_trace();
+//     quarisma::profiler_impl::kineto_start_trace();
 //
 //     // Your code here (GPU-related operations)
 //     // ...
@@ -123,7 +123,7 @@
 //     // Stop profiling and get trace
 //     std::unique_ptr<libkineto::ActivityTraceInterface> trace(
 //         static_cast<libkineto::ActivityTraceInterface*>(
-//             quarisma::profiler::kineto_stop_trace()));
+//             quarisma::profiler_impl::kineto_stop_trace()));
 //
 //     // Save Kineto trace
 //     if (trace) {
@@ -136,9 +136,9 @@
 //
 // void my_function() {
 //     // Initialize Kineto
-//     quarisma::profiler::kineto_init(false, true);
-//     quarisma::profiler::kineto_prepare_trace(activities);
-//     quarisma::profiler::kineto_start_trace();
+//     quarisma::profiler_impl::kineto_init(false, true);
+//     quarisma::profiler_impl::kineto_prepare_trace(activities);
+//     quarisma::profiler_impl::kineto_start_trace();
 //
 //     // Start Quarisma profiler for hierarchical CPU profiling
 //     profiler_options opts;
@@ -156,7 +156,7 @@
 //
 //     // Stop both profilers
 //     session.stop();
-//     auto kineto_trace = quarisma::profiler::kineto_stop_trace();
+//     auto kineto_trace = quarisma::profiler_impl::kineto_stop_trace();
 //
 //     // Export both traces
 //     session.write_chrome_trace("quarisma_trace.json");  // Full hierarchical CPU profiling
@@ -185,10 +185,10 @@
 //
 // void my_function() {
 //     // Initialize ITT profiler (creates global "Quarisma" domain)
-//     quarisma::profiler::itt_init();
+//     quarisma::profiler_impl::itt_init();
 //
 //     // Check if ITT is available (VTune installed)
-//     bool const itt_available = (quarisma::profiler::itt_get_domain() != nullptr);
+//     bool const itt_available = (quarisma::profiler_impl::itt_get_domain() != nullptr);
 //
 //     if (!itt_available) {
 //         std::cout << "ITT not available (VTune not installed)\n";
@@ -196,18 +196,18 @@
 //     }
 //
 //     // Annotate code with ITT ranges
-//     quarisma::profiler::itt_range_push("my_operation");
+//     quarisma::profiler_impl::itt_range_push("my_operation");
 //     {
 //         // ... your code ...
 //
-//         quarisma::profiler::itt_range_push("nested_operation");
+//         quarisma::profiler_impl::itt_range_push("nested_operation");
 //         // ... nested code ...
-//         quarisma::profiler::itt_range_pop();
+//         quarisma::profiler_impl::itt_range_pop();
 //     }
-//     quarisma::profiler::itt_range_pop();
+//     quarisma::profiler_impl::itt_range_pop();
 //
 //     // Mark instantaneous events
-//     quarisma::profiler::itt_mark("checkpoint_reached");
+//     quarisma::profiler_impl::itt_mark("checkpoint_reached");
 // }
 //
 // COMBINED WITH QUARISMA PROFILER (RECOMMENDED):
@@ -215,8 +215,8 @@
 //
 // void my_function() {
 //     // Initialize ITT
-//     quarisma::profiler::itt_init();
-//     bool const itt_available = (quarisma::profiler::itt_get_domain() != nullptr);
+//     quarisma::profiler_impl::itt_init();
+//     bool const itt_available = (quarisma::profiler_impl::itt_get_domain() != nullptr);
 //
 //     // Start Quarisma profiler for JSON export
 //     profiler_options opts;
@@ -229,14 +229,14 @@
 //     // Instrument with both ITT and Quarisma
 //     {
 //         if (itt_available) {
-//             quarisma::profiler::itt_range_push("my_operation");
+//             quarisma::profiler_impl::itt_range_push("my_operation");
 //         }
 //         QUARISMA_PROFILE_SCOPE("my_operation");
 //
 //         // ... your code ...
 //
 //         if (itt_available) {
-//             quarisma::profiler::itt_range_pop();
+//             quarisma::profiler_impl::itt_range_pop();
 //         }
 //     }
 //
@@ -275,19 +275,19 @@
 //
 // void my_function() {
 //     // Initialize all profilers
-//     quarisma::profiler::kineto_init(false, true);
-//     quarisma::profiler::itt_init();
+//     quarisma::profiler_impl::kineto_init(false, true);
+//     quarisma::profiler_impl::itt_init();
 //
 //     // Check availability
-//     bool const kineto_available = quarisma::profiler::kineto_is_profiler_registered();
-//     bool const itt_available = (quarisma::profiler::itt_get_domain() != nullptr);
+//     bool const kineto_available = quarisma::profiler_impl::kineto_is_profiler_registered();
+//     bool const itt_available = (quarisma::profiler_impl::itt_get_domain() != nullptr);
 //
 //     // Prepare Kineto
 //     if (kineto_available) {
 //         std::set<libkineto::ActivityType> activities;
 //         activities.insert(libkineto::ActivityType::CPU_OP);
-//         quarisma::profiler::kineto_prepare_trace(activities);
-//         quarisma::profiler::kineto_start_trace();
+//         quarisma::profiler_impl::kineto_prepare_trace(activities);
+//         quarisma::profiler_impl::kineto_start_trace();
 //     }
 //
 //     // Start Quarisma profiler
@@ -302,7 +302,7 @@
 //     // Instrument with all three profilers
 //     {
 //         if (itt_available) {
-//             quarisma::profiler::itt_range_push("my_operation");
+//             quarisma::profiler_impl::itt_range_push("my_operation");
 //         }
 //         QUARISMA_PROFILE_SCOPE("my_operation");
 //
@@ -310,19 +310,19 @@
 //
 //         {
 //             if (itt_available) {
-//                 quarisma::profiler::itt_range_push("nested_operation");
+//                 quarisma::profiler_impl::itt_range_push("nested_operation");
 //             }
 //             QUARISMA_PROFILE_SCOPE("nested_operation");
 //
 //             // ... nested code ...
 //
 //             if (itt_available) {
-//                 quarisma::profiler::itt_range_pop();
+//                 quarisma::profiler_impl::itt_range_pop();
 //             }
 //         }
 //
 //         if (itt_available) {
-//             quarisma::profiler::itt_range_pop();
+//             quarisma::profiler_impl::itt_range_pop();
 //         }
 //     }
 //
@@ -331,7 +331,7 @@
 //
 //     void* kineto_trace = nullptr;
 //     if (kineto_available) {
-//         kineto_trace = quarisma::profiler::kineto_stop_trace();
+//         kineto_trace = quarisma::profiler_impl::kineto_stop_trace();
 //     }
 //
 //     // Export all traces
@@ -874,9 +874,9 @@ QUARISMATEST(Profiler, kineto_heavy_function_profiling)
                  "profiler.\n\n";
 
     // Initialize Kineto profiler
-    quarisma::profiler::kineto_init(false, true);
+    quarisma::profiler_impl::kineto_init(false, true);
 
-    if (!quarisma::profiler::kineto_is_profiler_registered())
+    if (!quarisma::profiler_impl::kineto_is_profiler_registered())
     {
         std::cout << "Kineto profiler not registered - using Quarisma profiler only\n";
         // Fall back to Quarisma profiler only
@@ -968,10 +968,10 @@ QUARISMATEST(Profiler, kineto_heavy_function_profiling)
     // Prepare Kineto trace with CPU activities
     std::set<libkineto::ActivityType> activities;
     activities.insert(libkineto::ActivityType::CPU_OP);
-    quarisma::profiler::kineto_prepare_trace(activities);
+    quarisma::profiler_impl::kineto_prepare_trace(activities);
 
     // Start Kineto profiling
-    quarisma::profiler::kineto_start_trace();
+    quarisma::profiler_impl::kineto_start_trace();
     std::cout << "Combined profiling started (Kineto + Quarisma)\n";
 
     // Profile heavy computational workloads with hierarchical scopes
@@ -1016,7 +1016,7 @@ QUARISMATEST(Profiler, kineto_heavy_function_profiling)
     // Stop both profilers
     session.stop();
     std::unique_ptr<libkineto::ActivityTraceInterface> trace(
-        static_cast<libkineto::ActivityTraceInterface*>(quarisma::profiler::kineto_stop_trace()));
+        static_cast<libkineto::ActivityTraceInterface*>(quarisma::profiler_impl::kineto_stop_trace()));
 
     std::cout << "Combined profiling completed\n";
 
@@ -1139,10 +1139,10 @@ QUARISMATEST(Profiler, itt_api_heavy_function_profiling)
                  "profiler.\n\n";
 
     // Initialize ITT profiler (creates global Quarisma domain)
-    quarisma::profiler::itt_init();
+    quarisma::profiler_impl::itt_init();
 
     // Check if ITT is available (domain creation may fail if VTune not installed)
-    bool const itt_available = (quarisma::profiler::itt_get_domain() != nullptr);
+    bool const itt_available = (quarisma::profiler_impl::itt_get_domain() != nullptr);
 
     if (!itt_available)
     {
@@ -1170,7 +1170,7 @@ QUARISMATEST(Profiler, itt_api_heavy_function_profiling)
     {
         if (itt_available)
         {
-            quarisma::profiler::itt_range_push("matrix_operations");
+            quarisma::profiler_impl::itt_range_push("matrix_operations");
         }
         QUARISMA_PROFILE_SCOPE("itt_matrix_operations");
 
@@ -1184,7 +1184,7 @@ QUARISMATEST(Profiler, itt_api_heavy_function_profiling)
 
             if (itt_available)
             {
-                quarisma::profiler::itt_range_push(iter_name.c_str());
+                quarisma::profiler_impl::itt_range_push(iter_name.c_str());
             }
 
             QUARISMA_PROFILE_SCOPE(("itt_matrix_multiply_" + std::to_string(i)).c_str());
@@ -1194,13 +1194,13 @@ QUARISMATEST(Profiler, itt_api_heavy_function_profiling)
 
             if (itt_available)
             {
-                quarisma::profiler::itt_range_pop();
+                quarisma::profiler_impl::itt_range_pop();
             }
         }
 
         if (itt_available)
         {
-            quarisma::profiler::itt_range_pop();
+            quarisma::profiler_impl::itt_range_pop();
         }
     }
 
@@ -1208,7 +1208,7 @@ QUARISMATEST(Profiler, itt_api_heavy_function_profiling)
     {
         if (itt_available)
         {
-            quarisma::profiler::itt_range_push("sorting_operations");
+            quarisma::profiler_impl::itt_range_push("sorting_operations");
         }
         QUARISMA_PROFILE_SCOPE("itt_sorting_operations");
 
@@ -1227,7 +1227,7 @@ QUARISMATEST(Profiler, itt_api_heavy_function_profiling)
         {
             if (itt_available)
             {
-                quarisma::profiler::itt_range_push("merge_sort");
+                quarisma::profiler_impl::itt_range_push("merge_sort");
             }
 
             QUARISMA_PROFILE_SCOPE("itt_merge_sort");
@@ -1238,13 +1238,13 @@ QUARISMATEST(Profiler, itt_api_heavy_function_profiling)
 
             if (itt_available)
             {
-                quarisma::profiler::itt_range_pop();
+                quarisma::profiler_impl::itt_range_pop();
             }
         }
 
         if (itt_available)
         {
-            quarisma::profiler::itt_range_pop();
+            quarisma::profiler_impl::itt_range_pop();
         }
     }
 
@@ -1252,7 +1252,7 @@ QUARISMATEST(Profiler, itt_api_heavy_function_profiling)
     {
         if (itt_available)
         {
-            quarisma::profiler::itt_range_push("monte_carlo_simulation");
+            quarisma::profiler_impl::itt_range_push("monte_carlo_simulation");
         }
         QUARISMA_PROFILE_SCOPE("itt_monte_carlo_simulation");
 
@@ -1266,7 +1266,7 @@ QUARISMATEST(Profiler, itt_api_heavy_function_profiling)
 
         if (itt_available)
         {
-            quarisma::profiler::itt_range_pop();
+            quarisma::profiler_impl::itt_range_pop();
         }
     }
 
@@ -1401,9 +1401,9 @@ QUARISMATEST(Profiler, combined_kineto_itt_heavy_function_profiling)
     std::cout << "\n=== Combined Kineto + ITT Profiling Test ===\n";
 
     // Initialize Kineto profiler
-    quarisma::profiler::kineto_init(false, true);
+    quarisma::profiler_impl::kineto_init(false, true);
 
-    if (!quarisma::profiler::kineto_is_profiler_registered())
+    if (!quarisma::profiler_impl::kineto_is_profiler_registered())
     {
         std::cout << "Kineto profiler not registered - skipping combined test\n";
         EXPECT_TRUE(true);
@@ -1411,10 +1411,10 @@ QUARISMATEST(Profiler, combined_kineto_itt_heavy_function_profiling)
     }
 
     // Initialize ITT profiler (creates global Quarisma domain)
-    quarisma::profiler::itt_init();
+    quarisma::profiler_impl::itt_init();
 
     // Check if ITT is available
-    bool const itt_available = (quarisma::profiler::itt_get_domain() != nullptr);
+    bool const itt_available = (quarisma::profiler_impl::itt_get_domain() != nullptr);
 
     if (!itt_available)
     {
@@ -1429,10 +1429,10 @@ QUARISMATEST(Profiler, combined_kineto_itt_heavy_function_profiling)
     // Prepare Kineto trace
     std::set<libkineto::ActivityType> activities;
     activities.insert(libkineto::ActivityType::CPU_OP);
-    quarisma::profiler::kineto_prepare_trace(activities);
+    quarisma::profiler_impl::kineto_prepare_trace(activities);
 
     // Start Kineto profiling
-    quarisma::profiler::kineto_start_trace();
+    quarisma::profiler_impl::kineto_start_trace();
 
     // Also start Quarisma profiler session
     profiler_options opts;
@@ -1449,12 +1449,12 @@ QUARISMATEST(Profiler, combined_kineto_itt_heavy_function_profiling)
 
     // Profile combined workload with all three profiling systems
     {
-        quarisma::profiler::itt_range_push("combined_workload");
+        quarisma::profiler_impl::itt_range_push("combined_workload");
         QUARISMA_PROFILE_SCOPE("combined_profiling_workload");
 
         // Matrix operations
         {
-            quarisma::profiler::itt_range_push("matrix_computation");
+            quarisma::profiler_impl::itt_range_push("matrix_computation");
             QUARISMA_PROFILE_SCOPE("combined_matrix_operations");
 
             const size_t matrix_size = 50;
@@ -1464,12 +1464,12 @@ QUARISMATEST(Profiler, combined_kineto_itt_heavy_function_profiling)
             auto result = matrix_multiply(matrix_a, matrix_b);
             EXPECT_EQ(result.size(), matrix_size);
 
-            quarisma::profiler::itt_range_pop();
+            quarisma::profiler_impl::itt_range_pop();
         }
 
         // Monte Carlo simulation
         {
-            quarisma::profiler::itt_range_push("monte_carlo_computation");
+            quarisma::profiler_impl::itt_range_push("monte_carlo_computation");
             QUARISMA_PROFILE_SCOPE("combined_monte_carlo");
 
             const size_t num_samples = 500000;
@@ -1480,17 +1480,17 @@ QUARISMATEST(Profiler, combined_kineto_itt_heavy_function_profiling)
 
             std::cout << "Monte Carlo Pi estimate: " << pi_estimate << "\n";
 
-            quarisma::profiler::itt_range_pop();
+            quarisma::profiler_impl::itt_range_pop();
         }
 
-        quarisma::profiler::itt_range_pop();
+        quarisma::profiler_impl::itt_range_pop();
     }
 
     // Stop all profilers
     session.stop();
 
     std::unique_ptr<libkineto::ActivityTraceInterface> kineto_trace(
-        static_cast<libkineto::ActivityTraceInterface*>(quarisma::profiler::kineto_stop_trace()));
+        static_cast<libkineto::ActivityTraceInterface*>(quarisma::profiler_impl::kineto_stop_trace()));
 
     std::cout << "✓ All profilers stopped\n";
 

@@ -58,15 +58,15 @@ void runSampleWork()
 
 QUARISMATEST(profiler, autograd_chrome_trace_export)
 {
-    const std::set<quarisma::autograd::profiler::ActivityType> activities{
-        quarisma::autograd::profiler::ActivityType::CPU,
+    const std::set<quarisma::autograd::profiler_impl::ActivityType> activities{
+        quarisma::autograd::profiler_impl::ActivityType::CPU,
     };
 
     // Enable RecordFunction FIRST before enabling profiler
     //quarisma::RecordFunctionGuard record_function_guard(/*is_enabled=*/true);
 
-    quarisma::autograd::profiler::ProfilerConfig config(
-        quarisma::autograd::profiler::ProfilerState::KINETO,
+    quarisma::autograd::profiler_impl::ProfilerConfig config(
+        quarisma::autograd::profiler_impl::ProfilerState::KINETO,
         /*report_input_shapes=*/true,
         /*profile_memory=*/true,
         /*with_stack=*/true,
@@ -76,8 +76,8 @@ QUARISMATEST(profiler, autograd_chrome_trace_export)
     // Specify USER_SCOPE to capture RECORD_USER_SCOPE events
     const std::unordered_set<quarisma::RecordScope> scopes = {quarisma::RecordScope::FUNCTION};
 
-    quarisma::autograd::profiler::prepareProfiler(config, activities);
-    quarisma::autograd::profiler::enableProfiler(config, activities, scopes);
+    quarisma::autograd::profiler_impl::prepareProfiler(config, activities);
+    quarisma::autograd::profiler_impl::enableProfiler(config, activities, scopes);
 
     EXPECT_TRUE(quarisma::hasCallbacks()) << "RecordFunction callbacks not registered for profiler";
 
@@ -85,7 +85,7 @@ QUARISMATEST(profiler, autograd_chrome_trace_export)
 
     runSampleWork();
 
-    auto result = quarisma::autograd::profiler::disableProfiler();
+    auto result = quarisma::autograd::profiler_impl::disableProfiler();
     EXPECT_NE(result, nullptr);
     const auto trace_path = makeTracePath();
     result->save(trace_path);

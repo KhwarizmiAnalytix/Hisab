@@ -5,7 +5,7 @@
 
 #include "util.h"
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 using GlobalManager = GlobalStateManager<ProfilerStateBase>;
@@ -70,12 +70,12 @@ ProfilerConfig::ProfilerConfig(
 
 bool ProfilerConfig::disabled() const
 {
-    return state == quarisma::profiler::impl::ProfilerState::Disabled;
+    return state == quarisma::profiler_impl::impl::ProfilerState::Disabled;
 }
 
 bool ProfilerConfig::global() const
 {
-    return state == quarisma::profiler::impl::ProfilerState::KINETO_ONDEMAND;
+    return state == quarisma::profiler_impl::impl::ProfilerState::KINETO_ONDEMAND;
 }
 
 bool ProfilerConfig::pushGlobalCallbacks() const
@@ -218,12 +218,12 @@ QUARISMA_API ActiveProfilerType profilerType()
     return state_ptr == nullptr ? ActiveProfilerType::NONE : state_ptr->profilerType();
 }
 
-quarisma::profiler::impl::ProfilerConfig getProfilerConfig()
+quarisma::profiler_impl::impl::ProfilerConfig getProfilerConfig()
 {
     auto* state_ptr = ProfilerStateBase::get(/*global=*/false);
     QUARISMA_CHECK(state_ptr, "Tried to access profiler config, but profiler is not enabled!");
     return state_ptr->config();
 }
 
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl
 #endif

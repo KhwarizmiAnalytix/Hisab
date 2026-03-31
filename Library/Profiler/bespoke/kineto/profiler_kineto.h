@@ -16,24 +16,24 @@ constexpr bool hasCUDA()
     return QUARISMA_HAS_CUDA == 1;
 }
 
-namespace profiler::impl
+namespace profiler_impl::impl
 {
 struct Result;
 namespace kineto
 {
 struct ActivityTraceWrapper;
 }  // namespace kineto
-}  // namespace profiler::impl
+}  // namespace profiler_impl::impl
 
-namespace autograd::profiler
+namespace autograd::profiler_impl
 {
-using experimental_event_t = std::shared_ptr<quarisma::profiler::impl::Result>;
+using experimental_event_t = std::shared_ptr<quarisma::profiler_impl::impl::Result>;
 using extra_meta_t         = std::unordered_map<std::string, std::string>;
 
 struct PROFILER_VISIBILITY KinetoEvent
 {
     PROFILER_API KinetoEvent(
-        const std::shared_ptr<const quarisma::profiler::impl::Result>& /*result*/,
+        const std::shared_ptr<const quarisma::profiler_impl::impl::Result>& /*result*/,
         const bool verbose);
 
     PROFILER_API uint64_t startThreadId() const;
@@ -73,15 +73,15 @@ struct PROFILER_VISIBILITY KinetoEvent
     static PROFILER_API bool isPythonFunction();
     PROFILER_API int64_t     cudaElapsedUs() const;
     PROFILER_API int64_t     privateuse1ElapsedUs() const;
-    PROFILER_API void getPerfEventCounters(quarisma::profiler::perf_counters_t& /*in*/) const;
+    PROFILER_API void getPerfEventCounters(quarisma::profiler_impl::perf_counters_t& /*in*/) const;
     PROFILER_API extra_meta_t extraMeta() const;
     PROFILER_API std::string metadataJson() const;
 
 private:
-    quarisma::profiler::impl::ProfilerVoidEventStub fallbackStart() const;
-    quarisma::profiler::impl::ProfilerVoidEventStub fallbackEnd() const;
+    quarisma::profiler_impl::impl::ProfilerVoidEventStub fallbackStart() const;
+    quarisma::profiler_impl::impl::ProfilerVoidEventStub fallbackEnd() const;
 
-    std::shared_ptr<const quarisma::profiler::impl::Result> result_;
+    std::shared_ptr<const quarisma::profiler_impl::impl::Result> result_;
     std::vector<std::string>                                python_stack_;
 
     // Copy fields from result so we can return ArrayRefs.
@@ -100,7 +100,7 @@ struct PROFILER_VISIBILITY ProfilerResult
     PROFILER_API ProfilerResult(
         uint64_t                                                                  start_time,
         std::vector<KinetoEvent>                                                  events,
-        std::unique_ptr<quarisma::profiler::impl::kineto::ActivityTraceWrapper>&& trace,
+        std::unique_ptr<quarisma::profiler_impl::impl::kineto::ActivityTraceWrapper>&& trace,
         std::vector<experimental_event_t>&&                                       event_tree);
     PROFILER_API ~ProfilerResult();
 
@@ -115,7 +115,7 @@ struct PROFILER_VISIBILITY ProfilerResult
 private:
     uint64_t                                                                trace_start_ns_ = 0;
     std::vector<KinetoEvent>                                                events_;
-    std::unique_ptr<quarisma::profiler::impl::kineto::ActivityTraceWrapper> trace_;
+    std::unique_ptr<quarisma::profiler_impl::impl::kineto::ActivityTraceWrapper> trace_;
     std::vector<experimental_event_t>                                       event_tree_;
 };
 
@@ -149,8 +149,8 @@ PROFILER_API void reportBackendEventToActiveKinetoProfiler(
     const std::string&          backend_name);
 
 PROFILER_API void enableProfiler(
-    const quarisma::profiler::impl::ProfilerConfig&         config,
-    const std::set<quarisma::profiler::impl::ActivityType>& activities,
+    const quarisma::profiler_impl::impl::ProfilerConfig&         config,
+    const std::set<quarisma::profiler_impl::impl::ActivityType>& activities,
     const std::unordered_set<quarisma::RecordScope>&        scopes = {});
 
 /*
@@ -176,19 +176,19 @@ using post_process_t = std::function<void(
     /*jit_stack    */ std::vector<std::string>&,
     /*jit_modules  */ std::vector<std::string>&)>;
 PROFILER_API void enableProfilerWithEventPostProcess(
-    const quarisma::profiler::impl::ProfilerConfig&         config,
-    const std::set<quarisma::profiler::impl::ActivityType>& activities,
+    const quarisma::profiler_impl::impl::ProfilerConfig&         config,
+    const std::set<quarisma::profiler_impl::impl::ActivityType>& activities,
     post_process_t&&                                        cb,
     const std::unordered_set<quarisma::RecordScope>&        scopes = {});
 
 PROFILER_API std::unique_ptr<ProfilerResult> disableProfiler();
 
 PROFILER_API void prepareProfiler(
-    const quarisma::profiler::impl::ProfilerConfig&         config,
-    const std::set<quarisma::profiler::impl::ActivityType>& activities);
+    const quarisma::profiler_impl::impl::ProfilerConfig&         config,
+    const std::set<quarisma::profiler_impl::impl::ActivityType>& activities);
 
 PROFILER_API void toggleCollectionDynamic(
-    const bool enable, const std::set<quarisma::profiler::impl::ActivityType>& activities);
+    const bool enable, const std::set<quarisma::profiler_impl::impl::ActivityType>& activities);
 
 PROFILER_API void startMemoryProfile();
 PROFILER_API void stopMemoryProfile();
@@ -201,7 +201,7 @@ PROFILER_API void exportMemoryProfile(const std::string& path);
  * Without calling these functions, the symptom may be "not seeing GPU events
  * from some child C++ threads". This is an example on how to use them,
  *
- *    using namespace quarisma::autograd::profiler;
+ *    using namespace quarisma::autograd::profiler_impl;
  *    bool enabled = isProfilerEnabledInMainThread();
  *    if (enabled != saved_enabled_state) {
  *      if (enabled) {
@@ -216,14 +216,14 @@ PROFILER_API bool isProfilerEnabledInMainThread();
 PROFILER_API void enableProfilerInChildThread();
 PROFILER_API void disableProfilerInChildThread();
 
-}  // namespace autograd::profiler
+}  // namespace autograd::profiler_impl
 
-namespace profiler::impl
+namespace profiler_impl::impl
 {
 
 // Experimental.
 PROFILER_API void _reportVulkanEventToProfiler(vulkan_id_t id);
 
-}  // namespace profiler::impl
+}  // namespace profiler_impl::impl
 
 }  // namespace quarisma

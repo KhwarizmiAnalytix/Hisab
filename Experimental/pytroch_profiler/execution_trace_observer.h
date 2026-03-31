@@ -4,7 +4,7 @@
 
 #include "common/export.h"
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 // Adds the execution trace observer as a global callback function, the data
@@ -20,4 +20,4 @@ QUARISMA_API void enableExecutionTraceObserver();
 // Disables execution trace observer.
 QUARISMA_API void disableExecutionTraceObserver();
 
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl

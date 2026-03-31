@@ -359,13 +359,13 @@ std::set<ActivityType> activities{ActivityType::CPU};
 
 ```cpp
 // Check if profiler is active
-bool enabled = quarisma::profiler::impl::profilerEnabled();
+bool enabled = quarisma::profiler_impl::impl::profilerEnabled();
 
 // Get current profiler type
-auto type = quarisma::profiler::impl::profilerType();
+auto type = quarisma::profiler_impl::impl::profilerType();
 
 // Get current configuration
-auto config = quarisma::profiler::impl::getProfilerConfig();
+auto config = quarisma::profiler_impl::impl::getProfilerConfig();
 ```
 
 ### Logging
@@ -400,7 +400,7 @@ ProfilerConfig config(
 
 ```cpp
 // Register custom backend observer
-quarisma::profiler::impl::pushPRIVATEUSE1CallbacksStub(config, scopes);
+quarisma::profiler_impl::impl::pushPRIVATEUSE1CallbacksStub(config, scopes);
 
 // Custom backend can:
 // - Record custom events

@@ -43,7 +43,7 @@ limitations under the License.
 
 #include "common/macros.h"
 
-namespace quarisma::profiler
+namespace quarisma::profiler_impl
 {
 
 /**
@@ -160,4 +160,4 @@ void annotation_stack::enable(bool enable)
 PROFILER_API std::atomic<int> annotation_stack::generation_{0};
 static_assert(ATOMIC_INT_LOCK_FREE == 2, "Assumed atomic<int> was lock free");
 
-}  // namespace quarisma::profiler
+}  // namespace quarisma::profiler_impl

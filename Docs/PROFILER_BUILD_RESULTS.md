@@ -27,8 +27,8 @@ The profiler metadata collection has been successfully **uncommented, fixed, and
 **Changes:**
 ```cpp
 // Added namespace qualification
-addMetadata("Module Hierarchy", quarisma::profiler::impl::stacksToStr(module_hierarchy.vec(), "."));
-addMetadata("Call stack", quarisma::profiler::impl::stacksToStr(kineto_event.stack().vec(), ";"));
+addMetadata("Module Hierarchy", quarisma::profiler_impl::impl::stacksToStr(module_hierarchy.vec(), "."));
+addMetadata("Call stack", quarisma::profiler_impl::impl::stacksToStr(kineto_event.stack().vec(), ";"));
 ```
 
 #### 2. AddGenericMetadata::operator() (Lines 267-364)
@@ -46,9 +46,9 @@ addMetadata("Call stack", quarisma::profiler::impl::stacksToStr(kineto_event.sta
 **Changes:**
 ```cpp
 // All helper function calls now properly namespace-qualified
-addMetadata("Input Dims", quarisma::profiler::impl::shapesToStr(arg_data.shapesForKinetoEvent));
-addMetadata("Input type", quarisma::profiler::impl::strListToStr(arg_data.dtypes));
-addMetadata("Concrete Inputs", quarisma::profiler::impl::ivalueListToStr(arg_data.concreteInputs));
+addMetadata("Input Dims", quarisma::profiler_impl::impl::shapesToStr(arg_data.shapesForKinetoEvent));
+addMetadata("Input type", quarisma::profiler_impl::impl::strListToStr(arg_data.dtypes));
+addMetadata("Concrete Inputs", quarisma::profiler_impl::impl::ivalueListToStr(arg_data.concreteInputs));
 
 // Fixed clang-tidy warnings
 if (config_ != nullptr && !config_->experimental_config.performance_events.empty())
@@ -71,16 +71,16 @@ if (config_ != nullptr && !config_->experimental_config.performance_events.empty
 ### Issue #1: Namespace Qualification
 **Error:**
 ```
-use of undeclared identifier 'stacksToStr'; did you mean '::quarisma::profiler::impl::stacksToStr'?
+use of undeclared identifier 'stacksToStr'; did you mean '::quarisma::profiler_impl::impl::stacksToStr'?
 ```
 
 **Fix:**
 Added proper namespace qualification to all helper function calls:
-- `stacksToStr` → `quarisma::profiler::impl::stacksToStr`
-- `variantShapesToStr` → `quarisma::profiler::impl::variantShapesToStr`
-- `shapesToStr` → `quarisma::profiler::impl::shapesToStr`
-- `strListToStr` → `quarisma::profiler::impl::strListToStr`
-- `ivalueListToStr` → `quarisma::profiler::impl::ivalueListToStr`
+- `stacksToStr` → `quarisma::profiler_impl::impl::stacksToStr`
+- `variantShapesToStr` → `quarisma::profiler_impl::impl::variantShapesToStr`
+- `shapesToStr` → `quarisma::profiler_impl::impl::shapesToStr`
+- `strListToStr` → `quarisma::profiler_impl::impl::strListToStr`
+- `ivalueListToStr` → `quarisma::profiler_impl::impl::ivalueListToStr`
 
 ### Issue #2: IValue API Unavailable
 **Error:**
@@ -96,7 +96,7 @@ Temporarily disabled keyword arguments metadata collection (lines 289-338) until
 ### Issue #3: Clang-Tidy Warnings
 **Warning 1:**
 ```
-implicit conversion 'const quarisma::profiler::impl::ProfilerConfig *' -> 'bool'
+implicit conversion 'const quarisma::profiler_impl::impl::ProfilerConfig *' -> 'bool'
 ```
 
 **Fix:**
@@ -212,7 +212,7 @@ const auto& event_names = config_->experimental_config.performance_events;
 ```cpp
 #include "profiler/kineto/profiler_kineto.h"
 
-using namespace quarisma::profiler::impl;
+using namespace quarisma::profiler_impl::impl;
 
 // Configure profiler
 ProfilerConfig config(ProfilerState::KINETO);
@@ -240,7 +240,7 @@ result->save("trace.json");
 
 ```cpp
 // Enable globally before profiling
-quarisma::profiler::impl::set_record_concrete_inputs_enabled(true);
+quarisma::profiler_impl::impl::set_record_concrete_inputs_enabled(true);
 
 // Now profiler will capture actual tensor values and strides
 // WARNING: Significant performance impact and large trace files

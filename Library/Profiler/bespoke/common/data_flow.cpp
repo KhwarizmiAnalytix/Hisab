@@ -6,7 +6,7 @@
 #include "bespoke/common/collection.h"
 #include "util/overloaded.h"
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 namespace
@@ -240,4 +240,4 @@ void calculateUniqueTensorIDs(std::vector<std::shared_ptr<Result>>& sorted_resul
     }
 }
 
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl

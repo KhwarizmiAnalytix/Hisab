@@ -4,7 +4,7 @@
 
 #include <optional>
 
-namespace torch::autograd::profiler
+namespace torch::autograd::profiler_impl
 {
 
 struct PythonRecordFunction : public torch::CustomClassHolder
@@ -27,4 +27,4 @@ TORCH_API quarisma::intrusive_ptr<quarisma::ivalue::Future> _call_end_callbacks_
     const quarisma::intrusive_ptr<PythonRecordFunction>&     record,
     const quarisma::intrusive_ptr<quarisma::ivalue::Future>& fut);
 
-}  // namespace torch::autograd::profiler
+}  // namespace torch::autograd::profiler_impl

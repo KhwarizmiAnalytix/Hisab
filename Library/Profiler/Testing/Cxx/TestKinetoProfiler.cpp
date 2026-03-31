@@ -20,7 +20,7 @@
 
 #if 0
 // NOTE: The following tests were written for a quarisma::kineto_profiler API that does not exist.
-// The actual Kineto profiler API is in quarisma::autograd::profiler namespace with functions like
+// The actual Kineto profiler API is in quarisma::autograd::profiler_impl namespace with functions like
 // enableProfiler(), disableProfiler(), and prepareProfiler().
 // These tests are disabled until the API is implemented or tests are rewritten to use the actual API.
 
@@ -346,7 +346,7 @@ QUARISMATEST(RecordDebugHandles, Basic)
         {
             end_us = start_us + 1;
         }
-        quarisma::autograd::profiler::reportBackendEventToActiveKinetoProfiler(
+        quarisma::autograd::profiler_impl::reportBackendEventToActiveKinetoProfiler(
             start_us,
             end_us,
             handle,
@@ -378,17 +378,17 @@ QUARISMATEST(RecordDebugHandles, Basic)
         return sum;
     };
 
-    const std::set<quarisma::autograd::profiler::ActivityType> activities(
-        {quarisma::autograd::profiler::ActivityType::CPU});
+    const std::set<quarisma::autograd::profiler_impl::ActivityType> activities(
+        {quarisma::autograd::profiler_impl::ActivityType::CPU});
 
-    const auto profiler_config = quarisma::autograd::profiler::ProfilerConfig(
-        quarisma::autograd::profiler::ProfilerState::KINETO, false, false, true, true);
-    quarisma::autograd::profiler::prepareProfiler(profiler_config, activities);
+    const auto profiler_config = quarisma::autograd::profiler_impl::ProfilerConfig(
+        quarisma::autograd::profiler_impl::ProfilerState::KINETO, false, false, true, true);
+    quarisma::autograd::profiler_impl::prepareProfiler(profiler_config, activities);
 
     const std::unordered_set<quarisma::RecordScope> scopes = {
         quarisma::RecordScope::LITE_INTERPRETER};
-    quarisma::autograd::profiler::enableProfiler(profiler_config, activities, scopes);
-    ASSERT_TRUE(quarisma::autograd::profiler::isProfilerEnabledInMainThread());
+    quarisma::autograd::profiler_impl::enableProfiler(profiler_config, activities, scopes);
+    ASSERT_TRUE(quarisma::autograd::profiler_impl::isProfilerEnabledInMainThread());
     ASSERT_TRUE(quarisma::hasCallbacks()) << "RecordFunction callbacks not registered for profiler";
     quarisma::RecordFunctionGuard record_function_guard(/*is_enabled=*/true);
     record_step(
@@ -416,7 +416,7 @@ QUARISMATEST(RecordDebugHandles, Basic)
             record_step("finalize_results", kFinalizeHandle, [&]() { (void)z; });
         });
 
-    auto        profiler_results_ptr = quarisma::autograd::profiler::disableProfiler();
+    auto        profiler_results_ptr = quarisma::autograd::profiler_impl::disableProfiler();
     const auto& kineto_events        = profiler_results_ptr->events();
 
     if (kineto_events.empty())

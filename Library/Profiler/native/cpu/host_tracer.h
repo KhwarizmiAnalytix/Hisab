@@ -40,7 +40,7 @@ limitations under the License.
 
 namespace quarisma
 {
-namespace profiler
+namespace profiler_impl
 {
 
 struct host_tracer_options
@@ -63,7 +63,7 @@ struct host_tracer_options
 
 std::unique_ptr<profiler_interface> create_host_tracer(const host_tracer_options& options);
 
-}  // namespace profiler
+}  // namespace profiler_impl
 }  // namespace quarisma
 
 #endif  // XLA_BACKENDS_PROFILER_CPU_HOST_TRACER_H_

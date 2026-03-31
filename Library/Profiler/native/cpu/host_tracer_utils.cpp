@@ -48,7 +48,7 @@ limitations under the License.
 
 namespace quarisma
 {
-namespace profiler
+namespace profiler_impl
 {
 namespace
 {
@@ -214,5 +214,5 @@ void convert_complete_events_to_xplane(
     sort_xlines_by(raw_plane, xlines_comparator_by_name());
 }
 
-}  // namespace profiler
+}  // namespace profiler_impl
 }  // namespace quarisma

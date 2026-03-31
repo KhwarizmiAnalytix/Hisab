@@ -5,11 +5,11 @@
 // There are some components which use these symbols. Until we migrate them
 // we have to mirror them in the old autograd namespace.
 
-namespace quarisma::autograd::profiler
+namespace quarisma::autograd::profiler_impl
 {
-using quarisma::profiler::impl::ActivityType;
-using quarisma::profiler::impl::getProfilerConfig;
-using quarisma::profiler::impl::ProfilerConfig;
-using quarisma::profiler::impl::profilerEnabled;
-using quarisma::profiler::impl::ProfilerState;
-}  // namespace quarisma::autograd::profiler
+using quarisma::profiler_impl::impl::ActivityType;
+using quarisma::profiler_impl::impl::getProfilerConfig;
+using quarisma::profiler_impl::impl::ProfilerConfig;
+using quarisma::profiler_impl::impl::profilerEnabled;
+using quarisma::profiler_impl::impl::ProfilerState;
+}  // namespace quarisma::autograd::profiler_impl

@@ -57,7 +57,7 @@ Chrome Trace Event JSON produced by the profiler uses nanoseconds for timestamps
 ```cpp
 #include "profiler/native/core/profiler.h"
 
-using namespace quarisma::profiler;
+using namespace quarisma::profiler_impl;
 
 int main() {
     // Create profiler session with builder pattern

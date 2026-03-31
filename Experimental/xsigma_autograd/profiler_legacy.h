@@ -13,7 +13,7 @@
 #include "pytorch_profiler/base.h"
 #include "pytorch_profiler/util.h"
 
-namespace torch::autograd::profiler
+namespace torch::autograd::profiler_impl
 {
 
 enum class QUARISMA_API_ENUM EventKind : uint16_t
@@ -216,7 +216,7 @@ private:
     int64_t                                      cpu_memory_usage_  = 0;
     int64_t                                      cuda_memory_usage_ = 0;
     quarisma::DeviceIndex                        device_            = -1;
-    torch::profiler::impl::ProfilerVoidEventStub cuda_event         = nullptr;
+    torch::profiler_impl::impl::ProfilerVoidEventStub cuda_event         = nullptr;
     int64_t                                      node_id_           = 0;
     bool                                         is_remote_         = false;
     int64_t                                      cuda_us_           = -1;
@@ -291,7 +291,7 @@ struct TORCH_API ProfilerDisableOptions
 
 // NOTE: profiler mode is thread local, with automatic propagation
 // across thread boundary (e.g. quarisma::launch tasks)
-TORCH_API void enableProfilerLegacy(const torch::profiler::impl::profiler_config& /*new_config*/);
+TORCH_API void enableProfilerLegacy(const torch::profiler_impl::impl::profiler_config& /*new_config*/);
 using thread_event_lists = std::vector<std::vector<LegacyEvent>>;
 TORCH_API thread_event_lists
 disableProfilerLegacy(std::optional<ProfilerDisableOptions> profilerDisableOptions = std::nullopt);
@@ -334,7 +334,7 @@ private:
 struct TORCH_API TLSLegacyProfilerGuard
 {
     explicit TLSLegacyProfilerGuard(
-        const torch::profiler::impl::profiler_config&                 cfg,
+        const torch::profiler_impl::impl::profiler_config&                 cfg,
         std::optional<std::function<void(const thread_event_lists&)>> resultCallback = std::nullopt,
         std::optional<ProfilerDisableOptions> profilerDisableOptions                 = std::nullopt)
         : cb_(std::move(resultCallback)), profilerDisableOptions_(profilerDisableOptions)
@@ -363,4 +363,4 @@ private:
     const std::optional<ProfilerDisableOptions> profilerDisableOptions_;
 };
 
-}  // namespace torch::autograd::profiler
+}  // namespace torch::autograd::profiler_impl

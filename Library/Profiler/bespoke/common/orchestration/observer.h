@@ -8,7 +8,7 @@
 #include "bespoke/common/record_function.h"
 #include "memory/device.h"
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 // ----------------------------------------------------------------------------
@@ -244,4 +244,4 @@ PROFILER_API bool               profilerEnabled();
 PROFILER_API ActiveProfilerType profilerType();
 PROFILER_API ProfilerConfig     getProfilerConfig();
 
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl

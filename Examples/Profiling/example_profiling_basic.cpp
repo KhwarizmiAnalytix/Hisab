@@ -229,9 +229,9 @@ void example_kineto_profiler()
     std::cout << "\n=== Example 2: Kineto Profiler ===" << std::endl;
 
     // Initialize Kineto profiler
-    quarisma::profiler::kineto_init(false, true);
+    quarisma::profiler_impl::kineto_init(false, true);
 
-    if (!quarisma::profiler::kineto_is_profiler_registered())
+    if (!quarisma::profiler_impl::kineto_is_profiler_registered())
     {
         std::cout << "✗ Kineto profiler not available - skipping example" << std::endl;
         return;
@@ -242,10 +242,10 @@ void example_kineto_profiler()
     // Prepare Kineto trace
     std::set<libkineto::ActivityType> activities;
     activities.insert(libkineto::ActivityType::CPU_OP);
-    quarisma::profiler::kineto_prepare_trace(activities);
+    quarisma::profiler_impl::kineto_prepare_trace(activities);
 
     // Start Kineto profiling
-    quarisma::profiler::kineto_start_trace();
+    quarisma::profiler_impl::kineto_start_trace();
 
     // Also start Quarisma profiler for hierarchical CPU profiling
     profiler_options opts;
@@ -274,7 +274,7 @@ void example_kineto_profiler()
     session.stop();
 
     std::unique_ptr<libkineto::ActivityTraceInterface> kineto_trace(
-        static_cast<libkineto::ActivityTraceInterface*>(quarisma::profiler::kineto_stop_trace()));
+        static_cast<libkineto::ActivityTraceInterface*>(quarisma::profiler_impl::kineto_stop_trace()));
 
     // Export traces
     std::string const quarisma_file = "kineto_quarisma_trace.json";
@@ -311,10 +311,10 @@ void example_itt_profiler()
     std::cout << "\n=== Example 3: ITT Profiler ===" << std::endl;
 
     // Initialize ITT profiler
-    quarisma::profiler::itt_init();
+    quarisma::profiler_impl::itt_init();
 
     // Check if ITT is available
-    bool const itt_available = (quarisma::profiler::itt_get_domain() != nullptr);
+    bool const itt_available = (quarisma::profiler_impl::itt_get_domain() != nullptr);
 
     if (!itt_available)
     {
@@ -340,7 +340,7 @@ void example_itt_profiler()
     {
         if (itt_available)
         {
-            quarisma::profiler::itt_range_push("itt_workload");
+            quarisma::profiler_impl::itt_range_push("itt_workload");
         }
         QUARISMA_PROFILE_SCOPE("itt_workload");
 
@@ -351,7 +351,7 @@ void example_itt_profiler()
         {
             if (itt_available)
             {
-                quarisma::profiler::itt_range_push("matrix_computation");
+                quarisma::profiler_impl::itt_range_push("matrix_computation");
             }
             QUARISMA_PROFILE_SCOPE("matrix_computation");
 
@@ -359,7 +359,7 @@ void example_itt_profiler()
 
             if (itt_available)
             {
-                quarisma::profiler::itt_range_pop();
+                quarisma::profiler_impl::itt_range_pop();
             }
         }
 
@@ -367,7 +367,7 @@ void example_itt_profiler()
 
         if (itt_available)
         {
-            quarisma::profiler::itt_range_pop();
+            quarisma::profiler_impl::itt_range_pop();
         }
     }
 

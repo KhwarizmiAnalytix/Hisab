@@ -40,7 +40,7 @@ limitations under the License.
 
 namespace quarisma
 {
-namespace profiler
+namespace profiler_impl
 {
 namespace
 {
@@ -84,5 +84,5 @@ auto register_python_tracer_factory = []
 }();
 
 }  // namespace
-}  // namespace profiler
+}  // namespace profiler_impl
 }  // namespace quarisma

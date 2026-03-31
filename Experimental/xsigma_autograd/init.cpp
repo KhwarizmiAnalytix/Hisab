@@ -105,8 +105,8 @@ struct EnablePreDispatch
 
 PyObject* THPAutograd_initExtension(PyObject* _unused, PyObject* unused)
 {
-    using namespace torch::autograd::profiler;
-    using namespace torch::profiler::impl;
+    using namespace torch::autograd::profiler_impl;
+    using namespace torch::profiler_impl::impl;
     auto tensor_module = THPObjectPtr(PyImport_ImportModule("torch._tensor"));
     if (!tensor_module)
         return nullptr;
@@ -327,7 +327,7 @@ PyObject* THPAutograd_initExtension(PyObject* _unused, PyObject* unused)
         py::call_guard<py::gil_scoped_release>());
     m.def("_add_metadata_json", addMetadataJson);  // Only if `QUARISMA_HAS_KINETO` is set
     m.def("_kineto_step", profilerStep);           // Only if `QUARISMA_HAS_KINETO` is set
-    m.def("kineto_available", []() { return torch::profiler::kKinetoAvailable; });
+    m.def("kineto_available", []() { return torch::profiler_impl::kKinetoAvailable; });
 
     // NOTICE: These record functions are not torch operators and may not show up
     // in TorchScript tracing, FX transforms, or operator serialization. For these
@@ -338,7 +338,7 @@ PyObject* THPAutograd_initExtension(PyObject* _unused, PyObject* unused)
         "_record_function_with_args_enter",
         [](const std::string& name, const py::args& args)
         {
-            using torch::autograd::profiler::PythonRecordFunction;
+            using torch::autograd::profiler_impl::PythonRecordFunction;
             auto python_rec =
                 quarisma::make_intrusive<PythonRecordFunction>(quarisma::RecordScope::USER_SCOPE);
             auto* rec = &python_rec->record;
@@ -369,7 +369,7 @@ PyObject* THPAutograd_initExtension(PyObject* _unused, PyObject* unused)
         "_record_function_with_args_exit",
         [](const py::object& obj)
         {
-            using torch::autograd::profiler::PythonRecordFunction;
+            using torch::autograd::profiler_impl::PythonRecordFunction;
             auto python_record = torch::jit::toCustomClass<PythonRecordFunction>(obj);
 
             // We don't actually need to do anything with handle just need to persist
@@ -381,37 +381,37 @@ PyObject* THPAutograd_initExtension(PyObject* _unused, PyObject* unused)
         "_supported_activities",
         []()
         {
-            std::set<torch::profiler::impl::activity_type_enum> activities{
-                torch::profiler::impl::activity_type_enum::CPU};
+            std::set<torch::profiler_impl::impl::activity_type_enum> activities{
+                torch::profiler_impl::impl::activity_type_enum::CPU};
 #if QUARISMA_HAS_KINETO && (!defined(LIBKINETO_NOCUPTI) || !defined(LIBKINETO_NOROCTRACER))
             if (quarisma::hasMTIA())
             {
-                activities.insert(torch::profiler::impl::activity_type_enum::MTIA);
+                activities.insert(torch::profiler_impl::impl::activity_type_enum::MTIA);
             }
             if (quarisma::hasHPU())
             {
-                activities.insert(torch::profiler::impl::activity_type_enum::HPU);
+                activities.insert(torch::profiler_impl::impl::activity_type_enum::HPU);
             }
             if (quarisma::getNumGPUs() > 0)
             {
-                activities.insert(torch::profiler::impl::activity_type_enum::CUDA);
+                activities.insert(torch::profiler_impl::impl::activity_type_enum::CUDA);
             }
 #elif defined(QUARISMA_HAS_KINETO)
             if (quarisma::hasXPU())
             {
-                activities.insert(torch::profiler::impl::activity_type_enum::XPU);
+                activities.insert(torch::profiler_impl::impl::activity_type_enum::XPU);
             }
             if (quarisma::hasHPU())
             {
-                activities.insert(torch::profiler::impl::activity_type_enum::HPU);
+                activities.insert(torch::profiler_impl::impl::activity_type_enum::HPU);
             }
             if (quarisma::hasMTIA())
             {
-                activities.insert(torch::profiler::impl::activity_type_enum::MTIA);
+                activities.insert(torch::profiler_impl::impl::activity_type_enum::MTIA);
             }
             if (quarisma::get_privateuse1_backend() != "privateuseone")
             {
-                activities.insert(torch::profiler::impl::activity_type_enum::PrivateUse1);
+                activities.insert(torch::profiler_impl::impl::activity_type_enum::PrivateUse1);
             }
 #endif
             return activities;
@@ -443,7 +443,7 @@ PyObject* THPAutograd_initExtension(PyObject* _unused, PyObject* unused)
         disableProfilerLegacy,
         py::arg("profiler_disable_options") = ProfilerDisableOptions());
     m.def("_profiler_enabled", profilerEnabled);
-    m.def("_profiler_type", torch::profiler::impl::profilerType);
+    m.def("_profiler_type", torch::profiler_impl::impl::profilerType);
     m.def("_enable_record_function", [](bool enable) { quarisma::enableRecordFunction(enable); });
     m.def(
         "_set_empty_test_observer",
@@ -641,7 +641,7 @@ PyObject* THPAutograd_initExtension(PyObject* _unused, PyObject* unused)
                 return py::reinterpret_borrow<py::function>(unpack_ptr);
             });
 
-    torch::autograd::profiler::python_tracer::init();
+    torch::autograd::profiler_impl::python_tracer::init();
     Py_RETURN_TRUE;
 }
 

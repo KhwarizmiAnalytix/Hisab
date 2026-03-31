@@ -29,7 +29,7 @@
 #include "native/tracing/traceme_encode.h"
 #include "native/tracing/traceme_recorder.h"
 
-namespace quarisma::profiler
+namespace quarisma::profiler_impl
 {
 namespace
 {
@@ -122,4 +122,4 @@ std::unique_ptr<profiler_interface> create_threadpool_profiler()
     return std::make_unique<threadpool_profiler_interface>();
 }
 
-}  // namespace quarisma::profiler
+}  // namespace quarisma::profiler_impl

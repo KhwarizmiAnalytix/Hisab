@@ -1,6 +1,6 @@
 #include "bespoke/common/orchestration/python_tracer.h"
 
-namespace quarisma::profiler::impl::python_tracer
+namespace quarisma::profiler_impl::impl::python_tracer
 {
 namespace
 {
@@ -62,4 +62,4 @@ std::unique_ptr<PythonMemoryTracerBase> PythonMemoryTracerBase::make()
     }
     return memory_make_fn();
 }
-}  // namespace quarisma::profiler::impl::python_tracer
+}  // namespace quarisma::profiler_impl::impl::python_tracer

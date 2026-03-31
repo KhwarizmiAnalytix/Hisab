@@ -6,7 +6,7 @@
 #include "bespoke/base/perf-inl.h"
 #include "common/error.h"
 
-namespace quarisma::profiler::impl::linux_perf
+namespace quarisma::profiler_impl::impl::linux_perf
 {
 
 #if defined(__ANDROID__) || defined(__linux__)
@@ -191,4 +191,4 @@ void PerfProfiler::Disable(perf_counters_t& vals)
         StartCounting();
     }
 }
-}  // namespace quarisma::profiler::impl::linux_perf
+}  // namespace quarisma::profiler_impl::impl::linux_perf

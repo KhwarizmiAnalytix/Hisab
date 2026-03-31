@@ -4,7 +4,7 @@
 
 //QUARISMA_DIAGNOSTIC_PUSH("-Wunused-parameter")
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 namespace
 {
@@ -27,15 +27,15 @@ struct ITTMethods : public ProfilerStubs
 
     void mark(QUARISMA_UNUSED const char* name) const override
     {
-        quarisma::profiler::itt_mark(name);
+        quarisma::profiler_impl::itt_mark(name);
     }
 
     void rangePush(QUARISMA_UNUSED const char* name) const override
     {
-        quarisma::profiler::itt_range_push(name);
+        quarisma::profiler_impl::itt_range_push(name);
     }
 
-    void rangePop() const override { quarisma::profiler::itt_range_pop(); }
+    void rangePop() const override { quarisma::profiler_impl::itt_range_pop(); }
 
     void onEachDevice(QUARISMA_UNUSED std::function<void(int)> op) const override {}
 
@@ -55,5 +55,5 @@ struct RegisterITTMethods
 RegisterITTMethods reg;
 
 }  // namespace
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl
 //QUARISMA_DIAGNOSTIC_POP()

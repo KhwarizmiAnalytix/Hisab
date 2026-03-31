@@ -15,7 +15,7 @@
 #include "bespoke/common/util.h"
 #include "common/irange.h"
 
-namespace quarisma::profiler::impl {
+namespace quarisma::profiler_impl::impl {
 namespace {
 
 static void cudaCheck(cudaError_t result, const char* file, int line) {
@@ -127,5 +127,5 @@ struct RegisterCUDAMethods {
 RegisterCUDAMethods reg;
 
 } // namespace
-} // namespace quarisma::profiler::impl
+} // namespace quarisma::profiler_impl::impl
 #endif  // 0

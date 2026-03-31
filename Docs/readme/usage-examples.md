@@ -322,7 +322,7 @@ void example_function() {
     }
 
     // Generate report
-    quarisma::profiler::generate_report("profile_results.json");
+    quarisma::profiler_impl::generate_report("profile_results.json");
 }
 ```
 

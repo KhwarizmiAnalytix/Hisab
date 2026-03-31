@@ -33,7 +33,7 @@
 
 namespace py = pybind11;
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 namespace
 {
@@ -107,18 +107,18 @@ PyCodeObject* getCode<CallType::PyOptimizerCall>()
 }
 
 }  // namespace
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl
 
 template <>
-class QUARISMA_VISIBILITY std ::hash<quarisma::profiler::impl::CodeLocation>
+class QUARISMA_VISIBILITY std ::hash<quarisma::profiler_impl::impl::CodeLocation>
 {
-    size_t operator()(const quarisma::profiler::impl::CodeLocation& x)
+    size_t operator()(const quarisma::profiler_impl::impl::CodeLocation& x)
     {
         return quarisma::get_hash(x.filename_, x.name_, x.line_number_);
     }
 };
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 namespace
 {
@@ -740,7 +740,7 @@ static PyObject* c_call_callback(
 class PythonTracer final : public python_tracer::PythonTracerBase
 {
 public:
-    PythonTracer(quarisma::profiler::impl::RecordQueue* queue);
+    PythonTracer(quarisma::profiler_impl::impl::RecordQueue* queue);
     // NOLINTNEXTLINE(bugprone-exception-escape)
     ~PythonTracer() override;
 
@@ -773,7 +773,7 @@ private:
     bool              active_{false};
     bool              gc_callback_registered_{false};
 
-    quarisma::profiler::impl::RecordQueue* queue_;
+    quarisma::profiler_impl::impl::RecordQueue* queue_;
     PyInterpreterState*                  interpreter_{nullptr};
     PyCodeObject*                        module_call_code_;
     PyCodeObject*                        optimizer_hook_;
@@ -1045,7 +1045,7 @@ PyObject* PythonTracer::gc_event_callback(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 }
 
-PythonTracer::PythonTracer(quarisma::profiler::impl::RecordQueue* queue)
+PythonTracer::PythonTracer(quarisma::profiler_impl::impl::RecordQueue* queue)
     : queue_(queue),
 
       module_call_code_(getCode<CallType::PyModuleCall>()),
@@ -1674,7 +1674,7 @@ int PythonTracer::pyProfileFn(PyObject* obj, PyFrameObject* frame, int what, PyO
 }
 
 std::unique_ptr<python_tracer::PythonTracerBase> getTracer(
-    quarisma::profiler::impl::RecordQueue* queue)
+    quarisma::profiler_impl::impl::RecordQueue* queue)
 {
     return std::make_unique<PythonTracer>(queue);
 }
@@ -1685,18 +1685,18 @@ std::unique_ptr<python_tracer::PythonMemoryTracerBase> getMemoryTracer()
 }
 
 }  // namespace
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl
 
-namespace quarisma::autograd::profiler::python_tracer
+namespace quarisma::autograd::profiler_impl::python_tracer
 {
 
 void init()
 {
     pybind11::gil_scoped_acquire gil;
-    QUARISMA_CHECK(PyType_Ready(&quarisma::profiler::impl::TraceContextType) == 0);
-    quarisma::profiler::impl::python_tracer::registerTracer(&quarisma::profiler::impl::getTracer);
-    quarisma::profiler::impl::python_tracer::registerMemoryTracer(
-        &quarisma::profiler::impl::getMemoryTracer);
+    QUARISMA_CHECK(PyType_Ready(&quarisma::profiler_impl::impl::TraceContextType) == 0);
+    quarisma::profiler_impl::impl::python_tracer::registerTracer(&quarisma::profiler_impl::impl::getTracer);
+    quarisma::profiler_impl::impl::python_tracer::registerMemoryTracer(
+        &quarisma::profiler_impl::impl::getMemoryTracer);
 }
-}  // namespace quarisma::autograd::profiler::python_tracer
+}  // namespace quarisma::autograd::profiler_impl::python_tracer
 #endif

@@ -1,7 +1,7 @@
 #pragma once
 #include "bespoke/common/api.h"
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 using CallBackFnPtr =
@@ -43,4 +43,4 @@ struct RegisterPRIVATEUSE1Observer
 
 #define REGISTER_PRIVATEUSE1_OBSERVER(name, fn) \
     static RegisterPRIVATEUSE1Observer name##__register(name, fn);
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl

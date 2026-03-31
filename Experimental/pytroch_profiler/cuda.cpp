@@ -16,7 +16,7 @@
 #include "util/approximate_clock.h"
 #include "util/irange.h"
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 namespace
 {
@@ -125,5 +125,5 @@ class QUARISMA_VISIBILITY RegisterCUDAMethods
 RegisterCUDAMethods reg;
 
 }  // namespace
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl
 #endif  // QUARISMA_HAS_CUDA

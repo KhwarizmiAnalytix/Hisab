@@ -9,7 +9,7 @@
 
 struct CUevent_st;
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 // ----------------------------------------------------------------------------
@@ -49,4 +49,4 @@ using vulkan_id_t = strong::type<
     strong::convertible_to<int64_t>,
     strong::hashable>;
 
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl

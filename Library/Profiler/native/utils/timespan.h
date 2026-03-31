@@ -43,7 +43,7 @@ limitations under the License.
 
 namespace quarisma
 {
-namespace profiler
+namespace profiler_impl
 {
 
 /**
@@ -236,7 +236,7 @@ inline timespan milli_span(double start_ms, double end_ms)
     return pico_span(milli_to_pico(start_ms), milli_to_pico(end_ms));
 }
 
-}  // namespace profiler
+}  // namespace profiler_impl
 }  // namespace quarisma
 
 #endif  // QUARISMA_PROFILER_UTILS_TIMESPAN_H_

@@ -13,7 +13,7 @@ namespace quarisma
 typedef uint64_t CallbackHandle;
 }
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 // ----------------------------------------------------------------------------
@@ -231,5 +231,5 @@ QUARISMA_API bool               profilerEnabled();
 QUARISMA_API ActiveProfilerType profilerType();
 QUARISMA_API ProfilerConfig     getProfilerConfig();
 
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl
 #endif

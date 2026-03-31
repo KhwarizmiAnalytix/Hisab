@@ -10,7 +10,7 @@
 #include "common/approximate_clock.h"
 #include "util/strong_type.h"
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 class RecordQueue;
@@ -74,4 +74,4 @@ using MakeMemoryFn = std::unique_ptr<PythonMemoryTracerBase> (*)();
 PROFILER_API void registerMemoryTracer(MakeMemoryFn make_memory_tracer);
 
 }  // namespace python_tracer
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl

@@ -5,7 +5,7 @@
 
 #include "memory/device.h"
 
-namespace quarisma::profiler::impl
+namespace quarisma::profiler_impl::impl
 {
 
 namespace
@@ -74,4 +74,4 @@ REGISTER_DEFAULT(itt, ITT)
 REGISTER_DEFAULT(privateuse1, PrivateUse1)
 #undef REGISTER_DEFAULT
 
-}  // namespace quarisma::profiler::impl
+}  // namespace quarisma::profiler_impl::impl

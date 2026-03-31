@@ -27,7 +27,7 @@
 
 namespace quarisma
 {
-namespace profiler
+namespace profiler_impl
 {
 
 /**
@@ -100,7 +100,7 @@ PROFILER_API std::string export_to_chrome_trace_json(
 PROFILER_API bool export_to_chrome_trace_json_file(
     const x_space& space, const std::string& filename, bool pretty_print = false);
 
-}  // namespace profiler
+}  // namespace profiler_impl
 }  // namespace quarisma
 
 #endif  // QUARISMA_PROFILER_EXPORTERS_CHROME_TRACE_EXPORTER_H_

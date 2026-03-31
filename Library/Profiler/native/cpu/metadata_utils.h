@@ -43,7 +43,7 @@ limitations under the License.
 
 namespace quarisma
 {
-namespace profiler
+namespace profiler_impl
 {
 class MetadataXPlaneBuilder
 {
@@ -72,7 +72,7 @@ private:
     const XStatMetadata* hlo_proto_stat_ = nullptr;
 };
 
-}  // namespace profiler
+}  // namespace profiler_impl
 }  // namespace quarisma
 
 #endif  // XLA_BACKENDS_PROFILER_CPU_METADATA_UTILS_H_

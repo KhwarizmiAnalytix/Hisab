@@ -21,7 +21,7 @@
 
 #include <atomic>
 
-namespace quarisma::profiler::threadpool_listener
+namespace quarisma::profiler_impl::threadpool_listener
 {
 namespace
 {
@@ -43,4 +43,4 @@ void Deactivate()
     g_enabled.store(0, std::memory_order_release);
 }
 
-}  // namespace quarisma::profiler::threadpool_listener
+}  // namespace quarisma::profiler_impl::threadpool_listener

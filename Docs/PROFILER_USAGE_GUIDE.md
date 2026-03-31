@@ -14,8 +14,8 @@ The Quarisma profiler now captures comprehensive metadata for all profiled opera
 #include "profiler/kineto/profiler_kineto.h"
 
 // Configure profiler with enhanced metadata
-quarisma::profiler::impl::ProfilerConfig config(
-    quarisma::profiler::impl::ProfilerState::KINETO
+quarisma::profiler_impl::impl::ProfilerConfig config(
+    quarisma::profiler_impl::impl::ProfilerState::KINETO
 );
 
 // Enable input shape reporting
@@ -25,13 +25,13 @@ config.report_input_shapes = true;
 config.experimental_config.verbose = true;
 
 // Enable activities (CPU, CUDA, etc.)
-std::set<quarisma::profiler::impl::ActivityType> activities = {
-    quarisma::profiler::impl::ActivityType::CPU,
-    quarisma::profiler::impl::ActivityType::CUDA
+std::set<quarisma::profiler_impl::impl::ActivityType> activities = {
+    quarisma::profiler_impl::impl::ActivityType::CPU,
+    quarisma::profiler_impl::impl::ActivityType::CUDA
 };
 
 // Start profiling
-quarisma::profiler::impl::enableProfiler(
+quarisma::profiler_impl::impl::enableProfiler(
     config,
     activities,
     {} // scopes - empty means all scopes
@@ -40,7 +40,7 @@ quarisma::profiler::impl::enableProfiler(
 // ... Your code to profile ...
 
 // Stop profiling and get results
-auto profiler_result = quarisma::profiler::impl::disableProfiler();
+auto profiler_result = quarisma::profiler_impl::impl::disableProfiler();
 
 // Save trace to file (Chrome Trace format)
 profiler_result->save("trace.json");
@@ -78,7 +78,7 @@ For detailed debugging, capture actual input values (WARNING: can be verbose):
 
 ```cpp
 // Enable globally
-quarisma::profiler::impl::set_record_concrete_inputs_enabled(true);
+quarisma::profiler_impl::impl::set_record_concrete_inputs_enabled(true);
 
 // Now profiler will capture:
 // - Actual tensor values (not just shapes)
