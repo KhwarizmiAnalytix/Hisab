@@ -144,7 +144,6 @@ if (!initialized) {
 ## Testing
 
 ✅ **All Tests Passed**
-- SecurityCxxTests: 1/1 passed
 - CoreCxxTests: 1/1 passed
 
 ✅ **Parallel Functionality Verified**

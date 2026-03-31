@@ -135,48 +135,46 @@ General:
 
 ### Output (Last 50 lines - Build Completion)
 ```
-[153/194] Building CXX object Library/Security/Testing/Cxx/CMakeFiles/SecurityCxxTests.dir/TestInputValidator.cpp.obj
-[154/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestAllocatorBenchmark.cpp.obj
-[155/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestAsciiVisualizer.cpp.obj
-[156/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestAllocatorBfc.cpp.obj
-[157/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestKinetoShim.cpp.obj
-[158/194] Building CXX object Library/Core/CMakeFiles/Core.dir/profiler/kineto/profiler_kineto.cpp.obj
-[159/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestAllocatorPool.cpp.obj
-[160/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestAllocatorTracking.cpp.obj
-[161/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestLazy.cpp.obj
-[162/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestSMP.cpp.obj
-[163/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestParallelGuard.cpp.obj
-[164/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestParallelFor.cpp.obj
-[165/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestBackTrace.cpp.obj
-[166/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestParallelApi.cpp.obj
-[167/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestProfilerAutogradTrace.cpp.obj
-[168/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestLogger.cpp.obj
-[169/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestCPUMemoryStats.cpp.obj
-[170/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestLoggerThreadName.cpp.obj
-[171/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestParallelAdvancedThreadName.cpp.obj
-[172/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestParallelAdvancedParallelThreadPoolNative.cpp.obj
-[173/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestSMPComprehensive.cpp.obj
-[174/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestSMPTransformFillSort.cpp.obj
-[175/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/ProfileParallelBackends.cpp.obj
-[176/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestParallelAdvancedThreadPool.cpp.obj
-[177/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestParallelReduce.cpp.obj
-[178/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestAllocatorStatistics.cpp.obj
-[179/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestSMPEnhanced.cpp.obj
-[180/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestStringUtil.cpp.obj
-[181/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestException.cpp.obj
-[182/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestHashUtil.cpp.obj
-[183/194] Linking CXX static library lib\fmt.lib
-[184/194] Linking CXX shared library bin\Core.dll
-[185/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestThreadPool.cpp.obj
-[186/194] Linking C static library lib\cpuinfo_internals.lib
-[187/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestQuarismaProfiler.cpp.obj
-[188/194] Linking CXX executable bin\SecurityCxxTests.exe
-[189/194] Linking CXX executable bin\ProfileParallelBackends.exe
-[190/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestCPUMemory.cpp.obj
-[191/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestTrackingSystemBenchmark.cpp.obj
-[192/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestFlatHash.cpp.obj
-[193/194] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestPointer.cpp.obj
-[194/194] Linking CXX executable bin\CoreCxxTests.exe
+[154/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestAllocatorBenchmark.cpp.obj
+[155/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestAsciiVisualizer.cpp.obj
+[156/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestAllocatorBfc.cpp.obj
+[157/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestKinetoShim.cpp.obj
+[158/193] Building CXX object Library/Core/CMakeFiles/Core.dir/profiler/kineto/profiler_kineto.cpp.obj
+[159/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestAllocatorPool.cpp.obj
+[160/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestAllocatorTracking.cpp.obj
+[161/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestLazy.cpp.obj
+[162/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestSMP.cpp.obj
+[163/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestParallelGuard.cpp.obj
+[164/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestParallelFor.cpp.obj
+[165/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestBackTrace.cpp.obj
+[166/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestParallelApi.cpp.obj
+[167/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestProfilerAutogradTrace.cpp.obj
+[168/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestLogger.cpp.obj
+[169/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestCPUMemoryStats.cpp.obj
+[170/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestLoggerThreadName.cpp.obj
+[171/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestParallelAdvancedThreadName.cpp.obj
+[172/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestParallelAdvancedParallelThreadPoolNative.cpp.obj
+[173/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestSMPComprehensive.cpp.obj
+[174/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestSMPTransformFillSort.cpp.obj
+[175/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/ProfileParallelBackends.cpp.obj
+[176/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestParallelAdvancedThreadPool.cpp.obj
+[177/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestParallelReduce.cpp.obj
+[178/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestAllocatorStatistics.cpp.obj
+[179/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestSMPEnhanced.cpp.obj
+[180/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestStringUtil.cpp.obj
+[181/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestException.cpp.obj
+[182/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestHashUtil.cpp.obj
+[183/193] Linking CXX static library lib\fmt.lib
+[184/193] Linking CXX shared library bin\Core.dll
+[185/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestThreadPool.cpp.obj
+[186/193] Linking C static library lib\cpuinfo_internals.lib
+[187/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestQuarismaProfiler.cpp.obj
+[188/193] Linking CXX executable bin\ProfileParallelBackends.exe
+[189/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestCPUMemory.cpp.obj
+[190/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestTrackingSystemBenchmark.cpp.obj
+[191/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestFlatHash.cpp.obj
+[192/193] Building CXX object Library/Core/Testing/Cxx/CMakeFiles/CoreCxxTests.dir/TestPointer.cpp.obj
+[193/193] Linking CXX executable bin\CoreCxxTests.exe
 [SUCCESS] Build completed successfully
 [INFO] Config time: 11.9216 seconds
 [INFO] Build time: 28.6554 seconds

@@ -44,7 +44,6 @@
 - [x] All 170 build targets completed successfully
 - [x] Build time: 13.26 seconds
 - [x] All tests passed (2/2):
-  - [x] SecurityCxxTests: PASSED (1.13 sec)
   - [x] CoreCxxTests: PASSED (6.91 sec)
 - [x] Total test time: 8.05 seconds
 - [x] 100% tests passed, 0 tests failed

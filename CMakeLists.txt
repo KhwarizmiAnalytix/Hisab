@@ -331,7 +331,6 @@ endif()
 add_subdirectory(ThirdParty)
 
 # Add subdirectories
-add_subdirectory(Library/Security)
 add_subdirectory(Library/Core)
 add_subdirectory(Library/Profiler)
 
