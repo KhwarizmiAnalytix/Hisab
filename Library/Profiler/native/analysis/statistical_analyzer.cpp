@@ -26,6 +26,7 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#include <iterator>
 
 // Include hash compatibility layer for libc++ versions that don't export __hash_memory
 
@@ -192,11 +193,11 @@ quarisma::statistical_metrics statistical_analyzer::calculate_custom_stats(
     return calculate_metrics(it->second);
 }
 
-quarisma_map<std::string, quarisma::statistical_metrics>
+std::unordered_map<std::string, quarisma::statistical_metrics>
 statistical_analyzer::calculate_all_timing_stats() const
 {
     std::scoped_lock const                                   lock(timing_mutex_);
-    quarisma_map<std::string, quarisma::statistical_metrics> results;
+    std::unordered_map<std::string, quarisma::statistical_metrics> results;
 
     for (const auto& pair : timing_data_)
     {
@@ -206,11 +207,11 @@ statistical_analyzer::calculate_all_timing_stats() const
     return results;
 }
 
-quarisma_map<std::string, quarisma::statistical_metrics>
+std::unordered_map<std::string, quarisma::statistical_metrics>
 statistical_analyzer::calculate_all_memory_stats() const
 {
     std::scoped_lock const                                   lock(memory_mutex_);
-    quarisma_map<std::string, quarisma::statistical_metrics> results;
+    std::unordered_map<std::string, quarisma::statistical_metrics> results;
 
     for (const auto& pair : memory_data_)
     {
@@ -220,11 +221,11 @@ statistical_analyzer::calculate_all_memory_stats() const
     return results;
 }
 
-quarisma_map<std::string, quarisma::statistical_metrics>
+std::unordered_map<std::string, quarisma::statistical_metrics>
 statistical_analyzer::calculate_all_custom_stats() const
 {
     std::scoped_lock const                                   lock(custom_mutex_);
-    quarisma_map<std::string, quarisma::statistical_metrics> results;
+    std::unordered_map<std::string, quarisma::statistical_metrics> results;
 
     for (const auto& pair : custom_data_)
     {

@@ -108,11 +108,11 @@ public:
         const std::string& name) const;
 
     // Batch analysis
-    PROFILER_API quarisma_map<std::string, quarisma::statistical_metrics>
+    PROFILER_API std::unordered_map<std::string, quarisma::statistical_metrics>
                  calculate_all_timing_stats() const;
-    PROFILER_API quarisma_map<std::string, quarisma::statistical_metrics>
+    PROFILER_API std::unordered_map<std::string, quarisma::statistical_metrics>
                  calculate_all_memory_stats() const;
-    PROFILER_API quarisma_map<std::string, quarisma::statistical_metrics>
+    PROFILER_API std::unordered_map<std::string, quarisma::statistical_metrics>
                  calculate_all_custom_stats() const;
 
     // Time series analysis
@@ -161,10 +161,10 @@ private:
     mutable std::mutex custom_mutex_;
     mutable std::mutex time_series_mutex_;
 
-    quarisma_map<std::string, std::vector<double>>                      timing_data_;
-    quarisma_map<std::string, std::vector<double>>                      memory_data_;
-    quarisma_map<std::string, std::vector<double>>                      custom_data_;
-    quarisma_map<std::string, std::vector<quarisma::time_series_point>> time_series_data_;
+    std::unordered_map<std::string, std::vector<double>>                      timing_data_;
+    std::unordered_map<std::string, std::vector<double>>                      memory_data_;
+    std::unordered_map<std::string, std::vector<double>>                      custom_data_;
+    std::unordered_map<std::string, std::vector<quarisma::time_series_point>> time_series_data_;
 
     // Configuration
     size_t              max_samples_per_series_ = 10000;

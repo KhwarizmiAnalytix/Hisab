@@ -236,7 +236,7 @@ private:
     mutable std::mutex allocations_mutex_;
 
     /// Map of active memory allocations (using custom hash for void*)
-    quarisma_map<void*, quarisma::memory_allocation, quarisma::void_ptr_hash> active_allocations_;
+    std::unordered_map<void*, quarisma::memory_allocation, quarisma::void_ptr_hash> active_allocations_;
 
     /// Atomic counter for current memory usage
     std::atomic<size_t> current_usage_{0};

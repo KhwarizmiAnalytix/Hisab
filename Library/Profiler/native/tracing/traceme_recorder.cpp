@@ -38,6 +38,8 @@
 #include "common/flat_hash.h"
 #include "common/lock_free_queue.h"
 #include "common/per_thread.h"
+#include "common/profiler_export.h"
+#include "common/profiler_macros.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -53,7 +55,8 @@ namespace quarisma
 {
 static inline std::string get_thread_name()
 {
-    return quarisma::logger::GetThreadName();
+    return "";
+    //quarisma::logger::GetThreadName();
 }
 
 namespace internal
@@ -126,7 +129,7 @@ private:
 
     // Start events are collected from each ThreadLocalRecorder::Consume() call.
     // Their data is merged into end_events.
-    quarisma_map<int64_t, traceme_recorder::Event> start_events_;
+    std::unordered_map<int64_t, traceme_recorder::Event> start_events_;
 
     // End events are stored in the output of TraceMeRecorder::Consume().
     std::vector<traceme_recorder::Event*> end_events_;

@@ -50,7 +50,7 @@
 #include "common/macros.h"
 #include "logging/logger.h"
 #include "memory/cpu/allocator.h"
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
 #include "native/memory/scoped_memory_debug_annotation.h"
 #include "native/tracing/traceme.h"
 #include "native/tracing/traceme_encode.h"
@@ -720,7 +720,7 @@ void* allocator_bfc::AllocateRawInternal(
     void* ptr = FindChunkPtr(bin_num, rounded_bytes, num_bytes, freed_before);  //NOLINT
     if (ptr != nullptr)
     {
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER&&0
         AddTraceMe("MemoryAllocation", ptr);
 #endif
         return ptr;
@@ -732,7 +732,7 @@ void* allocator_bfc::AllocateRawInternal(
         ptr = FindChunkPtr(bin_num, rounded_bytes, num_bytes, freed_before);
         if (ptr != nullptr)
         {
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
             AddTraceMe("MemoryAllocation", ptr);
 #endif
             return ptr;
@@ -750,7 +750,7 @@ void* allocator_bfc::AllocateRawInternal(
             ptr = FindChunkPtr(bin_num, rounded_bytes, num_bytes, freed_before);
             if (ptr != nullptr)
             {
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
                 AddTraceMe("MemoryAllocation", ptr);
 #endif
                 return ptr;
@@ -767,7 +767,7 @@ void* allocator_bfc::AllocateRawInternal(
         ptr = FindChunkPtr(bin_num, rounded_bytes, num_bytes, freed_before);
         if (ptr != nullptr)
         {
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER &&0
             AddTraceMe("MemoryAllocation", ptr);
 #endif
             return ptr;
@@ -816,7 +816,7 @@ double allocator_bfc::GetFragmentation()
     return static_cast<double>(bytes_available - LargestFreeChunk()) / bytes_available;
 }
 
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
 void allocator_bfc::AddTraceMe(std::string_view traceme_name, const void* ptr)
 {
     allocator_bfc::Chunk const* chunk = ChunkFromHandle(region_manager_.get_handle(ptr));
@@ -1040,7 +1040,7 @@ void allocator_bfc::DeallocateRawInternal(void* ptr)
     allocator_bfc::ChunkHandle const h = region_manager_.get_handle(ptr);
     QUARISMA_CHECK(h != kInvalidChunkHandle);
 
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
     // Record chunk information before it's freed (only needed for profiling).
     const Chunk* const chunk       = ChunkFromHandle(h);
     void const* const  chunk_ptr   = chunk->ptr;
@@ -1061,7 +1061,7 @@ void allocator_bfc::DeallocateRawInternal(void* ptr)
         InsertFreeChunkIntoBin(TryToCoalesce(h, false));
     }
 
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
     // TraceMe needs to be added after MarkFree and InsertFreeChunkIntoBin for
     // correct aggregation stats (bytes_in_use, fragmentation).
     AddTraceMe("MemoryDeallocation", chunk_ptr, req_bytes, alloc_bytes);

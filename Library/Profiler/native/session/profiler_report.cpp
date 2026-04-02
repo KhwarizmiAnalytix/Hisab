@@ -371,7 +371,7 @@ void profiler_report::print_summary()
 
 void profiler_report::print_detailed_report() const
 {
-    PROFILER_LOG_INFO("{}", generate_console_report());
+    //PROFILER_LOG_INFO("{}", generate_console_report());
 }
 
 void profiler_report::print_memory_report()

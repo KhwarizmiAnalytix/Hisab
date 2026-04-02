@@ -38,10 +38,13 @@ limitations under the License.
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "common/profiler_macros.h"
+#include "common/profiler_export.h"
+#include "common/profiler_strings.h"
 //#include "logging/logger.h"
-#include "util/string_util.h"
+//#include "util/string_util.h"
 
 //#include "tsl/profiler/lib/context_types.h"
 

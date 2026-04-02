@@ -41,7 +41,7 @@
 #include "memory/cpu/allocator.h"
 #include "memory/helper/memory_allocator.h"
 #include "memory/helper/memory_info.h"
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
 #include "native/memory/scoped_memory_debug_annotation.h"
 #include "native/tracing/traceme.h"
 #include "native/tracing/traceme_encode.h"
@@ -246,7 +246,7 @@ void* allocator_cpu::allocate_raw(size_t alignment, size_t num_bytes)
         }
 
         // Add profiling trace (outside lock to minimize contention)
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
         AddTraceMe("MemoryAllocation", p, num_bytes, alloc_size);
 #endif
     }
@@ -269,7 +269,7 @@ void allocator_cpu::deallocate_raw(void* ptr)
         }
 
         // Add profiling trace (outside lock to minimize contention)
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
         AddTraceMe("MemoryDeallocation", ptr, 0, alloc_size);
 #endif
     }
@@ -318,7 +318,7 @@ allocator_memory_enum allocator_cpu::GetMemoryType() const noexcept
     return allocator_memory_enum::HOST_PAGEABLE;
 }
 
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
 void allocator_cpu::AddTraceMe(
     std::string_view traceme_name,
     const void*      chunk_ptr,

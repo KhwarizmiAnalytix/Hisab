@@ -65,7 +65,7 @@ namespace quarisma
  *
  * @note This function is force-inlined for optimal performance in hot paths
  */
-/*PROFILER_FORCE_INLINE*/ int64_t get_current_time_nanos()
+inline int64_t get_current_time_nanos()
 {
     // Monotonic clock for consistent relative timing
     auto now = std::chrono::steady_clock::now();

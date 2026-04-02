@@ -240,7 +240,7 @@ bool export_to_chrome_trace_json_file(
         file << json;
         file.close();
 
-        PROFILER_LOG_INFO("Exported Chrome Trace JSON to: {}", filename);
+        //PROFILER_LOG_INFO("Exported Chrome Trace JSON to: {}", filename);
         return true;
     }
     catch (const std::exception& e)

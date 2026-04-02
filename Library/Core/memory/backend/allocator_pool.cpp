@@ -47,7 +47,7 @@
 
 #include "logging/logger.h"
 #include "memory/helper/memory_allocator.h"
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
 #include "native/tracing/traceme.h"
 #endif
 #include "util/exception.h"
@@ -341,7 +341,7 @@ basic_cpu_allocator::~basic_cpu_allocator() = default;
 
 void* basic_cpu_allocator::Alloc(size_t alignment, size_t num_bytes, size_t* bytes_received)
 {
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
     quarisma::traceme const traceme("basic_cpu_allocator::Alloc");
 #endif
 
@@ -358,7 +358,7 @@ void* basic_cpu_allocator::Alloc(size_t alignment, size_t num_bytes, size_t* byt
 
 void basic_cpu_allocator::Free(void* ptr, size_t num_bytes)
 {
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
     quarisma::traceme const traceme("basic_cpu_allocator::Free");
 #endif
 

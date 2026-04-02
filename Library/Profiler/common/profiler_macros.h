@@ -33,7 +33,12 @@
 #define PROFILER_UNLIKELY(expr) (expr)
 #endif
 
-
+//----------------------------------------------------------------------------
+#ifdef __has_attribute
+#define PROFILER_HAVE_ATTRIBUTE(x) __has_attribute(x)
+#else
+#define PROFILER_HAVE_ATTRIBUTE(x) 0
+#endif
 
 //----------------------------------------------------------------------------
 #if PROFILER_HAVE_CPP_ATTRIBUTE(clang::lifetimebound)
@@ -45,3 +50,28 @@
 #else
 #define PROFILER_LIFETIME_BOUND
 #endif
+
+//----------------------------------------------------------------------------
+// Thread safety - guarded by mutex
+#if PROFILER_HAVE_ATTRIBUTE(guarded_by)
+#define PROFILER_GUARDED_BY(x) __attribute__((guarded_by(x)))
+#else
+#define PROFILER_GUARDED_BY(x)
+#endif
+
+//----------------------------------------------------------------------------
+#if __cplusplus >= 201703L
+#define PROFILER_NODISCARD [[nodiscard]]
+#else
+#define PROFILER_NODISCARD
+#endif
+
+//----------------------------------------------------------------------------
+#if PROFILER_HAVE_CPP_ATTRIBUTE(clang::require_constant_initialization)
+#define PROFILER_CONST_INIT [[clang::require_constant_initialization]]
+#else
+#define PROFILER_CONST_INIT
+#endif
+
+//----------------------------------------------------------------------------
+#define PROFILER_LOG_ERROR(...)

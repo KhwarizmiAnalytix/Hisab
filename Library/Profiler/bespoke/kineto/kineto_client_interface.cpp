@@ -108,7 +108,8 @@ private:
 void global_kineto_init()
 {
 #if ENABLE_GLOBAL_OBSERVER
-    if (quarisma::utils::get_env("KINETO_USE_DAEMON").has_value())
+    auto* envar = std::getenv("KINETO_USE_DAEMON");
+    if (envar!=nullptr)
     {
         libkineto_init(
             /*cpuOnly=*/!(quarisma::hasCUDA() /*|| quarisma::hasXPU() || quarisma::hasMTIA()*/),
@@ -126,7 +127,7 @@ struct RegisterLibKinetoClient
 {
     RegisterLibKinetoClient()
     {
-        static profiler::impl::LibKinetoClient client;
+        static profiler_impl::impl::LibKinetoClient client;
         libkineto::api().registerClient(&client);
     }
 } register_libkineto_client;

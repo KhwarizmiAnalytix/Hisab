@@ -35,9 +35,7 @@ limitations under the License.
 
 #include <algorithm>
 #include <string>
-
-//#include "logging/logger.h"
-#include "util/string_util.h"
+#include "common/profiler_strings.h"
 
 namespace quarisma
 {

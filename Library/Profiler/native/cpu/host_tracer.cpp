@@ -138,7 +138,7 @@ profiler_status host_tracer::stop()
 
 profiler_status host_tracer::collect_data(x_space* space)
 {
-    PROFILER_LOG_INFO("Collecting data to x_space from host_tracer.");  // NOLINT
+    //PROFILER_LOG_INFO("Collecting data to x_space from host_tracer.");  // NOLINT
     if (recording_)
     {
         PROFILER_LOG_ERROR("traceme_recorder not stopped");

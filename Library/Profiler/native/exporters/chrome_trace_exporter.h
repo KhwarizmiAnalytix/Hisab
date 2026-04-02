@@ -24,6 +24,7 @@
 
 #include "common/profiler_macros.h"
 #include "native/exporters/xplane/xplane.h"
+#include "common/profiler_export.h"
 
 namespace quarisma
 {

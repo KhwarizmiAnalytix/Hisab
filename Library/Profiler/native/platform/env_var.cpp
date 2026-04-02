@@ -44,7 +44,10 @@ limitations under the License.
 #include <vector>
 
 //#include "logging/logger.h"  // for PROFILER_LOG_ERROR
-#include "util/string_util.h"  // for quarisma::strings::to_lower
+//#include "util/string_util.h"  // for quarisma::strings::to_lower
+#include "common/profiler_export.h"
+#include "common/profiler_macros.h"
+#include "common/profiler_strings.h"
 
 namespace quarisma
 {
@@ -59,7 +62,7 @@ bool read_bool_from_env_var(std::string_view env_var_name, bool default_val, boo
     }
     std::string str_value = env_val;
 
-    str_value = quarisma::strings::to_lower(str_value);
+    str_value = strings::to_lower(str_value);
 
     if (str_value == "0" || str_value == "false")
     {

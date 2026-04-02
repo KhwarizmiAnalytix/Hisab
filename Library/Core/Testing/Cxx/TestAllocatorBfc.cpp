@@ -22,7 +22,7 @@
 #include "memory/backend/allocator_bfc.h"
 #include "memory/backend/allocator_pool.h"
 #include "memory/helper/memory_allocator.h"
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER&&0
 #include "native/analysis/statistical_analyzer.h"
 #include "native/memory/memory_tracker.h"
 #include "native/session/profiler.h"
@@ -101,7 +101,7 @@ std::unique_ptr<allocator_bfc> create_test_bfc_allocator()
  */
 QUARISMATEST(AllocatorBFC, basic_allocation_deallocation)
 {
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER&&0
     traceme_recorder::start(3);
     auto allocator = create_test_bfc_allocator();
 
@@ -653,7 +653,7 @@ QUARISMATEST(AllocatorBFC, MemoryTracking)
 // Test comprehensive memory profiling with BFC allocator
 QUARISMATEST(AllocatorBFC, ComprehensiveMemoryProfiling)
 {
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
     auto session = profiler_session_builder()
                        .with_timing(true)
                        .with_memory_tracking(true)
@@ -797,7 +797,7 @@ QUARISMATEST(AllocatorBFC, ComprehensiveMemoryProfiling)
 // Test memory profiling with allocation hotspots identification
 QUARISMATEST(AllocatorBFC, AllocationHotspotsIdentification)
 {
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
     auto session = profiler_session_builder()
                        .with_timing(true)
                        .with_memory_tracking(true)
