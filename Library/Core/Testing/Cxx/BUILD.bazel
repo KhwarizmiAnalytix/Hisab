@@ -58,8 +58,8 @@ cc_test(
         "//bazel:enable_hip": ["QUARISMA_HAS_HIP=1"],
         "//conditions:default": ["QUARISMA_HAS_HIP=0"],
     }) + select({
-        "//bazel:enable_kineto": ["QUARISMA_HAS_KINETO=1"],
-        "//conditions:default": ["QUARISMA_HAS_KINETO=0"],
+        "//bazel:enable_kineto": ["PROFILER_HAS_KINETO=1"],
+        "//conditions:default": ["PROFILER_HAS_KINETO=0"],
     }),
     includes = ["."],
     linkopts = quarisma_linkopts(),

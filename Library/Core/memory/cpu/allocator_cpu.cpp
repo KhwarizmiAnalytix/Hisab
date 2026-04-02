@@ -88,6 +88,7 @@ bool CPUAllocatorStatsEnabled() noexcept
  */
 static constexpr int kMaxTotalAllocationWarnings = 1;
 
+#ifndef NDEBUG
 /**
  * @brief Maximum number of large single allocation warnings to emit.
  *
@@ -95,6 +96,8 @@ static constexpr int kMaxTotalAllocationWarnings = 1;
  * further large allocation warnings are suppressed.
  */
 static constexpr int kMaxSingleAllocationWarnings = 5;
+#endif
+
 
 /**
  * @brief Threshold for total memory usage warnings (fraction of available RAM).
@@ -107,6 +110,7 @@ static constexpr int kMaxSingleAllocationWarnings = 5;
  */
 static constexpr double kTotalAllocationWarningThreshold = 0.5;
 
+#ifndef NDEBUG
 /**
  * @brief Threshold for large single allocation warnings (fraction of available RAM).
  *
@@ -118,7 +122,7 @@ static constexpr double kTotalAllocationWarningThreshold = 0.5;
  */
 static constexpr double kLargeAllocationWarningThreshold = 0.1;
 
-#ifndef NDEBUG
+
 /**
  * @brief Cached threshold for large allocation warnings in bytes.
  *

@@ -409,7 +409,7 @@ endfunction()
 #   )
 #
 #   add_third_party_library(kineto
-#       CONDITION QUARISMA_ENABLE_KINETO
+#       CONDITION PROFILER_ENABLE_KINETO
 #       LIBRARY_TYPE STATIC
 #       SOURCE_DIR kineto/libkineto
 #       DISABLE_WARNINGS
@@ -862,7 +862,7 @@ add_third_party_library(mimalloc
 )
 
 # Kineto - Quarisma profiling library
-# Aligned with Quarisma's QUARISMA_ENABLE_KINETO configuration for feature parity.
+# Aligned with Quarisma's PROFILER_ENABLE_KINETO configuration for feature parity.
 # Supports GPU backends: CUPTI (NVIDIA), ROCtracer (AMD), XPUPTI (Intel XPU), AIUPTI (AI accelerators)
 
 # Configure GPU backend support based on enabled platforms
@@ -901,7 +901,7 @@ message(STATUS "  KINETO_LIBRARY_TYPE = ${KINETO_LIBRARY_TYPE}")
 message(STATUS "  FMT_SOURCE_DIR = ${FMT_SOURCE_DIR} (using Quarisma's fmt)")
 
 add_third_party_library(kineto
-    CONDITION QUARISMA_ENABLE_KINETO
+    CONDITION PROFILER_ENABLE_KINETO
     LIBRARY_TYPE STATIC
     SOURCE_DIR kineto/libkineto
     DISABLE_WARNINGS
@@ -912,9 +912,9 @@ add_third_party_library(kineto
 )
 
 # Disable Kineto if the library was not found
-if(QUARISMA_ENABLE_KINETO AND NOT TARGET Quarisma::kineto)
-    message(STATUS "Kineto library not found - disabling QUARISMA_ENABLE_KINETO")
-    set(QUARISMA_ENABLE_KINETO OFF CACHE BOOL "Enable Quarisma Kineto profiling library." FORCE)
+if(PROFILER_ENABLE_KINETO AND NOT TARGET Quarisma::kineto)
+    message(STATUS "Kineto library not found - disabling PROFILER_ENABLE_KINETO")
+    set(PROFILER_ENABLE_KINETO OFF CACHE BOOL "Enable Quarisma Kineto profiling library." FORCE)
 endif()
 
 # =============================================================================
@@ -1028,7 +1028,7 @@ endif()
 # Kineto requires special handling because the Xcode generator has trouble
 # materializing the combined kineto static library from object libraries.
 # We need to link component libs directly under Xcode.
-if(QUARISMA_ENABLE_KINETO)
+if(PROFILER_ENABLE_KINETO)
   # Xcode generator has trouble materializing the combined kineto static library from
   # object libraries. Prefer linking the component libs directly under Xcode.
   if(CMAKE_GENERATOR STREQUAL "Xcode" AND TARGET kineto_base AND TARGET kineto_api)
@@ -1053,15 +1053,15 @@ endif()
 # -----------------------------------------------------------------------------
 # ITT is an external system dependency that uses find_package, not bundled
 # in ThirdParty, so it's handled separately here.
-if(QUARISMA_ENABLE_ITT)
+if(PROFILER_ENABLE_ITT)
   find_package(ITT)
   if(ITT_FOUND)
     list(APPEND QUARISMA_DEPENDENCY_LIBS ${ITT_LIBRARIES})
     list(APPEND QUARISMA_DEPENDENCY_INCLUDE_DIRS ${ITT_INCLUDE_DIR})
     message(STATUS "Dependency: ITT libraries added to QUARISMA_DEPENDENCY_LIBS")
   else()
-    message(STATUS "ITT API not found - disabling QUARISMA_ENABLE_ITT")
-    set(QUARISMA_ENABLE_ITT OFF CACHE BOOL "Enable Intel ITT API for VTune profiling." FORCE)
+    message(STATUS "ITT API not found - disabling PROFILER_ENABLE_ITT")
+    set(PROFILER_ENABLE_ITT OFF CACHE BOOL "Enable Intel ITT API for VTune profiling." FORCE)
   endif()
 endif()
 

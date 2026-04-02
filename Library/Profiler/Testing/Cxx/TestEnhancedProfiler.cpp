@@ -1241,17 +1241,17 @@ QUARISMATEST(Profiler, enhanced_profiler_comprehensive_test)
 
     if (passed_tests == total_tests)
     {
-        PROFILER_LOG_INFO("All Enhanced Profiler tests PASSED!");
-        PROFILER_LOG_INFO("Enhanced Profiler is ready for production use.");
+        //PROFILER_LOG_INFO("All Enhanced Profiler tests PASSED!");
+        //PROFILER_LOG_INFO("Enhanced Profiler is ready for production use.");
     }
     else
     {
-        PROFILER_LOG_INFO(" {} test(s) FAILED!", total_tests - passed_tests);
+        //PROFILER_LOG_INFO(" {} test(s) FAILED!", total_tests - passed_tests);
     }
-    PROFILER_LOG_IF(
-        ERROR,
-        passed_tests != total_tests,
-        "Some Enhanced Profiler tests FAILED. Please check the logs for details.");
+    //PROFILER_LOG_IF(
+     //   ERROR,
+      //  passed_tests != total_tests,
+      //  "Some Enhanced Profiler tests FAILED. Please check the logs for details.");
 
     END_TEST();
 }

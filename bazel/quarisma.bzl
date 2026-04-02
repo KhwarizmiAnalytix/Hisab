@@ -60,13 +60,13 @@ def quarisma_defines():
         "//bazel:enable_magic_enum": ["QUARISMA_ENABLE_MAGICENUM"],
         "//conditions:default": [],
     }) + select({
-        "//bazel:enable_kineto": ["QUARISMA_ENABLE_KINETO", "QUARISMA_HAS_KINETO=1"],
-        "//conditions:default": ["QUARISMA_HAS_KINETO=0"],
+        "//bazel:enable_kineto": ["PROFILER_ENABLE_KINETO", "PROFILER_HAS_KINETO=1"],
+        "//conditions:default": ["PROFILER_HAS_KINETO=0"],
     }) + select({
-        "//bazel:enable_native_profiler": ["QUARISMA_ENABLE_NATIVE_PROFILER"],
+        "//bazel:enable_native_profiler": ["PROFILER_ENABLE_NATIVE_PROFILER"],
         "//conditions:default": [],
     }) + select({
-        "//bazel:enable_itt": ["QUARISMA_ENABLE_ITT"],
+        "//bazel:enable_itt": ["PROFILER_ENABLE_ITT"],
         "//conditions:default": [],
     }) + select({
         "//bazel:enable_openmp": ["QUARISMA_ENABLE_OPENMP"],

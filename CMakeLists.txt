@@ -193,13 +193,13 @@ mark_as_advanced(QUARISMA_ENABLE_ROCM)
 
 # profiling libreray Quarisma Kineto Profiling Library Flag Controls whether Kineto profiling library
 # is enabled. When enabled, provides advanced profiling capabilities for performance analysis.
-option(QUARISMA_ENABLE_KINETO "Enable Quarisma Kineto profiling library." ON)
-mark_as_advanced(QUARISMA_ENABLE_KINETO)
+option(PROFILER_ENABLE_KINETO "Enable Quarisma Kineto profiling library." ON)
+mark_as_advanced(PROFILER_ENABLE_KINETO)
 
 # Intel ITT API (Instrumentation and Tracing Technology) Flag Controls whether Intel ITT API is
 # enabled. When enabled, provides task/frame annotations for Intel VTune profiling.
-option(QUARISMA_ENABLE_ITT "Enable Intel ITT API for VTune profiling." OFF)
-mark_as_advanced(QUARISMA_ENABLE_ITT)
+option(PROFILER_ENABLE_ITT "Enable Intel ITT API for VTune profiling." OFF)
+mark_as_advanced(PROFILER_ENABLE_ITT)
 
 # Profiler backend selection controls whether Kineto, Native TraceMe, or ITT
 # instrumentation is used. Defaults to Kineto for downstream compatibility.
@@ -214,9 +214,9 @@ if(NOT QUARISMA_PROFILER_TYPE MATCHES "^(KINETO|NATIVE|ITT)$")
 endif()
 
 if(QUARISMA_PROFILER_TYPE STREQUAL "NATIVE")
-  set(QUARISMA_ENABLE_NATIVE_PROFILER ON)
+  set(PROFILER_ENABLE_NATIVE_PROFILER ON)
 else()
-  set(QUARISMA_ENABLE_NATIVE_PROFILER OFF)
+  set(PROFILER_ENABLE_NATIVE_PROFILER OFF)
 endif()
 
 # =============================================================================

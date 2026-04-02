@@ -46,7 +46,7 @@ foreach(_test_source IN ITEMS ${test_sources})
   endif()
 
   # When Kineto is disabled, exclude Kineto-specific tests
-  if(NOT QUARISMA_ENABLE_KINETO)
+  if(NOT PROFILER_ENABLE_KINETO)
     if(file_name MATCHES "TestKineto")
       message(STATUS "Excluding Kineto test (Kineto disabled): ${file_name}")
       continue()

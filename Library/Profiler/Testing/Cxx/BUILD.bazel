@@ -48,6 +48,7 @@ cc_test(
         "USE_GTEST",
         "_VARIADIC_MAX=10",
         "PROFILER_HAS_GTEST=1",
+        "QUARISMA_HAS_GTEST=1",
     ] + select({
         "//bazel:enable_cuda": ["PROFILER_HAS_CUDA=1"],
         "//conditions:default": ["PROFILER_HAS_CUDA=0"],

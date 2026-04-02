@@ -60,19 +60,19 @@ compile_definition(QUARISMA_ENABLE_ROCM)
 compile_definition(QUARISMA_ENABLE_GTEST)
 
 # Kineto support
-compile_definition(QUARISMA_ENABLE_KINETO)
+compile_definition(PROFILER_ENABLE_KINETO)
 # Profiler bespoke code uses PROFILER_HAS_KINETO (mirrors Bazel); map from CMake enable flag.
-if(QUARISMA_ENABLE_KINETO)
+if(PROFILER_ENABLE_KINETO)
   list(APPEND QUARISMA_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=1)
 else()
   list(APPEND QUARISMA_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=0)
 endif()
 
 # Intel ITT API support
-compile_definition(QUARISMA_ENABLE_ITT)
+compile_definition(PROFILER_ENABLE_ITT)
 
 # Native profiler support (derived from QUARISMA_PROFILER_TYPE)
-compile_definition(QUARISMA_ENABLE_NATIVE_PROFILER)
+compile_definition(PROFILER_ENABLE_NATIVE_PROFILER)
 
 # OpenMP support
 compile_definition(QUARISMA_ENABLE_OPENMP)
@@ -142,7 +142,7 @@ endif()
 # Allocation statistics support (optional feature flag)
 compile_definition(QUARISMA_ENABLE_ALLOCATION_STATS)
 
-if(QUARISMA_ENABLE_NATIVE_PROFILER)
+if(PROFILER_ENABLE_NATIVE_PROFILER)
   list(APPEND QUARISMA_DEPENDENCY_COMPILE_DEFINITIONS QUARISMA_HAS_NATIVE_PROFILER=1)
 else()
   list(APPEND QUARISMA_DEPENDENCY_COMPILE_DEFINITIONS QUARISMA_HAS_NATIVE_PROFILER=0)

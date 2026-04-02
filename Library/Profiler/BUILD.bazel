@@ -76,7 +76,7 @@ cc_library(
         "//bazel:shared_libs": ["QUARISMA_SHARED_DEFINE", "QUARISMA_BUILDING_DLL"],
         "//conditions:default": ["QUARISMA_STATIC_DEFINE"],
     }) + select({
-        "//bazel:enable_kineto": ["QUARISMA_HAS_KINETO=1"],
+        "//bazel:enable_kineto": ["PROFILER_HAS_KINETO=1"],
         "//conditions:default": [],
     }),
     includes = [
@@ -89,6 +89,13 @@ cc_library(
     linkstatic = select({
         "//bazel:shared_libs": False,
         "//conditions:default": True,
+    }),
+    deps = [
+        "@fmt//:fmt",
+        "//Library/Core:core_lib",
+    ] + select({
+        "//bazel:enable_kineto": ["@kineto//:kineto"],
+        "//conditions:default": [],
     }),
     alwayslink = False,
 )

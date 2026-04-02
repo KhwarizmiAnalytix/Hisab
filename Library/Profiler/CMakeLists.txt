@@ -23,7 +23,7 @@ list(APPEND profiler_sources ${common_util_sources})
 # Kineto profiler backend
 # base/ is shared infrastructure for Kineto and ITT — included with either.
 # =============================================================================
-if(QUARISMA_ENABLE_KINETO)
+if(PROFILER_ENABLE_KINETO)
   file(
     GLOB_RECURSE kineto_headers
     LIST_DIRECTORIES false
@@ -50,7 +50,7 @@ endif()
 # =============================================================================
 # Native profiler backend (standalone)
 # =============================================================================
-if(QUARISMA_ENABLE_NATIVE_PROFILER)
+if(PROFILER_ENABLE_NATIVE_PROFILER)
   file(
     GLOB_RECURSE native_headers
     LIST_DIRECTORIES false
@@ -71,8 +71,8 @@ endif()
 # base/ is shared infrastructure for Kineto and ITT — included with either.
 # Guard against double-inclusion when both Kineto and ITT are enabled.
 # =============================================================================
-if(QUARISMA_ENABLE_ITT)
-  if(NOT QUARISMA_ENABLE_KINETO)
+if(PROFILER_ENABLE_ITT)
+  if(NOT PROFILER_ENABLE_KINETO)
     file(
       GLOB_RECURSE itt_base_headers
       LIST_DIRECTORIES false

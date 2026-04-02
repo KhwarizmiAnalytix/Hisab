@@ -38,7 +38,7 @@ limitations under the License.
 #include <cassert>
 #include <cstdio>
 #include <string>
-
+#include "common/profiler_macros.h"
 namespace quarisma
 {
 namespace profiler_impl
