@@ -1,5 +1,7 @@
 #include "util/cpu_info.h"
 
+#include "common/configure.h"
+
 #include <cpuinfo.h>
 #include <fmt/core.h>
 

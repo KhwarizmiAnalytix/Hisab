@@ -24,6 +24,7 @@
 #include <thread>
 #include <vector>
 
+#include "common/configure.h"
 #include "Testing/baseTest.h"
 
 // Only compile these tests for std_thread backend

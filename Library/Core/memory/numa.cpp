@@ -1,5 +1,6 @@
 #include "memory/numa.h"
 
+#include "common/configure.h"
 #include "common/macros.h"
 
 #if QUARISMA_HAS_NUMA

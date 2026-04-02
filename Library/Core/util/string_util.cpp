@@ -24,6 +24,7 @@
 #include <string>   // for char_traits, string, operator<<, allocator, operator==, oper...
 #include <string_view>
 
+#include "common/configure.h"
 #include "common/macros.h"   // for QUARISMA_UNUSED, QUARISMA_HAS_CXA_DEMANGLE
 #include "util/exception.h"  // for QUARISMA_CHECK_DEBUG, QUARISMA_CHECK, QUARISMA_CHECK_VALUE
 

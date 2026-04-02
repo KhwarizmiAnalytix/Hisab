@@ -22,6 +22,7 @@
 #include <functional>
 #include <vector>
 
+#include "common/configure.h"
 #include "Testing/baseTest.h"
 #include "parallel/common/parallel_tools_api.h"
 #include "parallel/parallel.h"

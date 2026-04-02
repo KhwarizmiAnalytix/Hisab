@@ -19,6 +19,8 @@
 #include <iostream>
 #include <vector>
 
+#include "common/configure.h"
+
 // Enzyme requires these declarations for AD
 // The __enzyme_autodiff and __enzyme_fwddiff functions are provided by the Enzyme plugin
 extern "C"

@@ -10,6 +10,7 @@
 #include <thread>
 #include <vector>
 
+#include "common/configure.h"
 #include "Testing/baseTest.h"
 #include "memory/gpu/allocator_gpu.h"
 #include "memory/gpu/cuda_caching_allocator.h"

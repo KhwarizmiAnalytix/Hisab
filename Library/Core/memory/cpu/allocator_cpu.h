@@ -35,6 +35,7 @@
 #include <string>
 #include <string_view>
 
+#include "common/configure.h"
 #include "common/macros.h"
 #include "memory/cpu/allocator.h"
 

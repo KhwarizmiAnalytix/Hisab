@@ -13,7 +13,7 @@ namespace quarisma
 {
 constexpr bool hasCUDA()
 {
-#if defined(QUARISMA_HAS_CUDA) && QUARISMA_HAS_CUDA
+#if QUARISMA_HAS_CUDA
     return true;
 #else
     return false;

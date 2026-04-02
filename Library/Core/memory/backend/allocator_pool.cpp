@@ -35,6 +35,7 @@
 #include <mutex>
 #include <string>
 
+#include "common/configure.h"
 #include "memory/cpu/allocator.h"
 
 #if !defined(_WIN32) && !defined(_MSC_VER)

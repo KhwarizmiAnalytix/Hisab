@@ -40,6 +40,7 @@
 #include <set>
 #include <vector>
 
+#include "common/configure.h"
 #include "common/macros.h"
 #include "logging/logger.h"
 #include "memory/backend/allocator_retry.h"

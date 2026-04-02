@@ -22,6 +22,7 @@
 #include <cstddef>
 #include <string>
 
+#include "common/configure.h"
 #include "common/macros.h"
 #include "memory/cpu/allocator.h"
 #include "memory/helper/memory_allocator.h"  // for allocate, free

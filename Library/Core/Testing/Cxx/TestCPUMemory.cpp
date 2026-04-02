@@ -29,6 +29,7 @@
 #include <utility>      // for move, min, max, max_element, min_element
 #include <vector>       // for vector, _Vector_iterator, _Vector_const_iterator
 
+#include "common/configure.h"
 #include "common/pointer.h"                // for make_ptr_unique_mutable
 #include "memory/backend/allocator_bfc.h"  // for allocator_bfc
 #include "memory/backend/allocator_pool.h"  // for basic_cpu_allocator, allocator_pool, NoopRounder, round_up_i...

@@ -26,6 +26,7 @@
 
 #include <memory>
 
+#include "common/configure.h"
 #include "common/export.h"
 #include "parallel/common/parallel_tools_impl.h"
 #include "parallel/parallel.h"

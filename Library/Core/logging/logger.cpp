@@ -12,6 +12,7 @@
 #include <utility>  // for pair
 #include <vector>   // for vector
 
+#include "common/configure.h"
 #include "common/macros.h"
 #include "logging/logger_verbosity_enum.h"
 #include "util/flat_hash.h"

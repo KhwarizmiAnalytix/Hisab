@@ -34,6 +34,7 @@ limitations under the License.
 #pragma once
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 #include "common/profiler_strings.h"
 
