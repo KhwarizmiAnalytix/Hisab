@@ -51,8 +51,8 @@ void pushITTCallbacks(
     const ProfilerConfig& config, const std::unordered_set<quarisma::RecordScope>& scopes)
 {
     // PROFILER_CHECK(
-        // quarisma::profiler_impl::impl::ittStubs()->enabled(),
-        // "Can't use ITT profiler - Quarisma was compiled without ITT");
+    // quarisma::profiler_impl::impl::ittStubs()->enabled(),
+    // "Can't use ITT profiler - Quarisma was compiled without ITT");
 
     quarisma::thread_local_debug_info::_push(
         quarisma::DebugInfoKind::PROFILER_STATE, std::make_shared<ITTThreadLocalState>(config));

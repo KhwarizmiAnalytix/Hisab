@@ -27,10 +27,10 @@
 
 #include "bespoke/common/collection.h"
 #include "bespoke/common/containers.h"
-#include "common/profiler_macros.h"
 #include "bespoke/common/orchestration/python_tracer.h"
 #include "bespoke/common/util.h"
 #include "common/irange.h"
+#include "common/profiler_macros.h"
 
 namespace py = pybind11;
 

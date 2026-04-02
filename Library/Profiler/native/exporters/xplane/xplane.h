@@ -242,9 +242,7 @@ public:
     std::string*     mutable_name() { return &name_; }
 
     void set_description(std::string metadata_description)
-    {
-        description_ = std::move(metadata_description);
-    }
+    { description_ = std::move(metadata_description); }
     const std::string& description() const { return description_; }
     std::string*       mutable_description() { return &description_; }
 
@@ -297,9 +295,7 @@ public:
         }
     }
     int64_t num_occurrences() const
-    {
-        return has_data() ? std::get<Data>(data_).num_occurrences : 0;
-    }
+    { return has_data() ? std::get<Data>(data_).num_occurrences : 0; }
 
     data_case_type data_case() const
     {
@@ -422,9 +418,7 @@ public:
     const std::map<int64_t, xevent_metadata>& event_metadata() const { return event_metadata_; }
     std::map<int64_t, xevent_metadata>*       mutable_event_metadata() { return &event_metadata_; }
     xevent_metadata*                          add_event_metadata(int64_t metadata_id)
-    {
-        return &event_metadata_[metadata_id];
-    }
+    { return &event_metadata_[metadata_id]; }
 
     const std::map<int64_t, x_stat_metadata>& stat_metadata() const { return stat_metadata_; }
     std::map<int64_t, x_stat_metadata>*       mutable_stat_metadata() { return &stat_metadata_; }

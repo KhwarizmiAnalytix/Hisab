@@ -11,19 +11,13 @@ device_option::device_option(device_enum type, int index)
     : index_(static_cast<device_option::int_t>(index)), type_(type) {};
 
 bool device_option::operator==(const quarisma::device_option& rhs) const noexcept
-{
-    return (index_ == rhs.index_ && type_ == rhs.type_);
-}
+{ return (index_ == rhs.index_ && type_ == rhs.type_); }
 
 device_option::int_t device_option::index() const noexcept
-{
-    return index_;
-}
+{ return index_; }
 
 quarisma::device_enum device_option::type() const noexcept
-{
-    return type_;
-}
+{ return type_; }
 
 std::ostream& operator<<(std::ostream& str, quarisma::device_enum const& s)
 {

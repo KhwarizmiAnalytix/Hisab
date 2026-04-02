@@ -57,9 +57,7 @@ void event_collector::set_current_thread_name(const char* /*name*/)
 }
 
 void set_event_collector(event_category category, const event_collector* collector)
-{
-    event_collector::instances_[static_cast<unsigned>(category)] = collector;
-}
+{ event_collector::instances_[static_cast<unsigned>(category)] = collector; }
 
 const event_collector* get_event_collector(event_category category)
 {
@@ -71,9 +69,7 @@ const event_collector* get_event_collector(event_category category)
 }
 
 uint64_t get_unique_arg()
-{
-    return g_unique_arg.fetch_add(1, std::memory_order_relaxed);
-}
+{ return g_unique_arg.fetch_add(1, std::memory_order_relaxed); }
 
 uint64_t get_arg_for_name(std::string_view name)
 {
@@ -113,9 +109,7 @@ scoped_region::scoped_region(event_category category, std::string_view name)
 }
 
 scoped_region::scoped_region(scoped_region&& other) noexcept : collector_(other.collector_)
-{
-    other.collector_ = nullptr;
-}
+{ other.collector_ = nullptr; }
 
 scoped_region::~scoped_region()
 {
@@ -126,8 +120,6 @@ scoped_region::~scoped_region()
 }
 
 const char* get_log_dir()
-{
-    return "";
-}
+{ return ""; }
 
 }  // namespace quarisma::tracing

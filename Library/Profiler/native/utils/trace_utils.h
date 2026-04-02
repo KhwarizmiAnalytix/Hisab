@@ -108,9 +108,7 @@ constexpr int kThreadIdDerivedMax = kThreadIdDeviceDerivedMax;
  * @return true if the thread ID is in the derived range
  */
 static inline bool is_derived_thread_id(int thread_id)
-{
-    return thread_id >= kThreadIdDerivedMin && thread_id <= kThreadIdDerivedMax;
-}
+{ return thread_id >= kThreadIdDerivedMin && thread_id <= kThreadIdDerivedMax; }
 
 /**
  * @brief Parse device ordinal from device names.

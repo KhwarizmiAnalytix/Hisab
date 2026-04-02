@@ -20,10 +20,7 @@ using ProfilerVoidEventStub = std::shared_ptr<void>;
 
 struct PROFILER_VISIBILITY ProfilerStubs
 {
-    virtual void record(
-        int16_t* device,
-        ProfilerVoidEventStub*          event,
-        int64_t*                        cpu_ns) const = 0;
+    virtual void  record(int16_t* device, ProfilerVoidEventStub* event, int64_t* cpu_ns) const = 0;
     virtual float elapsed(
         const ProfilerVoidEventStub* event, const ProfilerVoidEventStub* event2) const = 0;
     virtual void mark(const char* name) const                                          = 0;

@@ -561,9 +561,7 @@ public:
     }
 
     invoke_result<FT> operator()()
-    {
-        return this->invoke_impl(make_integer_sequence<sizeof...(ArgsT)>());
-    }
+    { return this->invoke_impl(make_integer_sequence<sizeof...(ArgsT)>()); }
 
 private:
     template <std::size_t... Is>
@@ -591,9 +589,7 @@ public:
     }
 
     invoke_result<FT> operator()()
-    {
-        return this->invoke_impl(make_integer_sequence<sizeof...(ArgsT)>());
-    }
+    { return this->invoke_impl(make_integer_sequence<sizeof...(ArgsT)>()); }
 
 private:
     template <std::size_t... Is>
@@ -616,9 +612,7 @@ class threaded_callback_queue::invoker
 public:
     template <class... ArgsTT>
     static invoker<FT, ArgsT...>* create(ArgsTT&&... args)
-    {
-        return new invoker<FT, ArgsT...>(std::forward<ArgsTT>(args)...);
-    }
+    { return new invoker<FT, ArgsT...>(std::forward<ArgsTT>(args)...); }
 
     template <class... ArgsTT>
     invoker(ArgsTT&&... args) : impl_(std::forward<ArgsTT>(args)...)
@@ -647,15 +641,11 @@ namespace detail
 {
 template <typename T>
 inline T* get_raw_ptr(T* ptr)
-{
-    return ptr;
-}
+{ return ptr; }
 
 template <typename T>
 inline T* get_raw_ptr(const std::shared_ptr<T>& ptr)
-{
-    return ptr.get();
-}
+{ return ptr.get(); }
 }  // namespace detail
 
 //-----------------------------------------------------------------------------
@@ -809,8 +799,8 @@ void threaded_callback_queue::push_control(FT&& f, ArgsT&&... args)
 
     worker w;
     using invoker_pointer_type = invoker_pointer<worker, threaded_callback_queue*, FT, ArgsT...>;
-    auto invoker_ptr =
-        invoker_pointer_type(invoker<worker, threaded_callback_queue*, FT, ArgsT...>::create(
+    auto invoker_ptr           = invoker_pointer_type(
+        invoker<worker, threaded_callback_queue*, FT, ArgsT...>::create(
             w, this, std::forward<FT>(f), std::forward<ArgsT>(args)...));
     w.future_ = invoker_ptr;
 

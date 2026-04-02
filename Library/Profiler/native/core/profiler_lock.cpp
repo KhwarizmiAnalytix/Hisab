@@ -36,7 +36,7 @@ limitations under the License.
 #include <atomic>  // for atomic, memory_order, ATOMIC_INT_LOCK_FREE, ATOMIC_VAR_INIT
 #include <optional>
 
-#include "common/profiler_macros.h"            // for PROFILER_UNLIKELY
+#include "common/profiler_macros.h"  // for PROFILER_UNLIKELY
 //#include "logging/logger.h"           // for PROFILER_LOG_ERROR
 #include "native/platform/env_var.h"  // for read_bool_from_env_var
 
@@ -57,9 +57,7 @@ static_assert(ATOMIC_INT_LOCK_FREE == 2, "Assumed atomic<int> was lock free");
 }  // namespace
 
 /*static*/ bool ProfilerLock::HasActiveSession()
-{
-    return g_session_active.load(std::memory_order_relaxed) != 0;
-}
+{ return g_session_active.load(std::memory_order_relaxed) != 0; }
 
 /*static*/ std::optional<ProfilerLock> ProfilerLock::Acquire()
 {

@@ -104,16 +104,12 @@ int parallel_tools_impl<backend_type::std_thread>::estimated_default_number_of_t
 //------------------------------------------------------------------------------
 template <>
 bool parallel_tools_impl<backend_type::std_thread>::single_thread()
-{
-    return parallel_thread_pool::instance().single_thread();
-}
+{ return parallel_thread_pool::instance().single_thread(); }
 
 //------------------------------------------------------------------------------
 template <>
 bool parallel_tools_impl<backend_type::std_thread>::is_parallel_scope()
-{
-    return parallel_thread_pool::instance().is_parallel_scope();
-}
+{ return parallel_thread_pool::instance().is_parallel_scope(); }
 
 }  // namespace parallel
 }  // namespace detail

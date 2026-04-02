@@ -65,19 +65,13 @@ namespace quarisma
 static std::atomic<bool> cpu_allocator_collect_stats{false};
 
 void EnableCPUAllocatorStats() noexcept
-{
-    cpu_allocator_collect_stats.store(true, std::memory_order_relaxed);
-}
+{ cpu_allocator_collect_stats.store(true, std::memory_order_relaxed); }
 
 void DisableCPUAllocatorStats() noexcept
-{
-    cpu_allocator_collect_stats.store(false, std::memory_order_relaxed);
-}
+{ cpu_allocator_collect_stats.store(false, std::memory_order_relaxed); }
 
 bool CPUAllocatorStatsEnabled() noexcept
-{
-    return cpu_allocator_collect_stats.load(std::memory_order_relaxed);
-}
+{ return cpu_allocator_collect_stats.load(std::memory_order_relaxed); }
 
 // ========== Memory Warning Configuration ==========
 
@@ -98,7 +92,6 @@ static constexpr int kMaxTotalAllocationWarnings = 1;
  */
 static constexpr int kMaxSingleAllocationWarnings = 5;
 #endif
-
 
 /**
  * @brief Threshold for total memory usage warnings (fraction of available RAM).
@@ -122,7 +115,6 @@ static constexpr double kTotalAllocationWarningThreshold = 0.5;
  * **Purpose**: Identify unexpectedly large allocations
  */
 static constexpr double kLargeAllocationWarningThreshold = 0.1;
-
 
 /**
  * @brief Cached threshold for large allocation warnings in bytes.
@@ -167,9 +159,7 @@ allocator_cpu::allocator_cpu()
 allocator_cpu::~allocator_cpu() = default;
 
 std::string allocator_cpu::Name() const
-{
-    return "cpu";
-}
+{ return "cpu"; }
 
 void* allocator_cpu::allocate_raw(size_t alignment, size_t num_bytes)
 {
@@ -319,9 +309,7 @@ bool allocator_cpu::ClearStats()
 }
 
 allocator_memory_enum allocator_cpu::GetMemoryType() const noexcept
-{
-    return allocator_memory_enum::HOST_PAGEABLE;
-}
+{ return allocator_memory_enum::HOST_PAGEABLE; }
 
 #if QUARISMA_HAS_NATIVE_PROFILER && 0
 void allocator_cpu::AddTraceMe(

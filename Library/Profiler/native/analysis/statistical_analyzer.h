@@ -34,8 +34,8 @@
 #include <string>
 #include <vector>
 
-#include "native/session/profiler.h"
 #include "common/flat_hash.h"
+#include "native/session/profiler.h"
 
 namespace quarisma
 {

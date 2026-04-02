@@ -457,57 +457,37 @@ public:
 
 // Test execution functions
 void TestGPUTimingStats()
-{
-    test_gpu_memory_stats::test_gpu_timing_stats();
-}
+{ test_gpu_memory_stats::test_gpu_timing_stats(); }
 
 void TestGPUResourceStats()
-{
-    test_gpu_memory_stats::test_gpu_resource_stats();
-}
+{ test_gpu_memory_stats::test_gpu_resource_stats(); }
 
 void TestCUDACachingStats()
-{
-    test_gpu_memory_stats::test_cuda_caching_stats();
-}
+{ test_gpu_memory_stats::test_cuda_caching_stats(); }
 
 void TestComprehensiveGPUStats()
-{
-    test_gpu_memory_stats::test_comprehensive_gpu_stats();
-}
+{ test_gpu_memory_stats::test_comprehensive_gpu_stats(); }
 
 void TestGPUStatsThreadSafety()
-{
-    test_gpu_memory_stats::test_gpu_stats_thread_safety();
-}
+{ test_gpu_memory_stats::test_gpu_stats_thread_safety(); }
 
 #else  // !QUARISMA_HAS_CUDA
 
 // Stub implementations when CUDA is not available
 void TestGPUTimingStats()
-{
-    QUARISMA_LOG_INFO("⚠ CUDA not enabled - GPU timing stats tests skipped");
-}
+{ QUARISMA_LOG_INFO("⚠ CUDA not enabled - GPU timing stats tests skipped"); }
 
 void TestGPUResourceStats()
-{
-    QUARISMA_LOG_INFO("⚠ CUDA not enabled - GPU resource stats tests skipped");
-}
+{ QUARISMA_LOG_INFO("⚠ CUDA not enabled - GPU resource stats tests skipped"); }
 
 void TestCUDACachingStats()
-{
-    QUARISMA_LOG_INFO("⚠ CUDA not enabled - CUDA caching stats tests skipped");
-}
+{ QUARISMA_LOG_INFO("⚠ CUDA not enabled - CUDA caching stats tests skipped"); }
 
 void TestComprehensiveGPUStats()
-{
-    QUARISMA_LOG_INFO("⚠ CUDA not enabled - comprehensive GPU stats tests skipped");
-}
+{ QUARISMA_LOG_INFO("⚠ CUDA not enabled - comprehensive GPU stats tests skipped"); }
 
 void TestGPUStatsThreadSafety()
-{
-    QUARISMA_LOG_INFO("⚠ CUDA not enabled - GPU thread safety tests skipped");
-}
+{ QUARISMA_LOG_INFO("⚠ CUDA not enabled - GPU thread safety tests skipped"); }
 
 #endif  // QUARISMA_HAS_CUDA
 

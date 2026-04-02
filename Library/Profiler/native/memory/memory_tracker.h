@@ -48,8 +48,8 @@
 #include <new>
 #include <vector>
 
-#include "native/session/profiler.h"
 #include "common/flat_hash.h"
+#include "native/session/profiler.h"
 
 #ifdef _WIN32
 #include <psapi.h>
@@ -236,7 +236,8 @@ private:
     mutable std::mutex allocations_mutex_;
 
     /// Map of active memory allocations (using custom hash for void*)
-    std::unordered_map<void*, quarisma::memory_allocation, quarisma::void_ptr_hash> active_allocations_;
+    std::unordered_map<void*, quarisma::memory_allocation, quarisma::void_ptr_hash>
+        active_allocations_;
 
     /// Atomic counter for current memory usage
     std::atomic<size_t> current_usage_{0};
@@ -344,9 +345,7 @@ public:
     };
 
     size_type max_size() const noexcept
-    {
-        return std::numeric_limits<size_type>::max() / (sizeof(T) == 0 ? 1 : sizeof(T));
-    }
+    { return std::numeric_limits<size_type>::max() / (sizeof(T) == 0 ? 1 : sizeof(T)); }
 
     /**
      * @brief Construct allocator with optional memory tracker
@@ -411,9 +410,7 @@ public:
      */
     template <typename U>
     bool operator==(const tracked_allocator<U>& other) const
-    {
-        return tracker_ == other.tracker_;
-    }
+    { return tracker_ == other.tracker_; }
 
     /**
      * @brief Compare allocators for inequality
@@ -423,9 +420,7 @@ public:
      */
     template <typename U>
     bool operator!=(const tracked_allocator<U>& other) const
-    {
-        return !(*this == other);
-    }
+    { return !(*this == other); }
 
 private:
     /// Pointer to the memory tracker

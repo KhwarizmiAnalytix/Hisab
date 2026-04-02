@@ -30,9 +30,7 @@ class profiler_status
 public:
     static profiler_status Ok() { return profiler_status(true, {}); }
     static profiler_status Error(std::string message)
-    {
-        return profiler_status(false, std::move(message));
-    }
+    { return profiler_status(false, std::move(message)); }
 
     bool               ok() const { return ok_; }
     const std::string& message() const { return message_; }

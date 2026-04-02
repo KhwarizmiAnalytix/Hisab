@@ -72,15 +72,11 @@ public:
 
     /// \brief A version of now_micros() that may be overridden by a subclass.
     virtual uint64_t get_overridable_now_micros() const
-    {
-        return get_overridable_now_nanos() / k_micros_to_nanos_;
-    }
+    { return get_overridable_now_nanos() / k_micros_to_nanos_; }
 
     /// \brief A version of now_seconds() that may be overridden by a subclass.
     virtual uint64_t get_overridable_now_seconds() const
-    {
-        return get_overridable_now_nanos() / k_seconds_to_nanos_;
-    }
+    { return get_overridable_now_nanos() / k_seconds_to_nanos_; }
 };
 
 }  // namespace quarisma

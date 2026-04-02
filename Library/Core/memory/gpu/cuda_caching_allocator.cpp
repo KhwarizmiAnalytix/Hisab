@@ -275,9 +275,7 @@ private:
     using FreeList = std::multimap<size_t, Block*>;
 
     bool should_cache(size_t size) const
-    {
-        return max_cached_bytes_ == std::numeric_limits<size_t>::max() || size <= max_cached_bytes_;
-    }
+    { return max_cached_bytes_ == std::numeric_limits<size_t>::max() || size <= max_cached_bytes_; }
 
     Block* find_suitable_block_locked(size_t size)
     {
@@ -499,33 +497,21 @@ void* cuda_caching_allocator::allocate(size_t size, stream_type stream)
 }
 
 void cuda_caching_allocator::deallocate(void* ptr, size_t size, stream_type stream)
-{
-    impl_->deallocate(ptr, size, stream);
-}
+{ impl_->deallocate(ptr, size, stream); }
 
 void cuda_caching_allocator::empty_cache()
-{
-    impl_->empty_cache();
-}
+{ impl_->empty_cache(); }
 
 void cuda_caching_allocator::set_max_cached_bytes(size_t bytes)
-{
-    impl_->set_max_cached_bytes(bytes);
-}
+{ impl_->set_max_cached_bytes(bytes); }
 
 size_t cuda_caching_allocator::max_cached_bytes() const
-{
-    return impl_->max_cached_bytes();
-}
+{ return impl_->max_cached_bytes(); }
 
 unified_cache_stats cuda_caching_allocator::stats() const
-{
-    return impl_->stats();
-}
+{ return impl_->stats(); }
 
 int cuda_caching_allocator::device() const
-{
-    return impl_->device();
-}
+{ return impl_->device(); }
 }  // namespace gpu
 }  // namespace quarisma

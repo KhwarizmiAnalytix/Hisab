@@ -41,8 +41,8 @@ limitations under the License.
 #include <string_view>
 #include <vector>
 
-#include "common/profiler_macros.h"
 #include "common/profiler_export.h"
+#include "common/profiler_macros.h"
 
 namespace quarisma
 {

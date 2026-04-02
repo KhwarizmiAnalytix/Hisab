@@ -1,6 +1,6 @@
 {
-  "cppcheck.executable": "C:/Strawberry/c/bin/cppcheck.exe;--enable=warning;--quiet;--inline-suppr;--error-exitcode=2;--force;--platform=win64;--library=windows;--library=gnu;--check-level=normal;--ctu;--max-ctu-depth=3;-j16;--template={id}:{file}:{line},{severity},{message};--relative-paths=C:/dev/cursor_code/Quarisma;--checkers-report=C:/dev/cursor_code/Quarisma/build/cppcheck-checkers.txt;--suppressions-list=C:/dev/cursor_code/Quarisma/Scripts/cppcheck_suppressions.txt",
-  "cppcheck.configFile": "C:/dev/cursor_code/Quarisma/Scripts/cppcheck_suppressions.txt",
+  "cppcheck.executable": "C:/Strawberry/c/bin/cppcheck.exe;--enable=warning;--quiet;--inline-suppr;--error-exitcode=2;--force;--platform=win64;--library=windows;--library=gnu;--check-level=normal;--ctu;--max-ctu-depth=3;-j16;-DQUARISMA_CPPCHECK=1;--template={id}:{file}:{line},{severity},{message};--relative-paths=C:/dev/cursor_code/Quarisma;--checkers-report=C:/dev/cursor_code/Quarisma/build/cppcheck-checkers.txt;--suppressions-list=C:/dev/cursor_code/Quarisma/Scripts/suppressions/cppcheck_suppressions.txt",
+  "cppcheck.configFile": "C:/dev/cursor_code/Quarisma/Scripts/suppressions/cppcheck_suppressions.txt",
   "cppcheck.includePaths": [
     "C:/dev/cursor_code/Quarisma/Library"
   ],

@@ -111,9 +111,7 @@ public:
      * @return true if the timespans overlap (inclusive end-points)
      */
     bool overlaps(const timespan& other) const
-    {
-        return begin_ps() <= other.end_ps() && other.begin_ps() <= end_ps();
-    }
+    { return begin_ps() <= other.end_ps() && other.begin_ps() <= end_ps(); }
 
     /**
      * @brief Check if this timespan includes another timespan.
@@ -122,9 +120,7 @@ public:
      * @return true if this timespan fully contains the other
      */
     bool includes(const timespan& other) const
-    {
-        return begin_ps() <= other.begin_ps() && other.end_ps() <= end_ps();
-    }
+    { return begin_ps() <= other.begin_ps() && other.end_ps() <= end_ps(); }
 
     /**
      * @brief Check if a specific time point is within this timespan.
@@ -180,9 +176,7 @@ public:
      * @brief Check if two timespans are equal.
      */
     bool operator==(const timespan& other) const
-    {
-        return begin_ps_ == other.begin_ps_ && duration_ps_ == other.duration_ps_;
-    }
+    { return begin_ps_ == other.begin_ps_ && duration_ps_ == other.duration_ps_; }
 
     /**
      * @brief Less-than-or-equal comparison.
@@ -195,9 +189,7 @@ public:
      * @return String in format "[begin_ps, end_ps]"
      */
     std::string debug_string() const
-    {
-        return "[" + std::to_string(begin_ps()) + ", " + std::to_string(end_ps()) + "]";
-    }
+    { return "[" + std::to_string(begin_ps()) + ", " + std::to_string(end_ps()) + "]"; }
 
     /**
      * @brief Compare timespans by duration (ascending), then begin time (ascending).
@@ -224,17 +216,13 @@ private:
  * @brief Create a timespan from endpoints in picoseconds.
  */
 inline timespan pico_span(uint64_t start_ps, uint64_t end_ps)
-{
-    return timespan::from_end_points(start_ps, end_ps);
-}
+{ return timespan::from_end_points(start_ps, end_ps); }
 
 /**
  * @brief Create a timespan from endpoints in milliseconds.
  */
 inline timespan milli_span(double start_ms, double end_ms)
-{
-    return pico_span(milli_to_pico(start_ms), milli_to_pico(end_ms));
-}
+{ return pico_span(milli_to_pico(start_ms), milli_to_pico(end_ms)); }
 
 }  // namespace profiler_impl
 }  // namespace quarisma

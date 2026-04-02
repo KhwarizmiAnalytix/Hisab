@@ -17,13 +17,13 @@
 #include <thread>
 #include <vector>
 
-#include "common/configure.h"
 #include "Testing/baseTest.h"
+#include "common/configure.h"
 #include "common/pointer.h"
 #include "memory/backend/allocator_bfc.h"
 #include "memory/backend/allocator_pool.h"
 #include "memory/helper/memory_allocator.h"
-#if QUARISMA_HAS_NATIVE_PROFILER&&0
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
 #include "native/analysis/statistical_analyzer.h"
 #include "native/memory/memory_tracker.h"
 #include "native/session/profiler.h"
@@ -43,17 +43,13 @@ namespace
  * @brief Helper function to check memory alignment
  */
 bool is_aligned(void* ptr, size_t alignment)
-{
-    return (reinterpret_cast<uintptr_t>(ptr) % alignment) == 0;
-}
+{ return (reinterpret_cast<uintptr_t>(ptr) % alignment) == 0; }
 
 /**
  * @brief Helper function to fill memory with pattern
  */
 void fill_memory(void* ptr, size_t size, uint8_t pattern)
-{
-    std::memset(ptr, pattern, size);
-}
+{ std::memset(ptr, pattern, size); }
 
 /**
  * @brief Helper function to validate memory pattern
@@ -102,7 +98,7 @@ std::unique_ptr<allocator_bfc> create_test_bfc_allocator()
  */
 QUARISMATEST(AllocatorBFC, basic_allocation_deallocation)
 {
-#if QUARISMA_HAS_NATIVE_PROFILER&&0
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
     traceme_recorder::start(3);
     auto allocator = create_test_bfc_allocator();
 

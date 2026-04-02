@@ -23,22 +23,14 @@ namespace
 {
 #ifdef _WIN32
 void set_env(const char* name, const char* value)
-{
-    _putenv_s(name, value);
-}
+{ _putenv_s(name, value); }
 void unset_env(const char* name)
-{
-    _putenv_s(name, "");
-}
+{ _putenv_s(name, ""); }
 #else
 void set_env(const char* name, const char* value)
-{
-    setenv(name, value, 1);
-}
+{ setenv(name, value, 1); }
 void unset_env(const char* name)
-{
-    unsetenv(name);
-}
+{ unsetenv(name); }
 #endif
 
 }  // namespace

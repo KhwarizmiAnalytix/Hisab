@@ -41,8 +41,6 @@ namespace quarisma
 {
 
 inline xplane_visitor CreateTfXPlaneVisitor(const xplane* plane)
-{
-    return xplane_visitor(plane, {FindHostEventType, FindTfOpEventType}, {FindStatType});
-}
+{ return xplane_visitor(plane, {FindHostEventType, FindTfOpEventType}, {FindStatType}); }
 
 }  // namespace quarisma

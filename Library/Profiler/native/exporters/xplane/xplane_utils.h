@@ -39,9 +39,9 @@ limitations under the License.
 #include <string_view>
 #include <vector>
 
+#include "common/flat_hash.h"
 #include "native/exporters/xplane/xplane.h"
 #include "native/exporters/xplane/xplane_visitor.h"
-#include "common/flat_hash.h"
 
 namespace quarisma
 {
@@ -49,9 +49,7 @@ namespace quarisma
 // Returns a timespan from an xevent.
 // WARNING: This should only be used when comparing events from the same xline.
 inline timespan xevent_timespan(const xevent& event)
-{
-    return timespan(event.offset_ps(), event.duration_ps());
-}
+{ return timespan(event.offset_ps(), event.duration_ps()); }
 
 // Returns the planes with the given predicate.
 template <typename F>
@@ -119,9 +117,7 @@ void remove_empty_lines(xplane* plane);
 // Sort lines in plane with a provided comparator.
 template <class Compare>
 void sort_xlines_by(xplane* plane, Compare comp)
-{
-    std::sort(plane->mutable_lines()->begin(), plane->mutable_lines()->end(), comp);
-}
+{ std::sort(plane->mutable_lines()->begin(), plane->mutable_lines()->end(), comp); }
 
 class xlines_comparator_by_name
 {

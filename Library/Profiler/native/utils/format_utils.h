@@ -38,6 +38,7 @@ limitations under the License.
 #include <cassert>
 #include <cstdio>
 #include <string>
+
 #include "common/profiler_macros.h"
 namespace quarisma
 {
@@ -71,9 +72,7 @@ inline std::string format_double(const char* fmt, double d)
  * @return Formatted string (e.g., "3.1", "42.7")
  */
 inline std::string one_digit(double d)
-{
-    return internal::format_double("%.1f", d);
-}
+{ return internal::format_double("%.1f", d); }
 
 /**
  * @brief Format double with 2 digits after the decimal point.
@@ -82,9 +81,7 @@ inline std::string one_digit(double d)
  * @return Formatted string (e.g., "3.14", "42.75")
  */
 inline std::string two_digits(double d)
-{
-    return internal::format_double("%.2f", d);
-}
+{ return internal::format_double("%.2f", d); }
 
 /**
  * @brief Format double with 3 digits after the decimal point.
@@ -93,9 +90,7 @@ inline std::string two_digits(double d)
  * @return Formatted string (e.g., "3.142", "42.750")
  */
 inline std::string three_digits(double d)
-{
-    return internal::format_double("%.3f", d);
-}
+{ return internal::format_double("%.3f", d); }
 
 /**
  * @brief Format double with maximum precision.
@@ -107,9 +102,7 @@ inline std::string three_digits(double d)
  * @return Formatted string with maximum precision
  */
 inline std::string max_precision(double d)
-{
-    return internal::format_double("%.17g", d);
-}
+{ return internal::format_double("%.17g", d); }
 
 }  // namespace profiler_impl
 }  // namespace quarisma

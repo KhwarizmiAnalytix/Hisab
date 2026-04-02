@@ -43,13 +43,9 @@ namespace quarisma
 static bool cpu_allocator_collect_full_stats = false;
 
 void EnableCPUAllocatorFullStats()
-{
-    cpu_allocator_collect_full_stats = true;
-}
+{ cpu_allocator_collect_full_stats = true; }
 bool CPUAllocatorFullStatsEnabled()
-{
-    return cpu_allocator_collect_full_stats;
-}
+{ return cpu_allocator_collect_full_stats; }
 
 std::string allocator_attributes::debug_string() const
 {

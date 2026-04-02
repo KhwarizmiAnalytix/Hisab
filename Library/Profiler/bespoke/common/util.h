@@ -8,10 +8,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include "common/profiler_export.h"
-#include "common/profiler_macros.h"
 #include "bespoke/common/record_function.h"
 #include "common/TensorImpl.h"
+#include "common/profiler_export.h"
+#include "common/profiler_macros.h"
 //#include "util/hash.h"
 
 // #include <quarisma/csrc/jit/frontend/source_range.h>
@@ -23,7 +23,7 @@
     {                                                                            \
         if PROFILER_UNLIKELY (!(cond))                                           \
         {                                                                        \
-            quarisma::profiler_impl::impl::logSoftAssert(                             \
+            quarisma::profiler_impl::impl::logSoftAssert(                        \
                 __func__, __FILE__, static_cast<uint32_t>(__LINE__), #cond, ""); \
             return false;                                                        \
         }                                                                        \
@@ -63,9 +63,7 @@ inline void logSoftAssert(
     uint32_t                                   line,
     const char*                                cond,
     ::quarisma::detail::CompileTimeEmptyString args)
-{
-    logSoftAssert(func, file, line, cond, (const char*)args);
-}
+{ logSoftAssert(func, file, line, cond, (const char*)args); }
 PROFILER_API void logSoftAssert(
     const char* func, const char* file, uint32_t line, const char* cond, const std::string& args);
 

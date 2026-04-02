@@ -70,9 +70,7 @@ namespace impl
 template <typename T>
 constexpr bool supports_default_construction(
     const ::strong::default_constructible::modifier<T>* /*unused*/)
-{
-    return true;
-}
+{ return true; }
 }  // namespace impl
 
 template <typename T, typename Tag, typename... M>
@@ -111,35 +109,23 @@ public:
 
     [[nodiscard]]
     constexpr T& value_of() & noexcept
-    {
-        return val;
-    }
+    { return val; }
     [[nodiscard]]
     constexpr const T& value_of() const& noexcept
-    {
-        return val;
-    }
+    { return val; }
     [[nodiscard]]
     constexpr T&& value_of() && noexcept
-    {
-        return std::move(val);
-    }
+    { return std::move(val); }
 
     [[nodiscard]]
     friend constexpr T& value_of(type& t) noexcept
-    {
-        return t.val;
-    }
+    { return t.val; }
     [[nodiscard]]
     friend constexpr const T& value_of(const type& t) noexcept
-    {
-        return t.val;
-    }
+    { return t.val; }
     [[nodiscard]]
     friend constexpr T&& value_of(type&& t) noexcept
-    {
-        return std::move(t).val;
-    }
+    { return std::move(t).val; }
 
 private:
     T val;
@@ -149,13 +135,9 @@ namespace impl
 {
 template <typename T, typename Tag, typename... Ms>
 constexpr bool is_strong_type_func(const strong::type<T, Tag, Ms...>* /*unused*/)
-{
-    return true;
-}
+{ return true; }
 constexpr bool is_strong_type_func(...)
-{
-    return false;
-}
+{ return false; }
 template <typename T, typename Tag, typename... Ms>
 constexpr T underlying_type(strong::type<T, Tag, Ms...>*);
 
@@ -194,15 +176,11 @@ namespace impl
 {
 template <typename T, typename = impl::WhenNotStrongType<T>>
 constexpr T&& access(T&& t) noexcept
-{
-    return std::forward<T>(t);
-}
+{ return std::forward<T>(t); }
 template <typename T, typename = impl::WhenStrongType<T>>
 [[nodiscard]]
 constexpr auto access(T&& t) noexcept -> decltype(value_of(std::forward<T>(t)))
-{
-    return value_of(std::forward<T>(t));
-}
+{ return value_of(std::forward<T>(t)); }
 
 }  // namespace impl
 struct equality
@@ -221,17 +199,13 @@ public:
     friend constexpr auto operator==(const type& lh, const type& rh) noexcept(
         noexcept(std::declval<const T&>() == std::declval<const T&>()))
         -> decltype(std::declval<const T&>() == std::declval<const T&>())
-    {
-        return value_of(lh) == value_of(rh);
-    }
+    { return value_of(lh) == value_of(rh); }
 
     [[nodiscard]]
     friend constexpr auto operator!=(const type& lh, const type& rh) noexcept(
         noexcept(std::declval<const T&>() != std::declval<const T&>()))
         -> decltype(std::declval<const T&>() != std::declval<const T&>())
-    {
-        return value_of(lh) != value_of(rh);
-    }
+    { return value_of(lh) != value_of(rh); }
 };
 
 namespace impl
@@ -248,30 +222,22 @@ public:
     friend constexpr auto operator==(const T& lh, const Other& rh) noexcept(
         noexcept(std::declval<const TT&>() == std::declval<const OT&>()))
         -> decltype(std::declval<const TT&>() == std::declval<const OT&>())
-    {
-        return value_of(lh) == impl::access(rh);
-    }
+    { return value_of(lh) == impl::access(rh); }
     [[nodiscard]]
     friend constexpr auto operator==(const Other& lh, const T& rh) noexcept(
         noexcept(std::declval<const OT&>() == std::declval<const TT&>()))
         -> decltype(std::declval<const OT&>() == std::declval<const TT&>())
-    {
-        return impl::access(lh) == value_of(rh);
-    }
+    { return impl::access(lh) == value_of(rh); }
     [[nodiscard]]
     friend constexpr auto operator!=(const T& lh, const Other rh) noexcept(
         noexcept(std::declval<const TT&>() != std::declval<const OT&>()))
         -> decltype(std::declval<const TT&>() != std::declval<const OT&>())
-    {
-        return value_of(lh) != impl::access(rh);
-    }
+    { return value_of(lh) != impl::access(rh); }
     [[nodiscard]]
     friend constexpr auto operator!=(const Other& lh, const T& rh) noexcept(
         noexcept(std::declval<const OT&>() != std::declval<const TT&>()))
         -> decltype(std::declval<const OT&>() != std::declval<const TT&>())
-    {
-        return impl::access(lh) != value_of(rh);
-    }
+    { return impl::access(lh) != value_of(rh); }
 };
 }  // namespace impl
 template <typename... Ts>
@@ -297,61 +263,45 @@ public:
     friend constexpr auto operator<(const T& lh, const Other& rh) noexcept(
         noexcept(std::declval<const TT&>() < std::declval<const OT&>()))
         -> decltype(std::declval<const TT&>() < std::declval<const OT&>())
-    {
-        return value_of(lh) < impl::access(rh);
-    }
+    { return value_of(lh) < impl::access(rh); }
     [[nodiscard]]
     friend constexpr auto operator<(const Other& lh, const T& rh) noexcept(
         noexcept(std::declval<const OT&>() < std::declval<const TT&>()))
         -> decltype(std::declval<const OT&>() < std::declval<const TT&>())
-    {
-        return impl::access(lh) < value_of(rh);
-    }
+    { return impl::access(lh) < value_of(rh); }
 
     [[nodiscard]]
     friend constexpr auto operator<=(const T& lh, const Other& rh) noexcept(
         noexcept(std::declval<const TT&>() <= std::declval<const OT&>()))
         -> decltype(std::declval<const TT&>() <= std::declval<const OT&>())
-    {
-        return value_of(lh) <= impl::access(rh);
-    }
+    { return value_of(lh) <= impl::access(rh); }
     [[nodiscard]]
     friend constexpr auto operator<=(const Other& lh, const T& rh) noexcept(
         noexcept(std::declval<const OT&>() <= std::declval<const TT&>()))
         -> decltype(std::declval<const OT&>() <= std::declval<const TT&>())
-    {
-        return impl::access(lh) <= value_of(rh);
-    }
+    { return impl::access(lh) <= value_of(rh); }
 
     [[nodiscard]]
     friend constexpr auto operator>(const T& lh, const Other& rh) noexcept(
         noexcept(std::declval<const TT&>() > std::declval<const OT&>()))
         -> decltype(std::declval<const TT&>() > std::declval<const OT&>())
-    {
-        return value_of(lh) > impl::access(rh);
-    }
+    { return value_of(lh) > impl::access(rh); }
     [[nodiscard]]
     friend constexpr auto operator>(const Other& lh, const T& rh) noexcept(
         noexcept(std::declval<const OT&>() > std::declval<const TT&>()))
         -> decltype(std::declval<const OT&>() > std::declval<const TT&>())
-    {
-        return impl::access(lh) > value_of(rh);
-    }
+    { return impl::access(lh) > value_of(rh); }
 
     [[nodiscard]]
     friend constexpr auto operator>=(const T& lh, const Other& rh) noexcept(
         noexcept(std::declval<const TT&>() >= std::declval<const OT&>()))
         -> decltype(std::declval<const TT&>() >= std::declval<const OT&>())
-    {
-        return value_of(lh) >= impl::access(rh);
-    }
+    { return value_of(lh) >= impl::access(rh); }
     [[nodiscard]]
     friend constexpr auto operator>=(const Other& lh, const T& rh) noexcept(
         noexcept(std::declval<const OT&>() >= std::declval<const TT&>()))
         -> decltype(std::declval<const OT&>() >= std::declval<const TT&>())
-    {
-        return impl::access(lh) >= value_of(rh);
-    }
+    { return impl::access(lh) >= value_of(rh); }
 };
 }  // namespace impl
 
@@ -458,25 +408,19 @@ public:
     friend constexpr auto operator<(const type& lh, const type& rh) noexcept(
         noexcept(std::declval<const T&>() < std::declval<const T&>()))
         -> decltype(std::declval<const T&>() < std::declval<const T&>())
-    {
-        return value_of(lh) < value_of(rh);
-    }
+    { return value_of(lh) < value_of(rh); }
 
     [[nodiscard]]
     friend constexpr auto operator<=(const type& lh, const type& rh) noexcept(
         noexcept(std::declval<const T&>() <= std::declval<const T&>()))
         -> decltype(std::declval<const T&>() <= std::declval<const T&>())
-    {
-        return value_of(lh) <= value_of(rh);
-    }
+    { return value_of(lh) <= value_of(rh); }
 
     [[nodiscard]]
     friend constexpr auto operator>(const type& lh, const type& rh) noexcept(
         noexcept(std::declval<const T&>() > std::declval<const T&>()))
         -> decltype(std::declval<const T&>() > std::declval<const T&>())
-    {
-        return value_of(lh) > value_of(rh);
-    }
+    { return value_of(lh) > value_of(rh); }
 
     [[nodiscard]]
     friend constexpr
@@ -484,9 +428,7 @@ public:
         auto operator>=(const type& lh, const type& rh) noexcept(
             noexcept(std::declval<const T&>() >= std::declval<const T&>()))
             -> decltype(std::declval<const T&>() >= std::declval<const T&>())
-    {
-        return value_of(lh) >= value_of(rh);
-    }
+    { return value_of(lh) >= value_of(rh); }
 };
 
 struct ostreamable
@@ -670,9 +612,7 @@ public:
     }
 
     friend constexpr T operator/(const type& lh, const type& rh)
-    {
-        return value_of(lh) / value_of(rh);
-    }
+    { return value_of(lh) / value_of(rh); }
 
     template <
         typename TT = T,
@@ -685,9 +625,7 @@ public:
 
     template <typename TT = T, typename = decltype(std::declval<TT>() % std::declval<TT>())>
     friend constexpr T operator%(type lh, type rh) noexcept(noexcept(value_of(lh) % value_of(rh)))
-    {
-        return value_of(lh) % value_of(rh);
-    }
+    { return value_of(lh) % value_of(rh); }
 };
 
 template <typename D = void>
@@ -732,9 +670,7 @@ public:
     static_assert(std::is_constructible_v<difference, base_diff_type>, "");
     [[nodiscard]]
     friend constexpr difference operator-(const type& lh, const type& rh)
-    {
-        return difference(value_of(lh) - value_of(rh));
-    }
+    { return difference(value_of(lh) - value_of(rh)); }
 
     friend constexpr type& operator+=(type& lh, const difference& d) noexcept(
         noexcept(value_of(lh) += impl::access(d)))
@@ -752,21 +688,15 @@ public:
 
     [[nodiscard]]
     friend constexpr type operator+(type lh, const difference& d)
-    {
-        return lh += d;
-    }
+    { return lh += d; }
 
     [[nodiscard]]
     friend constexpr type operator+(const difference& d, type rh)
-    {
-        return rh += d;
-    }
+    { return rh += d; }
 
     [[nodiscard]]
     friend constexpr type operator-(type lh, const difference& d)
-    {
-        return lh -= d;
-    }
+    { return lh -= d; }
 };
 
 struct pointer
@@ -785,33 +715,25 @@ public:
     [[nodiscard]]
     friend constexpr auto operator==(const type& t, std::nullptr_t) noexcept(noexcept(
         std::declval<const TT&>() == nullptr)) -> decltype(std::declval<const TT&>() == nullptr)
-    {
-        return value_of(t) == nullptr;
-    }
+    { return value_of(t) == nullptr; }
 
     template <typename TT = T>
     [[nodiscard]]
     friend constexpr auto operator==(std::nullptr_t, const type& t) noexcept(noexcept(
         nullptr == std::declval<const TT&>())) -> decltype(nullptr == std::declval<const TT&>())
-    {
-        return value_of(t) == nullptr;
-    }
+    { return value_of(t) == nullptr; }
 
     template <typename TT = T>
     [[nodiscard]]
     friend constexpr auto operator!=(const type& t, std::nullptr_t) noexcept(noexcept(
         std::declval<const TT&>() != nullptr)) -> decltype(std::declval<const TT&>() != nullptr)
-    {
-        return value_of(t) != nullptr;
-    }
+    { return value_of(t) != nullptr; }
 
     template <typename TT = T>
     [[nodiscard]]
     friend constexpr auto operator!=(std::nullptr_t, const type& t) noexcept(noexcept(
         nullptr != std::declval<const TT&>())) -> decltype(nullptr != std::declval<const TT&>())
-    {
-        return value_of(t) != nullptr;
-    }
+    { return value_of(t) != nullptr; }
 
     [[nodiscard]]
     constexpr decltype(*std::declval<const T&>()) operator*() const
@@ -822,9 +744,7 @@ public:
 
     [[nodiscard]]
     constexpr decltype(&(*std::declval<const T&>())) operator->() const
-    {
-        return &operator*();
-    }
+    { return &operator*(); }
 };
 
 struct arithmetic
@@ -835,9 +755,7 @@ struct arithmetic
     public:
         [[nodiscard]]
         friend constexpr T operator-(const T& lh)
-        {
-            return T{-value_of(lh)};
-        }
+        { return T{-value_of(lh)}; }
 
         friend constexpr T& operator+=(T& lh, const T& rh) noexcept(
             noexcept(value_of(lh) += value_of(rh)))

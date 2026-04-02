@@ -187,9 +187,7 @@ QUARISMA_API memory_bandwidth_info GetMemoryBandwidthInfo();
  * ```
  */
 QUARISMA_NODISCARD inline int64_t available_ram() noexcept
-{
-    return GetMemoryInfo().free;
-}
+{ return GetMemoryInfo().free; }
 
 }  // namespace port
 }  // namespace quarisma

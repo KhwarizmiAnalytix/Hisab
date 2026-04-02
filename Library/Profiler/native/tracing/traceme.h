@@ -41,9 +41,9 @@ limitations under the License.
 #include <utility>
 
 ////#include "logging/logger.h"
+#include "common/no_init.h"
 #include "native/tracing/traceme_encode.h"
 #include "native/tracing/traceme_recorder.h"
-#include "common/no_init.h"
 
 namespace quarisma
 {
@@ -575,9 +575,7 @@ public:
      */
     static int64_t activity_start(
         const std::string& name, int level = 1, uint64_t filter_mask = kTraceFilterDefaultMask)
-    {
-        return activity_start(std::string_view(name), level, filter_mask);
-    }
+    { return activity_start(std::string_view(name), level, filter_mask); }
 
     /**
      * @brief Starts a trace activity with a C-string name (convenience overload).
@@ -588,9 +586,7 @@ public:
      */
     static int64_t activity_start(
         const char* name, int level = 1, uint64_t filter_mask = kTraceFilterDefaultMask)
-    {
-        return activity_start(std::string_view(name), level, filter_mask);
-    }
+    { return activity_start(std::string_view(name), level, filter_mask); }
 
     /**
      * @brief Ends a trace activity started with activity_start().
@@ -780,8 +776,6 @@ private:
  * ```
  */
 inline bool tf_op_details_enabled()
-{
-    return traceme::active(static_cast<int>(traceme_level_enum::VERBOSE));
-}
+{ return traceme::active(static_cast<int>(traceme_level_enum::VERBOSE)); }
 
 }  // namespace quarisma

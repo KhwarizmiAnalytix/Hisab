@@ -27,7 +27,7 @@ void sub_allocator::VisitFree(void* ptr, int index, size_t num_bytes)
 {
     // Although we don't guarantee any order of visitor application, strive
     // to apply free visitors in reverse order of alloc visitors.
-    for (int i = (int)free_visitors_.size() - 1; i >= 0; --i)
+    for (int i = static_cast<int>(free_visitors_.size()) - 1; i >= 0; --i)
     {
         free_visitors_[i](ptr, index, num_bytes);
     }

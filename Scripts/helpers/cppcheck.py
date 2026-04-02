@@ -98,6 +98,8 @@ def build_cppcheck_command(
 
     cmd = [
         "cppcheck",
+        # Profiler branch hints: see Library/Profiler/common/profiler_macros.h
+        "-DQUARISMA_CPPCHECK=1",
         # Only scan Library and Examples directories (not entire project)
         "Library",
         "Examples",

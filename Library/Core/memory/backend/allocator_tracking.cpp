@@ -403,9 +403,7 @@ void allocator_tracking::deallocate_raw(void* ptr)
 }
 
 bool allocator_tracking::tracks_allocation_sizes() const noexcept
-{
-    return track_sizes_locally_ || allocator_->tracks_allocation_sizes();
-}
+{ return track_sizes_locally_ || allocator_->tracks_allocation_sizes(); }
 
 size_t allocator_tracking::RequestedSize(const void* ptr) const
 {
@@ -456,14 +454,10 @@ int64_t allocator_tracking::AllocationId(const void* ptr) const
 }
 
 std::optional<allocator_stats> allocator_tracking::GetStats() const
-{
-    return allocator_->GetStats();
-}
+{ return allocator_->GetStats(); }
 
 bool allocator_tracking::ClearStats()
-{
-    return allocator_->ClearStats();
-}
+{ return allocator_->ClearStats(); }
 
 std::tuple<size_t, size_t, size_t> allocator_tracking::GetSizes() const
 {
@@ -573,9 +567,7 @@ memory_fragmentation_metrics allocator_tracking::GetFragmentationMetrics() const
 }
 
 atomic_timing_stats allocator_tracking::GetTimingStats() const noexcept
-{
-    return timing_stats_;
-}
+{ return timing_stats_; }
 
 std::vector<enhanced_alloc_record> allocator_tracking::GetEnhancedRecords() const
 {
@@ -600,9 +592,7 @@ void allocator_tracking::SetLoggingLevel(tracking_log_level level) noexcept
 }
 
 tracking_log_level allocator_tracking::GetLoggingLevel() const noexcept
-{
-    return log_level_.load(std::memory_order_relaxed);
-}
+{ return log_level_.load(std::memory_order_relaxed); }
 
 void allocator_tracking::ResetTimingStats() noexcept
 {

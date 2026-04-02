@@ -53,9 +53,7 @@ namespace quarisma
  */
 template <typename E>
 inline std::string_view enum_to_string(E x)
-{
-    return magic_enum::enum_name(x);
-}
+{ return magic_enum::enum_name(x); }
 
 /**
  * @brief Convert a string to an enum value using magic_enum (case-insensitive)
@@ -72,9 +70,7 @@ inline std::string_view enum_to_string(E x)
  */
 template <typename E>
 E string_to_enum(std::string_view str)
-{
-    return magic_enum::enum_cast<E>(str, magic_enum::case_insensitive).value();
-}
+{ return magic_enum::enum_cast<E>(str, magic_enum::case_insensitive).value(); }
 }  // namespace quarisma
 #else
 namespace quarisma
@@ -105,9 +101,7 @@ inline std::string_view enum_to_string(E x)
  */
 template <typename E>
 E string_to_enum(std::string_view str)
-{
-    return static_cast<E>(std::stoi(std::string(str)));
-}
+{ return static_cast<E>(std::stoi(std::string(str))); }
 }  // namespace quarisma
 #endif
 
@@ -321,9 +315,7 @@ void str_append(std::string* result, const Args&... args);
  * @endcode
  */
 inline bool str_contains(std::string_view haystack, char needle) noexcept
-{
-    return haystack.find(needle) != haystack.npos;
-}
+{ return haystack.find(needle) != haystack.npos; }
 
 // =============================================================================
 // TEMPLATE IMPLEMENTATIONS
@@ -334,15 +326,11 @@ namespace internal
 // Helper to convert a value to string
 template <typename T>
 inline void to_string_helper(std::ostringstream& oss, const T& value)
-{
-    oss << value;
-}
+{ oss << value; }
 
 // Specialization for string_view to avoid unnecessary conversions
 inline void to_string_helper(std::ostringstream& oss, std::string_view value)
-{
-    oss << value;
-}
+{ oss << value; }
 
 // Specialization for const char* to avoid unnecessary conversions
 inline void to_string_helper(std::ostringstream& oss, const char* value)

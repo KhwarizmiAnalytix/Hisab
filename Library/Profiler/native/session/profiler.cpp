@@ -178,9 +178,9 @@ std::string ConvertScopeDataToChromeTrace(
         auto start_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
                             scope->start_time_.time_since_epoch())
                             .count();
-        auto end_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                          scope->end_time_.time_since_epoch())
-                          .count();
+        auto end_ns   = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                            scope->end_time_.time_since_epoch())
+                            .count();
 
         // Adjust for base time
         start_ns -= base_time_ns;
@@ -434,9 +434,7 @@ double profiler_scope_data::get_duration_ns() const
 
 profiler_session::profiler_session(quarisma::profiler_options options)
     : options_(std::move(options))
-{
-    initialize_components();
-}
+{ initialize_components(); }
 
 profiler_session::~profiler_session()
 {
@@ -603,14 +601,10 @@ bool profiler_session::stop()
 }
 
 std::unique_ptr<quarisma::profiler_scope> profiler_session::create_scope(const std::string& name)
-{
-    return std::make_unique<quarisma::profiler_scope>(name, this);
-}
+{ return std::make_unique<quarisma::profiler_scope>(name, this); }
 
 std::unique_ptr<quarisma::profiler_report> profiler_session::generate_report() const
-{
-    return std::make_unique<quarisma::profiler_report>(*this);
-}
+{ return std::make_unique<quarisma::profiler_report>(*this); }
 
 void profiler_session::export_report(const std::string& filename) const
 {
@@ -625,14 +619,10 @@ void profiler_session::print_report() const
 }
 
 profiler_session* profiler_session::current_session()
-{
-    return g_current_session.load();
-}
+{ return g_current_session.load(); }
 
 void profiler_session::set_current_session(quarisma::profiler_session* session)
-{
-    g_current_session.store(session);
-}
+{ g_current_session.store(session); }
 
 void profiler_session::initialize_components()
 {

@@ -450,11 +450,11 @@ QUARISMATEST(TracemeTest, documentation_examples)
                 {
                     // Check that metadata is present
                     // PROFILER_CHECK(
-                        // event.name.find("size=1000") != std::string::npos,
-                        // "Should contain size metadata");
+                    // event.name.find("size=1000") != std::string::npos,
+                    // "Should contain size metadata");
                     // PROFILER_CHECK(
-                        // event.name.find("type=vector<int>") != std::string::npos,
-                        // "Should contain type metadata");
+                    // event.name.find("type=vector<int>") != std::string::npos,
+                    // "Should contain type metadata");
                     found_process_data = true;
                     break;
                 }

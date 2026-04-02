@@ -22,9 +22,7 @@ template <>
 struct hash<std::pair<quarisma::device_enum, int>>
 {
     size_t operator()(const std::pair<quarisma::device_enum, int>& p) const
-    {
-        return std::hash<int>()(static_cast<int>(p.first)) ^ (std::hash<int>()(p.second) << 1);
-    }
+    { return std::hash<int>()(static_cast<int>(p.first)) ^ (std::hash<int>()(p.second) << 1); }
 };
 }  // namespace std
 

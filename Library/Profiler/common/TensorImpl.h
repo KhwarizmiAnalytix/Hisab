@@ -42,8 +42,8 @@
 #include <utility>
 #include <vector>
 
-#include "common/profiler_export.h"
 #include "bespoke/common/orchestration/observer.h"
+#include "common/profiler_export.h"
 //#include "common/intrusive_ptr.h"
 //#include "memory/device.h"
 #include "common/array_ref.h"
@@ -127,9 +127,7 @@ class TensorBase;
  * A utility function to convert vector<int> to vector<int64_t>.
  */
 inline std::vector<int64_t> ToVectorint64_t(const array_ref<int>& src)
-{
-    return std::vector<int64_t>(src.begin(), src.end());
-}
+{ return std::vector<int64_t>(src.begin(), src.end()); }
 
 /**
  * Return product of all dimensions starting from k
@@ -217,7 +215,7 @@ struct PROFILER_API PlacementDeleteContext
     PlacementDeleteContext& operator=(const PlacementDeleteContext&) = delete;
     PlacementDeleteContext& operator=(PlacementDeleteContext&&)      = delete;
     static DataPtr          makeDataPtr(
-                 DataPtr&& data_ptr, PlacementDtor placement_dtor, size_t size, device_option device);
+        DataPtr&& data_ptr, PlacementDtor placement_dtor, size_t size, device_option device);
     ~PlacementDeleteContext()
     {
         placement_dtor_(data_ptr_.get(), size_);
@@ -233,10 +231,10 @@ struct PROFILER_API AutogradMetaInterface
     virtual const at::Tensor& grad() const                                                     = 0;
     virtual const at::Tensor& fw_grad(uint64_t level, const at::TensorBase& self) const        = 0;
     virtual void              set_fw_grad(
-                     const at::TensorBase& new_grad,
-                     const at::TensorBase& self,
-                     uint64_t              level,
-                     bool                  is_inplace_op) = 0;
+        const at::TensorBase& new_grad,
+        const at::TensorBase& self,
+        uint64_t              level,
+        bool                  is_inplace_op) = 0;
     virtual ~AutogradMetaInterface();
 };
 
@@ -261,9 +259,10 @@ struct PROFILER_API AutogradMetaFactory
 PROFILER_API void                 SetAutogradMetaFactory(AutogradMetaFactory* factory);
 PROFILER_API AutogradMetaFactory* GetAutogradMetaFactory();
 
-struct PROFILER_API AutogradMetaFactoryRegisterer{explicit AutogradMetaFactoryRegisterer(
-    AutogradMetaFactory * factory){SetAutogradMetaFactory(factory);
-}  // namespace impl
+struct PROFILER_API AutogradMetaFactoryRegisterer
+{
+    explicit AutogradMetaFactoryRegisterer(AutogradMetaFactory* factory)
+    { SetAutogradMetaFactory(factory); }  // namespace impl
 };  // namespace quarisma
 
 }  // namespace impl
@@ -299,9 +298,7 @@ struct PROFILER_API BackendMeta : intrusive_ptr_target
 {
     ~BackendMeta() override = default;
     virtual intrusive_ptr<BackendMeta> clone(const intrusive_ptr<BackendMeta>& ptr) const
-    {
-        return ptr;
-    }
+    { return ptr; }
 };
 
 struct PROFILER_API ExtraMeta
@@ -469,10 +466,10 @@ public:
     {
         // TODO: Replace the link to the documentation once it's available.
         // PROFILER_CHECK(
-            // version_counter_ || InferenceMode::is_enabled(),
-            // "Inplace update to inference tensor outside InferenceMode is not allowed."
-            // "You can make a clone to get a normal tensor before doing inplace update."
-            // "See https://github.com/pytorch/rfcs/pull/17 for more details.");
+        // version_counter_ || InferenceMode::is_enabled(),
+        // "Inplace update to inference tensor outside InferenceMode is not allowed."
+        // "You can make a clone to get a normal tensor before doing inplace update."
+        // "See https://github.com/pytorch/rfcs/pull/17 for more details.");
         if (version_counter_)
         {
             ++version_counter_->version_;
@@ -482,9 +479,9 @@ public:
     void set_version(int64_t i)
     {
         // PROFILER_CHECK(
-            // version_counter_,
-            // "Tried to call torch.autograd._unsafe_set_version() on a tensor "
-            // "that does not have a version counter. Was it created in inference mode?");
+        // version_counter_,
+        // "Tried to call torch.autograd._unsafe_set_version() on a tensor "
+        // "that does not have a version counter. Was it created in inference mode?");
         // PROFILER_CHECK(i >= 0, "Cannot set a version_counter to a value below 0: ", i);
         version_counter_->version_ = i;
     }
@@ -984,14 +981,10 @@ public:
     }
 
     bool is_contiguous_default(at::MemoryFormat memory_format) const
-    {
-        return is_contiguous_default_impl<bool>(memory_format);
-    }
+    { return is_contiguous_default_impl<bool>(memory_format); }
 
     quarisma::SymBool sym_is_contiguous_default(at::MemoryFormat memory_format) const
-    {
-        return is_contiguous_default_impl<quarisma::SymBool>(memory_format);
-    }
+    { return is_contiguous_default_impl<quarisma::SymBool>(memory_format); }
 
     /**
    * Whether or not a tensor is laid out in contiguous memory.
@@ -1135,14 +1128,10 @@ public:
 
 protected:
     inline bool matches_policy(SizesStridesPolicy policy) const
-    {
-        return sizes_strides_policy_ >= static_cast<uint8_t>(policy);
-    }
+    { return sizes_strides_policy_ >= static_cast<uint8_t>(policy); }
 
     inline bool matches_custom(SizesStridesPolicy policy) const
-    {
-        return custom_sizes_strides_ >= static_cast<uint8_t>(policy);
-    }
+    { return custom_sizes_strides_ >= static_cast<uint8_t>(policy); }
 
     inline bool matches_python_custom(SizesStridesPolicy policy) const
     {
@@ -1168,16 +1157,12 @@ protected:
     virtual quarisma::SymBool sym_is_non_overlapping_and_dense_custom() const;
 
     bool is_non_overlapping_and_dense_custom() const
-    {
-        return sym_is_non_overlapping_and_dense_custom().guard_bool(__FILE__, __LINE__);
-    }
+    { return sym_is_non_overlapping_and_dense_custom().guard_bool(__FILE__, __LINE__); }
 
     virtual quarisma::SymBool sym_is_contiguous_custom(at::MemoryFormat memory_format) const;
 
     bool is_contiguous_custom(at::MemoryFormat memory_format) const
-    {
-        return sym_is_contiguous_custom(memory_format).guard_bool(__FILE__, __LINE__);
-    }
+    { return sym_is_contiguous_custom(memory_format).guard_bool(__FILE__, __LINE__); }
 
     // sizes_strides_policy_ >= CustomSizes
     // Currently this method only exists to be overwritten by subclasses such as
@@ -1224,17 +1209,14 @@ public:
 #else
     TENSORIMPL_MAYBE_VIRTUAL
 #endif
-        bool
-        has_storage() const
+        bool has_storage() const
 // NOTE: we devirtualize this because it arguably shouldn't be an
 // error just to ask subclasses if they have storage.
 // This used to throw for most subclasses, but OpaqueTensorImpl
 // wanted it to successfully return false, so we went ahead and made
 // it a non-error.
 #ifdef PROFILER_DISABLE_TENSORIMPL_EXTENSIBILITY
-    {
-        return storage_;
-    }
+    { return storage_; }
 #else
         ;
 #endif
@@ -1685,9 +1667,9 @@ public:
         if (value)
         {
             // PROFILER_CHECK_DEBUG(
-                // false,
-                // "Please call `torch._efficientzerotensor` if you want to create a tensor with no "
-                // "storage.");
+            // false,
+            // "Please call `torch._efficientzerotensor` if you want to create a tensor with no "
+            // "storage.");
         }
         else
         {
@@ -1810,12 +1792,12 @@ private:
     T* data_dtype_initialized_impl(const Func& get_data) const
     {
         // PROFILER_CHECK(
-            // data_type_.Match<std::remove_const_t<T> >(),
-            // "Tensor type mismatch, caller expects elements to be ",
-            // caffe2::TypeMeta::TypeName<std::remove_const_t<T> >(),
-            // ", while tensor contains ",
-            // data_type_.name(),
-            // ". ");
+        // data_type_.Match<std::remove_const_t<T> >(),
+        // "Tensor type mismatch, caller expects elements to be ",
+        // caffe2::TypeMeta::TypeName<std::remove_const_t<T> >(),
+        // ", while tensor contains ",
+        // data_type_.name(),
+        // ". ");
         return data_ptr_impl_impl<T>(get_data);
     }
 
@@ -1854,14 +1836,14 @@ private:
             throw_data_ptr_access_error();
         }
         // PROFILER_CHECK(
-            // storage_initialized(),
-            // "The tensor has a non-zero number of elements, but its data is not allocated yet.\n"
-            // "If you're using torch.compile/export/fx, it is likely that we are erroneously "
-            // "tracing into a custom kernel. To fix this, please wrap the custom kernel into "
-            // "an opaque custom op. Please see the following for details: "
-            // "https://pytorch.org/tutorials/advanced/custom_ops_landing_page.html\n"
-            // "If you're using Caffe2, Caffe2 uses a lazy allocation, so you will need to call "
-            // "mutable_data() or raw_mutable_data() to actually allocate memory.");
+        // storage_initialized(),
+        // "The tensor has a non-zero number of elements, but its data is not allocated yet.\n"
+        // "If you're using torch.compile/export/fx, it is likely that we are erroneously "
+        // "tracing into a custom kernel. To fix this, please wrap the custom kernel into "
+        // "an opaque custom op. Please see the following for details: "
+        // "https://pytorch.org/tutorials/advanced/custom_ops_landing_page.html\n"
+        // "If you're using Caffe2, Caffe2 uses a lazy allocation, so you will need to call "
+        // "mutable_data() or raw_mutable_data() to actually allocate memory.");
         // Caller does the type check.
         // Note: storage_offset_ can be non-null even for zero-elements tensors
         // (for example if created as `torch.empty(5)[10:]`) that triggers
@@ -1914,9 +1896,9 @@ private:
             throw_data_ptr_access_error();
         }
         // PROFILER_CHECK(
-            // dtype_initialized(),
-            // "Cannot access data pointer of Tensor that doesn't have initialized dtype "
-            // "(e.g., caffe2::Tensor x(CPU), prior to calling mutable_data<T>() on x)");
+        // dtype_initialized(),
+        // "Cannot access data pointer of Tensor that doesn't have initialized dtype "
+        // "(e.g., caffe2::Tensor x(CPU), prior to calling mutable_data<T>() on x)");
         auto* data = get_data();
         static_assert(sizeof(*data) == 1, "get_data must return a byte-addressed pointer.");
         // Computing an offset into an empty tensor would be UB, since an empty
@@ -1942,16 +1924,14 @@ public:
     size_t itemsize() const
     {
         // PROFILER_CHECK(
-            // dtype_initialized(),
-            // "Cannot report itemsize of Tensor that doesn't have initialized dtype "
-            // "(e.g., caffe2::Tensor x(CPU), prior to calling mutable_data<T>() on x)");
+        // dtype_initialized(),
+        // "Cannot report itemsize of Tensor that doesn't have initialized dtype "
+        // "(e.g., caffe2::Tensor x(CPU), prior to calling mutable_data<T>() on x)");
         return data_type_.itemsize();
     }
 
     void set_backend_meta(intrusive_ptr<quarisma::BackendMeta> backend_meta)
-    {
-        get_extra_meta().backend_meta_ = std::move(backend_meta);
-    }
+    { get_extra_meta().backend_meta_ = std::move(backend_meta); }
 
     quarisma::BackendMeta* get_backend_meta()
     {
@@ -2038,12 +2018,12 @@ public:
     virtual void set_size(int64_t dim, int64_t new_size)
     {
         // PROFILER_CHECK(
-            // allow_tensor_metadata_change(),
-            // "set_size ",
-            // err_msg_tensor_metadata_change_not_allowed);
+        // allow_tensor_metadata_change(),
+        // "set_size ",
+        // err_msg_tensor_metadata_change_not_allowed);
         // PROFILER_CHECK(
-            // !matches_policy(SizesStridesPolicy::CustomSizes),
-            // "set_size() called on tensor with dynamic shapes or customized size behavior")
+        // !matches_policy(SizesStridesPolicy::CustomSizes),
+        // "set_size() called on tensor with dynamic shapes or customized size behavior")
         sizes_and_strides_.size_at(dim) = new_size;
         refresh_numel();
         refresh_contiguous();
@@ -2058,11 +2038,11 @@ public:
     virtual void set_stride(int64_t dim, int64_t new_stride)
     {
         // PROFILER_CHECK(
-            // allow_tensor_metadata_change(),
-            // "set_stride ",
-            // err_msg_tensor_metadata_change_not_allowed);
+        // allow_tensor_metadata_change(),
+        // "set_stride ",
+        // err_msg_tensor_metadata_change_not_allowed);
         // PROFILER_CHECK(
-            // !has_symbolic_sizes_strides_, "set_stride() called on tensor with symbolic shape")
+        // !has_symbolic_sizes_strides_, "set_stride() called on tensor with symbolic shape")
         sizes_and_strides_.stride_at_unchecked(dim) = new_stride;
         refresh_contiguous();
     }
@@ -2077,13 +2057,13 @@ public:
     virtual void set_storage_offset(int64_t storage_offset)
     {
         // PROFILER_CHECK(
-            // allow_tensor_metadata_change(),
-            // "set_storage_offset ",
-            // err_msg_tensor_metadata_change_not_allowed);
+        // allow_tensor_metadata_change(),
+        // "set_storage_offset ",
+        // err_msg_tensor_metadata_change_not_allowed);
         // TODO: this should probably consult policy
         // PROFILER_CHECK(
-            // !has_symbolic_sizes_strides_,
-            // "set_storage_offset() called on tensor with symbolic shape")
+        // !has_symbolic_sizes_strides_,
+        // "set_storage_offset() called on tensor with symbolic shape")
         storage_offset_ = storage_offset;
     }
 
@@ -2097,12 +2077,12 @@ public:
     void set_sizes_contiguous(IntArrayRef new_size)
     {
         // PROFILER_CHECK(
-            // allow_tensor_metadata_change(),
-            // "set_sizes_contiguous ",
-            // err_msg_tensor_metadata_change_not_allowed);
+        // allow_tensor_metadata_change(),
+        // "set_sizes_contiguous ",
+        // err_msg_tensor_metadata_change_not_allowed);
         // PROFILER_CHECK(
-            // !matches_policy(SizesStridesPolicy::CustomStrides),
-            // "tried to directly modify sizes for customized tensor");
+        // !matches_policy(SizesStridesPolicy::CustomStrides),
+        // "tried to directly modify sizes for customized tensor");
         sizes_and_strides_.set_sizes(new_size);
 
         refresh_numel();
@@ -2110,9 +2090,7 @@ public:
     }
 
     /*PROFILER_FORCE_INLINE*/ const impl::SizesAndStrides& sizes_and_strides()
-    {
-        return sizes_and_strides_;
-    }
+    { return sizes_and_strides_; }
 
     /**
    * Set the sizes and strides of a tensor.
@@ -2127,19 +2105,19 @@ public:
         std::optional<int64_t> storage_offset = std::nullopt)
     {
         // PROFILER_CHECK(
-            // allow_tensor_metadata_change(),
-            // "set_sizes_and_strides ",
-            // err_msg_tensor_metadata_change_not_allowed);
+        // allow_tensor_metadata_change(),
+        // "set_sizes_and_strides ",
+        // err_msg_tensor_metadata_change_not_allowed);
         // PROFILER_CHECK(
-            // !has_symbolic_sizes_strides_,
-            // "set_sizes_and_strides() called on tensor with symbolic shape")
+        // !has_symbolic_sizes_strides_,
+        // "set_sizes_and_strides() called on tensor with symbolic shape")
         // PROFILER_CHECK(
-            // new_size.size() == new_stride.size(),
-            // "dimensionality of sizes (",
-            // new_size.size(),
-            // ") must match dimensionality of strides (",
-            // new_stride.size(),
-            // ")");
+        // new_size.size() == new_stride.size(),
+        // "dimensionality of sizes (",
+        // new_size.size(),
+        // ") must match dimensionality of strides (",
+        // new_stride.size(),
+        // ")");
         const auto new_dim    = new_size.size();
         bool       overflowed = false;
         sizes_and_strides_.set_sizes(new_size);
@@ -2415,16 +2393,16 @@ public:
     void set_version_counter(const quarisma::VariableVersion& version_counter)
     {
         // PROFILER_CHECK(
-            // !(is_inference() && version_counter.enabled()),
-            // "Cannot set version_counter for inference tensor");
+        // !(is_inference() && version_counter.enabled()),
+        // "Cannot set version_counter for inference tensor");
         version_counter_ = version_counter;
     }
 
     void set_version_counter(quarisma::VariableVersion&& version_counter)
     {
         // PROFILER_CHECK(
-            // !(is_inference() && version_counter.enabled()),
-            // "Cannot set version_counter for inference tensor");
+        // !(is_inference() && version_counter.enabled()),
+        // "Cannot set version_counter for inference tensor");
         version_counter_ = std::move(version_counter);
     }
 
@@ -2504,9 +2482,7 @@ public:
 
     template <typename T>
     void Resize(const std::vector<T>& dim_source)
-    {
-        Resize(array_ref<T>(dim_source));
-    }
+    { Resize(array_ref<T>(dim_source)); }
 
     /**
    * Resizes the tensor without touching underlying storage.
@@ -2591,8 +2567,9 @@ public:
                 auto size     = numel_;
                 auto dtor     = data_type_.placementDelete();
                 auto data_ptr = allocator->allocate(numel_ * data_type_.itemsize());
-                storage_.set_data_ptr_noswap(PlacementDeleteContext::makeDataPtr(
-                    std::move(data_ptr), dtor, size, storage_.device()));
+                storage_.set_data_ptr_noswap(
+                    PlacementDeleteContext::makeDataPtr(
+                        std::move(data_ptr), dtor, size, storage_.device()));
                 data_type_.placementNew()(storage_.mutable_data(), numel_);
             }
             else
@@ -2635,7 +2612,7 @@ public:
     bool storage_initialized() const
     {
         // PROFILER_CHECK(
-            // has_storage(), "cannot call storage_initialized on tensor that does not have storage");
+        // has_storage(), "cannot call storage_initialized on tensor that does not have storage");
         return storage_.data() || numel_ == 0;
     }
 
@@ -2649,9 +2626,9 @@ public:
     void set_storage_keep_dtype(at::Storage storage)
     {
         // PROFILER_CHECK(
-            // allow_tensor_metadata_change(),
-            // "set_storage ",
-            // err_msg_tensor_metadata_change_not_allowed);
+        // allow_tensor_metadata_change(),
+        // "set_storage ",
+        // err_msg_tensor_metadata_change_not_allowed);
         storage_    = std::move(storage);
         device_opt_ = storage_.device();
     }
@@ -2679,9 +2656,9 @@ public:
         }
 #ifdef DEBUG
         // PROFILER_CHECK_DEBUG(
-            // compute_numel() == numel_,
-            // "If you are seeing this error, that means empty_tensor_restride was "
-            // "called before setting correct numel");
+        // compute_numel() == numel_,
+        // "If you are seeing this error, that means empty_tensor_restride was "
+        // "called before setting correct numel");
 #endif
         switch (memory_format)
         {
@@ -2741,19 +2718,13 @@ public:
     }
 
     bool is_strides_like_channels_last() const
-    {
-        return is_strides_like(at::MemoryFormat::ChannelsLast);
-    }
+    { return is_strides_like(at::MemoryFormat::ChannelsLast); }
 
     bool is_strides_like_channels_last_3d() const
-    {
-        return is_strides_like(at::MemoryFormat::ChannelsLast3d);
-    }
+    { return is_strides_like(at::MemoryFormat::ChannelsLast3d); }
 
     bool is_non_overlapping_and_dense_or_false() const
-    {
-        return sym_is_non_overlapping_and_dense().guard_or_false(__FILE__, __LINE__);
-    }
+    { return sym_is_non_overlapping_and_dense().guard_or_false(__FILE__, __LINE__); }
 
     bool is_non_overlapping_and_dense() const
     {
@@ -2793,7 +2764,7 @@ private:
     bool SetDimsTemplate(array_ref<T> src)
     {
         // PROFILER_CHECK(
-            // !has_symbolic_sizes_strides_, "SetDims() called on tensor with symbolic shape")
+        // !has_symbolic_sizes_strides_, "SetDims() called on tensor with symbolic shape")
 
         auto old_numel = numel_;
         sizes_and_strides_.resize(src.size());
@@ -2821,14 +2792,10 @@ private:
     bool SetDims(const int64_t d0, const int64_t d1) { return SetDims(IntArrayRef{d0, d1}); }
 
     bool SetDims(const int64_t d0, const int64_t d1, const int64_t d2)
-    {
-        return SetDims(IntArrayRef{d0, d1, d2});
-    }
+    { return SetDims(IntArrayRef{d0, d1, d2}); }
 
     bool SetDims(const int64_t d0, const int64_t d1, const int64_t d2, const int64_t d3)
-    {
-        return SetDims(IntArrayRef{d0, d1, d2, d3});
-    }
+    { return SetDims(IntArrayRef{d0, d1, d2, d3}); }
 
     /**
    * Compute the number of elements based on the sizes of a tensor.
@@ -2953,19 +2920,13 @@ private:
     }
 
     bool compute_channels_last_contiguous_3d_dim5()
-    {
-        return !is_channels_last_contiguous_ && compute_channels_last_contiguous_3d();
-    }
+    { return !is_channels_last_contiguous_ && compute_channels_last_contiguous_3d(); }
 
     bool compute_channels_last_2d_dim5()
-    {
-        return !is_channels_last_3d_contiguous_ && compute_strides_like_channels_last_2d();
-    }
+    { return !is_channels_last_3d_contiguous_ && compute_strides_like_channels_last_2d(); }
 
     bool compute_channels_last_3d_dim5()
-    {
-        return !is_channels_last_ && compute_strides_like_channels_last_3d();
-    }
+    { return !is_channels_last_ && compute_strides_like_channels_last_3d(); }
 
     bool compute_is_non_overlapping_and_dense_dim5()
     {
@@ -2974,9 +2935,7 @@ private:
     }
 
     bool compute_is_non_overlapping_and_dense_anydim()
-    {
-        return is_contiguous_ || compute_non_overlapping_and_dense();
-    }
+    { return is_contiguous_ || compute_non_overlapping_and_dense(); }
 
     void _refresh_contiguous()
     {

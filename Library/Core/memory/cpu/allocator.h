@@ -641,9 +641,7 @@ public:
      * ```
      */
     virtual allocator_memory_enum GetMemoryType() const noexcept
-    {
-        return allocator_memory_enum::UNKNOWN;
-    }
+    { return allocator_memory_enum::UNKNOWN; }
 };
 
 /**
@@ -703,9 +701,7 @@ struct QUARISMA_VISIBILITY allocator_attributes
      * **Use Cases**: Distributed computing, RDMA operations, network transfers
      */
     void set_nic_compatible(bool v) noexcept
-    {
-        value = (value & ~0x2u) | (static_cast<uint32_t>(v) << 1);
-    }
+    { value = (value & ~0x2u) | (static_cast<uint32_t>(v) << 1); }
 
     /**
      * @brief Checks if network-compatible memory is requested.
@@ -722,9 +718,7 @@ struct QUARISMA_VISIBILITY allocator_attributes
      * **Use Cases**: GPU computations, device-to-device transfers, unified memory
      */
     void set_gpu_compatible(bool v) noexcept
-    {
-        value = (value & ~0x4u) | (static_cast<uint32_t>(v) << 2);
-    }
+    { value = (value & ~0x4u) | (static_cast<uint32_t>(v) << 2); }
 
     /**
      * @brief Checks if GPU-compatible memory is requested.
@@ -796,9 +790,7 @@ struct QUARISMA_VISIBILITY allocator_attributes
      * ```
      */
     bool IsEqualOrLessRestrictiveThan(const allocator_attributes& other) const noexcept
-    {
-        return (value | other.value) == other.value;
-    }
+    { return (value | other.value) == other.value; }
 
     /**
      * @brief Bit-packed attribute flags.

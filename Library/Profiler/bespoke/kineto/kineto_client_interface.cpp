@@ -4,7 +4,7 @@
 
 #include <libkineto.h>
 
-#include <chrono> 
+#include <chrono>
 #include <thread>
 
 #include "bespoke/kineto/profiler_kineto.h"
@@ -108,8 +108,8 @@ private:
 void global_kineto_init()
 {
 #if ENABLE_GLOBAL_OBSERVER
-    auto* envar = std::getenv("KINETO_USE_DAEMON");
-    if (envar!=nullptr)
+    const char* const envar = std::getenv("KINETO_USE_DAEMON");
+    if (envar != nullptr)
     {
         libkineto_init(
             /*cpuOnly=*/!(quarisma::hasCUDA() /*|| quarisma::hasXPU() || quarisma::hasMTIA()*/),

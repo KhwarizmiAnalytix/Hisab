@@ -196,9 +196,7 @@ public:
      * @return Aligned size
      */
     QUARISMA_API static constexpr size_t align_size(size_t size, size_t alignment) noexcept
-    {
-        return (size + alignment - 1) & ~(alignment - 1);
-    }
+    { return (size + alignment - 1) & ~(alignment - 1); }
 
     /**
      * @brief Align pointer to specified boundary
@@ -222,9 +220,7 @@ public:
      */
     template <typename T>
     static constexpr bool is_aligned(const T* ptr, size_t alignment) noexcept
-    {
-        return (reinterpret_cast<uintptr_t>(ptr) & (alignment - 1)) == 0;
-    }
+    { return (reinterpret_cast<uintptr_t>(ptr) & (alignment - 1)) == 0; }
 
     /**
      * @brief Align size for optimal coalesced memory access
@@ -293,9 +289,7 @@ public:
     template <typename T>
     static size_t calculate_padded_width(
         size_t width, const alignment_config& config = alignment_config{})
-    {
-        return calculate_optimal_stride<T>(width, config);
-    }
+    { return calculate_optimal_stride<T>(width, config); }
 
     /**
      * @brief Get alignment requirement for SIMD vector operations

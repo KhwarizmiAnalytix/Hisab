@@ -7,8 +7,8 @@
 #include <forward_list>
 #include <utility>
 
-#include "common/profiler_macros.h"
 #include "common/array_ref.h"
+#include "common/profiler_macros.h"
 
 namespace quarisma::profiler_impl::impl
 {
@@ -148,13 +148,9 @@ public:
         }
 
         friend bool operator==(const Iterator& a, const Iterator& b)
-        {
-            return a.current_ptr() == b.current_ptr();
-        }
+        { return a.current_ptr() == b.current_ptr(); }
         friend bool operator!=(const Iterator& a, const Iterator& b)
-        {
-            return a.current_ptr() != b.current_ptr();
-        }
+        { return a.current_ptr() != b.current_ptr(); }
 
         std::pair<array_t*, size_t> address() const
         {

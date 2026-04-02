@@ -1016,7 +1016,8 @@ QUARISMATEST(Profiler, kineto_heavy_function_profiling)
     // Stop both profilers
     session.stop();
     std::unique_ptr<libkineto::ActivityTraceInterface> trace(
-        static_cast<libkineto::ActivityTraceInterface*>(quarisma::profiler_impl::kineto_stop_trace()));
+        static_cast<libkineto::ActivityTraceInterface*>(
+            quarisma::profiler_impl::kineto_stop_trace()));
 
     std::cout << "Combined profiling completed\n";
 
@@ -1490,7 +1491,8 @@ QUARISMATEST(Profiler, combined_kineto_itt_heavy_function_profiling)
     session.stop();
 
     std::unique_ptr<libkineto::ActivityTraceInterface> kineto_trace(
-        static_cast<libkineto::ActivityTraceInterface*>(quarisma::profiler_impl::kineto_stop_trace()));
+        static_cast<libkineto::ActivityTraceInterface*>(
+            quarisma::profiler_impl::kineto_stop_trace()));
 
     std::cout << "✓ All profilers stopped\n";
 

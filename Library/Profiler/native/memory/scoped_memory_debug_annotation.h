@@ -63,9 +63,7 @@ class scoped_memory_debug_annotation
 {
 public:
     static const memory_debug_annotation& current_annotation()
-    {
-        return *thread_memory_debug_annotation();
-    }
+    { return *thread_memory_debug_annotation(); }
 
     explicit scoped_memory_debug_annotation(const char* op_name)
     {

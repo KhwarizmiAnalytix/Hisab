@@ -1,7 +1,6 @@
 #include "bespoke/base/perf.h"
 
 #include <unordered_map>
-#include <unordered_set>
 
 #include "bespoke/base/perf-inl.h"
 #include "common/error.h"
@@ -21,9 +20,7 @@ namespace quarisma::profiler_impl::impl::linux_perf
  */
 inline static long perf_event_open(
     struct perf_event_attr* hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags)
-{
-    return syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
-}
+{ return syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags); }
 
 // TODO sync with Kineto level abstract events in profiler/events.h
 static const std::
@@ -56,6 +53,8 @@ void PerfEvent::Init()
     if (it == EventTable.end())
     {
         // PROFILER_CHECK(false, "Unsupported profiler event name: ", name_);
+        fd_ = -1;
+        return;
     }
 
     struct perf_event_attr attr{};
@@ -82,30 +81,30 @@ void PerfEvent::Init()
     if (fd_ == -1)
     {
         // PROFILER_CHECK(
-            // false, "perf_event_open() failed, error: ", quarisma::utils::str_error(errno));
+        // false, "perf_event_open() failed, error: ", quarisma::utils::str_error(errno));
     }
     Reset();
 }
 
 uint64_t PerfEvent::ReadCounter() const
 {
-    PerfCounter counter{};
-    const long  n = read(fd_, &counter, sizeof(PerfCounter));
+    PerfCounter                 counter{};
+    [[maybe_unused]] const long n = read(fd_, &counter, sizeof(PerfCounter));
     // PROFILER_CHECK(
-        // n == sizeof(counter),
-        // "Read failed for Perf event fd, event : ",
-        // name_,
-        // ", error: ",
-        // quarisma::utils::str_error(errno));
+    // n == sizeof(counter),
+    // "Read failed for Perf event fd, event : ",
+    // name_,
+    // ", error: ",
+    // quarisma::utils::str_error(errno));
     // PROFILER_CHECK(
-        // counter.time_enabled == counter.time_running,
-        // "Hardware performance counter time multiplexing is not handled yet",
-        // ", name: ",
-        // name_,
-        // ", enabled: ",
-        // counter.time_enabled,
-        // ", running: ",
-        // counter.time_running);
+    // counter.time_enabled == counter.time_running,
+    // "Hardware performance counter time multiplexing is not handled yet",
+    // ", name: ",
+    // name_,
+    // ", enabled: ",
+    // counter.time_enabled,
+    // ", running: ",
+    // counter.time_running);
     return counter.value;
 }
 
@@ -120,9 +119,7 @@ PerfEvent::~PerfEvent() = default;
 void PerfEvent::Init() {}
 
 uint64_t PerfEvent::ReadCounter() const  //NOLINT
-{
-    return 0;
-}
+{ return 0; }
 
 #endif /* __ANDROID__ || __linux__ */
 
@@ -134,13 +131,15 @@ uint64_t PerfEvent::ReadCounter() const  //NOLINT
 void PerfProfiler::Configure(std::vector<std::string>& event_names)
 {
     // PROFILER_CHECK(
-        // event_names.size() <= MAX_EVENTS,
-        // "Too many events to configure, configured: ",
-        // event_names.size(),
-        // ", max allowed:",
-        // MAX_EVENTS);
-    std::unordered_set<std::string> const s(event_names.begin(), event_names.end());
-    // PROFILER_CHECK(s.size() == event_names.size(), "Duplicate event names are not allowed!")
+    // event_names.size() <= MAX_EVENTS,
+    // "Too many events to configure, configured: ",
+    // event_names.size(),
+    // ", max allowed:",
+    // MAX_EVENTS);
+    // PROFILER_CHECK(
+    //     std::unordered_set<std::string>(event_names.begin(), event_names.end()).size() ==
+    //         event_names.size(),
+    //     "Duplicate event names are not allowed!")
     for (auto name : event_names)
     {
         events_.emplace_back(name);
@@ -173,7 +172,7 @@ void PerfProfiler::Disable(perf_counters_t& vals)
 {
     StopCounting();
     // PROFILER_CHECK(
-        // vals.size() == events_.size(), "Can not fit all perf counters in the supplied container");
+    // vals.size() == events_.size(), "Can not fit all perf counters in the supplied container");
     // PROFILER_CHECK(!start_values_.empty(), "PerfProfiler must be enabled before disabling");
 
     /* Always connecting this disable event to the last enable event i.e. using

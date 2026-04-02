@@ -89,9 +89,7 @@ public:
      * @return DEVICE memory type for GPU allocations
      */
     QUARISMA_API allocator_memory_enum GetMemoryType() const noexcept override
-    {
-        return allocator_memory_enum::DEVICE;
-    }
+    { return allocator_memory_enum::DEVICE; }
 
 private:
     int                 device_id_;
@@ -286,9 +284,7 @@ public:
      * @return GPU device memory type
      */
     allocator_memory_enum GetMemoryType() const noexcept override
-    {
-        return allocator_memory_enum::DEVICE;
-    }
+    { return allocator_memory_enum::DEVICE; }
 
     /**
      * @brief Returns GPU device ID for this allocator.

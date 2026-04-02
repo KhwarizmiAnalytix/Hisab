@@ -16,17 +16,13 @@ namespace quarisma
 // Check if a container contains a specific value
 template <typename Container, typename T>
 QUARISMA_FORCE_INLINE bool contains(const Container& container, const T& value)
-{
-    return std::find(std::begin(container), std::end(container), value) != std::end(container);
-}
+{ return std::find(std::begin(container), std::end(container), value) != std::end(container); }
 
 //-----------------------------------------------------------------------------
 // Check if a map contains a specific key
 template <typename Key, typename Value>
 QUARISMA_FORCE_INLINE bool contains_key(const std::map<Key, Value>& map, const Key& key)
-{
-    return map.find(key) != map.end();
-}
+{ return map.find(key) != map.end(); }
 
 //-----------------------------------------------------------------------------
 template <typename T>
@@ -77,17 +73,13 @@ size_t closest_index(const container& element_array, T element)
 // Convert a vector to a set
 template <typename T>
 QUARISMA_FORCE_INLINE std::set<T> to_set(const std::vector<T>& vec)
-{
-    return std::set<T>(vec.begin(), vec.end());
-}
+{ return std::set<T>(vec.begin(), vec.end()); }
 
 //-----------------------------------------------------------------------------
 // Convert a set to a vector
 template <typename T>
 QUARISMA_FORCE_INLINE std::vector<T> to_vector(const std::set<T>& set)
-{
-    return std::vector<T>(set.begin(), set.end());
-}
+{ return std::vector<T>(set.begin(), set.end()); }
 
 //-----------------------------------------------------------------------------
 // Filter elements from a container based on a predicate

@@ -34,9 +34,9 @@ limitations under the License.
 #ifndef PROFILER_TSL_PROFILER_LIB_PROFILER_INTERFACE_H_
 #define PROFILER_TSL_PROFILER_LIB_PROFILER_INTERFACE_H_
 
+#include "common/profiler_export.h"
 #include "native/core/profiler_status.h"
 #include "native/exporters/xplane/xplane.h"
-#include "common/profiler_export.h"
 
 namespace quarisma
 {

@@ -150,15 +150,16 @@ void calculateUniqueTensorIDs(std::vector<std::shared_ptr<Result>>& sorted_resul
         // Simplified path: only process TorchOp events when Python support is disabled.
         for (auto& result : sorted_results)
         {
-            result->visit(quarisma::overloaded(
-                [&](ExtraFields<EventType::TorchOp>& torch_op)
-                {
-                    for (auto& i : torch_op.inputs_)
+            result->visit(
+                quarisma::overloaded(
+                    [&](ExtraFields<EventType::TorchOp>& torch_op)
                     {
-                        std::visit(raw_tensors, i);
-                    }
-                },
-                [&](auto& /*unused*/) { /* Skip non-TorchOp events */ }));
+                        for (auto& i : torch_op.inputs_)
+                        {
+                            std::visit(raw_tensors, i);
+                        }
+                    },
+                    [&](auto& /*unused*/) { /* Skip non-TorchOp events */ }));
         }
 #endif
         tensors = std::move(raw_tensors.tensors_);

@@ -37,8 +37,8 @@ limitations under the License.
 #include <mutex>
 #include <vector>
 
-#include "common/profiler_macros.h"
 #include "common/flat_hash.h"
+#include "common/profiler_macros.h"
 
 //#include "absl/synchronization/mutex.h"
 //#include "absl/base/thread_annotations.h"
@@ -68,16 +68,12 @@ public:
     // Starts keeping all thread-local instances of T alive.
     // Returns all instances of T from live threads.
     static std::vector<std::shared_ptr<T>> StartRecording()
-    {
-        return Registry::Get().StartRecording();
-    }
+    { return Registry::Get().StartRecording(); }
 
     // Stops keeping thread-local instances of T alive.
     // Returns all instances of T from live and destroyed threads.
     static std::vector<std::shared_ptr<T>> StopRecording()
-    {
-        return Registry::Get().StopRecording();
-    }
+    { return Registry::Get().StopRecording(); }
 
 private:
     // Prevent instantiation.

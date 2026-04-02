@@ -624,19 +624,13 @@ std::vector<enhanced_gpu_alloc_record> gpu_allocator_tracking::GetEnhancedGPURec
 }
 
 void gpu_allocator_tracking::SetGPULoggingLevel(gpu_tracking_log_level level) noexcept
-{
-    gpu_log_level_.store(level, std::memory_order_relaxed);
-}
+{ gpu_log_level_.store(level, std::memory_order_relaxed); }
 
 gpu_tracking_log_level gpu_allocator_tracking::GetGPULoggingLevel() const noexcept
-{
-    return gpu_log_level_.load(std::memory_order_relaxed);
-}
+{ return gpu_log_level_.load(std::memory_order_relaxed); }
 
 void gpu_allocator_tracking::ResetGPUTimingStats() noexcept
-{
-    gpu_timing_stats_.reset();
-}
+{ gpu_timing_stats_.reset(); }
 
 std::tuple<double, double, double> gpu_allocator_tracking::GetGPUEfficiencyMetrics() const
 {
@@ -755,9 +749,7 @@ std::string gpu_allocator_tracking::GenerateGPUReport(
 }
 
 gpu_device_info gpu_allocator_tracking::GetDeviceInfo() const noexcept
-{
-    return device_info_;
-}
+{ return device_info_; }
 
 std::tuple<size_t, size_t, size_t> gpu_allocator_tracking::GetGPUMemoryUsage() const
 {

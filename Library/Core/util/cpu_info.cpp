@@ -1,28 +1,22 @@
 #include "util/cpu_info.h"
 
-#include "common/configure.h"
-
 #include <cpuinfo.h>
 #include <fmt/core.h>
 
 #include <cstddef>
 
+#include "common/configure.h"
+
 namespace quarisma
 {
 bool cpu_info::initialize()
-{
-    return cpuinfo_initialize();
-}
+{ return cpuinfo_initialize(); }
 
 int cpu_info::number_of_cores()
-{
-    return cpuinfo_get_cores_count();
-}
+{ return cpuinfo_get_cores_count(); }
 
 int cpu_info::number_of_threads()
-{
-    return cpuinfo_get_processors_count();
-}
+{ return cpuinfo_get_processors_count(); }
 
 void cpu_info::info()
 {

@@ -75,9 +75,7 @@ allocator_pool::allocator_pool(
 }
 
 allocator_pool::~allocator_pool()
-{
-    Clear();
-}
+{ Clear(); }
 
 namespace
 {
@@ -301,9 +299,9 @@ void allocator_pool::EvictOne()
     {
         const double  eviction_rate       = evicted_count_ / static_cast<double>(put_count_);
         const int64_t alloc_request_count = allocated_count_ + get_from_pool_count_;
-        const double  alloc_rate          = (alloc_request_count == 0)
-                                                ? 0.0
-                                                : allocated_count_ / static_cast<double>(alloc_request_count);
+        const double alloc_rate = (alloc_request_count == 0)
+                                      ? 0.0
+                                      : allocated_count_ / static_cast<double>(alloc_request_count);
         // Can turn on for debugging purposes.
         const bool kShouldLog = false;
         if (kShouldLog)

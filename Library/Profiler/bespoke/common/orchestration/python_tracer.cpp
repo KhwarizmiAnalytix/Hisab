@@ -19,9 +19,7 @@ struct NoOpPythonTracer : public PythonTracerBase
         std::function<quarisma::time_t(quarisma::approx_time_t)> /*time_converter*/,
         std::vector<CompressedEvent>& /*enters*/,
         quarisma::time_t /*end_time_ns*/) override
-    {
-        return {};
-    }
+    { return {}; }
 };
 
 struct NoOpMemoryPythonTracer : public PythonMemoryTracerBase
@@ -36,9 +34,7 @@ struct NoOpMemoryPythonTracer : public PythonMemoryTracerBase
 }  // namespace
 
 void registerTracer(MakeFn make_tracer)
-{
-    make_fn = make_tracer;
-}
+{ make_fn = make_tracer; }
 
 std::unique_ptr<PythonTracerBase> PythonTracerBase::make(RecordQueue* queue)
 {
@@ -50,9 +46,7 @@ std::unique_ptr<PythonTracerBase> PythonTracerBase::make(RecordQueue* queue)
 }
 
 void registerMemoryTracer(MakeMemoryFn make_memory_tracer)
-{
-    memory_make_fn = make_memory_tracer;
-}
+{ memory_make_fn = make_memory_tracer; }
 
 std::unique_ptr<PythonMemoryTracerBase> PythonMemoryTracerBase::make()
 {

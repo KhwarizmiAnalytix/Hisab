@@ -353,7 +353,7 @@ double unified_cache_stats::driver_call_reduction() const noexcept
     size_t const hits              = cache_hits.load(std::memory_order_relaxed);
     size_t const driver_calls_free = driver_frees.load(std::memory_order_relaxed);
     size_t const driver_calls      = driver_allocations.load(std::memory_order_relaxed) +
-                                driver_frees.load(std::memory_order_relaxed);
+                                     driver_frees.load(std::memory_order_relaxed);
     if (driver_calls == 0)
     {
         return 1.0;

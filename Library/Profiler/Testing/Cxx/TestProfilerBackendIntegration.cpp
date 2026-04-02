@@ -33,9 +33,7 @@ void busy_wait_for(std::chrono::microseconds duration)
 }
 
 std::unordered_set<quarisma::RecordScope> user_scopes()
-{
-    return {quarisma::RecordScope::USER_SCOPE};
-}
+{ return {quarisma::RecordScope::USER_SCOPE}; }
 
 }  // namespace
 
@@ -65,7 +63,7 @@ struct kineto_session_guard
     kineto_session_guard(
         quarisma::autograd::profiler_impl::ProfilerConfig         cfg,
         std::set<quarisma::autograd::profiler_impl::ActivityType> activities,
-        std::unordered_set<quarisma::RecordScope>            scopes = user_scopes())
+        std::unordered_set<quarisma::RecordScope>                 scopes = user_scopes())
         : config_{std::move(cfg)}, activities_{std::move(activities)}, scopes_{std::move(scopes)}
     {
         try
@@ -117,13 +115,14 @@ struct kineto_session_guard
 private:
     quarisma::autograd::profiler_impl::ProfilerConfig         config_;
     std::set<quarisma::autograd::profiler_impl::ActivityType> activities_;
-    std::unordered_set<quarisma::RecordScope>            scopes_;
-    bool                                                 active_{false};
-    std::string                                          error_message_;
+    std::unordered_set<quarisma::RecordScope>                 scopes_;
+    bool                                                      active_{false};
+    std::string                                               error_message_;
 };
 
 const quarisma::autograd::profiler_impl::KinetoEvent* find_event_by_name(
-    const std::vector<quarisma::autograd::profiler_impl::KinetoEvent>& events, const std::string& name)
+    const std::vector<quarisma::autograd::profiler_impl::KinetoEvent>& events,
+    const std::string&                                                 name)
 {
     for (const auto& event : events)
     {
@@ -293,18 +292,14 @@ class recording_itt_stub : public quarisma::profiler_impl::impl::ProfilerStubs
 {
 public:
     void record(
-        int16_t*,
-        quarisma::profiler_impl::impl::ProfilerVoidEventStub*,
-        int64_t*) const override
+        int16_t*, quarisma::profiler_impl::impl::ProfilerVoidEventStub*, int64_t*) const override
     {
     }
 
     float elapsed(
         const quarisma::profiler_impl::impl::ProfilerVoidEventStub*,
         const quarisma::profiler_impl::impl::ProfilerVoidEventStub*) const override
-    {
-        return 0.0F;
-    }
+    { return 0.0F; }
 
     void mark(const char* name) const override
     {
@@ -356,11 +351,10 @@ class scoped_itt_stub
 public:
     explicit scoped_itt_stub(recording_itt_stub& stub)
         : stub_(stub),
-          previous_(const_cast<quarisma::profiler_impl::impl::ProfilerStubs*>(
-              quarisma::profiler_impl::impl::ittStubs()))
-    {
-        quarisma::profiler_impl::impl::registerITTMethods(&stub_);
-    }
+          previous_(
+              const_cast<quarisma::profiler_impl::impl::ProfilerStubs*>(
+                  quarisma::profiler_impl::impl::ittStubs()))
+    { quarisma::profiler_impl::impl::registerITTMethods(&stub_); }
 
     scoped_itt_stub(const scoped_itt_stub&)            = delete;
     scoped_itt_stub(scoped_itt_stub&&)                 = delete;
@@ -370,7 +364,7 @@ public:
     ~scoped_itt_stub() { quarisma::profiler_impl::impl::registerITTMethods(previous_); }
 
 private:
-    recording_itt_stub&                            stub_;
+    recording_itt_stub&                                 stub_;
     quarisma::profiler_impl::impl::ProfilerStubs* const previous_;
 };
 

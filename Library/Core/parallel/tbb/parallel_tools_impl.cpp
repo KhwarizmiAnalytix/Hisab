@@ -139,9 +139,7 @@ int parallel_tools_impl<backend_type::TBB>::estimated_number_of_threads()
 //------------------------------------------------------------------------------
 template <>
 int parallel_tools_impl<backend_type::TBB>::estimated_default_number_of_threads()
-{
-    return task_arena->max_concurrency();
-}
+{ return task_arena->max_concurrency(); }
 
 //------------------------------------------------------------------------------
 template <>

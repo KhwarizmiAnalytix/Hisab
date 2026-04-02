@@ -159,7 +159,7 @@ namespace traceme_internal
 inline char* append(char* out, std::string_view str)
 {
     // PROFILER_CHECK_DEBUG(
-        // !strings::str_contains(str, '#'), "'#' is not a valid character in traceme_encode {}", str);
+    // !strings::str_contains(str, '#'), "'#' is not a valid character in traceme_encode {}", str);
 
     const size_t str_size = str.size();
     if PROFILER_LIKELY (str_size > 0)
@@ -192,8 +192,7 @@ inline char* append(char* out, std::string_view str)
  * - Input: name="matrix_op", args={{"rows", 100}, {"cols", 50}}
  * - Output: "matrix_op#rows=100,cols=50#"
  */
-inline std::string append_args(
-    std::string name, std::initializer_list<TraceMeArg> args)
+inline std::string append_args(std::string name, std::initializer_list<TraceMeArg> args)
 {
     if PROFILER_LIKELY (args.size() > 0)
     {
@@ -217,11 +216,11 @@ inline std::string append_args(
         }
         *(out - 1) = '#';  // Replace final ',' with closing '#'
         // PROFILER_CHECK_DEBUG(
-            // out == begin + new_size,
-            // "out={} is not equal to begin={} + new_size={}",
-            // out,
-            // begin,
-            // new_size);
+        // out == begin + new_size,
+        // "out={} is not equal to begin={} + new_size={}",
+        // out,
+        // begin,
+        // new_size);
     }
     return name;
 }
@@ -294,11 +293,8 @@ inline void append_metadata(std::string* name, std::string_view new_metadata)
  * });
  * ```
  */
-inline std::string traceme_encode(
-    std::string name, std::initializer_list<TraceMeArg> args)
-{
-    return traceme_internal::append_args(std::move(name), args);
-}
+inline std::string traceme_encode(std::string name, std::initializer_list<TraceMeArg> args)
+{ return traceme_internal::append_args(std::move(name), args); }
 
 /**
  * @brief Encodes a trace event name from string_view with metadata arguments.
@@ -306,11 +302,8 @@ inline std::string traceme_encode(
  * @param args Key-value pairs to encode as metadata
  * @return Formatted trace name with embedded metadata
  */
-inline std::string traceme_encode(
-    std::string_view name, std::initializer_list<TraceMeArg> args)
-{
-    return traceme_internal::append_args(std::string(name), args);
-}
+inline std::string traceme_encode(std::string_view name, std::initializer_list<TraceMeArg> args)
+{ return traceme_internal::append_args(std::string(name), args); }
 
 /**
  * @brief Encodes a trace event name from C-string with metadata arguments.
@@ -318,11 +311,8 @@ inline std::string traceme_encode(
  * @param args Key-value pairs to encode as metadata
  * @return Formatted trace name with embedded metadata
  */
-inline std::string traceme_encode(
-    const char* name, std::initializer_list<TraceMeArg> args)
-{
-    return traceme_internal::append_args(std::string(name), args);
-}
+inline std::string traceme_encode(const char* name, std::initializer_list<TraceMeArg> args)
+{ return traceme_internal::append_args(std::string(name), args); }
 
 /**
  * @brief Encodes metadata arguments without a base name for appending to existing traces.
@@ -351,9 +341,7 @@ inline std::string traceme_encode(
  * ```
  */
 inline std::string traceme_encode(std::initializer_list<TraceMeArg> args)
-{
-    return traceme_internal::append_args(std::string(), args);
-}
+{ return traceme_internal::append_args(std::string(), args); }
 
 /**
  * @brief Creates a standardized operation trace name by combining operation name and type.
@@ -369,9 +357,7 @@ inline std::string traceme_encode(std::initializer_list<TraceMeArg> args)
  * **Example**: `traceme_op("MatMul", "GPU")` returns `"MatMul:GPU"`
  */
 inline std::string traceme_op(std::string_view op_name, std::string_view op_type)
-{
-    return strings::str_cat(op_name, ":", op_type);
-}
+{ return strings::str_cat(op_name, ":", op_type); }
 
 /**
  * @brief Creates operation trace name from C-string arguments.
@@ -380,9 +366,7 @@ inline std::string traceme_op(std::string_view op_name, std::string_view op_type
  * @return Formatted operation name
  */
 inline std::string traceme_op(const char* op_name, const char* op_type)
-{
-    return strings::str_cat(op_name, ":", op_type);
-}
+{ return strings::str_cat(op_name, ":", op_type); }
 
 /**
  * @brief Creates operation trace name by appending to existing string (move optimization).
@@ -410,11 +394,8 @@ inline std::string traceme_op(std::string&& op_name, std::string_view op_type)
  * **Use Case**: TensorFlow kernel profiling where the actual kernel name should
  * be replaced with the high-level TF operation name for better user understanding.
  */
-inline std::string traceme_op_override(
-    std::string_view op_name, std::string_view op_type)
-{
-    return strings::str_cat("#tf_op=", op_name, ":", op_type, "#");
-}
+inline std::string traceme_op_override(std::string_view op_name, std::string_view op_type)
+{ return strings::str_cat("#tf_op=", op_name, ":", op_type, "#"); }
 
 /**
  * @brief Creates TensorFlow operation override metadata from C-strings.
@@ -423,8 +404,6 @@ inline std::string traceme_op_override(
  * @return TensorFlow operation override metadata
  */
 inline std::string traceme_op_override(const char* op_name, const char* op_type)
-{
-    return strings::str_cat("#tf_op=", op_name, ":", op_type, "#");
-}
+{ return strings::str_cat("#tf_op=", op_name, ":", op_type, "#"); }
 
 }  // namespace quarisma

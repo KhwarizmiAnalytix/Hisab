@@ -379,9 +379,7 @@ public:
      * @return Start timestamp
      */
     std::chrono::high_resolution_clock::time_point session_start_time() const
-    {
-        return start_time_;
-    }
+    { return start_time_; }
 
     /**
      * @brief Retrieve the session end timestamp (nanoseconds)
@@ -398,9 +396,7 @@ public:
      * @brief Access the statistical analyzer in read-only form
      */
     const quarisma::statistical_analyzer* statistical_analyzer_ptr() const
-    {
-        return statistical_analyzer_.get();
-    }
+    { return statistical_analyzer_.get(); }
 
     /**
      * @brief Get the current active profiling session (thread-safe)
@@ -653,9 +649,7 @@ public:
      * @return Unique pointer to the created profiler session
      */
     std::unique_ptr<quarisma::profiler_session> build()
-    {
-        return std::make_unique<quarisma::profiler_session>(options_);
-    }
+    { return std::make_unique<quarisma::profiler_session>(options_); }
 
 private:
     /// Configuration options being built

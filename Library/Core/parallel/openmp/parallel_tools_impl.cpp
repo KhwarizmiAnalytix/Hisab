@@ -112,30 +112,22 @@ int number_of_threads_openmp()
 
 //------------------------------------------------------------------------------
 bool single_thread_openmp()
-{
-    return thread_id_stack->top() == omp_get_thread_num();
-}
+{ return thread_id_stack->top() == omp_get_thread_num(); }
 
 //------------------------------------------------------------------------------
 template <>
 int parallel_tools_impl<backend_type::OpenMP>::estimated_number_of_threads()
-{
-    return number_of_threads_openmp();
-}
+{ return number_of_threads_openmp(); }
 
 //------------------------------------------------------------------------------
 template <>
 int parallel_tools_impl<backend_type::OpenMP>::estimated_default_number_of_threads()
-{
-    return omp_get_max_threads();
-}
+{ return omp_get_max_threads(); }
 
 //------------------------------------------------------------------------------
 template <>
 bool parallel_tools_impl<backend_type::OpenMP>::single_thread()
-{
-    return single_thread_openmp();
-}
+{ return single_thread_openmp(); }
 
 //------------------------------------------------------------------------------
 void parallel_tools_impl_for_openmp(

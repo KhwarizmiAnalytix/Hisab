@@ -63,22 +63,16 @@ TTarget* assign_ptr_(TTarget* rhs)
 }
 
 inline uint32_t refcount(uint64_t combined_refcount)
-{
-    return static_cast<uint32_t>(combined_refcount);
-}
+{ return static_cast<uint32_t>(combined_refcount); }
 
 inline uint32_t weakcount(uint64_t combined_refcount)
-{
-    return static_cast<uint32_t>(combined_refcount >> 32);
-}
+{ return static_cast<uint32_t>(combined_refcount >> 32); }
 
 // The only requirement for refcount increment is that it happens-before
 // decrement, so no additional memory ordering is needed.
 inline uint64_t atomic_combined_refcount_increment(
     std::atomic<uint64_t>& combined_refcount, uint64_t inc)
-{
-    return combined_refcount.fetch_add(inc, std::memory_order_relaxed) + inc;
-}
+{ return combined_refcount.fetch_add(inc, std::memory_order_relaxed) + inc; }
 
 inline uint32_t atomic_refcount_increment(std::atomic<uint64_t>& combined_refcount)
 {
@@ -103,9 +97,7 @@ inline uint32_t atomic_weakcount_increment(std::atomic<uint64_t>& combined_refco
 // out, on modern architectures and chips, it's also fastest.
 inline uint64_t atomic_combined_refcount_decrement(
     std::atomic<uint64_t>& combined_refcount, uint64_t dec)
-{
-    return combined_refcount.fetch_sub(dec, std::memory_order_acq_rel) - dec;
-}
+{ return combined_refcount.fetch_sub(dec, std::memory_order_acq_rel) - dec; }
 
 inline uint32_t atomic_weakcount_decrement(std::atomic<uint64_t>& combined_refcount)
 {
@@ -247,9 +239,7 @@ protected:
     intrusive_ptr_target(const intrusive_ptr_target& /*other*/) noexcept : intrusive_ptr_target() {}
 
     intrusive_ptr_target& operator=(const intrusive_ptr_target& /*other*/) noexcept
-    {
-        return *this;
-    }
+    { return *this; }
 
 private:
     /**
@@ -266,14 +256,10 @@ private:
     virtual void release_resources() {}
 
     uint32_t refcount(std::memory_order order = std::memory_order_relaxed) const
-    {
-        return detail::refcount(combined_refcount_.load(order));
-    }
+    { return detail::refcount(combined_refcount_.load(order)); }
 
     uint32_t weakcount(std::memory_order order = std::memory_order_relaxed) const
-    {
-        return detail::weakcount(combined_refcount_.load(order));
-    }
+    { return detail::weakcount(combined_refcount_.load(order)); }
 };
 
 template <class TTarget, class NullType>
@@ -420,9 +406,7 @@ public:
     explicit intrusive_ptr(std::unique_ptr<TTarget> rhs) noexcept : intrusive_ptr(rhs.release()) {}
 
     intrusive_ptr(intrusive_ptr&& rhs) noexcept : target_(rhs.target_)
-    {
-        rhs.target_ = NullType::singleton();
-    }
+    { rhs.target_ = NullType::singleton(); }
 
     template <class From, class FromNullType>
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
@@ -574,9 +558,7 @@ public:
    */
     template <class... Args>
     static intrusive_ptr make(Args&&... args)
-    {
-        return intrusive_ptr(new TTarget(std::forward<Args>(args)...));
-    }
+    { return intrusive_ptr(new TTarget(std::forward<Args>(args)...)); }
 
     /**
    * Turn a new instance of TTarget (e.g., literally allocated
@@ -655,65 +637,47 @@ template <
     class NullType = detail::intrusive_target_default_null_type<TTarget>,
     class... Args>
 inline intrusive_ptr<TTarget, NullType> make_intrusive(Args&&... args)
-{
-    return intrusive_ptr<TTarget, NullType>::make(std::forward<Args>(args)...);
-}
+{ return intrusive_ptr<TTarget, NullType>::make(std::forward<Args>(args)...); }
 
 template <class TTarget, class NullType>
 inline void swap(
     intrusive_ptr<TTarget, NullType>& lhs, intrusive_ptr<TTarget, NullType>& rhs) noexcept
-{
-    lhs.swap(rhs);
-}
+{ lhs.swap(rhs); }
 
 // To allow intrusive_ptr inside std::map or std::set, we need operator<
 template <class TTarget1, class NullType1, class TTarget2, class NullType2>
 inline bool operator<(
     const intrusive_ptr<TTarget1, NullType1>& lhs,
     const intrusive_ptr<TTarget2, NullType2>& rhs) noexcept
-{
-    return lhs.get() < rhs.get();
-}
+{ return lhs.get() < rhs.get(); }
 
 template <class TTarget1, class NullType1, class TTarget2, class NullType2>
 inline bool operator==(
     const intrusive_ptr<TTarget1, NullType1>& lhs,
     const intrusive_ptr<TTarget2, NullType2>& rhs) noexcept
-{
-    return lhs.get() == rhs.get();
-}
+{ return lhs.get() == rhs.get(); }
 
 template <class TTarget1, class NullType1>
 inline bool operator==(const intrusive_ptr<TTarget1, NullType1>& lhs, std::nullptr_t) noexcept
-{
-    return lhs.get() == nullptr;
-}
+{ return lhs.get() == nullptr; }
 
 template <class TTarget2, class NullType2>
 inline bool operator==(std::nullptr_t, const intrusive_ptr<TTarget2, NullType2>& rhs) noexcept
-{
-    return nullptr == rhs.get();
-}
+{ return nullptr == rhs.get(); }
 
 template <class TTarget1, class NullType1, class TTarget2, class NullType2>
 inline bool operator!=(
     const intrusive_ptr<TTarget1, NullType1>& lhs,
     const intrusive_ptr<TTarget2, NullType2>& rhs) noexcept
-{
-    return !operator==(lhs, rhs);
-}
+{ return !operator==(lhs, rhs); }
 
 template <class TTarget1, class NullType1>
 inline bool operator!=(const intrusive_ptr<TTarget1, NullType1>& lhs, std::nullptr_t) noexcept
-{
-    return !operator==(lhs, nullptr);
-}
+{ return !operator==(lhs, nullptr); }
 
 template <class TTarget2, class NullType2>
 inline bool operator!=(std::nullptr_t, const intrusive_ptr<TTarget2, NullType2>& rhs) noexcept
-{
-    return !operator==(nullptr, rhs);
-}
+{ return !operator==(nullptr, rhs); }
 template <typename T>
 struct MaybeOwnedTraits<quarisma::intrusive_ptr<T>>
 {
@@ -721,9 +685,7 @@ struct MaybeOwnedTraits<quarisma::intrusive_ptr<T>>
     using borrow_type = quarisma::intrusive_ptr<T>;
 
     static borrow_type createBorrow(const owned_type& from)
-    {
-        return borrow_type::reclaim(from.get());
-    }
+    { return borrow_type::reclaim(from.get()); }
 
     static void assignBorrow(borrow_type& lhs, const borrow_type& rhs)
     {
@@ -734,14 +696,10 @@ struct MaybeOwnedTraits<quarisma::intrusive_ptr<T>>
     static void destroyBorrow(borrow_type& toDestroy) { toDestroy.release(); }
 
     static const owned_type& referenceFromBorrow(const borrow_type& borrow) noexcept
-    {
-        return borrow;
-    }
+    { return borrow; }
 
     static const owned_type* pointerFromBorrow(const borrow_type& borrow) noexcept
-    {
-        return &borrow;
-    }
+    { return &borrow; }
 
     static bool debugBorrowIsValid(const borrow_type& /*borrow*/) noexcept { return true; }
 };
@@ -799,14 +757,10 @@ public:
 
     explicit weak_intrusive_ptr(const intrusive_ptr<TTarget, NullType>& ptr)
         : weak_intrusive_ptr(ptr.get())
-    {
-        retain_();
-    }
+    { retain_(); }
 
     weak_intrusive_ptr(weak_intrusive_ptr&& rhs) noexcept : target_(rhs.target_)
-    {
-        rhs.target_ = NullType::singleton();
-    }
+    { rhs.target_ = NullType::singleton(); }
 
     template <class From, class FromNullType>
     /* implicit */ weak_intrusive_ptr(
@@ -1019,34 +973,26 @@ public:
 template <class TTarget, class NullType>
 inline void swap(
     weak_intrusive_ptr<TTarget, NullType>& lhs, weak_intrusive_ptr<TTarget, NullType>& rhs) noexcept
-{
-    lhs.swap(rhs);
-}
+{ lhs.swap(rhs); }
 
 // To allow weak_intrusive_ptr inside std::map or std::set, we need operator<
 template <class TTarget1, class NullType1, class TTarget2, class NullType2>
 inline bool operator<(
     const weak_intrusive_ptr<TTarget1, NullType1>& lhs,
     const weak_intrusive_ptr<TTarget2, NullType2>& rhs) noexcept
-{
-    return lhs.target_ < rhs.target_;
-}
+{ return lhs.target_ < rhs.target_; }
 
 template <class TTarget1, class NullType1, class TTarget2, class NullType2>
 inline bool operator==(
     const weak_intrusive_ptr<TTarget1, NullType1>& lhs,
     const weak_intrusive_ptr<TTarget2, NullType2>& rhs) noexcept
-{
-    return lhs.target_ == rhs.target_;
-}
+{ return lhs.target_ == rhs.target_; }
 
 template <class TTarget1, class NullType1, class TTarget2, class NullType2>
 inline bool operator!=(
     const weak_intrusive_ptr<TTarget1, NullType1>& lhs,
     const weak_intrusive_ptr<TTarget2, NullType2>& rhs) noexcept
-{
-    return !operator==(lhs, rhs);
-}
+{ return !operator==(lhs, rhs); }
 
 // Alias for documentary purposes, to more easily distinguish
 // weak raw intrusive pointers from intrusive pointers.
@@ -1114,9 +1060,7 @@ namespace weak_intrusive_ptr
 {
 
 inline void incref(weak_intrusive_ptr_target* self)
-{
-    detail::atomic_weakcount_increment(self->combined_refcount_);
-}
+{ detail::atomic_weakcount_increment(self->combined_refcount_); }
 
 inline void decref(weak_intrusive_ptr_target* self)
 {
@@ -1158,16 +1102,12 @@ template <class TTarget, class NullType>
 struct hash<quarisma::intrusive_ptr<TTarget, NullType>>
 {
     size_t operator()(const quarisma::intrusive_ptr<TTarget, NullType>& x) const
-    {
-        return std::hash<TTarget*>()(x.get());
-    }
+    { return std::hash<TTarget*>()(x.get()); }
 };
 template <class TTarget, class NullType>
 struct hash<quarisma::weak_intrusive_ptr<TTarget, NullType>>
 {
     size_t operator()(const quarisma::weak_intrusive_ptr<TTarget, NullType>& x) const
-    {
-        return std::hash<TTarget*>()(x._unsafe_get_target());
-    }
+    { return std::hash<TTarget*>()(x._unsafe_get_target()); }
 };
 }  // namespace std

@@ -42,7 +42,6 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
-
 namespace quarisma
 {
 namespace profiler_impl

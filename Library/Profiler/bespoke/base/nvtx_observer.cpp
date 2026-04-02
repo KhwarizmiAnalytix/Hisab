@@ -172,8 +172,8 @@ void pushNVTXCallbacks(
     const ProfilerConfig& config, const std::unordered_set<quarisma::RecordScope>& scopes)
 {
     // PROFILER_CHECK(
-        // quarisma::profiler_impl::impl::cudaStubs()->enabled(),
-        // "Can't use NVTX profiler - Quarisma was compiled without CUDA");
+    // quarisma::profiler_impl::impl::cudaStubs()->enabled(),
+    // "Can't use NVTX profiler - Quarisma was compiled without CUDA");
 
     quarisma::thread_local_debug_info::_push(
         quarisma::DebugInfoKind::PROFILER_STATE, std::make_shared<NVTXThreadLocalState>(config));

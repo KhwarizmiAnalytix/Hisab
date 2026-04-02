@@ -71,9 +71,7 @@ std::optional<std::string> get_env(const char* name) noexcept
 
 // Checks an environment variable is set.
 bool has_env(const char* name) noexcept
-{
-    return get_env(name).has_value();
-}
+{ return get_env(name).has_value(); }
 
 // Reads an environment variable and returns
 // - optional<true>,              if set equal to "1"

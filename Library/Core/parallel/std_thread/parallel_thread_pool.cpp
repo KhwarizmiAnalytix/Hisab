@@ -28,6 +28,8 @@
 #include <condition_variable>
 #include <future>
 #include <iostream>
+#include <memory>
+#include <limits>
 
 #include "parallel/common/parallel_tools_impl.h"
 
@@ -41,7 +43,7 @@ namespace parallel
 /**
  * @brief Sentinel value indicating no job is currently running on a thread
  */
-static constexpr std::size_t no_running_job = (std::numeric_limits<std::size_t>::max)();
+static constexpr std::size_t no_running_job = std::numeric_limits<std::size_t>::max();
 
 /**
  * @brief Represents a single job/task to be executed by a thread in the pool
@@ -332,9 +334,7 @@ std::vector<std::reference_wrapper<std::thread>> parallel_thread_pool::proxy::ge
  * @return true if this is a top-level proxy (no parent), false if nested
  */
 bool parallel_thread_pool::proxy::is_top_level() const noexcept
-{
-    return data_->parent_ == nullptr;
-}
+{ return data_->parent_ == nullptr; }
 
 /**
  * @brief Constructor creates the thread pool with default number of threads
@@ -356,7 +356,7 @@ parallel_thread_pool::parallel_thread_pool()
     threads_.reserve(thread_count);
     for (std::size_t i{}; i < thread_count; ++i)
     {
-        std::unique_ptr<thread_data> data{new thread_data{}};
+        auto data = std::make_unique<thread_data>();
         data->systethread_ = this->make_thread();
         threads_.emplace_back(std::move(data));
     }
@@ -422,7 +422,7 @@ parallel_thread_pool::proxy parallel_thread_pool::allocate_threads(std::size_t t
         thread_count = this->thread_count();
     }
 
-    std::unique_ptr<proxy_data> proxy{new proxy_data{}};
+    auto proxy = std::make_unique<proxy_data>();
     proxy->pool_ = this;
     proxy->threads_.reserve(thread_count);
 
@@ -492,9 +492,7 @@ std::size_t parallel_thread_pool::get_thread_id() const noexcept
  * @return true if called from a pool thread executing a job, false otherwise
  */
 bool parallel_thread_pool::is_parallel_scope() const noexcept
-{
-    return get_caller_thread_data() != nullptr;
-}
+{ return get_caller_thread_data() != nullptr; }
 
 /**
  * @brief Check if the calling thread is the "master" thread of its proxy
@@ -525,9 +523,7 @@ bool parallel_thread_pool::single_thread() const
  * @return Number of system threads
  */
 std::size_t parallel_thread_pool::thread_count() const noexcept
-{
-    return threads_.size();
-}
+{ return threads_.size(); }
 
 /**
  * @brief Find thread_data for the calling thread
@@ -672,9 +668,7 @@ void parallel_thread_pool::fill_threads_for_nested_proxy(proxy_data* proxy, std:
  * @note ID 1 is reserved for external_thread_id
  */
 std::size_t parallel_thread_pool::get_next_thread_id() noexcept
-{
-    return next_proxy_thread_id_.fetch_add(1, std::memory_order_relaxed) + 1;
-}
+{ return next_proxy_thread_id_.fetch_add(1, std::memory_order_relaxed) + 1; }
 
 /**
  * @brief Get the global singleton thread pool instance

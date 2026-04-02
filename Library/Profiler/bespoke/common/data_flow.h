@@ -3,8 +3,8 @@
 #include <memory>
 
 ////#include <Quarisma/core/TensorBody.h>
-#include "common/profiler_macros.h"
 #include "common/TensorImpl.h"
+#include "common/profiler_macros.h"
 #include "common/strong_type.h"
 
 namespace quarisma::profiler_impl::impl

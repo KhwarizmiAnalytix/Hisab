@@ -206,7 +206,7 @@ protected:
             auto* old_block = std::exchange(start_block_, start_block_->next);
             delete old_block;
             // PROFILER_CHECK_DEBUG(
-                // start_ == start_block_->start, "start_ is not equal to start_block_->start");
+            // start_ == start_block_->start, "start_ is not equal to start_block_->start");
         }
         return element;
     }
@@ -249,9 +249,7 @@ public:
     {
     public:
         bool operator==(const Iterator& another) const
-        {
-            return (index_ == another.index_) && (queue_ == another.queue_);
-        }
+        { return (index_ == another.index_) && (queue_ == another.queue_); }
 
         bool operator!=(const Iterator& another) const { return !(*this == another); }
 
@@ -259,21 +257,21 @@ public:
         {
             // PROFILER_CHECK_DEBUG(block_ != nullptr, "block_ is nullptr");
             // PROFILER_CHECK_DEBUG(
-                // index_ >= block_->start,
-                // "index_ {} is less than block_->start {}",
-                // index_,
-                // block_->start);
+            // index_ >= block_->start,
+            // "index_ {} is less than block_->start {}",
+            // index_,
+            // block_->start);
             // PROFILER_CHECK_DEBUG(
-                // index_ < block_->start + Block::kNumSlots,
-                // "index_ {} is greater than block_->start{} + Block::kNumSlots{}",
-                // index_,
-                // block_->start,
-                // Block::kNumSlots);
+            // index_ < block_->start + Block::kNumSlots,
+            // "index_ {} is greater than block_->start{} + Block::kNumSlots{}",
+            // index_,
+            // block_->start,
+            // Block::kNumSlots);
             // PROFILER_CHECK_DEBUG(
-                // index_ < queue_->End(),
-                // "index_={} is greater than queue_->End()={}",
-                // index_,
-                // queue_->End());
+            // index_ < queue_->End(),
+            // "index_={} is greater than queue_->End()={}",
+            // index_,
+            // queue_->End());
             return block_->slots[index_ - block_->start].value;
         }
 
@@ -288,10 +286,10 @@ public:
                 ++index_;
                 auto next_block_start = block_->start + Block::kNumSlots;
                 // PROFILER_CHECK_DEBUG(
-                    // index_ < next_block_start,
-                    // "index_ {} is greater than next_block_start {}",
-                    // index_,
-                    // next_block_start);
+                // index_ < next_block_start,
+                // "index_ {} is greater than next_block_start {}",
+                // index_,
+                // next_block_start);
                 if (index_ == next_block_start)
                 {
                     block_ = block_->next;

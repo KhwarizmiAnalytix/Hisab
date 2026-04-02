@@ -198,14 +198,10 @@ void allocator_gpu::deallocate_gpu_memory(void* ptr, size_t num_bytes, void* str
 }
 
 bool allocator_gpu::set_device_context() const
-{
-    return quarisma::gpu::memory_allocator::set_device(device_id_);
-}
+{ return quarisma::gpu::memory_allocator::set_device(device_id_); }
 
 void* allocator_gpu::allocate_raw(size_t alignment, size_t num_bytes)
-{
-    return allocate_raw(alignment, num_bytes, allocation_attributes{});
-}
+{ return allocate_raw(alignment, num_bytes, allocation_attributes{}); }
 
 void* allocator_gpu::allocate_raw(
     QUARISMA_UNUSED size_t                       alignment,
@@ -298,14 +294,10 @@ size_t allocator_gpu::RequestedSize(QUARISMA_UNUSED const void* ptr) const noexc
 }
 
 size_t allocator_gpu::AllocatedSize(QUARISMA_UNUSED const void* ptr) const noexcept
-{
-    return 0;
-}
+{ return 0; }
 
 int64_t allocator_gpu::AllocationId(QUARISMA_UNUSED const void* ptr) const
-{
-    return 0;
-}
+{ return 0; }
 
 std::optional<allocator_stats> allocator_gpu::GetStats() const
 {
@@ -353,9 +345,7 @@ std::unique_ptr<allocator_gpu> create_gpu_allocator(int device_id, const std::st
 
 std::unique_ptr<allocator_gpu> create_gpu_allocator(
     int device_id, const allocator_gpu::Options& options, const std::string& name)
-{
-    return std::make_unique<allocator_gpu>(device_id, options, name);
-}
+{ return std::make_unique<allocator_gpu>(device_id, options, name); }
 
 }  // namespace gpu
 }  // namespace quarisma

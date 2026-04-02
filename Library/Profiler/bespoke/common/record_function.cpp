@@ -9,9 +9,9 @@
 #include <mutex>
 #include <random>
 
-#include "common/profiler_macros.h"
 #include "common/irange.h"
 #include "common/overloaded.h"
+#include "common/profiler_macros.h"
 #include "common/small_vector.h"
 #include "common/strong_type.h"
 
@@ -228,9 +228,7 @@ GlobalCallbackManager& GlobalCallbackManager::get()
 }
 
 size_t GlobalCallbackManager::version() const
-{
-    return version_.load(std::memory_order_relaxed);
-}
+{ return version_.load(std::memory_order_relaxed); }
 
 std::pair<size_t, RecordFunctionCallbacks> GlobalCallbackManager::getSnapshot() const
 {
@@ -290,9 +288,7 @@ void GlobalCallbackManager::clearCallbacks()
 // ============================================================================
 CacheEntry::CacheEntry(std::mt19937* generator, RecordScope scope)
     : generator_{generator}, scope_{scope}
-{
-    rebuildActiveCallbacks();
-}
+{ rebuildActiveCallbacks(); }
 
 void CacheEntry::update(const std::vector<RecordFunctionCallback>& callbacks)
 {
@@ -313,7 +309,8 @@ void CacheEntry::getActiveCallbacksImpl()
     // reaches zero at the start of this function something has gone wrong.
     //PROFILER_CHECK(sampling_countdown_ > 0, sampling_countdown_);
 
-    if PROFILER_UNLIKELY (!(--sampling_countdown_))
+    --sampling_countdown_;
+    if PROFILER_UNLIKELY (sampling_countdown_ == 0)
     {
         // Use inferred steps to update sampled callbacks.
         for (auto& i : callbacks_)
@@ -426,9 +423,7 @@ LocalCallbackManager::LocalCallbackManager()
 }
 
 const RecordFunctionTLS& LocalCallbackManager::getTLS() const
-{
-    return registered_callbacks_;
-}
+{ return registered_callbacks_; }
 
 void LocalCallbackManager::rebuildActiveCallbacksIfNeeded()
 {
@@ -459,9 +454,7 @@ void LocalCallbackManager::setTLS(const RecordFunctionTLS& tls)
 }
 
 void LocalCallbackManager::seed(uint32_t seed)
-{
-    generator_.seed(seed);
-}
+{ generator_.seed(seed); }
 
 CallbackHandle LocalCallbackManager::addCallback(RecordFunctionCallback callback)
 {
@@ -733,24 +726,16 @@ const char* RecordFunction::overload_name()
 }
 
 StepCallbacks getStepCallbacks(RecordScope scope)
-{
-    return LocalCallbackManager::get().getActiveCallbacks(scope);
-}
+{ return LocalCallbackManager::get().getActiveCallbacks(scope); }
 
 std::optional<StepCallbacks> getStepCallbacksUnlessEmpty(RecordScope scope)
-{
-    return LocalCallbackManager::get().getActiveCallbacksUnlessEmpty(scope);
-}
+{ return LocalCallbackManager::get().getActiveCallbacksUnlessEmpty(scope); }
 
 const RecordFunctionTLS& get_record_function_tls_()
-{
-    return LocalCallbackManager::get().getTLS();
-}
+{ return LocalCallbackManager::get().getTLS(); }
 
 void set_record_function_tls_(const RecordFunctionTLS& tls)
-{
-    LocalCallbackManager::get().setTLS(tls);
-}
+{ LocalCallbackManager::get().setTLS(tls); }
 
 namespace
 {
@@ -762,29 +747,19 @@ bool anyEnabled(const RecordFunctionCallbacks& callbacks)
 }  // namespace
 
 bool hasCallbacks()
-{
-    return hasThreadLocalCallbacks() || hasGlobalCallbacks();
-}
+{ return hasThreadLocalCallbacks() || hasGlobalCallbacks(); }
 
 bool hasGlobalCallbacks()
-{
-    return anyEnabled(GlobalCallbackManager::get().getSnapshot().second);
-}
+{ return anyEnabled(GlobalCallbackManager::get().getSnapshot().second); }
 
 bool hasThreadLocalCallbacks()
-{
-    return anyEnabled(get_record_function_tls_().sorted_tls_callbacks_);
-}
+{ return anyEnabled(get_record_function_tls_().sorted_tls_callbacks_); }
 
 CallbackHandle addThreadLocalCallback(RecordFunctionCallback cb)
-{
-    return LocalCallbackManager::get().addCallback(cb);
-}
+{ return LocalCallbackManager::get().addCallback(cb); }
 
 CallbackHandle addGlobalCallback(RecordFunctionCallback cb)
-{
-    return GlobalCallbackManager::get().addCallback(cb);
-}
+{ return GlobalCallbackManager::get().addCallback(cb); }
 
 void removeCallback(CallbackHandle handle)
 {
@@ -811,14 +786,10 @@ void reenableCallback(CallbackHandle handle)
 }
 
 void clearGlobalCallbacks()
-{
-    GlobalCallbackManager::get().clearCallbacks();
-}
+{ GlobalCallbackManager::get().clearCallbacks(); }
 
 void clearThreadLocalCallbacks()
-{
-    LocalCallbackManager::get().clearCallbacks();
-}
+{ LocalCallbackManager::get().clearCallbacks(); }
 
 void clearCallbacks()
 {
@@ -827,9 +798,7 @@ void clearCallbacks()
 }
 
 bool isRecordFunctionEnabled()
-{
-    return LocalCallbackManager::get().getTLS().tls_record_function_enabled_;
-}
+{ return LocalCallbackManager::get().getTLS().tls_record_function_enabled_; }
 
 void enableRecordFunction(bool enable)
 {
@@ -842,9 +811,7 @@ void enableRecordFunction(bool enable)
 }
 
 void set_record_function_seed_for_testing(uint32_t seed)
-{
-    LocalCallbackManager::get().seed(seed);
-}
+{ LocalCallbackManager::get().seed(seed); }
 
 /* static */
 uint64_t RecordFunction::currentThreadId()
@@ -895,24 +862,16 @@ void RecordFunction::before(RecordFunction::FunctionDescriptor fn, int64_t seque
 }
 
 /* static */ int64_t RecordFunction::getDefaultNodeId()
-{
-    return defaultNodeId;
-}
+{ return defaultNodeId; }
 
 RecordFunction::~RecordFunction()
-{
-    end();
-}
+{ end(); }
 
 void RecordFunction::_setAsync()
-{
-    is_async_ = true;
-}
+{ is_async_ = true; }
 
 bool RecordFunction::isAsync() const
-{
-    return is_async_;
-}
+{ return is_async_; }
 
 void RecordFunction::_setStaticRuntimeOutVariant()
 {

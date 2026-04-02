@@ -40,9 +40,9 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
+#include "common/flat_hash.h"
 #include "native/core/timespan.h"
 #include "native/exporters/xplane/xplane.h"
-#include "common/flat_hash.h"
 
 namespace quarisma
 {
@@ -82,9 +82,7 @@ xevent_metadata* xplane_builder::get_or_create_event_metadata(int64_t metadata_i
 }
 
 xevent_metadata* xplane_builder::create_event_metadata()
-{
-    return get_or_create_event_metadata(++last_event_metadata_id_);
-}
+{ return get_or_create_event_metadata(++last_event_metadata_id_); }
 
 xevent_metadata* xplane_builder::get_or_create_event_metadata(std::string_view name)
 {
@@ -158,9 +156,7 @@ const x_stat_metadata* xplane_builder::stat_metadata(int64_t metadata_id) const
 }
 
 x_stat_metadata* xplane_builder::CreateStatMetadata()
-{
-    return get_or_create_stat_metadata(++last_stat_metadata_id_);
-}
+{ return get_or_create_stat_metadata(++last_stat_metadata_id_); }
 
 x_stat_metadata* xplane_builder::get_or_create_stat_metadata(std::string_view name)
 {

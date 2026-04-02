@@ -160,9 +160,7 @@ protected:
 
     /// Return true if V is an internal reference to this vector.
     bool isReferenceToStorage(const void* V) const
-    {
-        return isReferenceToRange(V, this->begin(), this->end());
-    }
+    { return isReferenceToRange(V, this->begin(), this->end()); }
 
     /// Return true if First and Last form a valid (possibly empty) range in this
     /// vector's storage.
@@ -204,9 +202,7 @@ protected:
     /// Check whether Elt will be invalidated by increasing the size of the
     /// vector by N.
     void assertSafeToAdd(const void* Elt, size_t N = 1)
-    {
-        this->assertSafeToReferenceAfterResize(Elt, this->size() + N);
-    }
+    { this->assertSafeToReferenceAfterResize(Elt, this->size() + N); }
 
     /// Check whether any part of the range will be invalidated by clearing.
     void assertSafeToReferenceAfterClear(const T* From, const T* To)
@@ -294,9 +290,7 @@ public:
 
     size_type           size_in_bytes() const { return size() * sizeof(T); }
     constexpr size_type max_size() const
-    {
-        return std::min(this->SizeTypeMax(), size_type(-1) / sizeof(T));
-    }
+    { return std::min(this->SizeTypeMax(), size_type(-1) / sizeof(T)); }
 
     size_t capacity_in_bytes() const { return capacity() * sizeof(T); }
 
@@ -388,17 +382,13 @@ protected:
     /// constructing elements as needed.
     template <typename It1, typename It2>
     static void uninitialized_move(It1 I, It1 E, It2 Dest)
-    {
-        std::uninitialized_copy(std::make_move_iterator(I), std::make_move_iterator(E), Dest);
-    }
+    { std::uninitialized_copy(std::make_move_iterator(I), std::make_move_iterator(E), Dest); }
 
     /// Copy the range [I, E) onto the uninitialized memory starting with "Dest",
     /// constructing elements as needed.
     template <typename It1, typename It2>
     static void uninitialized_copy(It1 I, It1 E, It2 Dest)
-    {
-        std::uninitialized_copy(I, E, Dest);
-    }
+    { std::uninitialized_copy(I, E, Dest); }
 
     /// Grow the allocated memory (without initializing new elements), doubling
     /// the size of the allocated memory. Guarantees space for at least one more
@@ -423,16 +413,12 @@ protected:
     /// Reserve enough space to add one element, and return the updated element
     /// pointer in case it was a reference to the storage.
     const T* reserveForParamAndGetAddress(const T& Elt, size_t N = 1)
-    {
-        return this->reserveForParamAndGetAddressImpl(this, Elt, N);
-    }
+    { return this->reserveForParamAndGetAddressImpl(this, Elt, N); }
 
     /// Reserve enough space to add one element, and return the updated element
     /// pointer in case it was a reference to the storage.
     T* reserveForParamAndGetAddress(T& Elt, size_t N = 1)
-    {
-        return const_cast<T*>(this->reserveForParamAndGetAddressImpl(this, Elt, N));
-    }
+    { return const_cast<T*>(this->reserveForParamAndGetAddressImpl(this, Elt, N)); }
 
     static T&&      forward_value_param(T&& V) { return std::move(V); }
     static const T& forward_value_param(const T& V) { return V; }
@@ -584,16 +570,12 @@ protected:
     /// Reserve enough space to add one element, and return the updated element
     /// pointer in case it was a reference to the storage.
     const T* reserveForParamAndGetAddress(const T& Elt, size_t N = 1)
-    {
-        return this->reserveForParamAndGetAddressImpl(this, Elt, N);
-    }
+    { return this->reserveForParamAndGetAddressImpl(this, Elt, N); }
 
     /// Reserve enough space to add one element, and return the updated element
     /// pointer in case it was a reference to the storage.
     T* reserveForParamAndGetAddress(T& Elt, size_t N = 1)
-    {
-        return const_cast<T*>(this->reserveForParamAndGetAddressImpl(this, Elt, N));
-    }
+    { return const_cast<T*>(this->reserveForParamAndGetAddressImpl(this, Elt, N)); }
 
     /// Copy \p V or return a reference, depending on \a ValueParamT.
     static ValueParamT forward_value_param(ValueParamT V) { return V; }
@@ -863,14 +845,10 @@ private:
 
 public:
     iterator insert(iterator I, T&& Elt)
-    {
-        return insert_one_impl(I, this->forward_value_param(std::move(Elt)));
-    }
+    { return insert_one_impl(I, this->forward_value_param(std::move(Elt))); }
 
     iterator insert(iterator I, const T& Elt)
-    {
-        return insert_one_impl(I, this->forward_value_param(Elt));
-    }
+    { return insert_one_impl(I, this->forward_value_param(Elt)); }
 
     iterator insert(iterator I, size_type NumToInsert, ValueParamT Elt)
     {
@@ -1033,9 +1011,7 @@ public:
     bool operator!=(const SmallVectorImpl& RHS) const { return !(*this == RHS); }
 
     bool operator<(const SmallVectorImpl& RHS) const
-    {
-        return std::lexicographical_compare(this->begin(), this->end(), RHS.begin(), RHS.end());
-    }
+    { return std::lexicographical_compare(this->begin(), this->end(), RHS.begin(), RHS.end()); }
 };
 
 template <typename T>
@@ -1307,9 +1283,7 @@ public:
     }
 
     explicit small_vector(size_t Size, const T& Value = T()) : SmallVectorImpl<T>(N)
-    {
-        this->assign(Size, Value);
-    }
+    { this->assign(Size, Value); }
 
     template <
         typename ItTy,
@@ -1317,9 +1291,7 @@ public:
             typename std::iterator_traits<ItTy>::iterator_category,
             std::input_iterator_tag>>>
     small_vector(ItTy S, ItTy E) : SmallVectorImpl<T>(N)
-    {
-        this->append(S, E);
-    }
+    { this->append(S, E); }
 
     // note: The enable_if restricts Container to types that have a .begin() and
     // .end() that return valid input iterators.
@@ -1336,9 +1308,7 @@ public:
                     std::input_iterator_tag>,
             int> = 0>
     explicit small_vector(Container&& c) : SmallVectorImpl<T>(N)
-    {
-        this->append(c.begin(), c.end());
-    }
+    { this->append(c.begin(), c.end()); }
 
     small_vector(std::initializer_list<T> IL) : SmallVectorImpl<T>(N) { this->assign(IL); }
 
@@ -1433,9 +1403,7 @@ public:
 
 template <typename T, unsigned N>
 inline size_t capacity_in_bytes(const small_vector<T, N>& X)
-{
-    return X.capacity_in_bytes();
-}
+{ return X.capacity_in_bytes(); }
 
 template <typename T, unsigned N>
 std::ostream& operator<<(std::ostream& out, const small_vector<T, N>& list)
@@ -1462,18 +1430,14 @@ using ValueTypeFromRangeType =
 template <unsigned Size, typename R>
 // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
 small_vector<ValueTypeFromRangeType<R>, Size> to_vector(R&& Range)
-{
-    return {std::begin(Range), std::end(Range)};
-}
+{ return {std::begin(Range), std::end(Range)}; }
 template <typename R>
 small_vector<
     ValueTypeFromRangeType<R>,
     CalculateSmallVectorDefaultInlinedElements<ValueTypeFromRangeType<R>>::value>
 // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
 to_vector(R&& Range)
-{
-    return {std::begin(Range), std::end(Range)};
-}
+{ return {std::begin(Range), std::end(Range)}; }
 
 }  // end namespace quarisma
 
@@ -1483,16 +1447,12 @@ namespace std
 /// Implement std::swap in terms of small_vector swap.
 template <typename T>
 inline void swap(quarisma::SmallVectorImpl<T>& LHS, quarisma::SmallVectorImpl<T>& RHS) noexcept
-{
-    LHS.swap(RHS);
-}
+{ LHS.swap(RHS); }
 
 /// Implement std::swap in terms of small_vector swap.
 template <typename T, unsigned N>
 inline void swap(quarisma::small_vector<T, N>& LHS, quarisma::small_vector<T, N>& RHS) noexcept
-{
-    LHS.swap(RHS);
-}
+{ LHS.swap(RHS); }
 
 }  // end namespace std
 #pragma warning(pop)  // Re-enable the warning after

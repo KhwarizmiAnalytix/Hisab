@@ -37,10 +37,10 @@ limitations under the License.
 
 #include <cstdint>
 
+#include "common/profiler_export.h"
 #include "common/profiler_macros.h"
 #include "native/exporters/xplane/xplane.h"
 #include "native/tracing/traceme_recorder.h"
-#include "common/profiler_export.h"
 
 namespace quarisma
 {

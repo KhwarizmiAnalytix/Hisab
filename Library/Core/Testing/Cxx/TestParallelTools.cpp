@@ -87,9 +87,7 @@ public:
     const_functor(std::atomic<int>& counter) : counter_(counter) {}
 
     void operator()(size_t begin, size_t end) const
-    {
-        counter_.fetch_add(static_cast<int>(end - begin), std::memory_order_relaxed);
-    }
+    { counter_.fetch_add(static_cast<int>(end - begin), std::memory_order_relaxed); }
 };
 
 QUARISMATEST(ParallelTools, test)

@@ -41,10 +41,10 @@ limitations under the License.
 #include <string_view>
 #include <vector>
 
-#include "native/core/timespan.h"
-#include "native/exporters/xplane/xplane.h"
 #include "common/flat_hash.h"
 #include "common/profiler_export.h"
+#include "native/core/timespan.h"
+#include "native/exporters/xplane/xplane.h"
 
 namespace quarisma
 {
@@ -213,9 +213,7 @@ public:
     int64_t timestamp_ns() const { return line_->timestamp_ns() + offset_ns(); }
 
     int64_t timestamp_ps() const
-    {
-        return nano_to_pico(line_->timestamp_ns()) + event_->offset_ps();
-    }
+    { return nano_to_pico(line_->timestamp_ns()) + event_->offset_ps(); }
 
     double duration_ns() const { return pico_to_nano(event_->duration_ps()); }
 
@@ -230,21 +228,15 @@ public:
     int64_t num_occurrences() const { return event_->num_occurrences(); }
 
     bool is_aggregated_event() const
-    {
-        return event_->data_case() == xevent::data_case_type::kNumOccurrences;
-    }
+    { return event_->data_case() == xevent::data_case_type::kNumOccurrences; }
 
     bool operator<(const xevent_visitor& other) const
-    {
-        return get_timespan() < other.get_timespan();
-    }
+    { return get_timespan() < other.get_timespan(); }
 
     const xevent_metadata* metadata() const { return metadata_; }
 
     xevent_metadata_visitor get_metadata() const
-    {
-        return xevent_metadata_visitor(plane_, metadata_);
-    }
+    { return xevent_metadata_visitor(plane_, metadata_); }
 
     timespan get_timespan() const { return timespan(timestamp_ps(), duration_ps()); }
 
@@ -269,9 +261,7 @@ public:
     std::string_view name() const { return line_->name(); }
 
     std::string_view display_name() const
-    {
-        return !line_->display_name().empty() ? line_->display_name() : line_->name();
-    }
+    { return !line_->display_name().empty() ? line_->display_name() : line_->name(); }
 
     int64_t timestamp_ns() const { return line_->timestamp_ns(); }
 

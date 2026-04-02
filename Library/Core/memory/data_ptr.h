@@ -87,9 +87,7 @@ struct data_ptr
           size_(std::move(rhs.size_)),
           type_(std::move(rhs.type_)),
           allocated_(std::move(rhs.allocated_))
-    {
-        rhs.data_ = nullptr;
-    };
+    { rhs.data_ = nullptr; };
 
     QUARISMA_FORCE_INLINE data_ptr& operator=(data_ptr&& rhs) noexcept
     {

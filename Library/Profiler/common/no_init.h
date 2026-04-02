@@ -50,16 +50,12 @@ union no_init
 
     template <typename... Ts>
     void Emplace(Ts&&... args)
-    {
-        new (&value) T(std::forward<Ts>(args)...);
-    }
+    { new (&value) T(std::forward<Ts>(args)...); }
 
     // Quarisma standards-compliant lowercase aliases
     template <typename... Ts>
     void emplace(Ts&&... args)
-    {
-        Emplace(std::forward<Ts>(args)...);
-    }
+    { Emplace(std::forward<Ts>(args)...); }
 
     void Destroy() { value.~T(); }
 

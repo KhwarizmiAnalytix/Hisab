@@ -38,7 +38,7 @@ limitations under the License.
 #include <utility>
 
 //#include "logging/logger.h"
-#include "common/profiler_macros.h" 
+#include "common/profiler_macros.h"
 #include "native/core/profiler_interface.h"
 #include "native/exporters/xplane/xplane.h"
 

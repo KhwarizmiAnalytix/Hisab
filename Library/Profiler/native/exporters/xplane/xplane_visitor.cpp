@@ -39,8 +39,8 @@ limitations under the License.
 #include <string_view>
 #include <utility>
 
-#include "native/exporters/xplane/xplane.h"
 #include "common/flat_hash.h"
+#include "native/exporters/xplane/xplane.h"
 
 namespace quarisma
 {

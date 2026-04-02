@@ -10,8 +10,8 @@
 #include <unordered_set>
 #include <variant>
 
-#include "common/profiler_export.h"
 #include "common/array_ref.h"
+#include "common/profiler_export.h"
 #include "common/small_vector.h"
 
 namespace quarisma
@@ -68,9 +68,7 @@ template <>
 struct hash<quarisma::RecordScope>
 {
     size_t operator()(const quarisma::RecordScope& sc) const
-    {
-        return static_cast<std::size_t>(sc);
-    }
+    { return static_cast<std::size_t>(sc); }
 };
 }  // namespace std
 
@@ -96,9 +94,7 @@ struct PROFILER_VISIBILITY StringView
     }
 
     friend bool operator==(const StringView& lhs, const StringView& rhs)
-    {
-        return strcmp(lhs.str(), rhs.str()) == 0;
-    }
+    { return strcmp(lhs.str(), rhs.str()) == 0; }
 
     friend bool operator!=(const StringView& lhs, const StringView& rhs) { return !(lhs == rhs); }
 
@@ -156,9 +152,7 @@ public:
     // between start and end callbacks.
     explicit RecordFunctionCallback(StartCallback start, EndCallback end = nullptr)
         : start_(start), end_(end)
-    {
-        scopes_.fill(true);
-    }
+    { scopes_.fill(true); }
 
     RecordFunctionCallback& needsInputs(bool needs_inputs)
     {
@@ -181,7 +175,7 @@ public:
     RecordFunctionCallback& samplingProb(double sampling_prob)
     {
         // PROFILER_CHECK(
-            // sampling_prob >= 0.0 && sampling_prob <= 1.0, "Invalid sampling probability");
+        // sampling_prob >= 0.0 && sampling_prob <= 1.0, "Invalid sampling probability");
         sampling_prob_ = sampling_prob;
         return *this;
     }
@@ -386,14 +380,14 @@ struct PROFILER_VISIBILITY RecordFunction
     quarisma::array_ref<const IValue> inputs() const
     {
         // PROFILER_CHECK_DEBUG(
-            // inputs_valid_, "Called inputs() outside RecordFunction start callback");
+        // inputs_valid_, "Called inputs() outside RecordFunction start callback");
         return inputs_;
     }
 
     std::unordered_map<std::string, IValue> kwinputs() const
     {
         // PROFILER_CHECK_DEBUG(
-            // inputs_valid_, "Called kwinputs() outside RecordFunction start callback");
+        // inputs_valid_, "Called kwinputs() outside RecordFunction start callback");
         return kwinputs_;
     }
 
@@ -757,9 +751,7 @@ class PROFILER_VISIBILITY RecordFunctionGuard
 {
 public:
     explicit RecordFunctionGuard(bool is_enabled = true) : prev_value_(isRecordFunctionEnabled())
-    {
-        enableRecordFunction(is_enabled);
-    }
+    { enableRecordFunction(is_enabled); }
 
     RecordFunctionGuard(RecordFunctionGuard&& other)           = delete;
     RecordFunctionGuard(const RecordFunctionGuard&)            = delete;

@@ -34,7 +34,7 @@ limitations under the License.
 
 #include <memory>  // for make_unique, unique_ptr
 
-#include "common/profiler_macros.h"                   // for PROFILER_UNUSED
+#include "common/profiler_macros.h"          // for PROFILER_UNUSED
 #include "native/core/profiler_factory.h"    // for register_profiler_factory
 #include "native/core/profiler_interface.h"  // for profiler_interface
 #include "native/core/profiler_options.h"    // for profile_options
@@ -77,9 +77,7 @@ private:
 };
 
 std::unique_ptr<profiler_interface> CreatMetadataCollector(const profile_options& options)
-{
-    return options.enable_hlo_proto() ? std::make_unique<MetadataCollector>() : nullptr;
-}
+{ return options.enable_hlo_proto() ? std::make_unique<MetadataCollector>() : nullptr; }
 
 }  // namespace
 

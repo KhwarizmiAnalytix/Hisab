@@ -1,8 +1,8 @@
 // NOLINTBEGIN(modernize-use-nodiscard,modernize-use-auto,modernize-return-braced-init-list,readability-qualified-auto,readability-convert-member-functions-to-static,readability-implicit-bool-conversion,readability-else-after-return,misc-const-correctness)
 #include "bespoke/common/unwind/unwind.h"
 
-#include "common/profiler_macros.h"
 #include "bespoke/common/unwind/cpp_stacktraces.h"
+#include "common/profiler_macros.h"
 //#include "util/env.h"
 
 #if !defined(__linux__) || !defined(__x86_64__) || !defined(__has_include) || \
@@ -559,9 +559,7 @@ std::vector<Frame> symbolize(const std::vector<void*>& frames, Mode mode)
 #endif
 
 Stats stats()
-{
-    return unwind_cache.stats();
-}
+{ return unwind_cache.stats(); }
 
 }  // namespace quarisma::unwind
 

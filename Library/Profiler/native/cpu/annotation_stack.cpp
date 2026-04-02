@@ -131,9 +131,7 @@ void annotation_stack::pop_annotation()
 }
 
 const std::string& annotation_stack::get()
-{
-    return *std::get<1>(get_annotation_data(generation_));
-}
+{ return *std::get<1>(get_annotation_data(generation_)); }
 
 const std::vector<int64_t>& annotation_stack::get_scope_range_ids()
 {

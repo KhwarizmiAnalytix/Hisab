@@ -64,7 +64,7 @@ struct Unwinder
         r.rsp         = (reg_ == D_RSP ? cur.rsp : cur.rbp) + off_;
         r.rbp         = rbp_off_ == std::numeric_limits<int64_t>::max()
                             ? cur.rbp
-                    // NOLINTNEXTLINE(performance-no-int-to-ptr)
+                            // NOLINTNEXTLINE(performance-no-int-to-ptr)
                             : *(int64_t*)(r.rsp + rbp_off_);
         if (deref_)
         {

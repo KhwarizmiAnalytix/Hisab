@@ -17,10 +17,10 @@
 #include "bespoke/common/containers.h"
 #include "bespoke/common/data_flow.h"
 #include "bespoke/common/events.h"
-#include "common/profiler_macros.h"
 #include "bespoke/common/orchestration/python_tracer.h"
 #include "bespoke/common/util.h"
 #include "bespoke/kineto/kineto_shim.h"
+#include "common/profiler_macros.h"
 //#include "memory/device.h"
 #include "common/approximate_clock.h"
 #include "common/flat_hash.h"
@@ -75,9 +75,9 @@ struct PROFILER_VISIBILITY RawTensorMetadata : RawTensorMetadataBase
 
     // Wrap `weak_self_` in `std::optional` and split device into components to
     // keep struct default constructable. (which the std::array initializer needs)
-    std::optional<WeakTensor>      weak_self_;
-    quarisma::device_enum          device_type_{quarisma::device_enum::CPU};
-    int16_t device_index_{-1};
+    std::optional<WeakTensor> weak_self_;
+    quarisma::device_enum     device_type_{quarisma::device_enum::CPU};
+    int16_t                   device_index_{-1};
 };
 
 // Used during post processing.
@@ -228,13 +228,13 @@ struct ExtraFields<EventType::Vulkan>
 
 struct RawAllocation
 {
-    quarisma::approx_time_t        start_time_;
-    void*                          ptr_;
-    int64_t                        alloc_size_;
-    size_t                         total_allocated_;
-    size_t                         total_reserved_;
-    quarisma::device_enum          device_type_;
-    int16_t device_index_;
+    quarisma::approx_time_t start_time_;
+    void*                   ptr_;
+    int64_t                 alloc_size_;
+    size_t                  total_allocated_;
+    size_t                  total_reserved_;
+    quarisma::device_enum   device_type_;
+    int16_t                 device_index_;
 };
 
 // For performance.
@@ -260,12 +260,12 @@ struct ExtraFields<EventType::Allocation> : RawAllocation
 template <>
 struct ExtraFields<EventType::OutOfMemory>
 {
-    quarisma::approx_time_t        start_time_;
-    int64_t                        alloc_size_;
-    size_t                         total_allocated_;
-    size_t                         total_reserved_;
-    quarisma::device_enum          device_type_;
-    int16_t device_index_;
+    quarisma::approx_time_t start_time_;
+    int64_t                 alloc_size_;
+    size_t                  total_allocated_;
+    size_t                  total_reserved_;
+    quarisma::device_enum   device_type_;
+    int16_t                 device_index_;
 };
 
 // For performance.
@@ -403,21 +403,15 @@ struct PROFILER_VISIBILITY Result : public std::enable_shared_from_this<Result>
 {
     template <typename... Args>
     [[nodiscard]] static std::shared_ptr<Result> create(Args... args)
-    {
-        return std::shared_ptr<Result>(new Result(std::forward<Args>(args)...));
-    }
+    { return std::shared_ptr<Result>(new Result(std::forward<Args>(args)...)); }
 
     template <typename T>
     auto visit(T&& visitor)
-    {
-        return std::visit(std::forward<T>(visitor), extra_fields_);
-    }
+    { return std::visit(std::forward<T>(visitor), extra_fields_); }
 
     template <typename T>
     auto visit(T&& visitor) const
-    {
-        return std::visit(std::forward<T>(visitor), extra_fields_);
-    }
+    { return std::visit(std::forward<T>(visitor), extra_fields_); }
 
     template <typename T, typename Fn>
     void visit_if_base(const Fn& fn) const
@@ -463,10 +457,10 @@ struct PROFILER_VISIBILITY Result : public std::enable_shared_from_this<Result>
         ExtraFields<EventType::PythonGC>*/>
         extra_fields_;
 
-    std::weak_ptr<Result>                               parent_;
-    std::vector<std::shared_ptr<Result>>                children_;
-    bool                                                finished_{false};
-    bool                                                hidden_{false};
+    std::weak_ptr<Result>                                    parent_;
+    std::vector<std::shared_ptr<Result>>                     children_;
+    bool                                                     finished_{false};
+    bool                                                     hidden_{false};
     const quarisma::profiler_impl::impl::kineto::activity_t* kineto_activity_{nullptr};
 
 private:
@@ -485,9 +479,7 @@ private:
 
     template <EventType E>
     static EventType deduceTag(const ExtraFields<E>& /*unused*/)
-    {
-        return E;
-    }
+    { return E; }
 };
 
 struct KinetoObserverContext : public quarisma::ObserverContext
@@ -582,48 +574,34 @@ public:
 
     template <class... Args>
     void emplace_backend_event(Args&&... args)
-    {
-        backend_events_.emplace_back(std::forward<Args>(args)...);
-    }
+    { backend_events_.emplace_back(std::forward<Args>(args)...); }
 
     template <class... Args>
     void emplace_vulkan_event(Args&&... args)
-    {
-        vulkan_events_.emplace_back(std::forward<Args>(args)...);
-    }
+    { vulkan_events_.emplace_back(std::forward<Args>(args)...); }
 
     template <class... Args>
     void emplace_allocation_event(Args&&... args)
-    {
-        allocations_.emplace_back(std::forward<Args>(args)...);
-    }
+    { allocations_.emplace_back(std::forward<Args>(args)...); }
 
     template <class... Args>
     void emplace_ooms_event(Args&&... args)
-    {
-        ooms_.emplace_back(std::forward<Args>(args)...);
-    }
+    { ooms_.emplace_back(std::forward<Args>(args)...); }
 
     template <class... Args>
     void emplace_py_call(Args&&... args)
-    {
-        py_calls_.emplace_back(std::forward<Args>(args)...);
-    }
+    { py_calls_.emplace_back(std::forward<Args>(args)...); }
 
     template <class... Args>
     void emplace_gc_call(Args&&... args)
-    {
-        pythongc_.emplace_back(std::forward<Args>(args)...);
-    }
+    { pythongc_.emplace_back(std::forward<Args>(args)...); }
 
     uint64_t tid() const { return tid_; }
 
     const kineto::DeviceAndResource& kineto_info() const { return kineto_info_; }
 
     inline void disable_perf_profiler(perf_counters_t& counters) const
-    {
-        perf_profiler_->Disable(counters);
-    }
+    { perf_profiler_->Disable(counters); }
 
 private:
     uint64_t                         tid_;

@@ -55,9 +55,7 @@ struct EHFrameHdr
     size_t nentries() const { return fde_count_; }
 
     uint64_t lowpc(size_t i) const
-    {
-        return Lexer(table_start_, base_).skip(2 * i * table_size_).readEncoded(table_enc_);
-    }
+    { return Lexer(table_start_, base_).skip(2 * i * table_size_).readEncoded(table_enc_); }
     void* fde(size_t i) const
     {
         // NOLINTNEXTLINE(performance-no-int-to-ptr)

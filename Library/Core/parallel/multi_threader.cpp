@@ -71,14 +71,10 @@ void multi_threader::set_global_maximum_number_of_threads(int val)
 }
 
 int multi_threader::get_global_maximum_number_of_threads()
-{
-    return g_multi_threader_global_maximum_number_of_threads;
-}
+{ return g_multi_threader_global_maximum_number_of_threads; }
 
 int multi_threader::get_global_static_maximum_number_of_threads()
-{
-    return QUARISMA_MAX_THREADS;
-}
+{ return QUARISMA_MAX_THREADS; }
 
 // 0 => Not initialized.
 static int g_multi_threader_global_default_number_of_threads = 0;
@@ -182,9 +178,7 @@ multi_threader::~multi_threader()
 }
 
 multi_threader* multi_threader::create()
-{
-    return new multi_threader();
-}
+{ return new multi_threader(); }
 
 //------------------------------------------------------------------------------
 int multi_threader::get_number_of_threads()
@@ -383,7 +377,7 @@ void multi_threader::multiple_method_execute()
 
     for (thread_loop = 0; thread_loop < number_of_threads_; thread_loop++)
     {
-        if (multiple_method_[thread_loop] == (thread_function_type) nullptr)
+        if (multiple_method_[thread_loop] == static_cast<thread_function_type>(nullptr))
         {
             // Error: No multiple method set
             return;

@@ -118,10 +118,10 @@ private:
 // TODO: Quarisma-specific types commented out
 using ActivitySet = std::set<quarisma::autograd::profiler_impl::ActivityType>;
 PROFILER_API void prepareTrace(
-    const bool                                          cpuOnly,
-    const ActivitySet&                                  activities,
+    const bool                                               cpuOnly,
+    const ActivitySet&                                       activities,
     const quarisma::profiler_impl::impl::ExperimentalConfig& config,
-    const std::string&                                  trace_id = "");
+    const std::string&                                       trace_id = "");
 
 PROFILER_API void                 toggleCollectionDynamic(const bool enable);
 PROFILER_API void                 startTrace();

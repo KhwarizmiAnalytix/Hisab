@@ -387,9 +387,7 @@ void threaded_task_queue<R, Args...>::push(Args&&... args)
 //-----------------------------------------------------------------------------
 template <typename R, typename... Args>
 bool threaded_task_queue<R, Args...>::try_pop(R& result)
-{
-    return results_->try_pop(result);
-}
+{ return results_->try_pop(result); }
 
 //-----------------------------------------------------------------------------
 template <typename R, typename... Args>
@@ -406,9 +404,7 @@ bool threaded_task_queue<R, Args...>::pop(R& result)
 //-----------------------------------------------------------------------------
 template <typename R, typename... Args>
 bool threaded_task_queue<R, Args...>::is_empty() const
-{
-    return results_->get_next_result_id() == tasks_->get_next_task_id();
-}
+{ return results_->get_next_result_id() == tasks_->get_next_task_id(); }
 
 //-----------------------------------------------------------------------------
 template <typename R, typename... Args>
@@ -494,9 +490,7 @@ void threaded_task_queue<void, Args...>::push(Args&&... args)
 //-----------------------------------------------------------------------------
 template <typename... Args>
 bool threaded_task_queue<void, Args...>::is_empty() const
-{
-    return next_result_id_ == tasks_->get_next_task_id();
-}
+{ return next_result_id_ == tasks_->get_next_task_id(); }
 
 //-----------------------------------------------------------------------------
 template <typename... Args>

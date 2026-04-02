@@ -10,14 +10,10 @@ namespace quarisma
 namespace
 {
 bool compute_cpp_stack_traces_enabled()
-{
-    return quarisma::utils::check_env("PROFILER_SHOW_CPP_STACKTRACES") == true;
-}
+{ return quarisma::utils::check_env("PROFILER_SHOW_CPP_STACKTRACES") == true; }
 
 bool compute_disable_addr2line()
-{
-    return quarisma::utils::check_env("PROFILER_DISABLE_ADDR2LINE") == true;
-}
+{ return quarisma::utils::check_env("PROFILER_DISABLE_ADDR2LINE") == true; }
 }  // namespace
 
 bool get_cpp_stacktraces_enabled()
@@ -45,9 +41,9 @@ static quarisma::unwind::Mode compute_symbolize_mode()
         }
 
         // PROFILER_CHECK(
-            // false,
-            // "expected {{dladdr, addr2line, fast}} for PROFILER_SYMBOLIZE_MODE, got {}",
-            // envar_c.value());
+        // false,
+        // "expected {{dladdr, addr2line, fast}} for PROFILER_SYMBOLIZE_MODE, got {}",
+        // envar_c.value());
         // Unreachable: PROFILER_CHECK will throw/abort on failure
         return unwind::Mode::dladdr;
     }

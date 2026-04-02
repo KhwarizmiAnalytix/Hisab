@@ -96,6 +96,7 @@ static std::string format_human_readable_bytes(int64_t bytes)
     return std::to_string(bytes) + "B";
 }
 
+// NOLINTNEXTLINE(misc-use-internal-linkage)
 class MemAllocatorStats
 {
 public:
@@ -121,6 +122,7 @@ private:
     float   fragmentation_metric_{0.0F};
 };
 
+// NOLINTNEXTLINE(misc-use-internal-linkage)
 class MemChunk
 {
 public:
@@ -159,6 +161,7 @@ private:
     uint64_t    step_id_{0};
 };
 
+// NOLINTNEXTLINE(misc-use-internal-linkage)
 class BinSummary
 {
 public:
@@ -184,6 +187,7 @@ private:
     int64_t total_chunks_in_bin_{0};
 };
 
+// NOLINTNEXTLINE(misc-use-internal-linkage)
 class SnapShot
 {
 public:
@@ -721,7 +725,7 @@ void* allocator_bfc::AllocateRawInternal(
     void* ptr = FindChunkPtr(bin_num, rounded_bytes, num_bytes, freed_before);  //NOLINT
     if (ptr != nullptr)
     {
-#if QUARISMA_HAS_NATIVE_PROFILER&&0
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
         AddTraceMe("MemoryAllocation", ptr);
 #endif
         return ptr;
@@ -768,7 +772,7 @@ void* allocator_bfc::AllocateRawInternal(
         ptr = FindChunkPtr(bin_num, rounded_bytes, num_bytes, freed_before);
         if (ptr != nullptr)
         {
-#if QUARISMA_HAS_NATIVE_PROFILER &&0
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
             AddTraceMe("MemoryAllocation", ptr);
 #endif
             return ptr;
@@ -833,9 +837,9 @@ void allocator_bfc::AddTraceMe(
     quarisma::traceme::instant_activity(
         [this, traceme_name, chunk_ptr, req_bytes, alloc_bytes]() QUARISMA_NO_THREAD_SAFETY_ANALYSIS
         {
-            int64_t bytes_available = memory_limit_ -
-                                      stats_.bytes_reserved.load(std::memory_order_relaxed) -
-                                      stats_.bytes_in_use.load(std::memory_order_relaxed);
+            int64_t     bytes_available = memory_limit_ -
+                                          stats_.bytes_reserved.load(std::memory_order_relaxed) -
+                                          stats_.bytes_in_use.load(std::memory_order_relaxed);
             const auto& annotation = quarisma::scoped_memory_debug_annotation::current_annotation();
             const auto* const op_name =
                 (annotation.pending_op_name != nullptr) ? annotation.pending_op_name : "(null)";
@@ -1323,9 +1327,7 @@ bool allocator_bfc::MergeTimestampedChunks(size_t required_bytes)
 }
 
 bool allocator_bfc::tracks_allocation_sizes() const noexcept
-{
-    return true;
-}
+{ return true; }
 
 size_t allocator_bfc::RequestedSize(const void* ptr) const
 {
@@ -1721,7 +1723,5 @@ std::array<allocator_bfc::BinDebugInfo, allocator_bfc::kNumBins> allocator_bfc::
 }
 
 allocator_memory_enum allocator_bfc::GetMemoryType() const noexcept
-{
-    return sub_allocator_->GetMemoryType();
-}
+{ return sub_allocator_->GetMemoryType(); }
 }  // namespace quarisma

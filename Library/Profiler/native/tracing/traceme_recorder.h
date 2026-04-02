@@ -26,8 +26,8 @@
 #include <string>
 #include <vector>
 
-#include "common/profiler_macros.h"
 #include "common/profiler_export.h"
+#include "common/profiler_macros.h"
 
 namespace quarisma
 {
@@ -245,9 +245,7 @@ public:
      *           but this is by design for performance
      */
     static inline bool active(int level = 1)
-    {
-        return internal::g_trace_level.load(std::memory_order_acquire) >= level;
-    }
+    { return internal::g_trace_level.load(std::memory_order_acquire) >= level; }
 
     /**
      * @brief Fast check whether the provided filter mask passes the current filter.
@@ -256,9 +254,7 @@ public:
      * @return true if the event should be recorded
      */
     static inline bool check_filter(uint64_t filter)
-    {
-        return (internal::g_trace_filter_bitmap.load(std::memory_order_acquire) & filter) != 0;
-    }
+    { return (internal::g_trace_filter_bitmap.load(std::memory_order_acquire) & filter) != 0; }
 
     /// Sentinel value indicating tracing is disabled
     static constexpr int kTracingDisabled = -1;

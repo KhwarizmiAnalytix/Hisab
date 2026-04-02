@@ -227,9 +227,7 @@ namespace quarisma
 {
 // Helper function to check memory alignment
 inline bool IsAligned(void* ptr, size_t alignment)
-{
-    return (reinterpret_cast<uintptr_t>(ptr) % alignment) == 0;
-}
+{ return (reinterpret_cast<uintptr_t>(ptr) % alignment) == 0; }
 
 inline bool ValidateMemory(const void* ptr, size_t size, uint8_t pattern)
 {

@@ -15,12 +15,8 @@ struct DefaultStubs : public ProfilerStubs
     explicit DefaultStubs(const char* name) : name_{name} {}
 
     void record(
-        int16_t* /*device*/,
-        ProfilerVoidEventStub* /*event*/,
-        int64_t* /*cpu_ns*/) const override
-    {
-        fail();
-    }
+        int16_t* /*device*/, ProfilerVoidEventStub* /*event*/, int64_t* /*cpu_ns*/) const override
+    { fail(); }
     float elapsed(const ProfilerVoidEventStub* /*event*/, const ProfilerVoidEventStub* /*event2*/)
         const override
     {
@@ -36,7 +32,7 @@ struct DefaultStubs : public ProfilerStubs
     ~DefaultStubs() override = default;
 
 private:
-    void fail() const {} // PROFILER_CHECK(false, "{} used in profiler but not enabled.", name_);
+    void fail() const {}  // PROFILER_CHECK(false, "{} used in profiler but not enabled.", name_);
 
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
     const char* const name_;
@@ -60,14 +56,10 @@ private:
     } /*namespace*/                                                                      \
                                                                                          \
     const ProfilerStubs* name##Stubs()                                                   \
-    {                                                                                    \
-        return name##_stubs();                                                           \
-    }                                                                                    \
+    { return name##_stubs(); }                                                           \
                                                                                          \
     void register##upper_name##Methods(ProfilerStubs* stubs)                             \
-    {                                                                                    \
-        name##_stubs() = stubs;                                                          \
-    }
+    { name##_stubs() = stubs; }
 
 REGISTER_DEFAULT(cuda, CUDA)
 REGISTER_DEFAULT(itt, ITT)

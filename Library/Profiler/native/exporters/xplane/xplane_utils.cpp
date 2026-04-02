@@ -46,6 +46,7 @@ limitations under the License.
 
 #include "common/profiler_macros.h"
 //#include "logging/logger.h"
+#include "common/flat_hash.h"
 #include "native/analysis/stats_calculator.h"
 #include "native/core/timespan.h"
 #include "native/exporters/xplane/tf_xplane_visitor.h"
@@ -53,7 +54,6 @@ limitations under the License.
 #include "native/exporters/xplane/xplane_builder.h"
 #include "native/exporters/xplane/xplane_schema.h"
 #include "native/exporters/xplane/xplane_visitor.h"
-#include "common/flat_hash.h"
 
 namespace quarisma
 {
@@ -236,9 +236,7 @@ void CopyEvent(
 }
 
 bool IsOpLineName(std::string_view line_name)
-{
-    return line_name == "kXlaOpLineName" || line_name == "kTensorFlowOpLineName";
-}
+{ return line_name == "kXlaOpLineName" || line_name == "kTensorFlowOpLineName"; }
 
 timespan GetEventTimespan(const xevent_visitor& event)
 {
@@ -477,9 +475,7 @@ void MergePlanes(const std::vector<const xplane*>& src_planes, xplane* dst_plane
 //}
 
 bool xevents_comparator::operator()(const xevent& a, const xevent& b) const
-{
-    return xevent_timespan(a) < xevent_timespan(b);
-}
+{ return xevent_timespan(a) < xevent_timespan(b); }
 
 //static void SortXSpace(x_space* space)
 //{
@@ -796,7 +792,7 @@ void AggregateXPlane(const xplane& full_trace, xplane& aggregated_trace)
                     StatByEvent& line_stats = stats[line.id()][group_id];
                     line_stats[event.id()].stat.update_stat(timespan.duration_ps());
                     // PROFILER_CHECK_DEBUG(                                       //NOLINT
-                        // event_stack.empty() || !(event < event_stack.back()));  //NOLINT
+                    // event_stack.empty() || !(event < event_stack.back()));  //NOLINT
                     while (!event_stack.empty() &&
                            !GetEventTimespan(event_stack.back()).includes(timespan))
                     {

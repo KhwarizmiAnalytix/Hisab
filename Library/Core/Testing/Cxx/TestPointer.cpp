@@ -1677,9 +1677,7 @@ struct IntrusiveAndWeak final
 };
 template <class T, class... Args>
 IntrusiveAndWeak<T> make_weak_intrusive(Args&&... args)
-{
-    return IntrusiveAndWeak<T>(make_intrusive<T>(std::forward<Args>(args)...));
-}
+{ return IntrusiveAndWeak<T>(make_intrusive<T>(std::forward<Args>(args)...)); }
 template <class T, class... Args>
 weak_intrusive_ptr<T> make_weak_only(Args&&... args)
 {
@@ -1688,9 +1686,7 @@ weak_intrusive_ptr<T> make_weak_only(Args&&... args)
 }
 template <class T, class NullType = quarisma::detail::intrusive_target_default_null_type<T>>
 weak_intrusive_ptr<T, NullType> make_invalid_weak()
-{
-    return weak_intrusive_ptr<T, NullType>(intrusive_ptr<T, NullType>());
-}
+{ return weak_intrusive_ptr<T, NullType>(intrusive_ptr<T, NullType>()); }
 
 struct WeakReferenceToSelf : public intrusive_ptr_target
 {
@@ -1705,7 +1701,5 @@ static_assert(
     "weak_intrusive_ptr<T>::element_type is wrong");
 
 TEST(WeakIntrusivePtrTest, givenPtr_whenCreatingAndDestructing_thenDoesntCrash)
-{
-    IntrusiveAndWeak<SomeClass> var = make_weak_intrusive<SomeClass>();
-}
+{ IntrusiveAndWeak<SomeClass> var = make_weak_intrusive<SomeClass>(); }
 // NOLINTEND(clang-analyzer-cplusplus*)

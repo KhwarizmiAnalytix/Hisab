@@ -6,7 +6,7 @@
 #else
 #include <nvToolsExt.h>
 #endif
-#else  // ROCM_ON_WINDOWS
+#else   // ROCM_ON_WINDOWS
 #endif  // ROCM_ON_WINDOWS
 #include <quarisma/cuda/CUDAGuard.h>
 #include <quarisma/util/ApproximateClock.h>

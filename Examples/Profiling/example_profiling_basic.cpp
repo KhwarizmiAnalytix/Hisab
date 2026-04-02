@@ -274,7 +274,8 @@ void example_kineto_profiler()
     session.stop();
 
     std::unique_ptr<libkineto::ActivityTraceInterface> kineto_trace(
-        static_cast<libkineto::ActivityTraceInterface*>(quarisma::profiler_impl::kineto_stop_trace()));
+        static_cast<libkineto::ActivityTraceInterface*>(
+            quarisma::profiler_impl::kineto_stop_trace()));
 
     // Export traces
     std::string const quarisma_file = "kineto_quarisma_trace.json";

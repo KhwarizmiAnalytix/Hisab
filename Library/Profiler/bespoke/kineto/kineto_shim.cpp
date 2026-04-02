@@ -78,15 +78,17 @@ static_assert(
 DeviceAndResource kineto_ids()
 {
 #if PROFILER_HAS_KINETO
-    return {
-        /*device=*/libkineto::processId(),
-        /*resource=*/libkineto::systemThreadId()};
+    return {/*device=*/libkineto::processId(),
+            /*resource=*/libkineto::systemThreadId()};
 #else
     return {};
 #endif  // PROFILER_HAS_KINETO
 }
 
-void addMetadata(activity_t* activity, const std::string& key, const std::string& value)
+void addMetadata(
+    activity_t*        activity,  // cppcheck-suppress constParameterPointer
+    const std::string& key,
+    const std::string& value)
 {
 #if PROFILER_HAS_KINETO
     // Suppress false positive from clang static analyzer in fmt library
@@ -193,7 +195,8 @@ namespace
 class ExperimentalConfigWrapper
 {
 public:
-    explicit ExperimentalConfigWrapper(const quarisma::profiler_impl::impl::ExperimentalConfig& config)
+    explicit ExperimentalConfigWrapper(
+        const quarisma::profiler_impl::impl::ExperimentalConfig& config)
         : config_(config)
     {
     }
@@ -202,8 +205,8 @@ public:
 
     void prepareTraceWithExperimentalOptions(std::set<libkineto::ActivityType>&& enabled_activities)
     {
-        std::set<libkineto::ActivityType> k_activities = std::move(enabled_activities);
 #if PROFILER_HAS_KINETO
+        std::set<libkineto::ActivityType> k_activities = std::move(enabled_activities);
         k_activities.insert(libkineto::ActivityType::CUDA_PROFILER_RANGE);
 
         // Add CPU activities if we are measuring per kernel ranges
@@ -240,6 +243,8 @@ public:
 #endif
 
         libkineto::api().activityProfiler().prepareTrace(k_activities, configss.str());
+#else
+        (void)enabled_activities;
 #endif  // PROFILER_HAS_KINETO
     }
 
@@ -286,10 +291,10 @@ static std::string appendCustomConfig(
 #endif
 
 void prepareTrace(
-    const bool                                          cpuOnly,
-    const ActivitySet&                                  activities,
+    const bool                                               cpuOnly,
+    const ActivitySet&                                       activities,
     const quarisma::profiler_impl::impl::ExperimentalConfig& config,
-    const std::string&                                  trace_id)
+    const std::string&                                       trace_id)
 {
 #if PROFILER_HAS_KINETO
     libkineto::api().resetKinetoTLS();
@@ -340,7 +345,8 @@ void prepareTrace(
     {
         k_activities.insert(libkineto::ActivityType::COLLECTIVE_COMM);
     }
-    if (activities.count(quarisma::autograd::profiler_impl::ActivityType::PrivateUse1) > 0)  //NOLINT
+    if (activities.count(quarisma::autograd::profiler_impl::ActivityType::PrivateUse1) >
+        0)  //NOLINT
     {
         k_activities.insert(kPrivateUse1Types.begin(), kPrivateUse1Types.end());
     }

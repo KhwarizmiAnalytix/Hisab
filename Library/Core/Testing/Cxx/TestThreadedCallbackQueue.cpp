@@ -69,13 +69,9 @@ struct A
 {
     A() { QUARISMA_LOG_INFO("Constructor"); }
     A(A&& other) noexcept : array(std::move(other.array)), val(other.val)
-    {
-        QUARISMA_LOG_INFO("Move constructor");
-    }
+    { QUARISMA_LOG_INFO("Move constructor"); }
     A(const A& other) : array(other.array), val(other.val)
-    {
-        QUARISMA_LOG_INFO("Copy constructor called.");
-    }
+    { QUARISMA_LOG_INFO("Copy constructor called."); }
     void f(A&, A&&) {}
     void const_f(A&, A&&) const {}
     void operator()(A&, A&&) { std::cout << array->name << std::endl; }

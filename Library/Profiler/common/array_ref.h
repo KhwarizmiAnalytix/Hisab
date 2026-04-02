@@ -62,9 +62,9 @@ private:
     void debugCheckNullptrInvariant()
     {
         // PROFILER_CHECK_DEBUG(
-            // Data != nullptr || Length == 0,
-            // "created array_ref with nullptr and non-zero length! std::optional relies on this "
-            // "being illegal");
+        // Data != nullptr || Length == 0,
+        // "created array_ref with nullptr and non-zero length! std::optional relies on this "
+        // "being illegal");
     }
 
 public:
@@ -80,15 +80,11 @@ public:
 
     /// Construct an array_ref from a pointer and length.
     constexpr array_ref(const T* data, size_t length) : Data(data), Length(length)
-    {
-        debugCheckNullptrInvariant();
-    }
+    { debugCheckNullptrInvariant(); }
 
     /// Construct an array_ref from a range.
     constexpr array_ref(const T* begin, const T* end) : Data(begin), Length(end - begin)
-    {
-        debugCheckNullptrInvariant();
-    }
+    { debugCheckNullptrInvariant(); }
 
     /// Construct an array_ref from a small_vector. This is templated in order to
     /// avoid instantiating SmallVectorTemplateCommon<T> whenever we
@@ -96,9 +92,7 @@ public:
     template <typename U>
     /* implicit */ array_ref(const SmallVectorTemplateCommon<T, U>& Vec)
         : Data(Vec.data()), Length(Vec.size())
-    {
-        debugCheckNullptrInvariant();
-    }
+    { debugCheckNullptrInvariant(); }
 
     template <
         typename Container,
@@ -106,9 +100,7 @@ public:
         typename   = std::enable_if_t<(std::is_same_v<U, T*> || std::is_same_v<U, T const*>)>>
     /* implicit */ array_ref(const Container& container)
         : Data(container.data()), Length(container.size())
-    {
-        debugCheckNullptrInvariant();
-    }
+    { debugCheckNullptrInvariant(); }
 
     /// Construct an array_ref from a std::vector.
     // The enable_if stuff here makes sure that this isn't used for
@@ -159,9 +151,7 @@ public:
 
     /// Check if all elements in the array satisfy the given expression
     constexpr bool allMatch(const std::function<bool(const T&)>& pred) const
-    {
-        return std::all_of(cbegin(), cend(), pred);
-    }
+    { return std::all_of(cbegin(), cend(), pred); }
 
     /// empty - Check if the array is empty.
     constexpr bool empty() const { return Length == 0; }
@@ -187,9 +177,7 @@ public:
 
     /// equals - Check for element-wise equality.
     constexpr bool equals(array_ref RHS) const
-    {
-        return Length == RHS.Length && std::equal(begin(), end(), RHS.begin());
-    }
+    { return Length == RHS.Length && std::equal(begin(), end(), RHS.begin()); }
 
     /// slice(n, m) - Take M elements of the array starting at element N
     constexpr array_ref<T> slice(size_t N, size_t M) const
@@ -265,73 +253,53 @@ std::ostream& operator<<(std::ostream& out, array_ref<T> list)
 /// Construct an array_ref from a single element.
 template <typename T>
 array_ref<T> makeArrayRef(const T& OneElt)
-{
-    return OneElt;
-}
+{ return OneElt; }
 
 /// Construct an array_ref from a pointer and length.
 template <typename T>
 array_ref<T> makeArrayRef(const T* data, size_t length)
-{
-    return array_ref<T>(data, length);
-}
+{ return array_ref<T>(data, length); }
 
 /// Construct an array_ref from a range.
 template <typename T>
 array_ref<T> makeArrayRef(const T* begin, const T* end)
-{
-    return array_ref<T>(begin, end);
-}
+{ return array_ref<T>(begin, end); }
 
 /// Construct an array_ref from a small_vector.
 template <typename T>
 array_ref<T> makeArrayRef(const SmallVectorImpl<T>& Vec)
-{
-    return Vec;
-}
+{ return Vec; }
 
 /// Construct an array_ref from a small_vector.
 template <typename T, unsigned N>
 array_ref<T> makeArrayRef(const small_vector<T, N>& Vec)
-{
-    return Vec;
-}
+{ return Vec; }
 
 /// Construct an array_ref from a std::vector.
 template <typename T>
 array_ref<T> makeArrayRef(const std::vector<T>& Vec)
-{
-    return Vec;
-}
+{ return Vec; }
 
 /// Construct an array_ref from a std::array.
 template <typename T, std::size_t N>
 array_ref<T> makeArrayRef(const std::array<T, N>& Arr)
-{
-    return Arr;
-}
+{ return Arr; }
 
 /// Construct an array_ref from an array_ref (no-op) (const)
 template <typename T>
 array_ref<T> makeArrayRef(const array_ref<T>& Vec)
-{
-    return Vec;
-}
+{ return Vec; }
 
 /// Construct an array_ref from an array_ref (no-op)
 template <typename T>
 array_ref<T>& makeArrayRef(array_ref<T>& Vec)
-{
-    return Vec;
-}
+{ return Vec; }
 
 /// Construct an array_ref from a C array.
 template <typename T, size_t N>
 // NOLINTNEXTLINE(*c-arrays*)
 array_ref<T> makeArrayRef(const T (&Arr)[N])
-{
-    return array_ref<T>(Arr);
-}
+{ return array_ref<T>(Arr); }
 
 // WARNING: Template instantiation will NOT be willing to do an implicit
 // conversions to get you to an quarisma::array_ref, which is why we need so
@@ -339,39 +307,27 @@ array_ref<T> makeArrayRef(const T (&Arr)[N])
 
 template <typename T>
 bool operator==(quarisma::array_ref<T> a1, quarisma::array_ref<T> a2)
-{
-    return a1.equals(a2);
-}
+{ return a1.equals(a2); }
 
 template <typename T>
 bool operator!=(quarisma::array_ref<T> a1, quarisma::array_ref<T> a2)
-{
-    return !a1.equals(a2);
-}
+{ return !a1.equals(a2); }
 
 template <typename T>
 bool operator==(const std::vector<T>& a1, quarisma::array_ref<T> a2)
-{
-    return quarisma::array_ref<T>(a1).equals(a2);
-}
+{ return quarisma::array_ref<T>(a1).equals(a2); }
 
 template <typename T>
 bool operator!=(const std::vector<T>& a1, quarisma::array_ref<T> a2)
-{
-    return !quarisma::array_ref<T>(a1).equals(a2);
-}
+{ return !quarisma::array_ref<T>(a1).equals(a2); }
 
 template <typename T>
 bool operator==(quarisma::array_ref<T> a1, const std::vector<T>& a2)
-{
-    return a1.equals(quarisma::array_ref<T>(a2));
-}
+{ return a1.equals(quarisma::array_ref<T>(a2)); }
 
 template <typename T>
 bool operator!=(quarisma::array_ref<T> a1, const std::vector<T>& a2)
-{
-    return !a1.equals(quarisma::array_ref<T>(a2));
-}
+{ return !a1.equals(quarisma::array_ref<T>(a2)); }
 
 using IntArrayRef = array_ref<int64_t>;
 

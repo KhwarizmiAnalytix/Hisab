@@ -35,15 +35,15 @@ RawTensorMetadataBase::RawTensorMetadataBase(const quarisma::Tensor& t)
       size_dim_{static_cast<uint32_t>(t.sizes().size())}
 {
     // PROFILER_CHECK_DEBUG(
-        // t.sizes().size() <= std::numeric_limits<uint32_t>::max(),
-        // "Cannot profile Tensors of size > uint32 max. Got dim: ",
-        // t.sizes().size());
+    // t.sizes().size() <= std::numeric_limits<uint32_t>::max(),
+    // "Cannot profile Tensors of size > uint32 max. Got dim: ",
+    // t.sizes().size());
     // PROFILER_CHECK_DEBUG(
-        // t.sizes().size() == t.strides().size(),
-        // "Tensor has mismatching sizes and strides. Sizes: ",
-        // t.sizes().size(),
-        // " Strides: ",
-        // t.strides().size());
+    // t.sizes().size() == t.strides().size(),
+    // "Tensor has mismatching sizes and strides. Sizes: ",
+    // t.sizes().size(),
+    // " Strides: ",
+    // t.strides().size());
 }
 
 RawTensorMetadata::RawTensorMetadata(const quarisma::Tensor& t)
@@ -62,9 +62,7 @@ TensorMetadata::TensorMetadata(
       device_{r.device_index_, r.device_type_},
       sizes_{std::move(sizes)},
       strides_{std::move(strides)}
-{
-    SOFT_ASSERT(r.weak_self_.has_value());
-}
+{ SOFT_ASSERT(r.weak_self_.has_value()); }
 
 // ============================================================================
 // == Quarisma Ops =============================================================
@@ -97,9 +95,7 @@ constexpr bool allTagsMapped(int idx = 0)
 static_assert(allTagsMapped(), "tag_map is out of order");
 
 [[maybe_unused]] constexpr InputOutputEncoder::IOType tagToIOType(InputOutputEncoder::Tag tag)
-{
-    return tag_map[(int)tag].io_type;
-}
+{ return tag_map[(int)tag].io_type; }
 }  // namespace
 
 // ----------------------------
@@ -205,9 +201,7 @@ bool InputOutputEncoder::isSupportedScalarList(const quarisma::IValue& list_cand
 #else
 // Stub implementation when IValue methods are not available
 bool InputOutputEncoder::isSupportedScalarList(const quarisma::IValue& /*list_candidate*/)
-{
-    return false;
-}
+{ return false; }
 #endif
 
 #if 0
@@ -344,14 +338,10 @@ auto InputOutputEncoder::getIValueGenerator(const IOType& /*io_type*/)  //NOLINT
 #endif
 
 auto InputOutputEncoder::getInputShapeGenerator()
-{
-    return getIValueGenerator(IOType::Shapes);
-}
+{ return getIValueGenerator(IOType::Shapes); }
 
 auto InputOutputEncoder::getConcreteInputGenerator()
-{
-    return getIValueGenerator(IOType::ConcreteInputs);
-}
+{ return getIValueGenerator(IOType::ConcreteInputs); }
 
 void InputOutputEncoder::clear()
 {
@@ -381,9 +371,7 @@ ThreadLocalSubqueue::TorchOpStorage::OpList::emplace_back(Args&&... args)
 }
 
 uint64_t ThreadLocalSubqueue::TorchOpStorage::OpList::correlationID(const OpList::Iterator& e)
-{
-    return e.address().first->correlation_id(&*e);
-}
+{ return e.address().first->correlation_id(&*e); }
 
 template <typename T, size_t ChunkSize>
 uint64_t ThreadLocalSubqueue::TorchOpStorage::EventBlock<T, ChunkSize>::correlation_id(
@@ -401,8 +389,8 @@ std::unique_ptr<KinetoObserverContext> ThreadLocalSubqueue::begin_op(
 {
     const auto* overload_name =
         config_.experimental_config.capture_overload_names ? fn.overload_name() : "";
-    auto [event, corr_id] =
-        torch_ops_.op_events_.emplace_back(quarisma::profiler_impl::impl::TorchOpBasicFields{
+    auto [event, corr_id] = torch_ops_.op_events_.emplace_back(
+        quarisma::profiler_impl::impl::TorchOpBasicFields{
             fn.seqNr(),
             fn.forwardThreadId(),
             fn.scope(),
@@ -456,7 +444,8 @@ std::unique_ptr<KinetoObserverContext> ThreadLocalSubqueue::begin_op(
         // Record NCCL metadata for specific CPU ops, switch off output
         // introspection in this begin_op callback, we will do that in exit callback
         // if needed.
-        quarisma::profiler_impl::impl::SaveNcclMetaConfig const ncclMetaConfig{true, true, true, false};
+        quarisma::profiler_impl::impl::SaveNcclMetaConfig const ncclMetaConfig{
+            true, true, true, false};
         out->event_->extra_nccl_meta_ = torch_ops_.extra_meta_.emplace_back(
             quarisma::profiler_impl::impl::saveNcclMeta(fn, ncclMetaConfig));
     }
@@ -654,9 +643,7 @@ static void materialize_vulkan(
     const std::function<quarisma::time_t(quarisma::approx_time_t)>& /*time_converter*/,
     const uint64_t /*tid*/,
     const kineto::DeviceAndResource& /*kineto_info*/)
-{
-    raw_events.clear();
-}
+{ raw_events.clear(); }
 #endif
 
 namespace
@@ -695,9 +682,7 @@ std::string toString(const ExtraFields<EventType::PyCall>& e)
 #else
 // Stub implementation
 [[maybe_unused]] std::string toString(const ExtraFields<EventType::PyCall>& /*e*/)
-{
-    return "";
-}
+{ return ""; }
 #endif
 
 auto scopeToType(quarisma::RecordScope scope)
@@ -759,55 +744,60 @@ std::string Result::name() const
 // Stub implementation
 std::string Result::name() const
 {
-    return visit(quarisma::overloaded(
-        ATTRIBUTE(Vulkan, std::string(e.name_)),
-        ATTRIBUTE(Allocation, std::string("[memory]")),
-        ATTRIBUTE(OutOfMemory, std::string("[OutOfMemory]")),
-        ATTRIBUTE(PythonGC, std::string("Python GC")),
-        [](const auto& e) -> std::string { return e.name_; }));
+    return visit(
+        quarisma::overloaded(
+            ATTRIBUTE(Vulkan, std::string(e.name_)),
+            ATTRIBUTE(Allocation, std::string("[memory]")),
+            ATTRIBUTE(OutOfMemory, std::string("[OutOfMemory]")),
+            ATTRIBUTE(PythonGC, std::string("Python GC")),
+            [](const auto& e) -> std::string { return e.name_; }));
 }
 #endif
 
 std::string Result::overload_name() const
 {
-    return visit(quarisma::overloaded(
-        ATTRIBUTE(TorchOp, std::string(e.overload_name_)),
-        [](const auto& /*e*/) -> std::string { return ""; }));
+    return visit(
+        quarisma::overloaded(
+            ATTRIBUTE(TorchOp, std::string(e.overload_name_)),
+            [](const auto& /*e*/) -> std::string { return ""; }));
 }
 
 libkineto::ActivityType Result::kinetoType() const
 {
-    return visit(quarisma::overloaded(
-        ATTRIBUTE(TorchOp, scopeToType(e.scope_)),
-        ATTRIBUTE(Backend, scopeToType(e.scope_)),
-        ATTRIBUTE(Vulkan, libkineto::ActivityType::CPU_OP),
-        ATTRIBUTE(Allocation, libkineto::ActivityType::CPU_INSTANT_EVENT),
-        ATTRIBUTE(OutOfMemory, libkineto::ActivityType::CPU_INSTANT_EVENT),
-        ATTRIBUTE(PyCall, libkineto::ActivityType::PYTHON_FUNCTION),
-        ATTRIBUTE(PyCCall, libkineto::ActivityType::PYTHON_FUNCTION),
-        ATTRIBUTE(PythonGC, libkineto::ActivityType::PYTHON_FUNCTION),
-        ATTRIBUTE(Kineto, e.activity_type_)));
+    return visit(
+        quarisma::overloaded(
+            ATTRIBUTE(TorchOp, scopeToType(e.scope_)),
+            ATTRIBUTE(Backend, scopeToType(e.scope_)),
+            ATTRIBUTE(Vulkan, libkineto::ActivityType::CPU_OP),
+            ATTRIBUTE(Allocation, libkineto::ActivityType::CPU_INSTANT_EVENT),
+            ATTRIBUTE(OutOfMemory, libkineto::ActivityType::CPU_INSTANT_EVENT),
+            ATTRIBUTE(PyCall, libkineto::ActivityType::PYTHON_FUNCTION),
+            ATTRIBUTE(PyCCall, libkineto::ActivityType::PYTHON_FUNCTION),
+            ATTRIBUTE(PythonGC, libkineto::ActivityType::PYTHON_FUNCTION),
+            ATTRIBUTE(Kineto, e.activity_type_)));
 }
 
 uint64_t Result::correlationID() const
 {
-    return visit(quarisma::overloaded(
-        ATTRIBUTE(TorchOp, e.correlation_id_),
-        ATTRIBUTE(Kineto, kinetoEventCorrelationID(e, parent_)),
-        [&](const auto&) -> uint64_t { return 0; }));
+    return visit(
+        quarisma::overloaded(
+            ATTRIBUTE(TorchOp, e.correlation_id_),
+            ATTRIBUTE(Kineto, kinetoEventCorrelationID(e, parent_)),
+            [&](const auto&) -> uint64_t { return 0; }));
 }
 
 int64_t Result::endTimeNS() const
 {
-    auto end_time_ns = visit(quarisma::overloaded(
-        ATTRIBUTE(TorchOp, torchOpEndNS(e, finished_, parent_)),
-        ATTRIBUTE(Backend, e.end_time_us_ * 1000),
-        ATTRIBUTE(Vulkan, start_time_ns_ + (e.in_tree_building_ ? 0 : e.duration_ns_)),
-        ATTRIBUTE(Allocation, start_time_ns_),
-        ATTRIBUTE(OutOfMemory, start_time_ns_),
-        ATTRIBUTE(Kineto, start_time_ns_ + e.duration_ns_),
-        ATTRIBUTE(PythonGC, start_time_ns_ + e.duration_ns_),
-        [&](const auto& e) -> int64_t { return e.end_time_ns_; }));
+    auto end_time_ns = visit(
+        quarisma::overloaded(
+            ATTRIBUTE(TorchOp, torchOpEndNS(e, finished_, parent_)),
+            ATTRIBUTE(Backend, e.end_time_us_ * 1000),
+            ATTRIBUTE(Vulkan, start_time_ns_ + (e.in_tree_building_ ? 0 : e.duration_ns_)),
+            ATTRIBUTE(Allocation, start_time_ns_),
+            ATTRIBUTE(OutOfMemory, start_time_ns_),
+            ATTRIBUTE(Kineto, start_time_ns_ + e.duration_ns_),
+            ATTRIBUTE(PythonGC, start_time_ns_ + e.duration_ns_),
+            [&](const auto& e) -> int64_t { return e.end_time_ns_; }));
 
     // In rare cases we're willing to tolerate ops which are missing an end time
     // so long as they can borrow their parent's end time. A consequence of this,
@@ -819,18 +809,20 @@ int64_t Result::endTimeNS() const
 
 uint64_t Result::endTID() const
 {
-    return visit(quarisma::overloaded(
-        ATTRIBUTE(TorchOp, e.end_tid_), [&](const auto&) -> uint64_t { return start_tid_; }));
+    return visit(
+        quarisma::overloaded(
+            ATTRIBUTE(TorchOp, e.end_tid_), [&](const auto&) -> uint64_t { return start_tid_; }));
 }
 
 quarisma::device_enum Result::deviceType() const
 {
     using quarisma::autograd::profiler_impl::deviceTypeFromActivity;
-    return visit(quarisma::overloaded(
-        ATTRIBUTE(Allocation, e.device_type_),
-        ATTRIBUTE(OutOfMemory, e.device_type_),
-        ATTRIBUTE(Kineto, deviceTypeFromActivity(e.activity_type_)),
-        [&](const auto&) { return quarisma::device_enum::CPU; }));
+    return visit(
+        quarisma::overloaded(
+            ATTRIBUTE(Allocation, e.device_type_),
+            ATTRIBUTE(OutOfMemory, e.device_type_),
+            ATTRIBUTE(Kineto, deviceTypeFromActivity(e.activity_type_)),
+            [&](const auto&) { return quarisma::device_enum::CPU; }));
 }
 #undef ATTRIBUTE
 
@@ -840,7 +832,8 @@ ThreadLocalSubqueue::ThreadLocalSubqueue(const uint64_t tid, ProfilerConfig conf
     quarisma::profiler_impl::impl::kineto::recordThreadInfo();
     if (!config_.experimental_config.performance_events.empty())
     {
-        perf_profiler_ = std::make_unique<quarisma::profiler_impl::impl::linux_perf::PerfProfiler>();
+        perf_profiler_ =
+            std::make_unique<quarisma::profiler_impl::impl::linux_perf::PerfProfiler>();
         perf_profiler_->Configure(config_.experimental_config.performance_events);
     }
 }
@@ -864,9 +857,7 @@ bool RecordQueue::tracePython() const
 }
 
 bool RecordQueue::getPythonGcEvents() const
-{
-    return config_.experimental_config.record_python_gc_info;
-}
+{ return config_.experimental_config.record_python_gc_info; }
 
 ThreadLocalSubqueue* RecordQueue::getSubqueue()
 {
@@ -924,9 +915,7 @@ void mark_finished(const std::shared_ptr<Result>& r)
 // Assumption: Total threads number will not exceed 2^16-1, and total ops will
 // not exceed 2^48 -1.
 uint64_t getForwardThreadKey(uint64_t tid, uint64_t seqNr)
-{
-    return ((tid << 48) | (seqNr & (((uint64_t)1 << 48) - 1)));
-}
+{ return ((tid << 48) | (seqNr & (((uint64_t)1 << 48) - 1))); }
 
 void generateForwardBackwardLink(
     const Result&                                                   profiler_result,
@@ -986,7 +975,7 @@ void generateForwardBackwardLink(
 
 void generateForwardBackwardLinks(
     const std::unique_ptr<quarisma::profiler_impl::impl::kineto::trace_t>& cpu_trace,
-    const std::vector<std::shared_ptr<Result>>&                       results)
+    const std::vector<std::shared_ptr<Result>>&                            results)
 {
 #ifndef PROFILER_HAS_KINETO
 }
@@ -1289,20 +1278,22 @@ private:
             {
                 if (config_.experimental_config.expose_kineto_event_metadata)
                 {
-                    e->visit(quarisma::overloaded(
-                        [&](ExtraFields<EventType::TorchOp>& i)
-                        { i.metadata_json_ = activity->metadataJson(); },
-                        [&](ExtraFields<EventType::Kineto>& i)
-                        { i.metadata_json_ = activity->metadataJson(); },
-                        [](auto&) { return; }));
+                    e->visit(
+                        quarisma::overloaded(
+                            [&](ExtraFields<EventType::TorchOp>& i)
+                            { i.metadata_json_ = activity->metadataJson(); },
+                            [&](ExtraFields<EventType::Kineto>& i)
+                            { i.metadata_json_ = activity->metadataJson(); },
+                            [](auto&) { return; }));
                 }
                 const auto* linked_activity = activity->linkedActivity();
                 if (linked_activity != nullptr)
                 {
-                    e->visit(quarisma::overloaded(
-                        [&](ExtraFields<EventType::Kineto>& i)
-                        { i.linked_activity_ = toResult(linked_activity); },
-                        [](auto&) { /* PROFILER_CHECK(false); */ }));
+                    e->visit(
+                        quarisma::overloaded(
+                            [&](ExtraFields<EventType::Kineto>& i)
+                            { i.linked_activity_ = toResult(linked_activity); },
+                            [](auto&) { /* PROFILER_CHECK(false); */ }));
                 }
             }
         }
@@ -1310,14 +1301,15 @@ private:
 
     void setKinetoTID(std::shared_ptr<Result>& r, std::shared_ptr<Result> parent)
     {
-        r->visit(quarisma::overloaded(
-            [&]([[maybe_unused]] ExtraFields<EventType::Kineto>& i)
-            {
-                // PROFILER_CHECK(r->start_tid_ == noTID);
-                r->start_tid_ =
-                    parent ? parent->start_tid_ : quarisma::RecordFunction::currentThreadId();
-            },
-            [](auto&) {}));
+        r->visit(
+            quarisma::overloaded(
+                [&]([[maybe_unused]] ExtraFields<EventType::Kineto>& i)
+                {
+                    // PROFILER_CHECK(r->start_tid_ == noTID);
+                    r->start_tid_ =
+                        parent ? parent->start_tid_ : quarisma::RecordFunction::currentThreadId();
+                },
+                [](auto&) {}));
 
         for (auto& child : r->children_)
         {
@@ -1332,52 +1324,54 @@ private:
         for (auto& e : results_.get())
         {
             // PROFILER_CHECK(e != nullptr);
-            e->visit(quarisma::overloaded(
-                [&](const ExtraFields<EventType::Kineto>& i)
-                {
-                    if (i.flow.type == libkineto::kLinkAsyncCpuGpu && i.flow.start)
+            e->visit(
+                quarisma::overloaded(
+                    [&](const ExtraFields<EventType::Kineto>& i)
                     {
-                        auto inserted = flow_map.insert({i.flow.id, e});
-#ifdef PROFILER_USE_ROCM
-                        if (inserted.second)
+                        if (i.flow.type == libkineto::kLinkAsyncCpuGpu && i.flow.start)
                         {
-                            /* PROFILER_LOG_WARNING(
+                            auto inserted = flow_map.insert({i.flow.id, e});
+#ifdef PROFILER_USE_ROCM
+                            if (inserted.second)
+                            {
+                                /* PROFILER_LOG_WARNING(
                                 "ROCTracer produced duplicate flow start: ", i.flow.id);
                             */
+                            }
+#else               // PROFILER_USE_ROCM
+                    // PROFILER_CHECK(inserted.second);
+#endif              // PROFILER_USE_ROCM
                         }
-#else   // PROFILER_USE_ROCM
-                        // PROFILER_CHECK(inserted.second);
-#endif  // PROFILER_USE_ROCM
-                    }
-                    // PROFILER_CHECK(e->parent_.expired());
-                    e->parent_ = i.linked_activity_;
-                },
-                [](const auto&) {}));
+                        // PROFILER_CHECK(e->parent_.expired());
+                        e->parent_ = i.linked_activity_;
+                    },
+                    [](const auto&) {}));
         }
 
         // Second pass
         for (auto& e : results_.get())
         {
-            e->visit(quarisma::overloaded(
-                [&](const ExtraFields<EventType::Kineto>& i)
-                {
-                    // Flow takes priority over linked event.
-                    const auto it = flow_map.find(i.flow.id);
-                    if (it != flow_map.end() && i.flow.type == libkineto::kLinkAsyncCpuGpu &&
-                        !i.flow.start)
+            e->visit(
+                quarisma::overloaded(
+                    [&](const ExtraFields<EventType::Kineto>& i)
                     {
-                        e->parent_ = it->second;
-                    }
+                        // Flow takes priority over linked event.
+                        const auto it = flow_map.find(i.flow.id);
+                        if (it != flow_map.end() && i.flow.type == libkineto::kLinkAsyncCpuGpu &&
+                            !i.flow.start)
+                        {
+                            e->parent_ = it->second;
+                        }
 
-                    // If a parent was set we have to do some bookkeeping.
-                    auto parent = e->parent_.lock();
-                    if (parent)
-                    {
-                        parent->children_.push_back(e);
-                        mark_finished(e);
-                    }
-                },
-                [](const auto&) {}));
+                        // If a parent was set we have to do some bookkeeping.
+                        auto parent = e->parent_.lock();
+                        if (parent)
+                        {
+                            parent->children_.push_back(e);
+                            mark_finished(e);
+                        }
+                    },
+                    [](const auto&) {}));
         }
 
         // Set TIDs now that we have established lineage.
@@ -1434,21 +1428,20 @@ trace_ptr_t addKinetoEvents(
 struct ResultGreater
 {
     bool operator()(const result_ptr_t& a, const result_ptr_t& b) const
-    {
-        return a->endTimeNS() > b->endTimeNS();
-    }
+    { return a->endTimeNS() > b->endTimeNS(); }
 };
 
 void set_in_tree_building(const std::vector<result_ptr_t>& results, const bool value)
 {
     for (result_ptr_t const& r : results)
     {
-        r->visit(quarisma::overloaded(
-            [value](ExtraFields<EventType::Vulkan>& i) { i.in_tree_building_ = value; },
-            [&](auto&)
-            {
-                // pass
-            }));
+        r->visit(
+            quarisma::overloaded(
+                [value](ExtraFields<EventType::Vulkan>& i) { i.in_tree_building_ = value; },
+                [&](auto&)
+                {
+                    // pass
+                }));
     }
 }
 
@@ -1482,9 +1475,10 @@ void build_tree(std::vector<std::shared_ptr<Result>>& sorted_events)
         auto parent_it = stacks.find(event->start_tid_);
         if (parent_it == stacks.end())
         {
-            auto fwd_tid = event->visit(quarisma::overloaded(
-                [](const op_fields& i) { return i.forward_tid_; },
-                [](const auto&) -> uint64_t { return 0; }));
+            auto fwd_tid = event->visit(
+                quarisma::overloaded(
+                    [](const op_fields& i) { return i.forward_tid_; },
+                    [](const auto&) -> uint64_t { return 0; }));
             if (fwd_tid)
             {
                 parent_it = stacks.find(fwd_tid);
@@ -1582,22 +1576,23 @@ int64_t adjust_durations_dfs(std::shared_ptr<Result>& r)
 
         if (children_total_duration > original_duration)
         {
-            r->visit(quarisma::overloaded(
-                [&r, &children_total_duration](ExtraFields<EventType::TorchOp>& i)
-                { i.end_time_ns_ = r->start_time_ns_ + children_total_duration; },
-                [&children_total_duration](ExtraFields<EventType::Vulkan>& i)
-                { i.duration_ns_ = children_total_duration; },
-                []([[maybe_unused]] ExtraFields<EventType::Allocation>& _)
-                {
-                    // Pass- Allocation events can't have children
-                },
-                [&](auto&)
-                {
-                    SOFT_ASSERT(
-                        false,
-                        "unexpected event type in mobile profiler adjust_durations_dfs: ",
-                        r->name());
-                }));
+            r->visit(
+                quarisma::overloaded(
+                    [&r, &children_total_duration](ExtraFields<EventType::TorchOp>& i)
+                    { i.end_time_ns_ = r->start_time_ns_ + children_total_duration; },
+                    [&children_total_duration](ExtraFields<EventType::Vulkan>& i)
+                    { i.duration_ns_ = children_total_duration; },
+                    []([[maybe_unused]] ExtraFields<EventType::Allocation>& _)
+                    {
+                        // Pass- Allocation events can't have children
+                    },
+                    [&](auto&)
+                    {
+                        SOFT_ASSERT(
+                            false,
+                            "unexpected event type in mobile profiler adjust_durations_dfs: ",
+                            r->name());
+                    }));
             return children_total_duration;
         }
 
@@ -1621,24 +1616,25 @@ int64_t adjust_timestamps_dfs(std::shared_ptr<Result>& r, int64_t new_start_time
         if (r->start_time_ns_ != new_start_time)
         {
             // Adjust start time (keeping duration constant)
-            r->visit(quarisma::overloaded(
-                [&r, &new_start_time](ExtraFields<EventType::TorchOp>& i)
-                { i.end_time_ns_ = new_start_time + (i.end_time_ns_ - r->start_time_ns_); },
-                []([[maybe_unused]] ExtraFields<EventType::Vulkan>& i)
-                {
-                    // Pass- We don't need to manually adjust end time for Vulkan events
-                },
-                []([[maybe_unused]] ExtraFields<EventType::Allocation>& _)
-                {
-                    // Pass- No duration or end time to adjust
-                },
-                [&](auto&)
-                {
-                    SOFT_ASSERT(
-                        false,
-                        "unexpected event type in mobile profiler adjust_timestamps_dfs: ",
-                        r->name());
-                }));
+            r->visit(
+                quarisma::overloaded(
+                    [&r, &new_start_time](ExtraFields<EventType::TorchOp>& i)
+                    { i.end_time_ns_ = new_start_time + (i.end_time_ns_ - r->start_time_ns_); },
+                    []([[maybe_unused]] ExtraFields<EventType::Vulkan>& i)
+                    {
+                        // Pass- We don't need to manually adjust end time for Vulkan events
+                    },
+                    []([[maybe_unused]] ExtraFields<EventType::Allocation>& _)
+                    {
+                        // Pass- No duration or end time to adjust
+                    },
+                    [&](auto&)
+                    {
+                        SOFT_ASSERT(
+                            false,
+                            "unexpected event type in mobile profiler adjust_timestamps_dfs: ",
+                            r->name());
+                    }));
             r->start_time_ns_ = new_start_time;
         }
         int64_t const children_total_duration = std::accumulate(
@@ -1722,9 +1718,10 @@ RecordQueue::getRecords(
             for (auto& i : events)
             {
                 quarisma::time_t start_time_ns = 0;
-                if constexpr (std::is_same_v<
-                                  std::remove_reference_t<decltype(i)>,
-                                  ExtraFields<EventType::Backend>>)
+                if constexpr (
+                    std::is_same_v<
+                        std::remove_reference_t<decltype(i)>,
+                        ExtraFields<EventType::Backend>>)
                 {
                     start_time_ns = i.start_time_us_ * 1000;
                 }
@@ -1732,11 +1729,12 @@ RecordQueue::getRecords(
                 {
                     start_time_ns = converter(i.start_time_);
                 }
-                out.emplace_back(Result::create(
-                    /*start_time_ns_=*/start_time_ns,
-                    /*start_tid_=*/queue.tid(),
-                    /*kineto_info_=*/queue.kineto_info(),
-                    /*extra_fields_=*/std::move(i)));
+                out.emplace_back(
+                    Result::create(
+                        /*start_time_ns_=*/start_time_ns,
+                        /*start_tid_=*/queue.tid(),
+                        /*kineto_info_=*/queue.kineto_info(),
+                        /*extra_fields_=*/std::move(i)));
             }
             events.clear();
         };
@@ -1746,11 +1744,12 @@ RecordQueue::getRecords(
         materialize_vulkan(out, queue.vulkan_events_, converter, queue.tid(), queue.kineto_info());
         for (auto& i : queue.allocations_)
         {
-            out.emplace_back(Result::create(
-                /*start_time_ns_=*/converter(i.start_time_),
-                /*start_tid_=*/queue.tid(),
-                /*kineto_info_=*/queue.kineto_info(),
-                /*extra_fields_=*/ExtraFields<EventType::Allocation>(i)));
+            out.emplace_back(
+                Result::create(
+                    /*start_time_ns_=*/converter(i.start_time_),
+                    /*start_tid_=*/queue.tid(),
+                    /*kineto_info_=*/queue.kineto_info(),
+                    /*extra_fields_=*/ExtraFields<EventType::Allocation>(i)));
         }
         queue.allocations_.clear();
         materialize(queue.ooms_);
@@ -1853,7 +1852,7 @@ RecordQueue::getRecords(
             [](const auto& a, const auto& b) { return a->start_time_ns_ < b->start_time_ns_; });
         build_tree(out);
         adjust_timestamps(out);
-        for (auto& r : out)
+        for (const auto& r : out)
         {
             r->parent_.reset();
             // Reset these so that second build_tree can happen
@@ -1888,14 +1887,10 @@ std::function<bool()>& record_concrete_inputs_enabled_fn()
 }  // namespace
 
 bool get_record_concrete_inputs_enabled()
-{
-    return record_concrete_inputs_enabled_fn()();
-}
+{ return record_concrete_inputs_enabled_fn()(); }
 
 void set_record_concrete_inputs_enabled_fn(std::function<bool()> fn)
-{
-    record_concrete_inputs_enabled_fn() = std::move(fn);
-}
+{ record_concrete_inputs_enabled_fn() = std::move(fn); }
 
 void set_record_concrete_inputs_enabled_val(bool val)
 {
@@ -1912,14 +1907,10 @@ std::function<bool()>& fwd_bwd_enabled_fn()
 }  // namespace
 
 bool get_fwd_bwd_enabled()
-{
-    return fwd_bwd_enabled_fn()();
-}
+{ return fwd_bwd_enabled_fn()(); }
 
 void set_fwd_bwd_enabled_fn(std::function<bool()> fn)
-{
-    fwd_bwd_enabled_fn() = std::move(fn);
-}
+{ fwd_bwd_enabled_fn() = std::move(fn); }
 
 void set_fwd_bwd_enabled_val(bool val)
 {
@@ -1936,14 +1927,10 @@ std::function<bool()>& cuda_sync_enabled_fn()
 }  // namespace
 
 bool get_cuda_sync_enabled()
-{
-    return cuda_sync_enabled_fn()();
-}
+{ return cuda_sync_enabled_fn()(); }
 
 void set_cuda_sync_enabled_fn(std::function<bool()> fn)
-{
-    cuda_sync_enabled_fn() = std::move(fn);
-}
+{ cuda_sync_enabled_fn() = std::move(fn); }
 
 void set_cuda_sync_enabled_val(bool val)
 {
@@ -1970,9 +1957,7 @@ bool get_record_tensor_addrs_enabled()
 }
 
 void set_record_tensor_addrs_enabled_fn(std::function<bool()> fn)
-{
-    record_tensor_addrs_enabled() = std::move(fn);
-}
+{ record_tensor_addrs_enabled() = std::move(fn); }
 
 void set_record_tensor_addrs_enabled_val(bool val)
 {

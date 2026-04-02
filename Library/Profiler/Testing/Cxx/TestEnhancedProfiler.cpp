@@ -54,7 +54,7 @@
 #include <utility>        // for max, pair
 #include <vector>         // for vector, _Vector_const_iterator, _Vector_iterato
 
-#include "baseTest.h"                              // for END_TEST, QUARISMATEST
+#include "baseTest.h"  // for END_TEST, QUARISMATEST
 //#include "logging/logger.h"                        // for PROFILER_LOG_INFO, PROFILER_LOG_IF
 #include "native/analysis/statistical_analyzer.h"  // for statistical_analyzer, statistical_metrics, time_seri...
 #include "native/memory/memory_tracker.h"  // for memory_tracker
@@ -77,9 +77,7 @@ void simulate_work(int /*milliseconds*/) {}
  * @return Vector of allocated integers
  */
 std::vector<int> allocate_memory(size_t size)
-{
-    return std::vector<int>(size, 42);
-}
+{ return std::vector<int>(size, 42); }
 
 /**
  * @brief Simulate CPU-intensive work for performance testing
@@ -1249,9 +1247,9 @@ QUARISMATEST(Profiler, enhanced_profiler_comprehensive_test)
         //PROFILER_LOG_INFO(" {} test(s) FAILED!", total_tests - passed_tests);
     }
     //PROFILER_LOG_IF(
-     //   ERROR,
-      //  passed_tests != total_tests,
-      //  "Some Enhanced Profiler tests FAILED. Please check the logs for details.");
+    //   ERROR,
+    //  passed_tests != total_tests,
+    //  "Some Enhanced Profiler tests FAILED. Please check the logs for details.");
 
     END_TEST();
 }
