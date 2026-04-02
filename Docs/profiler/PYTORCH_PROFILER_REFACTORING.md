@@ -37,18 +37,18 @@ Replaced Quarisma-specific macros with Quarisma equivalents:
 
 | Quarisma Macro | Quarisma Macro | Purpose |
 |---|---|---|
-| `QUARISMA_API` | `QUARISMA_API` | Function export/import |
-| `QUARISMA_PYTHON_API` | `QUARISMA_API` | Python-facing function export |
-| `QUARISMA_CHECK` | `QUARISMA_CHECK` | Internal assertions |
-| `QUARISMA_INTERNAL_ASSERT_DEBUG_ONLY` | `QUARISMA_CHECK_DEBUG` | Debug-only assertions |
-| `QUARISMA_CHECK` | `QUARISMA_CHECK` | Runtime checks |
-| `QUARISMA_API_ENUM` | (removed) | Enum visibility (not needed) |
-| `QUARISMA_DIAGNOSTIC_PUSH_AND_IGNORED_IF_DEFINED` | `QUARISMA_DIAGNOSTIC_PUSH` | Diagnostic control |
-| `QUARISMA_DIAGNOSTIC_POP` | `QUARISMA_DIAGNOSTIC_POP` | Diagnostic control |
+| `PROFILER_API` | `PROFILER_API` | Function export/import |
+| `PROFILER_PYTHON_API` | `PROFILER_API` | Python-facing function export |
+| `PROFILER_CHECK` | `PROFILER_CHECK` | Internal assertions |
+| `PROFILER_INTERNAL_ASSERT_DEBUG_ONLY` | `PROFILER_CHECK_DEBUG` | Debug-only assertions |
+| `PROFILER_CHECK` | `PROFILER_CHECK` | Runtime checks |
+| `PROFILER_API_ENUM` | (removed) | Enum visibility (not needed) |
+| `PROFILER_DIAGNOSTIC_PUSH_AND_IGNORED_IF_DEFINED` | `PROFILER_DIAGNOSTIC_PUSH` | Diagnostic control |
+| `PROFILER_DIAGNOSTIC_POP` | `PROFILER_DIAGNOSTIC_POP` | Diagnostic control |
 
 ### 4. Visibility and API Macros
-- Added `QUARISMA_VISIBILITY` before public class declarations
-- Added `QUARISMA_API` before public function declarations
+- Added `PROFILER_VISIBILITY` before public class declarations
+- Added `PROFILER_API` before public function declarations
 - Ensured proper DLL export/import semantics for Windows
 
 ### 5. Namespace Corrections
@@ -79,8 +79,8 @@ All files moved from nested directories to base `pytroch_profiler` directory:
 - `Library/Core/experimental/quarisma_autograd/python_function.cpp`
 
 ## Quarisma Infrastructure Used
-- **Export Macros**: `Library/Core/common/export.h` (QUARISMA_API, QUARISMA_VISIBILITY)
-- **Common Macros**: `Library/Core/common/macros.h` (QUARISMA_CHECK, QUARISMA_NODISCARD, etc.)
+- **Export Macros**: `Library/Core/common/profiler_export.h` (PROFILER_API, PROFILER_VISIBILITY)
+- **Common Macros**: `Library/Core/common/profiler_macros.h` (PROFILER_CHECK, PROFILER_NODISCARD, etc.)
 
 ## Compliance
 ✅ Follows Quarisma coding standards

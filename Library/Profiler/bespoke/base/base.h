@@ -3,9 +3,9 @@
 #include <functional>
 #include <memory>
 
-#include "common/export.h"
-#include "memory/device.h"
-#include "util/strong_type.h"
+#include "common/profiler_export.h"
+//#include "memory/device.h"
+#include "common/strong_type.h"
 
 struct CUevent_st;
 
@@ -21,7 +21,7 @@ using ProfilerVoidEventStub = std::shared_ptr<void>;
 struct PROFILER_VISIBILITY ProfilerStubs
 {
     virtual void record(
-        quarisma::device_option::int_t* device,
+        int16_t* device,
         ProfilerVoidEventStub*          event,
         int64_t*                        cpu_ns) const = 0;
     virtual float elapsed(

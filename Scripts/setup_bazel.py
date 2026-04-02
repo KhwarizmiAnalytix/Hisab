@@ -5,7 +5,8 @@ This script provides a simplified interface for building Quarisma with Bazel,
 mirroring the functionality of setup.py but using Bazel instead of CMake.
 
 Usage:
-    python setup_bazel.py config.build.test.release.avx2
+    python Scripts/setup_bazel.py config.build.test.release.avx2
+    python setup_bazel.py config.build.release.test.vv.enzyme   # from repo root (wrapper)
     python setup_bazel.py build.test.debug
     python setup_bazel.py test
     python setup_bazel.py config.build.release.test.cxx20
@@ -99,6 +100,8 @@ class BazelConfiguration:
         self.run_clean = False
         self.run_config = False
         self.timing_data: Dict[str, float] = {}
+        # Verbose test output (--test_output=all) when token "vv" is present
+        self.verbose_tests = False
 
         # Default backends (matching CMake defaults)
         self.logging_backend = "loguru"  # Default: LOGURU (matches CMake)
@@ -175,6 +178,14 @@ class BazelConfiguration:
             # Optional features
             elif arg_lower in ["mimalloc", "magic_enum", "tbb", "mkl", "openmp", "cuda", "hip"]:
                 self.configs.append(arg_lower)
+
+            # Enzyme AD (matches .bazelrc build:enzyme)
+            elif arg_lower == "enzyme":
+                self.configs.append("enzyme")
+
+            # Verbose test log output (maps to --test_output=all)
+            elif arg_lower == "vv":
+                self.verbose_tests = True
 
             # Logging backends (with logging_ prefix)
             elif arg_lower.startswith("logging_"):
@@ -340,6 +351,7 @@ class BazelConfiguration:
             "cuda": "QUARISMA_ENABLE_CUDA",
             "hip": "QUARISMA_ENABLE_HIP",
             "lto": "QUARISMA_ENABLE_LTO",
+            "enzyme": "QUARISMA_ENABLE_ENZYME",
         }
 
         for feature, flag in features.items():
@@ -429,8 +441,12 @@ class BazelConfiguration:
         print_status("Running Bazel tests...", "INFO")
         cmd = self.build_bazel_command("test")
 
-        # Add test output flags
-        cmd.append("--test_output=errors")
+        # Add test output flags (vv = full log for failures)
+        if self.verbose_tests:
+            cmd.append("--test_output=all")
+            cmd.append("--verbose_failures")
+        else:
+            cmd.append("--test_output=errors")
 
         print_status(f"Running: {' '.join(cmd)}", "INFO")
 
@@ -557,6 +573,8 @@ def print_help() -> None:
     print("  magic_enum    - Magic enum library")
     print("  tbb           - Intel TBB")
     print("  openmp        - OpenMP support")
+    print("  enzyme        - Enzyme AD defines (see .bazelrc build:enzyme)")
+    print("  vv            - Verbose Bazel test output (--test_output=all)")
     print("\nLogging backends:")
     print("  glog          - Google glog")
     print("  loguru        - Loguru logging")

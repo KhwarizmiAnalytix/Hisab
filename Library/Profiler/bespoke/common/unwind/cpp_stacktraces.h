@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/export.h"
+#include "common/profiler_export.h"
 #include "bespoke/common/unwind/unwind.h"
 
 namespace quarisma

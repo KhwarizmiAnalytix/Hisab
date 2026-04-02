@@ -49,7 +49,7 @@
 #include <vector>
 
 #include "native/session/profiler.h"
-#include "util/flat_hash.h"
+#include "common/flat_hash.h"
 
 #ifdef _WIN32
 #include <psapi.h>

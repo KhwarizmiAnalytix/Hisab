@@ -39,8 +39,8 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
-#include "common/macros.h"
-#include "logging/logger.h"
+#include "common/profiler_macros.h"
+//#include "logging/logger.h"
 #include "native/core/profiler_collection.h"
 #include "native/core/profiler_interface.h"
 #include "native/cpu/host_tracer_utils.h"
@@ -107,7 +107,7 @@ profiler_status host_tracer::start()
 {
     if (recording_)
     {
-        QUARISMA_LOG_ERROR("TraceMeRecorder already started");
+        PROFILER_LOG_ERROR("TraceMeRecorder already started");
         return profiler_status::Error("TraceMeRecorder already started");
     }
 
@@ -118,7 +118,7 @@ profiler_status host_tracer::start()
     recording_          = traceme_recorder::start(host_trace_level_, filter_mask_);
     if (!recording_)
     {
-        QUARISMA_LOG_ERROR("Failed to start TraceMeRecorder");
+        PROFILER_LOG_ERROR("Failed to start TraceMeRecorder");
         return profiler_status::Error("Failed to start TraceMeRecorder");
     }
     return profiler_status::Ok();
@@ -128,7 +128,7 @@ profiler_status host_tracer::stop()
 {
     if (!recording_)
     {
-        QUARISMA_LOG_ERROR("TraceMeRecorder not started");
+        PROFILER_LOG_ERROR("TraceMeRecorder not started");
         return profiler_status::Error("TraceMeRecorder not started");
     }
     events_    = traceme_recorder::stop();
@@ -138,10 +138,10 @@ profiler_status host_tracer::stop()
 
 profiler_status host_tracer::collect_data(x_space* space)
 {
-    QUARISMA_LOG_INFO("Collecting data to x_space from host_tracer.");  // NOLINT
+    PROFILER_LOG_INFO("Collecting data to x_space from host_tracer.");  // NOLINT
     if (recording_)
     {
-        QUARISMA_LOG_ERROR("traceme_recorder not stopped");
+        PROFILER_LOG_ERROR("traceme_recorder not stopped");
         return profiler_status::Error("TraceMeRecorder not stopped");
     }
     if (events_.empty())
@@ -151,7 +151,7 @@ profiler_status host_tracer::collect_data(x_space* space)
     xplane* plane = find_or_add_mutable_plane_with_name(space, kHostThreadsPlaneName);
     if (plane == nullptr)
     {
-        QUARISMA_LOG_ERROR("Failed to obtain host threads XPlane.");
+        PROFILER_LOG_ERROR("Failed to obtain host threads XPlane.");
         return profiler_status::Error("Failed to obtain host threads XPlane.");
     }
 

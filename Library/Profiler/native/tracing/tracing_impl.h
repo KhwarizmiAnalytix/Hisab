@@ -26,21 +26,21 @@ namespace quarisma::tracing
 
 inline bool event_collector::is_enabled()
 {
-    return profiler::threadpool_listener::IsEnabled();
+    return quarisma::profiler_impl::threadpool_listener::IsEnabled();
 }
 
 }  // namespace quarisma::tracing
 
 // Stub tracing macros for portability.
-#define QUARISMA_TRACELITERAL(a) \
+#define PROFILER_TRACELITERAL(a) \
     do                           \
     {                            \
     } while (0)
-#define QUARISMA_TRACESTRING(s) \
+#define PROFILER_TRACESTRING(s) \
     do                          \
     {                           \
     } while (0)
-#define QUARISMA_TRACEPRINTF(format, ...) \
+#define PROFILER_TRACEPRINTF(format, ...) \
     do                                    \
     {                                     \
     } while (0)

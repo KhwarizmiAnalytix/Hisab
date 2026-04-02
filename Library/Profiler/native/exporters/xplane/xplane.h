@@ -25,7 +25,7 @@
 #include <variant>
 #include <vector>
 
-#include "util/flat_hash.h"
+#include "common/flat_hash.h"
 
 namespace quarisma
 {

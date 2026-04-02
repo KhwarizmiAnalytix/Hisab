@@ -62,7 +62,7 @@ guard.end();
 
 // Option 2: Use macro (doesn't use RecordFunction)
 {
-    QUARISMA_PROFILE_SCOPE("my_operation");
+    PROFILER_PROFILE_SCOPE("my_operation");
     // ... code ...
 }
 ```
@@ -78,7 +78,7 @@ guard.end();
 
 // Or with macro
 {
-    QUARISMA_RECORD_FUNCTION("my_operation");
+    PROFILER_RECORD_FUNCTION("my_operation");
     // ... code ...
 }
 ```

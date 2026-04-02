@@ -40,7 +40,7 @@ limitations under the License.
 #include <type_traits>
 #include <utility>
 
-#include "logging/logger.h"
+////#include "logging/logger.h"
 #include "native/tracing/traceme_encode.h"
 #include "native/tracing/traceme_recorder.h"
 #include "common/no_init.h"
@@ -65,7 +65,7 @@ namespace quarisma
  *
  * @note This function is force-inlined for optimal performance in hot paths
  */
-QUARISMA_FORCE_INLINE int64_t get_current_time_nanos()
+/*PROFILER_FORCE_INLINE*/ int64_t get_current_time_nanos()
 {
     // Monotonic clock for consistent relative timing
     auto now = std::chrono::steady_clock::now();
@@ -206,9 +206,9 @@ public:
     explicit traceme(
         std::string_view name, int level = 1, uint64_t filter_mask = kTraceFilterDefaultMask)
     {
-        // QUARISMA_CHECK_DEBUG(level >= 1, "level is less than 1");
+        // PROFILER_CHECK_DEBUG(level >= 1, "level is less than 1");
 #if !defined(IS_MOBILE_PLATFORM)
-        if QUARISMA_UNLIKELY (
+        if PROFILER_UNLIKELY (
             traceme_recorder::active(level) && traceme_recorder::check_filter(filter_mask))
         {
             name_.Emplace(std::string(name));
@@ -308,9 +308,9 @@ public:
         int              level       = 1,
         uint64_t         filter_mask = kTraceFilterDefaultMask)
     {
-        // QUARISMA_CHECK_DEBUG(level >= 1, "level is less than 1");
+        // PROFILER_CHECK_DEBUG(level >= 1, "level is less than 1");
 #if !defined(IS_MOBILE_PLATFORM)
-        if QUARISMA_UNLIKELY (
+        if PROFILER_UNLIKELY (
             traceme_recorder::active(level) && traceme_recorder::check_filter(filter_mask))
         {
             name_.Emplace(std::forward<NameGeneratorT>(name_generator)());
@@ -348,7 +348,7 @@ public:
     traceme& operator=(traceme&& other) noexcept
     {
 #if !defined(IS_MOBILE_PLATFORM)
-        if QUARISMA_UNLIKELY (other.start_time_ != kUntracedActivity)
+        if PROFILER_UNLIKELY (other.start_time_ != kUntracedActivity)
         {
             name_.Emplace(std::move(other.name_).Consume());
             start_time_ = std::exchange(other.start_time_, kUntracedActivity);
@@ -410,9 +410,9 @@ public:
         //   event will be discarded when its start timestamp fall outside of the
         //   start/stop session timestamp.
 #if !defined(IS_MOBILE_PLATFORM)
-        if QUARISMA_UNLIKELY (start_time_ != kUntracedActivity)
+        if PROFILER_UNLIKELY (start_time_ != kUntracedActivity)
         {
-            if QUARISMA_LIKELY (traceme_recorder::active())
+            if PROFILER_LIKELY (traceme_recorder::active())
             {
                 traceme_recorder::record(
                     {std::move(name_.value), start_time_, get_current_time_nanos()});
@@ -465,9 +465,9 @@ public:
     void append_metadata(MetadataGeneratorT&& metadata_generator)
     {
 #if !defined(IS_MOBILE_PLATFORM)
-        if QUARISMA_UNLIKELY (start_time_ != kUntracedActivity)
+        if PROFILER_UNLIKELY (start_time_ != kUntracedActivity)
         {
-            if QUARISMA_LIKELY (traceme_recorder::active())
+            if PROFILER_LIKELY (traceme_recorder::active())
             {
                 traceme_internal::append_metadata(
                     &name_.value, std::forward<MetadataGeneratorT>(metadata_generator)());
@@ -523,7 +523,7 @@ public:
         uint64_t         filter_mask = kTraceFilterDefaultMask)
     {
 #if !defined(IS_MOBILE_PLATFORM)
-        if QUARISMA_UNLIKELY (
+        if PROFILER_UNLIKELY (
             traceme_recorder::active(level) && traceme_recorder::check_filter(filter_mask))
         {
             int64_t activity_id = traceme_recorder::new_activity_id();
@@ -555,7 +555,7 @@ public:
         std::string_view name, int level = 1, uint64_t filter_mask = kTraceFilterDefaultMask)
     {
 #if !defined(IS_MOBILE_PLATFORM)
-        if QUARISMA_UNLIKELY (
+        if PROFILER_UNLIKELY (
             traceme_recorder::active(level) && traceme_recorder::check_filter(filter_mask))
         {
             int64_t activity_id = traceme_recorder::new_activity_id();
@@ -616,9 +616,9 @@ public:
     {
 #if !defined(IS_MOBILE_PLATFORM)
         // We don't check the level again (see traceme::stop()).
-        if QUARISMA_UNLIKELY (activity_id != kUntracedActivity)
+        if PROFILER_UNLIKELY (activity_id != kUntracedActivity)
         {
-            if QUARISMA_LIKELY (traceme_recorder::active())
+            if PROFILER_LIKELY (traceme_recorder::active())
             {
                 traceme_recorder::record({std::string(), -activity_id, get_current_time_nanos()});
             }
@@ -660,7 +660,7 @@ public:
         uint64_t         filter_mask = kTraceFilterDefaultMask)
     {
 #if !defined(IS_MOBILE_PLATFORM)
-        if QUARISMA_UNLIKELY (
+        if PROFILER_UNLIKELY (
             traceme_recorder::active(level) && traceme_recorder::check_filter(filter_mask))
         {
             int64_t now = get_current_time_nanos();

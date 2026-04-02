@@ -1,8 +1,3 @@
-# Profiler module CMakeLists.txt
-# Typically added via add_subdirectory from Library/Core/CMakeLists.txt.
-# Core headers (memory/, common/macros.h, util/, logging/, …) come from the Quarisma::Core CMake
-# target — not a manual ../Core include path. This directory stays first so common/export.h is
-# Library/Profiler/common/export.h (Profiler visibility), not Core's.
 cmake_minimum_required(VERSION 3.16)
 
 set(profiler_headers)
@@ -162,9 +157,7 @@ if(QUARISMA_DEPENDENCY_INCLUDE_DIRS)
   message(STATUS "Profiler library include directories: ${QUARISMA_DEPENDENCY_INCLUDE_DIRS}")
 endif()
 
-# Link with build interface target and Core (headers + symbols for memory/, util/, logging/, …).
-# No manual ../Core include path on this target.
-target_link_libraries(Profiler PUBLIC Quarisma::build Quarisma::Core)
+target_link_libraries(Profiler PUBLIC Quarisma::build)
 
 # Link with centralized dependency list
 if(QUARISMA_DEPENDENCY_LIBS)

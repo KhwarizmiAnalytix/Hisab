@@ -38,7 +38,7 @@ limitations under the License.
 //#include "absl/status/status.h"
 //#include "xla/python/profiler/internal/python_hooks.h"
 //#include "tsl/platform/errors.h"
-#include "logging/logger.h"
+//#include "logging/logger.h"
 #include "native/core/profiler_interface.h"
 #include "native/exporters/xplane/xplane.h"
 
@@ -77,33 +77,33 @@ python_tracer::~python_tracer()
 }  // NOLINT
 
 bool python_tracer::start()
-{  // QUARISMA_STATUS_OK
+{  // PROFILER_STATUS_OK
     if (recording_)
     {
         return tsl::errors::Internal("PythonTracer already started");
     }
-    QUARISMA_LOG_INFO( __FUNCTION__);
+    PROFILER_LOG_INFO( __FUNCTION__);
     recording_ = true;
     PythonHooks::GetSingleton()->Start(options_);
     return true;
 }
 
 bool PythonTracer::Stop()
-{  // QUARISMA_STATUS_OK
+{  // PROFILER_STATUS_OK
     if (!recording_)
     {
         return tsl::errors::Internal("PythonTracer not started");
     }
-    QUARISMA_LOG_INFO( __FUNCTION__);
+    PROFILER_LOG_INFO( __FUNCTION__);
     context_   = PythonHooks::GetSingleton()->Stop();
     recording_ = false;
     return true;
 }
 
-bool PythonTracer::CollectData(  // QUARISMA_STATUS_OK
+bool PythonTracer::CollectData(  // PROFILER_STATUS_OK
     XSpace* space)
 {
-    QUARISMA_LOG_INFO( "Collecting data to XSpace from PythonTracer.");
+    PROFILER_LOG_INFO( "Collecting data to XSpace from PythonTracer.");
     if (context_)
     {
         context_->Finalize(space);

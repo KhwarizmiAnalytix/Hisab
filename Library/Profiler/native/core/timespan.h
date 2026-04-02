@@ -36,7 +36,7 @@ limitations under the License.
 #include <algorithm>
 #include <string>
 
-#include "logging/logger.h"
+//#include "logging/logger.h"
 #include "util/string_util.h"
 
 namespace quarisma
@@ -145,7 +145,7 @@ public:
         return a.begin_ps_ < b.begin_ps_;
     }
 
-    QUARISMA_FORCE_INLINE static int64_t milli_to_pico(int64_t milliseconds)
+    /*PROFILER_FORCE_INLINE*/ static int64_t milli_to_pico(int64_t milliseconds)
     {
         return milliseconds * 1000000000LL;  // 10^9
     }

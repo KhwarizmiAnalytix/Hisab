@@ -39,7 +39,7 @@ limitations under the License.
 #include <string_view>
 #include <vector>
 
-#include "common/export.h"
+#include "common/profiler_export.h"
 
 namespace quarisma
 {

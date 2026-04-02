@@ -12,7 +12,7 @@
 
 #include "baseTest.h"
 
-#if QUARISMA_HAS_ITT
+#if PROFILER_HAS_ITT
 
 #include "bespoke/itt/itt_wrapper.h"
 
@@ -268,4 +268,4 @@ QUARISMATEST(ITTWrapper, LongEventNames)
     EXPECT_TRUE(true);
 }
 
-#endif  // QUARISMA_HAS_ITT
+#endif  // PROFILER_HAS_ITT

@@ -44,8 +44,8 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
-#include "common/macros.h"
-#include "logging/logger.h"
+#include "common/profiler_macros.h"
+//#include "logging/logger.h"
 #include "native/analysis/stats_calculator.h"
 #include "native/core/timespan.h"
 #include "native/exporters/xplane/tf_xplane_visitor.h"
@@ -53,7 +53,7 @@ limitations under the License.
 #include "native/exporters/xplane/xplane_builder.h"
 #include "native/exporters/xplane/xplane_schema.h"
 #include "native/exporters/xplane/xplane_visitor.h"
-#include "util/flat_hash.h"
+#include "common/flat_hash.h"
 
 namespace quarisma
 {
@@ -95,7 +95,7 @@ int Find(const std::vector<T>& array, const Pred& pred)
     std::vector<int> indices = FindAll(array, pred);
     if (indices.size() > 1)
     {
-        QUARISMA_LOG_WARNING("Found multiple when only one was expected.");
+        // PROFILER_LOG_WARNING("Found multiple when only one was expected.");
     }
     return indices.empty() ? -1 : indices.front();
 }
@@ -199,7 +199,7 @@ void CopyEventMetadata(
                 dst_stat.set_metadata_id(metadata.id());
             });
     }
-    // QUARISMA_CHECK_DEBUG(src_event_metadata.stats_size() == dst_event_metadata.stats_size());
+    // PROFILER_CHECK_DEBUG(src_event_metadata.stats_size() == dst_event_metadata.stats_size());
 }
 
 // Copies src_event from source line to the destination line in the destination
@@ -354,7 +354,7 @@ xstat* find_or_add_mutable_stat(const x_stat_metadata& stat_metadata, xevent* ev
 
 //static void RemovePlane(x_space* space, const xplane* plane)
 //{
-//    QUARISMA_CHECK_DEBUG(plane != nullptr);
+//    PROFILER_CHECK_DEBUG(plane != nullptr);
 //    Remove(space->mutable_planes(), plane);
 //}
 
@@ -460,7 +460,7 @@ void MergePlanes(const std::vector<const xplane*>& src_planes, xplane* dst_plane
 
 //static void RemoveLine(xplane* plane, const xline* line)
 //{
-//    QUARISMA_CHECK_DEBUG(line != nullptr);
+//    PROFILER_CHECK_DEBUG(line != nullptr);
 //    Remove(plane->mutable_lines(), line);
 //}
 
@@ -652,14 +652,14 @@ uint64_t GetDevicePlaneFingerprint(const xplane& plane)
     xplane_visitor const xplane(&plane);
     xline_visitor const  xline(&xplane, xla_module_line);
     std::set<uint64_t>   ordered_module_fps;
-    xline.for_each_event([&](QUARISMA_UNUSED const xevent_visitor& xevent)
+    xline.for_each_event([&](PROFILER_UNUSED const xevent_visitor& xevent)
                          { ordered_module_fps.insert(/*Fingerprint64(xevent.Name())*/ 0); });
     if (ordered_module_fps.empty())
     {
         return 0ULL;
     }
     uint64_t output = 0ULL;
-    for (QUARISMA_UNUSED const auto& fp : ordered_module_fps)
+    for (PROFILER_UNUSED const auto& fp : ordered_module_fps)
     {
         output = 0;
         //FingerprintCat64(output, fp);
@@ -795,7 +795,7 @@ void AggregateXPlane(const xplane& full_trace, xplane& aggregated_trace)
 
                     StatByEvent& line_stats = stats[line.id()][group_id];
                     line_stats[event.id()].stat.update_stat(timespan.duration_ps());
-                    // QUARISMA_CHECK_DEBUG(                                       //NOLINT
+                    // PROFILER_CHECK_DEBUG(                                       //NOLINT
                         // event_stack.empty() || !(event < event_stack.back()));  //NOLINT
                     while (!event_stack.empty() &&
                            !GetEventTimespan(event_stack.back()).includes(timespan))

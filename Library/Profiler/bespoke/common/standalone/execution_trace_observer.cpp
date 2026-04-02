@@ -27,9 +27,12 @@
 
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <fstream>
 #include <iomanip>
 #include <map>
+#include <optional>
+#include <string>
 #include <mutex>
 #include <sstream>
 #include <stack>
@@ -43,7 +46,7 @@
 #include "bespoke/common/record_function.h"
 #include "bespoke/common/standalone/execution_trace_observer.h"
 #include "bespoke/common/util.h"
-#include "util/env.h"
+//#include "util/env.h"
 #include "common/irange.h"
 
 #ifdef USE_DISTRIBUTED
@@ -55,13 +58,25 @@ using namespace quarisma;
 // Stub declarations for types not available in profiler-only build
 namespace quarisma
 {
-// Stub for StorageImpl - used in execution trace observer
-struct StorageImpl : public quarisma::intrusive_ptr_target
+// Stub for StorageImpl - used in execution trace observer (no intrusive ref-count in stub build)
+struct StorageImpl
 {
-    // Stub implementation for profiler-only build
     static const void* data() { return nullptr; }
 };
 }  // namespace quarisma
+
+namespace
+{
+std::optional<std::string> profiler_get_env(const char* name)
+{
+    const char* v = std::getenv(name);
+    if (v == nullptr)
+    {
+        return std::nullopt;
+    }
+    return std::string(v);
+}
+}  // namespace
 
 // Collective property attributes
 // https://github.com/pytorch/pytorch/issues/124674
@@ -173,7 +188,7 @@ struct PROFILER_VISIBILITY ExecutionTraceObserver
     // unique id.
     std::map<const void*, ID> objectId;
 
-    using weak_storage_ptr = quarisma::weak_intrusive_ptr<StorageImpl>;
+    using weak_storage_ptr = std::weak_ptr<quarisma::StorageImpl>;
     std::unordered_map<const void*, ID>               data_ptr_to_storage_id;
     std::unordered_map<const void*, weak_storage_ptr> data_ptr_to_weak_storage_ptr;
 
@@ -769,7 +784,7 @@ static void handleKernelBackendInfo(FunctionCallContext& fc, const RecordFunctio
         if (fc.kernelBackend == "triton")
         {
             fc.kernelFile = kwinputs.at("kernel_file").toStringRef();
-            // QUARISMA_CHECK(
+            // PROFILER_CHECK(
                 // kwinputs.find("kernel_file") != kwinputs.end(),
                 // "kernel file is missing in triton kernel");
             // Remove the path of the file name
@@ -779,7 +794,7 @@ static void handleKernelBackendInfo(FunctionCallContext& fc, const RecordFunctio
             }
 
             // get stream information
-            // QUARISMA_CHECK(
+            // PROFILER_CHECK(
                 // kwinputs.find("stream") != kwinputs.end(), "stream is missing in triton kernel");
             fc.inputValues.emplace_back(std::to_string(kwinputs.at("stream").toInt()));
             fc.inputTypes.emplace_back("\"Int\"");
@@ -791,7 +806,7 @@ static void handleKernelBackendInfo(FunctionCallContext& fc, const RecordFunctio
 // Stub implementation
 static void handleKernelBackendInfo(FunctionCallContext& /*fc*/, const RecordFunction& fn)
 {
-    QUARISMA_UNUSED const auto& kwinputs = fn.kwinputs();
+    PROFILER_UNUSED const auto& kwinputs = fn.kwinputs();
     // Stub: IValue methods not available in profiler-only build
 }
 #endif
@@ -1008,7 +1023,7 @@ static void onFunctionExit(const RecordFunction& fn, ObserverContext* ctx_ptr)
     if (ob->getState() == RunState::enabled)
     {
         auto* fc_ptr = dynamic_cast<FunctionCallContext*>(ctx_ptr);
-        // QUARISMA_CHECK(fc_ptr != nullptr);
+        // PROFILER_CHECK(fc_ptr != nullptr);
         if (fc_ptr == nullptr)
         {
             //LOG(WARNING) << "FunctionCallContext is nullptr.";
@@ -1121,8 +1136,8 @@ bool addExecutionTraceObserver(const std::string& output_file_path)
 
         // check if the environment variable is set to force recording integer
         // tensors
-        auto env_variable = quarisma::utils::get_env(
-            "ENABLE_PYQUARISMA_EXECUTION_TRACE_SAVE_INTEGRAL_TENSOR_RANGE");
+        auto env_variable = profiler_get_env(
+            "ENABLE_PYPROFILER_EXECUTION_TRACE_SAVE_INTEGRAL_TENSOR_RANGE");
         if (env_variable.has_value())
         {
             ob.record_integral_tensor_range = true;
@@ -1130,8 +1145,7 @@ bool addExecutionTraceObserver(const std::string& output_file_path)
 
         // check if the environment variable is set to force recording integer
         // tensors
-        env_variable =
-            quarisma::utils::get_env("ENABLE_PYQUARISMA_EXECUTION_TRACE_SAVE_INTEGRAL_TENSOR_DATA");
+        env_variable = profiler_get_env("ENABLE_PYPROFILER_EXECUTION_TRACE_SAVE_INTEGRAL_TENSOR_DATA");
         if (env_variable.has_value())
         {
             std::istringstream stream(env_variable.value());
@@ -1187,7 +1201,7 @@ void removeExecutionTraceObserver()
             removeCallback(ob->cbHandle);
             ob->cbHandle = INVALID_CALLBACK_HANDLE;
             // Release the current ET observer object and reset.
-            // QUARISMA_CHECK(
+            // PROFILER_CHECK(
                 // ObserverManager::pop() != nullptr,
                 // "Global state ptr cannot be null before resetting");
             // VLOG(1) << "Quarisma Execution Trace: removed observer";

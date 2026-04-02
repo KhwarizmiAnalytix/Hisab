@@ -1,4 +1,4 @@
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE_PROFILER
 /*
  * Quarisma: High-Performance Quantitative Library
  *
@@ -276,4 +276,4 @@ QUARISMATEST(Profiler, stat_with_percentiles_output_stream)
     EXPECT_NE(output.find("p95="), std::string::npos);
 }
 
-#endif  // QUARISMA_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE_PROFILER

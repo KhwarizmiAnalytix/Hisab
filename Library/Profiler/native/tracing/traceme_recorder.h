@@ -26,7 +26,7 @@
 #include <string>
 #include <vector>
 
-#include "common/macros.h"
+#include "common/profiler_macros.h"
 
 namespace quarisma
 {

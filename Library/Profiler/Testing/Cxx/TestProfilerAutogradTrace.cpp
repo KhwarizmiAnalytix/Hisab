@@ -9,11 +9,11 @@
 #include "bespoke/common/api.h"
 #include "bespoke/common/record_function.h"
 #include "bespoke/kineto/profiler_kineto.h"
-#include "logging/logger.h"
+//#include "logging/logger.h"
 
 namespace
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 
 std::string makeTracePath()
 {
@@ -29,7 +29,7 @@ void runSampleWork()
     const auto start_time = std::chrono::steady_clock::now();
 
     auto step_callbacks = quarisma::getStepCallbacksUnlessEmpty(quarisma::RecordScope::FUNCTION);
-    if QUARISMA_UNLIKELY (step_callbacks.has_value())
+    if PROFILER_UNLIKELY (step_callbacks.has_value())
     {
         quarisma::RecordFunction guard(std::move(*step_callbacks));
         auto                     f = [](int n)
@@ -51,10 +51,10 @@ void runSampleWork()
     }
 }
 
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 }  // namespace
 
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 
 QUARISMATEST(profiler, autograd_chrome_trace_export)
 {
@@ -102,4 +102,4 @@ QUARISMATEST(profiler, autograd_chrome_trace_export)
               << std::endl;
 }
 
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO

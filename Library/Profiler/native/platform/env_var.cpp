@@ -43,7 +43,8 @@ limitations under the License.
 #include <string_view>
 #include <vector>
 
-#include "logging/logger.h"  // for QUARISMA_LOG_ERROR
+//#include "logging/logger.h"  // for PROFILER_LOG_ERROR
+#include "util/string_util.h"  // for quarisma::strings::to_lower
 
 namespace quarisma
 {
@@ -71,7 +72,7 @@ bool read_bool_from_env_var(std::string_view env_var_name, bool default_val, boo
         return true;
     }
 
-    QUARISMA_LOG_ERROR(
+    PROFILER_LOG_ERROR(
         "Failed to parse the env-var {} into bool: {}. Use the default value: {}",
         env_var_name,
         str_value,
@@ -96,7 +97,7 @@ bool read_int64_from_env_var(std::string_view env_var_name, int64_t default_val,
     size_t const end   = str.find_last_not_of(" \t\n\r");
     if (start == std::string::npos)
     {
-        QUARISMA_LOG_ERROR(
+        PROFILER_LOG_ERROR(
             "InvalidArgument Failed to parse the env-var {} into int64: {}. Use the default "
             "value: {}",
             env_var_name,
@@ -114,7 +115,7 @@ bool read_int64_from_env_var(std::string_view env_var_name, int64_t default_val,
         return true;
     }
 
-    QUARISMA_LOG_ERROR(
+    PROFILER_LOG_ERROR(
         "InvalidArgument Failed to parse the env-var {} into int64: {}. Use the default value: {}",
         env_var_name,
         tf_env_var_val,
@@ -140,7 +141,7 @@ bool read_float_from_env_var(std::string_view env_var_name, float default_val, f
     size_t const end   = str.find_last_not_of(" \t\n\r");
     if (start == std::string::npos)
     {
-        QUARISMA_LOG_ERROR(
+        PROFILER_LOG_ERROR(
             "InvalidArgument Failed to parse the env-var {} into float: {}. Use the default "
             "value: {}",
             env_var_name,
@@ -158,7 +159,7 @@ bool read_float_from_env_var(std::string_view env_var_name, float default_val, f
         return true;
     }
 
-    QUARISMA_LOG_ERROR(
+    PROFILER_LOG_ERROR(
         "InvalidArgument Failed to parse the env-var {} into float: {}. Use the default value: {}",
         env_var_name,
         tf_env_var_val,

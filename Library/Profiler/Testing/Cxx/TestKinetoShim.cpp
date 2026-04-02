@@ -10,7 +10,7 @@
 
 #include "baseTest.h"
 
-#if QUARISMA_HAS_KINETO && 0
+#if PROFILER_HAS_KINETO && 0
 
 #include <ActivityTraceInterface.h>
 
@@ -636,4 +636,4 @@ QUARISMATEST(KinetoShim, EndToEndDetailedProfiling)
     // To enable cleanup, uncomment the line above
 }
 
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO

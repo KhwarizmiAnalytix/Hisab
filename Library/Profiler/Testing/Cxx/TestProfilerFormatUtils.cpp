@@ -1,4 +1,4 @@
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE_PROFILER
 /*
  * Quarisma: High-Performance Quantitative Library
  *
@@ -56,4 +56,4 @@ QUARISMATEST(Profiler, format_handles_zero)
     EXPECT_EQ(three_digits(0.0), "0.000");
     EXPECT_EQ(max_precision(0.0), "0");
 }
-#endif  // QUARISMA_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE_PROFILER

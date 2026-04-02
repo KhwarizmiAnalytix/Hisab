@@ -3,9 +3,9 @@
 #include <memory>
 
 ////#include <Quarisma/core/TensorBody.h>
-#include "common/macros.h"
+#include "common/profiler_macros.h"
 #include "common/TensorImpl.h"
-#include "util/strong_type.h"
+#include "common/strong_type.h"
 
 namespace quarisma::profiler_impl::impl
 {
@@ -66,7 +66,7 @@ using StorageImplData = strong::
 class WeakTensor
 {
 public:
-    explicit WeakTensor(QUARISMA_UNUSED const quarisma::Tensor&) {};
+    explicit WeakTensor(PROFILER_UNUSED const quarisma::Tensor&) {};
 
     /*: weak_self_(t.getIntrusivePtr()) {}*/
 

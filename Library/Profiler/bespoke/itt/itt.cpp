@@ -10,7 +10,7 @@ namespace
 struct ITTMethods : public ProfilerStubs
 {
     void record(
-        quarisma::device_option::int_t* device,
+        int16_t* device,
         ProfilerVoidEventStub*          event,
         int64_t*                        cpu_ns) const override
     {

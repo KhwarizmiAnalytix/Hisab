@@ -1,6 +1,6 @@
 #include "common/approximate_clock.h"
 
-#include "util/exception.h"
+//#include "util/exception.h"
 #include "common/irange.h"
 
 namespace quarisma
@@ -19,7 +19,7 @@ ApproximateClockToUnixTimeConverter::measurePair()
     auto wall   = std::chrono::system_clock::now();
     auto fast_1 = getApproximateTime();
 
-    // QUARISMA_CHECK(fast_1 >= fast_0, "getCount is non-monotonic.");
+    // PROFILER_CHECK(fast_1 >= fast_0, "getCount is non-monotonic.");
     auto t = std::chrono::duration_cast<std::chrono::nanoseconds>(wall.time_since_epoch());
 
     // `x + (y - x) / 2` is a more numerically stable average than `(x + y) / 2`.

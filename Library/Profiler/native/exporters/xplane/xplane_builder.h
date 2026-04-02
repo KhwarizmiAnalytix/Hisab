@@ -46,10 +46,10 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
-#include "common/macros.h"
+#include "common/profiler_macros.h"
 #include "native/core/timespan.h"
 #include "native/exporters/xplane/xplane.h"
-#include "util/flat_hash.h"
+#include "common/flat_hash.h"
 
 namespace quarisma
 {
@@ -386,7 +386,7 @@ private:
         {
             const auto& stat_metadata_by_id = src_plane.stat_metadata();
             const auto  it                  = stat_metadata_by_id.find(src_stat.ref_value());
-            if QUARISMA_LIKELY (it != stat_metadata_by_id.end())
+            if PROFILER_LIKELY (it != stat_metadata_by_id.end())
             {
                 std::string_view value = it->second.name();
                 dst_stat->set_ref_value(get_or_create_stat_metadata(value).id());

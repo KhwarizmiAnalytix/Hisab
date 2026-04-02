@@ -17,14 +17,14 @@
 #include "bespoke/common/containers.h"
 #include "bespoke/common/data_flow.h"
 #include "bespoke/common/events.h"
-#include "common/macros.h"
+#include "common/profiler_macros.h"
 #include "bespoke/common/orchestration/python_tracer.h"
 #include "bespoke/common/util.h"
 #include "bespoke/kineto/kineto_shim.h"
-#include "memory/device.h"
+//#include "memory/device.h"
 #include "common/approximate_clock.h"
-#include "util/flat_hash.h"
-#include "util/strong_type.h"
+#include "common/flat_hash.h"
+#include "common/strong_type.h"
 
 // Minimal layout constant expected by profiler code for Tensor::layout()
 namespace quarisma
@@ -77,7 +77,7 @@ struct PROFILER_VISIBILITY RawTensorMetadata : RawTensorMetadataBase
     // keep struct default constructable. (which the std::array initializer needs)
     std::optional<WeakTensor>      weak_self_;
     quarisma::device_enum          device_type_{quarisma::device_enum::CPU};
-    quarisma::device_option::int_t device_index_{-1};
+    int16_t device_index_{-1};
 };
 
 // Used during post processing.
@@ -234,7 +234,7 @@ struct RawAllocation
     size_t                         total_allocated_;
     size_t                         total_reserved_;
     quarisma::device_enum          device_type_;
-    quarisma::device_option::int_t device_index_;
+    int16_t device_index_;
 };
 
 // For performance.
@@ -245,7 +245,13 @@ struct ExtraFields<EventType::Allocation> : RawAllocation
 {
     ExtraFields(const RawAllocation& allocation) : RawAllocation(allocation) {}
 
-    quarisma::device_option device() const { return {device_type_, device_index_}; }
+    quarisma::device_option device() const
+    {
+        quarisma::device_option d{};
+        d.type_  = device_type_;
+        d.index_ = device_index_;
+        return d;
+    }
 
     std::optional<TensorID>     id_;
     std::optional<AllocationID> allocation_id_;
@@ -259,7 +265,7 @@ struct ExtraFields<EventType::OutOfMemory>
     size_t                         total_allocated_;
     size_t                         total_reserved_;
     quarisma::device_enum          device_type_;
-    quarisma::device_option::int_t device_index_;
+    int16_t device_index_;
 };
 
 // For performance.

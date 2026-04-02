@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "common/export.h"
+#include "common/profiler_export.h"
 
 namespace quarisma::unwind
 {

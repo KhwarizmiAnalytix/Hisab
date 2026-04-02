@@ -17,7 +17,7 @@
 // removed LLVM_GSL_OWNER
 // added small_vector::at
 // added operator<< for std::ostream
-// added QUARISMA_API to export SmallVectorBase
+// added PROFILER_API to export SmallVectorBase
 
 #pragma once
 
@@ -39,8 +39,8 @@
 #include <utility>
 
 #include "common/align_of.h"
-#include "common/export.h"
-#include "common/macros.h"
+#include "common/profiler_export.h"
+#include "common/profiler_macros.h"
 
 namespace quarisma
 {
@@ -54,7 +54,7 @@ namespace quarisma
 /// 32 bit size would limit the vector to ~4GB. SmallVectors are used for
 /// buffering bitcode output - which can exceed 4GB.
 template <class Size_T>
-class QUARISMA_VISIBILITY SmallVectorBase
+class PROFILER_VISIBILITY SmallVectorBase
 {
 protected:
     void*  BeginX;
@@ -70,12 +70,12 @@ protected:
     /// This is a helper for \a grow() that's out of line to reduce code
     /// duplication.  This function will report a fatal error if it can't grow at
     /// least to \p MinSize.
-    QUARISMA_API void* malloc_for_grow(size_t MinSize, size_t TSize, size_t& NewCapacity);
+    PROFILER_API void* malloc_for_grow(size_t MinSize, size_t TSize, size_t& NewCapacity);
 
     /// This is an implementation of the grow() method which only works
     /// on POD-like data types and is out of line to reduce code duplication.
     /// This function will report a fatal error if it cannot increase capacity.
-    QUARISMA_API void grow_pod(const void* FirstEl, size_t MinSize, size_t TSize);
+    PROFILER_API void grow_pod(const void* FirstEl, size_t MinSize, size_t TSize);
 
 public:
     SmallVectorBase() = delete;
@@ -179,7 +179,7 @@ protected:
     bool isSafeToReferenceAfterResize(const void* Elt, size_t NewSize)
     {
         // Past the end.
-        if QUARISMA_LIKELY (!isReferenceToStorage(Elt))
+        if PROFILER_LIKELY (!isReferenceToStorage(Elt))
             return true;
 
         // Return false if Elt will be destroyed by shrinking.
@@ -244,14 +244,14 @@ protected:
     static const T* reserveForParamAndGetAddressImpl(U* This, const T& Elt, size_t N)
     {
         size_t NewSize = This->size() + N;
-        if QUARISMA_LIKELY (NewSize <= This->capacity())
+        if PROFILER_LIKELY (NewSize <= This->capacity())
             return &Elt;
 
         bool    ReferencesStorage = false;
         int64_t Index             = -1;
         if constexpr (!U::TakesParamByValue)
         {
-            if QUARISMA_UNLIKELY (This->isReferenceToStorage(&Elt))
+            if PROFILER_UNLIKELY (This->isReferenceToStorage(&Elt))
             {
                 ReferencesStorage = true;
                 Index             = &Elt - This->begin();
@@ -359,7 +359,7 @@ public:
 /// This catches the important case of std::pair<POD, POD>, which is not
 /// trivially assignable.
 ///
-/// XXX: if build fails here fall back to QUARISMA_IS_TRIVIALLY_COPYABLE and make a
+/// XXX: if build fails here fall back to PROFILER_IS_TRIVIALLY_COPYABLE and make a
 /// note
 template <
     typename T,
@@ -1011,7 +1011,7 @@ public:
     template <typename... ArgTypes>
     reference emplace_back(ArgTypes&&... Args)
     {
-        if QUARISMA_UNLIKELY (this->size() >= this->capacity())
+        if PROFILER_UNLIKELY (this->size() >= this->capacity())
             return this->growAndEmplaceBack(std::forward<ArgTypes>(Args)...);
 
         ::new ((void*)this->end()) T(std::forward<ArgTypes>(Args)...);

@@ -32,8 +32,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef QUARISMA_PROFILER_UTILS_TIMESPAN_H_
-#define QUARISMA_PROFILER_UTILS_TIMESPAN_H_
+#ifndef PROFILER_PROFILER_UTILS_TIMESPAN_H_
+#define PROFILER_PROFILER_UTILS_TIMESPAN_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -239,4 +239,4 @@ inline timespan milli_span(double start_ms, double end_ms)
 }  // namespace profiler_impl
 }  // namespace quarisma
 
-#endif  // QUARISMA_PROFILER_UTILS_TIMESPAN_H_
+#endif  // PROFILER_PROFILER_UTILS_TIMESPAN_H_

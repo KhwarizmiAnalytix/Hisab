@@ -1,4 +1,4 @@
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE_PROFILER
 /*
  * Quarisma: High-Performance Quantitative Library
  *
@@ -473,7 +473,7 @@ QUARISMATEST(Profiler, session_methods_and_data_access)
 
         EXPECT_TRUE(session->stop());
 
-        QUARISMA_UNUSED const auto& xspace = session->collected_xspace();
+        PROFILER_UNUSED const auto& xspace = session->collected_xspace();
         EXPECT_TRUE(true);
     }
 
@@ -647,4 +647,4 @@ QUARISMATEST(Profiler, report_customization_data_inclusion)
     std::string output2 = report->generate_console_report();
     EXPECT_FALSE(output2.empty());
 }
-#endif  // QUARISMA_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE_PROFILER

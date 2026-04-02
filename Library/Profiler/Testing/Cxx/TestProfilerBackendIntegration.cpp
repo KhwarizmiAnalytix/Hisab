@@ -27,7 +27,7 @@ void busy_wait_for(std::chrono::microseconds duration)
     const auto start = std::chrono::high_resolution_clock::now();
     while (std::chrono::high_resolution_clock::now() - start < duration)
     {
-        QUARISMA_UNUSED volatile int spin = 0;
+        PROFILER_UNUSED volatile int spin = 0;
         ++spin;
     }
 }
@@ -39,7 +39,7 @@ std::unordered_set<quarisma::RecordScope> user_scopes()
 
 }  // namespace
 
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 
 namespace
 {
@@ -282,9 +282,9 @@ const quarisma::autograd::profiler_impl::KinetoEvent* find_event_by_name(
 //    EXPECT_NE(result, nullptr);
 //}
 
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 
-#if QUARISMA_HAS_ITT
+#if PROFILER_HAS_ITT
 
 namespace
 {
@@ -293,7 +293,7 @@ class recording_itt_stub : public quarisma::profiler_impl::impl::ProfilerStubs
 {
 public:
     void record(
-        quarisma::device_option::int_t*,
+        int16_t*,
         quarisma::profiler_impl::impl::ProfilerVoidEventStub*,
         int64_t*) const override
     {
@@ -398,7 +398,7 @@ QUARISMATEST(ITTIntegration, records_basic_scope_sequence)
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
-    QUARISMA_UNUSED auto result = quarisma::autograd::profiler_impl::disableProfiler();
+    PROFILER_UNUSED auto result = quarisma::autograd::profiler_impl::disableProfiler();
 
     ASSERT_FALSE(stub.pushes_.empty());
     EXPECT_EQ(stub.pushes_.front(), "itt_basic_scope");
@@ -431,7 +431,7 @@ QUARISMATEST(ITTIntegration, nested_scopes_close_in_lifo_order)
         }
     }
 
-    QUARISMA_UNUSED auto result = quarisma::autograd::profiler_impl::disableProfiler();
+    PROFILER_UNUSED auto result = quarisma::autograd::profiler_impl::disableProfiler();
 
     ASSERT_GE(stub.closed_.size(), 2U);
     EXPECT_EQ(stub.closed_.front(), "itt_child_scope");
@@ -472,7 +472,7 @@ QUARISMATEST(ITTIntegration, nested_scopes_close_in_lifo_order)
 //
 //    worker.join();
 //
-//    QUARISMA_UNUSED auto result = quarisma::autograd::profiler_impl::disableProfiler();
+//    PROFILER_UNUSED auto result = quarisma::autograd::profiler_impl::disableProfiler();
 //
 //    bool saw_main_scope   = false;
 //    bool saw_worker_scope = false;
@@ -517,7 +517,7 @@ QUARISMATEST(ITTIntegration, handles_empty_and_null_range_names)
     quarisma::profiler_impl::impl::ittStubs()->rangePush(nullptr);
     quarisma::profiler_impl::impl::ittStubs()->rangePop();
 
-    QUARISMA_UNUSED auto result = quarisma::autograd::profiler_impl::disableProfiler();
+    PROFILER_UNUSED auto result = quarisma::autograd::profiler_impl::disableProfiler();
 
     bool saw_empty_name = false;
     for (const auto& name : stub.pushes_)
@@ -533,7 +533,7 @@ QUARISMATEST(ITTIntegration, handles_empty_and_null_range_names)
     EXPECT_EQ(stub.null_pushes_, 1U);
 }
 
-#endif  // QUARISMA_HAS_ITT
+#endif  // PROFILER_HAS_ITT
 
 namespace
 {

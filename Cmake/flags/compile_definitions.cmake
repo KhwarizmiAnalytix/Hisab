@@ -61,6 +61,12 @@ compile_definition(QUARISMA_ENABLE_GTEST)
 
 # Kineto support
 compile_definition(QUARISMA_ENABLE_KINETO)
+# Profiler bespoke code uses PROFILER_HAS_KINETO (mirrors Bazel); map from CMake enable flag.
+if(QUARISMA_ENABLE_KINETO)
+  list(APPEND QUARISMA_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=1)
+else()
+  list(APPEND QUARISMA_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=0)
+endif()
 
 # Intel ITT API support
 compile_definition(QUARISMA_ENABLE_ITT)

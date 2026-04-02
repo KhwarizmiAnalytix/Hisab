@@ -106,7 +106,7 @@ std::unique_ptr<record_function_scope> record_function(
     const std::string& name);
 
 // Macro for easy usage
-#define QUARISMA_RECORD_FUNCTION(name) \
+#define PROFILER_RECORD_FUNCTION(name) \
     auto _rf = quarisma::record_function(name)
 ```
 

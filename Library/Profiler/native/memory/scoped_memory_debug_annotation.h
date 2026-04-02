@@ -38,7 +38,7 @@ limitations under the License.
 #include <string>
 #include <utility>
 
-#include "common/export.h"
+#include "common/profiler_export.h"
 
 namespace quarisma
 {

@@ -8,11 +8,11 @@
 #include <unordered_map>
 #include <vector>
 
-#include "common/export.h"
-#include "common/macros.h"
+#include "common/profiler_export.h"
+#include "common/profiler_macros.h"
 #include "bespoke/common/record_function.h"
 #include "common/TensorImpl.h"
-#include "util/hash.h"
+//#include "util/hash.h"
 
 // #include <quarisma/csrc/jit/frontend/source_range.h>
 // These are Quarisma-specific headers not available in Quarisma
@@ -21,7 +21,7 @@
 #define SOFT_ASSERT(cond, ...)                                                   \
     [&]() -> bool                                                                \
     {                                                                            \
-        if QUARISMA_UNLIKELY (!(cond))                                           \
+        if PROFILER_UNLIKELY (!(cond))                                           \
         {                                                                        \
             quarisma::profiler_impl::impl::logSoftAssert(                             \
                 __func__, __FILE__, static_cast<uint32_t>(__LINE__), #cond, ""); \
@@ -177,26 +177,26 @@ private:
     std::shared_ptr<T> state_;
 };
 
-struct HashCombine
-{
-    template <typename T0, typename T1>
-    size_t operator()(const std::pair<T0, T1>& i)
-    {
-        return quarisma::get_hash((*this)(i.first), (*this)(i.second));
-    }
+// struct HashCombine
+// {
+//     template <typename T0, typename T1>
+//     size_t operator()(const std::pair<T0, T1>& i)
+//     {
+//         return quarisma::get_hash((*this)(i.first), (*this)(i.second));
+//     }
 
-    template <typename... Args>
-    size_t operator()(const std::tuple<Args...>& i)
-    {
-        return quarisma::get_hash(i);
-    }
+//     template <typename... Args>
+//     size_t operator()(const std::tuple<Args...>& i)
+//     {
+//         return quarisma::get_hash(i);
+//     }
 
-    template <typename T>
-    size_t operator()(const T& i)
-    {
-        return quarisma::get_hash(i);
-    }
-};
+//     template <typename T>
+//     size_t operator()(const T& i)
+//     {
+//         return quarisma::get_hash(i);
+//     }
+// };
 
 #ifdef USE_DISTRIBUTED
 constexpr auto kCommsName        = "Collective name";

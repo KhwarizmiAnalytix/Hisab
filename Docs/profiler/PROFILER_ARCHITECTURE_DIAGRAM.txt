@@ -7,7 +7,7 @@ CURRENT STATE (Incomplete)
 
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                          USER CODE                                      │
-│  QUARISMA_PROFILE_SCOPE("op")  |  RecordFunction(scope)                  │
+│  PROFILER_PROFILE_SCOPE("op")  |  RecordFunction(scope)                  │
 └──────────────────┬──────────────────────────────────────────────────────┘
                    │
         ┌──────────┴──────────┐
@@ -56,7 +56,7 @@ DESIRED STATE (After Implementation)
 
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                          USER CODE                                      │
-│  QUARISMA_RECORD_FUNCTION("op")  |  record_function("op")                │
+│  PROFILER_RECORD_FUNCTION("op")  |  record_function("op")                │
 └──────────────────┬──────────────────────────────────────────────────────┘
                    │
                    ▼
@@ -65,7 +65,7 @@ DESIRED STATE (After Implementation)
 │                                                                          │
 │ ✅ record_function() function                                           │
 │ ✅ record_function_scope RAII class                                     │
-│ ✅ QUARISMA_RECORD_FUNCTION macro                                         │
+│ ✅ PROFILER_RECORD_FUNCTION macro                                         │
 └──────────────────┬──────────────────────────────────────────────────────┘
                    │
                    ▼

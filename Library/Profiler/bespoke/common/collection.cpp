@@ -11,7 +11,7 @@
 #include <type_traits>
 #include <utility>
 
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 #include <libkineto.h>
 #endif
 
@@ -19,9 +19,9 @@
 #include "bespoke/common/ivalue.h"
 #include "bespoke/common/record_function.h"
 #include "bespoke/kineto/kineto_shim.h"
-#include "util/flat_hash.h"
+#include "common/flat_hash.h"
 #include "common/irange.h"
-#include "util/overloaded.h"
+#include "common/overloaded.h"
 
 namespace quarisma::profiler_impl::impl
 {
@@ -34,11 +34,11 @@ RawTensorMetadataBase::RawTensorMetadataBase(const quarisma::Tensor& t)
       layout_{t.layout()},
       size_dim_{static_cast<uint32_t>(t.sizes().size())}
 {
-    // QUARISMA_CHECK_DEBUG(
+    // PROFILER_CHECK_DEBUG(
         // t.sizes().size() <= std::numeric_limits<uint32_t>::max(),
         // "Cannot profile Tensors of size > uint32 max. Got dim: ",
         // t.sizes().size());
-    // QUARISMA_CHECK_DEBUG(
+    // PROFILER_CHECK_DEBUG(
         // t.sizes().size() == t.strides().size(),
         // "Tensor has mismatching sizes and strides. Sizes: ",
         // t.sizes().size(),
@@ -59,7 +59,7 @@ TensorMetadata::TensorMetadata(
     // NOLINTNEXTLINE(cppcoreguidelines-slicing)
     : RawTensorMetadataBase(r),
       weak_self_{r.weak_self_.value_or(WeakTensor(quarisma::Tensor()))},
-      device_{r.device_type_, r.device_index_},
+      device_{r.device_index_, r.device_type_},
       sizes_{std::move(sizes)},
       strides_{std::move(strides)}
 {
@@ -188,15 +188,15 @@ bool InputOutputEncoder::isSupportedScalarList(const quarisma::IValue& list_cand
         return false;
     }
     auto list_ref = list_candidate.toListRef();
-    if QUARISMA_UNLIKELY(list_ref.empty())
+    if PROFILER_UNLIKELY(list_ref.empty())
     {
         return true;
     }
-    if QUARISMA_UNLIKELY(!list_ref[0].isScalar())
+    if PROFILER_UNLIKELY(!list_ref[0].isScalar())
     {
         return false;
     }
-    if QUARISMA_UNLIKELY(list_ref.size() > SCALAR_LIST_LENGTH_LIMIT)
+    if PROFILER_UNLIKELY(list_ref.size() > SCALAR_LIST_LENGTH_LIMIT)
     {
         return false;
     }
@@ -298,7 +298,7 @@ auto InputOutputEncoder::getIValueGenerator(const IOType& io_type)
                         found_undefined = true;
                         continue;
                     }
-                    // QUARISMA_CHECK(*tag_it == Tag::Tensor, (int)(*tag_it));
+                    // PROFILER_CHECK(*tag_it == Tag::Tensor, (int)(*tag_it));
                     arg.emplace_back(decode_tensor());
                 }
                 if (found_undefined)
@@ -389,7 +389,7 @@ template <typename T, size_t ChunkSize>
 uint64_t ThreadLocalSubqueue::TorchOpStorage::EventBlock<T, ChunkSize>::correlation_id(
     const T* ptr) const
 {
-    // QUARISMA_CHECK_DEBUG(ptr >= this->data() && ptr < this->data() + ChunkSize);
+    // PROFILER_CHECK_DEBUG(ptr >= this->data() && ptr < this->data() + ChunkSize);
     return id_start_ + (ptr - this->data());
 }
 
@@ -429,7 +429,7 @@ std::unique_ptr<KinetoObserverContext> ThreadLocalSubqueue::begin_op(
         }
     }
 
-#if !defined BUILD_LITE_INTERPRETER && !defined QUARISMA_MOBILE
+#if !defined BUILD_LITE_INTERPRETER && !defined PROFILER_MOBILE
     // backward nodes source range corresponds to the forward node
     // TODO: consider using C++ stack trace
 #if 0
@@ -915,12 +915,12 @@ namespace
 {
 void mark_finished(const std::shared_ptr<Result>& r)
 {
-    //QUARISMA_CHECK(!r->finished_, r->name());
+    //PROFILER_CHECK(!r->finished_, r->name());
     r->finished_ = true;
-    //QUARISMA_CHECK(r->endTimeNS() >= r->start_time_ns_, r->name());
+    //PROFILER_CHECK(r->endTimeNS() >= r->start_time_ns_, r->name());
 }
 
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 // Assumption: Total threads number will not exceed 2^16-1, and total ops will
 // not exceed 2^48 -1.
 uint64_t getForwardThreadKey(uint64_t tid, uint64_t seqNr)
@@ -982,16 +982,16 @@ void generateForwardBackwardLink(
         }
     }
 }
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 
 void generateForwardBackwardLinks(
     const std::unique_ptr<quarisma::profiler_impl::impl::kineto::trace_t>& cpu_trace,
     const std::vector<std::shared_ptr<Result>>&                       results)
 {
-#ifndef QUARISMA_HAS_KINETO
+#ifndef PROFILER_HAS_KINETO
 }
-#else   // QUARISMA_HAS_KINETO
-    // QUARISMA_CHECK(cpu_trace->activities.size() == results.size());
+#else   // PROFILER_HAS_KINETO
+    // PROFILER_CHECK(cpu_trace->activities.size() == results.size());
 
     // startThreadId_seqNum to pointer of activity.
     // Low-16bits of startThreadId and low-48bits seqNum are concatenated into
@@ -1040,7 +1040,7 @@ void generateForwardBackwardLinks(
         generateForwardBackwardLink(*profiler_result, fwd_bwd_link_id, *activity, tidSeq2activity);
     }
 }
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 
 constexpr const char* indexKey = "Ev Idx";
 
@@ -1101,7 +1101,7 @@ void passEventsToKineto(
     cpu_trace.transferCpuTrace(static_cast<int64_t>(end_time_ns));
 }
 
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 // There are two mechanisms that we use to connect Profiler and Kineto events.
 // The first is the correlation ID. The profiler pushes a unique integer at the
 // start of an op and pops it at the end. Kineto then associates the events
@@ -1139,7 +1139,7 @@ public:
         : results_{results}, config_{config}
     {
         const auto* trace_activities_ptr = trace->get()->activities();
-        // QUARISMA_CHECK(trace_activities_ptr != nullptr);
+        // PROFILER_CHECK(trace_activities_ptr != nullptr);
         trace_activities_ = *trace_activities_ptr;
         reassociate();
         extractEventsFromTrace();
@@ -1193,17 +1193,17 @@ private:
         // relationship between `libkineto::ITraceActivity` and `Result`.
         for (const auto* activity : trace_activities_)
         {
-            // QUARISMA_CHECK(activity != nullptr);
+            // PROFILER_CHECK(activity != nullptr);
             auto e = lookup(activity);
             if (e != nullptr)
             {
-                // QUARISMA_CHECK(e->kineto_activity_ == nullptr);
+                // PROFILER_CHECK(e->kineto_activity_ == nullptr);
                 e->kineto_activity_ = static_cast<const activity_t*>(activity);
             }
         }
         /*if (results_.get().size() != kineto_events_.size())
         {
-            QUARISMA_LOG_WARNING(
+            PROFILER_LOG_WARNING(
                 fmt::format(
                     "Failed to recover relationship between all profiler and kineto events: "
                     "{} vs. {}  reassociated.",
@@ -1214,14 +1214,14 @@ private:
 
     static bool isHiddenEvent(const itrace_t* activity)
     {
-        // QUARISMA_CHECK(activity != nullptr);
+        // PROFILER_CHECK(activity != nullptr);
         // Kineto uses "hidden" metadata to mark events that should be hidden.
         return activity->getMetadataValue("hidden") == "1";
     }
 
     static std::shared_ptr<Result> resultFromActivity(const itrace_t* activity)
     {
-        // QUARISMA_CHECK(activity != nullptr);
+        // PROFILER_CHECK(activity != nullptr);
 
         // Kineto is inconsistent with types, so we have to cast to int32.
         quarisma::profiler_impl::impl::kineto::DeviceAndResource const device_and_resource{
@@ -1260,13 +1260,14 @@ private:
                              type == libkineto::ActivityType::USER_ANNOTATION ||
                              type == libkineto::ActivityType::PYTHON_FUNCTION))
         {
-            QUARISMA_LOG_WARNING(
+            /* PROFILER_LOG_WARNING(
                 "Detected an event which was likely passed to kineto by the Quarisma "
                 "profiler, but is not present in the set of known events: ",
                 activity->name(),
                 " This most likely means that Kineto has not "
                 "maintained address stability for this event. Please report this to "
                 "the Quarisma team.");
+            */
             return nullptr;
         }
 
@@ -1301,7 +1302,7 @@ private:
                     e->visit(quarisma::overloaded(
                         [&](ExtraFields<EventType::Kineto>& i)
                         { i.linked_activity_ = toResult(linked_activity); },
-                        [](auto&) { /* QUARISMA_CHECK(false); */ }));
+                        [](auto&) { /* PROFILER_CHECK(false); */ }));
                 }
             }
         }
@@ -1312,7 +1313,7 @@ private:
         r->visit(quarisma::overloaded(
             [&]([[maybe_unused]] ExtraFields<EventType::Kineto>& i)
             {
-                // QUARISMA_CHECK(r->start_tid_ == noTID);
+                // PROFILER_CHECK(r->start_tid_ == noTID);
                 r->start_tid_ =
                     parent ? parent->start_tid_ : quarisma::RecordFunction::currentThreadId();
             },
@@ -1330,24 +1331,25 @@ private:
         quarisma::flat_hash_map<uint32_t, std::shared_ptr<Result>> flow_map;
         for (auto& e : results_.get())
         {
-            // QUARISMA_CHECK(e != nullptr);
+            // PROFILER_CHECK(e != nullptr);
             e->visit(quarisma::overloaded(
                 [&](const ExtraFields<EventType::Kineto>& i)
                 {
                     if (i.flow.type == libkineto::kLinkAsyncCpuGpu && i.flow.start)
                     {
                         auto inserted = flow_map.insert({i.flow.id, e});
-#ifdef QUARISMA_USE_ROCM
+#ifdef PROFILER_USE_ROCM
                         if (inserted.second)
                         {
-                            QUARISMA_LOG_WARNING(
+                            /* PROFILER_LOG_WARNING(
                                 "ROCTracer produced duplicate flow start: ", i.flow.id);
+                            */
                         }
-#else   // QUARISMA_USE_ROCM
-                        // QUARISMA_CHECK(inserted.second);
-#endif  // QUARISMA_USE_ROCM
+#else   // PROFILER_USE_ROCM
+                        // PROFILER_CHECK(inserted.second);
+#endif  // PROFILER_USE_ROCM
                     }
-                    // QUARISMA_CHECK(e->parent_.expired());
+                    // PROFILER_CHECK(e->parent_.expired());
                     e->parent_ = i.linked_activity_;
                 },
                 [](const auto&) {}));
@@ -1422,7 +1424,7 @@ trace_ptr_t addKinetoEvents(
     }
 
     auto trace = std::make_unique<ActivityTraceWrapper>(stopTrace());
-    //QUARISMA_CHECK(trace || !kKinetoAvailable);
+    //PROFILER_CHECK(trace || !kKinetoAvailable);
     // TransferEvents constructor has side effects (transfers Kineto events to results)
     // cppcheck-suppress unreadVariable
     TransferEvents const transfer{results, trace, config};
@@ -1470,12 +1472,12 @@ void build_tree(std::vector<std::shared_ptr<Result>>& sorted_events)
             return;
         }
 
-        // QUARISMA_CHECK(event->parent_.expired());
+        // PROFILER_CHECK(event->parent_.expired());
         for (const auto& child : event->children_)
         {
-            // QUARISMA_CHECK(child->finished_);
+            // PROFILER_CHECK(child->finished_);
         }
-        // QUARISMA_CHECK(!event->finished_);
+        // PROFILER_CHECK(!event->finished_);
 
         auto parent_it = stacks.find(event->start_tid_);
         if (parent_it == stacks.end())
@@ -1525,9 +1527,9 @@ void build_tree(std::vector<std::shared_ptr<Result>>& sorted_events)
 
         while (frame.get() != event.get())
         {
-            // QUARISMA_CHECK(frame != nullptr);
+            // PROFILER_CHECK(frame != nullptr);
             mark_finished(frame);
-            // QUARISMA_CHECK(!frame->parent_.expired());
+            // PROFILER_CHECK(!frame->parent_.expired());
             frame = frame->parent_.lock();
         }
 

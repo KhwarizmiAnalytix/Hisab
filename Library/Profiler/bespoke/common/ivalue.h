@@ -19,7 +19,7 @@
 #include <utility>
 
 #include "bespoke/common/intrusive_ptr.h"
-#include "common/macros.h"
+#include "common/profiler_macros.h"
 
 // profiler_xxx note: this copy intentionally disables Tensor functionality.
 #define PROFILER_XXX_DISABLE_TENSOR 1
@@ -193,7 +193,7 @@ struct Capsule
 // to mark whether that type is a subtype of quarisma::intrusive_ptr_target and needs
 // retain/release calls.
 
-#define QUARISMA_FORALL_TAGS(_) \
+#define PROFILER_FORALL_TAGS(_) \
     _(None)                     \
     _(Tensor)                   \
     _(Storage)                  \
@@ -278,7 +278,7 @@ struct PROFILER_VISIBILITY IValue final
     /// @private [doxygen private]
     ~IValue() { destroy(); }
 
-    QUARISMA_FORCE_INLINE IValue& operator=(IValue&& rhs) & noexcept
+    /*PROFILER_FORCE_INLINE*/ IValue& operator=(IValue&& rhs) & noexcept
     {
         if (&rhs == this)
         {
@@ -513,7 +513,7 @@ public:
     const at::Tensor& toTensor() const&;
     at::TensorImpl*   unsafeToTensorImpl() const
     {
-        // QUARISMA_CHECK(isTensor());
+        // PROFILER_CHECK(isTensor());
         return payload.as_tensor.unsafeGetTensorImpl();
     }
 #else
@@ -523,7 +523,7 @@ public:
 private:
     [[noreturn]] void reportToTensorTypeError() const
     {
-        // QUARISMA_CHECK(false, "Tensor-specific APIs are disabled in profiler_xxx.");
+        // PROFILER_CHECK(false, "Tensor-specific APIs are disabled in profiler_xxx.");
     }
 
 public:
@@ -618,7 +618,7 @@ public:
         }
         else
         {
-            // QUARISMA_CHECK(0, "expected double");
+            // PROFILER_CHECK(0, "expected double");
         }
     }
 
@@ -735,7 +735,7 @@ public:
         }
         else
         {
-            // QUARISMA_CHECK(0, "expected int");
+            // PROFILER_CHECK(0, "expected int");
         }
     }
 
@@ -762,7 +762,7 @@ public:
         }
         else
         {
-            // QUARISMA_CHECK(0, "expected unsigned int");
+            // PROFILER_CHECK(0, "expected unsigned int");
         }
     }
 
@@ -791,7 +791,7 @@ public:
         }
         else
         {
-            // QUARISMA_CHECK(0, "expected bool");
+            // PROFILER_CHECK(0, "expected bool");
         }
     }
 
@@ -928,7 +928,7 @@ public:
     template <class Key, class Value>
     /// \cond
     /// DOXYGEN_CANNOT_HANDLE_CONSTRUCTORS_WITH_MACROS_SO_EXCLUDE_THIS_LINE_FROM_DOXYGEN
-    QUARISMA_DEPRECATED_MESSAGE(
+    PROFILER_DEPRECATED_MESSAGE(
         "IValues based on std::unordered_map<K, V> are slow and deprecated. Please use "
         "quarisma::Dict<K, V> instead.")
         /// \endcond
@@ -1015,7 +1015,7 @@ public:
         }
         else
         {
-            // QUARISMA_CHECK_DEBUG(s.isIntegral(false), "Unknown type in Scalar");
+            // PROFILER_CHECK_DEBUG(s.isIntegral(false), "Unknown type in Scalar");
             if (s.isUnsigned())
             {
                 const auto val    = s.toUInt64();
@@ -1054,7 +1054,7 @@ public:
             return toSymBool();
         else if (isUnsigned())
             return toUInt();
-        // QUARISMA_CHECK(false, "IValue is not a Scalar");
+        // PROFILER_CHECK(false, "IValue is not a Scalar");
     }
 
     // device_option
@@ -1125,7 +1125,7 @@ public:
 #define DEFINE_CASE(x) \
     case Tag::x:       \
         return #x;
-            QUARISMA_FORALL_TAGS(DEFINE_CASE)
+            PROFILER_FORALL_TAGS(DEFINE_CASE)
 #undef DEFINE_CASE
         }
         return "InvalidTag(" + std::to_string(static_cast<int>(tag)) + ")";
@@ -1192,7 +1192,7 @@ public:
     /// @private [doxygen private]
     const void* internalToPointer() const
     {
-        // QUARISMA_CHECK(isPtrType(), "Can only call internalToPointer() for pointer types");
+        // PROFILER_CHECK(isPtrType(), "Can only call internalToPointer() for pointer types");
 #if !PROFILER_XXX_DISABLE_TENSOR
         if (isTensor())
         {
@@ -1315,12 +1315,12 @@ private:
     enum class Tag : uint32_t
     {
 #define DEFINE_TAG(x) x,
-        QUARISMA_FORALL_TAGS(DEFINE_TAG)
+        PROFILER_FORALL_TAGS(DEFINE_TAG)
 #undef DEFINE_TAG
     };
 
 #define COUNT_TAG(x) 1 +
-    static constexpr auto kNumTags = QUARISMA_FORALL_TAGS(COUNT_TAG) 0;
+    static constexpr auto kNumTags = PROFILER_FORALL_TAGS(COUNT_TAG) 0;
 #undef COUNT_TAG
 
     template <class T, class NullType = quarisma::detail::intrusive_target_default_null_type<T>>
@@ -1353,7 +1353,7 @@ private:
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
-    QUARISMA_FORCE_INLINE void moveFrom(IValue&& rhs) noexcept
+    /*PROFILER_FORCE_INLINE*/ void moveFrom(IValue&& rhs) noexcept
     {
 #if !PROFILER_XXX_DISABLE_TENSOR
         if (rhs.isTensor())
@@ -1473,11 +1473,11 @@ public:
         // could find to accomplish that elimination.
         static constexpr uint32_t kTruthTableBitVector =
 #define TRUTH_TABLE_ENTRY(tag) (uint32_t(isIntrusivePtrConstexpr(Tag::tag)) << uint32_t(Tag::tag)) |
-            QUARISMA_FORALL_TAGS(TRUTH_TABLE_ENTRY)
+            PROFILER_FORALL_TAGS(TRUTH_TABLE_ENTRY)
 #undef TRUTH_TABLE_ENTRY
                 0;
 
-        // QUARISMA_CHECK_DEBUG(
+        // PROFILER_CHECK_DEBUG(
             // static_cast<uint32_t>(tag) < kNumTags, "unexpected tag ", static_cast<int>(tag));
         return kTruthTableBitVector & (1 << (uint32_t(tag) % 32));
     }
@@ -1750,13 +1750,13 @@ struct WeakOrStrongCompilationUnit
 
     std::shared_ptr<quarisma::jit::CompilationUnit> getStrongRefOrThrow() const
     {
-        // QUARISMA_CHECK(strong_ptr_.has_value());
+        // PROFILER_CHECK(strong_ptr_.has_value());
         return *strong_ptr_;
     }
 
     std::weak_ptr<quarisma::jit::CompilationUnit> getWeakRefOrThrow() const
     {
-        // QUARISMA_CHECK(weak_ptr_.has_value());
+        // PROFILER_CHECK(weak_ptr_.has_value());
         return *weak_ptr_;
     }
 

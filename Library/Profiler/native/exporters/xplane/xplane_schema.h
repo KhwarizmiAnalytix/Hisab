@@ -39,8 +39,8 @@ limitations under the License.
 #include <string>
 #include <string_view>
 
-#include "common/macros.h"
-#include "logging/logger.h"
+#include "common/profiler_macros.h"
+//#include "logging/logger.h"
 #include "util/string_util.h"
 
 //#include "tsl/profiler/lib/context_types.h"
@@ -587,7 +587,7 @@ public:
 
     XFlow(uint64_t flow_id, FlowDirection direction, ContextType category = ContextType::kGeneric)
     {
-        // QUARISMA_CHECK_DEBUG(direction != kFlowUnspecified);
+        // PROFILER_CHECK_DEBUG(direction != kFlowUnspecified);
         encoded_.parts.direction = direction;
         encoded_.parts.flow_id   = flow_id;
         encoded_.parts.category  = static_cast<uint64_t>(category);
@@ -643,32 +643,32 @@ private:
     static_assert(sizeof(encoded_) == sizeof(uint64_t), "Must be 64 bits.");
 };
 // String constants for XProf TraceMes for DCN Messages.
-QUARISMA_CONST_INIT extern const std::string_view kMegaScaleDcnReceive;
-QUARISMA_CONST_INIT extern const std::string_view kMegaScaleDcnSend;
-QUARISMA_CONST_INIT extern const std::string_view kMegaScaleDcnSendFinished;
-QUARISMA_CONST_INIT extern const std::string_view kMegaScaleDcnMemAllocate;
-QUARISMA_CONST_INIT extern const std::string_view kMegaScaleDcnMemCopy;
-QUARISMA_CONST_INIT extern const std::string_view kMegaScaleTopologyDiscovery;
-QUARISMA_CONST_INIT extern const std::string_view kMegaScaleBarrier;
-QUARISMA_CONST_INIT extern const std::string_view kMegaScaleHostCommand;
-QUARISMA_CONST_INIT extern const std::string_view kMegaScaleD2HTransferStart;
-QUARISMA_CONST_INIT extern const std::string_view kMegaScaleD2HTransferFinished;
-QUARISMA_CONST_INIT extern const std::string_view kMegaScaleH2DTransferStart;
-QUARISMA_CONST_INIT extern const std::string_view kMegaScaleH2DTransferFinished;
-QUARISMA_CONST_INIT extern const std::string_view kMegaScaleReductionStart;
-QUARISMA_CONST_INIT extern const std::string_view kMegaScaleReductionFinished;
-QUARISMA_CONST_INIT extern const std::string_view kMegaScaleCompressionStart;
-QUARISMA_CONST_INIT extern const std::string_view kMegaScaleCompressionFinished;
-QUARISMA_CONST_INIT extern const std::string_view kMegaScaleDecompressionStart;
-QUARISMA_CONST_INIT extern const std::string_view kMegaScaleDecompressionFinished;
-QUARISMA_CONST_INIT extern const char             kXProfMetadataKey[];
-QUARISMA_CONST_INIT extern const char             kXProfMetadataFlow[];
-QUARISMA_CONST_INIT extern const char             kXProfMetadataTransfers[];
-QUARISMA_CONST_INIT extern const char             kXProfMetadataBufferSize[];
+PROFILER_CONST_INIT extern const std::string_view kMegaScaleDcnReceive;
+PROFILER_CONST_INIT extern const std::string_view kMegaScaleDcnSend;
+PROFILER_CONST_INIT extern const std::string_view kMegaScaleDcnSendFinished;
+PROFILER_CONST_INIT extern const std::string_view kMegaScaleDcnMemAllocate;
+PROFILER_CONST_INIT extern const std::string_view kMegaScaleDcnMemCopy;
+PROFILER_CONST_INIT extern const std::string_view kMegaScaleTopologyDiscovery;
+PROFILER_CONST_INIT extern const std::string_view kMegaScaleBarrier;
+PROFILER_CONST_INIT extern const std::string_view kMegaScaleHostCommand;
+PROFILER_CONST_INIT extern const std::string_view kMegaScaleD2HTransferStart;
+PROFILER_CONST_INIT extern const std::string_view kMegaScaleD2HTransferFinished;
+PROFILER_CONST_INIT extern const std::string_view kMegaScaleH2DTransferStart;
+PROFILER_CONST_INIT extern const std::string_view kMegaScaleH2DTransferFinished;
+PROFILER_CONST_INIT extern const std::string_view kMegaScaleReductionStart;
+PROFILER_CONST_INIT extern const std::string_view kMegaScaleReductionFinished;
+PROFILER_CONST_INIT extern const std::string_view kMegaScaleCompressionStart;
+PROFILER_CONST_INIT extern const std::string_view kMegaScaleCompressionFinished;
+PROFILER_CONST_INIT extern const std::string_view kMegaScaleDecompressionStart;
+PROFILER_CONST_INIT extern const std::string_view kMegaScaleDecompressionFinished;
+PROFILER_CONST_INIT extern const char             kXProfMetadataKey[];
+PROFILER_CONST_INIT extern const char             kXProfMetadataFlow[];
+PROFILER_CONST_INIT extern const char             kXProfMetadataTransfers[];
+PROFILER_CONST_INIT extern const char             kXProfMetadataBufferSize[];
 
 // String constants for threadpool_listener events
-QUARISMA_CONST_INIT extern const std::string_view kThreadpoolListenerRecord;
-QUARISMA_CONST_INIT extern const std::string_view kThreadpoolListenerStartRegion;
-QUARISMA_CONST_INIT extern const std::string_view kThreadpoolListenerStopRegion;
-QUARISMA_CONST_INIT extern const std::string_view kThreadpoolListenerRegion;
+PROFILER_CONST_INIT extern const std::string_view kThreadpoolListenerRecord;
+PROFILER_CONST_INIT extern const std::string_view kThreadpoolListenerStartRegion;
+PROFILER_CONST_INIT extern const std::string_view kThreadpoolListenerStopRegion;
+PROFILER_CONST_INIT extern const std::string_view kThreadpoolListenerRegion;
 }  // namespace quarisma

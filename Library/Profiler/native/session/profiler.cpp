@@ -47,8 +47,8 @@
 #include <thread>
 #include <utility>
 
-#include "common/macros.h"
-#include "logging/logger.h"
+#include "common/profiler_macros.h"
+//#include "logging/logger.h"
 #include "native/analysis/statistical_analyzer.h"
 #include "native/core/profiler_collection.h"
 #include "native/core/profiler_factory.h"
@@ -475,7 +475,7 @@ bool profiler_session::start()
         profiler_status const backend_status = backend_profilers_->start();
         if (!backend_status.ok())
         {
-            QUARISMA_LOG_ERROR(
+            PROFILER_LOG_ERROR(
                 "Failed to start one or more profiler backends: {}", backend_status.message());
             backend_profilers_.reset();
             profiler_lock_.ReleaseIfActive();
@@ -582,7 +582,7 @@ bool profiler_session::stop()
 
         if (!backend_errors.empty())
         {
-            QUARISMA_LOG_ERROR("Profiler backend errors: {}", backend_errors);
+            PROFILER_LOG_ERROR("Profiler backend errors: {}", backend_errors);
         }
 
         backend_profilers_.reset();

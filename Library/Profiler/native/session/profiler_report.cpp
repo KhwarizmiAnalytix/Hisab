@@ -33,7 +33,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "logging/logger.h"
+//#include "logging/logger.h"
 #include "native/analysis/statistical_analyzer.h"
 #include "native/session/profiler.h"
 
@@ -364,35 +364,35 @@ bool profiler_report::export_xml_report(const std::string& filename) const
 
 void profiler_report::print_summary()
 {
-    QUARISMA_LOG_WARNING(
+    /* PROFILER_LOG_WARNING(
         "profiler_report::print_summary() requires a report instance. "
-        "Create a profiler_session report via profiler_session::generate_report().");
+        "Create a profiler_session report via profiler_session::generate_report()."); */
 }
 
 void profiler_report::print_detailed_report() const
 {
-    QUARISMA_LOG_INFO("{}", generate_console_report());
+    PROFILER_LOG_INFO("{}", generate_console_report());
 }
 
 void profiler_report::print_memory_report()
 {
-    QUARISMA_LOG_WARNING(
+    /* PROFILER_LOG_WARNING(
         "profiler_report::print_memory_report() is deprecated. "
-        "Use profiler_session::generate_report()->generate_memory_section().");
+        "Use profiler_session::generate_report()->generate_memory_section()."); */
 }
 
 void profiler_report::print_timing_report()
 {
-    QUARISMA_LOG_WARNING(
+    /* PROFILER_LOG_WARNING(
         "profiler_report::print_timing_report() is deprecated. "
-        "Use profiler_session::generate_report()->generate_timing_section().");
+        "Use profiler_session::generate_report()->generate_timing_section()."); */
 }
 
 void profiler_report::print_statistical_report()
 {
-    QUARISMA_LOG_WARNING(
+    /* PROFILER_LOG_WARNING(
         "profiler_report::print_statistical_report() is deprecated. "
-        "Use profiler_session::generate_report()->generate_statistical_section().");
+        "Use profiler_session::generate_report()->generate_statistical_section()."); */
 }
 
 std::string profiler_report::format_duration(double duration_ns) const

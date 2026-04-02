@@ -1,4 +1,4 @@
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE_PROFILER
 /*
  * Quarisma: High-Performance Quantitative Library
  *
@@ -475,4 +475,4 @@ QUARISMATEST(Profiler, chrome_trace_export_file_success_path)
     file.close();
     std::filesystem::remove(file_path, ec);
 }
-#endif  // QUARISMA_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE_PROFILER

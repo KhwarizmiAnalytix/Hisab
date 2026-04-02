@@ -33,7 +33,7 @@ limitations under the License.
 ==============================================================================*/
 #include <memory>  // for unique_ptr
 
-#include "logging/logger.h"
+//#include "logging/logger.h"
 #include "native/core/profiler_factory.h"    // for register_profiler_factory
 #include "native/core/profiler_interface.h"  // for profiler_interface
 #include "native/core/profiler_options.h"    // for profile_options
@@ -52,10 +52,10 @@ public:
 
     profiler_status start() override
     {
-        QUARISMA_LOG_WARNING(
+        /* PROFILER_LOG_WARNING(
             "Python tracing requested at level {}, but Python integration is not available in "
             "this build.",
-            requested_level_);
+            requested_level_); */
         return profiler_status::Ok();
     }
 

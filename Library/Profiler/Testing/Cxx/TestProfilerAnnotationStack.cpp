@@ -1,4 +1,4 @@
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE_PROFILER
 /*
  * Quarisma: High-Performance Quantitative Library
  *
@@ -349,4 +349,4 @@ QUARISMATEST(Profiler, annotation_stack_push_whitespace)
     const std::string& result = annotation_stack::get();
     EXPECT_TRUE(result.find("test name") != std::string::npos);
 }
-#endif  // QUARISMA_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE_PROFILER

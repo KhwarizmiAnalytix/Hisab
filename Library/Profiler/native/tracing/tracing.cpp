@@ -23,7 +23,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "logging/logger.h"
+////#include "logging/logger.h"
 
 namespace quarisma::tracing
 {

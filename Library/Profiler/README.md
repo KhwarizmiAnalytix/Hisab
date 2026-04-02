@@ -1,8 +1,8 @@
-# Enhanced Profiler for Quarisma Core Module
+# Quarisma Profiler (`Library/Profiler`)
 
 ## Overview
 
-The Enhanced Profiler is a comprehensive performance analysis system for the Quarisma Core module that provides:
+The profiler is a separate CMake/Bazel target from Core. Link `Quarisma::Profiler` (and `Quarisma::Core` when using a static build or Core APIs). It provides:
 
 - **High-precision timing measurements** with nanosecond accuracy
 - **Memory usage tracking** with allocation/deallocation monitoring
@@ -74,14 +74,14 @@ int main() {
 
     // Profile a function
     {
-        QUARISMA_PROFILE_FUNCTION();
+        PROFILER_PROFILE_FUNCTION();
 
         // Your code here
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
         // Profile nested operations
         {
-            QUARISMA_PROFILE_SCOPE("nested_operation");
+            PROFILER_PROFILE_SCOPE("nested_operation");
             std::vector<int> data(1000, 42);
             // More work...
         }
@@ -147,13 +147,13 @@ Convenient macros for automatic profiling:
 
 ```cpp
 // Profile current scope
-QUARISMA_PROFILE_SCOPE("scope_name");
+PROFILER_PROFILE_SCOPE("scope_name");
 
 // Profile current function
-QUARISMA_PROFILE_FUNCTION();
+PROFILER_PROFILE_FUNCTION();
 
 // Profile a block of code
-QUARISMA_PROFILE_BLOCK("block_name") {
+PROFILER_PROFILE_BLOCK("block_name") {
     // Your code here
 }
 ```
@@ -225,7 +225,7 @@ The profiler integrates seamlessly with existing Quarisma components:
 // Enhanced profiler builds on TraceMe infrastructure
 {
     TraceMe trace("traceme_scope");
-    QUARISMA_PROFILE_SCOPE("enhanced_scope");
+    PROFILER_PROFILE_SCOPE("enhanced_scope");
     // Both profilers will capture this scope
 }
 ```
@@ -245,7 +245,7 @@ session->start();
 std::vector<std::thread> threads;
 for (int i = 0; i < 4; ++i) {
     threads.emplace_back([&session, i]() {
-        QUARISMA_PROFILE_SCOPE("thread_" + std::to_string(i));
+        PROFILER_PROFILE_SCOPE("thread_" + std::to_string(i));
         // Thread-specific work
     });
 }
@@ -260,7 +260,7 @@ session->stop();
 
 ## Best Practices
 
-1. **Use RAII scopes** - Prefer `QUARISMA_PROFILE_SCOPE` over manual start/stop
+1. **Use RAII scopes** - Prefer `PROFILER_PROFILE_SCOPE` over manual start/stop
 2. **Minimize scope names** - Use short, descriptive names to reduce overhead
 3. **Configure appropriately** - Only enable features you need
 4. **Profile in release builds** - The profiler is designed for production use
@@ -287,8 +287,8 @@ session->set_debug_mode(true);
 
 ## Examples
 
-See the test files in `Library/Core/Testing/Cxx/TestEnhancedProfiler.cpp` for comprehensive usage examples.
+See the tests under `Library/Profiler/Testing/Cxx/` (for example `TestEnhancedProfiler.cpp`) for usage examples.
 
 ## License
 
-This profiler is part of the Quarisma Core module and follows the same licensing terms.
+This library follows the same licensing terms as the rest of the Quarisma repository.

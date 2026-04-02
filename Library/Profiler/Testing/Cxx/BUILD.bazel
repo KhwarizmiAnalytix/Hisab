@@ -44,24 +44,24 @@ cc_test(
     srcs = _PROFILER_TEST_FILES,
     copts = quarisma_copts(),
     defines = quarisma_defines() + [
-        "QUARISMA_GOOGLE_TEST",
+        "PROFILER_GOOGLE_TEST",
         "USE_GTEST",
         "_VARIADIC_MAX=10",
-        "QUARISMA_HAS_GTEST=1",
+        "PROFILER_HAS_GTEST=1",
     ] + select({
-        "//bazel:enable_cuda": ["QUARISMA_HAS_CUDA=1"],
-        "//conditions:default": ["QUARISMA_HAS_CUDA=0"],
+        "//bazel:enable_cuda": ["PROFILER_HAS_CUDA=1"],
+        "//conditions:default": ["PROFILER_HAS_CUDA=0"],
     }) + select({
-        "//bazel:enable_hip": ["QUARISMA_HAS_HIP=1"],
-        "//conditions:default": ["QUARISMA_HAS_HIP=0"],
+        "//bazel:enable_hip": ["PROFILER_HAS_HIP=1"],
+        "//conditions:default": ["PROFILER_HAS_HIP=0"],
     }) + select({
-        "//bazel:enable_kineto": ["QUARISMA_HAS_KINETO=1"],
-        "//conditions:default": ["QUARISMA_HAS_KINETO=0"],
+        "//bazel:enable_kineto": ["PROFILER_HAS_KINETO=1"],
+        "//conditions:default": ["PROFILER_HAS_KINETO=0"],
     }),
     includes = ["."],
     linkopts = quarisma_linkopts(),
     deps = [
-        "//Library/Core:Core",
+        "//Library/Profiler:Profiler",
         "//Library/Core/Testing:quarismaTest_header",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",

@@ -10,7 +10,7 @@
 #include <unordered_set>
 #include <variant>
 
-#include "common/export.h"
+#include "common/profiler_export.h"
 #include "common/array_ref.h"
 #include "common/small_vector.h"
 
@@ -180,7 +180,7 @@ public:
 
     RecordFunctionCallback& samplingProb(double sampling_prob)
     {
-        // QUARISMA_CHECK(
+        // PROFILER_CHECK(
             // sampling_prob >= 0.0 && sampling_prob <= 1.0, "Invalid sampling probability");
         sampling_prob_ = sampling_prob;
         return *this;
@@ -385,14 +385,14 @@ struct PROFILER_VISIBILITY RecordFunction
 
     quarisma::array_ref<const IValue> inputs() const
     {
-        // QUARISMA_CHECK_DEBUG(
+        // PROFILER_CHECK_DEBUG(
             // inputs_valid_, "Called inputs() outside RecordFunction start callback");
         return inputs_;
     }
 
     std::unordered_map<std::string, IValue> kwinputs() const
     {
-        // QUARISMA_CHECK_DEBUG(
+        // PROFILER_CHECK_DEBUG(
             // inputs_valid_, "Called kwinputs() outside RecordFunction start callback");
         return kwinputs_;
     }

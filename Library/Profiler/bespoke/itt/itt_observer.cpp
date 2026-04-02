@@ -12,10 +12,10 @@ struct ITTThreadLocalState : ProfilerStateBase
     explicit ITTThreadLocalState(const ProfilerConfig& config) : ProfilerStateBase(config)
     {
         // Only `report_input_shapes` makes sense in this context.
-        // QUARISMA_CHECK(!config.profile_memory);
-        // QUARISMA_CHECK(!config.with_stack);
-        // QUARISMA_CHECK(!config.with_flops);
-        // QUARISMA_CHECK(!config.with_modules);
+        // PROFILER_CHECK(!config.profile_memory);
+        // PROFILER_CHECK(!config.with_stack);
+        // PROFILER_CHECK(!config.with_flops);
+        // PROFILER_CHECK(!config.with_modules);
     }
     ~ITTThreadLocalState() override = default;
 
@@ -50,7 +50,7 @@ static std::unique_ptr<quarisma::ObserverContext> enterITT(const quarisma::Recor
 void pushITTCallbacks(
     const ProfilerConfig& config, const std::unordered_set<quarisma::RecordScope>& scopes)
 {
-    // QUARISMA_CHECK(
+    // PROFILER_CHECK(
         // quarisma::profiler_impl::impl::ittStubs()->enabled(),
         // "Can't use ITT profiler - Quarisma was compiled without ITT");
 
@@ -58,7 +58,7 @@ void pushITTCallbacks(
         quarisma::DebugInfoKind::PROFILER_STATE, std::make_shared<ITTThreadLocalState>(config));
 
     auto* state_ptr = ITTThreadLocalState::getTLS();
-    // QUARISMA_CHECK(state_ptr, "Expected profiler state set");
+    // PROFILER_CHECK(state_ptr, "Expected profiler state set");
 
     auto handle = quarisma::addThreadLocalCallback(
         quarisma::RecordFunctionCallback(

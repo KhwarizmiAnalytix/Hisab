@@ -32,8 +32,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef QUARISMA_PROFILER_UTILS_TRACE_UTILS_H_
-#define QUARISMA_PROFILER_UTILS_TRACE_UTILS_H_
+#ifndef PROFILER_PROFILER_UTILS_TRACE_UTILS_H_
+#define PROFILER_PROFILER_UTILS_TRACE_UTILS_H_
 
 #include <charconv>
 #include <cstdint>
@@ -157,4 +157,4 @@ static inline std::optional<uint32_t> parse_device_ordinal(std::string_view devi
 }  // namespace profiler_impl
 }  // namespace quarisma
 
-#endif  // QUARISMA_PROFILER_UTILS_TRACE_UTILS_H_
+#endif  // PROFILER_PROFILER_UTILS_TRACE_UTILS_H_

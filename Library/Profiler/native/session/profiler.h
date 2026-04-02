@@ -57,7 +57,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "common/macros.h"
+#include "common/profiler_macros.h"
 #include "native/core/profiler_interface.h"
 #include "native/core/profiler_lock.h"
 #include "native/core/profiler_options.h"
@@ -744,8 +744,8 @@ private:
  * Creates a profiler_scope object that will automatically profile
  * the current code block until the scope ends.
  */
-#define QUARISMA_PROFILE_SCOPE(name)                                      \
-    QUARISMA_UNUSED quarisma::profiler_scope QUARISMA_ANONYMOUS_VARIABLE( \
+#define PROFILER_PROFILE_SCOPE(name)                                      \
+    PROFILER_UNUSED quarisma::profiler_scope PROFILER_ANONYMOUS_VARIABLE( \
         _quarisma_profile_scope_)(name)
 
 /**
@@ -754,9 +754,9 @@ private:
  * Creates a profiler_scope object using the current function name
  * as the scope name. Profiles the entire function execution.
  */
-#define QUARISMA_PROFILE_FUNCTION() \
-    QUARISMA_UNUSED                 \
-    quarisma::profiler_scope QUARISMA_ANONYMOUS_VARIABLE(_quarisma_profile_scope_)(__FUNCTION__)
+#define PROFILER_PROFILE_FUNCTION() \
+    PROFILER_UNUSED                 \
+    quarisma::profiler_scope PROFILER_ANONYMOUS_VARIABLE(_quarisma_profile_scope_)(__FUNCTION__)
 
 /**
  * @brief Convenience macro for profiling a specific code block
@@ -765,8 +765,8 @@ private:
  * Creates a profiler_scope that profiles only the code within
  * the immediately following block or statement.
  */
-#define QUARISMA_PROFILE_BLOCK(name)                                          \
-    if (QUARISMA_UNUSED quarisma::profiler_scope QUARISMA_ANONYMOUS_VARIABLE( \
+#define PROFILER_PROFILE_BLOCK(name)                                          \
+    if (PROFILER_UNUSED quarisma::profiler_scope PROFILER_ANONYMOUS_VARIABLE( \
             _quarisma_profile_scope_)(name);                                  \
         true)
 

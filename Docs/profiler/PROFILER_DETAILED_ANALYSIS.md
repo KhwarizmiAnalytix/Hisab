@@ -9,7 +9,7 @@
 │ Layer 1: User API (MISSING)                         │
 │ - record_function("name")                           │
 │ - profiler_guard                                    │
-│ - QUARISMA_PROFILE_SCOPE (partially implemented)      │
+│ - PROFILER_PROFILE_SCOPE (partially implemented)      │
 └─────────────────────────────────────────────────────┘
                         ↓
 ┌─────────────────────────────────────────────────────┐
@@ -68,7 +68,7 @@ RecordFunctionTLS          // Thread-local state
 ### What It Doesn't Do
 - **Doesn't hook into RecordFunction** - No callback registration
 - **Doesn't capture RecordFunction events** - Separate event collection
-- **Doesn't provide record_function() API** - Only QUARISMA_PROFILE_SCOPE macro
+- **Doesn't provide record_function() API** - Only PROFILER_PROFILE_SCOPE macro
 - **Doesn't integrate with Kineto** - Kineto is separate system
 
 ### Key Classes
@@ -93,7 +93,7 @@ statistical_analyzer       // Statistical analysis
 ### Problem 2: No High-Level API
 - Users must manually create `RecordFunction` objects
 - No `record_function("name")` convenience function
-- `QUARISMA_PROFILE_SCOPE` macro exists but doesn't use `RecordFunction`
+- `PROFILER_PROFILE_SCOPE` macro exists but doesn't use `RecordFunction`
 
 ### Problem 3: No Callback Integration
 - `profiler_session` doesn't register callbacks with `RecordFunction`

@@ -24,7 +24,7 @@
 #include <cstdint>
 #include <string_view>
 
-#include "common/export.h"
+#include "common/profiler_export.h"
 
 namespace quarisma::tracing
 {

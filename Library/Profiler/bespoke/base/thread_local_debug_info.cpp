@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include "common/export.h"
+#include "common/profiler_export.h"
 
 namespace quarisma
 {
@@ -50,7 +50,7 @@ void thread_local_debug_info::_push(DebugInfoKind kind, std::shared_ptr<DebugInf
 /* static */
 std::shared_ptr<DebugInfoBase> thread_local_debug_info::_pop(DebugInfoKind /*kind*/)
 {
-    //QUARISMA_CHECK(//NOLINT
+    //PROFILER_CHECK(//NOLINT
     //    debug_info!=nullptr && debug_info->kind_ == kind, "Expected debug info of type ", (size_t)kind);//NOLINT
     auto res   = debug_info;
     debug_info = debug_info->parent_info_;
@@ -60,7 +60,7 @@ std::shared_ptr<DebugInfoBase> thread_local_debug_info::_pop(DebugInfoKind /*kin
 /* static */
 std::shared_ptr<DebugInfoBase> thread_local_debug_info::_peek(DebugInfoKind /*kind*/)
 {
-    //QUARISMA_CHECK(
+    //PROFILER_CHECK(
     //    debug_info!=nullptr && debug_info->kind_ == kind, "Expected debug info of type ", (size_t)kind);
     return debug_info->info_;
 }

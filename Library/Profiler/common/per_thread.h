@@ -37,8 +37,8 @@ limitations under the License.
 #include <mutex>
 #include <vector>
 
-#include "common/macros.h"
-#include "util/flat_hash.h"
+#include "common/profiler_macros.h"
+#include "common/flat_hash.h"
 
 //#include "absl/synchronization/mutex.h"
 //#include "absl/base/thread_annotations.h"
@@ -158,8 +158,8 @@ private:
         void operator=(const Registry&) = delete;
 
         std::mutex                                                 mutex_;
-        quarisma::flat_hash_map<std::shared_ptr<T>, bool> threads_ QUARISMA_GUARDED_BY(mutex_);
-        bool recording_ QUARISMA_GUARDED_BY(mutex_) = false;
+        quarisma::flat_hash_map<std::shared_ptr<T>, bool> threads_ PROFILER_GUARDED_BY(mutex_);
+        bool recording_ PROFILER_GUARDED_BY(mutex_) = false;
     };
 
     // Thread-local instance of T.

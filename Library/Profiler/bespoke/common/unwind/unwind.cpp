@@ -1,9 +1,9 @@
 // NOLINTBEGIN(modernize-use-nodiscard,modernize-use-auto,modernize-return-braced-init-list,readability-qualified-auto,readability-convert-member-functions-to-static,readability-implicit-bool-conversion,readability-else-after-return,misc-const-correctness)
 #include "bespoke/common/unwind/unwind.h"
 
-#include "common/macros.h"
+#include "common/profiler_macros.h"
 #include "bespoke/common/unwind/cpp_stacktraces.h"
-#include "util/env.h"
+//#include "util/env.h"
 
 #if !defined(__linux__) || !defined(__x86_64__) || !defined(__has_include) || \
     !__has_include("ext/stdio_filebuf.h")
@@ -11,27 +11,27 @@ namespace quarisma::unwind
 {
 std::vector<void*> unwind()
 {
-    QUARISMA_LOG_WARNING("record_context_cpp is not support on non-linux non-x86_64 platforms");
+    // PROFILER_LOG_WARNING("record_context_cpp is not support on non-linux non-x86_64 platforms");
     return {};
 }
 
 std::optional<std::pair<std::string, uint64_t>> libraryFor(void* /*addr*/)
 {
-    QUARISMA_LOG_WARNING("record_context_cpp is not support on non-linux non-x86_64 platforms");
+    // PROFILER_LOG_WARNING("record_context_cpp is not support on non-linux non-x86_64 platforms");
     return {};
 }
 
 #ifndef FBCODE_CAFFE2
 std::vector<Frame> symbolize(const std::vector<void*>& /*frames*/, Mode /*mode*/)
 {
-    QUARISMA_LOG_WARNING("record_context_cpp is not support on non-linux non-x86_64 platforms");
+    // PROFILER_LOG_WARNING("record_context_cpp is not support on non-linux non-x86_64 platforms");
     return {};
 }
 #endif
 
 Stats stats()
 {
-    QUARISMA_LOG_WARNING("record_context_cpp is not support on non-linux non-x86_64 platforms");
+    // PROFILER_LOG_WARNING("record_context_cpp is not support on non-linux non-x86_64 platforms");
     return {};
 }
 
@@ -56,7 +56,7 @@ Stats stats()
 #include "bespoke/common/unwind/fast_symbolizer.h"
 #include "bespoke/common/unwind/fde.h"
 #include "bespoke/common/unwind/unwinder.h"
-#include "util/flat_hash.h"
+#include "common/flat_hash.h"
 #include "common/irange.h"
 
 extern "C" void unwind_c(std::vector<void*>* result, int64_t rsp, int64_t rbp);
@@ -121,7 +121,7 @@ static const char* process_name()
     if (*name == '\0')
     {
         ssize_t len = readlink("/proc/self/exe", name, PATH_MAX);
-        // QUARISMA_CHECK(len != -1, "can't get path to exe")
+        // PROFILER_CHECK(len != -1, "can't get path to exe")
         name[len] = '\0';
     }
     return name;
@@ -225,7 +225,7 @@ struct UnwindCache
         {
             // because unwinders are cached this will only print
             // once per frame that cannot be unwound.
-            QUARISMA_LOG_WARNING("Unsupported unwinding pattern: ", err.what());
+            // PROFILER_LOG_WARNING("Unsupported unwinding pattern: ", err.what());
         }
         auto r = ip_cache_.insert_or_assign(addr, unwinder);
         return r.first->second;
@@ -259,7 +259,7 @@ struct UnwindCache
         {
             for ([[maybe_unused]] const auto& l : libraries_with_no_unwind_)
             {
-                QUARISMA_LOG_WARNING("Did not find a PT_GNU_EH_FRAME segment for ", l);
+                // PROFILER_LOG_WARNING("Did not find a PT_GNU_EH_FRAME segment for ", l);
             }
             libraries_with_no_unwind_.clear();
             throw UnwindError("addr not in range of known libraries");
@@ -350,12 +350,12 @@ struct Symbolizer
 {
     Symbolizer()
     {
-        auto envar = quarisma::utils::get_env("QUARISMA_ADDR2LINE_BINARY");
+        auto envar = quarisma::utils::get_env("PROFILER_ADDR2LINE_BINARY");
         if (envar.has_value())
         {
             // currently we take user's input as is without checking
             addr2line_binary_ = std::move(envar.value());
-            QUARISMA_LOG_WARNING("Use custom addr2line binary: ", addr2line_binary_);
+            // PROFILER_LOG_WARNING("Use custom addr2line binary: ", addr2line_binary_);
         }
         else
         {
@@ -565,7 +565,7 @@ Stats stats()
 
 }  // namespace quarisma::unwind
 
-extern "C" QUARISMA_USED void unwind_c(std::vector<void*>* result, int64_t rsp, int64_t rbp)
+extern "C" PROFILER_USED void unwind_c(std::vector<void*>* result, int64_t rsp, int64_t rbp)
 {
     std::shared_lock              lock(quarisma::unwind::cache_mutex_);
     quarisma::unwind::UnwindState state{};

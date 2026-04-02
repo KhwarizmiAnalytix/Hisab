@@ -23,7 +23,7 @@
 #include <sstream>
 #include <string>
 
-#include "logging/logger.h"
+//#include "logging/logger.h"
 #include "native/exporters/xplane/xplane.h"
 
 namespace quarisma::profiler_impl
@@ -233,19 +233,19 @@ bool export_to_chrome_trace_json_file(
         std::ofstream file(filename);
         if (!file.is_open())
         {
-            QUARISMA_LOG_ERROR("Failed to open file for writing: {}", filename);
+            PROFILER_LOG_ERROR("Failed to open file for writing: {}", filename);
             return false;
         }
 
         file << json;
         file.close();
 
-        QUARISMA_LOG_INFO("Exported Chrome Trace JSON to: {}", filename);
+        PROFILER_LOG_INFO("Exported Chrome Trace JSON to: {}", filename);
         return true;
     }
     catch (const std::exception& e)
     {
-        QUARISMA_LOG_ERROR("Failed to export Chrome Trace JSON: {}", e.what());
+        PROFILER_LOG_ERROR("Failed to export Chrome Trace JSON: {}", e.what());
         return false;
     }
 }

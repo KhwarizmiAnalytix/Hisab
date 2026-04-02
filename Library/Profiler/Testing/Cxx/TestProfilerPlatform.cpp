@@ -1,4 +1,4 @@
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE_PROFILER
 /*
  * Quarisma: High-Performance Quantitative Library
  *
@@ -207,7 +207,7 @@ QUARISMATEST(Profiler, env_time_seconds_precision)
 
 QUARISMATEST(Profiler, env_var_read_bool_values)
 {
-    static constexpr char const* var_name = "QUARISMA_TEST_ENV_BOOL";
+    static constexpr char const* var_name = "PROFILER_TEST_ENV_BOOL";
 
     unset_env(var_name);
     bool value   = false;
@@ -236,7 +236,7 @@ QUARISMATEST(Profiler, env_var_read_bool_values)
 
 QUARISMATEST(Profiler, env_var_read_int64_with_trimming_and_fallback)
 {
-    static constexpr char const* var_name = "QUARISMA_TEST_ENV_INT";
+    static constexpr char const* var_name = "PROFILER_TEST_ENV_INT";
 
     set_env(var_name, "  -42  ");
     int64_t value   = 0;
@@ -265,7 +265,7 @@ QUARISMATEST(Profiler, env_var_read_int64_with_trimming_and_fallback)
 
 QUARISMATEST(Profiler, env_var_read_float_with_trimming_and_invalid)
 {
-    static constexpr char const* var_name = "QUARISMA_TEST_ENV_FLOAT";
+    static constexpr char const* var_name = "PROFILER_TEST_ENV_FLOAT";
 
     set_env(var_name, "  3.25  ");
     float value   = 0.0F;
@@ -294,7 +294,7 @@ QUARISMATEST(Profiler, env_var_read_float_with_trimming_and_invalid)
 
 QUARISMATEST(Profiler, env_var_read_string_default_and_override)
 {
-    static constexpr char const* var_name = "QUARISMA_TEST_ENV_STRING";
+    static constexpr char const* var_name = "PROFILER_TEST_ENV_STRING";
 
     unset_env(var_name);
     std::string value;
@@ -313,7 +313,7 @@ QUARISMATEST(Profiler, env_var_read_string_default_and_override)
 
 QUARISMATEST(Profiler, env_var_read_strings_with_trimming_and_default)
 {
-    static constexpr char const* var_name = "QUARISMA_TEST_ENV_STRINGS";
+    static constexpr char const* var_name = "PROFILER_TEST_ENV_STRINGS";
 
     std::vector<std::string> values;
 
@@ -355,4 +355,4 @@ QUARISMATEST(Profiler, env_var_read_strings_with_trimming_and_default)
 
     unset_env(var_name);
 }
-#endif  // QUARISMA_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE_PROFILER

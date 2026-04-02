@@ -8,7 +8,7 @@
 #include "bespoke/common/util.h"
 #include "bespoke/kineto/kineto_shim.h"
 #include "common/approximate_clock.h"
-#include "util/strong_type.h"
+#include "common/strong_type.h"
 
 namespace quarisma::profiler_impl::impl
 {

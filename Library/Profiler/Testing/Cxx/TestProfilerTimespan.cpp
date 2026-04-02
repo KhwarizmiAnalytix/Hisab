@@ -1,4 +1,4 @@
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE_PROFILER
 /*
  * Quarisma: High-Performance Quantitative Library
  *
@@ -293,4 +293,4 @@ QUARISMATEST(Profiler, timespan_zero_duration)
     EXPECT_TRUE(ts.instant());
     EXPECT_EQ(ts.begin_ps(), ts.end_ps());
 }
-#endif  // QUARISMA_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE_PROFILER

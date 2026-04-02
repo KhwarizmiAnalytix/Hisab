@@ -34,9 +34,9 @@
 #include <utility>
 #include <vector>
 
-#include "logging/logger.h"
-#include "util/flat_hash.h"
-#include "util/lock_free_queue.h"
+//#include "logging/logger.h"
+#include "common/flat_hash.h"
+#include "common/lock_free_queue.h"
 #include "common/per_thread.h"
 
 #ifdef _WIN32
@@ -87,13 +87,13 @@ class SplitEventTracker
 public:
     void AddStart(traceme_recorder::Event&& event)
     {
-        // QUARISMA_CHECK(event.is_start(), "event is not a start event");
+        // PROFILER_CHECK(event.is_start(), "event is not a start event");
         start_events_.emplace(event.activity_id(), std::move(event));
     }
 
     void AddEnd(traceme_recorder::Event* event)
     {
-        // QUARISMA_CHECK(event->is_end(), "event is not an end event");
+        // PROFILER_CHECK(event->is_end(), "event is not an end event");
         if (!FindStartAndMerge(event))
         {
             end_events_.push_back(event);
@@ -165,7 +165,7 @@ public:
         info_.name = get_thread_name();
     }
 
-    QUARISMA_NODISCARD const traceme_recorder::ThreadInfo& Info() const { return info_; }
+    PROFILER_NODISCARD const traceme_recorder::ThreadInfo& Info() const { return info_; }
 
     // Record is only called from the producer thread.
     void Record(traceme_recorder::Event&& event) { queue_.push(std::move(event)); }
@@ -175,7 +175,7 @@ public:
     void Clear() { queue_.clear(); }
 
     // Consume is called from the control thread when tracing stops.
-    QUARISMA_NODISCARD std::deque<traceme_recorder::Event> Consume(
+    PROFILER_NODISCARD std::deque<traceme_recorder::Event> Consume(
         SplitEventTracker* split_event_tracker)
     {
         std::deque<traceme_recorder::Event>    events;

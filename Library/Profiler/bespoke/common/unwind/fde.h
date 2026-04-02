@@ -55,9 +55,9 @@ struct FDE
         auto  cie_length = LC.read4or8Length();
         void* cie_start  = LC.loc();
         auto  zero       = LC.read<uint32_t>();
-        // QUARISMA_CHECK(zero == 0, "expected 0 for CIE");
+        // PROFILER_CHECK(zero == 0, "expected 0 for CIE");
         auto version = LC.read<uint8_t>();
-        // QUARISMA_CHECK(version == 1 || version == 3, "non-1 version for CIE");
+        // PROFILER_CHECK(version == 1 || version == 3, "non-1 version for CIE");
         augmentation_string_ = LC.readCString();
         if (hasAugmentation("eh"))
         {
@@ -74,7 +74,7 @@ struct FDE
             ra_register_ = static_cast<int64_t>(LC.readULEB128());
         }
         // we assume this in the state
-        // QUARISMA_CHECK(ra_register_ == 16, "unexpected number of registers");
+        // PROFILER_CHECK(ra_register_ == 16, "unexpected number of registers");
         if (augmentation_string_ && *augmentation_string_ == 'z')
         {
             augmentation_length_ = static_cast<int64_t>(LC.readULEB128());

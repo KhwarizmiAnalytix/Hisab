@@ -42,7 +42,7 @@ limitations under the License.
 
 #include "native/core/timespan.h"
 #include "native/exporters/xplane/xplane.h"
-#include "util/flat_hash.h"
+#include "common/flat_hash.h"
 
 namespace quarisma
 {

@@ -1,10 +1,11 @@
 #include "bespoke/common/data_flow.h"
 
 #include <algorithm>
+#include <functional>
 #include <iterator>
 
 #include "bespoke/common/collection.h"
-#include "util/overloaded.h"
+#include "common/overloaded.h"
 
 namespace quarisma::profiler_impl::impl
 {
@@ -12,6 +13,24 @@ namespace quarisma::profiler_impl::impl
 namespace
 {
 constexpr TensorImplAddress NoTensorImpl{nullptr};
+
+struct DataFlowHash
+{
+    size_t operator()(const std::pair<StorageImplData, quarisma::device_option>& x) const noexcept
+    {
+        size_t h = std::hash<StorageImplData>{}(x.first);
+        h ^= std::hash<int>{}(static_cast<int>(x.second.type_)) + 0x9e3779b9 + (h << 6) + (h >> 2);
+        h ^= std::hash<int16_t>{}(x.second.index_) + 0x9e3779b9 + (h << 6) + (h >> 2);
+        return h;
+    }
+
+    size_t operator()(const std::pair<AllocationID, AllocationID>& x) const noexcept
+    {
+        size_t h = std::hash<AllocationID>{}(x.first);
+        h ^= std::hash<AllocationID>{}(x.second) + 0x9e3779b9 + (h << 6) + (h >> 2);
+        return h;
+    }
+};
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct RawTensorInfo
@@ -150,7 +169,7 @@ void calculateUniqueTensorIDs(std::vector<std::shared_ptr<Result>>& sorted_resul
     {
         size_t counter{1};
         using key_t = std::pair<StorageImplData, quarisma::device_option>;
-        quarisma::flat_hash_map<key_t, size_t, HashCombine> versions;
+        quarisma::flat_hash_map<key_t, size_t, DataFlowHash> versions;
         for (auto& t : tensors)
         {
             auto inserted = versions.insert({{t.storage_, t.device_}, counter});
@@ -190,7 +209,7 @@ void calculateUniqueTensorIDs(std::vector<std::shared_ptr<Result>>& sorted_resul
     // Handle the case that the storage of a TensorImpl changed.
     // --------------------------------------------------------------------------
     using storage_id_pair_t = std::pair<AllocationID, AllocationID>;
-    quarisma::flat_hash_set<storage_id_pair_t, HashCombine> same_group_set;
+    quarisma::flat_hash_set<storage_id_pair_t, DataFlowHash> same_group_set;
     {
         quarisma::flat_hash_map<TensorImplAddress, AllocationID> impl_map;
         for (const auto& t : tensors)

@@ -13,7 +13,11 @@ namespace quarisma
 {
 constexpr bool hasCUDA()
 {
-    return QUARISMA_HAS_CUDA == 1;
+#if defined(QUARISMA_HAS_CUDA) && QUARISMA_HAS_CUDA
+    return true;
+#else
+    return false;
+#endif
 }
 
 namespace profiler_impl::impl

@@ -25,7 +25,7 @@ The Quarisma profiler infrastructure has **significant gaps** in the C++ API lay
 3. **Profiler Scope** (`Library/Core/profiler/native/session/profiler.h`)
    - RAII-based scope profiling
    - Automatic timing and memory tracking
-   - Macros: `QUARISMA_PROFILE_SCOPE()`, `QUARISMA_PROFILE_FUNCTION()`
+   - Macros: `PROFILER_PROFILE_SCOPE()`, `PROFILER_PROFILE_FUNCTION()`
 
 4. **Observer/Orchestration** (`Library/Core/profiler/common/orchestration/observer.h`)
    - `ProfilerConfig` - Configuration structure

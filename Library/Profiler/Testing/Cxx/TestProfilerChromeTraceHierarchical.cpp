@@ -1,4 +1,4 @@
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE_PROFILER
 /*
  * Quarisma: High-Performance Quantitative Library
  *
@@ -243,4 +243,4 @@ QUARISMATEST(Profiler, chrome_trace_scope_with_special_characters)
     // Should contain escaped quotes
     EXPECT_NE(json.find("\\\""), std::string::npos);
 }
-#endif  // QUARISMA_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE_PROFILER

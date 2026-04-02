@@ -9,11 +9,11 @@
 #include <mutex>
 #include <random>
 
-#include "common/macros.h"
+#include "common/profiler_macros.h"
 #include "common/irange.h"
-#include "util/overloaded.h"
+#include "common/overloaded.h"
 #include "common/small_vector.h"
-#include "util/strong_type.h"
+#include "common/strong_type.h"
 
 namespace quarisma
 {
@@ -159,7 +159,7 @@ private:
         int tries_left_{-1};
     };
 
-    QUARISMA_FORCE_INLINE void getActiveCallbacksImpl();
+    /*PROFILER_FORCE_INLINE*/ void getActiveCallbacksImpl();
 
     void              rebuildActiveCallbacks();
     [[nodiscard]] int sampleTries(double p) const;
@@ -311,16 +311,16 @@ void CacheEntry::getActiveCallbacksImpl()
 {
     // We rebuild the active set when `sampling_countdown_` reaches zero, so if it
     // reaches zero at the start of this function something has gone wrong.
-    //QUARISMA_CHECK(sampling_countdown_ > 0, sampling_countdown_);
+    //PROFILER_CHECK(sampling_countdown_ > 0, sampling_countdown_);
 
-    if QUARISMA_UNLIKELY (!(--sampling_countdown_))
+    if PROFILER_UNLIKELY (!(--sampling_countdown_))
     {
         // Use inferred steps to update sampled callbacks.
         for (auto& i : callbacks_)
         {
             if (i.tries_left_ > 0)
             {
-                // QUARISMA_CHECK(i.tries_left_ >= steps_for_this_update_);
+                // PROFILER_CHECK(i.tries_left_ >= steps_for_this_update_);
                 i.tries_left_ -= steps_for_this_update_;
             }
         }
@@ -348,7 +348,7 @@ StepCallbacks CacheEntry::getActiveCallbacks()
 std::optional<StepCallbacks> CacheEntry::getActiveCallbacksUnlessEmpty()
 {
     getActiveCallbacksImpl();
-    if QUARISMA_LIKELY (active_callbacks_.empty())
+    if PROFILER_LIKELY (active_callbacks_.empty())
     {
         return std::nullopt;
     }
@@ -394,8 +394,8 @@ void CacheEntry::rebuildActiveCallbacks()
 
 int CacheEntry::sampleTries(double p) const
 {
-    // QUARISMA_CHECK(generator_ != nullptr);
-    // QUARISMA_CHECK(p > 0.0 && p <= 1.0);  //NOLINT
+    // PROFILER_CHECK(generator_ != nullptr);
+    // PROFILER_CHECK(p > 0.0 && p <= 1.0);  //NOLINT
 
     // The geometric distribution returns the number of failures. We add one to
     // also account for the call where we succeed.
@@ -407,13 +407,13 @@ int CacheEntry::sampleTries(double p) const
 // ============================================================================
 LocalCallbackManager& LocalCallbackManager::get()
 {
-#ifdef QUARISMA_PREFER_CUSTOM_THREAD_LOCAL_STORAGE
+#ifdef PROFILER_PREFER_CUSTOM_THREAD_LOCAL_STORAGE
     static quarisma::ThreadLocal<LocalCallbackManager> manager;
     return manager.get();
-#else   // defined(QUARISMA_PREFER_CUSTOM_THREAD_LOCAL_STORAGE)
+#else   // defined(PROFILER_PREFER_CUSTOM_THREAD_LOCAL_STORAGE)
     static thread_local LocalCallbackManager manager;
     return manager;
-#endif  // defined(QUARISMA_PREFER_CUSTOM_THREAD_LOCAL_STORAGE)
+#endif  // defined(PROFILER_PREFER_CUSTOM_THREAD_LOCAL_STORAGE)
 }
 
 LocalCallbackManager::LocalCallbackManager()
@@ -433,7 +433,7 @@ const RecordFunctionTLS& LocalCallbackManager::getTLS() const
 void LocalCallbackManager::rebuildActiveCallbacksIfNeeded()
 {
     const auto global_version = GlobalCallbackManager::get().version();
-    if QUARISMA_UNLIKELY (global_version != global_version_)
+    if PROFILER_UNLIKELY (global_version != global_version_)
     {
         rebuild_all(GlobalCallbackManager::get().getSnapshot());
     }
@@ -562,7 +562,7 @@ void logTryRunCallbackError(const char* what, const char* name)
 }
 
 template <bool is_start>
-QUARISMA_FORCE_INLINE bool tryRunCallback(
+/*PROFILER_FORCE_INLINE*/ bool tryRunCallback(
     const StepCallbacks::StartEndPair callback_ptrs,
     const RecordFunction&             rf,
     std::unique_ptr<ObserverContext>& ctx)
@@ -890,7 +890,7 @@ void RecordFunction::before(RecordFunction::FunctionDescriptor fn, int64_t seque
 
 /* static */ void RecordFunction::setDefaultNodeId(int64_t newDefaultNodeId)
 {
-    // QUARISMA_CHECK(newDefaultNodeId >= 0, "setDefaultNodeId expects an id >= 0.");
+    // PROFILER_CHECK(newDefaultNodeId >= 0, "setDefaultNodeId expects an id >= 0.");
     defaultNodeId = newDefaultNodeId;
 }
 

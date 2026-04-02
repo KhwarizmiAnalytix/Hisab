@@ -1,4 +1,4 @@
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE_PROFILER
 /*
  * Quarisma: High-Performance Quantitative Library
  *
@@ -55,7 +55,7 @@
 #include <vector>         // for vector, _Vector_const_iterator, _Vector_iterato
 
 #include "baseTest.h"                              // for END_TEST, QUARISMATEST
-#include "logging/logger.h"                        // for QUARISMA_LOG_INFO, QUARISMA_LOG_IF
+//#include "logging/logger.h"                        // for PROFILER_LOG_INFO, PROFILER_LOG_IF
 #include "native/analysis/statistical_analyzer.h"  // for statistical_analyzer, statistical_metrics, time_seri...
 #include "native/memory/memory_tracker.h"  // for memory_tracker
 #include "native/session/profiler.h"  // for profiler_session, profiler_session_builder, profiler...
@@ -128,7 +128,7 @@ bool test_basic_functionality()
 
     // Test basic profiling
     {
-        QUARISMA_PROFILE_SCOPE("test_basic_scope");
+        PROFILER_PROFILE_SCOPE("test_basic_scope");
         simulate_work(10);
     }
 
@@ -177,15 +177,15 @@ bool test_hierarchical_profiling()
 
         // Test nested scopes
         {
-            QUARISMA_PROFILE_SCOPE("level_1");
+            PROFILER_PROFILE_SCOPE("level_1");
             simulate_work(5);
 
             {
-                QUARISMA_PROFILE_SCOPE("level_2");
+                PROFILER_PROFILE_SCOPE("level_2");
                 simulate_work(3);
 
                 {
-                    QUARISMA_PROFILE_SCOPE("level_3");
+                    PROFILER_PROFILE_SCOPE("level_3");
                     simulate_work(2);
                 }
 
@@ -197,7 +197,7 @@ bool test_hierarchical_profiling()
 
         // Test function profiling
         {
-            QUARISMA_PROFILE_FUNCTION();
+            PROFILER_PROFILE_FUNCTION();
             simulate_work(5);
         }
 
@@ -507,13 +507,13 @@ bool test_thread_safety()
                     for (int i = 0; i < operations_per_thread; ++i)
                     {
                         {
-                            QUARISMA_PROFILE_SCOPE(
+                            PROFILER_PROFILE_SCOPE(
                                 "thread_" + std::to_string(t) + "_operation_" + std::to_string(i));
                             simulate_work(1);  // 1ms work
 
                             // Test nested scopes in concurrent environment
                             {
-                                QUARISMA_PROFILE_SCOPE("nested_operation");
+                                PROFILER_PROFILE_SCOPE("nested_operation");
                                 auto memory = allocate_memory(100);
                                 simulate_work(1);
                             }
@@ -592,7 +592,7 @@ bool test_performance_overhead()
         auto start_profiled = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < num_iterations; ++i)
         {
-            QUARISMA_PROFILE_SCOPE("overhead_test");
+            PROFILER_PROFILE_SCOPE("overhead_test");
             simulate_work(0);  // Minimal work to measure overhead
         }
         auto end_profiled = std::chrono::high_resolution_clock::now();
@@ -641,16 +641,16 @@ bool test_report_generation()
 
         // Generate some profiling data
         {
-            QUARISMA_PROFILE_SCOPE("report_test_scope");
+            PROFILER_PROFILE_SCOPE("report_test_scope");
             simulate_work(10);
 
             {
-                QUARISMA_PROFILE_SCOPE("nested_scope_1");
+                PROFILER_PROFILE_SCOPE("nested_scope_1");
                 simulate_work(5);
             }
 
             {
-                QUARISMA_PROFILE_SCOPE("nested_scope_2");
+                PROFILER_PROFILE_SCOPE("nested_scope_2");
                 simulate_work(3);
             }
         }
@@ -780,7 +780,7 @@ bool test_edge_cases()
 
             for (int i = 0; i < 13; ++i)
             {
-                QUARISMA_PROFILE_SCOPE("very_short_scope");
+                PROFILER_PROFILE_SCOPE("very_short_scope");
                 // No work - test very short execution times
             }
 
@@ -803,15 +803,15 @@ bool test_edge_cases()
 
             // Create deeply nested scopes
             {
-                QUARISMA_PROFILE_SCOPE("level_1");
+                PROFILER_PROFILE_SCOPE("level_1");
                 {
-                    QUARISMA_PROFILE_SCOPE("level_2");
+                    PROFILER_PROFILE_SCOPE("level_2");
                     {
-                        QUARISMA_PROFILE_SCOPE("level_3");
+                        PROFILER_PROFILE_SCOPE("level_3");
                         {
-                            QUARISMA_PROFILE_SCOPE("level_4");
+                            PROFILER_PROFILE_SCOPE("level_4");
                             {
-                                QUARISMA_PROFILE_SCOPE("level_5");
+                                PROFILER_PROFILE_SCOPE("level_5");
                                 simulate_work(1);
                             }
                         }
@@ -920,7 +920,7 @@ bool test_edge_cases()
 
             session->start();
             {
-                QUARISMA_PROFILE_SCOPE("full_options_test");
+                PROFILER_PROFILE_SCOPE("full_options_test");
                 simulate_work(5);
             }
             session->stop();
@@ -944,7 +944,7 @@ bool test_integration()
         session->start();
 
         {
-            QUARISMA_PROFILE_SCOPE("integration_test");
+            PROFILER_PROFILE_SCOPE("integration_test");
             simulate_work(10);
 
             // Simulate some work that might use other profiling tools
@@ -1019,7 +1019,7 @@ bool test_comprehensive_error_handling()
 
             for (int i = 0; i < 5; ++i)
             {
-                QUARISMA_PROFILE_SCOPE("microsecond_scope");
+                PROFILER_PROFILE_SCOPE("microsecond_scope");
                 // Extremely short scope - tests nanosecond precision
             }
 
@@ -1157,7 +1157,7 @@ bool test_high_concurrency()
                     for (int i = 0; i < operations_per_thread; ++i)
                     {
                         {
-                            QUARISMA_PROFILE_SCOPE("high_concurrency_scope_" + std::to_string(t));
+                            PROFILER_PROFILE_SCOPE("high_concurrency_scope_" + std::to_string(t));
 
                             // Simulate mixed workload
                             simulate_cpu_intensive_work();
@@ -1241,18 +1241,18 @@ QUARISMATEST(Profiler, enhanced_profiler_comprehensive_test)
 
     if (passed_tests == total_tests)
     {
-        QUARISMA_LOG_INFO("All Enhanced Profiler tests PASSED!");
-        QUARISMA_LOG_INFO("Enhanced Profiler is ready for production use.");
+        PROFILER_LOG_INFO("All Enhanced Profiler tests PASSED!");
+        PROFILER_LOG_INFO("Enhanced Profiler is ready for production use.");
     }
     else
     {
-        QUARISMA_LOG_INFO(" {} test(s) FAILED!", total_tests - passed_tests);
+        PROFILER_LOG_INFO(" {} test(s) FAILED!", total_tests - passed_tests);
     }
-    QUARISMA_LOG_IF(
+    PROFILER_LOG_IF(
         ERROR,
         passed_tests != total_tests,
         "Some Enhanced Profiler tests FAILED. Please check the logs for details.");
 
     END_TEST();
 }
-#endif  // QUARISMA_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE_PROFILER

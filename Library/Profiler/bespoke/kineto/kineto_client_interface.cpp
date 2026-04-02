@@ -1,14 +1,14 @@
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 //#include <Quarisma/Context.h>
 #include "bespoke/kineto/kineto_client_interface.h"
 
 #include <libkineto.h>
 
-#include <chrono>
+#include <chrono> 
 #include <thread>
 
 #include "bespoke/kineto/profiler_kineto.h"
-#include "util/env.h"
+//#include "util/env.h"
 
 // Ondemand tracing is not supported on Apple or edge platform
 #if defined(__APPLE__) || defined(EDGE_PROFILER_USE_KINETO)
@@ -135,4 +135,4 @@ struct RegisterLibKinetoClient
 #endif
 
 }  // namespace quarisma
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO

@@ -27,7 +27,7 @@
 
 #include "bespoke/common/collection.h"
 #include "bespoke/common/containers.h"
-#include "common/macros.h"
+#include "common/profiler_macros.h"
 #include "bespoke/common/orchestration/python_tracer.h"
 #include "bespoke/common/util.h"
 #include "common/irange.h"
@@ -75,7 +75,7 @@ PyCodeObject* getCode<CallType::PyModuleCall>() {
                    .attr("__call__")
                    .attr("__code__")
                    .ptr();
-    // QUARISMA_CHECK(PyCode_Check(res));
+    // PROFILER_CHECK(PyCode_Check(res));
     return (PyCodeObject*)res;
   }();
   return module_call_code;
@@ -90,7 +90,7 @@ PyCodeObject* getCode<CallType::PyOptimizerCall>() {
                    .attr("_optimizer_step_code")
                    .attr("__code__")
                    .ptr();
-    // QUARISMA_CHECK(PyCode_Check(res));
+    // PROFILER_CHECK(PyCode_Check(res));
     return (PyCodeObject*)res;
   }();
   return optimizer_step_code;
@@ -290,7 +290,7 @@ class ValueCache {
   template <CallType C>
   auto load(const Callsite<C>& callsite, size_t python_tid) const {
     auto caller = load<CallType::PyCall>(callsite.caller_);
-    // QUARISMA_CHECK(!caller.module_info_.has_value());
+    // PROFILER_CHECK(!caller.module_info_.has_value());
     return ExtraFields<Config<C>::event_type>{
         /*end_time_ns=*/std::numeric_limits<quarisma::time_t>::min(),
         python_tid,
@@ -320,9 +320,9 @@ typename Config<C>::cls_t set_class(
     typename Config<C>::cache_t& cache,
     const typename Config<C>::key_t& key,
     const typename Config<C>::ephemeral_t& frame) {
-  if QUARISMA_UNLIKELY(!cache.location_.has_value()) {
+  if PROFILER_UNLIKELY(!cache.location_.has_value()) {
     auto code = THPCodeObjectPtr(PyFrame_GetCode(frame));
-    // QUARISMA_CHECK(code.get() == getCode<C>());
+    // PROFILER_CHECK(code.get() == getCode<C>());
     cache.location_ = PyCallKey(frame);
     value_cache->store<CallType::PyCall>(*cache.location_, no_ephemeral_t());
   }
@@ -337,7 +337,7 @@ typename Config<C>::cls_t set_class(
 }
 
 TensorMetadata toTensorMetadata(PyObject* self) {
-  // QUARISMA_CHECK(THPVariable_CheckExact(self));
+  // PROFILER_CHECK(THPVariable_CheckExact(self));
   const auto& t = THPVariable_Unpack(self);
   RawTensorMetadata m{t};
   return TensorMetadata{
@@ -370,7 +370,7 @@ void ValueCache::store<CallType::PyCall>(
     const PyCallKey& key,
     no_ephemeral_t /*unused*/) {
   auto& locations = std::get<CallType::PyCall>(state_);
-  if QUARISMA_UNLIKELY(locations.find(key) == locations.end()) {
+  if PROFILER_UNLIKELY(locations.find(key) == locations.end()) {
     locations[key] = {
         key.line_number_,
         quarisma::StringView(key.filename_),
@@ -389,7 +389,7 @@ void ValueCache::store<CallType::PyModuleCall>(
     const PyModuleCallKey& key,
     Config<CallType::PyModuleCall>::ephemeral_t frame) {
   auto& cache = std::get<CallType::PyModuleCall>(state_);
-  if QUARISMA_UNLIKELY(
+  if PROFILER_UNLIKELY(
           cache.cls_and_parameters_.find(key) ==
           cache.cls_and_parameters_.end())) {
     auto cls = set_class<CallType::PyModuleCall>(this, cache, key, frame);
@@ -413,7 +413,7 @@ template <>
 ExtraFields<EventType::PyCall>::args_t ValueCache::load<CallType::PyModuleCall>(
     const PyModuleCallKey& key) const {
   auto& cache = std::get<CallType::PyModuleCall>(state_);
-  // QUARISMA_CHECK(cache.location_.has_value());
+  // PROFILER_CHECK(cache.location_.has_value());
   const auto& cls_and_parameters = cache.cls_and_parameters_.at(key);
   const auto& cls = cls_and_parameters.cls_;
   NNModuleInfo info{
@@ -429,7 +429,7 @@ void ValueCache::store<CallType::PyOptimizerCall>(
     const PyOptimizerCallKey& key,
     Config<CallType::PyOptimizerCall>::ephemeral_t frame) {
   auto& cache = std::get<CallType::PyOptimizerCall>(state_);
-  if QUARISMA_UNLIKELY(
+  if PROFILER_UNLIKELY(
           cache.cls_and_parameters_.find(key) ==
           cache.cls_and_parameters_.end())) {
     auto cls = set_class<CallType::PyOptimizerCall>(this, cache, key, frame);
@@ -477,7 +477,7 @@ void ValueCache::store<CallType::PyCCall>(
     const PyCCallKey& key,
     Config<CallType::PyCCall>::ephemeral_t arg) {
   auto& names = std::get<CallType::PyCCall>(state_);
-  if QUARISMA_UNLIKELY(names.find(key) == names.end()) {
+  if PROFILER_UNLIKELY(names.find(key) == names.end()) {
     names[key] = quarisma::StringView(py::repr(arg));
   }
 }
@@ -532,7 +532,7 @@ struct TraceKeyCacheState {
       typename Config<C>::ephemeral_t ephemeral,
       ValueCache& value_cache) {
     auto it = state_.find(callsite);
-    if QUARISMA_UNLIKELY(it == state_.end()) {
+    if PROFILER_UNLIKELY(it == state_.end()) {
       value_cache.store<C>(callsite.value_, ephemeral);
       value_cache.store<CallType::PyCall>(callsite.caller_, no_ephemeral_t());
       it = state_.insert({callsite, nextKey()}).first;
@@ -852,27 +852,27 @@ static void registerMonitoringCallback() {
 
   auto sys_module = THPObjectPtr(PyImport_ImportModule("sys"));
   if (!sys_module) {
-    QUARISMA_LOG_WARNING("Failed to import sys module.");
+    // PROFILER_LOG_WARNING("Failed to import sys module.");
     PyErr_Clear();
     return;
   }
   auto monitoring =
       THPObjectPtr(PyObject_GetAttrString(sys_module, "monitoring"));
   if (!monitoring) {
-    QUARISMA_LOG_WARNING("Failed to get monitoring from sys module.");
+    // PROFILER_LOG_WARNING("Failed to get monitoring from sys module.");
     PyErr_Clear();
     return;
   }
   auto result = THPObjectPtr(PyObject_CallMethod(
       monitoring, "use_tool_id", "is", PROFILER_ID, "Quarisma Profiler"));
   if (!result) {
-    QUARISMA_LOG_WARNING("Failed to call sys.monitoring.use_tool_id");
+    // PROFILER_LOG_WARNING("Failed to call sys.monitoring.use_tool_id");
     PyErr_Clear();
     return;
   }
   auto handler = THPObjectPtr(PyObject_NEW(PyObject, &_PyEventHandler_Type));
   if (!handler) {
-    QUARISMA_LOG_WARNING("Failed to create _PyEventHandler object.");
+    // PROFILER_LOG_WARNING("Failed to create _PyEventHandler object.");
     PyErr_Clear();
     return;
   }
@@ -886,7 +886,7 @@ static void registerMonitoringCallback() {
       1 << PY_MONITORING_EVENT_CALL,
       handler.get()));
   if (!result) {
-    QUARISMA_LOG_WARNING("Failed to call sys.monitoring.register_callback.");
+    // PROFILER_LOG_WARNING("Failed to call sys.monitoring.register_callback.");
     PyErr_Clear();
     return;
   }
@@ -897,7 +897,7 @@ static void registerMonitoringCallback() {
       PROFILER_ID,
       1 << PY_MONITORING_EVENT_CALL));
   if (!result) {
-    QUARISMA_LOG_WARNING("Failed to call sys.monitoring.set_events.");
+    // PROFILER_LOG_WARNING("Failed to call sys.monitoring.set_events.");
     PyErr_Clear();
     return;
   }
@@ -910,21 +910,21 @@ static void unregisterMonitoringCallback() {
 
   auto sys_module = THPObjectPtr(PyImport_ImportModule("sys"));
   if (!sys_module) {
-    QUARISMA_LOG_WARNING("Failed to import sys module.");
+    // PROFILER_LOG_WARNING("Failed to import sys module.");
     PyErr_Clear();
     return;
   }
   auto monitoring =
       THPObjectPtr(PyObject_GetAttrString(sys_module, "monitoring"));
   if (!monitoring) {
-    QUARISMA_LOG_WARNING("Failed to get monitoring from sys module.");
+    // PROFILER_LOG_WARNING("Failed to get monitoring from sys module.");
     PyErr_Clear();
     return;
   }
   auto tool_name = THPObjectPtr(
       PyObject_CallMethod(monitoring, "get_tool", "i", PROFILER_ID));
   if (!tool_name) {
-    QUARISMA_LOG_WARNING("Failed to call sys.monitoring.use_tool_id");
+    // PROFILER_LOG_WARNING("Failed to call sys.monitoring.use_tool_id");
     PyErr_Clear();
     return;
   }
@@ -945,21 +945,21 @@ static void unregisterMonitoringCallback() {
       1 << PY_MONITORING_EVENT_CALL,
       none.get()));
   if (!result) {
-    QUARISMA_LOG_WARNING("Failed to call sys.monitoring.register_callback.");
+    // PROFILER_LOG_WARNING("Failed to call sys.monitoring.register_callback.");
     PyErr_Clear();
     return;
   }
   result = THPObjectPtr(
       PyObject_CallMethod(monitoring, "set_events", "ii", PROFILER_ID, 0));
   if (!result) {
-    QUARISMA_LOG_WARNING("Failed to call sys.monitoring.set_events.");
+    // PROFILER_LOG_WARNING("Failed to call sys.monitoring.set_events.");
     PyErr_Clear();
     return;
   }
   result = THPObjectPtr(
       PyObject_CallMethod(monitoring, "free_tool_id", "i", PROFILER_ID));
   if (!result) {
-    QUARISMA_LOG_WARNING("Failed to call sys.monitoring.free_tool_id.");
+    // PROFILER_LOG_WARNING("Failed to call sys.monitoring.free_tool_id.");
     PyErr_Clear();
     return;
   }
@@ -1005,14 +1005,14 @@ PythonTracer::PythonTracer(quarisma::profiler_impl::impl::RecordQueue* queue)
 
       module_call_code_(getCode<CallType::PyModuleCall>()),
       optimizer_hook_(getCode<CallType::PyOptimizerCall>()) {
-  // QUARISMA_CHECK(queue_ != nullptr);
+  // PROFILER_CHECK(queue_ != nullptr);
 
   bool expected{false};
   active_ = active_lock_.compare_exchange_strong(expected, true);
   if (!active_) {
-    QUARISMA_LOG_WARNING(
+    /* PROFILER_LOG_WARNING(
         "There is already an active Python tracer. "
-        "Refusing to register profile functions.");
+        "Refusing to register profile functions."); */
     return;
   }
 
@@ -1020,7 +1020,7 @@ PythonTracer::PythonTracer(quarisma::profiler_impl::impl::RecordQueue* queue)
   interpreter_ = PyInterpreterState_Get();
 
   if (!gil.initial_thread_state()) {
-    QUARISMA_LOG_WARNING("PyThreadState_Get returned NULL");
+    // PROFILER_LOG_WARNING("PyThreadState_Get returned NULL");
     return;
   }
 
@@ -1057,7 +1057,7 @@ PythonTracer::PythonTracer(quarisma::profiler_impl::impl::RecordQueue* queue)
 
       // We hold one reference in `current_stack`, and the interpreter holds
       // another.
-      // QUARISMA_CHECK(frame_refcount >= 2, frame_refcount);
+      // PROFILER_CHECK(frame_refcount >= 2, frame_refcount);
     }
 
     tls.remaining_start_frames_ = tls.active_frames_;
@@ -1162,9 +1162,9 @@ void PythonTracer::restart() {
   gil_and_restore_thread gil;
   active_ = active_lock_.compare_exchange_strong(active_, true);
   if (!active_) {
-    QUARISMA_LOG_WARNING(
+    /* PROFILER_LOG_WARNING(
         "There is already an active Python tracer. "
-        "Refusing to register profile functions.");
+        "Refusing to register profile functions."); */
     return;
   }
   int cur_thread = 0;
@@ -1183,7 +1183,7 @@ void PythonTracer::restart() {
 // NOLINTNEXTLINE(bugprone-exception-escape)
 PythonTracer::~PythonTracer() {
   if (active_) {
-    QUARISMA_LOG_WARNING("`PythonTracer::stop()` was not called.");
+    // PROFILER_LOG_WARNING("`PythonTracer::stop()` was not called.");
     stop();
   }
 }
@@ -1216,7 +1216,7 @@ void PythonTracer::recordPyCall(
 #endif
       Py_INCREF(self.get());
       auto back = THPFrameObjectPtr(PyFrame_GetBack(frame));
-      // QUARISMA_CHECK(back != nullptr);
+      // PROFILER_CHECK(back != nullptr);
       return tls.intern<CallType::PyModuleCall, E>(
           frame, self.get(), back.get());
     } else if (code.get() == optimizer_hook_) {
@@ -1228,7 +1228,7 @@ void PythonTracer::recordPyCall(
 #endif
       Py_INCREF(self.get());
       auto back = THPFrameObjectPtr(PyFrame_GetBack(frame));
-      // QUARISMA_CHECK(back != nullptr);
+      // PROFILER_CHECK(back != nullptr);
       return tls.intern<CallType::PyOptimizerCall, E>(
           frame, self.get(), back.get());
     } else {
@@ -1251,7 +1251,7 @@ void PythonTracer::recordCCall(
   // for starting frames we duplicate callable python functions to avoid having
   // empty C frames in trace when exiting
   if (!start_frame) {
-    // QUARISMA_CHECK_DEBUG(PyCFunction_Check(arg));
+    // PROFILER_CHECK_DEBUG(PyCFunction_Check(arg));
   }
   auto fn = reinterpret_cast<PyCFunctionObject*>(arg);
 
@@ -1312,7 +1312,7 @@ class PostProcess {
     for (const auto& it : trace_cache.state_) {
       const auto inserted = get_state<Config<C>::event_type>().fields_.insert(
           {it.second, value_cache.load(it.first, python_tid)});
-      // QUARISMA_CHECK(inserted.second, "Duplicate key: ", it.second);
+      // PROFILER_CHECK(inserted.second, "Duplicate key: ", it.second);
     }
   }
 
@@ -1349,8 +1349,9 @@ class PostProcess {
         std::get<ExtraFields<E>>(stack.back()->extra_fields_).end_time_ns_ = t;
         stack.pop_back();
       } else {
-        QUARISMA_LOG_WARNING(
+        /* PROFILER_LOG_WARNING(
             "Python replay stack is empty during pop operation! May result in incorrect stack tracing.");
+        */
       }
     };
 
@@ -1593,7 +1594,7 @@ namespace quarisma::autograd::profiler_impl::python_tracer {
 
 void init() {
   pybind11::gil_scoped_acquire gil;
-  // QUARISMA_CHECK(PyType_Ready(&quarisma::profiler_impl::impl::TraceContextType) == 0);
+  // PROFILER_CHECK(PyType_Ready(&quarisma::profiler_impl::impl::TraceContextType) == 0);
   quarisma::profiler_impl::impl::python_tracer::registerTracer(
       &quarisma::profiler_impl::impl::getTracer);
   quarisma::profiler_impl::impl::python_tracer::registerMemoryTracer(

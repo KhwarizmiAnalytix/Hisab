@@ -11,7 +11,7 @@
  * - Thread-safe operations
  *
  * Usage:
- *   #if QUARISMA_HAS_ITT
+ *   #if PROFILER_HAS_ITT
  *   itt_range_push("my_operation");
  *   // ... code to profile ...
  *   itt_range_pop();
@@ -23,9 +23,9 @@
 
 #include <string>
 
-#include "common/export.h"
+#include "common/profiler_export.h"
 
-#if QUARISMA_HAS_ITT
+#if PROFILER_HAS_ITT
 #include <ittnotify.h>
 #endif
 
@@ -34,7 +34,7 @@ namespace quarisma
 namespace profiler_impl
 {
 
-#if QUARISMA_HAS_ITT
+#if PROFILER_HAS_ITT
 constexpr bool kITTAvailable{true};
 #else
 constexpr bool kITTAvailable{false};
@@ -44,7 +44,7 @@ constexpr bool kITTAvailable{false};
 // ITT API Wrapper Functions
 // ============================================================================
 
-#if QUARISMA_HAS_ITT
+#if PROFILER_HAS_ITT
 
 /**
  * @brief Initialize ITT API
@@ -88,7 +88,7 @@ PROFILER_API __itt_domain* itt_get_domain();
 
 #else
 
-// Stub implementations when QUARISMA_HAS_ITT is not defined
+// Stub implementations when PROFILER_HAS_ITT is not defined
 inline void  itt_init() {}
 inline void  itt_range_push(const char*) {}
 inline void  itt_range_pop() {}
@@ -98,7 +98,7 @@ inline void* itt_get_domain()
     return nullptr;
 }
 
-#endif  // QUARISMA_HAS_ITT
+#endif  // PROFILER_HAS_ITT
 
 }  // namespace profiler_impl
 }  // namespace quarisma

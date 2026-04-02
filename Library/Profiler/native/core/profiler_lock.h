@@ -37,7 +37,7 @@ limitations under the License.
 #include <string_view>  // for string_view
 #include <utility>      // for exchange
 
-#include "common/export.h"  // for PROFILER_API
+#include "common/profiler_export.h"  // for PROFILER_API
 
 namespace quarisma
 {

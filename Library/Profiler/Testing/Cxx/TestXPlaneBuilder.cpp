@@ -1,4 +1,4 @@
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE_PROFILER
 /*
  * Quarisma: High-Performance Quantitative Library
  *
@@ -408,4 +408,4 @@ QUARISMATEST(XPlaneBuilder, xevent_builder_stats_and_occurrences)
     EXPECT_TRUE(true);
 }
 
-#endif  // QUARISMA_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE_PROFILER

@@ -104,14 +104,14 @@ quarisma::IValue ProfilerConfig::toIValue()
 }
 
 ProfilerConfig ProfilerConfig::fromIValue(
-    QUARISMA_UNUSED const quarisma::IValue& profilerConfigIValue)
+    PROFILER_UNUSED const quarisma::IValue& profilerConfigIValue)
 {
     /*
-    QUARISMA_CHECK(
+    PROFILER_CHECK(
       profilerConfigIValue.isList(),
       "Expected IValue to contain type quarisma::impl::GenericList");
   auto ivalues = profilerConfigIValue.toList();
-  QUARISMA_CHECK(
+  PROFILER_CHECK(
       ivalues.size() == NUM_PROFILER_CFG_IVALUE_IDX,
       quarisma::str(
           "Expected exactly ",
@@ -152,7 +152,7 @@ ProfilerStateBase::~ProfilerStateBase()
 
 /*static*/ void ProfilerStateBase::push(std::shared_ptr<ProfilerStateBase>&& state)
 {
-    // QUARISMA_CHECK(state != nullptr);
+    // PROFILER_CHECK(state != nullptr);
     if (state->config().pushGlobalCallbacks())
     {
         GlobalManager::push(std::move(state));
@@ -224,7 +224,7 @@ PROFILER_API ActiveProfilerType profilerType()
 quarisma::profiler_impl::impl::ProfilerConfig getProfilerConfig()
 {
     auto* state_ptr = ProfilerStateBase::get(/*global=*/false);
-    // QUARISMA_CHECK(state_ptr, "Tried to access profiler config, but profiler is not enabled!");
+    // PROFILER_CHECK(state_ptr, "Tried to access profiler config, but profiler is not enabled!");
     return state_ptr->config();
 }
 

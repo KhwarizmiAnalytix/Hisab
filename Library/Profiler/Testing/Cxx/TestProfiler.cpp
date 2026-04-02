@@ -1,4 +1,4 @@
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE_PROFILER
 /*
  * Quarisma: High-Performance Quantitative Library
  *
@@ -27,7 +27,7 @@
 
 #include "baseTest.h"
 #include "common/configure.h"  // IWYU pragma: keep
-#include "logging/logger.h"
+//#include "logging/logger.h"
 #include "native/core/profiler_factory.h"
 #include "native/core/profiler_lock.h"
 #include "native/core/profiler_options.h"
@@ -330,4 +330,4 @@ QUARISMATEST(Profiler, enhanced_profiler_session_deeply_nested_scopes)
 
     EXPECT_TRUE(session->stop());
 }
-#endif  // QUARISMA_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE_PROFILER

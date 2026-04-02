@@ -22,7 +22,7 @@
 #include <string>
 #include <utility>
 
-#include "logging/logger.h"
+//#include "logging/logger.h"
 #include "native/cpu/threadpool_listener_state.h"
 #include "native/exporters/xplane/xplane_schema.h"
 #include "native/tracing/traceme.h"
@@ -87,9 +87,9 @@ profiler_status threadpool_profiler_interface::start()
 {
     if (tracing::event_collector::is_enabled())
     {
-        QUARISMA_LOG_WARNING(
+        /* PROFILER_LOG_WARNING(
             "[ThreadpoolEventCollector] event collector already enabled; "
-            "threadpool events will not be captured.");
+            "threadpool events will not be captured."); */
         last_status_ = profiler_status::Error(
             "ThreadpoolEventCollector already enabled; not collecting threadpool events.");
         return profiler_status::Ok();
