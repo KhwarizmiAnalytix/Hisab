@@ -12,17 +12,12 @@ Usage:
     python setup_bazel.py config.build.release.test.cxx20
 """
 
-import argparse
-import json
-import os
 import platform
-import re
+import shutil
 import subprocess
 import sys
 import time
-from datetime import datetime
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import colorama
 from colorama import Fore, Style
@@ -31,7 +26,7 @@ from colorama import Fore, Style
 colorama.init()
 
 
-def print_status(message: str, status: str = "INFO"):
+def print_status(message: str, status: str = "INFO") -> None:
     """Print colored status messages."""
     colors = {
         "INFO": Fore.CYAN,
@@ -43,44 +38,30 @@ def print_status(message: str, status: str = "INFO"):
     print(f"{color}[{status}]{Style.RESET_ALL} {message}")
 
 
+def _find_bazel_executable() -> Optional[str]:
+    """Find bazelisk or bazel on PATH without spawning a process."""
+    # On Windows, shutil.which also resolves .exe/.cmd/.ps1 extensions
+    for cmd in ["bazelisk", "bazel"]:
+        path = shutil.which(cmd)
+        if path:
+            return cmd
+    return None
+
+
 def check_bazel_installed() -> bool:
     """Check if Bazel or Bazelisk is installed."""
-    for cmd in ["bazelisk", "bazel"]:
-        try:
-            result = subprocess.run(
-                [cmd, "version"],
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=10,  # 10 second timeout to prevent hanging
-            )
-            if result.returncode == 0:
-                print_status(f"Found {cmd}: {result.stdout.split()[0]}", "INFO")
-                return True
-        except FileNotFoundError:
-            continue
-        except subprocess.TimeoutExpired:
-            print_status(f"Timeout checking {cmd} version (command took too long)", "WARNING")
-            continue
+    cmd = _find_bazel_executable()
+    if cmd:
+        print_status(f"Found {cmd}", "INFO")
+        return True
     return False
 
 
 def get_bazel_command() -> str:
     """Get the appropriate Bazel command (bazelisk or bazel)."""
-    for cmd in ["bazelisk", "bazel"]:
-        try:
-            subprocess.run(
-                [cmd, "version"],
-                capture_output=True,
-                check=True,
-                timeout=10,  # 10 second timeout to prevent hanging
-            )
-            return cmd
-        except (FileNotFoundError, subprocess.CalledProcessError):
-            continue
-        except subprocess.TimeoutExpired:
-            print_status(f"Timeout checking {cmd} version (command took too long)", "WARNING")
-            continue
+    cmd = _find_bazel_executable()
+    if cmd:
+        return cmd
     raise RuntimeError("Neither bazel nor bazelisk found in PATH")
 
 
@@ -99,9 +80,16 @@ class BazelConfiguration:
         self.run_build = False
         self.run_clean = False
         self.run_config = False
+        self.run_coverage = False
         self.timing_data: Dict[str, float] = {}
+        # Warn when a phase exceeds this many seconds (incremental builds should stay fast)
+        self.slow_phase_warn_seconds: float = 60.0
+        # Pass --batch to bazel (avoids waiting on a stuck server; slower per invocation)
+        self.use_batch: bool = False
         # Verbose test output (--test_output=all) when token "vv" is present
         self.verbose_tests = False
+        # Timeout in seconds for build/test/coverage subprocesses (default: 10 min)
+        self.subprocess_timeout: int = 600
 
         # Default backends (matching CMake defaults)
         self.logging_backend = "loguru"  # Default: LOGURU (matches CMake)
@@ -187,6 +175,10 @@ class BazelConfiguration:
             elif arg_lower == "vv":
                 self.verbose_tests = True
 
+            # Avoid blocking on another Bazel server PID (use if you see "Another command is running")
+            elif arg_lower == "batch":
+                self.use_batch = True
+
             # Logging backends (with logging_ prefix)
             elif arg_lower.startswith("logging_"):
                 backend = arg_lower[8:]  # Remove "logging_" prefix
@@ -218,6 +210,8 @@ class BazelConfiguration:
                 self.run_build = True
             elif arg_lower == "test":
                 self.run_tests = True
+            elif arg_lower == "coverage":
+                self.run_coverage = True
             elif arg_lower == "clean":
                 self.run_clean = True
             elif arg_lower == "config":
@@ -262,10 +256,10 @@ class BazelConfiguration:
     def build_bazel_command(self, action: str) -> list[str]:
         """Build the Bazel command with all configurations."""
         bazel_cmd = get_bazel_command()
-        cmd = [bazel_cmd, action]
-
-        # Add server management flags to prevent hanging
-        # Use --noserver to disable Bazel server (prevents deadlocks on Windows)
+        cmd = [bazel_cmd]
+        if self.use_batch:
+            cmd.append("--batch")
+        cmd.append(action)
 
         # Add compiler-specific configuration
         if self.compiler == "clang":
@@ -311,6 +305,46 @@ class BazelConfiguration:
 
         return cmd
 
+    def _kill_stale_bazel_processes(self) -> None:
+        """Force-kill any stale Bazel server processes holding the output base lock.
+
+        Uses taskkill directly — never calls 'bazel shutdown' which itself requires
+        the lock and will hang if another instance is holding it.
+        """
+        print_status("Killing any stale Bazel server processes...", "INFO")
+        for proc_name in ["bazel-real.exe", "bazel.exe"]:
+            try:
+                result = subprocess.run(
+                    ["taskkill", "/F", "/IM", proc_name],
+                    capture_output=True,
+                    timeout=10,
+                    check=False,
+                )
+                if result.returncode == 0:
+                    print_status(f"Killed stale process: {proc_name}", "WARNING")
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                pass
+
+    def _shutdown_bazel_for_batch(self) -> None:
+        """Stop the Bazel server so --batch does not warn about differing startup options."""
+        if not self.use_batch:
+            return
+        bazel_cmd = get_bazel_command()
+        print_status(
+            "Running `bazel shutdown` before `--batch` (avoids startup-option mismatch on the server).",
+            "INFO",
+        )
+        try:
+            subprocess.run(
+                [bazel_cmd, "shutdown"],
+                capture_output=True,
+                text=True,
+                timeout=120,
+                check=False,
+            )
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            pass
+
     def print_configuration_summary(self) -> None:
         """Print a summary of the build configuration."""
         print("\n" + "=" * 80)
@@ -333,30 +367,35 @@ class BazelConfiguration:
         if self.cxx_standard:
             print(f"  C++ Standard:      {self.cxx_standard.upper()}")
         else:
-            print(f"  C++ Standard:      C++17 (default)")
+            print("  C++ Standard:      C++17 (default)")
 
         # Vectorization
         if self.vectorization:
             print(f"  Vectorization:     {self.vectorization.upper()}")
         else:
-            print(f"  Vectorization:     None")
+            print("  Vectorization:     None")
 
-        # Feature flags
+        # Feature flags (CMake defaults: mimalloc, magic_enum ON; opt-in via --config listed below)
         print(f"\n{Fore.CYAN}Feature Flags:{Style.RESET_ALL}")
         features = {
-            "mimalloc": "QUARISMA_ENABLE_MIMALLOC",
-            "magic_enum": "QUARISMA_ENABLE_MAGIC_ENUM",
-            "tbb": "QUARISMA_ENABLE_TBB",
-            "openmp": "QUARISMA_ENABLE_OPENMP",
-            "cuda": "QUARISMA_ENABLE_CUDA",
-            "hip": "QUARISMA_ENABLE_HIP",
-            "lto": "QUARISMA_ENABLE_LTO",
-            "enzyme": "QUARISMA_ENABLE_ENZYME",
+            "mimalloc": ("QUARISMA_ENABLE_MIMALLOC", True),
+            "magic_enum": ("QUARISMA_ENABLE_MAGIC_ENUM", True),
+            "tbb": ("QUARISMA_ENABLE_TBB", False),
+            "openmp": ("QUARISMA_ENABLE_OPENMP", False),
+            "cuda": ("QUARISMA_ENABLE_CUDA", False),
+            "hip": ("QUARISMA_ENABLE_HIP", False),
+            "lto": ("QUARISMA_ENABLE_LTO", False),
+            "enzyme": ("QUARISMA_ENABLE_ENZYME", False),
         }
 
-        for feature, flag in features.items():
-            status = "ON" if feature in self.configs else "OFF"
-            color = Fore.GREEN if status == "ON" else Fore.RED
+        for feature, (flag, cmake_default_on) in features.items():
+            if feature in self.configs:
+                status = "ON"
+            elif cmake_default_on:
+                status = "ON (default)"
+            else:
+                status = "OFF"
+            color = Fore.GREEN if status.startswith("ON") else Fore.RED
             print(f"  {flag:30} {color}{status}{Style.RESET_ALL}")
 
         # Logging backend
@@ -416,21 +455,28 @@ class BazelConfiguration:
             return
 
         print_status("Starting Bazel build...", "INFO")
+        self._shutdown_bazel_for_batch()
         cmd = self.build_bazel_command("build")
 
         print_status(f"Running: {' '.join(cmd)}", "INFO")
 
         try:
             start_time = time.time()
-            subprocess.run(cmd, check=True, timeout=3600)  # 1 hour timeout for build
+            subprocess.run(cmd, check=True, timeout=self.subprocess_timeout)
             elapsed = time.time() - start_time
             self.timing_data["build"] = elapsed
             print_status(f"Build completed successfully ({elapsed:.2f}s)", "SUCCESS")
+            if elapsed > self.slow_phase_warn_seconds:
+                print_status(
+                    f"Build took longer than {self.slow_phase_warn_seconds:.0f}s — check cold cache, "
+                    "machine load, or run a narrower target (e.g. //Library/Core:core_lib).",
+                    "WARNING",
+                )
         except subprocess.CalledProcessError as e:
             print_status(f"Build failed with exit code {e.returncode}", "ERROR")
             sys.exit(1)
         except subprocess.TimeoutExpired:
-            print_status("Build operation timed out (exceeded 1 hour)", "ERROR")
+            print_status(f"Build timed out (exceeded {self.subprocess_timeout}s)", "ERROR")
             sys.exit(1)
 
     def test(self) -> None:
@@ -439,6 +485,7 @@ class BazelConfiguration:
             return
 
         print_status("Running Bazel tests...", "INFO")
+        self._shutdown_bazel_for_batch()
         cmd = self.build_bazel_command("test")
 
         # Add test output flags (vv = full log for failures)
@@ -452,12 +499,18 @@ class BazelConfiguration:
 
         try:
             start_time = time.time()
-            result = subprocess.run(cmd, check=False, timeout=3600)  # 1 hour timeout for tests
+            result = subprocess.run(cmd, check=False, timeout=self.subprocess_timeout)
             elapsed = time.time() - start_time
             self.timing_data["test"] = elapsed
 
             if result.returncode == 0:
                 print_status(f"Tests completed successfully ({elapsed:.2f}s)", "SUCCESS")
+                if elapsed > self.slow_phase_warn_seconds:
+                    print_status(
+                        f"Tests took longer than {self.slow_phase_warn_seconds:.0f}s — "
+                        "narrow targets or check for hangs.",
+                        "WARNING",
+                    )
             elif result.returncode == 4:
                 # No test targets found - this is not an error
                 print_status(f"No test targets found ({elapsed:.2f}s)", "WARNING")
@@ -465,10 +518,48 @@ class BazelConfiguration:
                 print_status(f"Tests failed with exit code {result.returncode}", "ERROR")
                 sys.exit(1)
         except subprocess.TimeoutExpired:
-            print_status("Test operation timed out (exceeded 1 hour)", "ERROR")
+            print_status(f"Tests timed out (exceeded {self.subprocess_timeout}s)", "ERROR")
             sys.exit(1)
         except subprocess.CalledProcessError as e:
             print_status(f"Tests failed with exit code {e.returncode}", "ERROR")
+            sys.exit(1)
+
+    def coverage(self) -> None:
+        """Execute Bazel coverage."""
+        if not self.run_coverage:
+            return
+
+        print_status("Running Bazel coverage...", "INFO")
+        self._shutdown_bazel_for_batch()
+        cmd = self.build_bazel_command("coverage")
+
+        if self.verbose_tests:
+            cmd.append("--test_output=all")
+            cmd.append("--verbose_failures")
+        else:
+            cmd.append("--test_output=errors")
+
+        print_status(f"Running: {' '.join(cmd)}", "INFO")
+
+        try:
+            start_time = time.time()
+            result = subprocess.run(cmd, check=False, timeout=self.subprocess_timeout)
+            elapsed = time.time() - start_time
+            self.timing_data["coverage"] = elapsed
+
+            if result.returncode == 0:
+                print_status(f"Coverage completed successfully ({elapsed:.2f}s)", "SUCCESS")
+                print_status("Coverage report: bazel-out/_coverage/_coverage_report.dat", "INFO")
+            elif result.returncode == 4:
+                print_status(f"No coverage targets found ({elapsed:.2f}s)", "WARNING")
+            else:
+                print_status(f"Coverage failed with exit code {result.returncode}", "ERROR")
+                sys.exit(1)
+        except subprocess.TimeoutExpired:
+            print_status(f"Coverage timed out (exceeded {self.subprocess_timeout}s)", "ERROR")
+            sys.exit(1)
+        except subprocess.CalledProcessError as e:
+            print_status(f"Coverage failed with exit code {e.returncode}", "ERROR")
             sys.exit(1)
 
     def print_timing_summary(self) -> None:
@@ -498,8 +589,11 @@ class BazelConfiguration:
             self.print_configuration_summary()
         self.config()
         self.clean()
+        if self.run_build or self.run_tests or self.run_coverage:
+            self._kill_stale_bazel_processes()
         self.build()
         self.test()
+        self.coverage()
         self.print_timing_summary()
 
 
@@ -575,6 +669,8 @@ def print_help() -> None:
     print("  openmp        - OpenMP support")
     print("  enzyme        - Enzyme AD defines (see .bazelrc build:enzyme)")
     print("  vv            - Verbose Bazel test output (--test_output=all)")
+    print("  batch         - Pass --batch to Bazel; script runs `bazel shutdown` first to avoid")
+    print("                  startup-option warnings (or run: bazel shutdown; bazel --batch ...)")
     print("\nLogging backends:")
     print("  glog          - Google glog")
     print("  loguru        - Loguru logging")
@@ -588,6 +684,7 @@ def print_help() -> None:
     print("  config        - Show configuration summary (no build)")
     print("  build         - Build the project")
     print("  test          - Run tests")
+    print("  coverage      - Run tests with coverage instrumentation (lcov report)")
     print("  clean         - Clean build artifacts")
     print("\nDefault Behavior:")
     print("  If no compiler or build tool is specified, defaults to Ninja + Clang")
@@ -627,7 +724,7 @@ def main() -> None:
         config = BazelConfiguration(arg_list)
 
         # If no actions specified, default to build
-        if not (config.run_build or config.run_tests or config.run_clean or config.run_config):
+        if not (config.run_build or config.run_tests or config.run_clean or config.run_config or config.run_coverage):
             config.run_build = True
 
         # Execute build pipeline
@@ -645,5 +742,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-

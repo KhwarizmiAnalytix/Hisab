@@ -1,9 +1,61 @@
 # =============================================================================
-# Quarisma Profiler Library (sources under Library/Profiler: base/, common/, kineto/, native/, …)
+# Quarisma Profiler Library (matches Library/Profiler/CMakeLists.txt backend splits)
 # =============================================================================
 load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
 
 package(default_visibility = ["//visibility:public"])
+
+# KINETO backend: bespoke/base, bespoke/kineto, bespoke/common (no unwind)
+_KINETO_BACKEND_SRCS = glob(
+    [
+        "kineto_*.cpp",
+        "kineto/**/*.cpp",
+        "bespoke/kineto/**/*.cpp",
+        "bespoke/common/**/*.cpp",
+        "bespoke/base/**/*.cpp",
+    ],
+    exclude = [
+        "bespoke/common/unwind/**/*.cpp",
+        "Testing/**",
+    ],
+    allow_empty = True,
+)
+
+# ITT backend (when PROFILER_ENABLE_ITT and not KINETO): base + common + itt
+_ITT_BACKEND_SRCS = glob(
+    [
+        "bespoke/base/**/*.cpp",
+        "bespoke/common/**/*.cpp",
+        "bespoke/itt/**/*.cpp",
+    ],
+    exclude = [
+        "bespoke/common/unwind/**/*.cpp",
+        "Testing/**",
+    ],
+    allow_empty = True,
+)
+
+_KINETO_BACKEND_HDRS = glob(
+    [
+        "kineto_*.h",
+        "kineto/**/*.h",
+        "bespoke/kineto/**/*.h",
+        "bespoke/common/**/*.h",
+        "bespoke/base/**/*.h",
+    ],
+    exclude = ["Testing/**"],
+    allow_empty = True,
+)
+
+_ITT_BACKEND_HDRS = glob(
+    [
+        "bespoke/base/**/*.h",
+        "bespoke/common/**/*.h",
+        "bespoke/itt/**/*.h",
+    ],
+    exclude = ["Testing/**"],
+    allow_empty = True,
+)
 
 filegroup(
     name = "profiler_hdrs",
@@ -14,6 +66,8 @@ filegroup(
         ],
         exclude = [
             "Testing/**",
+            "native/**",
+            "bespoke/**",
         ],
         allow_empty = True,
     ),
@@ -28,10 +82,9 @@ filegroup(
         ],
         exclude = [
             "native/**/*.cpp",
-            "bespoke/common/**/*.cpp",
+            "bespoke/**",
             "kineto_*.cpp",
             "kineto/**/*.cpp",
-            "bespoke/kineto/**/*.cpp",
             "Testing/**",
         ],
         allow_empty = True,
@@ -46,21 +99,9 @@ cc_library(
         "//bazel:enable_native_profiler": glob(["native/**/*.cpp"], exclude = ["Testing/**"], allow_empty = True),
         "//conditions:default": [],
     }) + select({
-        "//bazel:enable_kineto": glob(
-            [
-                "kineto_*.cpp",
-                "kineto/**/*.cpp",
-                "bespoke/kineto/**/*.cpp",
-                "bespoke/common/**/*.cpp",
-                "native/**/*.cpp",
-            ],
-            exclude = [
-                "bespoke/common/unwind/**/*.cpp",
-                "Testing/**",
-            ],
-            allow_empty = True,
-        ),
-        "//conditions:default": [],
+        "//bazel:enable_native_profiler": [],
+        "//bazel:enable_itt": _ITT_BACKEND_SRCS,
+        "//conditions:default": _KINETO_BACKEND_SRCS,
     }),
     hdrs = [
         ":profiler_hdrs",
@@ -68,22 +109,21 @@ cc_library(
         "//bazel:enable_native_profiler": glob(["native/**/*.h", "native/**/*.hxx"], exclude = ["Testing/**"], allow_empty = True),
         "//conditions:default": [],
     }) + select({
-        "//bazel:enable_kineto": glob(["kineto_*.h", "native/**/*.h", "native/**/*.hxx"], exclude = ["Testing/**"], allow_empty = True),
-        "//conditions:default": [],
+        "//bazel:enable_native_profiler": [],
+        "//bazel:enable_itt": _ITT_BACKEND_HDRS,
+        "//conditions:default": _KINETO_BACKEND_HDRS,
     }),
     copts = quarisma_copts(),
     defines = quarisma_defines() + select({
         "//bazel:shared_libs": ["QUARISMA_SHARED_DEFINE", "QUARISMA_BUILDING_DLL"],
         "//conditions:default": ["QUARISMA_STATIC_DEFINE"],
-    }) + select({
-        "//bazel:enable_kineto": ["PROFILER_HAS_KINETO=1"],
-        "//conditions:default": [],
     }),
     includes = [
         ".",
     ] + select({
-        "//bazel:enable_kineto": ["kineto"],
-        "//conditions:default": [],
+        "//bazel:enable_native_profiler": [],
+        "//bazel:enable_itt": [],
+        "//conditions:default": ["kineto"],
     }),
     linkopts = quarisma_linkopts(),
     linkstatic = select({
@@ -94,8 +134,9 @@ cc_library(
         "@fmt//:fmt",
         "//Library/Core:core_lib",
     ] + select({
-        "//bazel:enable_kineto": ["@kineto//:kineto"],
-        "//conditions:default": [],
+        "//bazel:enable_native_profiler": [],
+        "//bazel:enable_itt": [],
+        "//conditions:default": ["@kineto//:kineto"],
     }),
     alwayslink = False,
 )

@@ -6,16 +6,21 @@ load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_lin
 
 package(default_visibility = ["//visibility:public"])
 
-_PROFILER_TEST_FILES = [
+# =============================================================================
+# Test file lists (mirror CMake's glob-then-exclude logic)
+# CMake step 1: glob all Test*.cpp
+# CMake step 2: remove TestKineto* when PROFILER_ENABLE_KINETO is OFF
+# CMake step 3: remove PROFILER_NATIVE_ONLY_TESTS when PROFILER_ENABLE_NATIVE_PROFILER is OFF
+# =============================================================================
+
+# Native-only tests: kept only when PROFILER_ENABLE_NATIVE_PROFILER=ON
+# (matches CMake PROFILER_NATIVE_PROFILER_TESTS list)
+_PROFILER_NATIVE_ONLY_TESTS = [
     "TestEnhancedProfiler.cpp",
-    "TestITTWrapper.cpp",
-    "TestKinetoProfiler.cpp",
-    "TestKinetoShim.cpp",
     "TestProfiler.cpp",
     "TestProfilerAnalysis.cpp",
     "TestProfilerAnnotationParsing.cpp",
     "TestProfilerAnnotationStack.cpp",
-    "TestProfilerAutogradTrace.cpp",
     "TestProfilerBackendIntegration.cpp",
     "TestProfilerChromeTraceHierarchical.cpp",
     "TestProfilerExporters.cpp",
@@ -34,6 +39,39 @@ _PROFILER_TEST_FILES = [
     "TestXPlaneBuilder.cpp",
     "TestXPlaneSchema.cpp",
     "TestXPlaneUtils.cpp",
+]
+
+# Kineto tests: excluded when kineto is OFF (native or ITT backends)
+_PROFILER_KINETO_TESTS = [
+    "TestKinetoProfiler.cpp",
+    "TestKinetoShim.cpp",
+]
+
+# Native profiler mode: all tests EXCEPT Kineto (kineto is off in native mode)
+# Matches CMake: step 2 removes TestKineto* (kineto OFF), step 3 keeps native tests (native ON)
+_PROFILER_TEST_FILES_NATIVE = (
+    _PROFILER_NATIVE_ONLY_TESTS + [
+        "TestITTWrapper.cpp",
+        "TestProfilerAutogradTrace.cpp",
+        "TestXSigmaProfiler.cpp",
+    ]
+)
+
+# ITT mode: non-native tests only, no Kineto tests (kineto is off when ITT is active)
+# Matches CMake: step 2 removes TestKineto* (kineto OFF), step 3 removes native-only (native OFF)
+_PROFILER_TEST_FILES_ITT = [
+    "TestITTWrapper.cpp",
+    "TestProfilerAutogradTrace.cpp",
+    "TestXSigmaProfiler.cpp",
+]
+
+# Kineto mode (default): non-native tests + Kineto tests
+# Matches CMake: step 2 keeps TestKineto* (kineto ON), step 3 removes native-only (native OFF)
+_PROFILER_TEST_FILES_KINETO = [
+    "TestITTWrapper.cpp",
+    "TestKinetoProfiler.cpp",
+    "TestKinetoShim.cpp",
+    "TestProfilerAutogradTrace.cpp",
     "TestXSigmaProfiler.cpp",
 ]
 
@@ -41,7 +79,11 @@ cc_test(
     name = "ProfilerCxxTests",
     size = "large",
     timeout = "long",
-    srcs = _PROFILER_TEST_FILES,
+    srcs = select({
+        "//bazel:enable_native_profiler": _PROFILER_TEST_FILES_NATIVE,
+        "//bazel:enable_itt": _PROFILER_TEST_FILES_ITT,
+        "//conditions:default": _PROFILER_TEST_FILES_KINETO,
+    }),
     copts = quarisma_copts(),
     defines = quarisma_defines() + [
         "PROFILER_GOOGLE_TEST",
@@ -55,9 +97,6 @@ cc_test(
     }) + select({
         "//bazel:enable_hip": ["PROFILER_HAS_HIP=1"],
         "//conditions:default": ["PROFILER_HAS_HIP=0"],
-    }) + select({
-        "//bazel:enable_kineto": ["PROFILER_HAS_KINETO=1"],
-        "//conditions:default": ["PROFILER_HAS_KINETO=0"],
     }),
     includes = ["."],
     linkopts = quarisma_linkopts(),

@@ -9,10 +9,13 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "magic_enum",
-    hdrs = glob([
-        "include/magic_enum/*.hpp",
-        "include/magic_enum.hpp",
-    ]),
+    hdrs = glob(
+        [
+            "include/magic_enum/**/*.hpp",
+            "include/magic_enum.hpp",
+        ],
+        allow_empty = True,
+    ),
     includes = ["include"],
     strip_include_prefix = "include",
 )

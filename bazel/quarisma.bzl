@@ -1,8 +1,9 @@
 # =============================================================================
 # Quarisma Bazel Helper Functions and Macros
 # =============================================================================
-# Common functions for compiler flags, defines, and link options
-# Equivalent to various CMake modules in Cmake/tools and Cmake/flags
+# Common functions for compiler flags, defines, and link options.
+# Defaults match root CMakeLists.txt + Cmake/tools (QUARISMA_* / PROFILER_*).
+# Opt out with --define=quarisma_enable_*=false where disable_* config_settings exist.
 # =============================================================================
 
 def quarisma_copts():
@@ -22,7 +23,7 @@ def quarisma_copts():
     })
 
 def quarisma_defines():
-    """Returns common preprocessor defines for Quarisma targets."""
+    """Returns common preprocessor defines for Quarisma targets (CMake-equivalent defaults)."""
     base_defines = [
         # Threading configuration (matches Cmake/tools/threads.cmake)
         "QUARISMA_MAX_THREADS=64",
@@ -40,57 +41,99 @@ def quarisma_defines():
         ],
     })
 
-    # Add feature-specific defines based on build configuration
-    return base_defines + select({
+    # CUDA / HIP (opt-in)
+    base_defines += select({
         "//bazel:enable_cuda": ["QUARISMA_ENABLE_CUDA", "QUARISMA_HAS_CUDA=1"],
         "//conditions:default": ["QUARISMA_HAS_CUDA=0"],
-    }) + select({
+    })
+    base_defines += select({
         "//bazel:enable_hip": ["QUARISMA_ENABLE_HIP", "QUARISMA_HAS_HIP=1"],
         "//conditions:default": ["QUARISMA_HAS_HIP=0"],
-    }) + select({
+    })
+
+    # TBB / MKL / OpenMP (opt-in)
+    base_defines += select({
         "//bazel:enable_tbb": ["QUARISMA_HAS_TBB"],
         "//conditions:default": [],
-    }) + select({
+    })
+    base_defines += select({
         "//bazel:enable_mkl": ["QUARISMA_ENABLE_MKL"],
         "//conditions:default": [],
-    }) + select({
-        "//bazel:enable_mimalloc": ["QUARISMA_ENABLE_MIMALLOC"],
-        "//conditions:default": [],
-    }) + select({
-        "//bazel:enable_magic_enum": ["QUARISMA_ENABLE_MAGICENUM"],
-        "//conditions:default": [],
-    }) + select({
-        "//bazel:enable_kineto": ["PROFILER_ENABLE_KINETO", "PROFILER_HAS_KINETO=1"],
-        "//conditions:default": ["PROFILER_HAS_KINETO=0"],
-    }) + select({
-        "//bazel:enable_native_profiler": ["PROFILER_ENABLE_NATIVE_PROFILER"],
-        "//conditions:default": [],
-    }) + select({
-        "//bazel:enable_itt": ["PROFILER_ENABLE_ITT"],
-        "//conditions:default": [],
-    }) + select({
+    })
+    base_defines += select({
         "//bazel:enable_openmp": ["QUARISMA_ENABLE_OPENMP"],
         "//conditions:default": [],
-    }) + select({
+    })
+
+    # mimalloc — CMake default ON; code uses QUARISMA_HAS_MIMALLOC (compile_definitions.cmake).
+    # Bazel //Library/Core defaults to static linking on Windows; mimalloc's MSVC override
+    # requires a DLL build — match by disabling mimalloc there (use shared_libs or disable_mimalloc).
+    base_defines += select({
+        "//bazel:disable_mimalloc": ["QUARISMA_HAS_MIMALLOC=0"],
+        "@platforms//os:windows": ["QUARISMA_HAS_MIMALLOC=0"],
+        "//conditions:default": ["QUARISMA_HAS_MIMALLOC=1"],
+    })
+
+    # magic_enum — CMake default ON (QUARISMA_HAS_MAGICENUM in compile_definitions.cmake)
+    base_defines += select({
+        "//bazel:disable_magic_enum": ["QUARISMA_HAS_MAGICENUM=0"],
+        "//conditions:default": ["QUARISMA_HAS_MAGICENUM=1"],
+    })
+
+    # Profiler backends — mutually exclusive; default KINETO (QUARISMA_PROFILER_TYPE default)
+    base_defines += select({
+        "//bazel:enable_native_profiler": [
+            "PROFILER_HAS_NATIVE_PROFILER=1",
+            "PROFILER_HAS_KINETO=0",
+            "PROFILER_HAS_ITT=0",
+        ],
+        "//bazel:enable_itt": [
+            "PROFILER_HAS_ITT=1",
+            "PROFILER_HAS_KINETO=0",
+            "PROFILER_HAS_NATIVE_PROFILER=0",
+        ],
+        "//conditions:default": [
+            "PROFILER_HAS_KINETO=1",
+            "PROFILER_HAS_ITT=0",
+            "PROFILER_HAS_NATIVE_PROFILER=0",
+        ],
+    })
+
+    # LU pivoting: default OFF — only when //bazel:lu_pivoting
+    base_defines += select({
         "//bazel:lu_pivoting": ["QUARISMA_LU_PIVOTING"],
         "//conditions:default": [],
-    }) + select({
-        "//bazel:sobol_1111": ["QUARISMA_SOBOL_1111"],
-        "//conditions:default": [],
-    }) + select({
+    })
+
+    # Sobol 1111: default ON (QUARISMA_SOBOL_1111=ON in CMake)
+    base_defines += select({
+        "//bazel:disable_sobol_1111": [],
+        "//conditions:default": ["QUARISMA_SOBOL_1111=1"],
+    })
+
+    # Enzyme (opt-in)
+    base_defines += select({
         "//bazel:enable_enzyme": ["QUARISMA_HAS_ENZYME=1"],
         "//conditions:default": ["QUARISMA_HAS_ENZYME=0"],
-    }) + select({
+    })
+
+    # Logging — default LOGURU (QUARISMA_LOGGING_BACKEND default in Cmake/tools/logging.cmake)
+    base_defines += select({
         "//bazel:logging_glog": ["QUARISMA_USE_GLOG"],
         "//bazel:logging_loguru": ["QUARISMA_USE_LOGURU"],
         "//bazel:logging_native": ["QUARISMA_USE_NATIVE_LOGGING"],
-        "//conditions:default": [],
-    }) + select({
+        "//conditions:default": ["QUARISMA_USE_LOGURU"],
+    })
+
+    # GPU allocation — default POOL_ASYNC
+    base_defines += select({
         "//bazel:gpu_alloc_sync": ["QUARISMA_GPU_ALLOC_SYNC"],
         "//bazel:gpu_alloc_async": ["QUARISMA_GPU_ALLOC_ASYNC"],
         "//bazel:gpu_alloc_pool_async": ["QUARISMA_GPU_ALLOC_POOL_ASYNC"],
-        "//conditions:default": ["QUARISMA_GPU_ALLOC_POOL_ASYNC"],  # Default
+        "//conditions:default": ["QUARISMA_GPU_ALLOC_POOL_ASYNC"],
     })
+
+    return base_defines
 
 def quarisma_linkopts():
     """Returns common linker options for Quarisma targets."""

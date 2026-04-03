@@ -51,6 +51,8 @@ filegroup(
             "parallel/std_thread/*.cpp",
             "parallel/STDThread/*.cpp",
             "parallel/openmp/*.cpp",
+            # logging.cpp is excluded here and added back via select in core_lib
+            # (excluded only for native logging backend — matches CMake QUARISMA_USE_NATIVE_LOGGING)
             "logging/logging.cpp",
         ],
         allow_empty = True,
@@ -66,12 +68,22 @@ cc_library(
     srcs = [
         ":core_srcs",
     ] + select({
+        # logging.cpp excluded from native logging backend (matches CMake QUARISMA_USE_NATIVE_LOGGING)
+        "//bazel:logging_native": [],
+        "//conditions:default": glob(["logging/logging.cpp"], allow_empty = True),
+    }) + select({
         "//bazel:enable_cuda": glob(["memory/gpu/*.cpp", "memory/cpu/allocator_device.cpp"], allow_empty = True),
         "//bazel:enable_hip": glob(["memory/gpu/*.cpp", "memory/cpu/allocator_device.cpp"], allow_empty = True),
         "//conditions:default": [],
     }) + select({
+        # Parallel backend: TBB > OpenMP > std_thread (matches CMake exclusion logic)
         "//bazel:enable_tbb": glob(["parallel/tbb/*.cpp"], allow_empty = True),
+        "//bazel:enable_openmp": glob(["parallel/openmp/*.cpp"], allow_empty = True),
         "//conditions:default": glob(["parallel/std_thread/*.cpp"], allow_empty = True),
+    }) + select({
+        # Compression — matches CMake QUARISMA_ENABLE_COMPRESSION + QUARISMA_COMPRESSION_TYPE=SNAPPY
+        "//bazel:compression_snappy": glob(["compression/snappy.cpp"], allow_empty = True),
+        "//conditions:default": [],
     }),
     hdrs = [
         ":core_hdrs",
@@ -81,15 +93,16 @@ cc_library(
         "//conditions:default": [],
     }) + select({
         "//bazel:enable_tbb": glob(["parallel/tbb/*.h", "parallel/tbb/*.hxx"], allow_empty = True),
+        "//bazel:enable_openmp": glob(["parallel/openmp/*.h", "parallel/openmp/*.hxx"], allow_empty = True),
         "//conditions:default": glob(["parallel/std_thread/*.h", "parallel/std_thread/*.hxx"], allow_empty = True),
+    }) + select({
+        "//bazel:compression_snappy": glob(["compression/snappy.h"], allow_empty = True),
+        "//conditions:default": [],
     }),
     copts = quarisma_copts(),
     defines = quarisma_defines() + select({
         "//bazel:shared_libs": ["QUARISMA_SHARED_DEFINE", "QUARISMA_BUILDING_DLL"],
         "//conditions:default": ["QUARISMA_STATIC_DEFINE"],
-    }) + select({
-        "//bazel:enable_kineto": ["PROFILER_HAS_KINETO=1"],
-        "//conditions:default": [],
     }),
     includes = [
         ".",
@@ -108,14 +121,16 @@ cc_library(
         "@fmt//:fmt",
         "//ThirdParty/cpuinfo:cpuinfo",
     ] + select({
-        "//bazel:enable_magic_enum": ["@magic_enum//:magic_enum"],
-        "//conditions:default": [],
+        "//bazel:disable_magic_enum": [],
+        "//conditions:default": ["@magic_enum//:magic_enum"],
     }) + select({
-        "//bazel:enable_mimalloc": ["@mimalloc//:mimalloc"],
-        "//conditions:default": [],
+        "//bazel:disable_mimalloc": [],
+        "@platforms//os:windows": [],
+        "//conditions:default": ["@mimalloc//:mimalloc"],
     }) + select({
-        "//bazel:enable_kineto": ["@kineto//:kineto"],
-        "//conditions:default": [],
+        "//bazel:enable_native_profiler": [],
+        "//bazel:enable_itt": [],
+        "//conditions:default": ["@kineto//:kineto"],
     }) + select({
         "//bazel:enable_tbb": [
             "@tbb//:tbb",
@@ -131,7 +146,7 @@ cc_library(
     }) + select({
         "//bazel:logging_glog": ["@glog//:glog"],
         "//bazel:logging_loguru": ["@loguru//:loguru"],
-        "//conditions:default": [],
+        "//conditions:default": ["@loguru//:loguru"],
     }),
     alwayslink = False,
     visibility = [

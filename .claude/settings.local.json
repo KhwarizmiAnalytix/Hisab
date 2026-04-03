@@ -78,7 +78,16 @@
       "Bash(sudo update-alternatives:*)",
       "Bash(clang++-20:*)",
       "Bash(apt search:*)",
-      "Bash(python Scripts/iwyu/iwyu_configure_detector.py:*)"
+      "Bash(python Scripts/iwyu/iwyu_configure_detector.py:*)",
+      "Bash(taskkill /PID 39316 /F)",
+      "Bash(cmd.exe /c \"taskkill /PID 39316 /F\")",
+      "Bash(cmd.exe /c \"taskkill /PID 39316 /F 2>&1\")",
+      "Bash(cmd.exe /c \"tasklist 2>&1 | findstr /i bazel\")",
+      "Bash(python -c \"import os; print\\(os.cpu_count\\(\\)\\)\")",
+      "Bash(cmd.exe /c \"tasklist 2>&1 | findstr /i \\\\\"bazel java\\\\\"\")",
+      "Bash(python Scripts/setup_bazel.py config.build.test.coverage --help)",
+      "Bash(python Scripts/setup_bazel.py config.build.test)",
+      "Bash(python Scripts/setup_bazel.py config.BUILD)"
     ],
     "deny": [],
     "ask": []

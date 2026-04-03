@@ -65,6 +65,12 @@ config_setting(
     define_values = {"quarisma_enable_mimalloc": "true"},
 )
 
+# Opt-out when CMake-equivalent default is ON (mimalloc, magic_enum, Sobol 1111)
+config_setting(
+    name = "disable_mimalloc",
+    define_values = {"quarisma_enable_mimalloc": "false"},
+)
+
 # =============================================================================
 # Utility Library Configuration
 # =============================================================================
@@ -72,6 +78,11 @@ config_setting(
 config_setting(
     name = "enable_magic_enum",
     define_values = {"quarisma_enable_magic_enum": "true"},
+)
+
+config_setting(
+    name = "disable_magic_enum",
+    define_values = {"quarisma_enable_magic_enum": "false"},
 )
 
 # =============================================================================
@@ -145,6 +156,11 @@ config_setting(
     define_values = {"quarisma_sobol_1111": "true"},
 )
 
+config_setting(
+    name = "disable_sobol_1111",
+    define_values = {"quarisma_sobol_1111": "false"},
+)
+
 # =============================================================================
 # Enzyme AD (matches CMake QUARISMA_ENABLE_ENZYME / QUARISMA_HAS_ENZYME)
 # =============================================================================
@@ -152,6 +168,24 @@ config_setting(
 config_setting(
     name = "enable_enzyme",
     define_values = {"quarisma_enable_enzyme": "true"},
+)
+
+# =============================================================================
+# Compression Configuration
+# =============================================================================
+
+config_setting(
+    name = "enable_compression",
+    define_values = {"quarisma_enable_compression": "true"},
+)
+
+# Matches CMake: QUARISMA_ENABLE_COMPRESSION=ON + QUARISMA_COMPRESSION_TYPE=SNAPPY
+config_setting(
+    name = "compression_snappy",
+    define_values = {
+        "quarisma_enable_compression": "true",
+        "quarisma_compression_type": "snappy",
+    },
 )
 
 # =============================================================================

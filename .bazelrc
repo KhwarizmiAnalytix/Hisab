@@ -23,6 +23,18 @@ build --experimental_repo_remote_exec
 build --color=yes
 
 # =============================================================================
+# Responsiveness / hang-prevention flags
+# =============================================================================
+# Fail fast if the Bazel server doesn't respond within 30s
+startup --connect_timeout_secs=30
+# Show progress every 10s so a silent hang is immediately visible
+build --show_progress_rate_limit=10
+# Limit parallel jobs to avoid starving the system (uses all cores by default)
+build --jobs=HOST_CPUS*.5
+# Fetch timeout: abort if a single repository fetch takes more than 60s
+build --experimental_repository_cache_hardlinks
+
+# =============================================================================
 # C++ Standard Selection
 # =============================================================================
 # Default is C++17 (set above)
@@ -223,6 +235,8 @@ build:enzyme --define=quarisma_enable_enzyme=true
 # =============================================================================
 test --test_output=errors
 test --test_summary=detailed
+# Kill individual tests that hang (5 minutes per test)
+test --test_timeout=300
 
 # Enable Google Test
 build:gtest --define=quarisma_enable_gtest=true
@@ -235,7 +249,9 @@ build:benchmark --define=quarisma_enable_benchmark=true
 # =============================================================================
 coverage --combined_report=lcov
 coverage --instrument_test_targets
-coverage --experimental_use_llvm_covmap
+# Note: --experimental_use_llvm_covmap is not supported on Windows/MSVC and
+# may cause hangs. Enable via --config=llvm_coverage on Linux/macOS with Clang.
+build:llvm_coverage --experimental_use_llvm_covmap
 
 # =============================================================================
 # Logging Backend Selection
@@ -256,6 +272,21 @@ build:gpu_alloc_pool_async --define=quarisma_gpu_alloc=pool_async
 # =============================================================================
 # Use cmd.exe for genrule commands on Windows
 build:windows --shell_executable=cmd.exe
+
+# =============================================================================
+# Bazel --batch (manual use)
+# =============================================================================
+# `--batch` is a startup option. If a server is already running from a prior `bazel` command
+# without `--batch`, the next `bazel --batch ...` may warn and restart the server. Run
+# `bazel shutdown` first, or use:  bazel shutdown; bazel --batch test ...
+# Scripts/setup_bazel.py with token `batch` runs shutdown before build/test.
+
+# =============================================================================
+# CMake-equivalent defaults
+# =============================================================================
+# Feature defaults (mimalloc, magic_enum, KINETO profiler, LOGURU, Sobol 1111, POOL_ASYNC GPU
+# alloc) are applied in //bazel:quarisma.bzl — plain `bazel build //...` matches root CMakeLists.txt
+# without extra --define. Opt out with --define=quarisma_enable_*=false / disable_sobol_1111, etc.
 
 # =============================================================================
 # Default Configuration
