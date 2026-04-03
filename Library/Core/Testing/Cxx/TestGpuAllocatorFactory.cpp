@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -22,7 +22,6 @@
  */
 
 #include "baseTest.h"
-#include "common/configure.h"
 #include "common/macros.h"
 
 #if QUARISMA_HAS_CUDA

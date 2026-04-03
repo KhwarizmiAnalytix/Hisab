@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -26,7 +26,6 @@
 
 #include <cstdlib>
 
-#include "common/configure.h"
 #include "common/export.h"
 #include "common/macros.h"
 

@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -22,8 +22,6 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
-
-#include "logging/logger.h"
 
 namespace quarisma::tracing
 {
@@ -53,9 +51,9 @@ const char* get_event_category_name(event_category category)
     }
 }
 
-void event_collector::set_current_thread_name(const char* name)
+void event_collector::set_current_thread_name(const char* /*name*/)
 {
-    quarisma::logger::SetThreadName(name);
+    //quarisma::logger::SetThreadName(name);
 }
 
 void set_event_collector(event_category category, const event_collector* collector)

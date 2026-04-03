@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -40,9 +40,9 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
+#include "common/flat_hash.h"
 #include "native/core/timespan.h"
 #include "native/exporters/xplane/xplane.h"
-#include "util/flat_hash.h"
 
 namespace quarisma
 {

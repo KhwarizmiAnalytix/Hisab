@@ -7,8 +7,8 @@
 #include <forward_list>
 #include <utility>
 
-#include "common/macros.h"
 #include "common/array_ref.h"
+#include "common/profiler_macros.h"
 
 namespace quarisma::profiler_impl::impl
 {
@@ -77,12 +77,12 @@ public:
         quarisma::array_ref<T0> src)
     {
         size_t n = src.size();
-        if QUARISMA_UNLIKELY (n == 0)
+        if PROFILER_UNLIKELY (n == 0)
         {
             return;
         }
         maybe_grow();
-        if QUARISMA_LIKELY (next_ && (next_ + n <= end_))
+        if PROFILER_LIKELY (next_ && (next_ + n <= end_))
         {
             std::memcpy((void*)next_, (void*)src.begin(), n * sizeof(T0));
             next_ += n;
@@ -171,7 +171,7 @@ public:
             auto a = address();
             if (a.first == nullptr)
             {
-                // QUARISMA_CHECK(!checked, "Invalid access on AppendOnlyList.");
+                // PROFILER_CHECK(!checked, "Invalid access on AppendOnlyList.");
                 return nullptr;
             }
             return a.first->data() + a.second;
@@ -189,7 +189,7 @@ public:
 private:
     void maybe_grow()
     {
-        if QUARISMA_UNLIKELY (next_ == end_)
+        if PROFILER_UNLIKELY (next_ == end_)
         {
             buffer_last_ = buffer_.emplace_after(buffer_last_);
             n_blocks_++;

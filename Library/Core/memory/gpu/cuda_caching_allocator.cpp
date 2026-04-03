@@ -13,7 +13,6 @@
 #include <utility>
 #include <vector>
 
-#include "common/configure.h"
 #include "common/macros.h"
 #include "logging/logger.h"
 #include "util/exception.h"

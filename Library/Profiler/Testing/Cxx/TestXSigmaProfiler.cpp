@@ -11,7 +11,7 @@
 
 #include "baseTest.h"
 
-#if QUARISMA_HAS_PROFILER
+#if PROFILER_HAS_PROFILER
 
 #include <chrono>
 #include <thread>
@@ -316,4 +316,4 @@ TEST_F(ProfilerSessionTest, StateTransitions)
     EXPECT_EQ(get_profiler_state(), profiler_state_enum::Ready);
 }
 
-#endif  // QUARISMA_HAS_PROFILER
+#endif  // PROFILER_HAS_PROFILER

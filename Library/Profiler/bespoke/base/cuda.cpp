@@ -1,12 +1,12 @@
 #include <sstream>
 #if 0
 #ifndef ROCM_ON_WINDOWS
-#ifdef QUARISMA_CUDA_USE_NVTX3
+#ifdef PROFILER_CUDA_USE_NVTX3
 #include <nvtx3/nvtx3.hpp>
 #else
 #include <nvToolsExt.h>
 #endif
-#else  // ROCM_ON_WINDOWS
+#else   // ROCM_ON_WINDOWS
 #endif  // ROCM_ON_WINDOWS
 #include <quarisma/cuda/CUDAGuard.h>
 #include <quarisma/util/ApproximateClock.h>
@@ -36,29 +36,29 @@ static void cudaCheck(cudaError_t result, const char* file, int line) {
     } else {
       ss << cudaGetErrorString(result);
     }
-    // QUARISMA_CHECK(false, ss.str());
+    // PROFILER_CHECK(false, ss.str());
   }
 }
-#define QUARISMA_CUDA_CHECK(result) cudaCheck(result, __FILE__, __LINE__);
+#define PROFILER_CUDA_CHECK(result) cudaCheck(result, __FILE__, __LINE__);
 
 struct CUDAMethods : public ProfilerStubs {
   void record(
-      quarisma::device_option::int_t* device,
+      int16_t* device,
       ProfilerVoidEventStub* event,
       int64_t* cpu_ns) const override {
     if (device) {
-      QUARISMA_CUDA_CHECK(quarisma::cuda::GetDevice(device));
+      PROFILER_CUDA_CHECK(quarisma::cuda::GetDevice(device));
     }
     CUevent_st* cuda_event_ptr{nullptr};
-    QUARISMA_CUDA_CHECK(cudaEventCreate(&cuda_event_ptr));
+    PROFILER_CUDA_CHECK(cudaEventCreate(&cuda_event_ptr));
     *event = std::shared_ptr<CUevent_st>(cuda_event_ptr, [](CUevent_st* ptr) {
-      QUARISMA_CUDA_CHECK(cudaEventDestroy(ptr));
+      PROFILER_CUDA_CHECK(cudaEventDestroy(ptr));
     });
     auto stream = quarisma::cuda::getCurrentCUDAStream();
     if (cpu_ns) {
       *cpu_ns = quarisma::getTime();
     }
-    QUARISMA_CUDA_CHECK(cudaEventRecord(cuda_event_ptr, stream));
+    PROFILER_CUDA_CHECK(cudaEventRecord(cuda_event_ptr, stream));
   }
 
   float elapsed(
@@ -66,10 +66,10 @@ struct CUDAMethods : public ProfilerStubs {
       const ProfilerVoidEventStub* event2_) const override {
     auto event = (const ProfilerEventStub*)(event_);
     auto event2 = (const ProfilerEventStub*)(event2_);
-    QUARISMA_CUDA_CHECK(cudaEventSynchronize(event->get()));
-    QUARISMA_CUDA_CHECK(cudaEventSynchronize(event2->get()));
+    PROFILER_CUDA_CHECK(cudaEventSynchronize(event->get()));
+    PROFILER_CUDA_CHECK(cudaEventSynchronize(event2->get()));
     float ms = 0;
-    QUARISMA_CUDA_CHECK(cudaEventElapsedTime(&ms, event->get(), event2->get()));
+    PROFILER_CUDA_CHECK(cudaEventElapsedTime(&ms, event->get(), event2->get()));
     // NOLINTNEXTLINE(bugprone-narrowing-conversions,cppcoreguidelines-avoid-magic-numbers,cppcoreguidelines-narrowing-conversions)
     return ms * 1000.0;
   }
@@ -88,7 +88,7 @@ struct CUDAMethods : public ProfilerStubs {
   }
 #else  // ROCM_ON_WINDOWS
   static void printUnavailableWarning() {
-    QUARISMA_LOG_WARNING("Warning: roctracer isn't available on Windows");
+    // PROFILER_LOG_WARNING("Warning: roctracer isn't available on Windows");
   }
   void mark(const char* name) const override {
     printUnavailableWarning();
@@ -110,7 +110,7 @@ struct CUDAMethods : public ProfilerStubs {
   }
 
   void synchronize() const override {
-    QUARISMA_CUDA_CHECK(cudaDeviceSynchronize());
+    PROFILER_CUDA_CHECK(cudaDeviceSynchronize());
   }
 
   bool enabled() const override {

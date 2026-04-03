@@ -4,9 +4,35 @@
 #include <utility>
 
 #include "bespoke/base/thread_local_debug_info.h"
-#include "common/export.h"
 #include "bespoke/common/record_function.h"
-#include "memory/device.h"
+#include "common/profiler_export.h"
+//#include "memory/device.h"
+
+namespace quarisma
+{
+enum class device_enum : int16_t
+{
+    CPU         = 0,
+    CUDA        = 1,
+    HIP         = 2,
+    PrivateUse1 = 3
+};
+
+struct device_option
+{
+    using int_t        = int16_t;
+    int_t       index_ = -1;
+    device_enum type_{};
+
+    device_enum type() const noexcept { return type_; }
+    int_t       index() const noexcept { return index_; }
+
+    bool operator==(const device_option& other) const noexcept
+    {
+        return type_ == other.type_ && index_ == other.index_;
+    }
+};
+}  // namespace quarisma
 
 namespace quarisma::profiler_impl::impl
 {

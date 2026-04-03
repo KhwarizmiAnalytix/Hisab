@@ -43,7 +43,6 @@ The `parallel_thread_local` abstraction has been completely removed from the Qua
 ✅ **Build**: Succeeded with NO ERRORS and NO WARNINGS
 ✅ **Build Targets**: All 170 targets completed successfully
 ✅ **Tests**: All tests passed (2/2)
-  - SecurityCxxTests: PASSED (1.13 sec)
   - CoreCxxTests: PASSED (6.91 sec)
 ✅ **Performance**: No regression detected
 

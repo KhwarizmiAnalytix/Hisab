@@ -6,23 +6,79 @@ Handles coverage generation for Clang compiler using LLVM coverage tools
 """
 
 import os
+import re
 import subprocess
 import json
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 import logging
 
 from common import get_config, get_platform_config, find_library
 
 logger = logging.getLogger(__name__)
 
+# Cache resolved tool names so detection runs only once per process.
+_llvm_tool_cache: Dict[str, str] = {}
+
+
+def _clang_major_version() -> Optional[int]:
+    """Return the major version of the clang compiler on PATH, or None."""
+    for candidate in ["clang", "clang-cl"]:
+        try:
+            result = subprocess.run(
+                [candidate, "--version"],
+                capture_output=True, text=True, check=True
+            )
+            m = re.search(r"version\s+(\d+)", result.stdout)
+            if m:
+                return int(m.group(1))
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            continue
+    return None
+
+
+def _resolve_llvm_tool(base_name: str) -> str:
+    """Return the versioned LLVM tool that matches the clang compiler.
+
+    Tries base_name-major first so that the tool version matches the profraw
+    format produced by the compiler. Falls back to the unversioned base_name
+    if no versioned variant is found.
+    """
+    if base_name in _llvm_tool_cache:
+        return _llvm_tool_cache[base_name]
+
+    major = _clang_major_version()
+    if major is not None:
+        versioned = f"{base_name}-{major}"
+        try:
+            subprocess.run(
+                [versioned, "--version"],
+                capture_output=True, text=True, check=True
+            )
+            logger.info("Using %s (matches clang %d)", versioned, major)
+            _llvm_tool_cache[base_name] = versioned
+            return versioned
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            logger.warning(
+                "%s not found; falling back to unversioned %s ",
+                versioned, base_name
+            )
+
+    _llvm_tool_cache[base_name] = base_name
+    return base_name
+
+
 def _validate_llvm_tools() -> None:
     """Validate that required LLVM tools are available.
+
+    Prefers versioned tools (e.g. llvm-profdata-18) that match the clang
+    compiler to avoid raw-profile version mismatches.
 
     Raises:
         RuntimeError: If llvm-profdata or llvm-cov are not found.
     """
-    for tool in ["llvm-profdata", "llvm-cov"]:
+    for tool_base in ["llvm-profdata", "llvm-cov"]:
+        tool = _resolve_llvm_tool(tool_base)
         try:
             subprocess.run(
                 [tool, "--version"],
@@ -63,7 +119,7 @@ def _generate_json_export(build_dir: Path, coverage_dir: Path, binaries: List[st
         # Use llvm-cov export with lcov format (supported in LLVM 21.1.0)
         lcov_file = coverage_dir / "coverage.lcov"
         export_cmd = [
-            "llvm-cov", "export"
+            _resolve_llvm_tool("llvm-cov"), "export"
         ] + binaries + [
             f"-instr-profile={coverage_dir / 'all-merged.profdata'}",
             "-format=lcov"
@@ -495,7 +551,7 @@ def generate_llvm_coverage(
         return
 
     merge_cmd = [
-        "llvm-profdata", "merge", "-o",
+        _resolve_llvm_tool("llvm-profdata"), "merge", "-o",
         str(coverage_dir / "all-merged.profdata"), "-sparse"
     ] + profraw_files
 

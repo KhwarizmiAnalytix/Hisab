@@ -65,7 +65,20 @@
       "Bash(python -m pytest test_html_report.py -v)",
       "Read(//opt/homebrew/Cellar/include-what-you-use/0.24_1/libexec/share/include-what-you-use/**)",
       "Read(//Users/toufikbellaj/XSigma/**)",
-      "Bash(pip3 install:*)"
+      "Bash(pip3 install:*)",
+      "Bash(python Scripts/setup_bazel.py config)",
+      "Bash(python Scripts/setup_bazel.py build)",
+      "Bash(timeout 120 ctest:*)",
+      "Bash(lcov:*)",
+      "Bash(genhtml:*)",
+      "Bash(wslpath:*)",
+      "Bash(timeout 300 python3 setup.py:*)",
+      "Bash(dpkg:*)",
+      "Bash(sudo update-alternatives --install:*)",
+      "Bash(sudo update-alternatives:*)",
+      "Bash(clang++-20:*)",
+      "Bash(apt search:*)",
+      "Bash(python Scripts/iwyu/iwyu_configure_detector.py:*)"
     ],
     "deny": [],
     "ask": []

@@ -9,7 +9,6 @@
 #include <string>
 #include <vector>
 
-#include "common/configure.h"
 #include "memory/backend/allocator_tracking.h"
 #include "memory/cpu/allocator.h"
 #include "memory/unified_memory_stats.h"

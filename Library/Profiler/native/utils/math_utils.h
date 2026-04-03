@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -32,8 +32,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef QUARISMA_PROFILER_UTILS_MATH_UTILS_H_
-#define QUARISMA_PROFILER_UTILS_MATH_UTILS_H_
+#ifndef PROFILER_PROFILER_UTILS_MATH_UTILS_H_
+#define PROFILER_PROFILER_UTILS_MATH_UTILS_H_
 
 #include <cstdint>
 
@@ -205,4 +205,4 @@ inline double gibibytes_per_second(double bytes, double ns)
 }  // namespace profiler_impl
 }  // namespace quarisma
 
-#endif  // QUARISMA_PROFILER_UTILS_MATH_UTILS_H_
+#endif  // PROFILER_PROFILER_UTILS_MATH_UTILS_H_

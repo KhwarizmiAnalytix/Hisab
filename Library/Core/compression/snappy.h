@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * Original work Copyright 2015 The TensorFlow Authors
  * Modified work Copyright 2025 Quarisma Contributors

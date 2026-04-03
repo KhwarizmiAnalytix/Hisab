@@ -12,10 +12,10 @@ struct NVTXThreadLocalState : ProfilerStateBase
     explicit NVTXThreadLocalState(const ProfilerConfig& config) : ProfilerStateBase(config)
     {
         // Only `report_input_shapes` makes sense in this context.
-        // QUARISMA_CHECK(!config.profile_memory);
-        // QUARISMA_CHECK(!config.with_stack);
-        // QUARISMA_CHECK(!config.with_flops);
-        // QUARISMA_CHECK(!config.with_modules);
+        // PROFILER_CHECK(!config.profile_memory);
+        // PROFILER_CHECK(!config.with_stack);
+        // PROFILER_CHECK(!config.with_flops);
+        // PROFILER_CHECK(!config.with_modules);
     }
     ~NVTXThreadLocalState() override = default;
 
@@ -75,7 +75,7 @@ std::pair<quarisma::RecordFunctionHandle, int> NVTXThreadLocalState::getOpIdFrom
 // {
 //     std::list<std::pair<quarisma::RecordFunctionHandle, int>> input_op_id_list;
 //     auto state_ptr = NVTXThreadLocalState::getTLS();
-//     QUARISMA_CHECK(state_ptr, "Expected profiler state set");
+//     PROFILER_CHECK(state_ptr, "Expected profiler state set");
 //     for (const quarisma::IValue& input : list)
 //     {
 //         if (input.isTensor())
@@ -94,7 +94,7 @@ static std::list<std::pair<quarisma::RecordFunctionHandle, int>> getInputTensorO
     // std::pair<quarisma::RecordFunctionHandle, int> const undefined_op_pair(0, -1);
     std::list<std::pair<quarisma::RecordFunctionHandle, int>> input_producer_ops_;
     /*auto state_ptr = NVTXThreadLocalState::getTLS();
-    // QUARISMA_CHECK(state_ptr, "Expected profiler state set");
+    // PROFILER_CHECK(state_ptr, "Expected profiler state set");
     for (const quarisma::IValue& input_item : fn.inputs())
     {
         if (input_item.isTensor())
@@ -132,7 +132,7 @@ static std::list<std::pair<quarisma::RecordFunctionHandle, int>> getInputTensorO
 //{
 //    int  output_nr = 0;
 //    auto state_ptr = NVTXThreadLocalState::getTLS();
-//    QUARISMA_CHECK(state_ptr, "Expected profiler state set");
+//    PROFILER_CHECK(state_ptr, "Expected profiler state set");
 //    for (const quarisma::IValue& s_tensor : fn.outputs())
 //    {
 //        if (s_tensor.isTensor())
@@ -171,15 +171,15 @@ static std::unique_ptr<quarisma::ObserverContext> enterNVTX(const quarisma::Reco
 void pushNVTXCallbacks(
     const ProfilerConfig& config, const std::unordered_set<quarisma::RecordScope>& scopes)
 {
-    // QUARISMA_CHECK(
-        // quarisma::profiler_impl::impl::cudaStubs()->enabled(),
-        // "Can't use NVTX profiler - Quarisma was compiled without CUDA");
+    // PROFILER_CHECK(
+    // quarisma::profiler_impl::impl::cudaStubs()->enabled(),
+    // "Can't use NVTX profiler - Quarisma was compiled without CUDA");
 
     quarisma::thread_local_debug_info::_push(
         quarisma::DebugInfoKind::PROFILER_STATE, std::make_shared<NVTXThreadLocalState>(config));
 
     auto* state_ptr = NVTXThreadLocalState::getTLS();
-    // QUARISMA_CHECK(state_ptr, "Expected profiler state set");
+    // PROFILER_CHECK(state_ptr, "Expected profiler state set");
 
     auto handle = quarisma::addThreadLocalCallback(
         quarisma::RecordFunctionCallback(

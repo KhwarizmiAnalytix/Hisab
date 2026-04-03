@@ -32,11 +32,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Leak Sanitizer (LSan)
   - Valgrind integration for memory profiling
 - Comprehensive linting system with 20+ linters (.lintrunner.toml)
-- Security module (Library/Security/) with:
-  - Input validation utilities
-  - Data sanitization functions
-  - Cryptographic utilities (SHA-256, secure random generation)
-  - Platform-specific secure implementations (BCrypt, Security.framework, getrandom)
 - Extensive documentation (70+ files in Docs/ directory)
 - Automated CI/CD pipeline with GitHub Actions:
   - Multi-platform testing (Ubuntu, Windows, macOS)
@@ -58,10 +53,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - Implemented comprehensive security policy (SECURITY.md)
-- Added dedicated Security module (Library/Security/)
-- Platform-specific secure random number generation
-- Input validation and sanitization utilities
-- Cryptographic hashing (SHA-256)
 - Vulnerability reporting process via GitHub Security Advisories
 - 90-day coordinated disclosure timeline
 - Secure coding standards enforced (.augment/rules/coding.md)

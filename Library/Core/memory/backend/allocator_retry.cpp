@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * Original work Copyright 2015 The TensorFlow Authors
  * Modified work Copyright 2025 Quarisma Contributors
@@ -70,22 +70,22 @@ private:
     const std::string description_;
     Cell              cell_;
 };
-namespace
+
+Counter<0>* get_allocator_bfc_delay_counter()
 {
-
-auto* allocator_bfc_delay = Counter<0>::New(
-    "/memory/cpu/allocator_bfc_delay",
-    "The total time spent running each graph "
-    "optimization pass in microseconds.");
-
-}  // namespace
+    static auto* const counter = Counter<0>::New(
+        "/memory/cpu/allocator_bfc_delay",
+        "The total time spent running each graph "
+        "optimization pass in microseconds.");
+    return counter;
+}
 
 void update_allocator_bfc_delay_time(const uint64_t delay_usecs)
 {
-    static auto* allocator_bfc_delay_cell = allocator_bfc_delay->GetCell();
+    static auto* allocator_bfc_delay_cell = get_allocator_bfc_delay_counter()->GetCell();
     if (delay_usecs > 0)
     {
-        allocator_bfc_delay_cell->IncrementBy((int64_t)delay_usecs);
+        allocator_bfc_delay_cell->IncrementBy(static_cast<int64_t>(delay_usecs));
     }
 }
 

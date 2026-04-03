@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -25,7 +25,6 @@
 #include <vector>
 
 #include "baseTest.h"
-#include "common/configure.h"
 #include "memory/cpu/allocator_device.h"
 #include "memory/unified_memory_stats.h"
 

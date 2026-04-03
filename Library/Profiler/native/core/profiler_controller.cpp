@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -37,7 +37,8 @@ limitations under the License.
 #include <string>
 #include <utility>
 
-#include "logging/logger.h"
+//#include "logging/logger.h"
+#include "common/profiler_macros.h"
 #include "native/core/profiler_interface.h"
 #include "native/exporters/xplane/xplane.h"
 
@@ -73,10 +74,10 @@ profiler_status profiler_controller::start()
             return status_;
         }
 
-        QUARISMA_LOG_ERROR("Previous call returned an error: {}", status_.message());
+        PROFILER_LOG_ERROR("Previous call returned an error: {}", status_.message());
         return status_;
     }
-    QUARISMA_LOG_ERROR("start called in the wrong order");
+    PROFILER_LOG_ERROR("start called in the wrong order");
     status_ = profiler_status::Error("start called in the wrong order");
     return status_;
 }
@@ -96,10 +97,10 @@ profiler_status profiler_controller::stop()
             return status_;
         }
 
-        QUARISMA_LOG_ERROR("Previous call returned an error: {}", status_.message());
+        PROFILER_LOG_ERROR("Previous call returned an error: {}", status_.message());
         return status_;
     }
-    QUARISMA_LOG_ERROR("stop called in the wrong order");
+    PROFILER_LOG_ERROR("stop called in the wrong order");
     status_ = profiler_status::Error("stop called in the wrong order");
     return status_;
 }
@@ -119,10 +120,10 @@ profiler_status profiler_controller::collect_data(x_space* space)
             return status_;
         }
 
-        QUARISMA_LOG_ERROR("Previous call returned an error: {}", status_.message());
+        PROFILER_LOG_ERROR("Previous call returned an error: {}", status_.message());
         return status_;
     }
-    QUARISMA_LOG_ERROR("collect_data called in the wrong order.");
+    PROFILER_LOG_ERROR("collect_data called in the wrong order.");
     status_ = profiler_status::Error("collect_data called in the wrong order.");
     return status_;
 }

@@ -1,29 +1,32 @@
+#include <fmt/format.h>
+
+#include <cstdio>
 #include <cstring>
 #include <stdexcept>
 #include <utility>
 
-#define QUARISMA_ASSERT_ONLY_METHOD_OPERATORS
+#define PROFILER_ASSERT_ONLY_METHOD_OPERATORS
 #include "bespoke/base/nvtx_observer.h"
 #include "bespoke/base/perf.h"
 #include "bespoke/common/api.h"
 #include "bespoke/common/collection.h"
 #include "bespoke/common/containers.h"
 #include "bespoke/common/events.h"
-#include "common/export.h"
 #include "bespoke/common/orchestration/observer.h"
 #include "bespoke/common/standalone/privateuse1_observer.h"
 #include "bespoke/common/util.h"
-#if QUARISMA_HAS_ITT
+#include "common/profiler_export.h"
+#if PROFILER_HAS_ITT
 #include "bespoke/itt/itt_observer.h"
 #endif
 #include "bespoke/kineto/kineto_shim.h"
 #include "bespoke/kineto/profiler_kineto.h"
 #include "common/approximate_clock.h"
-#include "util/flat_hash.h"
+#include "common/flat_hash.h"
 #include "common/irange.h"
-#include "util/overloaded.h"
+#include "common/overloaded.h"
 
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 #include <ApproximateClock.h>
 #include <libkineto.h>
 #include <time_since_epoch.h>
@@ -39,13 +42,13 @@ extern "C"
     __attribute__((weak)) int acc_get_device_type();
     __attribute__((weak)) int acc_get_device_type()
     {
-        // QUARISMA_CHECK(
-            // false, "Dummy implementation of acc_get_device_type is not supposed to be called!");
+        // PROFILER_CHECK(
+        // false, "Dummy implementation of acc_get_device_type is not supposed to be called!");
         return -1;  // Never reached, but satisfies compiler
     }
 }  // extern "C"
 #endif  // _MSC_VER
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 
 namespace quarisma
 {
@@ -56,13 +59,13 @@ namespace
 {
 inline int64_t getTimeNs()
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     // NOLINTNEXTLINE(clang-analyzer-optin.cplusplus.UninitializedObject)
     // False positive in fmt library's internal format_string_checker constructor
     return libkineto::timeSinceEpoch(std::chrono::system_clock::now());
 #else
     return quarisma::getTime();
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 }
 
 using quarisma::profiler_impl::impl::ActiveProfilerType;
@@ -168,9 +171,7 @@ auto parseArgData(
 
 struct MetadataBase
 {
-    // NOLINTNEXTLINE(google-explicit-constructor,hicpp-explicit-conversions)
-    /* implicit */ MetadataBase(
-        const std::shared_ptr<Result>& result)  // cppcheck-suppress noExplicitConstructor
+    explicit MetadataBase(const std::shared_ptr<Result>& result)
         : kinetoActivity_{result->kineto_activity_}
     {
         if (std::holds_alternative<ExtraFields<EventType::Kineto>>(result->extra_fields_))
@@ -215,9 +216,11 @@ struct AddTensorboardFields : public MetadataBase
         result->visit(*this);
         const auto module_hierarchy = kineto_event.moduleHierarchy();
         addMetadata(
-            "Module Hierarchy", quarisma::profiler_impl::impl::stacksToStr(module_hierarchy.vec(), "."));
+            "Module Hierarchy",
+            quarisma::profiler_impl::impl::stacksToStr(module_hierarchy.vec(), "."));
         addMetadata(
-            "Call stack", quarisma::profiler_impl::impl::stacksToStr(kineto_event.stack().vec(), ";"));
+            "Call stack",
+            quarisma::profiler_impl::impl::stacksToStr(kineto_event.stack().vec(), ";"));
 
         // Note: PyExtraFieldsBase is not currently available in this build
         // Uncomment when Python integration is enabled
@@ -257,7 +260,8 @@ struct AddTensorboardFields : public MetadataBase
 struct AddGenericMetadata : public MetadataBase
 {
     AddGenericMetadata(
-        std::shared_ptr<Result>& result, const quarisma::profiler_impl::impl::ProfilerConfig* config)
+        std::shared_ptr<Result>&                             result,
+        const quarisma::profiler_impl::impl::ProfilerConfig* config)
         : MetadataBase(result), config_(config)
     {
         result->visit(*this);
@@ -280,7 +284,8 @@ struct AddGenericMetadata : public MetadataBase
             if (get_record_concrete_inputs_enabled())
             {
                 addMetadata(
-                    "Input Dims", quarisma::profiler_impl::impl::variantShapesToStr(arg_data.shapes));
+                    "Input Dims",
+                    quarisma::profiler_impl::impl::variantShapesToStr(arg_data.shapes));
                 addMetadata(
                     "Input Strides",
                     quarisma::profiler_impl::impl::variantShapesToStr(arg_data.strides));
@@ -307,7 +312,7 @@ struct AddGenericMetadata : public MetadataBase
         {
             if (key == "stream" && !val.isInt())
             {
-                QUARISMA_LOG_WARNING(
+                PROFILER_LOG_WARNING(
                     "Inputted stream is not an int for op: {} skipping", op_event.name_);
                 continue;
             }
@@ -329,7 +334,7 @@ struct AddGenericMetadata : public MetadataBase
 
             if (!isValidType && !isStringList)
             {
-                QUARISMA_LOG_WARNING(
+                PROFILER_LOG_WARNING(
                     "Inputted kwarg: {} is not an int, double, string, bool, or list of strings "
                     "for op: {} skipping",
                     key,
@@ -417,7 +422,8 @@ private:
 struct KinetoThreadLocalState : public ProfilerStateBase
 {
     explicit KinetoThreadLocalState(
-        const ProfilerConfig& config, std::set<quarisma::profiler_impl::impl::ActivityType> activities)
+        const ProfilerConfig&                                 config,
+        std::set<quarisma::profiler_impl::impl::ActivityType> activities)
         : ProfilerStateBase(config),
           startTime(getTimeNs()),
           recordQueue(config, std::move(activities))
@@ -428,8 +434,8 @@ struct KinetoThreadLocalState : public ProfilerStateBase
     static KinetoThreadLocalState* get(bool global)
     {
         auto* state = ProfilerStateBase::get(/*global=*/global);
-        // QUARISMA_CHECK_DEBUG(
-            // state == nullptr || state->profilerType() == ActiveProfilerType::KINETO);
+        // PROFILER_CHECK_DEBUG(
+        // state == nullptr || state->profilerType() == ActiveProfilerType::KINETO);
         return static_cast<KinetoThreadLocalState*>(state);
     }
 
@@ -494,7 +500,7 @@ struct KinetoThreadLocalState : public ProfilerStateBase
 
         std::scoped_lock const guard(state_mutex_);
         auto                   converter = clockConverter.makeConverter();
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
         libkineto::get_time_converter() = converter;
 #endif
         auto records_and_trace = recordQueue.getRecords(std::move(converter), startTime, end_time);
@@ -550,7 +556,7 @@ struct KinetoThreadLocalState : public ProfilerStateBase
 
     uint64_t                                      startTime;
     quarisma::ApproximateClockToUnixTimeConverter clockConverter;
-    quarisma::profiler_impl::impl::RecordQueue         recordQueue;
+    quarisma::profiler_impl::impl::RecordQueue    recordQueue;
     std::vector<KinetoEvent>                      kinetoEvents;
     std::vector<experimental_event_t>             eventTree;
     // Optional, if event post-processing is enabled.
@@ -577,9 +583,10 @@ void onFunctionExit(const quarisma::RecordFunction& fn, quarisma::ObserverContex
     {
         return;
     }
-    const auto& config   = state_ptr->config();
-    auto* kineto_ctx_ptr = static_cast<quarisma::profiler_impl::impl::KinetoObserverContext*>(ctx_ptr);
-    // QUARISMA_CHECK(kineto_ctx_ptr != nullptr);
+    const auto& config = state_ptr->config();
+    auto*       kineto_ctx_ptr =
+        static_cast<quarisma::profiler_impl::impl::KinetoObserverContext*>(ctx_ptr);
+    // PROFILER_CHECK(kineto_ctx_ptr != nullptr);
     kineto_ctx_ptr->event_->end_time_ = quarisma::getApproximateTime();
     if (!config.experimental_config.performance_events.empty())
     {
@@ -591,21 +598,22 @@ void onFunctionExit(const quarisma::RecordFunction& fn, quarisma::ObserverContex
     {
         auto& extra_meta = *(kineto_ctx_ptr->event_->extra_nccl_meta_);
         // Record only the outputs in this exit callback of the record function
-        quarisma::profiler_impl::impl::SaveNcclMetaConfig const ncclMetaConfig{true, false, false, true};
+        quarisma::profiler_impl::impl::SaveNcclMetaConfig const ncclMetaConfig{
+            true, false, false, true};
         auto additonal_nccl_meta = quarisma::profiler_impl::impl::saveNcclMeta(fn, ncclMetaConfig);
         extra_meta.insert(additonal_nccl_meta.begin(), additonal_nccl_meta.end());
     }
     if (config.state == ProfilerState::KINETO_GPU_FALLBACK)
     {
         auto* fallback = kineto_ctx_ptr->fallback_;
-        // QUARISMA_CHECK(fallback != nullptr);
+        // PROFILER_CHECK(fallback != nullptr);
         quarisma::profiler_impl::impl::cudaStubs()->record(
             nullptr, &fallback->device_event_end_, nullptr);
     }
     else if (config.state == ProfilerState::KINETO_PRIVATEUSE1_FALLBACK)
     {
         auto* fallback = kineto_ctx_ptr->fallback_;
-        // QUARISMA_CHECK(fallback != nullptr);
+        // PROFILER_CHECK(fallback != nullptr);
         quarisma::profiler_impl::impl::privateuse1Stubs()->record(
             nullptr, &fallback->device_event_end_, nullptr);
     }
@@ -627,7 +635,7 @@ template <bool use_global_callback = false>
 void pushProfilingCallbacks(const std::unordered_set<quarisma::RecordScope>& scopes)
 {
     auto* registration_state_ptr = KinetoThreadLocalState::get(use_global_callback);
-    // QUARISMA_CHECK(registration_state_ptr, "Expected profiler state set");
+    // PROFILER_CHECK(registration_state_ptr, "Expected profiler state set");
     auto recordFunctionCallback =
         quarisma::RecordFunctionCallback(
             onFunctionEnter<use_global_callback>, onFunctionExit<use_global_callback>)
@@ -663,9 +671,9 @@ void reportBackendEventToActiveKinetoProfiler(
     const std::string&          event_name,
     const std::string&          backend_name)
 {
-    // QUARISMA_CHECK(
-        // KinetoThreadLocalState::get(/*global=*/true) == nullptr,
-        // "On-demand profiling does not support post processing callback");
+    // PROFILER_CHECK(
+    // KinetoThreadLocalState::get(/*global=*/true) == nullptr,
+    // "On-demand profiling does not support post processing callback");
 
     auto* state_ptr = KinetoThreadLocalState::get(/*global=*/false);
     if (state_ptr == nullptr)
@@ -693,11 +701,11 @@ void prepareProfiler(
         return;
     }
 
-    // QUARISMA_CHECK(
-        // config.state == ProfilerState::KINETO ||
-            // config.state == ProfilerState::KINETO_GPU_FALLBACK ||
-            // config.state == ProfilerState::KINETO_PRIVATEUSE1_FALLBACK,
-        // "Supported only in Kineto profiler");
+    // PROFILER_CHECK(
+    // config.state == ProfilerState::KINETO ||
+    // config.state == ProfilerState::KINETO_GPU_FALLBACK ||
+    // config.state == ProfilerState::KINETO_PRIVATEUSE1_FALLBACK,
+    // "Supported only in Kineto profiler");
 
     quarisma::profiler_impl::impl::kineto::prepareTrace(
         /*cpuOnly=*/!(quarisma::hasCUDA()  //|| quarisma::hasXPU() || quarisma::hasMTIA() ||
@@ -710,10 +718,10 @@ void prepareProfiler(
     if (!config.experimental_config.performance_events.empty())
     {
         /* For now only CPU activity is supported */
-        // QUARISMA_CHECK(
-            // activities.count(quarisma::autograd::profiler_impl::ActivityType::CPU),
-            // "Cannot run cpu hardware profiler without CPU activities, please only use CPU activity "
-            // "type");
+        // PROFILER_CHECK(
+        // activities.count(quarisma::autograd::profiler_impl::ActivityType::CPU),
+        // "Cannot run cpu hardware profiler without CPU activities, please only use CPU activity "
+        // "type");
         /*
      * Sending a warning and passing the non-standard event to the backend
      * Backend can abort if the event is not supported.
@@ -732,7 +740,10 @@ void prepareProfiler(
         {
             if (!is_standard_event(e))
             {
-                QUARISMA_LOG_WARNING("Forwarding a non-standard CPU performance event : {}", e);
+                fmt::print(
+                    stderr,
+                    "PROFILER WARNING: Forwarding a non-standard CPU performance event : {}\n",
+                    e);
             }
         }
     }
@@ -831,16 +842,16 @@ void toggleCollectionDynamic(
 void enableProfilerWithEventPostProcess(
     const quarisma::profiler_impl::impl::ProfilerConfig&         config,
     const std::set<quarisma::profiler_impl::impl::ActivityType>& activities,
-    post_process_t&&                                        cb,
-    const std::unordered_set<quarisma::RecordScope>&        scopes)
+    post_process_t&&                                             cb,
+    const std::unordered_set<quarisma::RecordScope>&             scopes)
 {
-    // QUARISMA_CHECK(
-        // config.state != ProfilerState::NVTX, "NVTX does not support post processing callback.");
-    // QUARISMA_CHECK(
-        // config.state != ProfilerState::ITT, "ITT does not support post processing callback.");
-    // QUARISMA_CHECK(
-        // KinetoThreadLocalState::get(/*global=*/true) == nullptr,
-        // "On-demand profiling does not support post processing callback");
+    // PROFILER_CHECK(
+    // config.state != ProfilerState::NVTX, "NVTX does not support post processing callback.");
+    // PROFILER_CHECK(
+    // config.state != ProfilerState::ITT, "ITT does not support post processing callback.");
+    // PROFILER_CHECK(
+    // KinetoThreadLocalState::get(/*global=*/true) == nullptr,
+    // "On-demand profiling does not support post processing callback");
 
     enableProfiler(config, activities, scopes);
     auto* state_ptr = KinetoThreadLocalState::get(config.global());
@@ -850,13 +861,13 @@ void enableProfilerWithEventPostProcess(
 void enableProfiler(
     const quarisma::profiler_impl::impl::ProfilerConfig&         config,
     const std::set<quarisma::profiler_impl::impl::ActivityType>& activities,
-    const std::unordered_set<quarisma::RecordScope>&        scopes)
+    const std::unordered_set<quarisma::RecordScope>&             scopes)
 {
     const auto has_cpu = activities.count(ActivityType::CPU);
-    // QUARISMA_CHECK(
-        // KinetoThreadLocalState::get(/*global=*/config.global()) == nullptr,
-        // "Profiler is already enabled",
-        // (config.global() ? "." : " on this thread."));
+    // PROFILER_CHECK(
+    // KinetoThreadLocalState::get(/*global=*/config.global()) == nullptr,
+    // "Profiler is already enabled",
+    // (config.global() ? "." : " on this thread."));
 
     if (config.state == ProfilerState::NVTX)
     {
@@ -865,7 +876,7 @@ void enableProfiler(
     }
     if (config.state == ProfilerState::ITT)
     {
-#if QUARISMA_HAS_ITT
+#if PROFILER_HAS_ITT
         quarisma::profiler_impl::impl::pushITTCallbacks(config, scopes);
 #endif
         return;
@@ -876,12 +887,12 @@ void enableProfiler(
         return;
     }
 
-    // QUARISMA_CHECK(
-        // config.state == ProfilerState::KINETO ||
-        // config.state == ProfilerState::KINETO_GPU_FALLBACK ||
-        // config.state == ProfilerState::KINETO_PRIVATEUSE1_FALLBACK || config.global());
-    // QUARISMA_CHECK(!activities.empty(), "No activities specified.");
-    // QUARISMA_CHECK(has_cpu || !config.global(), "Ondemand profiling must enable CPU tracing");
+    // PROFILER_CHECK(
+    // config.state == ProfilerState::KINETO ||
+    // config.state == ProfilerState::KINETO_GPU_FALLBACK ||
+    // config.state == ProfilerState::KINETO_PRIVATEUSE1_FALLBACK || config.global());
+    // PROFILER_CHECK(!activities.empty(), "No activities specified.");
+    // PROFILER_CHECK(has_cpu || !config.global(), "Ondemand profiling must enable CPU tracing");
 
     auto state_ptr = std::make_shared<KinetoThreadLocalState>(config, activities);
     KinetoThreadLocalState::push(state_ptr);
@@ -914,10 +925,10 @@ bool isProfilerEnabledInMainThread()
 void enableProfilerInChildThread()
 {
     auto state_info_ptr = profiler_state_info_ptr;
-    // QUARISMA_CHECK(state_info_ptr, "Profiler is not enabled in main thread.");
-    // QUARISMA_CHECK(
-        // KinetoThreadLocalState::get(/*global=*/false) == nullptr,
-        // "Profiler is already enabled in this thread.");
+    // PROFILER_CHECK(state_info_ptr, "Profiler is not enabled in main thread.");
+    // PROFILER_CHECK(
+    // KinetoThreadLocalState::get(/*global=*/false) == nullptr,
+    // "Profiler is already enabled in this thread.");
 
     KinetoThreadLocalState::push(state_info_ptr->state_ptr);
     pushProfilingCallbacks</*global=*/false>(state_info_ptr->scopes);
@@ -926,7 +937,7 @@ void enableProfilerInChildThread()
 void disableProfilerInChildThread()
 {
     auto state_ptr = ProfilerStateBase::pop();
-    // QUARISMA_CHECK(state_ptr, "Can't disable Kineto profiler when it's not running in this thread");
+    // PROFILER_CHECK(state_ptr, "Can't disable Kineto profiler when it's not running in this thread");
     state_ptr->removeCallback();
 }
 
@@ -937,14 +948,14 @@ std::unique_ptr<ProfilerResult> disableProfiler()
 
     auto        state_ptr = ProfilerStateBase::pop();
     const auto& config    = state_ptr->config();
-    // QUARISMA_CHECK(
-        // state_ptr && (config.state == ProfilerState::KINETO ||
-                      // config.state == ProfilerState::KINETO_GPU_FALLBACK ||
-                      // config.state == ProfilerState::KINETO_PRIVATEUSE1_FALLBACK ||
-                      // config.state == ProfilerState::KINETO_ONDEMAND ||
-                      // config.state == ProfilerState::NVTX || config.state == ProfilerState::ITT ||
-                      // config.state == ProfilerState::PRIVATEUSE1),
-        // "Can't disable Kineto profiler when it's not running");
+    // PROFILER_CHECK(
+    // state_ptr && (config.state == ProfilerState::KINETO ||
+    // config.state == ProfilerState::KINETO_GPU_FALLBACK ||
+    // config.state == ProfilerState::KINETO_PRIVATEUSE1_FALLBACK ||
+    // config.state == ProfilerState::KINETO_ONDEMAND ||
+    // config.state == ProfilerState::NVTX || config.state == ProfilerState::ITT ||
+    // config.state == ProfilerState::PRIVATEUSE1),
+    // "Can't disable Kineto profiler when it's not running");
 
     state_ptr->removeCallback();
 
@@ -1004,7 +1015,7 @@ KinetoEvent::KinetoEvent(
     const std::shared_ptr<const quarisma::profiler_impl::impl::Result>& result, const bool verbose)
     : result_{result}
 {
-    // QUARISMA_CHECK(result != nullptr);
+    // PROFILER_CHECK(result != nullptr);
 
     if (verbose)
     {
@@ -1250,7 +1261,8 @@ TYPED_ATTR(TorchOp, fallbackEnd, e.device_fallback_.device_event_end_)
 TYPED_ATTR(
     TorchOp,
     flops,
-    !e.extra_args_.empty() ? quarisma::profiler_impl::impl::computeFlops(e.name_, e.extra_args_) : 0)
+    !e.extra_args_.empty() ? quarisma::profiler_impl::impl::computeFlops(e.name_, e.extra_args_)
+                           : 0)
 TYPED_ATTR(Backend, backend, e.backend_)
 TYPED_ATTR(Allocation, nBytes, e.alloc_size_)
 TYPED_ATTR(
@@ -1265,10 +1277,10 @@ TYPED_ATTR(
 #undef TYPED_ATTR_WITH_DEFAULT
 
 ProfilerResult::ProfilerResult(
-    uint64_t                                                                  start_time,
-    std::vector<KinetoEvent>                                                  events,
+    uint64_t                                                                       start_time,
+    std::vector<KinetoEvent>                                                       events,
     std::unique_ptr<quarisma::profiler_impl::impl::kineto::ActivityTraceWrapper>&& trace,
-    std::vector<experimental_event_t>&&                                       event_tree)
+    std::vector<experimental_event_t>&&                                            event_tree)
     : trace_start_ns_(start_time),
       events_(std::move(events)),
       trace_(std::move(trace)),

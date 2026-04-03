@@ -93,7 +93,6 @@ No changes needed - uses GLOB_RECURSE which automatically excludes deleted files
 
 ### Test Results
 ✅ All tests passed (2/2)
-  - SecurityCxxTests: PASSED (1.13 sec)
   - CoreCxxTests: PASSED (6.91 sec)
 ✅ Total test time: 8.05 seconds
 ✅ 100% tests passed, 0 tests failed

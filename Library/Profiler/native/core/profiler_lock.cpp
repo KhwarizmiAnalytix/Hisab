@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -36,8 +36,8 @@ limitations under the License.
 #include <atomic>  // for atomic, memory_order, ATOMIC_INT_LOCK_FREE, ATOMIC_VAR_INIT
 #include <optional>
 
-#include "common/macros.h"            // for QUARISMA_UNLIKELY
-#include "logging/logger.h"           // for QUARISMA_LOG_ERROR
+#include "common/profiler_macros.h"  // for PROFILER_UNLIKELY
+//#include "logging/logger.h"           // for PROFILER_LOG_ERROR
 #include "native/platform/env_var.h"  // for read_bool_from_env_var
 
 namespace quarisma
@@ -69,20 +69,20 @@ static_assert(ATOMIC_INT_LOCK_FREE == 2, "Assumed atomic<int> was lock free");
     static bool const tf_profiler_disabled = []
     {
         bool disabled = false;
-        read_bool_from_env_var("QUARISMA_DISABLE_PROFILING", false, &disabled);
+        read_bool_from_env_var("PROFILER_DISABLE_PROFILING", false, &disabled);
         return disabled;
     }();
-    if QUARISMA_UNLIKELY (tf_profiler_disabled)
+    if PROFILER_UNLIKELY (tf_profiler_disabled)
     {
-        QUARISMA_LOG_ERROR(
-            "TensorFlow Profiler is permanently disabled by env var QUARISMA_DISABLE_PROFILING.");
+        PROFILER_LOG_ERROR(
+            "TensorFlow Profiler is permanently disabled by env var PROFILER_DISABLE_PROFILING.");
 
         return std::nullopt;
     }
     int const already_active = g_session_active.exchange(1, std::memory_order_acq_rel);
     if (already_active != 0)
     {
-        QUARISMA_LOG_ERROR(kProfilerLockContention);
+        PROFILER_LOG_ERROR(kProfilerLockContention);
         return std::nullopt;
     }
     return ProfilerLock(/*active=*/true);

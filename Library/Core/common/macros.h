@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -23,8 +23,6 @@
 #include <string>
 #include <type_traits>  // for std::underlying_type
 #include <typeinfo>
-
-#include "common/configure.h"
 
 //----------------------------------------------------------------------------
 // Check for unsupported old compilers - updated minimum requirements

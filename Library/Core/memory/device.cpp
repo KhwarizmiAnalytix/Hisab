@@ -5,10 +5,10 @@
 namespace quarisma
 {
 device_option::device_option(device_enum type, device_option::int_t index)
-    : index_(index), type_(type) {};
+    : index_(index), type_(type){};
 
 device_option::device_option(device_enum type, int index)
-    : index_(static_cast<device_option::int_t>(index)), type_(type) {};
+    : index_(static_cast<device_option::int_t>(index)), type_(type){};
 
 bool device_option::operator==(const quarisma::device_option& rhs) const noexcept
 {

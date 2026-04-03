@@ -13,7 +13,11 @@ namespace quarisma
 {
 constexpr bool hasCUDA()
 {
-    return QUARISMA_HAS_CUDA == 1;
+#if QUARISMA_HAS_CUDA
+    return true;
+#else
+    return false;
+#endif
 }
 
 namespace profiler_impl::impl
@@ -82,7 +86,7 @@ private:
     quarisma::profiler_impl::impl::ProfilerVoidEventStub fallbackEnd() const;
 
     std::shared_ptr<const quarisma::profiler_impl::impl::Result> result_;
-    std::vector<std::string>                                python_stack_;
+    std::vector<std::string>                                     python_stack_;
 
     // Copy fields from result so we can return ArrayRefs.
     std::vector<std::vector<int64_t>>                 shapes_;
@@ -98,10 +102,10 @@ struct PROFILER_VISIBILITY ProfilerResult
 {
     PROFILER_API ProfilerResult();
     PROFILER_API ProfilerResult(
-        uint64_t                                                                  start_time,
-        std::vector<KinetoEvent>                                                  events,
+        uint64_t                                                                       start_time,
+        std::vector<KinetoEvent>                                                       events,
         std::unique_ptr<quarisma::profiler_impl::impl::kineto::ActivityTraceWrapper>&& trace,
-        std::vector<experimental_event_t>&&                                       event_tree);
+        std::vector<experimental_event_t>&&                                            event_tree);
     PROFILER_API ~ProfilerResult();
 
     uint64_t trace_start_ns() const { return trace_start_ns_; }
@@ -113,10 +117,10 @@ struct PROFILER_VISIBILITY ProfilerResult
     PROFILER_API void save(const std::string& path);
 
 private:
-    uint64_t                                                                trace_start_ns_ = 0;
-    std::vector<KinetoEvent>                                                events_;
+    uint64_t                 trace_start_ns_ = 0;
+    std::vector<KinetoEvent> events_;
     std::unique_ptr<quarisma::profiler_impl::impl::kineto::ActivityTraceWrapper> trace_;
-    std::vector<experimental_event_t>                                       event_tree_;
+    std::vector<experimental_event_t>                                            event_tree_;
 };
 
 /*
@@ -151,7 +155,7 @@ PROFILER_API void reportBackendEventToActiveKinetoProfiler(
 PROFILER_API void enableProfiler(
     const quarisma::profiler_impl::impl::ProfilerConfig&         config,
     const std::set<quarisma::profiler_impl::impl::ActivityType>& activities,
-    const std::unordered_set<quarisma::RecordScope>&        scopes = {});
+    const std::unordered_set<quarisma::RecordScope>&             scopes = {});
 
 /*
  * Same as enableProfiler but with callback to do post-processing of
@@ -178,8 +182,8 @@ using post_process_t = std::function<void(
 PROFILER_API void enableProfilerWithEventPostProcess(
     const quarisma::profiler_impl::impl::ProfilerConfig&         config,
     const std::set<quarisma::profiler_impl::impl::ActivityType>& activities,
-    post_process_t&&                                        cb,
-    const std::unordered_set<quarisma::RecordScope>&        scopes = {});
+    post_process_t&&                                             cb,
+    const std::unordered_set<quarisma::RecordScope>&             scopes = {});
 
 PROFILER_API std::unique_ptr<ProfilerResult> disableProfiler();
 

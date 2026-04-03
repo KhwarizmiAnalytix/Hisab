@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -32,12 +32,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef QUARISMA_PROFILER_UTILS_TIME_UTILS_H_
-#define QUARISMA_PROFILER_UTILS_TIME_UTILS_H_
+#ifndef PROFILER_PROFILER_UTILS_TIME_UTILS_H_
+#define PROFILER_PROFILER_UTILS_TIME_UTILS_H_
 
 #include <cstdint>
 
-#include "common/macros.h"
+#include "common/profiler_export.h"
+#include "common/profiler_macros.h"
 #include "native/utils/math_utils.h"
 
 namespace quarisma
@@ -119,4 +120,4 @@ inline void spin_for_micros(int64_t us)
 }  // namespace profiler_impl
 }  // namespace quarisma
 
-#endif  // QUARISMA_PROFILER_UTILS_TIME_UTILS_H_
+#endif  // PROFILER_PROFILER_UTILS_TIME_UTILS_H_

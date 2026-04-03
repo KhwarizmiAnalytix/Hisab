@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -39,8 +39,8 @@ limitations under the License.
 #include <string_view>
 #include <utility>
 
+#include "common/flat_hash.h"
 #include "native/exporters/xplane/xplane.h"
-#include "util/flat_hash.h"
 
 namespace quarisma
 {
@@ -139,7 +139,7 @@ void xplane_visitor::build_event_type_map(
             if (event_type.has_value())
             {
                 [[maybe_unused]] auto result = event_type_by_id_.emplace(metadata_id, *event_type);
-                // QUARISMA_CHECK_DEBUG(result.second);  // inserted
+                // PROFILER_CHECK_DEBUG(result.second);  // inserted
                 break;
             }
         }
@@ -184,7 +184,7 @@ void xplane_visitor::build_stat_type_map(
             if (stat_type.has_value())
             {
                 [[maybe_unused]] auto result = stat_type_by_id_.emplace(metadata_id, *stat_type);
-                // QUARISMA_CHECK_DEBUG(result.second);  // inserted
+                // PROFILER_CHECK_DEBUG(result.second);  // inserted
                 stat_metadata_by_type_.emplace(*stat_type, &metadata);
                 break;
             }

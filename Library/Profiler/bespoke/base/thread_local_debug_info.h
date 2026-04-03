@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <memory>
 
-#include "common/export.h"
+#include "common/profiler_export.h"
 
 namespace quarisma
 {

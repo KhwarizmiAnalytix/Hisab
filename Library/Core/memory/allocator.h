@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -26,7 +26,6 @@
 #include <exception>  // for bad_alloc
 #include <stdexcept>  // for invalid_argument
 
-#include "common/configure.h"
 #include "common/macros.h"         // for QUARISMA_FORCE_INLINE, QUARISMA_ALIGNMENT, XSIG...
 #include "memory/cpu/allocator.h"  // for Allocator
 #include "memory/cpu/allocator_device.h"

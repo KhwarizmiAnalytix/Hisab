@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -44,7 +44,7 @@ limitations under the License.
 #include <utility>    // for max, min
 #include <vector>     // for vector
 
-#include "common/export.h"
+#include "common/profiler_export.h"
 #include "native/analysis/stat_summarizer_options.h"
 
 namespace quarisma

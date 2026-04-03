@@ -1,6 +1,6 @@
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE_PROFILER
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -415,7 +415,7 @@ QUARISMATEST(TracemeTest, documentation_examples)
                 }
             }
         }
-        // QUARISMA_CHECK(found_example, "Should have recorded example_function event");
+        // PROFILER_CHECK(found_example, "Should have recorded example_function event");
     }
 
     // Test the metadata example from documentation
@@ -449,18 +449,18 @@ QUARISMATEST(TracemeTest, documentation_examples)
                 if (event.name.find("process_data") != std::string::npos)
                 {
                     // Check that metadata is present
-                    // QUARISMA_CHECK(
-                        // event.name.find("size=1000") != std::string::npos,
-                        // "Should contain size metadata");
-                    // QUARISMA_CHECK(
-                        // event.name.find("type=vector<int>") != std::string::npos,
-                        // "Should contain type metadata");
+                    // PROFILER_CHECK(
+                    // event.name.find("size=1000") != std::string::npos,
+                    // "Should contain size metadata");
+                    // PROFILER_CHECK(
+                    // event.name.find("type=vector<int>") != std::string::npos,
+                    // "Should contain type metadata");
                     found_process_data = true;
                     break;
                 }
             }
         }
-        // QUARISMA_CHECK(found_process_data, "Should have recorded process_data event");
+        // PROFILER_CHECK(found_process_data, "Should have recorded process_data event");
     }
 
     // Test the manual activity management example from documentation
@@ -489,7 +489,7 @@ QUARISMATEST(TracemeTest, documentation_examples)
                 }
             }
         }
-        // QUARISMA_CHECK(found_async, "Should have recorded async_operation event");
+        // PROFILER_CHECK(found_async, "Should have recorded async_operation event");
     }
 
     END_TEST();
@@ -504,7 +504,7 @@ QUARISMATEST(TracemeTest, edge_cases_robustness)
     // Test handling of empty names
     {
         bool started = traceme_recorder::start(1);
-        // QUARISMA_CHECK(started, "Should be able to start tracing");
+        // PROFILER_CHECK(started, "Should be able to start tracing");
 
         {
             traceme trace("");  // Empty name
@@ -526,7 +526,7 @@ QUARISMATEST(TracemeTest, edge_cases_robustness)
                 }
             }
         }
-        // QUARISMA_CHECK(found_empty, "Should handle empty names");
+        // PROFILER_CHECK(found_empty, "Should handle empty names");
     }
 
     // Test that the system can handle very long names without crashing
@@ -562,13 +562,13 @@ QUARISMATEST(TracemeTest, edge_cases_robustness)
         traceme::instant_activity([&long_name]() { return long_name; });
 
         // If we get here without crashing, the test passes
-        // QUARISMA_CHECK(true, "Successfully handled very long names in all scenarios");
+        // PROFILER_CHECK(true, "Successfully handled very long names in all scenarios");
     }
 
     // Test metadata encoding with special characters
     {
         bool started = traceme_recorder::start(1);
-        // QUARISMA_CHECK(started, "Should be able to start tracing");
+        // PROFILER_CHECK(started, "Should be able to start tracing");
 
         {
             traceme trace(
@@ -599,7 +599,7 @@ QUARISMATEST(TracemeTest, edge_cases_robustness)
                 }
             }
         }
-        // QUARISMA_CHECK(found_special, "Should handle special characters in metadata");
+        // PROFILER_CHECK(found_special, "Should handle special characters in metadata");
     }
 
     END_TEST();
@@ -613,7 +613,7 @@ QUARISMATEST(TracemeTest, zero_duration_traces)
 {
     // Test traces with potentially zero duration
     bool started = traceme_recorder::start(1);
-    // QUARISMA_CHECK(started, "Should be able to start tracing");
+    // PROFILER_CHECK(started, "Should be able to start tracing");
 
     for (int i = 0; i < 100; ++i)
     {
@@ -642,10 +642,10 @@ QUARISMATEST(TracemeTest, zero_duration_traces)
     }
 
     // Should have recorded at least some events
-    // QUARISMA_CHECK(total_events > 0, "Should have recorded some zero_duration_test events");
+    // PROFILER_CHECK(total_events > 0, "Should have recorded some zero_duration_test events");
 
     // It's okay to have zero-duration traces
-    // QUARISMA_CHECK(true, "Zero duration traces should be handled gracefully");
+    // PROFILER_CHECK(true, "Zero duration traces should be handled gracefully");
     END_TEST();
 }
-#endif  // QUARISMA_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE_PROFILER

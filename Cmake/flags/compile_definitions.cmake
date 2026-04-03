@@ -59,14 +59,31 @@ compile_definition(QUARISMA_ENABLE_ROCM)
 # Google Test support
 compile_definition(QUARISMA_ENABLE_GTEST)
 
-# Kineto support
-compile_definition(QUARISMA_ENABLE_KINETO)
+# Profiler backend flags — all three are derived from QUARISMA_PROFILER_TYPE (set in
+# CMakeLists.txt) and are mutually exclusive. compile_definition() maps each
+# PROFILER_ENABLE_* variable to the corresponding PROFILER_HAS_* compile definition.
+compile_definition(PROFILER_ENABLE_KINETO)          # → PROFILER_HAS_KINETO
+compile_definition(PROFILER_ENABLE_ITT)             # → PROFILER_HAS_ITT
+compile_definition(PROFILER_ENABLE_NATIVE_PROFILER) # → PROFILER_HAS_NATIVE_PROFILER
 
-# Intel ITT API support
-compile_definition(QUARISMA_ENABLE_ITT)
-
-# Native profiler support (derived from QUARISMA_PROFILER_TYPE)
-compile_definition(QUARISMA_ENABLE_NATIVE_PROFILER)
+# Defensive mutual-exclusivity check (QUARISMA_PROFILER_TYPE already enforces this,
+# but guard against any direct variable manipulation downstream).
+set(_profiler_backends_enabled 0)
+if(PROFILER_ENABLE_KINETO)
+  math(EXPR _profiler_backends_enabled "${_profiler_backends_enabled} + 1")
+endif()
+if(PROFILER_ENABLE_ITT)
+  math(EXPR _profiler_backends_enabled "${_profiler_backends_enabled} + 1")
+endif()
+if(PROFILER_ENABLE_NATIVE_PROFILER)
+  math(EXPR _profiler_backends_enabled "${_profiler_backends_enabled} + 1")
+endif()
+if(_profiler_backends_enabled GREATER 1)
+  message(FATAL_ERROR
+    "PROFILER_ENABLE_KINETO, PROFILER_ENABLE_ITT, and PROFILER_ENABLE_NATIVE_PROFILER "
+    "are mutually exclusive. Only one may be set to ON at a time.")
+endif()
+unset(_profiler_backends_enabled)
 
 # OpenMP support
 compile_definition(QUARISMA_ENABLE_OPENMP)
@@ -136,7 +153,7 @@ endif()
 # Allocation statistics support (optional feature flag)
 compile_definition(QUARISMA_ENABLE_ALLOCATION_STATS)
 
-if(QUARISMA_ENABLE_NATIVE_PROFILER)
+if(PROFILER_ENABLE_NATIVE_PROFILER)
   list(APPEND QUARISMA_DEPENDENCY_COMPILE_DEFINITIONS QUARISMA_HAS_NATIVE_PROFILER=1)
 else()
   list(APPEND QUARISMA_DEPENDENCY_COMPILE_DEFINITIONS QUARISMA_HAS_NATIVE_PROFILER=0)

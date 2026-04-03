@@ -10,26 +10,26 @@
 #include <functional>
 #include <type_traits>
 
-#include "common/export.h"
-#include "common/macros.h"
+#include "common/profiler_export.h"
+#include "common/profiler_macros.h"
 
-#if defined(QUARISMA_IOS) && defined(QUARISMA_MOBILE)
+#if defined(PROFILER_IOS) && defined(PROFILER_MOBILE)
 #include <sys/time.h>  // for gettimeofday()
 #endif
 
 #if defined(__i386__) || defined(__x86_64__) || defined(__amd64__)
-#define QUARISMA_RDTSC
+#define PROFILER_RDTSC
 #if defined(_MSC_VER)
 #include <intrin.h>
 #elif defined(__CUDACC__) || defined(__HIPCC__)
-#undef QUARISMA_RDTSC
+#undef PROFILER_RDTSC
 #elif defined(__clang__)
 // `__rdtsc` is available by default.
 // NB: This has to be first, because Clang will also define `__GNUC__`
 #elif defined(__GNUC__)
 #include <x86intrin.h>
 #else
-#undef QUARISMA_RDTSC
+#undef PROFILER_RDTSC
 #endif
 #endif
 
@@ -48,9 +48,9 @@ inline time_t getTimeSinceEpoch()
     return std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
 }
 
-inline time_t getTime(QUARISMA_UNUSED bool allow_monotonic = false)
+inline time_t getTime(PROFILER_UNUSED bool allow_monotonic = false)
 {
-#if defined(QUARISMA_IOS) && defined(QUARISMA_MOBILE)
+#if defined(PROFILER_IOS) && defined(PROFILER_MOBILE)
     // clock_gettime is only available on iOS 10.0 or newer. Unlike OS X, iOS
     // can't rely on CLOCK_REALTIME, as it is defined no matter if clock_gettime
     // is implemented or not
@@ -63,8 +63,10 @@ inline time_t getTime(QUARISMA_UNUSED bool allow_monotonic = false)
         .count();
 #else
     // clock_gettime is *much* faster than std::chrono implementation on Linux
-    struct timespec t{};
-    auto            mode = CLOCK_REALTIME;
+    struct timespec t
+    {
+    };
+    auto mode = CLOCK_REALTIME;
     if (allow_monotonic)
     {
         mode = CLOCK_MONOTONIC;
@@ -84,7 +86,7 @@ inline time_t getTime(QUARISMA_UNUSED bool allow_monotonic = false)
 // `https://github.com/google/benchmark/blob/main/src/cycleclock.h`
 inline auto getApproximateTime()
 {
-#if defined(QUARISMA_RDTSC)
+#if defined(PROFILER_RDTSC)
     return static_cast<uint64_t>(__rdtsc());
 #else
     return getTime();
@@ -97,7 +99,7 @@ static_assert(
     "Expected either int64_t (`getTime`) or uint64_t (some TSC reads).");
 
 // Convert `getCount` results to Nanoseconds since unix epoch.
-class QUARISMA_VISIBILITY ApproximateClockToUnixTimeConverter final
+class PROFILER_VISIBILITY ApproximateClockToUnixTimeConverter final
 {
 public:
     ApproximateClockToUnixTimeConverter();

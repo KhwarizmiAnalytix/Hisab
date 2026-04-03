@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -34,10 +34,12 @@
 #include <utility>
 #include <vector>
 
-#include "logging/logger.h"
-#include "util/flat_hash.h"
-#include "util/lock_free_queue.h"
+//#include "logging/logger.h"
+#include "common/flat_hash.h"
+#include "common/lock_free_queue.h"
 #include "common/per_thread.h"
+#include "common/profiler_export.h"
+#include "common/profiler_macros.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -53,7 +55,8 @@ namespace quarisma
 {
 static inline std::string get_thread_name()
 {
-    return quarisma::logger::GetThreadName();
+    return "";
+    //quarisma::logger::GetThreadName();
 }
 
 namespace internal
@@ -87,13 +90,13 @@ class SplitEventTracker
 public:
     void AddStart(traceme_recorder::Event&& event)
     {
-        // QUARISMA_CHECK(event.is_start(), "event is not a start event");
+        // PROFILER_CHECK(event.is_start(), "event is not a start event");
         start_events_.emplace(event.activity_id(), std::move(event));
     }
 
     void AddEnd(traceme_recorder::Event* event)
     {
-        // QUARISMA_CHECK(event->is_end(), "event is not an end event");
+        // PROFILER_CHECK(event->is_end(), "event is not an end event");
         if (!FindStartAndMerge(event))
         {
             end_events_.push_back(event);
@@ -126,7 +129,7 @@ private:
 
     // Start events are collected from each ThreadLocalRecorder::Consume() call.
     // Their data is merged into end_events.
-    quarisma_map<int64_t, traceme_recorder::Event> start_events_;
+    std::unordered_map<int64_t, traceme_recorder::Event> start_events_;
 
     // End events are stored in the output of TraceMeRecorder::Consume().
     std::vector<traceme_recorder::Event*> end_events_;
@@ -165,7 +168,7 @@ public:
         info_.name = get_thread_name();
     }
 
-    QUARISMA_NODISCARD const traceme_recorder::ThreadInfo& Info() const { return info_; }
+    PROFILER_NODISCARD const traceme_recorder::ThreadInfo& Info() const { return info_; }
 
     // Record is only called from the producer thread.
     void Record(traceme_recorder::Event&& event) { queue_.push(std::move(event)); }
@@ -175,7 +178,7 @@ public:
     void Clear() { queue_.clear(); }
 
     // Consume is called from the control thread when tracing stops.
-    QUARISMA_NODISCARD std::deque<traceme_recorder::Event> Consume(
+    PROFILER_NODISCARD std::deque<traceme_recorder::Event> Consume(
         SplitEventTracker* split_event_tracker)
     {
         std::deque<traceme_recorder::Event>    events;

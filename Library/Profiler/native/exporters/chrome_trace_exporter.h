@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -17,12 +17,13 @@
  * Website: https://www.quarisma.co.uk
  */
 
-#ifndef QUARISMA_PROFILER_EXPORTERS_CHROME_TRACE_EXPORTER_H_
-#define QUARISMA_PROFILER_EXPORTERS_CHROME_TRACE_EXPORTER_H_
+#ifndef PROFILER_PROFILER_EXPORTERS_CHROME_TRACE_EXPORTER_H_
+#define PROFILER_PROFILER_EXPORTERS_CHROME_TRACE_EXPORTER_H_
 
 #include <string>
 
-#include "common/macros.h"
+#include "common/profiler_export.h"
+#include "common/profiler_macros.h"
 #include "native/exporters/xplane/xplane.h"
 
 namespace quarisma
@@ -103,4 +104,4 @@ PROFILER_API bool export_to_chrome_trace_json_file(
 }  // namespace profiler_impl
 }  // namespace quarisma
 
-#endif  // QUARISMA_PROFILER_EXPORTERS_CHROME_TRACE_EXPORTER_H_
+#endif  // PROFILER_PROFILER_EXPORTERS_CHROME_TRACE_EXPORTER_H_

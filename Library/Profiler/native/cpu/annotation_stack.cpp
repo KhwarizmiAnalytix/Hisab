@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -41,7 +41,7 @@ limitations under the License.
 #include <tuple>
 #include <vector>
 
-#include "common/macros.h"
+#include "common/profiler_macros.h"
 
 namespace quarisma::profiler_impl
 {
@@ -104,7 +104,7 @@ void annotation_stack::push_annotation(std::string_view name)
     int64_t scope_range_id = scope_range_counter.fetch_add(1, std::memory_order_relaxed) + 1;
 
     // Handle overflow (extremely unlikely, but be safe)
-    if QUARISMA_UNLIKELY (scope_range_id == 0)
+    if PROFILER_UNLIKELY (scope_range_id == 0)
     {
         scope_range_id = scope_range_counter.fetch_add(1, std::memory_order_relaxed) + 1;
     }

@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -31,9 +31,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-#ifndef QUARISMA_TSL_PROFILER_LIB_PROFILER_INTERFACE_H_
-#define QUARISMA_TSL_PROFILER_LIB_PROFILER_INTERFACE_H_
+#ifndef PROFILER_TSL_PROFILER_LIB_PROFILER_INTERFACE_H_
+#define PROFILER_TSL_PROFILER_LIB_PROFILER_INTERFACE_H_
 
+#include "common/profiler_export.h"
 #include "native/core/profiler_status.h"
 #include "native/exporters/xplane/xplane.h"
 
@@ -80,4 +81,4 @@ public:
 
 }  // namespace quarisma
 
-#endif  // QUARISMA_TSL_PROFILER_LIB_PROFILER_INTERFACE_H_
+#endif  // PROFILER_TSL_PROFILER_LIB_PROFILER_INTERFACE_H_

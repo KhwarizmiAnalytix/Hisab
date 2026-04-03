@@ -51,7 +51,7 @@ The Quarisma Profiler System is a comprehensive, modular performance analysis fr
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Application Layer                        │
-│  (User Code with QUARISMA_PROFILE_SCOPE macros)             │
+│  (User Code with PROFILER_PROFILE_SCOPE macros)             │
 └─────────────────────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────────────────────────────────────┐
@@ -124,14 +124,14 @@ int main() {
 
     // Profile a function
     {
-        QUARISMA_PROFILE_FUNCTION();
+        PROFILER_PROFILE_FUNCTION();
 
         // Your code here
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
         // Profile nested operations
         {
-            QUARISMA_PROFILE_SCOPE("nested_operation");
+            PROFILER_PROFILE_SCOPE("nested_operation");
             std::vector<int> data(1000, 42);
             // More work...
         }
@@ -232,13 +232,13 @@ Generates comprehensive profiling reports.
 
 ```cpp
 // Profile current scope
-QUARISMA_PROFILE_SCOPE("scope_name");
+PROFILER_PROFILE_SCOPE("scope_name");
 
 // Profile current function
-QUARISMA_PROFILE_FUNCTION();
+PROFILER_PROFILE_FUNCTION();
 
 // Profile a block of code
-QUARISMA_PROFILE_BLOCK("block_name") {
+PROFILER_PROFILE_BLOCK("block_name") {
     // Your code here
 }
 ```
@@ -306,7 +306,7 @@ auto session = profiler_session_builder()
 session->start();
 
 {
-    QUARISMA_PROFILE_SCOPE("compute");
+    PROFILER_PROFILE_SCOPE("compute");
     // Your computation
 }
 
@@ -325,7 +325,7 @@ auto session = profiler_session_builder()
 session->start();
 
 {
-    QUARISMA_PROFILE_SCOPE("memory_intensive");
+    PROFILER_PROFILE_SCOPE("memory_intensive");
     std::vector<int> data(1000000);
     // Process data
 }
@@ -344,11 +344,11 @@ auto session = profiler_session_builder()
 session->start();
 
 {
-    QUARISMA_PROFILE_SCOPE("level_1");
+    PROFILER_PROFILE_SCOPE("level_1");
     {
-        QUARISMA_PROFILE_SCOPE("level_2");
+        PROFILER_PROFILE_SCOPE("level_2");
         {
-            QUARISMA_PROFILE_SCOPE("level_3");
+            PROFILER_PROFILE_SCOPE("level_3");
             // Nested work
         }
     }
@@ -370,7 +370,7 @@ session->start();
 std::vector<std::thread> threads;
 for (int i = 0; i < 4; ++i) {
     threads.emplace_back([&session, i]() {
-        QUARISMA_PROFILE_SCOPE("thread_" + std::to_string(i));
+        PROFILER_PROFILE_SCOPE("thread_" + std::to_string(i));
         // Thread-specific work
     });
 }
@@ -394,7 +394,7 @@ auto session = profiler_session_builder()
 session->start();
 
 for (int i = 0; i < 100; ++i) {
-    QUARISMA_PROFILE_SCOPE("repeated_operation");
+    PROFILER_PROFILE_SCOPE("repeated_operation");
     // Work that varies in duration
 }
 
@@ -412,7 +412,7 @@ auto report = session->generate_report();
 ```
 User Code
     ↓
-QUARISMA_PROFILE_SCOPE macro
+PROFILER_PROFILE_SCOPE macro
     ↓
 profiler_scope constructor
     ↓
@@ -487,14 +487,14 @@ python setup.py config.build.ninja.clang.debug
 ### Using ITT API with Profiler
 
 ```cpp
-#ifdef QUARISMA_HAS_ITT
+#ifdef PROFILER_HAS_ITT
 #include <ittnotify.h>
 #endif
 
 #include "profiler/session/profiler.h"
 
 void profile_with_itt() {
-#ifdef QUARISMA_HAS_ITT
+#ifdef PROFILER_HAS_ITT
     __itt_domain* domain = __itt_domain_create("QuarismaProfiler");
     auto handle = __itt_string_handle_create("ProfiledTask");
     __itt_task_begin(domain, __itt_null, __itt_null, handle);
@@ -506,12 +506,12 @@ void profile_with_itt() {
 
     session->start();
     {
-        QUARISMA_PROFILE_SCOPE("task");
+        PROFILER_PROFILE_SCOPE("task");
         // Your code
     }
     session->stop();
 
-#ifdef QUARISMA_HAS_ITT
+#ifdef PROFILER_HAS_ITT
     __itt_task_end(domain);
 #endif
 }
@@ -536,7 +536,7 @@ Kineto is enabled by default in Quarisma builds.
 ### Using Kineto Profiler
 
 ```cpp
-#ifdef QUARISMA_HAS_KINETO
+#ifdef PROFILER_HAS_KINETO
 #include "profiler/kineto_profiler.h"
 
 void profile_with_kineto() {
@@ -554,7 +554,7 @@ void profile_with_kineto() {
 ### Kineto Configuration
 
 ```cpp
-#ifdef QUARISMA_HAS_KINETO
+#ifdef PROFILER_HAS_KINETO
 quarisma::kineto_profiler::profiling_config config;
 config.enable_cpu_tracing = true;
 config.enable_gpu_tracing = false;
@@ -651,12 +651,12 @@ XPlane is a structured format used internally by Quarisma for comprehensive prof
 
 ### 1. Use RAII Scopes
 
-Prefer `QUARISMA_PROFILE_SCOPE` over manual start/stop:
+Prefer `PROFILER_PROFILE_SCOPE` over manual start/stop:
 
 ```cpp
 // Good
 {
-    QUARISMA_PROFILE_SCOPE("operation");
+    PROFILER_PROFILE_SCOPE("operation");
     // Work
 }
 
@@ -672,10 +672,10 @@ Use short, descriptive names to reduce overhead:
 
 ```cpp
 // Good
-QUARISMA_PROFILE_SCOPE("compute");
+PROFILER_PROFILE_SCOPE("compute");
 
 // Avoid
-QUARISMA_PROFILE_SCOPE("very_long_descriptive_name_for_computation");
+PROFILER_PROFILE_SCOPE("very_long_descriptive_name_for_computation");
 ```
 
 ### 3. Configure Appropriately
@@ -801,7 +801,7 @@ The Enhanced Profiler is designed for minimal overhead:
 std::vector<std::vector<double>> matrix_multiply(
     const std::vector<std::vector<double>>& a,
     const std::vector<std::vector<double>>& b) {
-    QUARISMA_PROFILE_SCOPE("matrix_multiply");
+    PROFILER_PROFILE_SCOPE("matrix_multiply");
 
     const size_t rows_a = a.size();
     const size_t cols_a = a[0].size();
@@ -811,9 +811,9 @@ std::vector<std::vector<double>> matrix_multiply(
         rows_a, std::vector<double>(cols_b, 0.0));
 
     {
-        QUARISMA_PROFILE_SCOPE("matrix_computation");
+        PROFILER_PROFILE_SCOPE("matrix_computation");
         for (size_t i = 0; i < rows_a; ++i) {
-            QUARISMA_PROFILE_SCOPE("row_" + std::to_string(i));
+            PROFILER_PROFILE_SCOPE("row_" + std::to_string(i));
             for (size_t j = 0; j < cols_b; ++j) {
                 for (size_t k = 0; k < cols_a; ++k) {
                     result[i][j] += a[i][k] * b[k][j];
@@ -855,24 +855,24 @@ int main() {
 
 ```cpp
 void merge_sort(std::vector<double>& arr, size_t left, size_t right, int depth = 0) {
-    QUARISMA_PROFILE_SCOPE("merge_sort_depth_" + std::to_string(depth));
+    PROFILER_PROFILE_SCOPE("merge_sort_depth_" + std::to_string(depth));
 
     if (left >= right) return;
 
     size_t mid = left + (right - left) / 2;
 
     {
-        QUARISMA_PROFILE_SCOPE("sort_left");
+        PROFILER_PROFILE_SCOPE("sort_left");
         merge_sort(arr, left, mid, depth + 1);
     }
 
     {
-        QUARISMA_PROFILE_SCOPE("sort_right");
+        PROFILER_PROFILE_SCOPE("sort_right");
         merge_sort(arr, mid + 1, right, depth + 1);
     }
 
     {
-        QUARISMA_PROFILE_SCOPE("merge");
+        PROFILER_PROFILE_SCOPE("merge");
         std::vector<double> temp(right - left + 1);
         size_t i = left, j = mid + 1, k = 0;
 

@@ -2,50 +2,39 @@
 # Quarisma Core Library Tests BUILD Configuration
 # =============================================================================
 # Test targets for Core library using GoogleTest
-# Equivalent to Library/Core/Testing/Cxx/CMakeLists.txt
+# Equivalent to Library/Core/Testing/Cxx/CMakeLists.txt (glob + conditional excludes)
 # =============================================================================
 
 load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
 
 package(default_visibility = ["//visibility:public"])
 
-# =============================================================================
-# Test Files
-# =============================================================================
-
-# Core test files (non-GPU; profiler tests live under //Library/Profiler/Testing/Cxx)
-_CORE_TEST_FILES = [
-    "TestAllocatorBfc.cpp",
-    "TestAllocatorPool.cpp",
-    "TestAllocatorStatistics.cpp",
-    "TestAllocatorTracking.cpp",
-    "TestAsciiVisualizer.cpp",
-    "TestBackTrace.cpp",
-    "TestCPUMemory.cpp",
-    "TestCPUMemoryStats.cpp",
-    "TestCPUinfo.cpp",
-    "TestException.cpp",
-    "TestFlatHash.cpp",
-    "TestHashUtil.cpp",
-    "TestLazy.cpp",
-    "TestLogger.cpp",
-    "TestLoggerThreadName.cpp",
-    "TestParallelApi.cpp",
-    "TestParallelFor.cpp",
-    "TestParallelGuard.cpp",
-    "TestParallelReduce.cpp",
-    "TestPointer.cpp",
-    "TestSMP.cpp",
-    "TestSMPComprehensive.cpp",
-    "TestSMPEnhanced.cpp",
-    "TestSMPTransformFillSort.cpp",
-    "TestSanitizers.cpp",
-    "TestParallelAdvancedParallelThreadPoolNative.cpp",
-    "TestParallelAdvancedThreadName.cpp",
-    "TestParallelAdvancedThreadPool.cpp",
-    "TestStringUtil.cpp",
-    "TestThreadPool.cpp",
-]
+# Base tests: all Test*.cpp except always-excluded and GPU/CUDA/HIP (added back via select).
+# TestEnzymeAD.cpp requires the Enzyme LLVM plugin; keep out of Bazel until plugin wiring exists.
+_CORE_TEST_SRCS = glob(
+    ["Test*.cpp"],
+    exclude = [
+        "TestLoggerDisableSignalHandler.cpp",
+        "TestEnzymeAD.cpp",
+        "TestGpu*.cpp",
+        "TestGPU*.cpp",
+        "TestCuda*.cpp",
+        "TestHip*.cpp",
+    ],
+) + select({
+    "//bazel:enable_cuda": glob(
+        [
+            "TestGpu*.cpp",
+            "TestGPU*.cpp",
+            "TestCuda*.cpp",
+        ],
+        allow_empty = True,
+    ),
+    "//conditions:default": [],
+}) + select({
+    "//bazel:enable_hip": glob(["TestHip*.cpp"], allow_empty = True),
+    "//conditions:default": [],
+})
 
 # =============================================================================
 # Core Tests Target
@@ -55,7 +44,7 @@ cc_test(
     name = "CoreCxxTests",
     size = "large",
     timeout = "long",
-    srcs = _CORE_TEST_FILES,
+    srcs = _CORE_TEST_SRCS,
     copts = quarisma_copts(),
     defines = quarisma_defines() + [
         "QUARISMA_GOOGLE_TEST",
@@ -69,8 +58,8 @@ cc_test(
         "//bazel:enable_hip": ["QUARISMA_HAS_HIP=1"],
         "//conditions:default": ["QUARISMA_HAS_HIP=0"],
     }) + select({
-        "//bazel:enable_kineto": ["QUARISMA_HAS_KINETO=1"],
-        "//conditions:default": ["QUARISMA_HAS_KINETO=0"],
+        "//bazel:enable_kineto": ["PROFILER_HAS_KINETO=1"],
+        "//conditions:default": ["PROFILER_HAS_KINETO=0"],
     }),
     includes = ["."],
     linkopts = quarisma_linkopts(),

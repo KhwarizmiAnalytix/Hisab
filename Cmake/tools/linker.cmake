@@ -99,9 +99,13 @@ function(quarisma_find_linker)
 
   # Apply linker flags to quarismabuild target if found
   if(LINKER_FOUND)
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-      # For Clang and GCC, use -fuse-ld flag Extract just the linker name (e.g., "mold" from
-      # "/usr/bin/mold")
+    if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+      # Windows + Clang: lld-link does not understand -fuse-ld=; set the linker directly.
+      set(CMAKE_LINKER "${LINKER_NAME}" CACHE FILEPATH "Linker executable")
+      message("Linker configured: ${LINKER_NAME}")
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+      # For Clang and GCC on non-Windows, use -fuse-ld flag. Extract just the linker name
+      # (e.g., "mold" from "/usr/bin/mold")
       get_filename_component(LINKER_BASENAME "${LINKER_NAME}" NAME)
 
       # Convert linker names to -fuse-ld compatible format ld.gold -> gold, ld.lld -> lld, mold ->

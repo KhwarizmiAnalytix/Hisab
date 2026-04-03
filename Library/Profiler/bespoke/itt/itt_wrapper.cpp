@@ -7,7 +7,7 @@
 
 #include "itt_wrapper.h"
 
-#if QUARISMA_HAS_ITT
+#if PROFILER_HAS_ITT
 #include <ittnotify.h>
 
 #include <mutex>
@@ -19,7 +19,7 @@ namespace quarisma
 namespace profiler_impl
 {
 
-#if QUARISMA_HAS_ITT
+#if PROFILER_HAS_ITT
 
 namespace
 {
@@ -87,7 +87,7 @@ __itt_domain* itt_get_domain()
     return g_itt_domain;
 }
 
-#endif  // QUARISMA_HAS_ITT
+#endif  // PROFILER_HAS_ITT
 
 }  // namespace profiler_impl
 }  // namespace quarisma

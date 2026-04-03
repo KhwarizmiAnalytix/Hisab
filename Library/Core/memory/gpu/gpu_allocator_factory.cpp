@@ -3,7 +3,6 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "common/configure.h"
 #include "common/macros.h"
 #include "logging/logger.h"
 #include "memory/gpu/gpu_device_manager.h"

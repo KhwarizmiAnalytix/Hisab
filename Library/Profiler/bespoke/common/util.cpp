@@ -5,12 +5,14 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
+#include <sstream>
+
 #include "bespoke/base/thread_local_debug_info.h"
 #include "bespoke/common/collection.h"
 #include "common/array_ref.h"
 #include "common/irange.h"
 
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 #include <libkineto.h>
 #endif
 #ifdef USE_DISTRIBUTED
@@ -47,7 +49,7 @@ void logSoftAssert(
     // @lint-ignore CLANGTIDY
     const char* args)
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     std::string error;
     error = fmt::format(
         "{} SOFT ASSERT FAILED at {}:{}, func: {}, args: {}", cond, file, line, func, args);
@@ -68,7 +70,7 @@ void logSoftAssert(
     // @lint-ignore CLANGTIDY
     const std::string& args)
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     std::string error;
     error = fmt::format(
         "{} SOFT ASSERT FAILED at {}:{}, func: {}, args: {}", cond, file, line, func, args);
@@ -100,7 +102,7 @@ std::string getNvtxStr(
         }
         else
         {
-#ifdef QUARISMA_USE_ROCM
+#ifdef PROFILER_USE_ROCM
             // Only ROCM supports < -1 sequence_nr
             str = name;
 #endif
@@ -792,7 +794,7 @@ static std::vector<quarisma::IntArrayRef> getInputSizes(
     {
         ss << "Failed to save extra arguments for flops computation of op " << op_name
            << ", min size: " << min_size << ", actual size: " << inputs.size();
-        QUARISMA_LOG_WARNING(ss.str());
+        // PROFILER_LOG_WARNING(ss.str());
         return {};
     }
     std::vector<quarisma::IntArrayRef> inputSizes = {};
@@ -802,7 +804,7 @@ static std::vector<quarisma::IntArrayRef> getInputSizes(
         {
             ss << "Failed to save extra arguments for flops computation of op " << op_name
                << ", input[" << index << "] must be a tensor.";
-            QUARISMA_LOG_WARNING(ss.str());
+            // PROFILER_LOG_WARNING(ss.str());
             return {};
         }
         quarisma::Tensor t = inputs[index].toTensor();
@@ -810,7 +812,7 @@ static std::vector<quarisma::IntArrayRef> getInputSizes(
         {
             ss << "Failed to save extra arguments for flops computation of op " << op_name
                << " with input[" << index << "] as nested tensor.";
-            QUARISMA_LOG_WARNING(ss.str());
+            // PROFILER_LOG_WARNING(ss.str());
             return {};
         }
         inputSizes.emplace_back(t.sizes());
@@ -840,9 +842,9 @@ std::unordered_map<std::string, quarisma::IValue> saveExtraArgs(const quarisma::
         }
         if (inputSizes[1].size() != 4)
         {
-            QUARISMA_LOG_WARNING(
+            /* PROFILER_LOG_WARNING(
                 "Failed to compute flops for op aten::conv2d because it requires a 4D kernel "
-                "tensor.");
+                "tensor."); */
             return map;
         }
         map[kInputSize]  = quarisma::IValue(inputSizes[0]);
@@ -937,9 +939,9 @@ uint64_t computeFlops(
             extra_args.find(kStride) == extra_args.end() ||
             extra_args.find(kDilation) == extra_args.end())
         {
-            QUARISMA_LOG_WARNING(
+            /* PROFILER_LOG_WARNING(
                 "Calculating flops for aten::conv2d requires groups, padding, stride, dilation, "
-                "input_size, and weight_size in saved arguments.");
+                "input_size, and weight_size in saved arguments."); */
             return 0;
         }
         auto input_sizes_ref  = extra_args.at(kInputSize);
@@ -950,16 +952,16 @@ uint64_t computeFlops(
         auto dilation_ref     = extra_args.at(kDilation);
         if (!input_sizes_ref.isIntList() || !kernel_sizes_ref.isIntList())
         {
-            QUARISMA_LOG_WARNING(
+            /* PROFILER_LOG_WARNING(
                 "Failed to compute flops for op aten::conv2d because it requires input and weight "
-                "tensor sizes.");
+                "tensor sizes."); */
             return 0;
         }
         if (!padding_ref.isIntList() || !stride_ref.isIntList() || !dilation_ref.isIntList())
         {
-            QUARISMA_LOG_WARNING(
+            /* PROFILER_LOG_WARNING(
                 "Failed to compute flops for op aten::conv2d because it requires padding, stride, "
-                "and dilation values.");
+                "and dilation values."); */
             return 0;
         }
 
@@ -971,29 +973,29 @@ uint64_t computeFlops(
         const std::vector<int64_t> dilation     = dilation_ref.toIntVector();
         if (input_sizes.size() != 4 || kernel_sizes.size() != 4)
         {
-            QUARISMA_LOG_WARNING(
+            /* PROFILER_LOG_WARNING(
                 "Failed to compute flops for op aten::conv2d because both input and weight must be "
-                "size 4.");
+                "size 4."); */
             return 0;
         }
         if (!groups)
         {
-            QUARISMA_LOG_WARNING(
-                "Failed to compute flops for op aten::conv2d because group size must not be 0.");
+            /* PROFILER_LOG_WARNING(
+                "Failed to compute flops for op aten::conv2d because group size must not be 0."); */
             return 0;
         }
         if (padding.size() != 2 || dilation.size() != 2)
         {
-            QUARISMA_LOG_WARNING(
+            /* PROFILER_LOG_WARNING(
                 "Failed to compute flops for op aten::conv2d because both padding and dilation "
-                "must be size 2.");
+                "must be size 2."); */
             return 0;
         }
         if (stride.size() != 2 || (stride[0] * stride[1] == 0))
         {
-            QUARISMA_LOG_WARNING(
+            /* PROFILER_LOG_WARNING(
                 "Failed to compute flops for op aten::conv2d because stride must be size 2 and "
-                "cannot be 0.");
+                "cannot be 0."); */
             return 0;
         }
         // format of the input is defined in
@@ -1016,20 +1018,20 @@ uint64_t computeFlops(
         if (extra_args.find(kMat1Size) == extra_args.end() ||
             extra_args.find(kMat2Size) == extra_args.end())
         {
-            QUARISMA_LOG_WARNING(
+            /* PROFILER_LOG_WARNING(
                 "Calculating flops for ",
                 op_name,
-                " requires mat1_size and mat2_size in saved arguments.");
+                " requires mat1_size and mat2_size in saved arguments."); */
             return 0;
         }
         auto mat1_sizes_ref = extra_args.at(kMat1Size);
         auto mat2_sizes_ref = extra_args.at(kMat2Size);
         if (!mat1_sizes_ref.isIntList() || !mat2_sizes_ref.isIntList())
         {
-            QUARISMA_LOG_WARNING(
+            /* PROFILER_LOG_WARNING(
                 "Failed to compute flops for op ",
                 op_name,
-                " because it requires mat1_size and mat2_size to be IntList.");
+                " because it requires mat1_size and mat2_size to be IntList."); */
             return 0;
         }
 
@@ -1065,20 +1067,20 @@ uint64_t computeFlops(
         if (extra_args.find(kMat1Size) == extra_args.end() ||
             extra_args.find(kMat2Size) == extra_args.end())
         {
-            QUARISMA_LOG_WARNING(
+            /* PROFILER_LOG_WARNING(
                 "Calculating flops for ",
                 op_name,
-                " requires mat1_size and mat2_size in saved arguments.");
+                " requires mat1_size and mat2_size in saved arguments."); */
             return 0;
         }
         auto mat1_sizes_ref = extra_args.at(kMat1Size);
         auto mat2_sizes_ref = extra_args.at(kMat2Size);
         if (!mat1_sizes_ref.isIntList() || !mat2_sizes_ref.isIntList())
         {
-            QUARISMA_LOG_WARNING(
+            /* PROFILER_LOG_WARNING(
                 "Failed to compute flops for op ",
                 op_name,
-                " because it requires mat1_size and mat2_size to be IntList.");
+                " because it requires mat1_size and mat2_size to be IntList."); */
             return 0;
         }
 
@@ -1120,16 +1122,16 @@ uint64_t computeFlops(
     {
         if (extra_args.find(kMatSize) == extra_args.end())
         {
-            QUARISMA_LOG_WARNING(
-                "Calculating flops for aten::mul.Tensor requires mat_size in saved arguments.");
+            /* PROFILER_LOG_WARNING(
+                "Calculating flops for aten::mul.Tensor requires mat_size in saved arguments."); */
             return 0;
         }
         auto mat_sizes = extra_args.at(kMatSize);
         if (!mat_sizes.isIntList())
         {
-            QUARISMA_LOG_WARNING(
+            /* PROFILER_LOG_WARNING(
                 "Failed to compute flops for op aten::mul because it requires mat_size to be "
-                "IntList.");
+                "IntList."); */
             return 0;
         }
 
@@ -1145,16 +1147,16 @@ uint64_t computeFlops(
     {
         if (extra_args.find(kMatSize) == extra_args.end())
         {
-            QUARISMA_LOG_WARNING(
-                "Calculating flops for aten::add.Tensor requires mat_size in saved arguments.");
+            /* PROFILER_LOG_WARNING(
+                "Calculating flops for aten::add.Tensor requires mat_size in saved arguments."); */
             return 0;
         }
         auto mat_sizes = extra_args.at(kMatSize);
         if (!mat_sizes.isIntList())
         {
-            QUARISMA_LOG_WARNING(
+            /* PROFILER_LOG_WARNING(
                 "Failed to compute flops for op aten::add because it requires mat_size to be "
-                "IntList.");
+                "IntList."); */
             return 0;
         }
 
@@ -1214,7 +1216,7 @@ bool checkFunctionOutputsForLogging(const quarisma::RecordFunction& fn)
     // We have two cases: for unboxed kernel, we have num_outputs ==
     // outputs.size() for boxed kernel using stack, there could be more elements
     // on the stack from previous ops.
-    // QUARISMA_CHECK(num_outputs <= outputs.size());
+    // PROFILER_CHECK(num_outputs <= outputs.size());
     return num_outputs <= outputs.size();
 }
 
@@ -1226,7 +1228,7 @@ bool checkFunctionInputsForLogging(const quarisma::RecordFunction& fn)
     // We have two cases: for unboxed kernel, we have num_inputs ==
     // inputs.size() for boxed kernel using stack, there could be more elements
     // on the stack from previous ops.
-    // QUARISMA_CHECK(num_inputs <= inputs.size());
+    // PROFILER_CHECK(num_inputs <= inputs.size());
     return num_inputs <= inputs.size();
 }
 }  // namespace quarisma::profiler_impl::impl

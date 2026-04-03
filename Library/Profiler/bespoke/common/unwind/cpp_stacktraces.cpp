@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "util/env.h"
+//#include "util/env.h"
 
 namespace quarisma
 {
@@ -11,12 +11,12 @@ namespace
 {
 bool compute_cpp_stack_traces_enabled()
 {
-    return quarisma::utils::check_env("QUARISMA_SHOW_CPP_STACKTRACES") == true;
+    return quarisma::utils::check_env("PROFILER_SHOW_CPP_STACKTRACES") == true;
 }
 
 bool compute_disable_addr2line()
 {
-    return quarisma::utils::check_env("QUARISMA_DISABLE_ADDR2LINE") == true;
+    return quarisma::utils::check_env("PROFILER_DISABLE_ADDR2LINE") == true;
 }
 }  // namespace
 
@@ -28,7 +28,7 @@ bool get_cpp_stacktraces_enabled()
 
 static quarisma::unwind::Mode compute_symbolize_mode()
 {
-    auto envar_c = quarisma::utils::get_env("QUARISMA_SYMBOLIZE_MODE");
+    auto envar_c = quarisma::utils::get_env("PROFILER_SYMBOLIZE_MODE");
     if (envar_c.has_value())
     {
         if (envar_c == "dladdr")
@@ -44,11 +44,11 @@ static quarisma::unwind::Mode compute_symbolize_mode()
             return unwind::Mode::fast;
         }
 
-        // QUARISMA_CHECK(
-            // false,
-            // "expected {{dladdr, addr2line, fast}} for QUARISMA_SYMBOLIZE_MODE, got {}",
-            // envar_c.value());
-        // Unreachable: QUARISMA_CHECK will throw/abort on failure
+        // PROFILER_CHECK(
+        // false,
+        // "expected {{dladdr, addr2line, fast}} for PROFILER_SYMBOLIZE_MODE, got {}",
+        // envar_c.value());
+        // Unreachable: PROFILER_CHECK will throw/abort on failure
         return unwind::Mode::dladdr;
     }
 

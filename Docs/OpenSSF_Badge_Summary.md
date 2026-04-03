@@ -52,7 +52,7 @@ This document summarizes the work completed to improve Quarisma's OpenSSF Best P
 **Content Includes:**
 - **Phase 1:** 11 criteria updates referencing existing CONTRIBUTING.md documentation
 - **Phase 2:** 7 security-related criteria updates
-- **Phase 3:** 9 cryptographic criteria updates (based on Library/Security module)
+- **Phase 3:** Cryptographic criteria (mark N/A where no in-tree crypto library; see guide)
 - Exact URLs and justification text for each criterion
 - Expected completion percentages after each phase
 
@@ -111,18 +111,11 @@ This document summarizes the work completed to improve Quarisma's OpenSSF Best P
    - 98% code coverage requirement is well-documented
    - Static analysis tools (clang-tidy, cppcheck, IWYU) are documented and used
 
-2. **Security Library**
-   - Quarisma includes a Security module (Library/Security/) with:
-     - SHA-256 hashing implementation
-     - Cryptographically secure random number generation
-     - Platform-specific secure APIs (BCryptGenRandom, SecRandomCopyBytes, getrandom)
-   - All cryptographic practices follow industry standards
-
-3. **Compiler Warning Configuration**
+2. **Compiler Warning Configuration**
    - MSVC: /W4 (highest warning level) configured in Cmake/flags/platform.cmake
    - Static analysis integrated into build process
 
-4. **Semantic Versioning**
+3. **Semantic Versioning**
    - Project follows SemVer (documented in CONTRIBUTING.md)
    - Current version: 1.0.0
 
@@ -215,7 +208,7 @@ This document summarizes the work completed to improve Quarisma's OpenSSF Best P
 
 ## Conclusion
 
-Quarisma has strong development practices already in place. The primary gap was **documentation visibility** in the OpenSSF badge system, not actual practice deficiencies. By updating the badge entries with references to existing documentation (CONTRIBUTING.md, SECURITY.md, and code in Library/Security/), Quarisma can achieve 60-65% completion with minimal effort.
+Quarisma has strong development practices already in place. The primary gap was **documentation visibility** in the OpenSSF badge system, not actual practice deficiencies. By updating the badge entries with references to existing documentation (CONTRIBUTING.md, SECURITY.md), Quarisma can achieve 60-65% completion with minimal effort.
 
 The comprehensive guide provided in `Docs/OpenSSF_Badge_Update_Guide.md` makes this process straightforward - simply copy-paste the provided text into the appropriate badge entry fields.
 

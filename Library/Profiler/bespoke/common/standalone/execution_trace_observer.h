@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "common/export.h"
+#include "common/profiler_export.h"
 
 namespace quarisma::profiler_impl::impl
 {

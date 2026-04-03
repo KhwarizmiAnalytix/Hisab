@@ -127,11 +127,10 @@ const auto& event_names = config_->experimental_config.performance_events;
 ## Build Output
 
 ```
-[1/5] Building CXX object Library/Core/CMakeFiles/Core.dir/profiler/kineto/profiler_kineto.cpp.o
-[2/5] Linking CXX shared library lib/libCore.dylib
-[3/5] Linking CXX executable bin/ProfileParallelBackends
-[4/5] Linking CXX executable bin/SecurityCxxTests
-[5/5] Linking CXX executable bin/CoreCxxTests
+[1/4] Building CXX object Library/Core/CMakeFiles/Core.dir/profiler/kineto/profiler_kineto.cpp.o
+[2/4] Linking CXX shared library lib/libCore.dylib
+[3/4] Linking CXX executable bin/ProfileParallelBackends
+[4/4] Linking CXX executable bin/CoreCxxTests
 [SUCCESS] Build completed successfully
 ```
 

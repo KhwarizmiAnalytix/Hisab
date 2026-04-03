@@ -123,7 +123,6 @@ bazel build //...
 
 # Build specific library
 bazel build //Library/Core:Core
-bazel build //Library/Security:Security
 
 # Build with specific configuration
 bazel build --config=release //...
@@ -802,10 +801,8 @@ Quarisma/
 │   └── mimalloc.BUILD          # mimalloc library
 │
 ├── Library/
-│   ├── Core/
-│   │   └── BUILD.bazel         # Core library build
-│   └── Security/
-│       └── BUILD.bazel         # Security library build
+│   └── Core/
+│       └── BUILD.bazel         # Core library build
 │
 └── ThirdParty/                  # (Existing CMake third-party deps)
 ```

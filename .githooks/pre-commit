@@ -1,0 +1,13 @@
+#!/bin/bash
+# Pre-commit hook: format staged C++/header files with clang-format
+
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+"$REPO_ROOT/Scripts/all-clang-format.sh"
+
+# Re-stage any files that were reformatted
+git diff --name-only | while IFS= read -r f; do
+  case "$f" in *.cpp|*.hxx|*.h) git add "$REPO_ROOT/$f" ;; esac
+done

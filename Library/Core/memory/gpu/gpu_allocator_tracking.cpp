@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -35,7 +35,6 @@
 #include <sstream>
 #include <utility>
 
-#include "common/configure.h"
 #include "util/exception.h"
 
 namespace quarisma

@@ -1,8 +1,3 @@
-# Profiler module CMakeLists.txt
-# Typically added via add_subdirectory from Library/Core/CMakeLists.txt.
-# Core headers (memory/, common/macros.h, util/, logging/, …) come from the Quarisma::Core CMake
-# target — not a manual ../Core include path. This directory stays first so common/export.h is
-# Library/Profiler/common/export.h (Profiler visibility), not Core's.
 cmake_minimum_required(VERSION 3.16)
 
 set(profiler_headers)
@@ -28,7 +23,7 @@ list(APPEND profiler_sources ${common_util_sources})
 # Kineto profiler backend
 # base/ is shared infrastructure for Kineto and ITT — included with either.
 # =============================================================================
-if(QUARISMA_ENABLE_KINETO)
+if(PROFILER_ENABLE_KINETO)
   file(
     GLOB_RECURSE kineto_headers
     LIST_DIRECTORIES false
@@ -55,7 +50,7 @@ endif()
 # =============================================================================
 # Native profiler backend (standalone)
 # =============================================================================
-if(QUARISMA_ENABLE_NATIVE_PROFILER)
+if(PROFILER_ENABLE_NATIVE_PROFILER)
   file(
     GLOB_RECURSE native_headers
     LIST_DIRECTORIES false
@@ -76,8 +71,8 @@ endif()
 # base/ is shared infrastructure for Kineto and ITT — included with either.
 # Guard against double-inclusion when both Kineto and ITT are enabled.
 # =============================================================================
-if(QUARISMA_ENABLE_ITT)
-  if(NOT QUARISMA_ENABLE_KINETO)
+if(PROFILER_ENABLE_ITT)
+  if(NOT PROFILER_ENABLE_KINETO)
     file(
       GLOB_RECURSE itt_base_headers
       LIST_DIRECTORIES false
@@ -162,9 +157,7 @@ if(QUARISMA_DEPENDENCY_INCLUDE_DIRS)
   message(STATUS "Profiler library include directories: ${QUARISMA_DEPENDENCY_INCLUDE_DIRS}")
 endif()
 
-# Link with build interface target and Core (headers + symbols for memory/, util/, logging/, …).
-# No manual ../Core include path on this target.
-target_link_libraries(Profiler PUBLIC Quarisma::build Quarisma::Core)
+target_link_libraries(Profiler PUBLIC Quarisma::build)
 
 # Link with centralized dependency list
 if(QUARISMA_DEPENDENCY_LIBS)

@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -41,8 +41,8 @@ limitations under the License.
 #include <type_traits>
 #include <utility>
 
-#include "common/macros.h"
-#include "util/flat_hash.h"
+#include "common/flat_hash.h"
+#include "common/profiler_macros.h"
 
 namespace quarisma
 {
@@ -120,16 +120,16 @@ typename Collection::value_type::second_type* FindOrNull(
     return &it->second;
 }
 
-QUARISMA_UNUSED constexpr int kNumHostEventTypes =
+PROFILER_UNUSED constexpr int kNumHostEventTypes =
     HostEventType::kLastHostEventType - HostEventType::kFirstHostEventType + 1;
 
-QUARISMA_UNUSED constexpr int kNumStatTypes =
+PROFILER_UNUSED constexpr int kNumStatTypes =
     StatType::kLastStatType - StatType::kFirstStatType + 1;
 
-QUARISMA_UNUSED constexpr int kNumMegaScaleStatTypes =
+PROFILER_UNUSED constexpr int kNumMegaScaleStatTypes =
     MegaScaleStatType::kLastMegaScaleStatType - MegaScaleStatType::kFirstMegaScaleStatType + 1;
 
-QUARISMA_UNUSED constexpr int kNumLineIdTypes =
+PROFILER_UNUSED constexpr int kNumLineIdTypes =
     LineIdType::kLastLineIdType - LineIdType::kFirstLineIdType + 1;
 
 using HostEventTypeMap        = flat_hash_map<std::string_view, HostEventType>;
@@ -237,7 +237,7 @@ const HostEventTypeMap& GetHostEventTypeMap()
         {"tpu::System::TransferFromDevice=>IssueEvent=>Done", kTransferFromDeviceDone},
         {"tpu::System::Execute", kTpuSystemExecute},
     });
-    // QUARISMA_CHECK_DEBUG(host_event_type_map->size() == kNumHostEventTypes);
+    // PROFILER_CHECK_DEBUG(host_event_type_map->size() == kNumHostEventTypes);
     return *host_event_type_map;
 }
 
@@ -386,7 +386,7 @@ const StatTypeMap& GetStatTypeMap()
          {"source_stack", kSourceStack},
          {"device_offset_ps", kDeviceOffsetPs},
          {"device_duration_ps", kDeviceDurationPs}});
-    // QUARISMA_CHECK_DEBUG(stat_type_map->size() == kNumStatTypes);
+    // PROFILER_CHECK_DEBUG(stat_type_map->size() == kNumStatTypes);
     return *stat_type_map;
 }
 
@@ -416,7 +416,7 @@ const MegaScaleStatTypeMap& GetMegaScaleStatTypeMap()
         {"graph_protos", kMegaScaleGraphProtos},
         {"network_transport_latency_us", kMegaScaleNetworkTransportLatency},
     });
-    // QUARISMA_CHECK_DEBUG(stat_type_map->size() == kNumMegaScaleStatTypes);
+    // PROFILER_CHECK_DEBUG(stat_type_map->size() == kNumMegaScaleStatTypes);
     return *stat_type_map;
 }
 
@@ -427,7 +427,7 @@ const LineIdTypeMap& GetLineIdTypeMap()
         {"DcnHostTraffic", kDcnHostTraffic},
         {"DcnCollectiveTraffic", kDcnCollectiveTraffic},
     });
-    // QUARISMA_CHECK_DEBUG(line_id_type_map->size() == kNumLineIdTypes);
+    // PROFILER_CHECK_DEBUG(line_id_type_map->size() == kNumLineIdTypes);
     return *line_id_type_map;
 }
 
@@ -462,7 +462,7 @@ const MegaScaleStatTypeStrMap& GetMegaScaleStatTypeStrMap()
 using TaskEnvStatTypeMap    = flat_hash_map<std::string_view, TaskEnvStatType>;
 using TaskEnvStatTypeStrMap = flat_hash_map<TaskEnvStatType, std::string_view>;
 
-QUARISMA_UNUSED constexpr int kNumTaskEnvStatTypes =
+PROFILER_UNUSED constexpr int kNumTaskEnvStatTypes =
     TaskEnvStatType::kLastTaskEnvStatType - TaskEnvStatType::kFirstTaskEnvStatType + 1;
 
 const TaskEnvStatTypeMap& GetTaskEnvStatTypeMap()
@@ -471,7 +471,7 @@ const TaskEnvStatTypeMap& GetTaskEnvStatTypeMap()
         {"profile_start_time", kEnvProfileStartTime},
         {"profile_stop_time", kEnvProfileStopTime},
     });
-    // QUARISMA_CHECK_DEBUG(task_env_stat_type_map->size() == kNumTaskEnvStatTypes);
+    // PROFILER_CHECK_DEBUG(task_env_stat_type_map->size() == kNumTaskEnvStatTypes);
     return *task_env_stat_type_map;
 }
 
@@ -498,7 +498,7 @@ std::optional<int64_t> FindHostEventType(std::string_view event_name)
     return std::nullopt;
 }
 
-std::optional<int64_t> FindTfOpEventType(QUARISMA_UNUSED std::string_view event_name)
+std::optional<int64_t> FindTfOpEventType(PROFILER_UNUSED std::string_view event_name)
 {
 // TF op names.
 #if 0

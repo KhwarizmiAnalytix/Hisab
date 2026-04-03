@@ -27,12 +27,16 @@
 
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
+#include <ctime>
 #include <fstream>
 #include <iomanip>
 #include <map>
 #include <mutex>
+#include <optional>
 #include <sstream>
 #include <stack>
+#include <string>
 #include <vector>
 
 // TODO: Missing Quarisma dependencies - original includes were:
@@ -43,7 +47,7 @@
 #include "bespoke/common/record_function.h"
 #include "bespoke/common/standalone/execution_trace_observer.h"
 #include "bespoke/common/util.h"
-#include "util/env.h"
+//#include "util/env.h"
 #include "common/irange.h"
 
 #ifdef USE_DISTRIBUTED
@@ -55,13 +59,25 @@ using namespace quarisma;
 // Stub declarations for types not available in profiler-only build
 namespace quarisma
 {
-// Stub for StorageImpl - used in execution trace observer
-struct StorageImpl : public quarisma::intrusive_ptr_target
+// Stub for StorageImpl - used in execution trace observer (no intrusive ref-count in stub build)
+struct StorageImpl
 {
-    // Stub implementation for profiler-only build
     static const void* data() { return nullptr; }
 };
 }  // namespace quarisma
+
+namespace
+{
+std::optional<std::string> profiler_get_env(const char* name)
+{
+    const char* v = std::getenv(name);
+    if (v == nullptr)
+    {
+        return std::nullopt;
+    }
+    return std::string(v);
+}
+}  // namespace
 
 // Collective property attributes
 // https://github.com/pytorch/pytorch/issues/124674
@@ -173,9 +189,11 @@ struct PROFILER_VISIBILITY ExecutionTraceObserver
     // unique id.
     std::map<const void*, ID> objectId;
 
-    using weak_storage_ptr = quarisma::weak_intrusive_ptr<StorageImpl>;
-    std::unordered_map<const void*, ID>               data_ptr_to_storage_id;
-    std::unordered_map<const void*, weak_storage_ptr> data_ptr_to_weak_storage_ptr;
+    using weak_storage_ptr = std::weak_ptr<quarisma::StorageImpl>;
+    std::unordered_map<const void*, ID>
+        data_ptr_to_storage_id;  // cppcheck-suppress unusedStructMember
+    std::unordered_map<const void*, weak_storage_ptr>
+        data_ptr_to_weak_storage_ptr;  // cppcheck-suppress unusedStructMember
 
 #if 0
     // Disabled: Storage::getWeakStorageImpl() not available in profiler-only build
@@ -457,8 +475,20 @@ static void writeJsonNode(
 
 static std::string timeString(const std::time_t timepoint)
 {
+    std::tm tm_buf{};
+#if defined(_WIN32)
+    if (localtime_s(&tm_buf, &timepoint) != 0)
+    {
+        return {};
+    }
+#else
+    if (localtime_r(&timepoint, &tm_buf) == nullptr)
+    {
+        return {};
+    }
+#endif
     std::ostringstream oss;
-    oss << std::put_time(std::localtime(&timepoint), "%Y-%m-%d %X");  // NOLINT
+    oss << std::put_time(&tm_buf, "%Y-%m-%d %X");
     return oss.str();
 }
 
@@ -540,7 +570,7 @@ static void finalizeExecutionTraceOutput(ExecutionTraceObserver& ob)
 }
 
 [[maybe_unused]] static void dumpTensorData2File(
-    std::string& tensor_dump_file_name, quarisma::Tensor& tensor_on_host)
+    const std::string& tensor_dump_file_name, quarisma::Tensor& tensor_on_host)
 {
     std::fstream fs;
     fs.open(tensor_dump_file_name, std::fstream::out | std::fstream::binary);
@@ -550,7 +580,8 @@ static void finalizeExecutionTraceOutput(ExecutionTraceObserver& ob)
         size_t const tensor_offset = tensor_impl->storage_offset();
         size_t const tensor_nbyte  = tensor_impl->numel() * tensor_impl->itemsize();
 
-        fs.write((const char*)tensor_impl->storage().data() + tensor_offset, (long)tensor_nbyte);
+        const auto* const bytes = static_cast<const char*>(tensor_impl->storage().data());
+        fs.write(bytes + tensor_offset, static_cast<std::streamsize>(tensor_nbyte));
     }
 }
 
@@ -769,7 +800,7 @@ static void handleKernelBackendInfo(FunctionCallContext& fc, const RecordFunctio
         if (fc.kernelBackend == "triton")
         {
             fc.kernelFile = kwinputs.at("kernel_file").toStringRef();
-            // QUARISMA_CHECK(
+            // PROFILER_CHECK(
                 // kwinputs.find("kernel_file") != kwinputs.end(),
                 // "kernel file is missing in triton kernel");
             // Remove the path of the file name
@@ -779,7 +810,7 @@ static void handleKernelBackendInfo(FunctionCallContext& fc, const RecordFunctio
             }
 
             // get stream information
-            // QUARISMA_CHECK(
+            // PROFILER_CHECK(
                 // kwinputs.find("stream") != kwinputs.end(), "stream is missing in triton kernel");
             fc.inputValues.emplace_back(std::to_string(kwinputs.at("stream").toInt()));
             fc.inputTypes.emplace_back("\"Int\"");
@@ -791,24 +822,23 @@ static void handleKernelBackendInfo(FunctionCallContext& fc, const RecordFunctio
 // Stub implementation
 static void handleKernelBackendInfo(FunctionCallContext& /*fc*/, const RecordFunction& fn)
 {
-    QUARISMA_UNUSED const auto& kwinputs = fn.kwinputs();
+    PROFILER_UNUSED const auto& kwinputs = fn.kwinputs();
     // Stub: IValue methods not available in profiler-only build
 }
 #endif
 
 // Additional attributes for commounication collectives
-static inline std::string getCommsNodeAttrs(const RecordFunction& /*fn*/)
-{  // NOLINT
-    std::vector<std::string> attrs;
-
+static inline std::string getCommsNodeAttrs(const RecordFunction& fn)
+{
 #ifdef USE_DISTRIBUTED
+    std::vector<std::string> attrs;  // cppcheck-suppress unusedVariable
     // We rely on paramcommsdebug object that is available in thread local info
-    auto debugInfo = dynamic_cast<ParamCommsDebugInfo*>(
+    const auto* const debugInfo = dynamic_cast<ParamCommsDebugInfo*>(
         quarisma::thread_local_debug_info::get(quarisma::DebugInfoKind::PARAM_COMMS_INFO));
     if (debugInfo == nullptr)
     {
-        //LOG(WARNING) << "ParamCommsDebugInfo not available for function: "
-        << fn.name();
+        // LOG(WARNING) << "ParamCommsDebugInfo not available for function: " << fn.name();
+        (void)fn;
         return ", " + getAttrJson("debug", "string", "\"missing comms info\"");
     }
 
@@ -847,10 +877,12 @@ static inline std::string getCommsNodeAttrs(const RecordFunction& /*fn*/)
 
     addAttr(kGroupSize, kETGroupSize, "uint64");
 
-#endif  // USE_DISTRIBUTED
-
     // XXX consider using as string stream?
     return attrs.empty() ? "" : fmt::format(", {}", fmt::join(attrs, ", "));
+#else
+    (void)fn;
+    return "";
+#endif  // USE_DISTRIBUTED
 }
 
 static void recordOperatorStart(
@@ -1008,7 +1040,7 @@ static void onFunctionExit(const RecordFunction& fn, ObserverContext* ctx_ptr)
     if (ob->getState() == RunState::enabled)
     {
         auto* fc_ptr = dynamic_cast<FunctionCallContext*>(ctx_ptr);
-        // QUARISMA_CHECK(fc_ptr != nullptr);
+        // PROFILER_CHECK(fc_ptr != nullptr);
         if (fc_ptr == nullptr)
         {
             //LOG(WARNING) << "FunctionCallContext is nullptr.";
@@ -1121,8 +1153,8 @@ bool addExecutionTraceObserver(const std::string& output_file_path)
 
         // check if the environment variable is set to force recording integer
         // tensors
-        auto env_variable = quarisma::utils::get_env(
-            "ENABLE_PYQUARISMA_EXECUTION_TRACE_SAVE_INTEGRAL_TENSOR_RANGE");
+        auto env_variable =
+            profiler_get_env("ENABLE_PYPROFILER_EXECUTION_TRACE_SAVE_INTEGRAL_TENSOR_RANGE");
         if (env_variable.has_value())
         {
             ob.record_integral_tensor_range = true;
@@ -1131,7 +1163,7 @@ bool addExecutionTraceObserver(const std::string& output_file_path)
         // check if the environment variable is set to force recording integer
         // tensors
         env_variable =
-            quarisma::utils::get_env("ENABLE_PYQUARISMA_EXECUTION_TRACE_SAVE_INTEGRAL_TENSOR_DATA");
+            profiler_get_env("ENABLE_PYPROFILER_EXECUTION_TRACE_SAVE_INTEGRAL_TENSOR_DATA");
         if (env_variable.has_value())
         {
             std::istringstream stream(env_variable.value());
@@ -1187,9 +1219,9 @@ void removeExecutionTraceObserver()
             removeCallback(ob->cbHandle);
             ob->cbHandle = INVALID_CALLBACK_HANDLE;
             // Release the current ET observer object and reset.
-            // QUARISMA_CHECK(
-                // ObserverManager::pop() != nullptr,
-                // "Global state ptr cannot be null before resetting");
+            // PROFILER_CHECK(
+            // ObserverManager::pop() != nullptr,
+            // "Global state ptr cannot be null before resetting");
             // VLOG(1) << "Quarisma Execution Trace: removed observer";
         }
         else

@@ -24,8 +24,8 @@
 #include <type_traits>
 #include <vector>
 
-#include "common/macros.h"
-#include "util/exception.h"
+#include "common/profiler_macros.h"
+//#include "util/exception.h"
 #include "common/small_vector.h"
 
 namespace quarisma
@@ -61,10 +61,10 @@ private:
 
     void debugCheckNullptrInvariant()
     {
-        // QUARISMA_CHECK_DEBUG(
-            // Data != nullptr || Length == 0,
-            // "created array_ref with nullptr and non-zero length! std::optional relies on this "
-            // "being illegal");
+        // PROFILER_CHECK_DEBUG(
+        // Data != nullptr || Length == 0,
+        // "created array_ref with nullptr and non-zero length! std::optional relies on this "
+        // "being illegal");
     }
 
 public:
@@ -174,14 +174,14 @@ public:
     /// front - Get the first element.
     constexpr const T& front() const
     {
-        //QUARISMA_CHECK(!empty(), "array_ref: attempted to access front() of empty list");
+        //PROFILER_CHECK(!empty(), "array_ref: attempted to access front() of empty list");
         return Data[0];
     }
 
     /// back - Get the last element.
     constexpr const T& back() const
     {
-        //QUARISMA_CHECK(!empty(), "array_ref: attempted to access back() of empty list");
+        //PROFILER_CHECK(!empty(), "array_ref: attempted to access back() of empty list");
         return Data[Length - 1];
     }
 
@@ -194,7 +194,7 @@ public:
     /// slice(n, m) - Take M elements of the array starting at element N
     constexpr array_ref<T> slice(size_t N, size_t M) const
     {
-        //QUARISMA_CHECK(
+        //PROFILER_CHECK(
         //   N + M <= size(), "array_ref: invalid slice, N = ", N, "; M = ", M, "; size = ", size());
         return array_ref<T>(data() + N, M);
     }
@@ -202,7 +202,7 @@ public:
     /// slice(n) - Chop off the first N elements of the array.
     constexpr array_ref<T> slice(size_t N) const
     {
-        //QUARISMA_CHECK(N <= size(), "array_ref: invalid slice, N = ", N, "; size = ", size());
+        //PROFILER_CHECK(N <= size(), "array_ref: invalid slice, N = ", N, "; size = ", size());
         return slice(N, size() - N);
     }
 
@@ -214,7 +214,7 @@ public:
     /// Vector compatibility
     constexpr const T& at(size_t Index) const
     {
-        //QUARISMA_CHECK(
+        //PROFILER_CHECK(
         //   Index < Length, "array_ref: invalid index Index = ", Index, "; Length = ", Length);
         return Data[Index];
     }

@@ -2,7 +2,7 @@
 # Quarisma Core Library BUILD Configuration
 # =============================================================================
 # Core library containing parallel computing and memory management.
-# Profiler lives under //Library/Profiler and is linked into the public Core target.
+# Profiler is //Library/Profiler and is built separately; link both when you need profiling.
 # =============================================================================
 
 load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
@@ -31,22 +31,6 @@ filegroup(
 )
 
 filegroup(
-    name = "core_templates",
-    srcs = glob(
-        [
-            "util/*.hxx",
-            "common/*.hxx",
-            "logging/*.hxx",
-            "memory/*.hxx",
-            "memory/**/*.hxx",
-            "parallel/*.hxx",
-            "parallel/**/*.hxx",
-        ],
-        allow_empty = True,
-    ),
-)
-
-filegroup(
     name = "core_srcs",
     srcs = glob(
         [
@@ -61,8 +45,12 @@ filegroup(
         exclude = [
             "memory/gpu/*.cpp",
             "memory/cpu/allocator_device.cpp",
+            # Backend-specific impls are added via select (paths match on-disk dirs: tbb/, std_thread/, openmp/)
+            "parallel/tbb/*.cpp",
             "parallel/TBB/*.cpp",
+            "parallel/std_thread/*.cpp",
             "parallel/STDThread/*.cpp",
+            "parallel/openmp/*.cpp",
             "logging/logging.cpp",
         ],
         allow_empty = True,
@@ -77,14 +65,13 @@ cc_library(
     name = "core_lib",
     srcs = [
         ":core_srcs",
-        ":core_templates",
     ] + select({
         "//bazel:enable_cuda": glob(["memory/gpu/*.cpp", "memory/cpu/allocator_device.cpp"], allow_empty = True),
         "//bazel:enable_hip": glob(["memory/gpu/*.cpp", "memory/cpu/allocator_device.cpp"], allow_empty = True),
         "//conditions:default": [],
     }) + select({
-        "//bazel:enable_tbb": glob(["parallel/TBB/*.cpp"], allow_empty = True),
-        "//conditions:default": glob(["parallel/STDThread/*.cpp"], allow_empty = True),
+        "//bazel:enable_tbb": glob(["parallel/tbb/*.cpp"], allow_empty = True),
+        "//conditions:default": glob(["parallel/std_thread/*.cpp"], allow_empty = True),
     }),
     hdrs = [
         ":core_hdrs",
@@ -93,15 +80,15 @@ cc_library(
         "//bazel:enable_hip": glob(["memory/gpu/*.h", "memory/cpu/allocator_device.h"], allow_empty = True),
         "//conditions:default": [],
     }) + select({
-        "//bazel:enable_tbb": glob(["parallel/TBB/*.h", "parallel/TBB/*.hxx"], allow_empty = True),
-        "//conditions:default": glob(["parallel/STDThread/*.h", "parallel/STDThread/*.hxx"], allow_empty = True),
+        "//bazel:enable_tbb": glob(["parallel/tbb/*.h", "parallel/tbb/*.hxx"], allow_empty = True),
+        "//conditions:default": glob(["parallel/std_thread/*.h", "parallel/std_thread/*.hxx"], allow_empty = True),
     }),
     copts = quarisma_copts(),
     defines = quarisma_defines() + select({
         "//bazel:shared_libs": ["QUARISMA_SHARED_DEFINE", "QUARISMA_BUILDING_DLL"],
         "//conditions:default": ["QUARISMA_STATIC_DEFINE"],
     }) + select({
-        "//bazel:enable_kineto": ["QUARISMA_HAS_KINETO=1"],
+        "//bazel:enable_kineto": ["PROFILER_HAS_KINETO=1"],
         "//conditions:default": [],
     }),
     includes = [
@@ -154,14 +141,13 @@ cc_library(
 )
 
 # =============================================================================
-# Public Core target: core implementation + Profiler
+# Public Core target (core implementation only; Profiler is separate)
 # =============================================================================
 
 cc_library(
     name = "Core",
     deps = [
         ":core_lib",
-        "//Library/Profiler:Profiler",
     ],
     visibility = ["//visibility:public"],
 )

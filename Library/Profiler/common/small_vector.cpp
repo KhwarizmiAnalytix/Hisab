@@ -32,10 +32,12 @@ namespace
 #endif
 struct Struct16B
 {
+    // cppcheck-suppress unusedStructMember
     alignas(16) void* X;
 };
 struct Struct32B
 {
+    // cppcheck-suppress unusedStructMember
     alignas(32) void* X;
 };
 #ifdef _AIX

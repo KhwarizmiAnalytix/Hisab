@@ -45,8 +45,8 @@ foreach(example_source ${example_sources})
       CXX_EXTENSIONS OFF
   )
 
-  # Link against Core library (which includes all profiling functionality)
-  target_link_libraries(${example_name} PRIVATE Quarisma::Core)
+  # Profiling example uses APIs from Profiler; link Core as well for static builds (PRIVATE Core on Profiler).
+  target_link_libraries(${example_name} PRIVATE Quarisma::Profiler Quarisma::Core)
 
   # Set output directory
   if(COMMAND quarisma_set_target_output_directories)

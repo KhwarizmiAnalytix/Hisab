@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -34,10 +34,10 @@ limitations under the License.
 #pragma once
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 
-#include "logging/logger.h"
-#include "util/string_util.h"
+#include "common/profiler_strings.h"
 
 namespace quarisma
 {
@@ -145,7 +145,7 @@ public:
         return a.begin_ps_ < b.begin_ps_;
     }
 
-    QUARISMA_FORCE_INLINE static int64_t milli_to_pico(int64_t milliseconds)
+    /*PROFILER_FORCE_INLINE*/ static int64_t milli_to_pico(int64_t milliseconds)
     {
         return milliseconds * 1000000000LL;  // 10^9
     }

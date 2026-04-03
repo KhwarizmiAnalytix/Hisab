@@ -11,12 +11,12 @@
 
 This document provides a comprehensive audit of the Quarisma project against the [OpenSSF Best Practices criteria](https://www.bestpractices.dev/en/criteria). Quarisma demonstrates **strong compliance** with most passing-level requirements, with particular strengths in:
 
-- ✅ **Security practices** (dedicated Security module, SECURITY.md policy)
+- ✅ **Security practices** (SECURITY.md policy, secure coding standards)
 - ✅ **Quality assurance** (comprehensive testing, 98% coverage target, static analysis)
 - ✅ **Build system** (modern CMake, cross-platform, automated CI/CD)
 - ✅ **Documentation** (extensive README, guides, API docs)
 
-**Overall Assessment**: **~85% compliant** with passing-level criteria. Key gaps are in formal release management and contributor documentation.
+**Overall Assessment**: **~84% compliant** with passing-level criteria. Key gaps are in formal release management and contributor documentation.
 
 ---
 
@@ -195,8 +195,8 @@ This document provides a comprehensive audit of the Quarisma project against the
 | Criterion | Status | Evidence | Notes |
 |-----------|--------|----------|-------|
 | **Security knowledge** | ✅ PASS | SECURITY.md (153 lines) | Comprehensive security policy |
-| **Secure design** | ✅ PASS | Library/Security/ module | Dedicated security utilities |
-| **Security requirements** | ✅ PASS | SECURITY.md | Input validation, sanitization, crypto |
+| **Secure design** | ✅ PASS | SECURITY.md, `.augment/rules/coding.md` | Secure development practices documented |
+| **Security requirements** | ✅ PASS | SECURITY.md | Policy for secure development and reporting |
 
 **Score**: 3/3 ✅
 
@@ -206,12 +206,12 @@ This document provides a comprehensive audit of the Quarisma project against the
 
 | Criterion | Status | Evidence | Notes |
 |-----------|--------|----------|-------|
-| **Crypto published protocols** | ✅ PASS | Library/Security/crypto.h | SHA-256, secure random (platform APIs) |
-| **Crypto call** | ✅ PASS | Platform crypto APIs | BCrypt (Win), Security (macOS), getrandom (Linux) |
-| **Crypto random** | ✅ PASS | crypto::generate_random_*() | Cryptographically secure RNG |
-| **Crypto keylength** | ✅ PASS | SHA-256 (256-bit) | Industry standard |
+| **Crypto published protocols** | 🔵 N/A | — | No dedicated cryptographic library in the repository |
+| **Crypto call** | 🔵 N/A | — | No in-tree crypto module; use platform/OS APIs when needed |
+| **Crypto random** | 🔵 N/A | — | Same |
+| **Crypto keylength** | 🔵 N/A | — | Same |
 
-**Score**: 4/4 ✅
+**Score**: 4/4 🔵 (criteria not applicable — no standalone crypto implementation shipped)
 
 ---
 
@@ -285,9 +285,9 @@ This document provides a comprehensive audit of the Quarisma project against the
 | **Change Control** | 6/9 | 67% | ⚠️ Needs Work |
 | **Reporting** | 6/6 | 100% | ✅ Excellent |
 | **Quality** | 9/9 | 100% | ✅ Excellent |
-| **Security** | 13/14 | 93% | ✅ Excellent |
+| **Security** | 9/14 | 64% | ⚠️ Good (crypto criteria N/A) |
 | **Analysis** | 6/6 | 100% | ✅ Excellent |
-| **TOTAL** | **55/61** | **90%** | ✅ **Strong** |
+| **TOTAL** | **51/61** | **84%** | ✅ **Strong** |
 
 ---
 
@@ -401,14 +401,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Code coverage analysis (98% target)
 - Static analysis tools (clang-tidy, cppcheck)
 - Dynamic analysis (sanitizers, Valgrind)
-- Security module with input validation, sanitization, and cryptography
 - Extensive documentation and guides
 
 ### Security
 - Implemented comprehensive security policy (SECURITY.md)
-- Added dedicated Security module (Library/Security/)
-- Platform-specific secure random generation
-- Input validation and sanitization utilities
 
 [Unreleased]: https://github.com/QuarismaAnalyitix/Quarisma/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/QuarismaAnalyitix/Quarisma/releases/tag/v1.0.0

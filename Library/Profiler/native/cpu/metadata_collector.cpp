@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -34,7 +34,7 @@ limitations under the License.
 
 #include <memory>  // for make_unique, unique_ptr
 
-#include "common/macros.h"                   // for QUARISMA_UNUSED
+#include "common/profiler_macros.h"          // for PROFILER_UNUSED
 #include "native/core/profiler_factory.h"    // for register_profiler_factory
 #include "native/core/profiler_interface.h"  // for profiler_interface
 #include "native/core/profiler_options.h"    // for profile_options

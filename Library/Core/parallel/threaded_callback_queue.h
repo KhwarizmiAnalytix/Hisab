@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -809,8 +809,8 @@ void threaded_callback_queue::push_control(FT&& f, ArgsT&&... args)
 
     worker w;
     using invoker_pointer_type = invoker_pointer<worker, threaded_callback_queue*, FT, ArgsT...>;
-    auto invoker_ptr =
-        invoker_pointer_type(invoker<worker, threaded_callback_queue*, FT, ArgsT...>::create(
+    auto invoker_ptr           = invoker_pointer_type(
+        invoker<worker, threaded_callback_queue*, FT, ArgsT...>::create(
             w, this, std::forward<FT>(f), std::forward<ArgsT>(args)...));
     w.future_ = invoker_ptr;
 

@@ -1,4 +1,4 @@
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 //#include <Quarisma/Context.h>
 #include "bespoke/kineto/kineto_client_interface.h"
 
@@ -8,7 +8,7 @@
 #include <thread>
 
 #include "bespoke/kineto/profiler_kineto.h"
-#include "util/env.h"
+//#include "util/env.h"
 
 // Ondemand tracing is not supported on Apple or edge platform
 #if defined(__APPLE__) || defined(EDGE_PROFILER_USE_KINETO)
@@ -108,7 +108,8 @@ private:
 void global_kineto_init()
 {
 #if ENABLE_GLOBAL_OBSERVER
-    if (quarisma::utils::get_env("KINETO_USE_DAEMON").has_value())
+    const char* const envar = std::getenv("KINETO_USE_DAEMON");
+    if (envar != nullptr)
     {
         libkineto_init(
             /*cpuOnly=*/!(quarisma::hasCUDA() /*|| quarisma::hasXPU() || quarisma::hasMTIA()*/),
@@ -126,7 +127,7 @@ struct RegisterLibKinetoClient
 {
     RegisterLibKinetoClient()
     {
-        static profiler::impl::LibKinetoClient client;
+        static profiler_impl::impl::LibKinetoClient client;
         libkineto::api().registerClient(&client);
     }
 } register_libkineto_client;
@@ -135,4 +136,4 @@ struct RegisterLibKinetoClient
 #endif
 
 }  // namespace quarisma
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO

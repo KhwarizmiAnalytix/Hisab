@@ -8,17 +8,17 @@
 // When is it explicitly asked for?
 //   KinetoEdgeCPUProfiler uses KinetoProfiler for cpu
 //   event profiling. This has a dependency on cpu only libkineto
-#if QUARISMA_HAS_KINETO && defined(QUARISMA_MOBILE) && !defined(EDGE_PROFILER_USE_KINETO)
-#undef QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO && defined(PROFILER_MOBILE) && !defined(EDGE_PROFILER_USE_KINETO)
+#undef PROFILER_HAS_KINETO
 #endif
 
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 #include <ActivityType.h>
 #endif
 
 #include "bespoke/common/api.h"
 
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 // Forward declarations so we don't have to include `libkineto.h` in a header.
 namespace libkineto
 {
@@ -33,7 +33,7 @@ namespace quarisma
 namespace profiler_impl
 {
 
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 constexpr bool kKinetoAvailable{true};
 #else
 constexpr bool kKinetoAvailable{false};
@@ -52,7 +52,7 @@ struct DeviceAndResource
 };
 DeviceAndResource kineto_ids();
 
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 using trace_t           = libkineto::CpuTraceBuffer;
 using interface_trace_t = libkineto::ActivityTraceInterface;
 using activity_t        = libkineto::GenericTraceActivity;
@@ -69,7 +69,7 @@ using trace_t           = DummyTraceBuffer;
 using interface_trace_t = DummyTraceBuffer;
 struct activity_t;
 struct activity_type_t;
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 
 void addMetadata(activity_t* activity, const std::string& key, const std::string& value);
 
@@ -110,7 +110,7 @@ struct ActivityTraceWrapper
 
 private:
     std::unique_ptr<interface_trace_t> trace_;
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     bool saved_ = false;  // Kineto's save is destructive
 #endif
 };
@@ -118,10 +118,10 @@ private:
 // TODO: Quarisma-specific types commented out
 using ActivitySet = std::set<quarisma::autograd::profiler_impl::ActivityType>;
 PROFILER_API void prepareTrace(
-    const bool                                          cpuOnly,
-    const ActivitySet&                                  activities,
+    const bool                                               cpuOnly,
+    const ActivitySet&                                       activities,
     const quarisma::profiler_impl::impl::ExperimentalConfig& config,
-    const std::string&                                  trace_id = "");
+    const std::string&                                       trace_id = "");
 
 PROFILER_API void                 toggleCollectionDynamic(const bool enable);
 PROFILER_API void                 startTrace();

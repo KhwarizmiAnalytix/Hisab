@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -23,7 +23,7 @@
 #include <memory>
 #include <string>
 
-#include "common/export.h"
+#include "common/profiler_export.h"
 #include "native/core/profiler_interface.h"
 #include "native/exporters/xplane/xplane.h"
 #include "native/tracing/tracing.h"

@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -274,7 +274,8 @@ void multi_threader::single_method_execute()
         process_id[thread_loop]                           = CreateThread(  // NOLINT
             nullptr,
             0,
-            reinterpret_cast<LPTHREAD_START_ROUTINE>(single_method_),  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+            reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                single_method_),  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
             static_cast<void*>(&thread_info_array_[thread_loop]),
             0,
             &threadId);
@@ -383,7 +384,7 @@ void multi_threader::multiple_method_execute()
 
     for (thread_loop = 0; thread_loop < number_of_threads_; thread_loop++)
     {
-        if (multiple_method_[thread_loop] == (thread_function_type) nullptr)
+        if (multiple_method_[thread_loop] == static_cast<thread_function_type>(nullptr))
         {
             // Error: No multiple method set
             return;
@@ -399,7 +400,9 @@ void multi_threader::multiple_method_execute()
         process_id[thread_loop]                           = CreateThread(  // NOLINT
             nullptr,
             0,
-            reinterpret_cast<LPTHREAD_START_ROUTINE>(multiple_method_[thread_loop]),  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+            reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                multiple_method_
+                    [thread_loop]),  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
             static_cast<void*>(&thread_info_array_[thread_loop]),
             0,
             &threadId);

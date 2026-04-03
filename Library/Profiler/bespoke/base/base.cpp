@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <functional>
 
-#include "memory/device.h"
+//#include "memory/device.h"
 
 namespace quarisma::profiler_impl::impl
 {
@@ -15,9 +15,7 @@ struct DefaultStubs : public ProfilerStubs
     explicit DefaultStubs(const char* name) : name_{name} {}
 
     void record(
-        quarisma::device_option::int_t* /*device*/,
-        ProfilerVoidEventStub* /*event*/,
-        int64_t* /*cpu_ns*/) const override
+        int16_t* /*device*/, ProfilerVoidEventStub* /*event*/, int64_t* /*cpu_ns*/) const override
     {
         fail();
     }
@@ -36,7 +34,7 @@ struct DefaultStubs : public ProfilerStubs
     ~DefaultStubs() override = default;
 
 private:
-    void fail() const {} // QUARISMA_CHECK(false, "{} used in profiler but not enabled.", name_);
+    void fail() const {}  // PROFILER_CHECK(false, "{} used in profiler but not enabled.", name_);
 
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
     const char* const name_;

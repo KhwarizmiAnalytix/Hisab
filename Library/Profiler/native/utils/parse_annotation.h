@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -32,13 +32,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef QUARISMA_PROFILER_UTILS_PARSE_ANNOTATION_H_
-#define QUARISMA_PROFILER_UTILS_PARSE_ANNOTATION_H_
+#ifndef PROFILER_PROFILER_UTILS_PARSE_ANNOTATION_H_
+#define PROFILER_PROFILER_UTILS_PARSE_ANNOTATION_H_
 
 #include <string_view>
 #include <vector>
 
-#include "common/macros.h"
+#include "common/profiler_export.h"
+#include "common/profiler_macros.h"
 
 namespace quarisma
 {
@@ -103,4 +104,4 @@ PROFILER_API std::vector<annotation> parse_annotation_stack(std::string_view ann
 }  // namespace profiler_impl
 }  // namespace quarisma
 
-#endif  // QUARISMA_PROFILER_UTILS_PARSE_ANNOTATION_H_
+#endif  // PROFILER_PROFILER_UTILS_PARSE_ANNOTATION_H_

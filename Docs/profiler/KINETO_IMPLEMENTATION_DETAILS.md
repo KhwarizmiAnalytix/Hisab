@@ -304,13 +304,13 @@ try {
 
 ```cpp
 // enableProfiler validates:
-QUARISMA_CHECK(
+PROFILER_CHECK(
     KinetoThreadLocalState::get(config.global()) == nullptr,
     "Profiler is already enabled");
 
-QUARISMA_CHECK(!activities.empty(), "No activities specified");
+PROFILER_CHECK(!activities.empty(), "No activities specified");
 
-QUARISMA_CHECK(
+PROFILER_CHECK(
     has_cpu || !config.global(),
     "Ondemand profiling must enable CPU tracing");
 ```

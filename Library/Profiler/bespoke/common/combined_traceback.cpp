@@ -34,13 +34,13 @@ std::shared_ptr<CapturedTraceback> CapturedTraceback::gather(bool python, bool s
 
 int CapturedTraceback::traversePython(visitproc visit, void* arg)
 {
-    // QUARISMA_CHECK(python_);
+    // PROFILER_CHECK(python_);
     return python_->traverse(frames_, visit, arg);
 }
 
 int CapturedTraceback::clearPython()
 {
-    // QUARISMA_CHECK(python_);
+    // PROFILER_CHECK(python_);
     return python_->clear(frames_);
 }
 
@@ -48,7 +48,7 @@ CapturedTraceback::~CapturedTraceback()
 {
     if (!frames_.empty())
     {
-        // QUARISMA_CHECK(python_);
+        // PROFILER_CHECK(python_);
         python_->release(frames_);
     }
 }

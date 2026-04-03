@@ -149,6 +149,8 @@ public:
 
 logger::LogScopeRAII::LogScopeRAII() = default;
 
+// printf-style scope entry; variadic form matches loguru / vsnprintf usage.
+// NOLINTNEXTLINE(modernize-avoid-variadic-functions)
 logger::LogScopeRAII::LogScopeRAII(
     logger_verbosity_enum verbosity,
     const char*           fname,
@@ -199,12 +201,18 @@ namespace detail
 {
 #if QUARISMA_HAS_LOGURU
 using scope_pair = std::pair<std::string, std::shared_ptr<loguru::LogScopeRAII>>;
-static std::mutex                                             g_mutex;
-static quarisma_map<std::thread::id, std::vector<scope_pair>> g_vectors;
-static std::vector<scope_pair>&                               get_vector()
+static std::mutex g_mutex;
+
+static quarisma_map<std::thread::id, std::vector<scope_pair>>& scope_vectors()
+{
+    static quarisma_map<std::thread::id, std::vector<scope_pair>> vectors;
+    return vectors;
+}
+
+static std::vector<scope_pair>& get_vector()
 {
     const std::scoped_lock guard(g_mutex);
-    return g_vectors[std::this_thread::get_id()];
+    return scope_vectors()[std::this_thread::get_id()];
 }
 
 static void push_scope(const char* id, std::shared_ptr<loguru::LogScopeRAII> ptr)
@@ -222,7 +230,7 @@ static void pop_scope(const char* id)
         if (vector.empty())
         {
             const std::scoped_lock guard(g_mutex);
-            g_vectors.erase(std::this_thread::get_id());
+            scope_vectors().erase(std::this_thread::get_id());
         }
     }
     else
@@ -616,6 +624,7 @@ void logger::Log(
 }
 
 //------------------------------------------------------------------------------
+// NOLINTNEXTLINE(modernize-avoid-variadic-functions)
 void logger::LogF(
     logger_verbosity_enum verbosity,
     const char*           fname,
@@ -675,6 +684,7 @@ void logger::EndScope(const char* id)
 }
 
 //------------------------------------------------------------------------------
+// NOLINTNEXTLINE(modernize-avoid-variadic-functions)
 void logger::StartScopeF(
     logger_verbosity_enum verbosity,
     const char*           id,
@@ -720,11 +730,11 @@ void logger::StartScopeF(
 //------------------------------------------------------------------------------
 logger_verbosity_enum logger::ConvertToVerbosity(int value)
 {
-    if (value <= (int)logger_verbosity_enum::VERBOSITY_INVALID)
+    if (value <= static_cast<int>(logger_verbosity_enum::VERBOSITY_INVALID))
     {
         return logger_verbosity_enum::VERBOSITY_INVALID;
     }
-    if (value > (int)logger_verbosity_enum::VERBOSITY_MAX)
+    if (value > static_cast<int>(logger_verbosity_enum::VERBOSITY_MAX))
     {
         return logger_verbosity_enum::VERBOSITY_MAX;
     }

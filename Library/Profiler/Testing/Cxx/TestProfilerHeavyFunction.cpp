@@ -50,11 +50,11 @@
 //
 //     // Instrument your code with scopes
 //     {
-//         QUARISMA_PROFILE_SCOPE("my_operation");
+//         PROFILER_PROFILE_SCOPE("my_operation");
 //         // ... your code here ...
 //
 //         {
-//             QUARISMA_PROFILE_SCOPE("nested_operation");
+//             PROFILER_PROFILE_SCOPE("nested_operation");
 //             // ... nested code ...
 //         }
 //     }
@@ -148,9 +148,9 @@
 //     profiler_session session(opts);
 //     session.start();
 //
-//     // Instrument with QUARISMA_PROFILE_SCOPE
+//     // Instrument with PROFILER_PROFILE_SCOPE
 //     {
-//         QUARISMA_PROFILE_SCOPE("my_operation");
+//         PROFILER_PROFILE_SCOPE("my_operation");
 //         // ... your code ...
 //     }
 //
@@ -231,7 +231,7 @@
 //         if (itt_available) {
 //             quarisma::profiler_impl::itt_range_push("my_operation");
 //         }
-//         QUARISMA_PROFILE_SCOPE("my_operation");
+//         PROFILER_PROFILE_SCOPE("my_operation");
 //
 //         // ... your code ...
 //
@@ -304,7 +304,7 @@
 //         if (itt_available) {
 //             quarisma::profiler_impl::itt_range_push("my_operation");
 //         }
-//         QUARISMA_PROFILE_SCOPE("my_operation");
+//         PROFILER_PROFILE_SCOPE("my_operation");
 //
 //         // ... your code ...
 //
@@ -312,7 +312,7 @@
 //             if (itt_available) {
 //                 quarisma::profiler_impl::itt_range_push("nested_operation");
 //             }
-//             QUARISMA_PROFILE_SCOPE("nested_operation");
+//             PROFILER_PROFILE_SCOPE("nested_operation");
 //
 //             // ... nested code ...
 //
@@ -375,7 +375,7 @@
 //    - Clean up old trace files to save disk space
 //
 // 5. PERFORMANCE:
-//    - Disable profiling in production builds (use #if QUARISMA_ENABLE_PROFILING)
+//    - Disable profiling in production builds (use #if PROFILER_ENABLE_PROFILING)
 //    - Use profiler_session RAII for automatic cleanup
 //    - Minimize string allocations in hot paths
 //
@@ -385,7 +385,7 @@
 //
 // ISSUE: Empty or small JSON file (< 1 KB)
 // SOLUTION: Ensure profiler session is started and stopped correctly
-//           Check that QUARISMA_PROFILE_SCOPE macros are used
+//           Check that PROFILER_PROFILE_SCOPE macros are used
 //
 // ISSUE: Kineto trace has no events
 // SOLUTION: Kineto's CPU_OP captures GPU-related operations only
@@ -431,7 +431,7 @@ namespace
 std::vector<std::vector<double>> matrix_multiply(
     const std::vector<std::vector<double>>& a, const std::vector<std::vector<double>>& b)
 {
-    QUARISMA_PROFILE_SCOPE("matrix_multiply");
+    PROFILER_PROFILE_SCOPE("matrix_multiply");
 
     const size_t rows_a = a.size();
     const size_t cols_a = a[0].size();
@@ -446,11 +446,11 @@ std::vector<std::vector<double>> matrix_multiply(
     std::vector<std::vector<double>> result(rows_a, std::vector<double>(cols_b, 0.0));
 
     {
-        QUARISMA_PROFILE_SCOPE("matrix_multiply_computation");
+        PROFILER_PROFILE_SCOPE("matrix_multiply_computation");
 
         for (size_t i = 0; i < rows_a; ++i)
         {
-            QUARISMA_PROFILE_SCOPE("matrix_row_computation");
+            PROFILER_PROFILE_SCOPE("matrix_row_computation");
 
             for (size_t j = 0; j < cols_b; ++j)
             {
@@ -471,7 +471,7 @@ std::vector<std::vector<double>> matrix_multiply(
  */
 void merge_sort(std::vector<double>& arr, size_t left, size_t right, int depth = 0)
 {
-    QUARISMA_PROFILE_SCOPE("merge_sort_depth_" + std::to_string(depth));
+    PROFILER_PROFILE_SCOPE("merge_sort_depth_" + std::to_string(depth));
 
     if (left >= right)
         return;
@@ -479,17 +479,17 @@ void merge_sort(std::vector<double>& arr, size_t left, size_t right, int depth =
     size_t mid = left + (right - left) / 2;
 
     {
-        QUARISMA_PROFILE_SCOPE("merge_sort_left_half");
+        PROFILER_PROFILE_SCOPE("merge_sort_left_half");
         merge_sort(arr, left, mid, depth + 1);
     }
 
     {
-        QUARISMA_PROFILE_SCOPE("merge_sort_right_half");
+        PROFILER_PROFILE_SCOPE("merge_sort_right_half");
         merge_sort(arr, mid + 1, right, depth + 1);
     }
 
     {
-        QUARISMA_PROFILE_SCOPE("merge_operation");
+        PROFILER_PROFILE_SCOPE("merge_operation");
 
         // Merge the sorted halves
         std::vector<double> temp(right - left + 1);
@@ -525,7 +525,7 @@ void merge_sort(std::vector<double>& arr, size_t left, size_t right, int depth =
  */
 double estimate_pi_monte_carlo(size_t num_samples)
 {
-    QUARISMA_PROFILE_SCOPE("monte_carlo_pi_estimation");
+    PROFILER_PROFILE_SCOPE("monte_carlo_pi_estimation");
 
     std::random_device                     rd;
     std::mt19937                           gen(rd());
@@ -534,13 +534,13 @@ double estimate_pi_monte_carlo(size_t num_samples)
     size_t points_inside_circle = 0;
 
     {
-        QUARISMA_PROFILE_SCOPE("monte_carlo_sampling");
+        PROFILER_PROFILE_SCOPE("monte_carlo_sampling");
 
         for (size_t i = 0; i < num_samples; ++i)
         {
             if (i % 100000 == 0)
             {
-                QUARISMA_PROFILE_SCOPE("monte_carlo_batch_" + std::to_string(i / 100000));
+                PROFILER_PROFILE_SCOPE("monte_carlo_batch_" + std::to_string(i / 100000));
 
                 for (size_t j = 0; j < std::min(size_t(100000), num_samples - i); ++j)
                 {
@@ -564,17 +564,17 @@ double estimate_pi_monte_carlo(size_t num_samples)
  */
 std::vector<std::complex<double>> simulate_fft(const std::vector<double>& signal)
 {
-    QUARISMA_PROFILE_SCOPE("simulate_fft");
+    PROFILER_PROFILE_SCOPE("simulate_fft");
 
     const size_t                      n = signal.size();
     std::vector<std::complex<double>> result(n);
 
     {
-        QUARISMA_PROFILE_SCOPE("fft_computation");
+        PROFILER_PROFILE_SCOPE("fft_computation");
 
         for (size_t k = 0; k < n; ++k)
         {
-            QUARISMA_PROFILE_SCOPE("fft_frequency_bin");
+            PROFILER_PROFILE_SCOPE("fft_frequency_bin");
 
             std::complex<double> sum(0.0, 0.0);
             for (size_t j = 0; j < n; ++j)
@@ -594,7 +594,7 @@ std::vector<std::complex<double>> simulate_fft(const std::vector<double>& signal
  */
 std::vector<std::vector<double>> generate_test_matrix(size_t rows, size_t cols)
 {
-    QUARISMA_PROFILE_SCOPE("generate_test_matrix");
+    PROFILER_PROFILE_SCOPE("generate_test_matrix");
 
     std::random_device                     rd;
     std::mt19937                           gen(rd());
@@ -615,7 +615,7 @@ std::vector<std::vector<double>> generate_test_matrix(size_t rows, size_t cols)
 
 std::vector<double> generate_test_signal(size_t size)
 {
-    QUARISMA_PROFILE_SCOPE("generate_test_signal");
+    PROFILER_PROFILE_SCOPE("generate_test_signal");
 
     std::random_device                     rd;
     std::mt19937                           gen(rd());
@@ -647,11 +647,11 @@ QUARISMATEST(Profiler, heavy_function_comprehensive_computational_profiling)
     session.start();
 
     {
-        QUARISMA_PROFILE_SCOPE("heavy_computational_workload");
+        PROFILER_PROFILE_SCOPE("heavy_computational_workload");
 
         // Test 1: Matrix multiplication profiling
         {
-            QUARISMA_PROFILE_SCOPE("matrix_operations_test");
+            PROFILER_PROFILE_SCOPE("matrix_operations_test");
 
             const size_t matrix_size = 100;  // 100x100 matrices
             auto         matrix_a    = generate_test_matrix(matrix_size, matrix_size);
@@ -660,7 +660,7 @@ QUARISMATEST(Profiler, heavy_function_comprehensive_computational_profiling)
             // Perform multiple matrix multiplications
             for (int i = 0; i < 3; ++i)
             {
-                QUARISMA_PROFILE_SCOPE("matrix_multiply_iteration_" + std::to_string(i));
+                PROFILER_PROFILE_SCOPE("matrix_multiply_iteration_" + std::to_string(i));
                 auto result = matrix_multiply(matrix_a, matrix_b);
 
                 // Verify result is not empty (basic correctness check)
@@ -672,14 +672,14 @@ QUARISMATEST(Profiler, heavy_function_comprehensive_computational_profiling)
         // Test 2: Sorting algorithm profiling
         if (false)
         {
-            QUARISMA_PROFILE_SCOPE("sorting_algorithms_test");
+            PROFILER_PROFILE_SCOPE("sorting_algorithms_test");
 
             const size_t        array_size = 50000;
             std::vector<double> test_data(array_size);
 
             // Generate random data
             {
-                QUARISMA_PROFILE_SCOPE("random_data_generation");
+                PROFILER_PROFILE_SCOPE("random_data_generation");
                 std::random_device                     rd;
                 std::mt19937                           gen(rd());
                 std::uniform_real_distribution<double> dis(0.0, 1000.0);
@@ -692,7 +692,7 @@ QUARISMATEST(Profiler, heavy_function_comprehensive_computational_profiling)
 
             // Test merge sort
             {
-                QUARISMA_PROFILE_SCOPE("merge_sort_test");
+                PROFILER_PROFILE_SCOPE("merge_sort_test");
                 auto data_copy = test_data;
                 merge_sort(data_copy, 0, data_copy.size() - 1);
 
@@ -702,7 +702,7 @@ QUARISMATEST(Profiler, heavy_function_comprehensive_computational_profiling)
 
             // Test std::sort for comparison
             {
-                QUARISMA_PROFILE_SCOPE("std_sort_comparison");
+                PROFILER_PROFILE_SCOPE("std_sort_comparison");
                 auto data_copy = test_data;
                 std::sort(data_copy.begin(), data_copy.end());
 
@@ -712,7 +712,7 @@ QUARISMATEST(Profiler, heavy_function_comprehensive_computational_profiling)
 
         // Test 3: Monte Carlo simulation profiling
         {
-            QUARISMA_PROFILE_SCOPE("monte_carlo_simulation_test");
+            PROFILER_PROFILE_SCOPE("monte_carlo_simulation_test");
 
             const size_t num_samples = 1000000;  // 1 million samples
             double       pi_estimate = estimate_pi_monte_carlo(num_samples);
@@ -726,7 +726,7 @@ QUARISMATEST(Profiler, heavy_function_comprehensive_computational_profiling)
 
         // Test 4: FFT simulation profiling
         {
-            QUARISMA_PROFILE_SCOPE("fft_simulation_test");
+            PROFILER_PROFILE_SCOPE("fft_simulation_test");
 
             const size_t signal_size = 512;  // Common FFT size
             auto         test_signal = generate_test_signal(signal_size);
@@ -739,7 +739,7 @@ QUARISMATEST(Profiler, heavy_function_comprehensive_computational_profiling)
 
         // Test 5: Multi-threaded computation profiling
         {
-            QUARISMA_PROFILE_SCOPE("multithreaded_computation_test");
+            PROFILER_PROFILE_SCOPE("multithreaded_computation_test");
 
             std::vector<std::thread> workers;
             const int                num_threads = 4;
@@ -749,11 +749,11 @@ QUARISMATEST(Profiler, heavy_function_comprehensive_computational_profiling)
                 workers.emplace_back(
                     [i]()
                     {
-                        QUARISMA_PROFILE_SCOPE("worker_thread_" + std::to_string(i));
+                        PROFILER_PROFILE_SCOPE("worker_thread_" + std::to_string(i));
 
                         // Each thread performs different computational work
                         const size_t           samples_per_thread = 250000;
-                        QUARISMA_UNUSED double pi_est = estimate_pi_monte_carlo(samples_per_thread);
+                        PROFILER_UNUSED double pi_est = estimate_pi_monte_carlo(samples_per_thread);
 
                         // Small computation to keep thread busy
                         std::vector<double> data(10000);
@@ -846,7 +846,7 @@ QUARISMATEST(Profiler, heavy_function_comprehensive_computational_profiling)
 //    - Load the JSON file
 // ============================================================================
 
-#if QUARISMA_HAS_KINETO && 0
+#if PROFILER_HAS_KINETO && 0
 #include <fstream>
 #include <sstream>
 
@@ -889,7 +889,7 @@ QUARISMATEST(Profiler, kineto_heavy_function_profiling)
 
         // Profile heavy computational workloads with hierarchical scopes
         {
-            QUARISMA_PROFILE_SCOPE("kineto_matrix_operations");
+            PROFILER_PROFILE_SCOPE("kineto_matrix_operations");
 
             const size_t matrix_size = 50;
             auto         matrix_a    = generate_test_matrix(matrix_size, matrix_size);
@@ -897,7 +897,7 @@ QUARISMATEST(Profiler, kineto_heavy_function_profiling)
 
             for (int i = 0; i < 2; ++i)
             {
-                QUARISMA_PROFILE_SCOPE("kineto_matrix_multiply_" + std::to_string(i));
+                PROFILER_PROFILE_SCOPE("kineto_matrix_multiply_" + std::to_string(i));
                 auto result = matrix_multiply(matrix_a, matrix_b);
                 EXPECT_EQ(result.size(), matrix_size);
             }
@@ -905,7 +905,7 @@ QUARISMATEST(Profiler, kineto_heavy_function_profiling)
 
         if (false)
         {
-            QUARISMA_PROFILE_SCOPE("kineto_sorting_operations");
+            PROFILER_PROFILE_SCOPE("kineto_sorting_operations");
 
             const size_t        array_size = 10000;
             std::vector<double> test_data(array_size);
@@ -920,7 +920,7 @@ QUARISMATEST(Profiler, kineto_heavy_function_profiling)
             }
 
             {
-                QUARISMA_PROFILE_SCOPE("kineto_merge_sort");
+                PROFILER_PROFILE_SCOPE("kineto_merge_sort");
                 auto data_copy = test_data;
                 merge_sort(data_copy, 0, data_copy.size() - 1);
                 EXPECT_TRUE(std::is_sorted(data_copy.begin(), data_copy.end()));
@@ -976,7 +976,7 @@ QUARISMATEST(Profiler, kineto_heavy_function_profiling)
 
     // Profile heavy computational workloads with hierarchical scopes
     {
-        QUARISMA_PROFILE_SCOPE("kineto_matrix_operations");
+        PROFILER_PROFILE_SCOPE("kineto_matrix_operations");
 
         const size_t matrix_size = 50;  // Smaller for faster execution
         auto         matrix_a    = generate_test_matrix(matrix_size, matrix_size);
@@ -984,14 +984,14 @@ QUARISMATEST(Profiler, kineto_heavy_function_profiling)
 
         for (int i = 0; i < 2; ++i)
         {
-            QUARISMA_PROFILE_SCOPE("kineto_matrix_multiply_" + std::to_string(i));
+            PROFILER_PROFILE_SCOPE("kineto_matrix_multiply_" + std::to_string(i));
             auto result = matrix_multiply(matrix_a, matrix_b);
             EXPECT_EQ(result.size(), matrix_size);
         }
     }
 
     {
-        QUARISMA_PROFILE_SCOPE("kineto_sorting_operations");
+        PROFILER_PROFILE_SCOPE("kineto_sorting_operations");
 
         const size_t        array_size = 10000;
         std::vector<double> test_data(array_size);
@@ -1006,7 +1006,7 @@ QUARISMATEST(Profiler, kineto_heavy_function_profiling)
         }
 
         {
-            QUARISMA_PROFILE_SCOPE("kineto_merge_sort");
+            PROFILER_PROFILE_SCOPE("kineto_merge_sort");
             auto data_copy = test_data;
             merge_sort(data_copy, 0, data_copy.size() - 1);
             EXPECT_TRUE(std::is_sorted(data_copy.begin(), data_copy.end()));
@@ -1016,7 +1016,8 @@ QUARISMATEST(Profiler, kineto_heavy_function_profiling)
     // Stop both profilers
     session.stop();
     std::unique_ptr<libkineto::ActivityTraceInterface> trace(
-        static_cast<libkineto::ActivityTraceInterface*>(quarisma::profiler_impl::kineto_stop_trace()));
+        static_cast<libkineto::ActivityTraceInterface*>(
+            quarisma::profiler_impl::kineto_stop_trace()));
 
     std::cout << "Combined profiling completed\n";
 
@@ -1095,7 +1096,7 @@ QUARISMATEST(Profiler, kineto_heavy_function_profiling)
                   << ") contains full hierarchical CPU profiling.\n";
     }
 }
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 
 // ============================================================================
 // INTEL ITT API TEST
@@ -1124,7 +1125,7 @@ QUARISMATEST(Profiler, kineto_heavy_function_profiling)
 // - Memory events correlate with allocations
 // ============================================================================
 
-#if QUARISMA_HAS_ITT
+#if PROFILER_HAS_ITT
 #include <fstream>
 #include <sstream>
 
@@ -1172,7 +1173,7 @@ QUARISMATEST(Profiler, itt_api_heavy_function_profiling)
         {
             quarisma::profiler_impl::itt_range_push("matrix_operations");
         }
-        QUARISMA_PROFILE_SCOPE("itt_matrix_operations");
+        PROFILER_PROFILE_SCOPE("itt_matrix_operations");
 
         const size_t matrix_size = 50;
         auto         matrix_a    = generate_test_matrix(matrix_size, matrix_size);
@@ -1187,7 +1188,7 @@ QUARISMATEST(Profiler, itt_api_heavy_function_profiling)
                 quarisma::profiler_impl::itt_range_push(iter_name.c_str());
             }
 
-            QUARISMA_PROFILE_SCOPE(("itt_matrix_multiply_" + std::to_string(i)).c_str());
+            PROFILER_PROFILE_SCOPE(("itt_matrix_multiply_" + std::to_string(i)).c_str());
 
             auto result = matrix_multiply(matrix_a, matrix_b);
             EXPECT_EQ(result.size(), matrix_size);
@@ -1210,7 +1211,7 @@ QUARISMATEST(Profiler, itt_api_heavy_function_profiling)
         {
             quarisma::profiler_impl::itt_range_push("sorting_operations");
         }
-        QUARISMA_PROFILE_SCOPE("itt_sorting_operations");
+        PROFILER_PROFILE_SCOPE("itt_sorting_operations");
 
         const size_t        array_size = 10000;
         std::vector<double> test_data(array_size);
@@ -1230,7 +1231,7 @@ QUARISMATEST(Profiler, itt_api_heavy_function_profiling)
                 quarisma::profiler_impl::itt_range_push("merge_sort");
             }
 
-            QUARISMA_PROFILE_SCOPE("itt_merge_sort");
+            PROFILER_PROFILE_SCOPE("itt_merge_sort");
 
             auto data_copy = test_data;
             merge_sort(data_copy, 0, data_copy.size() - 1);
@@ -1254,7 +1255,7 @@ QUARISMATEST(Profiler, itt_api_heavy_function_profiling)
         {
             quarisma::profiler_impl::itt_range_push("monte_carlo_simulation");
         }
-        QUARISMA_PROFILE_SCOPE("itt_monte_carlo_simulation");
+        PROFILER_PROFILE_SCOPE("itt_monte_carlo_simulation");
 
         const size_t num_samples = 100000;
         double       pi_estimate = estimate_pi_monte_carlo(num_samples);
@@ -1363,7 +1364,7 @@ QUARISMATEST(Profiler, itt_api_heavy_function_profiling)
                   << ") contains full hierarchical CPU profiling.\n";
     }
 }
-#endif  // QUARISMA_HAS_ITT
+#endif  // PROFILER_HAS_ITT
 
 // ============================================================================
 // COMBINED KINETO + ITT PROFILING TEST
@@ -1378,7 +1379,7 @@ QUARISMATEST(Profiler, itt_api_heavy_function_profiling)
 // OUTPUT: Multiple JSON trace files that can be viewed in different tools
 // ============================================================================
 
-#if QUARISMA_HAS_KINETO && QUARISMA_HAS_ITT
+#if PROFILER_HAS_KINETO && PROFILER_HAS_ITT
 
 // Suppress MSVC warnings for Kineto headers
 #ifdef _MSC_VER
@@ -1450,12 +1451,12 @@ QUARISMATEST(Profiler, combined_kineto_itt_heavy_function_profiling)
     // Profile combined workload with all three profiling systems
     {
         quarisma::profiler_impl::itt_range_push("combined_workload");
-        QUARISMA_PROFILE_SCOPE("combined_profiling_workload");
+        PROFILER_PROFILE_SCOPE("combined_profiling_workload");
 
         // Matrix operations
         {
             quarisma::profiler_impl::itt_range_push("matrix_computation");
-            QUARISMA_PROFILE_SCOPE("combined_matrix_operations");
+            PROFILER_PROFILE_SCOPE("combined_matrix_operations");
 
             const size_t matrix_size = 50;
             auto         matrix_a    = generate_test_matrix(matrix_size, matrix_size);
@@ -1470,7 +1471,7 @@ QUARISMATEST(Profiler, combined_kineto_itt_heavy_function_profiling)
         // Monte Carlo simulation
         {
             quarisma::profiler_impl::itt_range_push("monte_carlo_computation");
-            QUARISMA_PROFILE_SCOPE("combined_monte_carlo");
+            PROFILER_PROFILE_SCOPE("combined_monte_carlo");
 
             const size_t num_samples = 500000;
             double       pi_estimate = estimate_pi_monte_carlo(num_samples);
@@ -1490,7 +1491,8 @@ QUARISMATEST(Profiler, combined_kineto_itt_heavy_function_profiling)
     session.stop();
 
     std::unique_ptr<libkineto::ActivityTraceInterface> kineto_trace(
-        static_cast<libkineto::ActivityTraceInterface*>(quarisma::profiler_impl::kineto_stop_trace()));
+        static_cast<libkineto::ActivityTraceInterface*>(
+            quarisma::profiler_impl::kineto_stop_trace()));
 
     std::cout << "✓ All profilers stopped\n";
 
@@ -1558,4 +1560,4 @@ QUARISMATEST(Profiler, combined_kineto_itt_heavy_function_profiling)
     std::cout << "     - Look for 'QuarismaCombinedProfilingTest' domain\n";
 }
 
-#endif  // QUARISMA_HAS_KINETO && QUARISMA_HAS_ITT
+#endif  // PROFILER_HAS_KINETO && PROFILER_HAS_ITT

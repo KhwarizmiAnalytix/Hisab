@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -24,7 +24,7 @@
 #include <cstdint>
 #include <string_view>
 
-#include "common/export.h"
+#include "common/profiler_export.h"
 
 namespace quarisma::tracing
 {

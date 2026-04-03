@@ -2,7 +2,7 @@
 
 #include <cstddef>
 
-#include "common/configure.h"  // IWYU pragma: keep
+// IWYU pragma: keep
 #include "common/export.h"
 
 namespace quarisma

@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -38,9 +38,9 @@ limitations under the License.
 #include <initializer_list>
 #include <string>
 
-#include "common/macros.h"
-#include "logging/logger.h"
-#include "util/string_util.h"
+#include "common/profiler_macros.h"
+//#include "logging/logger.h"
+#include "common/profiler_strings.h"
 
 namespace quarisma
 {
@@ -86,7 +86,7 @@ struct TraceMeArg
      * @param k Argument key
      * @param v String value (must remain valid during encoding)
      */
-    TraceMeArg(std::string_view k, QUARISMA_LIFETIME_BOUND const std::string& v) : key(k), value(v)
+    TraceMeArg(std::string_view k, PROFILER_LIFETIME_BOUND const std::string& v) : key(k), value(v)
     {
     }
 
@@ -156,13 +156,13 @@ namespace traceme_internal
  * **Safety**: Requires pre-allocated buffer with sufficient space
  * **Format**: Metadata uses '#' as delimiter, so it's forbidden in content
  */
-QUARISMA_FORCE_INLINE char* append(char* out, std::string_view str)
+inline char* append(char* out, std::string_view str)
 {
-    // QUARISMA_CHECK_DEBUG(
-        // !strings::str_contains(str, '#'), "'#' is not a valid character in traceme_encode {}", str);
+    // PROFILER_CHECK_DEBUG(
+    // !strings::str_contains(str, '#'), "'#' is not a valid character in traceme_encode {}", str);
 
     const size_t str_size = str.size();
-    if QUARISMA_LIKELY (str_size > 0)
+    if PROFILER_LIKELY (str_size > 0)
     {
         memcpy(out, str.data(), str_size);
         out += str_size;
@@ -192,10 +192,9 @@ QUARISMA_FORCE_INLINE char* append(char* out, std::string_view str)
  * - Input: name="matrix_op", args={{"rows", 100}, {"cols", 50}}
  * - Output: "matrix_op#rows=100,cols=50#"
  */
-QUARISMA_FORCE_INLINE std::string append_args(
-    std::string name, std::initializer_list<TraceMeArg> args)
+inline std::string append_args(std::string name, std::initializer_list<TraceMeArg> args)
 {
-    if QUARISMA_LIKELY (args.size() > 0)
+    if PROFILER_LIKELY (args.size() > 0)
     {
         const auto old_size = name.size();
         auto       new_size =
@@ -216,12 +215,12 @@ QUARISMA_FORCE_INLINE std::string append_args(
             *out++ = ',';  // Separator (will be replaced with '#' for last arg)
         }
         *(out - 1) = '#';  // Replace final ',' with closing '#'
-        // QUARISMA_CHECK_DEBUG(
-            // out == begin + new_size,
-            // "out={} is not equal to begin={} + new_size={}",
-            // out,
-            // begin,
-            // new_size);
+        // PROFILER_CHECK_DEBUG(
+        // out == begin + new_size,
+        // "out={} is not equal to begin={} + new_size={}",
+        // out,
+        // begin,
+        // new_size);
     }
     return name;
 }
@@ -248,9 +247,9 @@ QUARISMA_FORCE_INLINE std::string append_args(
  * - Before: name="op#param1=value1#", new_metadata="#param2=value2#"
  * - After: name="op#param1=value1,param2=value2#"
  */
-QUARISMA_FORCE_INLINE void append_metadata(std::string* name, std::string_view new_metadata)
+inline void append_metadata(std::string* name, std::string_view new_metadata)
 {
-    if QUARISMA_UNLIKELY (new_metadata.empty())
+    if PROFILER_UNLIKELY (new_metadata.empty())
     {
         return;  // No metadata to append
     }
@@ -258,7 +257,7 @@ QUARISMA_FORCE_INLINE void append_metadata(std::string* name, std::string_view n
     if (!name->empty() && name->back() == '#')
     {                        // name already has metadata - merge it
         name->back() = ',';  // Replace closing '#' with separator ','
-        if QUARISMA_LIKELY (new_metadata.front() == '#')
+        if PROFILER_LIKELY (new_metadata.front() == '#')
         {
             new_metadata.remove_prefix(1);  // Skip leading '#' to avoid duplication
         }
@@ -294,8 +293,7 @@ QUARISMA_FORCE_INLINE void append_metadata(std::string* name, std::string_view n
  * });
  * ```
  */
-QUARISMA_FORCE_INLINE std::string traceme_encode(
-    std::string name, std::initializer_list<TraceMeArg> args)
+inline std::string traceme_encode(std::string name, std::initializer_list<TraceMeArg> args)
 {
     return traceme_internal::append_args(std::move(name), args);
 }
@@ -306,8 +304,7 @@ QUARISMA_FORCE_INLINE std::string traceme_encode(
  * @param args Key-value pairs to encode as metadata
  * @return Formatted trace name with embedded metadata
  */
-QUARISMA_FORCE_INLINE std::string traceme_encode(
-    std::string_view name, std::initializer_list<TraceMeArg> args)
+inline std::string traceme_encode(std::string_view name, std::initializer_list<TraceMeArg> args)
 {
     return traceme_internal::append_args(std::string(name), args);
 }
@@ -318,8 +315,7 @@ QUARISMA_FORCE_INLINE std::string traceme_encode(
  * @param args Key-value pairs to encode as metadata
  * @return Formatted trace name with embedded metadata
  */
-QUARISMA_FORCE_INLINE std::string traceme_encode(
-    const char* name, std::initializer_list<TraceMeArg> args)
+inline std::string traceme_encode(const char* name, std::initializer_list<TraceMeArg> args)
 {
     return traceme_internal::append_args(std::string(name), args);
 }
@@ -350,7 +346,7 @@ QUARISMA_FORCE_INLINE std::string traceme_encode(
  * });
  * ```
  */
-QUARISMA_FORCE_INLINE std::string traceme_encode(std::initializer_list<TraceMeArg> args)
+inline std::string traceme_encode(std::initializer_list<TraceMeArg> args)
 {
     return traceme_internal::append_args(std::string(), args);
 }
@@ -368,7 +364,7 @@ QUARISMA_FORCE_INLINE std::string traceme_encode(std::initializer_list<TraceMeAr
  *
  * **Example**: `traceme_op("MatMul", "GPU")` returns `"MatMul:GPU"`
  */
-QUARISMA_FORCE_INLINE std::string traceme_op(std::string_view op_name, std::string_view op_type)
+inline std::string traceme_op(std::string_view op_name, std::string_view op_type)
 {
     return strings::str_cat(op_name, ":", op_type);
 }
@@ -379,7 +375,7 @@ QUARISMA_FORCE_INLINE std::string traceme_op(std::string_view op_name, std::stri
  * @param op_type Operation type as C-string
  * @return Formatted operation name
  */
-QUARISMA_FORCE_INLINE std::string traceme_op(const char* op_name, const char* op_type)
+inline std::string traceme_op(const char* op_name, const char* op_type)
 {
     return strings::str_cat(op_name, ":", op_type);
 }
@@ -390,7 +386,7 @@ QUARISMA_FORCE_INLINE std::string traceme_op(const char* op_name, const char* op
  * @param op_type Operation type to append
  * @return Modified op_name with appended type
  */
-QUARISMA_FORCE_INLINE std::string traceme_op(std::string&& op_name, std::string_view op_type)
+inline std::string traceme_op(std::string&& op_name, std::string_view op_type)
 {
     strings::str_append(&op_name, ":", op_type);
     return op_name;
@@ -410,8 +406,7 @@ QUARISMA_FORCE_INLINE std::string traceme_op(std::string&& op_name, std::string_
  * **Use Case**: TensorFlow kernel profiling where the actual kernel name should
  * be replaced with the high-level TF operation name for better user understanding.
  */
-QUARISMA_FORCE_INLINE std::string traceme_op_override(
-    std::string_view op_name, std::string_view op_type)
+inline std::string traceme_op_override(std::string_view op_name, std::string_view op_type)
 {
     return strings::str_cat("#tf_op=", op_name, ":", op_type, "#");
 }
@@ -422,7 +417,7 @@ QUARISMA_FORCE_INLINE std::string traceme_op_override(
  * @param op_type TensorFlow operation type as C-string
  * @return TensorFlow operation override metadata
  */
-QUARISMA_FORCE_INLINE std::string traceme_op_override(const char* op_name, const char* op_type)
+inline std::string traceme_op_override(const char* op_name, const char* op_type)
 {
     return strings::str_cat("#tf_op=", op_name, ":", op_type, "#");
 }

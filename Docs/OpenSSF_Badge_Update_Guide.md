@@ -280,117 +280,15 @@ The public repository does not contain any valid credentials. CONTRIBUTING.md an
 
 ---
 
-## Phase 3: Cryptographic Criteria (Target: 60-65%)
+## Phase 3: Cryptographic Criteria
 
-Quarisma includes a Security library with cryptographic utilities. Mark the following criteria:
+Quarisma does **not** ship a dedicated cryptographic library. For OpenSSF criteria that assume in-tree crypto (hashing, CSPRNG, key storage, etc.), mark them **N/A** (or **Unmet** with an explanation, per badge UI) and use short justification such as:
 
-#### ✅ Criterion: `crypto_published`
-**Status:** Currently unmet  
-**Action:** Mark as "Met"
-
-**Justification text:**
 ```
-Quarisma uses only publicly published and reviewed cryptographic algorithms:
-- SHA-256 for hashing (Library/Security/crypto.cpp)
-- Platform-specific secure random: BCryptGenRandom (Windows), SecRandomCopyBytes (macOS), getrandom (Linux)
-All algorithms are industry-standard and publicly documented. See Library/Security/README.md lines 75-101.
+The project does not include a standalone cryptographic module. Security-sensitive development practices are documented in SECURITY.md; cryptographic needs are met via standard dependencies and platform APIs where applicable, not via a first-party crypto library.
 ```
 
----
-
-#### ✅ Criterion: `crypto_call`
-**Status:** Currently unmet  
-**Action:** Mark as "Met"
-
-**Justification text:**
-```
-Quarisma's Security library calls platform-specific cryptographic APIs rather than implementing its own:
-- Windows: BCryptGenRandom for secure random
-- macOS: SecRandomCopyBytes for secure random
-- Linux: getrandom() for secure random
-SHA-256 implementation follows FIPS 180-4 specification. See Library/Security/crypto.cpp lines 8-22.
-```
-
----
-
-#### ✅ Criterion: `crypto_floss`
-**Status:** Currently unmet  
-**Action:** Mark as "Met"
-
-**Justification text:**
-```
-All cryptographic functionality in Quarisma is implementable using FLOSS. The Security library uses platform APIs available on all major operating systems without requiring proprietary software. Source code is available under GPL-3.0-or-later.
-```
-
----
-
-#### ✅ Criterion: `crypto_keylength`
-**Status:** Currently unmet  
-**Action:** Mark as "Met" or "N/A"
-
-**Justification text:**
-```
-Quarisma's cryptographic utilities use SHA-256 (256-bit hash, exceeds NIST 224-bit minimum through 2030). Secure random generation uses platform APIs that meet NIST requirements. Quarisma does not implement key agreement protocols, so key length requirements for asymmetric crypto are N/A. If the project doesn't use encryption keys, select N/A.
-```
-
----
-
-#### ✅ Criterion: `crypto_working`
-**Status:** Currently unmet  
-**Action:** Mark as "Met"
-
-**Justification text:**
-```
-Quarisma does not use broken cryptographic algorithms. SHA-256 is used for hashing (not MD4, MD5, SHA-1, or single DES). Platform-specific secure random generators are used (not weak PRNGs). See Library/Security/crypto.cpp.
-```
-
----
-
-#### ✅ Criterion: `crypto_weaknesses`
-**Status:** Currently unmet  
-**Action:** Mark as "Met"
-
-**Justification text:**
-```
-Quarisma does not depend on cryptographic algorithms with known serious weaknesses. SHA-256 is used instead of SHA-1. Platform secure random APIs are used. No use of CBC mode in SSH or other weak modes.
-```
-
----
-
-#### ✅ Criterion: `crypto_pfs`
-**Status:** Currently unmet  
-**Action:** Mark as "N/A"
-
-**Justification text:**
-```
-Quarisma does not implement key agreement protocols. The Security library provides hashing and secure random generation, not key exchange. Select N/A.
-```
-
----
-
-#### ✅ Criterion: `crypto_password_storage`
-**Status:** Currently unmet  
-**Action:** Mark as "N/A"
-
-**Justification text:**
-```
-Quarisma does not store passwords for external user authentication. The library provides cryptographic utilities but does not implement authentication systems. Select N/A.
-```
-
----
-
-#### ✅ Criterion: `crypto_random`
-**Status:** Currently unmet  
-**Action:** Mark as "Met"
-
-**Justification text:**
-```
-Quarisma uses cryptographically secure random number generators for all security-sensitive operations:
-- Windows: BCryptGenRandom (CSPRNG)
-- macOS: SecRandomCopyBytes (CSPRNG)
-- Linux: getrandom() (CSPRNG)
-See Library/Security/crypto.cpp lines 33-48 and Library/Security/README.md lines 85-95.
-```
+Apply that consistently for: `crypto_published`, `crypto_call`, `crypto_floss`, `crypto_keylength`, `crypto_working`, `crypto_weaknesses`, `crypto_random` unless a future release adds explicit crypto code. Criteria that were already N/A (e.g. key agreement, password storage) remain unchanged.
 
 ---
 

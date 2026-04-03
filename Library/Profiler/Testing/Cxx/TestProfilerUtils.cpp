@@ -1,6 +1,6 @@
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE_PROFILER
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  */
@@ -185,4 +185,4 @@ QUARISMATEST(Profiler, get_current_time_nanos_high_resolution)
     int64_t diff = time2 - time1;
     EXPECT_LT(diff, 1000000000);  // Less than 1 second
 }
-#endif  // QUARISMA_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE_PROFILER

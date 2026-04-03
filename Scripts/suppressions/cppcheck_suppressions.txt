@@ -1,4 +1,14 @@
-# cppcheck .   --platform=unspecified   --enable=style   -q   --library=qt --library=posix --library=gnu --library=bsd --library=windows   --check-level=exhaustive   --template='{id},{file}:{line},{severity},{message}' --suppressions-list=Scripts/cppcheck_suppressions.txt -j8   -I Library
+# cppcheck .   --platform=unspecified   --enable=style   -q   --library=qt --library=posix --library=gnu --library=bsd --library=windows   --check-level=exhaustive   --template='{id},{file}:{line},{severity},{message}' --suppressions-list=Scripts/suppressions/cppcheck_suppressions.txt -j8   -I Library
+#
+# Run via Scripts/helpers/cppcheck.py (or pass -DQUARISMA_CPPCHECK=1) so PROFILER_LIKELY /
+# PROFILER_UNLIKELY expand to plain (expr); do not rewrite `if PROFILER_UNLIKELY (` to
+# `if (PROFILER_UNLIKELY(...))` in source.
+#
+# If cppcheck is run without QUARISMA_CPPCHECK, it mis-parses the branch-hint macros and
+# reports syntaxError — suppress those false positives for affected translation units:
+syntaxError:Library/Profiler/bespoke/common/record_function.cpp
+syntaxError:Library/Profiler/native/core/profiler_lock.cpp
+syntaxError:Library/Profiler/native/cpu/annotation_stack.cpp
 
 # Exclude third-party and test code
 *:ThirdParty/*
@@ -11,9 +21,6 @@ unknownMacro:QUARISMA_LIKELY
 unknownMacro:QUARISMA_CHECK
 unknownMacro:Library/Profiler/kineto/kineto_shim.cpp:171
 syntaxError:Library/Core/parallel/parallel.h:267
-syntaxError:Library/Profiler/common/record_function.cpp:316
-syntaxError:Library/Profiler/native/core/profiler_lock.cpp:75
-syntaxError:Library/Profiler/native/cpu/annotation_stack.cpp:107
 
 # Suppress missing include warnings
 missingIncludeSystem:*

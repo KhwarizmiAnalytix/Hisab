@@ -20,20 +20,6 @@ filegroup(
 )
 
 filegroup(
-    name = "profiler_templates",
-    srcs = glob(
-        [
-            "*.hxx",
-            "**/*.hxx",
-        ],
-        exclude = [
-            "Testing/**",
-        ],
-        allow_empty = True,
-    ),
-)
-
-filegroup(
     name = "profiler_srcs",
     srcs = glob(
         [
@@ -56,7 +42,6 @@ cc_library(
     name = "Profiler",
     srcs = [
         ":profiler_srcs",
-        ":profiler_templates",
     ] + select({
         "//bazel:enable_native_profiler": glob(["native/**/*.cpp"], exclude = ["Testing/**"], allow_empty = True),
         "//conditions:default": [],
@@ -91,7 +76,7 @@ cc_library(
         "//bazel:shared_libs": ["QUARISMA_SHARED_DEFINE", "QUARISMA_BUILDING_DLL"],
         "//conditions:default": ["QUARISMA_STATIC_DEFINE"],
     }) + select({
-        "//bazel:enable_kineto": ["QUARISMA_HAS_KINETO=1"],
+        "//bazel:enable_kineto": ["PROFILER_HAS_KINETO=1"],
         "//conditions:default": [],
     }),
     includes = [
@@ -106,7 +91,11 @@ cc_library(
         "//conditions:default": True,
     }),
     deps = [
+        "@fmt//:fmt",
         "//Library/Core:core_lib",
-    ],
+    ] + select({
+        "//bazel:enable_kineto": ["@kineto//:kineto"],
+        "//conditions:default": [],
+    }),
     alwayslink = False,
 )

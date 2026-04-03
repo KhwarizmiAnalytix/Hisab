@@ -82,7 +82,7 @@ MISSING COMPONENTS SPECIFICATION
 4. record_function_api (functions)
    - High-level record_function() function
    - record_function_scope RAII class
-   - QUARISMA_RECORD_FUNCTION macro
+   - PROFILER_RECORD_FUNCTION macro
 
 5. profiler_session Integration (modifications)
    - Add event_recorder member

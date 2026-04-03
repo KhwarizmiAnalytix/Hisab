@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * Original work Copyright 2015 The TensorFlow Authors
  * Modified work Copyright 2025 Quarisma Contributors
@@ -41,7 +41,7 @@
 #include "memory/cpu/allocator.h"
 #include "memory/helper/memory_allocator.h"
 #include "memory/helper/memory_info.h"
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
 #include "native/memory/scoped_memory_debug_annotation.h"
 #include "native/tracing/traceme.h"
 #include "native/tracing/traceme_encode.h"
@@ -88,6 +88,7 @@ bool CPUAllocatorStatsEnabled() noexcept
  */
 static constexpr int kMaxTotalAllocationWarnings = 1;
 
+#ifndef NDEBUG
 /**
  * @brief Maximum number of large single allocation warnings to emit.
  *
@@ -95,6 +96,7 @@ static constexpr int kMaxTotalAllocationWarnings = 1;
  * further large allocation warnings are suppressed.
  */
 static constexpr int kMaxSingleAllocationWarnings = 5;
+#endif
 
 /**
  * @brief Threshold for total memory usage warnings (fraction of available RAM).
@@ -107,6 +109,7 @@ static constexpr int kMaxSingleAllocationWarnings = 5;
  */
 static constexpr double kTotalAllocationWarningThreshold = 0.5;
 
+#ifndef NDEBUG
 /**
  * @brief Threshold for large single allocation warnings (fraction of available RAM).
  *
@@ -118,7 +121,6 @@ static constexpr double kTotalAllocationWarningThreshold = 0.5;
  */
 static constexpr double kLargeAllocationWarningThreshold = 0.1;
 
-#ifndef NDEBUG
 /**
  * @brief Cached threshold for large allocation warnings in bytes.
  *
@@ -246,7 +248,7 @@ void* allocator_cpu::allocate_raw(size_t alignment, size_t num_bytes)
         }
 
         // Add profiling trace (outside lock to minimize contention)
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
         AddTraceMe("MemoryAllocation", p, num_bytes, alloc_size);
 #endif
     }
@@ -269,7 +271,7 @@ void allocator_cpu::deallocate_raw(void* ptr)
         }
 
         // Add profiling trace (outside lock to minimize contention)
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
         AddTraceMe("MemoryDeallocation", ptr, 0, alloc_size);
 #endif
     }
@@ -318,7 +320,7 @@ allocator_memory_enum allocator_cpu::GetMemoryType() const noexcept
     return allocator_memory_enum::HOST_PAGEABLE;
 }
 
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
 void allocator_cpu::AddTraceMe(
     std::string_view traceme_name,
     const void*      chunk_ptr,

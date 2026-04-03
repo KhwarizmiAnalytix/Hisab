@@ -8,14 +8,14 @@ set(TestFiles)
 foreach(_test_source IN ITEMS ${profiler_test_sources})
   get_filename_component(file_name "${_test_source}" NAME)
 
-  if(NOT QUARISMA_ENABLE_KINETO)
+  if(NOT PROFILER_ENABLE_KINETO)
     if(file_name MATCHES "TestKineto")
       message(STATUS "Excluding Kineto profiler test (Kineto disabled): ${file_name}")
       continue()
     endif()
   endif()
 
-  if(NOT QUARISMA_ENABLE_ENZYME)
+  if(NOT PROFILER_ENABLE_ENZYME)
     if(file_name MATCHES "TestEnzyme")
       message(STATUS "Excluding Enzyme test (Enzyme disabled): ${file_name}")
       continue()
@@ -25,7 +25,7 @@ foreach(_test_source IN ITEMS ${profiler_test_sources})
   list(APPEND TestFiles "${_test_source}")
 endforeach()
 
-set(QUARISMA_NATIVE_PROFILER_TESTS
+set(PROFILER_NATIVE_PROFILER_TESTS
     "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerBackendIntegration.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerPlatform.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerXPlane.cpp"
@@ -51,16 +51,19 @@ set(QUARISMA_NATIVE_PROFILER_TESTS
     "${CMAKE_CURRENT_SOURCE_DIR}/TestXPlaneBuilder.cpp"
 )
 
-if(NOT QUARISMA_ENABLE_NATIVE_PROFILER)
-  list(REMOVE_ITEM TestFiles ${QUARISMA_NATIVE_PROFILER_TESTS})
+if(NOT PROFILER_ENABLE_NATIVE_PROFILER)
+  list(REMOVE_ITEM TestFiles ${PROFILER_NATIVE_PROFILER_TESTS})
   message(STATUS "Native profiler disabled: excluding native-only Profiler tests")
 endif()
 
 add_executable(ProfilerCxxTests ${TestFiles})
 
-target_compile_definitions(ProfilerCxxTests PRIVATE QUARISMA_GOOGLE_TEST USE_GTEST _VARIADIC_MAX=10)
+target_compile_definitions(ProfilerCxxTests PRIVATE PROFILER_GOOGLE_TEST USE_GTEST _VARIADIC_MAX=10)
 
-target_link_libraries(ProfilerCxxTests PRIVATE Quarisma::gtest Quarisma::gtest_main Quarisma::Profiler)
+# Profiler links Core privately; executables may need Core explicitly when linking static archives.
+target_link_libraries(
+  ProfilerCxxTests PRIVATE Quarisma::gtest Quarisma::gtest_main Quarisma::Profiler Quarisma::Core
+)
 
 set_target_properties(
   ProfilerCxxTests PROPERTIES FOLDER "Tests" VS_DEBUGGER_WORKING_DIRECTORY
@@ -73,13 +76,13 @@ add_test(NAME ProfilerCxxTests COMMAND ProfilerCxxTests
 
 set_tests_properties(ProfilerCxxTests PROPERTIES TIMEOUT 300 LABELS "Profiler;Unit")
 
-if(QUARISMA_ENABLE_COVERAGE AND DEFINED QUARISMA_LLVM_PROFILE_FILE)
+if(PROFILER_ENABLE_COVERAGE AND DEFINED PROFILER_LLVM_PROFILE_FILE)
   set_tests_properties(
-    ProfilerCxxTests PROPERTIES ENVIRONMENT "LLVM_PROFILE_FILE=${QUARISMA_LLVM_PROFILE_FILE}"
+    ProfilerCxxTests PROPERTIES ENVIRONMENT "LLVM_PROFILE_FILE=${PROFILER_LLVM_PROFILE_FILE}"
   )
 endif()
 
-if(QUARISMA_ENABLE_ENZYME)
+if(PROFILER_ENABLE_ENZYME)
   target_link_libraries(ProfilerCxxTests PRIVATE Quarisma::enzyme)
 endif()
 

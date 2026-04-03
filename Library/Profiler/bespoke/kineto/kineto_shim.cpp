@@ -4,13 +4,12 @@
 
 #include "bespoke/common/collection.h"
 
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 #include <libkineto.h>
 #endif
 
-// TODO: Missing Quarisma dependencies - original includes were:
-#include "util/env.h"
-// These are Quarisma-specific headers not available in Quarisma
+#include <cstdlib>
+#include <string_view>
 
 namespace quarisma
 {
@@ -18,9 +17,9 @@ namespace quarisma
 namespace profiler_impl::impl::kineto
 {
 
-// Here lies pain and `#if QUARISMA_HAS_KINETO`
+// Here lies pain and `#if PROFILER_HAS_KINETO`
 
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 namespace
 {
 const std::set<libkineto::ActivityType> kCpuTypes{
@@ -71,25 +70,27 @@ const std::set<libkineto::ActivityType> kPrivateUse1Types = {
     libkineto::ActivityType::PRIVATEUSE1_DRIVER,
 };
 }  // namespace
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 
 static_assert(
     std::is_trivial_v<DeviceAndResource>, "Kineto specific details should be in `kineto_ids`.");
 
 DeviceAndResource kineto_ids()
 {
-#if QUARISMA_HAS_KINETO
-    return {
-        /*device=*/libkineto::processId(),
-        /*resource=*/libkineto::systemThreadId()};
+#if PROFILER_HAS_KINETO
+    return {/*device=*/libkineto::processId(),
+            /*resource=*/libkineto::systemThreadId()};
 #else
     return {};
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 }
 
-void addMetadata(activity_t* activity, const std::string& key, const std::string& value)
+void addMetadata(
+    activity_t*        activity,  // cppcheck-suppress constParameterPointer
+    const std::string& key,
+    const std::string& value)
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     // Suppress false positive from clang static analyzer in fmt library
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -100,11 +101,11 @@ void addMetadata(activity_t* activity, const std::string& key, const std::string
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 }
 
 TraceWrapper::TraceWrapper(const int64_t start_time, const std::string& name)
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     : cpu_trace_(std::make_unique<libkineto::CpuTraceBuffer>())
 {
     cpu_trace_->span.startTime = start_time;
@@ -114,7 +115,7 @@ TraceWrapper::TraceWrapper(const int64_t start_time, const std::string& name)
 #else
 {
 }
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 
 activity_t* TraceWrapper::addCPUActivity(
     const std::string&            name,
@@ -124,8 +125,8 @@ activity_t* TraceWrapper::addCPUActivity(
     const int64_t                 start_time,
     const int64_t                 end_time)
 {
-#if QUARISMA_HAS_KINETO
-    // QUARISMA_CHECK((bool)(*this), "Cannot add event to non-existent trace.");
+#if PROFILER_HAS_KINETO
+    // PROFILER_CHECK((bool)(*this), "Cannot add event to non-existent trace.");
     cpu_trace_->emplace_activity(cpu_trace_->span, type, name);
     auto& act     = libkineto::CpuTraceBuffer::toRef(cpu_trace_->activities.back());
     act.device    = device_and_resource.device;
@@ -139,24 +140,24 @@ activity_t* TraceWrapper::addCPUActivity(
     return cpu_trace_->activities.back().get();
 #else
     return nullptr;
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 }
 
 void TraceWrapper::transferCpuTrace(int64_t end_time)
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     cpu_trace_->span.endTime = end_time;
     libkineto::api().activityProfiler().transferCpuTrace(std::move(cpu_trace_));
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 }
 
 TraceWrapper::operator bool() const
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     return cpu_trace_ != nullptr;
 #else
     return false;
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 }
 
 ActivityTraceWrapper::ActivityTraceWrapper(std::unique_ptr<interface_trace_t>&& trace)
@@ -166,26 +167,26 @@ ActivityTraceWrapper::ActivityTraceWrapper(std::unique_ptr<interface_trace_t>&& 
 
 ActivityTraceWrapper::operator bool() const
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     return trace_ != nullptr;
 #else
     return false;
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 }
 
 void ActivityTraceWrapper::save(const std::string& path)
 {
-#if QUARISMA_HAS_KINETO
-    // QUARISMA_CHECK(!saved_, "Trace is already saved.");
+#if PROFILER_HAS_KINETO
+    // PROFILER_CHECK(!saved_, "Trace is already saved.");
     // cppcheck-suppress unknownMacro
-    // QUARISMA_CHECK(trace_ != nullptr, "Missing trace.")
+    // PROFILER_CHECK(trace_ != nullptr, "Missing trace.")
     trace_->save(path);
     saved_ = true;
 #else
-    QUARISMA_THROW(
+    PROFILER_THROW(
         "Saving a trace requires using quarisma.profiler with Kineto support "
-        "(QUARISMA_HAS_KINETO=1)");
-#endif  // QUARISMA_HAS_KINETO
+        "(PROFILER_HAS_KINETO=1)");
+#endif  // PROFILER_HAS_KINETO
 }
 
 namespace
@@ -194,7 +195,8 @@ namespace
 class ExperimentalConfigWrapper
 {
 public:
-    explicit ExperimentalConfigWrapper(const quarisma::profiler_impl::impl::ExperimentalConfig& config)
+    explicit ExperimentalConfigWrapper(
+        const quarisma::profiler_impl::impl::ExperimentalConfig& config)
         : config_(config)
     {
     }
@@ -203,8 +205,8 @@ public:
 
     void prepareTraceWithExperimentalOptions(std::set<libkineto::ActivityType>&& enabled_activities)
     {
+#if PROFILER_HAS_KINETO
         std::set<libkineto::ActivityType> k_activities = std::move(enabled_activities);
-#if QUARISMA_HAS_KINETO
         k_activities.insert(libkineto::ActivityType::CUDA_PROFILER_RANGE);
 
         // Add CPU activities if we are measuring per kernel ranges
@@ -241,7 +243,9 @@ public:
 #endif
 
         libkineto::api().activityProfiler().prepareTrace(k_activities, configss.str());
-#endif  // QUARISMA_HAS_KINETO
+#else
+        (void)enabled_activities;
+#endif  // PROFILER_HAS_KINETO
     }
 
 private:
@@ -255,11 +259,11 @@ bool collectivesProfilerExists()
 #ifdef KINETO_HAS_HCCL_PROFILER
     return true;
 #endif
-    const auto val = quarisma::utils::get_env("QUARISMA_PROFILER_ENABLE_COLLECTIVE_PROFILING");
-    return val == "1";
+    const char* val = std::getenv("PROFILER_ENABLE_COLLECTIVE_PROFILING");
+    return val != nullptr && std::string_view{val} == "1";
 }
 
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 static std::string setTraceID(const std::string& trace_id)
 {
     if (trace_id.empty())
@@ -287,12 +291,12 @@ static std::string appendCustomConfig(
 #endif
 
 void prepareTrace(
-    const bool                                          cpuOnly,
-    const ActivitySet&                                  activities,
+    const bool                                               cpuOnly,
+    const ActivitySet&                                       activities,
     const quarisma::profiler_impl::impl::ExperimentalConfig& config,
-    const std::string&                                  trace_id)
+    const std::string&                                       trace_id)
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     libkineto::api().resetKinetoTLS();
     if (!libkineto::api().isProfilerRegistered())
     {
@@ -341,7 +345,8 @@ void prepareTrace(
     {
         k_activities.insert(libkineto::ActivityType::COLLECTIVE_COMM);
     }
-    if (activities.count(quarisma::autograd::profiler_impl::ActivityType::PrivateUse1) > 0)  //NOLINT
+    if (activities.count(quarisma::autograd::profiler_impl::ActivityType::PrivateUse1) >
+        0)  //NOLINT
     {
         k_activities.insert(kPrivateUse1Types.begin(), kPrivateUse1Types.end());
     }
@@ -359,71 +364,71 @@ void prepareTrace(
     const std::string configStr  = appendCustomConfig(traceIdStr, config.custom_profiler_config);
 
     libkineto::api().activityProfiler().prepareTrace(k_activities, configStr);
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 }
 
 void toggleCollectionDynamic(const bool enable)
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     // TODO: We may want to consider adding another input arg for this function
     // if we want to support turning off certain devices and keeping others on.
     // For now, we can keep it simple at have it turn off all tracing of "CUDA"
     // devices
     libkineto::api().activityProfiler().toggleCollectionDynamic(enable);
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 }
 
 void startTrace()
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     libkineto::api().activityProfiler().startTrace();
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 }
 
 ActivityTraceWrapper stopTrace()
 {
     return ActivityTraceWrapper{
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
         libkineto::api().activityProfiler().stopTrace()
 #else
         std::make_unique<interface_trace_t>()
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
     };
 }
 
 void pushCorrelationId(uint64_t correlation_id)
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     libkineto::api().activityProfiler().pushCorrelationId(correlation_id);
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 }
 
 void pushUserCorrelationId(uint64_t correlation_id)
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     libkineto::api().activityProfiler().pushUserCorrelationId(correlation_id);
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 }
 
 void popCorrelationId()
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     libkineto::api().activityProfiler().popCorrelationId();
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 }
 
 void popUserCorrelationId()
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     libkineto::api().activityProfiler().popUserCorrelationId();
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 }
 
 void recordThreadInfo()
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     libkineto::api().activityProfiler().recordThreadInfo();
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 }
 
 void logInvariantViolation(
@@ -432,13 +437,13 @@ void logInvariantViolation(
     const std::string& profile_id,
     const std::string& group_profile_id)
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     if (libkineto::api().isProfilerInitialized())
     {
         libkineto::api().activityProfiler().logInvariantViolation(
             profile_id, assertion, error, group_profile_id);
     }
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 }
 
 }  // namespace profiler_impl::impl::kineto
@@ -518,8 +523,8 @@ quarisma::device_enum deviceTypeFromActivity(
     default:
     {
 #if 0
-        // Disabled: QUARISMA_LOG_WARNING macro not available in profiler-only build.
-        QUARISMA_LOG_WARNING("Unknown activity type (", (uint8_t)activity_type, "), assuming CPU device");
+        // Disabled: PROFILER_LOG_WARNING macro not available in profiler-only build.
+        // PROFILER_LOG_WARNING("Unknown activity type (", (uint8_t)activity_type, "), assuming CPU device");
 #endif
         return quarisma::device_enum::CPU;
     }
@@ -528,25 +533,25 @@ quarisma::device_enum deviceTypeFromActivity(
 
 void addMetadataJson(const std::string& key, const std::string& value)
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     if (libkineto::api().isProfilerInitialized())
     {
         libkineto::api().activityProfiler().addMetadata(key, value);
     }
     else
     {
-        QUARISMA_LOG_WARNING("Profiler is not initialized: skipping profiling metadata");
+        // PROFILER_LOG_WARNING("Profiler is not initialized: skipping profiling metadata");
     }
 #else
-    QUARISMA_LOG_WARNING(
+    /* PROFILER_LOG_WARNING(
         "Adding profiling metadata requires using "
-        "quarisma.profiler with Kineto support (QUARISMA_HAS_KINETO=1)");
-#endif  // QUARISMA_HAS_KINETO
+        "quarisma.profiler with Kineto support (PROFILER_HAS_KINETO=1)"); */
+#endif  // PROFILER_HAS_KINETO
 }
 
 void profilerStep()
 {
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     libkineto::api().initProfilerIfRegistered();
 
     if (libkineto::api().isProfilerInitialized())
@@ -555,9 +560,9 @@ void profilerStep()
     }
     else
     {
-        QUARISMA_LOG_WARNING("Profiler is not initialized: skipping step() invocation");
+        // PROFILER_LOG_WARNING("Profiler is not initialized: skipping step() invocation");
     }
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 }
 
 }  // namespace autograd::profiler_impl

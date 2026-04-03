@@ -177,7 +177,7 @@ auto session = profiler_session_builder()
 session->start();
 
 {
-    QUARISMA_PROFILE_SCOPE("model_inference");
+    PROFILER_PROFILE_SCOPE("model_inference");
     // ... model code ...
 }
 
@@ -200,12 +200,12 @@ QUARISMATEST(profiler_report_test, pytorch_table_format) {
     session->start();
     
     {
-        QUARISMA_PROFILE_SCOPE("operation_a");
+        PROFILER_PROFILE_SCOPE("operation_a");
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     
     {
-        QUARISMA_PROFILE_SCOPE("operation_b");
+        PROFILER_PROFILE_SCOPE("operation_b");
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     

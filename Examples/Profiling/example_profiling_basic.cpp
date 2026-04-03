@@ -20,7 +20,7 @@
 
 #include "native/session/profiler.h"
 
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 #include <ActivityTrace.h>
 
 #include "kineto/kineto_shim.h"
@@ -216,7 +216,7 @@ void example_quarisma_native_profiler()
 // Example 2: Kineto Profiler
 // ============================================================================
 
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
 
 /**
  * @brief Demonstrates Kineto profiler combined with Quarisma profiler.
@@ -274,7 +274,8 @@ void example_kineto_profiler()
     session.stop();
 
     std::unique_ptr<libkineto::ActivityTraceInterface> kineto_trace(
-        static_cast<libkineto::ActivityTraceInterface*>(quarisma::profiler_impl::kineto_stop_trace()));
+        static_cast<libkineto::ActivityTraceInterface*>(
+            quarisma::profiler_impl::kineto_stop_trace()));
 
     // Export traces
     std::string const quarisma_file = "kineto_quarisma_trace.json";
@@ -292,7 +293,7 @@ void example_kineto_profiler()
     std::cout << "✓ Kineto trace saved to: " << kineto_file << std::endl;
 }
 
-#endif  // QUARISMA_HAS_KINETO
+#endif  // PROFILER_HAS_KINETO
 
 // ============================================================================
 // Example 3: ITT Profiler
@@ -407,12 +408,12 @@ int main()
     // Example 1: Quarisma Native Profiler
     quarisma::examples::profiling::example_quarisma_native_profiler();
 
-#if QUARISMA_HAS_KINETO
+#if PROFILER_HAS_KINETO
     // Example 2: Kineto Profiler
     quarisma::examples::profiling::example_kineto_profiler();
 #else
     std::cout << "\n=== Example 2: Kineto Profiler ===" << std::endl;
-    std::cout << "✗ Kineto not available (QUARISMA_HAS_KINETO=0)" << std::endl;
+    std::cout << "✗ Kineto not available (PROFILER_HAS_KINETO=0)" << std::endl;
 #endif
 
 #if QUARISMA_HAS_ITT

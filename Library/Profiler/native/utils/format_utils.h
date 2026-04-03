@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -32,12 +32,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef QUARISMA_PROFILER_UTILS_FORMAT_UTILS_H_
-#define QUARISMA_PROFILER_UTILS_FORMAT_UTILS_H_
+#ifndef PROFILER_PROFILER_UTILS_FORMAT_UTILS_H_
+#define PROFILER_PROFILER_UTILS_FORMAT_UTILS_H_
 
 #include <cassert>
 #include <cstdio>
 #include <string>
+
+#include "common/profiler_macros.h"
 
 namespace quarisma
 {
@@ -57,7 +59,7 @@ inline std::string format_double(const char* fmt, double d)
 {
     constexpr int       kBufferSize = 32;
     char                buffer[kBufferSize];
-    QUARISMA_UNUSED int result = snprintf(buffer, kBufferSize, fmt, d);
+    PROFILER_UNUSED int result = snprintf(buffer, kBufferSize, fmt, d);
     assert(result > 0 && result < kBufferSize);
     return std::string(buffer);
 }
@@ -114,4 +116,4 @@ inline std::string max_precision(double d)
 }  // namespace profiler_impl
 }  // namespace quarisma
 
-#endif  // QUARISMA_PROFILER_UTILS_FORMAT_UTILS_H_
+#endif  // PROFILER_PROFILER_UTILS_FORMAT_UTILS_H_

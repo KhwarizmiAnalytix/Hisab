@@ -1,7 +1,6 @@
 #include "bespoke/base/perf.h"
 
 #include <unordered_map>
-#include <unordered_set>
 
 #include "bespoke/base/perf-inl.h"
 #include "common/error.h"
@@ -50,15 +49,19 @@ PerfEvent::~PerfEvent()
 
 void PerfEvent::Init()
 {
-    // QUARISMA_CHECK(!name_.empty(), "Invalid profiler event name");
+    // PROFILER_CHECK(!name_.empty(), "Invalid profiler event name");
 
     auto const it = EventTable.find(name_);
     if (it == EventTable.end())
     {
-        // QUARISMA_CHECK(false, "Unsupported profiler event name: ", name_);
+        // PROFILER_CHECK(false, "Unsupported profiler event name: ", name_);
+        fd_ = -1;
+        return;
     }
 
-    struct perf_event_attr attr{};
+    struct perf_event_attr attr
+    {
+    };
 
     attr.size           = sizeof(perf_event_attr);
     attr.type           = it->second.first;
@@ -81,31 +84,31 @@ void PerfEvent::Init()
     fd_ = static_cast<int>(perf_event_open(&attr, pid, cpu, group_fd, flags));
     if (fd_ == -1)
     {
-        // QUARISMA_CHECK(
-            // false, "perf_event_open() failed, error: ", quarisma::utils::str_error(errno));
+        // PROFILER_CHECK(
+        // false, "perf_event_open() failed, error: ", quarisma::utils::str_error(errno));
     }
     Reset();
 }
 
 uint64_t PerfEvent::ReadCounter() const
 {
-    PerfCounter counter{};
-    const long  n = read(fd_, &counter, sizeof(PerfCounter));
-    // QUARISMA_CHECK(
-        // n == sizeof(counter),
-        // "Read failed for Perf event fd, event : ",
-        // name_,
-        // ", error: ",
-        // quarisma::utils::str_error(errno));
-    // QUARISMA_CHECK(
-        // counter.time_enabled == counter.time_running,
-        // "Hardware performance counter time multiplexing is not handled yet",
-        // ", name: ",
-        // name_,
-        // ", enabled: ",
-        // counter.time_enabled,
-        // ", running: ",
-        // counter.time_running);
+    PerfCounter                 counter{};
+    [[maybe_unused]] const long n = read(fd_, &counter, sizeof(PerfCounter));
+    // PROFILER_CHECK(
+    // n == sizeof(counter),
+    // "Read failed for Perf event fd, event : ",
+    // name_,
+    // ", error: ",
+    // quarisma::utils::str_error(errno));
+    // PROFILER_CHECK(
+    // counter.time_enabled == counter.time_running,
+    // "Hardware performance counter time multiplexing is not handled yet",
+    // ", name: ",
+    // name_,
+    // ", enabled: ",
+    // counter.time_enabled,
+    // ", running: ",
+    // counter.time_running);
     return counter.value;
 }
 
@@ -133,14 +136,16 @@ uint64_t PerfEvent::ReadCounter() const  //NOLINT
 
 void PerfProfiler::Configure(std::vector<std::string>& event_names)
 {
-    // QUARISMA_CHECK(
-        // event_names.size() <= MAX_EVENTS,
-        // "Too many events to configure, configured: ",
-        // event_names.size(),
-        // ", max allowed:",
-        // MAX_EVENTS);
-    std::unordered_set<std::string> const s(event_names.begin(), event_names.end());
-    // QUARISMA_CHECK(s.size() == event_names.size(), "Duplicate event names are not allowed!")
+    // PROFILER_CHECK(
+    // event_names.size() <= MAX_EVENTS,
+    // "Too many events to configure, configured: ",
+    // event_names.size(),
+    // ", max allowed:",
+    // MAX_EVENTS);
+    // PROFILER_CHECK(
+    //     std::unordered_set<std::string>(event_names.begin(), event_names.end()).size() ==
+    //         event_names.size(),
+    //     "Duplicate event names are not allowed!")
     for (auto name : event_names)
     {
         events_.emplace_back(name);
@@ -172,9 +177,9 @@ void PerfProfiler::Enable()
 void PerfProfiler::Disable(perf_counters_t& vals)
 {
     StopCounting();
-    // QUARISMA_CHECK(
-        // vals.size() == events_.size(), "Can not fit all perf counters in the supplied container");
-    // QUARISMA_CHECK(!start_values_.empty(), "PerfProfiler must be enabled before disabling");
+    // PROFILER_CHECK(
+    // vals.size() == events_.size(), "Can not fit all perf counters in the supplied container");
+    // PROFILER_CHECK(!start_values_.empty(), "PerfProfiler must be enabled before disabling");
 
     /* Always connecting this disable event to the last enable event i.e. using
    * whatever is on the top of the start counter value stack. */

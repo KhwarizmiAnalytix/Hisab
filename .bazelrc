@@ -215,6 +215,9 @@ build:lu_pivoting --define=quarisma_lu_pivoting=true
 # Enable Sobol 1111 dimensions
 build:sobol_1111 --define=quarisma_sobol_1111=true
 
+# Enzyme AD (LLVM plugin; add -fpass-plugin via .bazelrc.user for full codegen support)
+build:enzyme --define=quarisma_enable_enzyme=true
+
 # =============================================================================
 # Testing Configuration
 # =============================================================================
