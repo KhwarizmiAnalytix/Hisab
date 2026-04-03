@@ -5,7 +5,7 @@
 # Profiler is //Library/Profiler and is built separately; link both when you need profiling.
 # =============================================================================
 
-load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
+load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_enzyme_copts", "quarisma_enzyme_linkopts", "quarisma_linkopts")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -99,7 +99,7 @@ cc_library(
         "//bazel:compression_snappy": glob(["compression/snappy.h"], allow_empty = True),
         "//conditions:default": [],
     }),
-    copts = quarisma_copts(),
+    copts = quarisma_copts() + quarisma_enzyme_copts(),
     defines = quarisma_defines() + select({
         "//bazel:shared_libs": ["QUARISMA_SHARED_DEFINE", "QUARISMA_BUILDING_DLL"],
         "//conditions:default": ["QUARISMA_STATIC_DEFINE"],
@@ -108,7 +108,7 @@ cc_library(
         ".",
         "Testing",
     ],
-    linkopts = quarisma_linkopts() + select({
+    linkopts = quarisma_linkopts() + quarisma_enzyme_linkopts() + select({
         "@platforms//os:windows": [],
         "@platforms//os:macos": ["-framework Security"],
         "//conditions:default": ["-lpthread", "-ldl", "-lrt"],

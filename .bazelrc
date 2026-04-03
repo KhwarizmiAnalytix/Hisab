@@ -119,19 +119,22 @@ build:avx512 --copt=-mavx512vl
 # We do NOT add compiler-specific flags here to avoid conflicts with the
 # actual compiler being used by Bazel's auto-detection.
 
-# Clang compiler configuration (uses system Clang if available)
-build:clang --cxxopt=-std=c++17
+# Clang compiler configuration
+# --repo_env forces local_config_cc to select Clang instead of the system GCC default.
+build:clang --repo_env=CC=clang
+build:clang --repo_env=CXX=clang++
+build:clang --cxxopt=-std=c++20
 
 # GCC compiler configuration (uses system GCC if available)
-build:gcc --cxxopt=-std=c++17
+build:gcc --cxxopt=-std=c++20
 
 # MSVC compiler configuration (uses system MSVC if available)
-build:msvc --cxxopt=-std=c++17
+build:msvc --cxxopt=-std=c++20
 
 # Xcode configuration (macOS with Clang)
 build:xcode --apple_platform_type=macos
 build:xcode --cxxopt=-stdlib=libc++
-build:xcode --cxxopt=-std=c++17
+build:xcode --cxxopt=-std=c++20
 
 # =============================================================================
 # Platform-Specific Configurations
@@ -227,7 +230,20 @@ build:lu_pivoting --define=quarisma_lu_pivoting=true
 # Enable Sobol 1111 dimensions
 build:sobol_1111 --define=quarisma_sobol_1111=true
 
-# Enzyme AD (LLVM plugin; add -fpass-plugin via .bazelrc.user for full codegen support)
+# Enzyme AD — mirrors CMake QUARISMA_ENABLE_ENZYME + Quarisma::enzyme interface target.
+# Enables QUARISMA_HAS_ENZYME=1 define and includes TestEnzymeAD.cpp in tests.
+#
+# The Enzyme LLVM plugin path cannot be auto-discovered in Bazel (CMake does this at
+# configure time via Cmake/tools/enzyme.cmake). Add --per_file_copt in .bazelrc.user,
+# restricting -fpass-plugin to Library/* only — equivalent to CMake's PRIVATE linkage
+# which prevents the Clang-only flag from leaking to GCC-compiled third-party targets:
+#   build:enzyme --per_file_copt=Library/.*@-fpass-plugin=/path/to/LLDEnzyme-XX.so
+#
+# DO NOT use global --copt/-linkopt: third-party targets (benchmark, etc.) may use
+# GCC which rejects -fpass-plugin. --per_file_copt matches CMake's PRIVATE behaviour.
+#
+# quarisma_enzyme_copts()/quarisma_enzyme_linkopts() in //bazel:quarisma.bzl mark
+# the structural intent; the actual flag is user-supplied via .bazelrc.user.
 build:enzyme --define=quarisma_enable_enzyme=true
 
 # =============================================================================

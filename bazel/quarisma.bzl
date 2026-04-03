@@ -149,6 +149,39 @@ def quarisma_linkopts():
         ],
     })
 
+def quarisma_enzyme_copts():
+    """Returns Enzyme AD compile options.
+    Mirrors CMake: target_compile_options(Quarisma::enzyme INTERFACE -fpass-plugin=<path>)
+
+    The -fpass-plugin=<path> flag is Clang-only and cannot be auto-discovered in Bazel.
+    Provide it via --per_file_copt in .bazelrc.user, restricted to Library/* to avoid
+    leaking the Clang-only flag to GCC-compiled third-party targets:
+      build:enzyme --per_file_copt=Library/.*@-fpass-plugin=/path/to/LLDEnzyme-XX.so
+
+    DO NOT use global --copt: third-party targets (benchmark, googletest, etc.) may be
+    compiled with GCC which does not recognise -fpass-plugin.
+    This mirrors CMake's: target_link_libraries(Core PRIVATE Quarisma::enzyme)
+    """
+    return select({
+        "//bazel:enable_enzyme": [],  # Plugin path supplied via .bazelrc.user --per_file_copt
+        "//conditions:default": [],
+    })
+
+def quarisma_enzyme_linkopts():
+    """Returns Enzyme AD link options.
+    Mirrors CMake: target_link_options(Quarisma::enzyme INTERFACE -fpass-plugin=<path>)
+
+    For non-LTO builds, Enzyme resolves __enzyme_* symbols at compile time (the pass
+    transforms the IR in-place); no -fpass-plugin is needed at link time.
+    For LTO builds, add to .bazelrc.user:
+      build:enzyme --linkopt=-fpass-plugin=/path/to/LLDEnzyme-XX.so
+    and ensure all link steps use Clang/lld (GCC does not support -fpass-plugin).
+    """
+    return select({
+        "//bazel:enable_enzyme": [],  # Non-LTO: symbols resolved at compile time
+        "//conditions:default": [],
+    })
+
 def quarisma_test_copts():
     """Returns compiler options for Quarisma test targets."""
     return quarisma_copts()

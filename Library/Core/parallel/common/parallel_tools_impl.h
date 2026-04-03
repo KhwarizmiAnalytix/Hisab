@@ -25,6 +25,7 @@
 #define PARALLEL_TOOLS_IMPL_H
 
 #include <atomic>
+#include <cstddef>
 
 #include "common/export.h"
 #include "parallel/parallel.h"
