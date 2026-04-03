@@ -52,7 +52,7 @@ dev = [
 
 [project]
 name = "quarisma"
-description = "Quarisma: High-Performance Quantitative Library"
+description = "Quarisma: High-Performance Computational Library"
 readme = "README.md"
 requires-python = ">=3.10"
 # TODO: change to `license = "BSD-3-Clause"` and enable PEP 639 after pinning setuptools>=77

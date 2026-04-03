@@ -1,6 +1,6 @@
 #if PROFILER_HAS_NATIVE_PROFILER
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -328,7 +328,8 @@ QUARISMATEST(TracemeTest, threading_and_concurrency)
                     for (int i = 0; i < traces_per_thread; ++i)
                     {
                         traceme trace(
-                            [t, i]() {
+                            [t, i]()
+                            {
                                 return std::string("thread_") + std::to_string(t) + "_trace_" +
                                        std::to_string(i);
                             });

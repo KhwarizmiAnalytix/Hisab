@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * Original work Copyright 2015 The TensorFlow Authors
  * Modified work Copyright 2025 Quarisma Contributors
@@ -73,7 +73,7 @@ private:
 
 Counter<0>* get_allocator_bfc_delay_counter()
 {
-    static Counter<0>* const counter = Counter<0>::New(
+    static auto* const counter = Counter<0>::New(
         "/memory/cpu/allocator_bfc_delay",
         "The total time spent running each graph "
         "optimization pass in microseconds.");

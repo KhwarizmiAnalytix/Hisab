@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  * Copyright 2025 Quarisma Contributors
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  */

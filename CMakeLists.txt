@@ -191,18 +191,10 @@ mark_as_advanced(QUARISMA_ENABLE_MIMALLOC)
 option(QUARISMA_ENABLE_ROCM "Enable ROCm support for AMD GPUs" OFF)
 mark_as_advanced(QUARISMA_ENABLE_ROCM)
 
-# profiling libreray Quarisma Kineto Profiling Library Flag Controls whether Kineto profiling library
-# is enabled. When enabled, provides advanced profiling capabilities for performance analysis.
-option(PROFILER_ENABLE_KINETO "Enable Quarisma Kineto profiling library." ON)
-mark_as_advanced(PROFILER_ENABLE_KINETO)
-
-# Intel ITT API (Instrumentation and Tracing Technology) Flag Controls whether Intel ITT API is
-# enabled. When enabled, provides task/frame annotations for Intel VTune profiling.
-option(PROFILER_ENABLE_ITT "Enable Intel ITT API for VTune profiling." OFF)
-mark_as_advanced(PROFILER_ENABLE_ITT)
-
-# Profiler backend selection controls whether Kineto, Native TraceMe, or ITT
-# instrumentation is used. Defaults to Kineto for downstream compatibility.
+# Profiler backend selection — the single control point for the profiler backend.
+# PROFILER_ENABLE_KINETO, PROFILER_ENABLE_ITT, and PROFILER_ENABLE_NATIVE_PROFILER
+# are derived from this value and are mutually exclusive. Do not set them directly.
+# Defaults to KINETO for downstream compatibility.
 set(QUARISMA_PROFILER_TYPE "KINETO"
     CACHE STRING "Profiler backend type. Options are KINETO, NATIVE, or ITT")
 set_property(CACHE QUARISMA_PROFILER_TYPE PROPERTY STRINGS KINETO NATIVE ITT)
@@ -213,10 +205,18 @@ if(NOT QUARISMA_PROFILER_TYPE MATCHES "^(KINETO|NATIVE|ITT)$")
       "Invalid QUARISMA_PROFILER_TYPE: ${QUARISMA_PROFILER_TYPE}. Valid options are KINETO, NATIVE, or ITT")
 endif()
 
-if(QUARISMA_PROFILER_TYPE STREQUAL "NATIVE")
-  set(PROFILER_ENABLE_NATIVE_PROFILER ON)
-else()
+if(QUARISMA_PROFILER_TYPE STREQUAL "KINETO")
+  set(PROFILER_ENABLE_KINETO          ON)
+  set(PROFILER_ENABLE_ITT             OFF)
   set(PROFILER_ENABLE_NATIVE_PROFILER OFF)
+elseif(QUARISMA_PROFILER_TYPE STREQUAL "ITT")
+  set(PROFILER_ENABLE_KINETO          OFF)
+  set(PROFILER_ENABLE_ITT             ON)
+  set(PROFILER_ENABLE_NATIVE_PROFILER OFF)
+elseif(QUARISMA_PROFILER_TYPE STREQUAL "NATIVE")
+  set(PROFILER_ENABLE_KINETO          OFF)
+  set(PROFILER_ENABLE_ITT             OFF)
+  set(PROFILER_ENABLE_NATIVE_PROFILER ON)
 endif()
 
 # =============================================================================

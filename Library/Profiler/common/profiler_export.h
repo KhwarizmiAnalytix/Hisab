@@ -48,4 +48,12 @@
 #define PROFILER_HIDDEN
 #endif
 
+// Mutual exclusivity: only one profiler backend may be active per translation unit.
+// PROFILER_HAS_KINETO, PROFILER_HAS_ITT, and PROFILER_HAS_NATIVE_PROFILER are
+// mutually exclusive — exactly one (or none) may equal 1.
+#if (PROFILER_HAS_KINETO + PROFILER_HAS_ITT + PROFILER_HAS_NATIVE_PROFILER) > 1
+#error \
+    "PROFILER_HAS_KINETO, PROFILER_HAS_ITT, and PROFILER_HAS_NATIVE_PROFILER are mutually exclusive. Only one may equal 1."
+#endif
+
 #endif  // __profiler_export_h__

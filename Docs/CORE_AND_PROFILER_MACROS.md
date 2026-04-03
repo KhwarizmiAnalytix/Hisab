@@ -365,6 +365,63 @@ QUARISMA_USE_PTHREADS
 QUARISMA_USE_WIN32_THREADS
 ```
 
+## Conditional Compilation Macros
+
+These macros appear in `#if` / `#ifdef` / `#ifndef` directives to enable or disable code sections at compile time. Only project-defined or build-system-injected macros are listed here; compiler and platform builtins (`_WIN32`, `__GNUC__`, `__cplusplus`, etc.) are excluded per the scope note above.
+
+### Backend Feature Flags
+
+Set by CMake based on available libraries at configure time.
+
+> **Mutual exclusivity:** `PROFILER_HAS_KINETO`, `PROFILER_HAS_ITT`, and `PROFILER_HAS_NATIVE_PROFILER` are mutually exclusive — at most one may equal `1` in any given build. Enabling more than one is a CMake configure-time error (`compile_definitions.cmake`) and also a compile-time `#error` in `common/profiler_export.h`.
+
+| Macro | Key Files | Purpose |
+|---|---|---|
+| `PROFILER_HAS_KINETO` | `bespoke/kineto/kineto_shim.*`, `bespoke/common/collection.cpp`, `bespoke/kineto/profiler_kineto.cpp` | Enables the entire Kineto GPU activity tracing backend. All shim functions compile as no-ops when off. Used in ~30 `#if` guards across the shim layer. |
+| `PROFILER_HAS_ITT` | `bespoke/itt/itt_wrapper.*`, `bespoke/kineto/profiler_kineto.cpp`, test files | Enables Intel VTune ITT range annotations. When off, all `ITTWrapper` calls compile away. |
+| `PROFILER_HAS_NATIVE_PROFILER` | All native test translation units | Gates the full native profiler subsystem (XPlane, stats, exporters, traceme). Every test file under `Testing/Cxx/` opens with `#if PROFILER_HAS_NATIVE_PROFILER`. |
+| `PROFILER_HAS_PROFILER` | `Testing/Cxx/TestXSigmaProfiler.cpp` | Top-level availability flag — the profiler exists at all in this build. |
+| `QUARISMA_HAS_CUDA` | `bespoke/kineto/profiler_kineto.h` | Activates CUDA-specific event types and NVML memory queries inside the Kineto profiler wrapper. |
+| `KINETO_HAS_HCCL_PROFILER` | `bespoke/kineto/kineto_shim.cpp` | Enables AMD HCCL (collective communications) profiling hooks inside Kineto. Only meaningful on ROCm builds with HCCL. |
+
+### Target / Build Variant Flags
+
+Control which code paths are included for a given deployment target.
+
+| Macro | Key Files | Purpose |
+|---|---|---|
+| `PROFILER_MOBILE` | `bespoke/kineto/kineto_shim.h`, `bespoke/common/collection.cpp`, `common/approximate_clock.h` | Mobile build — disables heavy features and switches Kineto linkage to the edge (`EDGE_PROFILER_USE_KINETO`) variant. Also used alongside `PROFILER_IOS` to select the iOS clock path. |
+| `PROFILER_IOS` | `common/approximate_clock.h` | iOS-specific clock path (combined check: `PROFILER_IOS && PROFILER_MOBILE`). Falls through to `std::chrono` when RDTSC is unavailable. |
+| `PROFILER_USE_ROCM` | `bespoke/common/collection.cpp`, `bespoke/common/util.cpp` | Switches GPU-side activity collection from CUDA HIP to AMD ROCm HIP APIs. |
+| `PROFILER_CUDA_USE_NVTX3` | `bespoke/base/cuda.cpp` | Selects the NVTX3 header-only API over NVTX2 for NVIDIA range annotations. NVTX3 is the preferred path on modern CUDA toolkits. |
+| `ROCM_ON_WINDOWS` | `bespoke/base/cuda.cpp` | ROCm on Windows exposes a different NVTX-equivalent include path; this skips the standard NVTX header. |
+| `BUILD_LITE_INTERPRETER` | `bespoke/common/collection.cpp` | Stripped-down interpreter build; excludes full record-function collection paths that depend on the complete op dispatch table. |
+| `FBCODE_CAFFE2` | `bespoke/common/unwind/unwind.cpp` | Selects the Meta-internal fbcode stack unwinder over the open-source libunwind path. Also gates internal DWARF helpers in `unwind_fb.cpp`. |
+| `EDGE_PROFILER_USE_KINETO` | `bespoke/kineto/kineto_client_interface.cpp`, `bespoke/kineto/kineto_shim.h` | Edge/embedded Kineto shim — uses a different activity client initialisation path from full Kineto (e.g., on Apple devices). |
+
+### Runtime Behavior Flags
+
+Opt-in or opt-out of specific runtime subsystems.
+
+| Macro | Key Files | Purpose |
+|---|---|---|
+| `PROFILER_PREFER_CUSTOM_THREAD_LOCAL_STORAGE` | `bespoke/common/record_function.cpp` | Replaces `thread_local` with a custom TLS implementation on platforms where TLS access overhead is measurable in hot paths. |
+| `PROFILER_DISABLE_TENSORIMPL_EXTENSIBILITY` | `common/TensorImpl.h` | Removes virtual dispatch hooks on `TensorImpl` (two sites: class body and inline impl). Used in embedded/mobile builds to reduce vtable size and prevent unwanted subclassing. |
+| `PROFILER_XXX_DISABLE_TENSOR` | `bespoke/common/ivalue.h` | Strips all tensor-related branches from `IValue` (~10 sites). Used in lightweight non-ML profiling contexts where tensor support is unnecessary. |
+| `PROFILER_RDTSC` | `common/approximate_clock.h` | Signals that the RDTSC x86 cycle-counter instruction is available; enables the fast cycle-counter clock path inside `ApproximateClock`. Defined in the same file when x86 is detected. |
+| `ENABLE_GLOBAL_OBSERVER` | `bespoke/kineto/kineto_client_interface.cpp` | Activates a global activity observer that intercepts all ops system-wide (off by default; opt-in for system-level tracing). |
+| `USE_DISTRIBUTED` | `bespoke/common/util.h`, `bespoke/common/util.cpp`, `bespoke/common/standalone/execution_trace_observer.cpp` | Adds distributed training metadata (NCCL ranks, collective op IDs) to profiler events. Requires the distributed comms library to be linked. |
+| `IS_MOBILE_PLATFORM` | `native/tracing/traceme.h` (×11 guards) | Disables the full `TraceMe` RAII machinery on mobile targets — every trace entry/exit method becomes a no-op to eliminate tracing overhead entirely. |
+| `IS_PYTHON_3_12` | `bespoke/kineto/profiler_python.cpp` | Derived from Python headers; selects the new `sys.monitoring` tracing API (Python ≥ 3.12) over the legacy `PyEval_SetProfile` path. Also has a variant check for Python ≥ 3.13 compat shims. |
+
+### Dead Code Blocks (`#if 0`)
+
+Appears in ~30+ locations across `collection.cpp`, `kineto_shim.cpp`, `ivalue.h`, `util.cpp`, `execution_trace_observer.cpp`, `record_function.cpp`, `itt.h`, and several test files.
+
+These blocks are permanently disabled — they contain old implementations, discarded alternative approaches, or work-in-progress code retained for reference. The pattern `#if PROFILER_HAS_KINETO && 0` seen in `TestProfilerHeavyFunction.cpp` and `TestKinetoShim.cpp` is a deliberate technique to disable a specific sub-block while keeping the surrounding Kineto feature guard intact.
+
+---
+
 ## Notes
 
 - Some names above are include guards or file-local helper macros rather than public API macros.

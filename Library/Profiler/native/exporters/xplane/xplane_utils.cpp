@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -764,7 +764,8 @@ void AggregateXPlane(const xplane& full_trace, xplane& aggregated_trace)
                 xline_builder aggregated_line = aggregated_plane.get_or_create_line(line.id());
                 aggregated_line.SetName(kStepLineName);
                 line.for_each_event(
-                    [&](const xevent_visitor& event) {
+                    [&](const xevent_visitor& event)
+                    {
                         CopyEvent(event, plane, full_trace, 0LL, aggregated_plane, aggregated_line);
                     });
             }

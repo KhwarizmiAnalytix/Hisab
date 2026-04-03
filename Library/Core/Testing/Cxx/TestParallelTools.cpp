@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -309,7 +309,8 @@ QUARISMATEST(ParallelTools, test)
 
         // Test 5: Check parallel scope inside parallel region
         std::atomic<bool> inside_scope_result{false};
-        auto              check_scope = [&inside_scope_result](size_t, size_t) {
+        auto              check_scope = [&inside_scope_result](size_t, size_t)
+        {
             inside_scope_result.store(
                 parallel_tools::is_parallel_scope(), std::memory_order_relaxed);
         };

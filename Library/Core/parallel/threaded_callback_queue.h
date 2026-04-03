@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -704,7 +704,8 @@ bool threaded_callback_queue::must_wait(SharedFutureContainerT&& prior_shared_fu
     return std::any_of(
         prior_shared_futures.begin(),
         prior_shared_futures.end(),
-        [](const auto& future_item) {
+        [](const auto& future_item)
+        {
             return detail::get_raw_ptr(future_item)->status_.load(std::memory_order_acquire) !=
                    READY;
         });
@@ -808,8 +809,8 @@ void threaded_callback_queue::push_control(FT&& f, ArgsT&&... args)
 
     worker w;
     using invoker_pointer_type = invoker_pointer<worker, threaded_callback_queue*, FT, ArgsT...>;
-    auto invoker_ptr =
-        invoker_pointer_type(invoker<worker, threaded_callback_queue*, FT, ArgsT...>::create(
+    auto invoker_ptr           = invoker_pointer_type(
+        invoker<worker, threaded_callback_queue*, FT, ArgsT...>::create(
             w, this, std::forward<FT>(f), std::forward<ArgsT>(args)...));
     w.future_ = invoker_ptr;
 

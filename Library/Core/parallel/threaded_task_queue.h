@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * Quarisma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -296,7 +296,8 @@ public:
         std::unique_lock<std::mutex> lk(results_mutex_);
         results_cv_.wait(
             lk,
-            [this] {
+            [this]
+            {
                 return !results_.empty() &&
                        (!strict_ordering_ || results_.top().first == next_result_id_);
             });

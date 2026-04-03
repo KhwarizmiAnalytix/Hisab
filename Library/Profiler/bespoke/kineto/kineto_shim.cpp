@@ -78,9 +78,8 @@ static_assert(
 DeviceAndResource kineto_ids()
 {
 #if PROFILER_HAS_KINETO
-    return {
-        /*device=*/libkineto::processId(),
-        /*resource=*/libkineto::systemThreadId()};
+    return {/*device=*/libkineto::processId(),
+            /*resource=*/libkineto::systemThreadId()};
 #else
     return {};
 #endif  // PROFILER_HAS_KINETO
@@ -260,7 +259,7 @@ bool collectivesProfilerExists()
 #ifdef KINETO_HAS_HCCL_PROFILER
     return true;
 #endif
-    const char* val = std::getenv("PROFILER_PROFILER_ENABLE_COLLECTIVE_PROFILING");
+    const char* val = std::getenv("PROFILER_ENABLE_COLLECTIVE_PROFILING");
     return val != nullptr && std::string_view{val} == "1";
 }
 
