@@ -44,7 +44,9 @@ ExperimentalConfig::ExperimentalConfig(
 }
 
 /*explicit*/ ExperimentalConfig::operator bool() const
-{ return !profiler_metrics.empty(); }
+{
+    return !profiler_metrics.empty();
+}
 
 ProfilerConfig::ProfilerConfig(
     ProfilerState      state,
@@ -67,13 +69,19 @@ ProfilerConfig::ProfilerConfig(
 }
 
 bool ProfilerConfig::disabled() const
-{ return state == quarisma::profiler_impl::impl::ProfilerState::Disabled; }
+{
+    return state == quarisma::profiler_impl::impl::ProfilerState::Disabled;
+}
 
 bool ProfilerConfig::global() const
-{ return state == quarisma::profiler_impl::impl::ProfilerState::KINETO_ONDEMAND; }
+{
+    return state == quarisma::profiler_impl::impl::ProfilerState::KINETO_ONDEMAND;
+}
 
 bool ProfilerConfig::pushGlobalCallbacks() const
-{ return global() || experimental_config.profile_all_threads; }
+{
+    return global() || experimental_config.profile_all_threads;
+}
 
 namespace
 {

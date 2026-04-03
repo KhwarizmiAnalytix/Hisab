@@ -219,22 +219,30 @@ public:
     // Adds a stat for the given metadata and sets its value.
     template <typename ValueT>
     void add_stat_value(const x_stat_metadata& metadata, ValueT&& value)
-    { set_stat_value(std::forward<ValueT>(value), add_stat(metadata)); }
+    {
+        set_stat_value(std::forward<ValueT>(value), add_stat(metadata));
+    }
 
     // Adds or finds a stat for the given metadata and sets its value.
     template <typename ValueT>
     void set_or_add_stat_value(const x_stat_metadata& metadata, ValueT&& value)
-    { set_stat_value(std::forward<ValueT>(value), find_or_add_stat(metadata)); }
+    {
+        set_stat_value(std::forward<ValueT>(value), find_or_add_stat(metadata));
+    }
 
     // Adds a stat by copying a stat from another xplane. Does not check if a stat
     // with the same metadata already exists in the event. To avoid duplicated
     // stats, use the variant below.
     void add_stat(const x_stat_metadata& metadata, const xstat& src_stat, const xplane& src_plane)
-    { copy_stat_value(src_stat, src_plane, add_stat(metadata)); }
+    {
+        copy_stat_value(src_stat, src_plane, add_stat(metadata));
+    }
     // Same as above but overrides an existing stat with the same metadata.
     void set_or_add_stat(
         const x_stat_metadata& metadata, const xstat& src_stat, const xplane& src_plane)
-    { copy_stat_value(src_stat, src_plane, find_or_add_stat(metadata)); }
+    {
+        copy_stat_value(src_stat, src_plane, find_or_add_stat(metadata));
+    }
 
     void parse_and_add_stat_value(const x_stat_metadata& metadata, std::string_view value)
     {
@@ -322,23 +330,35 @@ private:
             std::conjunction<std::is_integral<Int>, std::is_signed<Int>>::value,
             bool> = true>
     static void set_stat_value(Int value, xstat* stat)
-    { stat->set_value((int64_t)value); }
+    {
+        stat->set_value((int64_t)value);
+    }
     template <
         typename UInt,
         std::enable_if_t<
             std::conjunction<std::is_integral<UInt>, std::negation<std::is_signed<UInt>>>::value,
             bool> = true>
     static void set_stat_value(UInt value, xstat* stat)
-    { stat->set_value((uint64_t)value); }
+    {
+        stat->set_value((uint64_t)value);
+    }
     static void set_stat_value(double value, xstat* stat) { stat->set_value(value); }
     static void set_stat_value(const char* value, xstat* stat)
-    { stat->set_value(std::string(value)); }
+    {
+        stat->set_value(std::string(value));
+    }
     static void set_stat_value(std::string_view value, xstat* stat)
-    { stat->set_value(std::string(value)); }
+    {
+        stat->set_value(std::string(value));
+    }
     static void set_stat_value(std::string&& value, xstat* stat)
-    { stat->set_value(std::move(value)); }
+    {
+        stat->set_value(std::move(value));
+    }
     static void set_stat_value(const x_stat_metadata& value, xstat* stat)
-    { stat->set_ref_value(value.id()); }
+    {
+        stat->set_ref_value(value.id());
+    }
     /*static void SetStatValue(const protobuf::MessageLite& proto, XStat* stat)
     {
         auto* bytes = stat->mutable_bytes_value();
@@ -412,15 +432,21 @@ public:
     void SetTimestampNs(int64_t timestamp_ns) { SetOffsetNs(timestamp_ns - line_->timestamp_ns()); }
 
     void SetNumOccurrences(int64_t num_occurrences)
-    { event_->set_num_occurrences(num_occurrences); }
+    {
+        event_->set_num_occurrences(num_occurrences);
+    }
 
     void SetDurationPs(int64_t duration_ps) { event_->set_duration_ps(duration_ps); }
     void SetDurationNs(int64_t duration_ns) { SetDurationPs(NanoToPico(duration_ns)); }
 
     void SetEndTimestampPs(int64_t end_timestamp_ps)
-    { SetDurationPs(end_timestamp_ps - TimestampPs()); }
+    {
+        SetDurationPs(end_timestamp_ps - TimestampPs());
+    }
     void SetEndTimestampNs(int64_t end_timestamp_ns)
-    { SetDurationPs(NanoToPico(end_timestamp_ns - line_->timestamp_ns()) - event_->offset_ps()); }
+    {
+        SetDurationPs(NanoToPico(end_timestamp_ns - line_->timestamp_ns()) - event_->offset_ps());
+    }
 
     timespan GetTimespan() const { return timespan(TimestampPs(), DurationPs()); }
 
@@ -431,7 +457,9 @@ public:
     }
 
     bool operator<(const xevent_builder& other) const
-    { return GetTimespan() < other.GetTimespan(); }
+    {
+        return GetTimespan() < other.GetTimespan();
+    }
 
 private:
     const xline* line_;
@@ -546,7 +574,9 @@ public:
     PROFILER_API xevent_metadata* get_or_create_event_metadata(std::string_view name);
     PROFILER_API xevent_metadata* get_or_create_event_metadata(std::string&& name);
     xevent_metadata*              get_or_create_event_metadata(const char* name)
-    { return get_or_create_event_metadata(std::string_view(name)); }
+    {
+        return get_or_create_event_metadata(std::string_view(name));
+    }
     // Like the functions above but for multiple names.
     std::vector<xevent_metadata*> get_or_create_events_metadata(
         const std::vector<std::string_view>& names);
@@ -578,7 +608,9 @@ public:
     PROFILER_API x_stat_metadata* get_or_create_stat_metadata(std::string_view name);
     PROFILER_API x_stat_metadata* get_or_create_stat_metadata(std::string&& name);
     x_stat_metadata*              get_or_create_stat_metadata(const char* name)
-    { return get_or_create_stat_metadata(std::string_view(name)); }
+    {
+        return get_or_create_stat_metadata(std::string_view(name));
+    }
 
 private:
     xplane* plane_;
@@ -593,7 +625,9 @@ private:
 
 template <typename T>
 const x_stat_metadata& xstats_builder<T>::get_or_create_stat_metadata(std::string_view value)
-{ return *stats_metadata_owner_->get_or_create_stat_metadata(value); }
+{
+    return *stats_metadata_owner_->get_or_create_stat_metadata(value);
+}
 
 template <typename T>
 std::string_view xstats_builder<T>::StrOrRefValue(const xstat& stat)

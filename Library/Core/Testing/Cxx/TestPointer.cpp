@@ -670,9 +670,8 @@ TEST(MakeIntrusiveTest, Test)
     //TEST(IntrusivePtrTest, CanBePutInMap)
     {
         std::map<intrusive_ptr<SomeClass1Parameter>, intrusive_ptr<SomeClass1Parameter>> map;
-        map.insert(
-            std::make_pair(
-                make_intrusive<SomeClass1Parameter>(5), make_intrusive<SomeClass1Parameter>(3)));
+        map.insert(std::make_pair(
+            make_intrusive<SomeClass1Parameter>(5), make_intrusive<SomeClass1Parameter>(3)));
         EXPECT_EQ(5, map.begin()->first->param);
         EXPECT_EQ(3, map.begin()->second->param);
     }
@@ -681,9 +680,8 @@ TEST(MakeIntrusiveTest, Test)
     {
         std::unordered_map<intrusive_ptr<SomeClass1Parameter>, intrusive_ptr<SomeClass1Parameter>>
             map;
-        map.insert(
-            std::make_pair(
-                make_intrusive<SomeClass1Parameter>(3), make_intrusive<SomeClass1Parameter>(5)));
+        map.insert(std::make_pair(
+            make_intrusive<SomeClass1Parameter>(3), make_intrusive<SomeClass1Parameter>(5)));
         EXPECT_EQ(3, map.begin()->first->param);
         EXPECT_EQ(5, map.begin()->second->param);
     }
@@ -1677,7 +1675,9 @@ struct IntrusiveAndWeak final
 };
 template <class T, class... Args>
 IntrusiveAndWeak<T> make_weak_intrusive(Args&&... args)
-{ return IntrusiveAndWeak<T>(make_intrusive<T>(std::forward<Args>(args)...)); }
+{
+    return IntrusiveAndWeak<T>(make_intrusive<T>(std::forward<Args>(args)...));
+}
 template <class T, class... Args>
 weak_intrusive_ptr<T> make_weak_only(Args&&... args)
 {
@@ -1686,7 +1686,9 @@ weak_intrusive_ptr<T> make_weak_only(Args&&... args)
 }
 template <class T, class NullType = quarisma::detail::intrusive_target_default_null_type<T>>
 weak_intrusive_ptr<T, NullType> make_invalid_weak()
-{ return weak_intrusive_ptr<T, NullType>(intrusive_ptr<T, NullType>()); }
+{
+    return weak_intrusive_ptr<T, NullType>(intrusive_ptr<T, NullType>());
+}
 
 struct WeakReferenceToSelf : public intrusive_ptr_target
 {
@@ -1701,5 +1703,7 @@ static_assert(
     "weak_intrusive_ptr<T>::element_type is wrong");
 
 TEST(WeakIntrusivePtrTest, givenPtr_whenCreatingAndDestructing_thenDoesntCrash)
-{ IntrusiveAndWeak<SomeClass> var = make_weak_intrusive<SomeClass>(); }
+{
+    IntrusiveAndWeak<SomeClass> var = make_weak_intrusive<SomeClass>();
+}
 // NOLINTEND(clang-analyzer-cplusplus*)

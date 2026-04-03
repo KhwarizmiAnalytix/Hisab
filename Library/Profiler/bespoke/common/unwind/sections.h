@@ -88,10 +88,14 @@ struct Sections
     }
 
     uint64_t readSegmentOffset(CheckedLexer& data, bool is_64bit)
-    { return is_64bit ? data.read<uint64_t>() : data.read<uint32_t>(); }
+    {
+        return is_64bit ? data.read<uint64_t>() : data.read<uint32_t>();
+    }
 
     std::optional<uint64_t> findDebugInfoOffset(uint64_t address)
-    { return debug_info_offsets_.find(address); }
+    {
+        return debug_info_offsets_.find(address);
+    }
     size_t compilationUnitCount() { return debug_info_offsets_.size() / 2; }
     void   addDebugInfoRange(uint64_t start, uint64_t end, uint64_t debug_info_offset)
     {

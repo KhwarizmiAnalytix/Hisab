@@ -25,7 +25,6 @@
 #include <type_traits>
 #include <utility>
 
-#include "common/configure.h"
 #include "common/macros.h"
 #include "memory/device.h"
 #include "memory/gpu/gpu_memory_pool.h"
@@ -774,7 +773,9 @@ public:
      * @return Number of references to the pool, or 0 if no pool
      */
     [[nodiscard]] auto pool_use_count() const noexcept -> long
-    { return pool_ ? pool_.use_count() : 0; }
+    {
+        return pool_ ? pool_.use_count() : 0;
+    }
 
     /**
      * @brief Check if pool is unique (only this wrapper references it)
@@ -827,21 +828,27 @@ public:
      * @return Shared pointer to pool
      */
     [[nodiscard]] auto get_pool() const noexcept -> std::shared_ptr<gpu_memory_pool>
-    { return pool_; }
+    {
+        return pool_;
+    }
 
     /**
      * @brief Get weak pool reference
      * @return Weak pointer to pool
      */
     [[nodiscard]] auto get_weak_pool() const noexcept -> std::weak_ptr<gpu_memory_pool>
-    { return weak_pool_; }
+    {
+        return weak_pool_;
+    }
 
     /**
      * @brief Try to lock weak pool reference
      * @return Shared pointer if weak reference is still valid, null otherwise
      */
     [[nodiscard]] auto try_lock_pool() const noexcept -> std::shared_ptr<gpu_memory_pool>
-    { return weak_pool_.lock(); }
+    {
+        return weak_pool_.lock();
+    }
 
     /**
      * @brief Boolean conversion operator
@@ -855,7 +862,9 @@ public:
      * @return True if both wrappers manage the same memory
      */
     QUARISMA_NODISCARD bool operator==(const gpu_memory_wrapper& other) const noexcept
-    { return ptr_ == other.ptr_; }
+    {
+        return ptr_ == other.ptr_;
+    }
 
     /**
      * @brief Inequality comparison
@@ -863,7 +872,9 @@ public:
      * @return True if wrappers manage different memory
      */
     QUARISMA_NODISCARD bool operator!=(const gpu_memory_wrapper& other) const noexcept
-    { return ptr_ != other.ptr_; }
+    {
+        return ptr_ != other.ptr_;
+    }
 };
 
 /**
@@ -1080,7 +1091,9 @@ public:
 template <typename T>
 gpu_memory_wrapper<T> make_gpu_memory(
     std::size_t count, device_enum device_type, int device_index = 0)
-{ return gpu_memory_wrapper<T>::allocate(count, device_type, device_index); }
+{
+    return gpu_memory_wrapper<T>::allocate(count, device_type, device_index);
+}
 
 /**
  * @brief Swap function for GPU memory wrappers
@@ -1090,7 +1103,9 @@ gpu_memory_wrapper<T> make_gpu_memory(
  */
 template <typename T>
 void swap(gpu_memory_wrapper<T>& a, gpu_memory_wrapper<T>& b) noexcept
-{ a.swap(b); }
+{
+    a.swap(b);
+}
 
 }  // namespace gpu
 }  // namespace quarisma

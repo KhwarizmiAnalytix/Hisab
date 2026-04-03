@@ -71,7 +71,9 @@ class Registerer
 {
 public:
     explicit Registerer(const KeyType& key, Registry<KeyType, Function>* registry, Function method)
-    { registry->Register(key, method); }
+    {
+        registry->Register(key, method);
+    }
 };
 /**
  * @brief A template class that allows one to register classes by keys.
@@ -140,11 +142,15 @@ public:
         const KeyType&                                            key,
         Registry<KeyType, ReturnType, Args...>*                   registry,
         typename Registry<KeyType, ReturnType, Args...>::Function method)
-    { registry->Register(key, method); }
+    {
+        registry->Register(key, method);
+    }
 
     template <class DerivedType>
     static ReturnType DefaultCreator(Args... args)
-    { return ReturnType(new DerivedType(args...)); }
+    {
+        return ReturnType(new DerivedType(args...));
+    }
 };
 }  // namespace creator
 

@@ -256,7 +256,9 @@ public:
      * **Default**: UNKNOWN (should be overridden by implementations)
      */
     virtual allocator_memory_enum GetMemoryType() const noexcept
-    { return allocator_memory_enum::UNKNOWN; }
+    {
+        return allocator_memory_enum::UNKNOWN;
+    }
 
 protected:
     /**

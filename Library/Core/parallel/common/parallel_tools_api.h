@@ -26,7 +26,6 @@
 
 #include <memory>
 
-#include "common/configure.h"
 #include "common/export.h"
 #include "parallel/common/parallel_tools_impl.h"
 #include "parallel/parallel.h"
@@ -120,7 +119,9 @@ public:
     //--------------------------------------------------------------------------------
     template <typename FunctorInternal>
     void parallel_for(size_t first, size_t last, size_t grain, FunctorInternal& fi)
-    { backend_impl_.parallel_for(first, last, grain, fi); }
+    {
+        backend_impl_.parallel_for(first, last, grain, fi);
+    }
 
     // disable copying
     parallel_tools_api(parallel_tools_api const&) = delete;

@@ -29,8 +29,6 @@
 #ifndef PARALLEL_H
 #define PARALLEL_H
 
-#include "common/configure.h"
-
 // Maximum number of backends
 #define PARALLEL_MAX_BACKENDS_NB 3
 

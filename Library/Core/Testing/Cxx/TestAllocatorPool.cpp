@@ -61,7 +61,9 @@ public:
     bool SupportsCoalescing() const override { return underlying_allocator_.SupportsCoalescing(); }
 
     allocator_memory_enum GetMemoryType() const noexcept override
-    { return underlying_allocator_.GetMemoryType(); }
+    {
+        return underlying_allocator_.GetMemoryType();
+    }
 
     // Test helpers
     int  get_alloc_count() const { return alloc_count_; }
@@ -114,13 +116,17 @@ public:
  * @brief Helper function to check memory alignment
  */
 bool is_aligned(void* ptr, size_t alignment)
-{ return (reinterpret_cast<uintptr_t>(ptr) % alignment) == 0; }
+{
+    return (reinterpret_cast<uintptr_t>(ptr) % alignment) == 0;
+}
 
 /**
  * @brief Helper function to fill memory with pattern
  */
 void fill_memory(void* ptr, size_t size, uint8_t pattern)
-{ std::memset(ptr, pattern, size); }
+{
+    std::memset(ptr, pattern, size);
+}
 
 /**
  * @brief Helper function to validate memory pattern

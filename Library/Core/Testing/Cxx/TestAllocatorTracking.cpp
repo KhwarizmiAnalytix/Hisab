@@ -33,13 +33,17 @@ namespace
  * @brief Helper function to check memory alignment
  */
 bool is_aligned(void* ptr, size_t alignment)
-{ return (reinterpret_cast<uintptr_t>(ptr) % alignment) == 0; }
+{
+    return (reinterpret_cast<uintptr_t>(ptr) % alignment) == 0;
+}
 
 /**
  * @brief Helper function to fill memory with pattern
  */
 void fill_memory(void* ptr, size_t size, uint8_t pattern)
-{ std::memset(ptr, pattern, size); }
+{
+    std::memset(ptr, pattern, size);
+}
 
 /**
  * @brief Helper function to validate memory pattern
@@ -344,13 +348,17 @@ TEST(AllocatorTracking, local_size_tracking)
     {
     public:
         void* allocate_raw(size_t alignment, size_t num_bytes) override
-        { return quarisma::cpu::memory_allocator::allocate(num_bytes, alignment); }
+        {
+            return quarisma::cpu::memory_allocator::allocate(num_bytes, alignment);
+        }
 
         void* allocate_raw(
             size_t                                       alignment,
             size_t                                       num_bytes,
             QUARISMA_UNUSED const allocation_attributes& attrs) override
-        { return allocate_raw(alignment, num_bytes); }
+        {
+            return allocate_raw(alignment, num_bytes);
+        }
 
         void deallocate_raw(void* ptr) override { quarisma::cpu::memory_allocator::free(ptr); }
 
@@ -363,7 +371,9 @@ TEST(AllocatorTracking, local_size_tracking)
         std::optional<allocator_stats> GetStats() const override { return std::nullopt; }
         std::string                    Name() const override { return "non_tracking_allocator"; }
         allocator_memory_enum          GetMemoryType() const noexcept override
-        { return allocator_memory_enum::HOST_PAGEABLE; }
+        {
+            return allocator_memory_enum::HOST_PAGEABLE;
+        }
     };
 
     auto underlying     = std::make_unique<non_tracking_allocator>();

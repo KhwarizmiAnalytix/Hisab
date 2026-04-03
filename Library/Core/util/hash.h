@@ -45,7 +45,9 @@ namespace quarisma
 // DEALINGS IN THE SOFTWARE.
 
 inline size_t hash_combine(size_t seed, size_t value)
-{ return seed ^ (value + 0x9e3779b9 + (seed << 6u) + (seed >> 2u)); }
+{
+    return seed ^ (value + 0x9e3779b9 + (seed << 6u) + (seed >> 2u));
+}
 
 // Creates the SHA1 hash of a string. A 160-bit hash.
 // Based on the implementation in Boost (see notice above).
@@ -305,7 +307,9 @@ using type_if_not_enum = std::enable_if_t<!std::is_enum_v<T>, V>;
 // overload if T is an enum type (and use the one below in this case).
 template <typename T>
 auto dispatch_hash(const T& o) -> decltype(std::hash<T>()(o), type_if_not_enum<T, size_t>())
-{ return std::hash<T>()(o); }
+{
+    return std::hash<T>()(o);
+}
 
 template <typename T>
 std::enable_if_t<std::is_enum_v<T>, size_t> dispatch_hash(const T& o)
@@ -316,7 +320,9 @@ std::enable_if_t<std::is_enum_v<T>, size_t> dispatch_hash(const T& o)
 
 template <typename T>
 auto dispatch_hash(const T& o) -> decltype(T::hash(o), size_t())
-{ return T::hash(o); }
+{
+    return T::hash(o);
+}
 
 }  // namespace _hash_detail
 
@@ -345,11 +351,15 @@ struct hash<std::tuple<Types...>>
     struct tuple_hash<0, Ts...>
     {
         size_t operator()(const std::tuple<Ts...>& t) const
-        { return _hash_detail::simple_get_hash(std::get<0>(t)); }
+        {
+            return _hash_detail::simple_get_hash(std::get<0>(t));
+        }
     };
 
     size_t operator()(const std::tuple<Types...>& t) const
-    { return tuple_hash<sizeof...(Types) - 1, Types...>()(t); }
+    {
+        return tuple_hash<sizeof...(Types) - 1, Types...>()(t);
+    }
 };
 
 template <typename T1, typename T2>
@@ -399,7 +409,9 @@ namespace _hash_detail
 
 template <typename T>
 size_t simple_get_hash(const T& o)
-{ return quarisma::hash<T>()(o); }
+{
+    return quarisma::hash<T>()(o);
+}
 
 }  // namespace _hash_detail
 
@@ -412,7 +424,9 @@ size_t simple_get_hash(const T& o)
 // }
 template <typename... Types>
 size_t get_hash(const Types&... args)
-{ return quarisma::hash<decltype(std::tie(args...))>()(std::tie(args...)); }
+{
+    return quarisma::hash<decltype(std::tie(args...))>()(std::tie(args...));
+}
 
 // Specialization for quarisma::complex
 //template <typename T>

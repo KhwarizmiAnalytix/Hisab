@@ -10,10 +10,14 @@ namespace quarisma
 namespace
 {
 bool compute_cpp_stack_traces_enabled()
-{ return quarisma::utils::check_env("PROFILER_SHOW_CPP_STACKTRACES") == true; }
+{
+    return quarisma::utils::check_env("PROFILER_SHOW_CPP_STACKTRACES") == true;
+}
 
 bool compute_disable_addr2line()
-{ return quarisma::utils::check_env("PROFILER_DISABLE_ADDR2LINE") == true; }
+{
+    return quarisma::utils::check_env("PROFILER_DISABLE_ADDR2LINE") == true;
+}
 }  // namespace
 
 bool get_cpp_stacktraces_enabled()

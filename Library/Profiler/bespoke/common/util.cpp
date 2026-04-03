@@ -28,10 +28,14 @@ std::optional<bool> soft_assert_raises_;
 }  // namespace
 
 void setSoftAssertRaises(std::optional<bool> value)
-{ soft_assert_raises_ = value; }
+{
+    soft_assert_raises_ = value;
+}
 
 bool softAssertRaises()
-{ return soft_assert_raises_.value_or(false); }
+{
+    return soft_assert_raises_.value_or(false);
+}
 
 void logSoftAssert(
     // @lint-ignore CLANGTIDY
@@ -152,7 +156,9 @@ std::vector<FileLineFunc> prepareCallstack(const std::vector<jit::StackEntry>& c
 #else
 // Stub implementation
 std::vector<FileLineFunc> prepareCallstack(const std::vector<jit::StackEntry>& /*cs*/)
-{ return {}; }
+{
+    return {};
+}
 #endif
 
 std::vector<std::string> callstackStr(const std::vector<FileLineFunc>& cs)
@@ -212,7 +218,9 @@ static std::vector<std::vector<int64_t>> flattenList(const quarisma::IValue& lis
 // Stub implementation
 [[maybe_unused]] static std::vector<std::vector<int64_t>> flattenList(
     const quarisma::IValue& /*list*/)
-{ return {}; }
+{
+    return {};
+}
 #endif
 
 #if 0
@@ -264,7 +272,9 @@ std::vector<std::vector<int64_t>> inputSizes(
 // Stub implementation
 std::vector<std::vector<int64_t>> inputSizes(
     const quarisma::RecordFunction& /*fn*/, bool /*flatten_list_enabled*/)
-{ return {}; }
+{
+    return {};
+}
 #endif
 
 std::string shapesToStr(const std::vector<std::vector<int64_t>>& shapes)
@@ -414,7 +424,9 @@ std::string ivalueToStr(const quarisma::IValue& val, bool isString)
 #else
 // Stub implementation when IValue methods are not available.
 std::string ivalueToStr(const quarisma::IValue& /*val*/, bool /*isString*/)
-{ return "\"None\""; }
+{
+    return "\"None\"";
+}
 #endif
 
 #if 0
@@ -441,7 +453,9 @@ std::string ivalueListToStr(const std::vector<quarisma::IValue>& list)
 #else
 // Stub implementation when IValue methods are not available.
 std::string ivalueListToStr(const std::vector<quarisma::IValue>& /*list*/)
-{ return "[]"; }
+{
+    return "[]";
+}
 #endif
 
 #if 0
@@ -592,7 +606,9 @@ std::pair<bool, std::variant<int, std::vector<int>>> findStartAddrForTensors(
 // Stub implementation when IValue methods are not available.
 std::pair<bool, std::variant<int, std::vector<int>>> findStartAddrForTensors(
     const quarisma::IValue& /*val*/)
-{ return {false, -1}; }
+{
+    return {false, -1};
+}
 #endif
 
 std::unordered_map<std::string, std::string> saveNcclMeta(
@@ -1161,16 +1177,22 @@ uint64_t computeFlops(
     size_t /*min_size*/,
     quarisma::array_ref<const quarisma::IValue> /*inputs*/,
     const quarisma::array_ref<int>& /*should_be_tensor*/)
-{ return {}; }
+{
+    return {};
+}
 
 std::unordered_map<std::string, quarisma::IValue> saveExtraArgs(
     const quarisma::RecordFunction& /*fn*/)
-{ return {}; }
+{
+    return {};
+}
 
 uint64_t computeFlops(
     const std::string& /*op_name*/,
     const std::unordered_map<std::string, quarisma::IValue>& /*extra_args*/)
-{ return 0; }
+{
+    return 0;
+}
 #endif
 
 // A function that takes an IValue

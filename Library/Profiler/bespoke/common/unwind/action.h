@@ -30,11 +30,17 @@ struct Action
     int64_t       data = 0;
     static Action undefined() { return Action{A_UNDEFINED}; }
     static Action regPlusData(int32_t reg, int64_t offset)
-    { return Action{A_REG_PLUS_DATA, reg, offset}; }
+    {
+        return Action{A_REG_PLUS_DATA, reg, offset};
+    }
     static Action regPlusDataDeref(int32_t reg, int64_t offset)
-    { return Action{A_REG_PLUS_DATA_DEREF, reg, offset}; }
+    {
+        return Action{A_REG_PLUS_DATA_DEREF, reg, offset};
+    }
     static Action loadCfaOffset(int64_t offset)
-    { return Action{A_LOAD_CFA_OFFSET, D_UNDEFINED, offset}; }
+    {
+        return Action{A_LOAD_CFA_OFFSET, D_UNDEFINED, offset};
+    }
 
     friend std::ostream& operator<<(std::ostream& out, const Action& self)
     {

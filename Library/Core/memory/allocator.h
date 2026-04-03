@@ -26,7 +26,6 @@
 #include <exception>  // for bad_alloc
 #include <stdexcept>  // for invalid_argument
 
-#include "common/configure.h"
 #include "common/macros.h"         // for QUARISMA_FORCE_INLINE, QUARISMA_ALIGNMENT, XSIG...
 #include "memory/cpu/allocator.h"  // for Allocator
 #include "memory/cpu/allocator_device.h"
@@ -308,7 +307,9 @@ public:
 
     QUARISMA_FORCE_INLINE static size_type last_aligned(
         size_type aligned_start, size_type size, size_type simd_stride)
-    { return aligned_start + ((size - aligned_start) / simd_stride) * simd_stride; }
+    {
+        return aligned_start + ((size - aligned_start) / simd_stride) * simd_stride;
+    }
 
     // GPU-specific convenience methods
 #if QUARISMA_HAS_CUDA
@@ -409,7 +410,9 @@ inline constexpr std::size_t optimal_alignment(device_enum device_type)
  * @return True if device supports GPU operations
  */
 inline constexpr bool is_gpu_device(device_enum device_type)
-{ return device_type == device_enum::CUDA || device_type == device_enum::HIP; }
+{
+    return device_type == device_enum::CUDA || device_type == device_enum::HIP;
+}
 
 /**
  * @brief Helper function to check if GPU support is compiled in

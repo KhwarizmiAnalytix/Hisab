@@ -18,7 +18,6 @@
 #include <vector>
 
 #include "Testing/baseTest.h"
-#include "common/configure.h"
 #include "common/pointer.h"
 #include "memory/backend/allocator_bfc.h"
 #include "memory/backend/allocator_pool.h"
@@ -43,13 +42,17 @@ namespace
  * @brief Helper function to check memory alignment
  */
 bool is_aligned(void* ptr, size_t alignment)
-{ return (reinterpret_cast<uintptr_t>(ptr) % alignment) == 0; }
+{
+    return (reinterpret_cast<uintptr_t>(ptr) % alignment) == 0;
+}
 
 /**
  * @brief Helper function to fill memory with pattern
  */
 void fill_memory(void* ptr, size_t size, uint8_t pattern)
-{ std::memset(ptr, pattern, size); }
+{
+    std::memset(ptr, pattern, size);
+}
 
 /**
  * @brief Helper function to validate memory pattern

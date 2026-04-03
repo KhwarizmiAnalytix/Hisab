@@ -220,8 +220,8 @@ std::string ascii_visualizer::create_performance_summary(
     uint64_t const total_deallocs = timing_stats.total_deallocations.load();
     double const   avg_alloc_time =
         (total_allocs > 0)
-            ? static_cast<double>(timing_stats.total_alloc_time_us.load()) / total_allocs
-            : 0.0;
+              ? static_cast<double>(timing_stats.total_alloc_time_us.load()) / total_allocs
+              : 0.0;
     double const avg_dealloc_time =
         (total_deallocs > 0)
             ? static_cast<double>(timing_stats.total_dealloc_time_us.load()) / total_deallocs
@@ -402,7 +402,9 @@ std::string ascii_visualizer::format_bytes(size_t bytes)
 }
 
 std::string ascii_visualizer::format_size_range(size_t min_size, size_t max_size)
-{ return format_bytes(min_size) + " - " + format_bytes(max_size); }
+{
+    return format_bytes(min_size) + " - " + format_bytes(max_size);
+}
 
 std::vector<size_t> ascii_visualizer::calculate_bucket_boundaries(
     size_t min_size, size_t max_size, size_t num_buckets)

@@ -559,7 +559,9 @@ std::vector<Frame> symbolize(const std::vector<void*>& frames, Mode mode)
 #endif
 
 Stats stats()
-{ return unwind_cache.stats(); }
+{
+    return unwind_cache.stats();
+}
 
 }  // namespace quarisma::unwind
 

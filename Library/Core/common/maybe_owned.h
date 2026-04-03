@@ -198,11 +198,15 @@ public:
     static MaybeOwned borrowed(const T& t) { return MaybeOwned(t); }
 
     static MaybeOwned owned(T&& t) noexcept(std::is_nothrow_move_constructible_v<T>)
-    { return MaybeOwned(std::move(t)); }
+    {
+        return MaybeOwned(std::move(t));
+    }
 
     template <class... Args>
     static MaybeOwned owned(std::in_place_t /*unused*/, Args&&... args)
-    { return MaybeOwned(std::in_place, std::forward<Args>(args)...); }
+    {
+        return MaybeOwned(std::in_place, std::forward<Args>(args)...);
+    }
 
     ~MaybeOwned() noexcept(
         // NOLINTNEXTLINE(*-noexcept-destructor)

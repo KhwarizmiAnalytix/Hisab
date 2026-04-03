@@ -35,7 +35,6 @@
 #include <cstdint>
 #include <limits>
 
-#include "common/configure.h"
 #include "common/macros.h"
 
 #ifdef _WIN32

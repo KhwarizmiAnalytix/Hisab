@@ -167,22 +167,34 @@ quarisma::memory_stats memory_tracker::get_current_stats() const
 }
 
 size_t memory_tracker::get_current_usage() const
-{ return current_usage_.load(); }
+{
+    return current_usage_.load();
+}
 
 size_t memory_tracker::get_peak_usage() const
-{ return peak_usage_.load(); }
+{
+    return peak_usage_.load();
+}
 
 size_t memory_tracker::get_total_allocated() const
-{ return total_allocated_.load(); }
+{
+    return total_allocated_.load();
+}
 
 size_t memory_tracker::get_total_deallocated() const
-{ return total_deallocated_.load(); }
+{
+    return total_deallocated_.load();
+}
 
 size_t memory_tracker::get_system_memory_usage()
-{ return get_process_memory_usage(); }
+{
+    return get_process_memory_usage();
+}
 
 size_t memory_tracker::get_system_peak_memory_usage()
-{ return get_process_peak_memory_usage(); }
+{
+    return get_process_peak_memory_usage();
+}
 
 size_t memory_tracker::get_available_system_memory()
 {

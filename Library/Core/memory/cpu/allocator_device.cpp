@@ -22,7 +22,6 @@
 #include <cstddef>
 #include <string>
 
-#include "common/configure.h"
 #include "common/macros.h"
 #include "memory/cpu/allocator.h"
 #include "memory/helper/memory_allocator.h"  // for allocate, free
@@ -36,7 +35,9 @@ namespace quarisma
 {
 
 std::string allocator_device::Name() const
-{ return "allocator_device"; }
+{
+    return "allocator_device";
+}
 
 void* allocator_device::allocate_raw(size_t alignment, size_t num_bytes)
 {
@@ -83,5 +84,7 @@ void allocator_device::deallocate_raw(void* ptr)
 }
 
 allocator_memory_enum allocator_device::GetMemoryType() const noexcept
-{ return allocator_memory_enum::HOST_PINNED; }
+{
+    return allocator_memory_enum::HOST_PINNED;
+}
 }  // namespace quarisma

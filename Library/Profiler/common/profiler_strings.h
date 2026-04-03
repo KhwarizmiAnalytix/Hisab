@@ -33,7 +33,9 @@ namespace internal
 {
 template <typename T>
 void to_string_helper(std::ostringstream& oss, const T& val)
-{ oss << val; }
+{
+    oss << val;
+}
 }  // namespace internal
 
 template <typename... Args>

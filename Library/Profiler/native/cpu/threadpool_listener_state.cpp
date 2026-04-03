@@ -29,12 +29,18 @@ std::atomic<int> g_enabled{0};
 }  // namespace
 
 bool IsEnabled()
-{ return g_enabled.load(std::memory_order_acquire) != 0; }
+{
+    return g_enabled.load(std::memory_order_acquire) != 0;
+}
 
 void Activate()
-{ g_enabled.store(1, std::memory_order_release); }
+{
+    g_enabled.store(1, std::memory_order_release);
+}
 
 void Deactivate()
-{ g_enabled.store(0, std::memory_order_release); }
+{
+    g_enabled.store(0, std::memory_order_release);
+}
 
 }  // namespace quarisma::profiler_impl::threadpool_listener

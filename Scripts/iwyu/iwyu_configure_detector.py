@@ -26,15 +26,9 @@ class QuarismaConfigureDetector:
 
     # Pattern to match QUARISMA_HAS_* macros in various forms
     QUARISMA_PATTERNS = [
-        r"#ifdef\s+QUARISMA_HAS_\w+",
-        r"#ifndef\s+QUARISMA_HAS_\w+",
-        r"#if\s+defined\s*\(\s*QUARISMA_HAS_\w+\s*\)",
-        r"#if\s+!defined\s*\(\s*QUARISMA_HAS_\w+\s*\)",
-        r"#elif\s+defined\s*\(\s*QUARISMA_HAS_\w+\s*\)",
-        r"#elif\s+!defined\s*\(\s*QUARISMA_HAS_\w+\s*\)",
-        r"QUARISMA_HAS_\w+\s*==\s*1",  # Direct usage with comparison
-        r"QUARISMA_HAS_\w+\s*==\s*0",  # Direct usage with comparison
-        r"QUARISMA_HAS_\w+",  # Direct usage
+        r"QUARISMA_NUMA_ENABLED",
+        r"QUARISMA_VECTORIZED",
+        r"#QUARISMA_COMPRESSION_TYPE_SNAPPY",
     ]
 
     # Pattern to detect if common/configure.h is already included
@@ -147,7 +141,7 @@ class QuarismaConfigureDetector:
                 insertion_point = self.find_include_insertion_point(lines)
                 result["suggestion"] = {
                     "line": insertion_point,
-                    "include": '#include "common/configure.h"',
+                    "include": '',
                 }
 
         except Exception as e:

@@ -268,7 +268,9 @@ public:
      * **Tracking**: Full allocation tracking and statistics
      */
     void* allocate_raw(size_t alignment, size_t num_bytes) override
-    { return allocate_raw(alignment, num_bytes, allocation_attributes{}); }
+    {
+        return allocate_raw(alignment, num_bytes, allocation_attributes{});
+    }
 
     /**
      * @brief Allocates memory with comprehensive tracking and statistics.
@@ -386,7 +388,9 @@ public:
      * **Thread Safety**: Thread-safe if underlying allocator is thread-safe
      */
     allocator_memory_enum GetMemoryType() const noexcept override
-    { return allocator_->GetMemoryType(); }
+    {
+        return allocator_->GetMemoryType();
+    }
 
     /**
      * @brief Retrieves comprehensive memory usage metrics.

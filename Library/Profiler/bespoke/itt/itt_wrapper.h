@@ -94,7 +94,9 @@ inline void  itt_range_push(const char*) {}
 inline void  itt_range_pop() {}
 inline void  itt_mark(const char*) {}
 inline void* itt_get_domain()
-{ return nullptr; }
+{
+    return nullptr;
+}
 
 #endif  // PROFILER_HAS_ITT
 

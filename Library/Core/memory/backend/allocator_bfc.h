@@ -40,7 +40,6 @@
 #include <set>
 #include <vector>
 
-#include "common/configure.h"
 #include "common/macros.h"
 #include "logging/logger.h"
 #include "memory/backend/allocator_retry.h"
@@ -1658,7 +1657,9 @@ private:
          */
         std::vector<AllocationRegion>::iterator RemoveAllocationRegion(
             std::vector<AllocationRegion>::iterator it)
-        { return regions_.erase(it); }
+        {
+            return regions_.erase(it);
+        }
 
         /**
          * @brief Retrieves chunk handle for pointer across all regions.
@@ -1733,7 +1734,9 @@ private:
          * **Performance**: O(1) - simple pointer comparison
          */
         static bool Comparator(const void* ptr, const AllocationRegion& other) noexcept
-        { return ptr < other.end_ptr(); }
+        {
+            return ptr < other.end_ptr();
+        }
 
         /**
          * @brief Finds mutable region containing given pointer.
@@ -1745,7 +1748,9 @@ private:
          * **Thread Safety**: Not thread-safe - returns mutable pointer
          */
         AllocationRegion* MutableRegionFor(const void* p)
-        { return const_cast<AllocationRegion*>(RegionFor(p)); }
+        {
+            return const_cast<AllocationRegion*>(RegionFor(p));
+        }
 
         /**
          * @brief Finds region containing given pointer.
@@ -2151,7 +2156,9 @@ private:
      * **Memory Layout**: Uses bins_space_ for storage
      */
     Bin* BinFromIndex(BinNum index) noexcept
-    { return reinterpret_cast<Bin*>(&(bins_space_[index * sizeof(Bin)])); }
+    {
+        return reinterpret_cast<Bin*>(&(bins_space_[index * sizeof(Bin)]));
+    }
 
     /**
      * @brief Converts bin number to minimum size for that bin.

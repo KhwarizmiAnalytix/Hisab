@@ -27,11 +27,15 @@ DebugInfoBase* thread_local_debug_info::get(DebugInfoKind kind)
 
 /* static */
 std::shared_ptr<thread_local_debug_info> thread_local_debug_info::current()
-{ return debug_info; }
+{
+    return debug_info;
+}
 
 /* static */
 void thread_local_debug_info::_forceCurrentDebugInfo(std::shared_ptr<thread_local_debug_info> info)
-{ debug_info = std::move(info); }
+{
+    debug_info = std::move(info);
+}
 
 /* static */
 void thread_local_debug_info::_push(DebugInfoKind kind, std::shared_ptr<DebugInfoBase> info)

@@ -26,7 +26,6 @@
 
 #include <cstdlib>
 
-#include "common/configure.h"
 #include "common/export.h"
 #include "common/macros.h"
 
@@ -66,7 +65,9 @@ QUARISMA_FORCE_INLINE bool is_valid_alignment(std::size_t alignment) noexcept
 
 // Get default alignment for the platform
 QUARISMA_FORCE_INLINE QUARISMA_FUNCTION_CONSTEXPR std::size_t default_alignment() noexcept
-{ return QUARISMA_ALIGNMENT; }
+{
+    return QUARISMA_ALIGNMENT;
+}
 
 QUARISMA_API void* allocate(
     std::size_t      nbytes,
@@ -88,7 +89,9 @@ QUARISMA_API void free_mi(void* ptr, std::size_t nbytes = 0) noexcept;
 // Zero-initialized allocation
 QUARISMA_FORCE_INLINE void* allocate_zero(
     std::size_t nbytes, std::size_t alignment = default_alignment())
-{ return allocate(nbytes, alignment, init_policy_enum::ZERO); }
+{
+    return allocate(nbytes, alignment, init_policy_enum::ZERO);
+}
 
 }  // namespace memory_allocator
 }  // namespace cpu

@@ -236,7 +236,9 @@ void CopyEvent(
 }
 
 bool IsOpLineName(std::string_view line_name)
-{ return line_name == "kXlaOpLineName" || line_name == "kTensorFlowOpLineName"; }
+{
+    return line_name == "kXlaOpLineName" || line_name == "kTensorFlowOpLineName";
+}
 
 timespan GetEventTimespan(const xevent_visitor& event)
 {
@@ -475,7 +477,9 @@ void MergePlanes(const std::vector<const xplane*>& src_planes, xplane* dst_plane
 //}
 
 bool xevents_comparator::operator()(const xevent& a, const xevent& b) const
-{ return xevent_timespan(a) < xevent_timespan(b); }
+{
+    return xevent_timespan(a) < xevent_timespan(b);
+}
 
 //static void SortXSpace(x_space* space)
 //{
@@ -760,8 +764,7 @@ void AggregateXPlane(const xplane& full_trace, xplane& aggregated_trace)
                 xline_builder aggregated_line = aggregated_plane.get_or_create_line(line.id());
                 aggregated_line.SetName(kStepLineName);
                 line.for_each_event(
-                    [&](const xevent_visitor& event)
-                    {
+                    [&](const xevent_visitor& event) {
                         CopyEvent(event, plane, full_trace, 0LL, aggregated_plane, aggregated_line);
                     });
             }

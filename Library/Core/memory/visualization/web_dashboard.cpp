@@ -352,7 +352,9 @@ size_t web_dashboard::get_connected_clients_count() const
 }
 
 void web_dashboard::update_metrics_now()
-{ collect_metrics(); }
+{
+    collect_metrics();
+}
 
 void web_dashboard::server_thread_main()
 {

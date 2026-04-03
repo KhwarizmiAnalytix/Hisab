@@ -16,7 +16,9 @@ struct DefaultStubs : public ProfilerStubs
 
     void record(
         int16_t* /*device*/, ProfilerVoidEventStub* /*event*/, int64_t* /*cpu_ns*/) const override
-    { fail(); }
+    {
+        fail();
+    }
     float elapsed(const ProfilerVoidEventStub* /*event*/, const ProfilerVoidEventStub* /*event2*/)
         const override
     {
@@ -56,10 +58,14 @@ private:
     } /*namespace*/                                                                      \
                                                                                          \
     const ProfilerStubs* name##Stubs()                                                   \
-    { return name##_stubs(); }                                                           \
+    {                                                                                    \
+        return name##_stubs();                                                           \
+    }                                                                                    \
                                                                                          \
     void register##upper_name##Methods(ProfilerStubs* stubs)                             \
-    { name##_stubs() = stubs; }
+    {                                                                                    \
+        name##_stubs() = stubs;                                                          \
+    }
 
 REGISTER_DEFAULT(cuda, CUDA)
 REGISTER_DEFAULT(itt, ITT)

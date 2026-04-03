@@ -211,7 +211,9 @@ public:
     /// this object.
     /// @note Inline for performance - frequently accessed in hot paths
     inline const char* what_without_backtrace() const noexcept
-    { return what_without_backtrace_.c_str(); }
+    {
+        return what_without_backtrace_.c_str();
+    }
 
     /// Get nested exception (if any)
     /// @note Inline for performance - frequently accessed in hot paths
@@ -295,7 +297,9 @@ inline std::string format_check_msg(
 
 // Overload for no arguments
 inline std::string format_check_msg(const char* cond_str)
-{ return fmt::format(FMT_STRING("Check failed: {}"), cond_str); }
+{
+    return fmt::format(FMT_STRING("Check failed: {}"), cond_str);
+}
 }  // namespace details
 }  // namespace quarisma
 

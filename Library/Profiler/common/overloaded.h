@@ -30,6 +30,8 @@ struct overloaded_t<T0, Ts...> : T0, overloaded_t<Ts...>
 // Construct an overloaded callable combining multiple callables, e.g. lambdas
 template <class... Ts>
 detail::overloaded_t<Ts...> overloaded(Ts... ts)
-{ return {std::move(ts)...}; }
+{
+    return {std::move(ts)...};
+}
 
 }  // namespace quarisma

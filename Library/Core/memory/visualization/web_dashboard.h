@@ -11,7 +11,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "common/configure.h"
 #include "memory/cpu/allocator.h"
 #include "memory/unified_memory_stats.h"
 

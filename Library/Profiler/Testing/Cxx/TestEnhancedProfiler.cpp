@@ -77,7 +77,9 @@ void simulate_work(int /*milliseconds*/) {}
  * @return Vector of allocated integers
  */
 std::vector<int> allocate_memory(size_t size)
-{ return std::vector<int>(size, 42); }
+{
+    return std::vector<int>(size, 42);
+}
 
 /**
  * @brief Simulate CPU-intensive work for performance testing

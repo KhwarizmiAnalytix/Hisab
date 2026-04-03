@@ -122,7 +122,9 @@ allocation_timing_stats create_sample_timing_stats()
  * @brief Helper function to create a default ASCII visualizer for testing
  */
 std::unique_ptr<ascii_visualizer> create_test_visualizer()
-{ return std::make_unique<ascii_visualizer>(); }
+{
+    return std::make_unique<ascii_visualizer>();
+}
 
 /**
  * @brief Helper function to create a custom ASCII visualizer for testing

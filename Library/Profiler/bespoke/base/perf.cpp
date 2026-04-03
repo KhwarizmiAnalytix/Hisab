@@ -20,7 +20,9 @@ namespace quarisma::profiler_impl::impl::linux_perf
  */
 inline static long perf_event_open(
     struct perf_event_attr* hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags)
-{ return syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags); }
+{
+    return syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
+}
 
 // TODO sync with Kineto level abstract events in profiler/events.h
 static const std::
@@ -57,7 +59,9 @@ void PerfEvent::Init()
         return;
     }
 
-    struct perf_event_attr attr{};
+    struct perf_event_attr attr
+    {
+    };
 
     attr.size           = sizeof(perf_event_attr);
     attr.type           = it->second.first;
@@ -119,7 +123,9 @@ PerfEvent::~PerfEvent() = default;
 void PerfEvent::Init() {}
 
 uint64_t PerfEvent::ReadCounter() const  //NOLINT
-{ return 0; }
+{
+    return 0;
+}
 
 #endif /* __ANDROID__ || __linux__ */
 

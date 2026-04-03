@@ -59,7 +59,9 @@ inline void HashCombine(std::size_t& seed, std::size_t hash)
 
 template <typename T>
 std::size_t HashOf(const T& val)
-{ return std::hash<T>{}(val); }
+{
+    return std::hash<T>{}(val);
+}
 
 // Variadic template for multiple arguments
 template <typename T, typename... Rest>
@@ -95,11 +97,15 @@ struct VectorHasher
 // Specialization for strings and string_views
 template <>
 inline std::size_t HashOf(const std::string_view& str)
-{ return std::hash<std::string_view>{}(str); }
+{
+    return std::hash<std::string_view>{}(str);
+}
 
 template <>
 inline std::size_t HashOf(const std::string& str)
-{ return std::hash<std::string>{}(str); }
+{
+    return std::hash<std::string>{}(str);
+}
 enum class ContextType : int
 {
     kGeneric = 0,
@@ -516,17 +522,23 @@ enum LineIdType
 };
 
 inline std::string TpuPlaneName(int32_t device_ordinal)
-{ return strings::str_cat(kTpuPlanePrefix, device_ordinal); }
+{
+    return strings::str_cat(kTpuPlanePrefix, device_ordinal);
+}
 
 inline std::string GpuPlaneName(int32_t device_ordinal)
-{ return strings::str_cat(kGpuPlanePrefix, device_ordinal); }
+{
+    return strings::str_cat(kGpuPlanePrefix, device_ordinal);
+}
 
 PROFILER_API std::string_view GetHostEventTypeStr(HostEventType event_type);
 
 bool IsHostEventType(HostEventType event_type, std::string_view event_name);
 
 inline bool IsHostEventType(HostEventType event_type, std::string_view event_name)
-{ return GetHostEventTypeStr(event_type) == event_name; }
+{
+    return GetHostEventTypeStr(event_type) == event_name;
+}
 
 PROFILER_API std::optional<int64_t> FindHostEventType(std::string_view event_name);
 
@@ -537,14 +549,18 @@ PROFILER_API std::string_view GetStatTypeStr(StatType stat_type);
 PROFILER_API bool IsStatType(StatType stat_type, std::string_view stat_name);
 
 inline bool IsStatType(StatType stat_type, std::string_view stat_name)
-{ return GetStatTypeStr(stat_type) == stat_name; }
+{
+    return GetStatTypeStr(stat_type) == stat_name;
+}
 
 PROFILER_API std::optional<int64_t> FindStatType(std::string_view stat_name);
 
 PROFILER_API std::string_view GetMegaScaleStatTypeStr(MegaScaleStatType stat_type);
 
 inline bool IsMegaScaleStatType(MegaScaleStatType stat_type, std::string_view stat_name)
-{ return GetMegaScaleStatTypeStr(stat_type) == stat_name; }
+{
+    return GetMegaScaleStatTypeStr(stat_type) == stat_name;
+}
 
 PROFILER_API std::optional<int64_t> FindMegaScaleStatType(std::string_view stat_name);
 
@@ -597,7 +613,9 @@ public:
    */
     template <typename... Args>
     static uint64_t GetFlowId(Args&&... args)
-    { return HashOf(std::forward<Args>(args)...) & kFlowMask; }
+    {
+        return HashOf(std::forward<Args>(args)...) & kFlowMask;
+    }
 
     uint64_t      Id() const { return encoded_.parts.flow_id; }
     ContextType   Category() const { return GetSafeContextType(encoded_.parts.category); }

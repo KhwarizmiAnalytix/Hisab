@@ -20,7 +20,9 @@ template <>
 struct hash<std::pair<quarisma::device_enum, int>>
 {
     size_t operator()(const std::pair<quarisma::device_enum, int>& p) const
-    { return std::hash<int>()(static_cast<int>(p.first)) ^ (std::hash<int>()(p.second) << 1); }
+    {
+        return std::hash<int>()(static_cast<int>(p.first)) ^ (std::hash<int>()(p.second) << 1);
+    }
 };
 }  // namespace std
 
@@ -41,7 +43,9 @@ namespace
 struct void_ptr_hash
 {
     std::size_t operator()(void* ptr) const noexcept
-    { return static_cast<std::size_t>(reinterpret_cast<std::uintptr_t>(ptr)); }
+    {
+        return static_cast<std::size_t>(reinterpret_cast<std::uintptr_t>(ptr));
+    }
 };
 
 /**
@@ -90,9 +94,8 @@ private:
                 {
                     while (!stop_background_thread_.load())
                     {
-                        std::this_thread::sleep_for(
-                            std::chrono::milliseconds(
-                                static_cast<int>(leak_config_.scan_interval_ms)));
+                        std::this_thread::sleep_for(std::chrono::milliseconds(
+                            static_cast<int>(leak_config_.scan_interval_ms)));
 
                         if (stop_background_thread_.load())
                         {

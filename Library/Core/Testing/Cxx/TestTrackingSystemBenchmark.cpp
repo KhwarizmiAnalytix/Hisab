@@ -14,7 +14,6 @@
 #include <vector>
 
 #include "Testing/baseTest.h"
-#include "common/configure.h"
 #include "memory/backend/allocator_bfc.h"
 #include "memory/backend/allocator_pool.h"
 #include "memory/backend/allocator_tracking.h"

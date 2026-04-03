@@ -237,7 +237,9 @@ private:
 }
 
 /* static */ bool traceme_recorder::start(int level)
-{ return start(level, kDefaultTraceFilter); }
+{
+    return start(level, kDefaultTraceFilter);
+}
 
 /* static */ bool traceme_recorder::start(int level, uint64_t filter_mask)
 {
@@ -258,7 +260,9 @@ private:
 }
 
 /* static */ void traceme_recorder::record(Event&& event)
-{ per_thread<ThreadLocalRecorder>::Get().Record(std::move(event)); }
+{
+    per_thread<ThreadLocalRecorder>::Get().Record(std::move(event));
+}
 
 /* static */ traceme_recorder::Events traceme_recorder::stop()
 {

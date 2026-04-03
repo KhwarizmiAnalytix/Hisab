@@ -17,10 +17,14 @@ void level_3()
 }
 
 void level_2()
-{ level_3(); }
+{
+    level_3();
+}
 
 void level_1()
-{ level_2(); }
+{
+    level_2();
+}
 
 }  // namespace
 }  // namespace quarisma

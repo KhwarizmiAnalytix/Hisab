@@ -28,7 +28,9 @@ struct device_option
     int_t       index() const noexcept { return index_; }
 
     bool operator==(const device_option& other) const noexcept
-    { return type_ == other.type_ && index_ == other.index_; }
+    {
+        return type_ == other.type_ && index_ == other.index_;
+    }
 };
 }  // namespace quarisma
 

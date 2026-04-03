@@ -363,7 +363,9 @@ public:
     size_t size_limit() const NO_THREAD_SAFETY_ANALYSIS { return pool_size_limit_; }
 
     allocator_memory_enum GetMemoryType() const noexcept override
-    { return allocator_->GetMemoryType(); }
+    {
+        return allocator_->GetMemoryType();
+    }
 
 private:
     struct PtrRecord
@@ -433,7 +435,9 @@ public:
     bool SupportsCoalescing() const override { return false; }
 
     allocator_memory_enum GetMemoryType() const noexcept override
-    { return allocator_memory_enum::HOST_PAGEABLE; }
+    {
+        return allocator_memory_enum::HOST_PAGEABLE;
+    }
 
 private:
     int numa_node_;

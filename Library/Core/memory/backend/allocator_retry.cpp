@@ -47,7 +47,9 @@ class Counter
 {
 public:
     static Counter* New(const char* name, const char* description)
-    { return new Counter(name, description); }
+    {
+        return new Counter(name, description);
+    }
 
     class Cell
     {

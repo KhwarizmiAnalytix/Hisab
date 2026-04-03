@@ -102,7 +102,9 @@ namespace quarisma::profiler_impl::impl
 //******************************************************************************
 template <typename T>
 static std::string vectorToString(const std::vector<T>& v)
-{ return fmt::format("[{}]", fmt::join(v, ",")); }
+{
+    return fmt::format("[{}]", fmt::join(v, ","));
+}
 
 static std::string json_str_escape(const std::string& str);
 
@@ -292,7 +294,9 @@ struct PROFILER_VISIBILITY ExecutionTraceObserver
 
 private:
     static bool callbackShouldBeEnabled(RunState run_state)
-    { return run_state == ExecutionTraceObserver::RunState::enabled; }
+    {
+        return run_state == ExecutionTraceObserver::RunState::enabled;
+    }
 
     // Must use accessors to change this so that we can keep the
     // RecordFunction callback in sync with the state.
@@ -758,7 +762,9 @@ static std::tuple<std::string, std::string, std::string, std::string> convertIVa
     const quarisma::IValue& /*val*/,
     const bool /*baseType*/      = true,
     const size_t /*maxArrayLen*/ = kMaxNumElements)
-{ return std::make_tuple("[]", "[]", "\"unknown\"", "null"); }
+{
+    return std::make_tuple("[]", "[]", "\"unknown\"", "null");
+}
 #endif
 
 static void appendValueInfo(

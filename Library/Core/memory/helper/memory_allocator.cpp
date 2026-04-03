@@ -23,7 +23,6 @@
 #include <cstdlib>
 #include <cstring>  // for std::memset
 
-#include "common/configure.h"
 #include "common/macros.h"
 #include "util/exception.h"
 

@@ -22,7 +22,9 @@ namespace quarisma
  */
 template <typename T>
 QUARISMA_FORCE_INLINE void hash_combine(std::size_t& seed, const T& v)
-{ seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2); }
+{
+    seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
 
 /**
  * @brief Specialized version of hash_combine for size_t values
@@ -34,7 +36,9 @@ QUARISMA_FORCE_INLINE void hash_combine(std::size_t& seed, const T& v)
  * @param v The hash value to combine
  */
 QUARISMA_FORCE_INLINE void hash_combine(std::size_t& seed, const std::size_t& v)
-{ seed ^= v + 0x9e3779b9 + (seed << 6) + (seed >> 2); }
+{
+    seed ^= v + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
 
 /**
  * @brief Computes a hash value for a pair of values
@@ -156,7 +160,9 @@ QUARISMA_FORCE_INLINE std::size_t hash_values(std::size_t h1, std::size_t h2, Re
  * @return The same hash value (identity function)
  */
 QUARISMA_FORCE_INLINE std::size_t hash_values(std::size_t h)
-{ return h; }
+{
+    return h;
+}
 
 }  // namespace quarisma
 

@@ -83,11 +83,15 @@ public:
 
     // Returns true if the timespan overlaps with other.
     bool overlaps(const timespan& other) const
-    { return begin_ps() <= other.end_ps() && other.begin_ps() <= end_ps(); }
+    {
+        return begin_ps() <= other.end_ps() && other.begin_ps() <= end_ps();
+    }
 
     // Returns true if this timespan includes the other.
     bool includes(const timespan& other) const
-    { return begin_ps() <= other.begin_ps() && other.end_ps() <= end_ps(); }
+    {
+        return begin_ps() <= other.begin_ps() && other.end_ps() <= end_ps();
+    }
 
     // Returns true if time_ps is within this timespan.
     bool includes(uint64_t time_ps) const { return includes(timespan(time_ps)); }
@@ -120,11 +124,15 @@ public:
 
     // Returns true if this timespan is equal to the given timespan.
     bool operator==(const timespan& other) const
-    { return begin_ps_ == other.begin_ps_ && duration_ps_ == other.duration_ps_; }
+    {
+        return begin_ps_ == other.begin_ps_ && duration_ps_ == other.duration_ps_;
+    }
 
     // Returns a string that shows the begin and end times.
     std::string debug_string() const
-    { return strings::str_cat("[", begin_ps(), ", ", end_ps(), "]"); }
+    {
+        return strings::str_cat("[", begin_ps(), ", ", end_ps(), "]");
+    }
 
     // Compares timespans by their duration_ps (ascending), begin time
     // (ascending).
@@ -149,7 +157,9 @@ private:
 
 // Creates a timespan from endpoints in picoseconds.
 inline timespan pico_span(uint64_t start_ps, uint64_t end_ps)
-{ return timespan::from_end_points(start_ps, end_ps); }
+{
+    return timespan::from_end_points(start_ps, end_ps);
+}
 
 // Creates a timespan from endpoints in milliseconds.
 inline timespan milli_span(double start_ms, double end_ms)

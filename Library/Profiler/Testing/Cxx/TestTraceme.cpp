@@ -328,8 +328,7 @@ QUARISMATEST(TracemeTest, threading_and_concurrency)
                     for (int i = 0; i < traces_per_thread; ++i)
                     {
                         traceme trace(
-                            [t, i]()
-                            {
+                            [t, i]() {
                                 return std::string("thread_") + std::to_string(t) + "_trace_" +
                                        std::to_string(i);
                             });

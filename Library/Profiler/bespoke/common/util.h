@@ -63,7 +63,9 @@ inline void logSoftAssert(
     uint32_t                                   line,
     const char*                                cond,
     ::quarisma::detail::CompileTimeEmptyString args)
-{ logSoftAssert(func, file, line, cond, (const char*)args); }
+{
+    logSoftAssert(func, file, line, cond, (const char*)args);
+}
 PROFILER_API void logSoftAssert(
     const char* func, const char* file, uint32_t line, const char* cond, const std::string& args);
 

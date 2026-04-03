@@ -6,7 +6,6 @@
 #include <iomanip>
 #include <sstream>
 
-#include "common/configure.h"
 #include "common/macros.h"
 #include "logging/logger.h"
 #include "util/exception.h"
@@ -33,7 +32,9 @@ namespace
 struct void_ptr_hash
 {
     std::size_t operator()(void* ptr) const noexcept
-    { return static_cast<std::size_t>(reinterpret_cast<std::uintptr_t>(ptr)); }
+    {
+        return static_cast<std::size_t>(reinterpret_cast<std::uintptr_t>(ptr));
+    }
 };
 
 /**
@@ -100,9 +101,9 @@ private:
         }
 
         // Calculate the size class using geometric progression
-        double const log_ratio   = std::log(static_cast<double>(size) / config_.min_block_size) /
-                                   std::log(config_.block_growth_factor);
-        auto const   class_index = static_cast<size_t>(std::ceil(log_ratio));
+        double const log_ratio = std::log(static_cast<double>(size) / config_.min_block_size) /
+                                 std::log(config_.block_growth_factor);
+        auto const class_index = static_cast<size_t>(std::ceil(log_ratio));
 
         return static_cast<size_t>(
             config_.min_block_size * std::pow(config_.block_growth_factor, class_index));
@@ -469,7 +470,9 @@ public:
 }  // anonymous namespace
 
 std::unique_ptr<gpu_memory_pool> gpu_memory_pool::create(const gpu_memory_pool_config& config)
-{ return std::make_unique<gpu_memory_pool_impl>(config); }
+{
+    return std::make_unique<gpu_memory_pool_impl>(config);
+}
 
 }  // namespace gpu
 }  // namespace quarisma

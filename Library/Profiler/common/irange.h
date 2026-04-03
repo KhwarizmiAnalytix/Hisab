@@ -17,12 +17,16 @@ namespace detail
 /// Returns true for signed types when value < 0, false for unsigned types.
 template <typename T, std::enable_if_t<std::is_signed_v<T>, int> = 0>
 constexpr bool is_negative(T value)
-{ return value < T(0); }
+{
+    return value < T(0);
+}
 
 /// Specialization for unsigned types - always returns false.
 template <typename T, std::enable_if_t<!std::is_signed_v<T>, int> = 0>
 constexpr bool is_negative(T)
-{ return false; }
+{
+    return false;
+}
 
 template <typename I, bool one_sided = false, std::enable_if_t<std::is_integral_v<I>, int> = 0>
 struct integer_iterator
@@ -110,6 +114,8 @@ constexpr integer_range<Integer2> irange(Integer1 begin, Integer2 end)
 /// If end<=begin, then the range is empty
 template <typename Integer, std::enable_if_t<std::is_integral_v<Integer>, bool> = true>
 constexpr integer_range<Integer, true> irange(Integer end)
-{ return {Integer(), end}; }
+{
+    return {Integer(), end};
+}
 
 }  // namespace quarisma

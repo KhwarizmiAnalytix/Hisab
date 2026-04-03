@@ -31,7 +31,6 @@
 #include <cstddef>
 #include <string>
 
-#include "common/configure.h"
 #include "common/macros.h"
 
 #if QUARISMA_HAS_COMPRESSION

@@ -26,7 +26,7 @@
 #include <utility>
 
 #include "baseTest.h"
-#include "common/configure.h"  // IWYU pragma: keep
+// IWYU pragma: keep
 //#include "logging/logger.h"
 #include "native/core/profiler_factory.h"
 #include "native/core/profiler_lock.h"

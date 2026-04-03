@@ -127,7 +127,9 @@ class TensorBase;
  * A utility function to convert vector<int> to vector<int64_t>.
  */
 inline std::vector<int64_t> ToVectorint64_t(const array_ref<int>& src)
-{ return std::vector<int64_t>(src.begin(), src.end()); }
+{
+    return std::vector<int64_t>(src.begin(), src.end());
+}
 
 /**
  * Return product of all dimensions starting from k
@@ -215,7 +217,7 @@ struct PROFILER_API PlacementDeleteContext
     PlacementDeleteContext& operator=(const PlacementDeleteContext&) = delete;
     PlacementDeleteContext& operator=(PlacementDeleteContext&&)      = delete;
     static DataPtr          makeDataPtr(
-        DataPtr&& data_ptr, PlacementDtor placement_dtor, size_t size, device_option device);
+                 DataPtr&& data_ptr, PlacementDtor placement_dtor, size_t size, device_option device);
     ~PlacementDeleteContext()
     {
         placement_dtor_(data_ptr_.get(), size_);
@@ -231,10 +233,10 @@ struct PROFILER_API AutogradMetaInterface
     virtual const at::Tensor& grad() const                                                     = 0;
     virtual const at::Tensor& fw_grad(uint64_t level, const at::TensorBase& self) const        = 0;
     virtual void              set_fw_grad(
-        const at::TensorBase& new_grad,
-        const at::TensorBase& self,
-        uint64_t              level,
-        bool                  is_inplace_op) = 0;
+                     const at::TensorBase& new_grad,
+                     const at::TensorBase& self,
+                     uint64_t              level,
+                     bool                  is_inplace_op) = 0;
     virtual ~AutogradMetaInterface();
 };
 
@@ -262,7 +264,9 @@ PROFILER_API AutogradMetaFactory* GetAutogradMetaFactory();
 struct PROFILER_API AutogradMetaFactoryRegisterer
 {
     explicit AutogradMetaFactoryRegisterer(AutogradMetaFactory* factory)
-    { SetAutogradMetaFactory(factory); }  // namespace impl
+    {
+        SetAutogradMetaFactory(factory);
+    }  // namespace impl
 };  // namespace quarisma
 
 }  // namespace impl
@@ -298,7 +302,9 @@ struct PROFILER_API BackendMeta : intrusive_ptr_target
 {
     ~BackendMeta() override = default;
     virtual intrusive_ptr<BackendMeta> clone(const intrusive_ptr<BackendMeta>& ptr) const
-    { return ptr; }
+    {
+        return ptr;
+    }
 };
 
 struct PROFILER_API ExtraMeta
@@ -981,10 +987,14 @@ public:
     }
 
     bool is_contiguous_default(at::MemoryFormat memory_format) const
-    { return is_contiguous_default_impl<bool>(memory_format); }
+    {
+        return is_contiguous_default_impl<bool>(memory_format);
+    }
 
     quarisma::SymBool sym_is_contiguous_default(at::MemoryFormat memory_format) const
-    { return is_contiguous_default_impl<quarisma::SymBool>(memory_format); }
+    {
+        return is_contiguous_default_impl<quarisma::SymBool>(memory_format);
+    }
 
     /**
    * Whether or not a tensor is laid out in contiguous memory.
@@ -1128,10 +1138,14 @@ public:
 
 protected:
     inline bool matches_policy(SizesStridesPolicy policy) const
-    { return sizes_strides_policy_ >= static_cast<uint8_t>(policy); }
+    {
+        return sizes_strides_policy_ >= static_cast<uint8_t>(policy);
+    }
 
     inline bool matches_custom(SizesStridesPolicy policy) const
-    { return custom_sizes_strides_ >= static_cast<uint8_t>(policy); }
+    {
+        return custom_sizes_strides_ >= static_cast<uint8_t>(policy);
+    }
 
     inline bool matches_python_custom(SizesStridesPolicy policy) const
     {
@@ -1157,12 +1171,16 @@ protected:
     virtual quarisma::SymBool sym_is_non_overlapping_and_dense_custom() const;
 
     bool is_non_overlapping_and_dense_custom() const
-    { return sym_is_non_overlapping_and_dense_custom().guard_bool(__FILE__, __LINE__); }
+    {
+        return sym_is_non_overlapping_and_dense_custom().guard_bool(__FILE__, __LINE__);
+    }
 
     virtual quarisma::SymBool sym_is_contiguous_custom(at::MemoryFormat memory_format) const;
 
     bool is_contiguous_custom(at::MemoryFormat memory_format) const
-    { return sym_is_contiguous_custom(memory_format).guard_bool(__FILE__, __LINE__); }
+    {
+        return sym_is_contiguous_custom(memory_format).guard_bool(__FILE__, __LINE__);
+    }
 
     // sizes_strides_policy_ >= CustomSizes
     // Currently this method only exists to be overwritten by subclasses such as
@@ -1209,14 +1227,17 @@ public:
 #else
     TENSORIMPL_MAYBE_VIRTUAL
 #endif
-        bool has_storage() const
+        bool
+        has_storage() const
 // NOTE: we devirtualize this because it arguably shouldn't be an
 // error just to ask subclasses if they have storage.
 // This used to throw for most subclasses, but OpaqueTensorImpl
 // wanted it to successfully return false, so we went ahead and made
 // it a non-error.
 #ifdef PROFILER_DISABLE_TENSORIMPL_EXTENSIBILITY
-    { return storage_; }
+    {
+        return storage_;
+    }
 #else
         ;
 #endif
@@ -1931,7 +1952,9 @@ public:
     }
 
     void set_backend_meta(intrusive_ptr<quarisma::BackendMeta> backend_meta)
-    { get_extra_meta().backend_meta_ = std::move(backend_meta); }
+    {
+        get_extra_meta().backend_meta_ = std::move(backend_meta);
+    }
 
     quarisma::BackendMeta* get_backend_meta()
     {
@@ -2090,7 +2113,9 @@ public:
     }
 
     /*PROFILER_FORCE_INLINE*/ const impl::SizesAndStrides& sizes_and_strides()
-    { return sizes_and_strides_; }
+    {
+        return sizes_and_strides_;
+    }
 
     /**
    * Set the sizes and strides of a tensor.
@@ -2482,7 +2507,9 @@ public:
 
     template <typename T>
     void Resize(const std::vector<T>& dim_source)
-    { Resize(array_ref<T>(dim_source)); }
+    {
+        Resize(array_ref<T>(dim_source));
+    }
 
     /**
    * Resizes the tensor without touching underlying storage.
@@ -2567,9 +2594,8 @@ public:
                 auto size     = numel_;
                 auto dtor     = data_type_.placementDelete();
                 auto data_ptr = allocator->allocate(numel_ * data_type_.itemsize());
-                storage_.set_data_ptr_noswap(
-                    PlacementDeleteContext::makeDataPtr(
-                        std::move(data_ptr), dtor, size, storage_.device()));
+                storage_.set_data_ptr_noswap(PlacementDeleteContext::makeDataPtr(
+                    std::move(data_ptr), dtor, size, storage_.device()));
                 data_type_.placementNew()(storage_.mutable_data(), numel_);
             }
             else
@@ -2718,13 +2744,19 @@ public:
     }
 
     bool is_strides_like_channels_last() const
-    { return is_strides_like(at::MemoryFormat::ChannelsLast); }
+    {
+        return is_strides_like(at::MemoryFormat::ChannelsLast);
+    }
 
     bool is_strides_like_channels_last_3d() const
-    { return is_strides_like(at::MemoryFormat::ChannelsLast3d); }
+    {
+        return is_strides_like(at::MemoryFormat::ChannelsLast3d);
+    }
 
     bool is_non_overlapping_and_dense_or_false() const
-    { return sym_is_non_overlapping_and_dense().guard_or_false(__FILE__, __LINE__); }
+    {
+        return sym_is_non_overlapping_and_dense().guard_or_false(__FILE__, __LINE__);
+    }
 
     bool is_non_overlapping_and_dense() const
     {
@@ -2792,10 +2824,14 @@ private:
     bool SetDims(const int64_t d0, const int64_t d1) { return SetDims(IntArrayRef{d0, d1}); }
 
     bool SetDims(const int64_t d0, const int64_t d1, const int64_t d2)
-    { return SetDims(IntArrayRef{d0, d1, d2}); }
+    {
+        return SetDims(IntArrayRef{d0, d1, d2});
+    }
 
     bool SetDims(const int64_t d0, const int64_t d1, const int64_t d2, const int64_t d3)
-    { return SetDims(IntArrayRef{d0, d1, d2, d3}); }
+    {
+        return SetDims(IntArrayRef{d0, d1, d2, d3});
+    }
 
     /**
    * Compute the number of elements based on the sizes of a tensor.
@@ -2920,13 +2956,19 @@ private:
     }
 
     bool compute_channels_last_contiguous_3d_dim5()
-    { return !is_channels_last_contiguous_ && compute_channels_last_contiguous_3d(); }
+    {
+        return !is_channels_last_contiguous_ && compute_channels_last_contiguous_3d();
+    }
 
     bool compute_channels_last_2d_dim5()
-    { return !is_channels_last_3d_contiguous_ && compute_strides_like_channels_last_2d(); }
+    {
+        return !is_channels_last_3d_contiguous_ && compute_strides_like_channels_last_2d();
+    }
 
     bool compute_channels_last_3d_dim5()
-    { return !is_channels_last_ && compute_strides_like_channels_last_3d(); }
+    {
+        return !is_channels_last_ && compute_strides_like_channels_last_3d();
+    }
 
     bool compute_is_non_overlapping_and_dense_dim5()
     {
@@ -2935,7 +2977,9 @@ private:
     }
 
     bool compute_is_non_overlapping_and_dense_anydim()
-    { return is_contiguous_ || compute_non_overlapping_and_dense(); }
+    {
+        return is_contiguous_ || compute_non_overlapping_and_dense();
+    }
 
     void _refresh_contiguous()
     {

@@ -450,16 +450,24 @@ size_t statistical_analyzer::get_sample_count(const std::string& name) const
 }
 
 void statistical_analyzer::set_max_samples_per_series(size_t max_samples)
-{ max_samples_per_series_ = max_samples; }
+{
+    max_samples_per_series_ = max_samples;
+}
 
 void statistical_analyzer::set_outlier_threshold(double threshold)
-{ outlier_threshold_ = threshold; }
+{
+    outlier_threshold_ = threshold;
+}
 
 void statistical_analyzer::set_percentiles(const std::vector<double>& percentiles)
-{ percentiles_ = percentiles; }
+{
+    percentiles_ = percentiles;
+}
 
 void statistical_analyzer::set_worker_threads_hint(size_t threads)
-{ worker_threads_hint_ = threads; }
+{
+    worker_threads_hint_ = threads;
+}
 
 quarisma::statistical_metrics statistical_analyzer::calculate_metrics(
     const std::vector<double>& data) const

@@ -25,7 +25,6 @@
 #include <random>
 #include <vector>
 
-#include "common/configure.h"
 #include "common/macros.h"
 #include "common/pointer.h"
 #include "logging/logger.h"

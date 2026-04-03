@@ -69,7 +69,9 @@ PROFILER_API void sleep_for_nanos(int64_t ns);
  * @param us Duration to sleep in microseconds
  */
 inline void sleep_for_micros(int64_t us)
-{ sleep_for_nanos(static_cast<int64_t>(micro_to_nano(static_cast<double>(us)))); }
+{
+    sleep_for_nanos(static_cast<int64_t>(micro_to_nano(static_cast<double>(us))));
+}
 
 /**
  * @brief Sleep for the specified duration in milliseconds.
@@ -77,7 +79,9 @@ inline void sleep_for_micros(int64_t us)
  * @param ms Duration to sleep in milliseconds
  */
 inline void sleep_for_millis(int64_t ms)
-{ sleep_for_nanos(milli_to_nano(static_cast<double>(ms))); }
+{
+    sleep_for_nanos(milli_to_nano(static_cast<double>(ms)));
+}
 
 /**
  * @brief Sleep for the specified duration in seconds.
@@ -85,7 +89,9 @@ inline void sleep_for_millis(int64_t ms)
  * @param s Duration to sleep in seconds
  */
 inline void sleep_for_seconds(int64_t s)
-{ sleep_for_nanos(uni_to_nano(static_cast<double>(s))); }
+{
+    sleep_for_nanos(uni_to_nano(static_cast<double>(s)));
+}
 
 /**
  * @brief Spin (busy-wait) for the specified duration in nanoseconds.
@@ -107,7 +113,9 @@ PROFILER_API void spin_for_nanos(int64_t ns);
  * @param us Duration to spin in microseconds
  */
 inline void spin_for_micros(int64_t us)
-{ spin_for_nanos(us * 1000); }
+{
+    spin_for_nanos(us * 1000);
+}
 
 }  // namespace profiler_impl
 }  // namespace quarisma

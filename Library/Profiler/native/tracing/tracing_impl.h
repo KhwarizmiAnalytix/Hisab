@@ -25,7 +25,9 @@ namespace quarisma::tracing
 {
 
 inline bool event_collector::is_enabled()
-{ return quarisma::profiler_impl::threadpool_listener::IsEnabled(); }
+{
+    return quarisma::profiler_impl::threadpool_listener::IsEnabled();
+}
 
 }  // namespace quarisma::tracing
 

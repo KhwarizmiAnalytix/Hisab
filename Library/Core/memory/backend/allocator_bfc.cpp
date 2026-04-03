@@ -47,7 +47,6 @@
 #include <utility>
 #include <vector>
 
-#include "common/configure.h"
 #include "common/macros.h"
 #include "logging/logger.h"
 #include "memory/cpu/allocator.h"
@@ -837,9 +836,9 @@ void allocator_bfc::AddTraceMe(
     quarisma::traceme::instant_activity(
         [this, traceme_name, chunk_ptr, req_bytes, alloc_bytes]() QUARISMA_NO_THREAD_SAFETY_ANALYSIS
         {
-            int64_t     bytes_available = memory_limit_ -
-                                          stats_.bytes_reserved.load(std::memory_order_relaxed) -
-                                          stats_.bytes_in_use.load(std::memory_order_relaxed);
+            int64_t bytes_available = memory_limit_ -
+                                      stats_.bytes_reserved.load(std::memory_order_relaxed) -
+                                      stats_.bytes_in_use.load(std::memory_order_relaxed);
             const auto& annotation = quarisma::scoped_memory_debug_annotation::current_annotation();
             const auto* const op_name =
                 (annotation.pending_op_name != nullptr) ? annotation.pending_op_name : "(null)";
@@ -1327,7 +1326,9 @@ bool allocator_bfc::MergeTimestampedChunks(size_t required_bytes)
 }
 
 bool allocator_bfc::tracks_allocation_sizes() const noexcept
-{ return true; }
+{
+    return true;
+}
 
 size_t allocator_bfc::RequestedSize(const void* ptr) const
 {
@@ -1723,5 +1724,7 @@ std::array<allocator_bfc::BinDebugInfo, allocator_bfc::kNumBins> allocator_bfc::
 }
 
 allocator_memory_enum allocator_bfc::GetMemoryType() const noexcept
-{ return sub_allocator_->GetMemoryType(); }
+{
+    return sub_allocator_->GetMemoryType();
+}
 }  // namespace quarisma

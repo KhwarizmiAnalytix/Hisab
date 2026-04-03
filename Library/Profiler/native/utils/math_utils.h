@@ -54,57 +54,97 @@ namespace profiler_impl
 
 // Picosecond conversions
 inline double pico_to_nano(uint64_t p)
-{ return p / 1E3; }
+{
+    return p / 1E3;
+}
 inline double pico_to_micro(uint64_t p)
-{ return p / 1E6; }
+{
+    return p / 1E6;
+}
 inline double pico_to_milli(uint64_t p)
-{ return p / 1E9; }
+{
+    return p / 1E9;
+}
 inline double pico_to_uni(uint64_t p)
-{ return p / 1E12; }
+{
+    return p / 1E12;
+}
 
 // Nanosecond conversions
 inline uint64_t nano_to_pico(uint64_t n)
-{ return n * 1000; }
+{
+    return n * 1000;
+}
 inline double nano_to_micro(uint64_t n)
-{ return n / 1E3; }
+{
+    return n / 1E3;
+}
 inline double nano_to_milli(uint64_t n)
-{ return n / 1E6; }
+{
+    return n / 1E6;
+}
 
 // Microsecond conversions
 inline double micro_to_nano(double u)
-{ return u * 1E3; }
+{
+    return u * 1E3;
+}
 inline double micro_to_milli(double u)
-{ return u / 1E3; }
+{
+    return u / 1E3;
+}
 
 // Millisecond conversions
 inline uint64_t milli_to_pico(double m)
-{ return static_cast<uint64_t>(m * 1E9); }
+{
+    return static_cast<uint64_t>(m * 1E9);
+}
 inline uint64_t milli_to_nano(double m)
-{ return static_cast<uint64_t>(m * 1E6); }
+{
+    return static_cast<uint64_t>(m * 1E6);
+}
 inline double milli_to_uni(double m)
-{ return m / 1E3; }
+{
+    return m / 1E3;
+}
 
 // Unit (second) conversions
 inline uint64_t uni_to_pico(double uni)
-{ return static_cast<uint64_t>(uni * 1E12); }
+{
+    return static_cast<uint64_t>(uni * 1E12);
+}
 inline uint64_t uni_to_nano(double uni)
-{ return static_cast<uint64_t>(uni * 1E9); }
+{
+    return static_cast<uint64_t>(uni * 1E9);
+}
 inline double uni_to_micro(double uni)
-{ return uni * 1E6; }
+{
+    return uni * 1E6;
+}
 inline double uni_to_mega(double uni)
-{ return uni / 1E6; }
+{
+    return uni / 1E6;
+}
 inline double uni_to_giga(double uni)
-{ return uni / 1E9; }
+{
+    return uni / 1E9;
+}
 
 // Giga conversions
 inline double giga_to_uni(double giga)
-{ return giga * 1E9; }
+{
+    return giga * 1E9;
+}
 inline double giga_to_tera(double giga)
-{ return giga / 1E3; }
+{
+    return giga / 1E3;
+}
 
 // Tera conversions
 inline double tera_to_giga(double tera)
-{ return tera * 1E3; }
+{
+    return tera * 1E3;
+}
 
 /**
  * @brief Convert from clock cycles to seconds.
@@ -116,7 +156,9 @@ inline double tera_to_giga(double tera)
  * Formula: cycles / (cycles/s) = s
  */
 inline double cycles_to_seconds(double cycles, double frequency_hz)
-{ return cycles / frequency_hz; }
+{
+    return cycles / frequency_hz;
+}
 
 /**
  * @brief Safe division that returns 0 instead of dividing by zero.
@@ -140,9 +182,13 @@ inline double safe_divide(double dividend, double divisor)
  * GB (Gigabyte) = 10^9 bytes = 1,000,000,000 bytes
  */
 inline double gibi_to_giga(double gibi)
-{ return gibi * ((1 << 30) / 1.0e9); }
+{
+    return gibi * ((1 << 30) / 1.0e9);
+}
 inline double giga_to_gibi(double giga)
-{ return giga / ((1 << 30) / 1.0e9); }
+{
+    return giga / ((1 << 30) / 1.0e9);
+}
 
 /**
  * @brief Calculate bandwidth in GiB/s.
@@ -152,7 +198,9 @@ inline double giga_to_gibi(double giga)
  * @return Bandwidth in GiB/s
  */
 inline double gibibytes_per_second(double bytes, double ns)
-{ return giga_to_gibi(safe_divide(bytes, ns)); }
+{
+    return giga_to_gibi(safe_divide(bytes, ns));
+}
 
 }  // namespace profiler_impl
 }  // namespace quarisma

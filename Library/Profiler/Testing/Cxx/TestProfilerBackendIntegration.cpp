@@ -33,7 +33,9 @@ void busy_wait_for(std::chrono::microseconds duration)
 }
 
 std::unordered_set<quarisma::RecordScope> user_scopes()
-{ return {quarisma::RecordScope::USER_SCOPE}; }
+{
+    return {quarisma::RecordScope::USER_SCOPE};
+}
 
 }  // namespace
 
@@ -299,7 +301,9 @@ public:
     float elapsed(
         const quarisma::profiler_impl::impl::ProfilerVoidEventStub*,
         const quarisma::profiler_impl::impl::ProfilerVoidEventStub*) const override
-    { return 0.0F; }
+    {
+        return 0.0F;
+    }
 
     void mark(const char* name) const override
     {
@@ -351,10 +355,11 @@ class scoped_itt_stub
 public:
     explicit scoped_itt_stub(recording_itt_stub& stub)
         : stub_(stub),
-          previous_(
-              const_cast<quarisma::profiler_impl::impl::ProfilerStubs*>(
-                  quarisma::profiler_impl::impl::ittStubs()))
-    { quarisma::profiler_impl::impl::registerITTMethods(&stub_); }
+          previous_(const_cast<quarisma::profiler_impl::impl::ProfilerStubs*>(
+              quarisma::profiler_impl::impl::ittStubs()))
+    {
+        quarisma::profiler_impl::impl::registerITTMethods(&stub_);
+    }
 
     scoped_itt_stub(const scoped_itt_stub&)            = delete;
     scoped_itt_stub(scoped_itt_stub&&)                 = delete;

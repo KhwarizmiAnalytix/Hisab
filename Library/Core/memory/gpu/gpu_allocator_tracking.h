@@ -36,7 +36,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "common/configure.h"
 #include "common/macros.h"
 #include "logging/logger.h"
 #include "memory/device.h"

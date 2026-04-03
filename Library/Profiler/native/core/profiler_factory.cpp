@@ -123,12 +123,18 @@ private:
 }  // namespace
 
 void register_profiler_factory(profiler_factory factory)
-{ factory_registry::instance().register_factory(std::move(factory)); }
+{
+    factory_registry::instance().register_factory(std::move(factory));
+}
 
 std::vector<std::unique_ptr<profiler_interface>> create_profilers(const profile_options& options)
-{ return factory_registry::instance().create_all_profilers(options); }
+{
+    return factory_registry::instance().create_all_profilers(options);
+}
 
 void clear_registered_profilers_for_test()
-{ factory_registry::instance().clear_factories(); }
+{
+    factory_registry::instance().clear_factories();
+}
 
 }  // namespace quarisma

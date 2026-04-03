@@ -39,7 +39,6 @@
 #include <string>       // For std::string
 #include <type_traits>  // For std::enable_if
 
-#include "common/configure.h"
 #include "common/export.h"
 #include "parallel/common/parallel_tools_api.h"
 

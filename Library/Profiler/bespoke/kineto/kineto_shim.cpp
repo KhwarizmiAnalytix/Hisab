@@ -78,8 +78,9 @@ static_assert(
 DeviceAndResource kineto_ids()
 {
 #if PROFILER_HAS_KINETO
-    return {/*device=*/libkineto::processId(),
-            /*resource=*/libkineto::systemThreadId()};
+    return {
+        /*device=*/libkineto::processId(),
+        /*resource=*/libkineto::systemThreadId()};
 #else
     return {};
 #endif  // PROFILER_HAS_KINETO

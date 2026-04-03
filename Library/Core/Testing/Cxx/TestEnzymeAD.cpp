@@ -19,8 +19,6 @@
 #include <iostream>
 #include <vector>
 
-#include "common/configure.h"
-
 // Enzyme requires these declarations for AD
 // The __enzyme_autodiff and __enzyme_fwddiff functions are provided by the Enzyme plugin
 extern "C"
@@ -50,7 +48,9 @@ enum
  * Derivative: f'(x) = 2x
  */
 double square(double x)
-{ return x * x; }
+{
+    return x * x;
+}
 
 /**
  * @brief Cubic function: f(x) = x^3 + 2x^2 + 3x + 4
@@ -58,7 +58,9 @@ double square(double x)
  * Derivative: f'(x) = 3x^2 + 4x + 3
  */
 double cubic(double x)
-{ return x * x * x + 2.0 * x * x + 3.0 * x + 4.0; }
+{
+    return x * x * x + 2.0 * x * x + 3.0 * x + 4.0;
+}
 
 /**
  * @brief Multivariate function: f(x, y) = x^2 + 2xy + y^2
@@ -68,15 +70,21 @@ double cubic(double x)
  * - ∂f/∂y = 2x + 2y
  */
 double multivariate(double x, double y)
-{ return x * x + 2.0 * x * y + y * y; }
+{
+    return x * x + 2.0 * x * y + y * y;
+}
 
 // Wrapper to compute ∂f/∂x for multivariate function
 double multivariate_dx(double x, double y)
-{ return multivariate(x, y); }
+{
+    return multivariate(x, y);
+}
 
 // Wrapper to compute ∂f/∂y for multivariate function
 double multivariate_dy(double x, double y)
-{ return multivariate(x, y); }
+{
+    return multivariate(x, y);
+}
 
 /**
  * @brief Exponential function: f(x) = e^x
@@ -84,7 +92,9 @@ double multivariate_dy(double x, double y)
  * Derivative: f'(x) = e^x
  */
 double exponential(double x)
-{ return std::exp(x); }
+{
+    return std::exp(x);
+}
 
 /**
  * @brief Rosenbrock function: f(x, y) = (1-x)^2 + 100(y-x^2)^2
@@ -103,11 +113,15 @@ double rosenbrock(double x, double y)
 
 // Wrapper to compute ∂f/∂x for rosenbrock function
 double rosenbrock_dx(double x, double y)
-{ return rosenbrock(x, y); }
+{
+    return rosenbrock(x, y);
+}
 
 // Wrapper to compute ∂f/∂y for rosenbrock function
 double rosenbrock_dy(double x, double y)
-{ return rosenbrock(x, y); }
+{
+    return rosenbrock(x, y);
+}
 
 // =============================================================================
 // Google Test Suite for Enzyme AD
@@ -462,7 +476,9 @@ TEST(EnzymeAD, NumericalAccuracy)
  * @brief Placeholder test when Enzyme is disabled
  */
 TEST(EnzymeAD, DISABLED_EnzymeNotEnabled)
-{ GTEST_SKIP() << "Enzyme AD is not enabled. Configure with -DQUARISMA_ENABLE_ENZYME=ON"; }
+{
+    GTEST_SKIP() << "Enzyme AD is not enabled. Configure with -DQUARISMA_ENABLE_ENZYME=ON";
+}
 
 #endif  // QUARISMA_HAS_ENZYME
 

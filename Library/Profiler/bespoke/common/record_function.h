@@ -68,7 +68,9 @@ template <>
 struct hash<quarisma::RecordScope>
 {
     size_t operator()(const quarisma::RecordScope& sc) const
-    { return static_cast<std::size_t>(sc); }
+    {
+        return static_cast<std::size_t>(sc);
+    }
 };
 }  // namespace std
 
@@ -94,7 +96,9 @@ struct PROFILER_VISIBILITY StringView
     }
 
     friend bool operator==(const StringView& lhs, const StringView& rhs)
-    { return strcmp(lhs.str(), rhs.str()) == 0; }
+    {
+        return strcmp(lhs.str(), rhs.str()) == 0;
+    }
 
     friend bool operator!=(const StringView& lhs, const StringView& rhs) { return !(lhs == rhs); }
 
@@ -152,7 +156,9 @@ public:
     // between start and end callbacks.
     explicit RecordFunctionCallback(StartCallback start, EndCallback end = nullptr)
         : start_(start), end_(end)
-    { scopes_.fill(true); }
+    {
+        scopes_.fill(true);
+    }
 
     RecordFunctionCallback& needsInputs(bool needs_inputs)
     {
@@ -751,7 +757,9 @@ class PROFILER_VISIBILITY RecordFunctionGuard
 {
 public:
     explicit RecordFunctionGuard(bool is_enabled = true) : prev_value_(isRecordFunctionEnabled())
-    { enableRecordFunction(is_enabled); }
+    {
+        enableRecordFunction(is_enabled);
+    }
 
     RecordFunctionGuard(RecordFunctionGuard&& other)           = delete;
     RecordFunctionGuard(const RecordFunctionGuard&)            = delete;

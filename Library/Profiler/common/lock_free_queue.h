@@ -249,7 +249,9 @@ public:
     {
     public:
         bool operator==(const Iterator& another) const
-        { return (index_ == another.index_) && (queue_ == another.queue_); }
+        {
+            return (index_ == another.index_) && (queue_ == another.queue_);
+        }
 
         bool operator!=(const Iterator& another) const { return !(*this == another); }
 
@@ -309,7 +311,7 @@ public:
     private:
         friend class BlockedQueue;
         Iterator(BlockedQueue* queue, BlockedQueue::Block* block, size_t index)
-            : queue_(queue), block_(block), index_(index) {};
+            : queue_(queue), block_(block), index_(index){};
         BlockedQueue*        queue_ = nullptr;
         BlockedQueue::Block* block_ = nullptr;
         size_t               index_ = 0;

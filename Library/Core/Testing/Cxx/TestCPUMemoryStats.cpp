@@ -25,7 +25,6 @@
 #include <vector>
 
 #include "baseTest.h"
-#include "common/configure.h"
 #include "memory/cpu/allocator_device.h"
 #include "memory/unified_memory_stats.h"
 

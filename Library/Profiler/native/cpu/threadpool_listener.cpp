@@ -118,6 +118,8 @@ profiler_status threadpool_profiler_interface::collect_data(x_space* space)
 }
 
 std::unique_ptr<profiler_interface> create_threadpool_profiler()
-{ return std::make_unique<threadpool_profiler_interface>(); }
+{
+    return std::make_unique<threadpool_profiler_interface>();
+}
 
 }  // namespace quarisma::profiler_impl

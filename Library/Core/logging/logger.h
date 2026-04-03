@@ -235,7 +235,9 @@ public:
 #if defined(_MSC_VER) && _MSC_VER > 1800
         // see loguru.hpp for the reason why this is needed on MSVC
         LogScopeRAII(LogScopeRAII&& other) : Internals(other.Internals)
-        { other.Internals = nullptr; }
+        {
+            other.Internals = nullptr;
+        }
 #else
         LogScopeRAII(LogScopeRAII&&) = default;
 #endif

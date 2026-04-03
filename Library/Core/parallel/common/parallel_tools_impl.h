@@ -81,15 +81,21 @@ private:
 
 template <backend_type Backend>
 void parallel_tools_impl<Backend>::set_nested_parallelism(bool is_nested)
-{ nested_activated_ = is_nested; }
+{
+    nested_activated_ = is_nested;
+}
 
 template <backend_type Backend>
 bool parallel_tools_impl<Backend>::nested_parallelism()
-{ return nested_activated_; }
+{
+    return nested_activated_;
+}
 
 template <backend_type Backend>
 bool parallel_tools_impl<Backend>::is_parallel_scope()
-{ return is_parallel_; }
+{
+    return is_parallel_;
+}
 
 template <backend_type Backend>
 parallel_tools_impl<Backend>::parallel_tools_impl() : nested_activated_(true), is_parallel_(false)

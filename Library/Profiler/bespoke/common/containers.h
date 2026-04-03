@@ -148,9 +148,13 @@ public:
         }
 
         friend bool operator==(const Iterator& a, const Iterator& b)
-        { return a.current_ptr() == b.current_ptr(); }
+        {
+            return a.current_ptr() == b.current_ptr();
+        }
         friend bool operator!=(const Iterator& a, const Iterator& b)
-        { return a.current_ptr() != b.current_ptr(); }
+        {
+            return a.current_ptr() != b.current_ptr();
+        }
 
         std::pair<array_t*, size_t> address() const
         {

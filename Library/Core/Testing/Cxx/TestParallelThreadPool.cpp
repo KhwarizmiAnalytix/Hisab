@@ -25,7 +25,6 @@
 #include <vector>
 
 #include "Testing/baseTest.h"
-#include "common/configure.h"
 
 // Only compile these tests for std_thread backend
 #if !QUARISMA_HAS_OPENMP && !QUARISMA_HAS_TBB

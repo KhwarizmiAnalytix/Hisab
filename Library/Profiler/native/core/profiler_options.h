@@ -84,7 +84,9 @@ public:
      * @param include_dataset_ops true to include dataset ops, false otherwise
      */
     void set_include_dataset_ops(bool include_dataset_ops)
-    { include_dataset_ops_ = include_dataset_ops; }
+    {
+        include_dataset_ops_ = include_dataset_ops;
+    }
 
     /**
      * @brief Gets the host tracer level
@@ -97,7 +99,9 @@ public:
      * @param host_tracer_level The tracer level (0-3, higher means more detailed)
      */
     void set_host_tracer_level(uint32_t host_tracer_level)
-    { host_tracer_level_ = host_tracer_level; }
+    {
+        host_tracer_level_ = host_tracer_level;
+    }
 
     /**
      * @brief Gets the device tracer level
@@ -110,7 +114,9 @@ public:
      * @param device_tracer_level The tracer level (0-3, higher means more detailed)
      */
     void set_device_tracer_level(uint32_t device_tracer_level)
-    { device_tracer_level_ = device_tracer_level; }
+    {
+        device_tracer_level_ = device_tracer_level;
+    }
 
     /**
      * @brief Gets the Python tracer level
@@ -123,7 +129,9 @@ public:
      * @param python_tracer_level The tracer level (0-3, higher means more detailed)
      */
     void set_python_tracer_level(uint32_t python_tracer_level)
-    { python_tracer_level_ = python_tracer_level; }
+    {
+        python_tracer_level_ = python_tracer_level;
+    }
 
     /**
      * @brief Gets whether HLO proto generation is enabled
@@ -148,7 +156,9 @@ public:
      * @param start_timestamp_ns The start timestamp in nanoseconds since epoch
      */
     void set_start_timestamp_ns(uint64_t start_timestamp_ns)
-    { start_timestamp_ns_ = start_timestamp_ns; }
+    {
+        start_timestamp_ns_ = start_timestamp_ns;
+    }
 
     /**
      * @brief Gets the profiling duration in milliseconds
@@ -173,7 +183,9 @@ public:
      * @param repository_path The path where profiling data should be stored
      */
     void set_repository_path(const std::string& repository_path)
-    { repository_path_ = repository_path; }
+    {
+        repository_path_ = repository_path;
+    }
 
 private:
     // Member variables
@@ -209,7 +221,9 @@ public:
      * @param profiler_options The profile_options to use
      */
     void set_profiler_options(const profile_options& profiler_options)
-    { profiler_options_ = profiler_options; }
+    {
+        profiler_options_ = profiler_options;
+    }
 
     /**
      * @brief Gets the list of service addresses
@@ -222,14 +236,18 @@ public:
      * @param service_addresses Vector of service address strings
      */
     void set_service_addresses(const std::vector<std::string>& service_addresses)
-    { service_addresses_ = service_addresses; }
+    {
+        service_addresses_ = service_addresses;
+    }
 
     /**
      * @brief Adds a service address to the list
      * @param service_address The service address to add
      */
     void add_service_address(const std::string& service_address)
-    { service_addresses_.push_back(service_address); }
+    {
+        service_addresses_.push_back(service_address);
+    }
 
     /**
      * @brief Gets the session creation timestamp in nanoseconds
@@ -242,7 +260,9 @@ public:
      * @param session_creation_timestamp_ns The timestamp in nanoseconds since epoch
      */
     void set_session_creation_timestamp_ns(uint64_t session_creation_timestamp_ns)
-    { session_creation_timestamp_ns_ = session_creation_timestamp_ns; }
+    {
+        session_creation_timestamp_ns_ = session_creation_timestamp_ns;
+    }
 
     /**
      * @brief Gets the maximum session duration in milliseconds
@@ -255,7 +275,9 @@ public:
      * @param max_session_duration_ms The maximum duration in milliseconds
      */
     void set_max_session_duration_ms(uint64_t max_session_duration_ms)
-    { max_session_duration_ms_ = max_session_duration_ms; }
+    {
+        max_session_duration_ms_ = max_session_duration_ms;
+    }
 
     /**
      * @brief Gets the delay before starting profiling in milliseconds

@@ -77,9 +77,13 @@ public:
     constexpr reverse_iterator       rbegin() const noexcept { return reverse_iterator(end()); }
     constexpr reverse_iterator       rend() const noexcept { return reverse_iterator(begin()); }
     constexpr const_reverse_iterator crbegin() const noexcept
-    { return const_reverse_iterator(cend()); }
+    {
+        return const_reverse_iterator(cend());
+    }
     constexpr const_reverse_iterator crend() const noexcept
-    { return const_reverse_iterator(cbegin()); }
+    {
+        return const_reverse_iterator(cbegin());
+    }
 
     // Element access
     constexpr reference operator[](size_type idx) const noexcept
@@ -167,7 +171,9 @@ constexpr bool operator==(const span<T>& lhs, const span<T>& rhs) noexcept
 
 template <typename T>
 constexpr bool operator!=(const span<T>& lhs, const span<T>& rhs) noexcept
-{ return !(lhs == rhs); }
+{
+    return !(lhs == rhs);
+}
 
 // Helper type traits
 template <typename T>

@@ -77,7 +77,9 @@ private:
 };
 
 std::unique_ptr<profiler_interface> CreatMetadataCollector(const profile_options& options)
-{ return options.enable_hlo_proto() ? std::make_unique<MetadataCollector>() : nullptr; }
+{
+    return options.enable_hlo_proto() ? std::make_unique<MetadataCollector>() : nullptr;
+}
 
 }  // namespace
 

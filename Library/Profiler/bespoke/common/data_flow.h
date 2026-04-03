@@ -66,7 +66,7 @@ using StorageImplData = strong::
 class WeakTensor
 {
 public:
-    explicit WeakTensor(PROFILER_UNUSED const quarisma::Tensor&) {};
+    explicit WeakTensor(PROFILER_UNUSED const quarisma::Tensor&){};
 
     /*: weak_self_(t.getIntrusivePtr()) {}*/
 

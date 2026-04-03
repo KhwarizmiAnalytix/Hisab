@@ -12,7 +12,6 @@
 #include <utility>  // for pair
 #include <vector>   // for vector
 
-#include "common/configure.h"
 #include "common/macros.h"
 #include "logging/logger_verbosity_enum.h"
 #include "util/flat_hash.h"
@@ -110,14 +109,20 @@ void native_log_output(
 }
 
 int native_max_vlog_level()
-{ return g_max_vlog_level.load(std::memory_order_relaxed); }
+{
+    return g_max_vlog_level.load(std::memory_order_relaxed);
+}
 
 void native_fatal_exit()
-{ std::abort(); }
+{
+    std::abort();
+}
 
 std::string native_check_failed(
     const char* exprtext, const std::string& v1_str, const std::string& v2_str)
-{ return fmt::format("Check failed: {} ({} vs. {})", exprtext, v1_str, v2_str); }
+{
+    return fmt::format("Check failed: {} ({} vs. {})", exprtext, v1_str, v2_str);
+}
 
 }  // namespace internal
 }  // namespace quarisma
@@ -188,7 +193,9 @@ logger::LogScopeRAII::LogScopeRAII(
 }
 
 logger::LogScopeRAII::~LogScopeRAII()
-{ delete this->Internals; }
+{
+    delete this->Internals;
+}
 //=============================================================================
 namespace detail
 {
@@ -209,7 +216,9 @@ static std::vector<scope_pair>& get_vector()
 }
 
 static void push_scope(const char* id, std::shared_ptr<loguru::LogScopeRAII> ptr)
-{ get_vector().emplace_back(std::string(id), ptr); }
+{
+    get_vector().emplace_back(std::string(id), ptr);
+}
 
 static void pop_scope(const char* id)
 {

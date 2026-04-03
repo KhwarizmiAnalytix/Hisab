@@ -94,7 +94,9 @@ private:
    * We can continue popping elements if conditions are met.
    */
     [[nodiscard]] bool can_continue() const
-    { return *thread_index_ < queue_->number_of_threads_ && !queue_->invoker_queue_.empty(); }
+    {
+        return *thread_index_ < queue_->number_of_threads_ && !queue_->invoker_queue_.empty();
+    }
 
     threaded_callback_queue*         queue_;
     std::shared_ptr<std::atomic_int> thread_index_;
@@ -102,7 +104,9 @@ private:
 
 //-----------------------------------------------------------------------------
 threaded_callback_queue::threaded_callback_queue()
-{ this->set_number_of_threads(1); }
+{
+    this->set_number_of_threads(1);
+}
 
 //-----------------------------------------------------------------------------
 threaded_callback_queue::~threaded_callback_queue()

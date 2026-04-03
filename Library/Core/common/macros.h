@@ -24,8 +24,6 @@
 #include <type_traits>  // for std::underlying_type
 #include <typeinfo>
 
-#include "common/configure.h"
-
 //----------------------------------------------------------------------------
 // Check for unsupported old compilers - updated minimum requirements
 #if defined(_MSC_VER) && _MSC_VER < 1910  // VS2017 15.0 minimum for C++17

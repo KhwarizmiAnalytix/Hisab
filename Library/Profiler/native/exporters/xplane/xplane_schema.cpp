@@ -67,7 +67,9 @@ bool InsertOrUpdate(
     Collection* const                                   collection,
     const typename Collection::value_type::first_type&  key,
     const typename Collection::value_type::second_type& value)
-{ return InsertOrUpdate(collection, typename Collection::value_type(key, value)); }
+{
+    return InsertOrUpdate(collection, typename Collection::value_type(key, value));
+}
 
 template <typename M, typename ReverseM>
 bool ReverseMap(const M& m, ReverseM* reverse)
@@ -483,7 +485,9 @@ const TaskEnvStatTypeStrMap& GetTaskEnvStatTypeStrMap()
 }  // namespace
 
 std::string_view GetHostEventTypeStr(HostEventType event_type)
-{ return GetHostEventTypeStrMap().at(event_type); }
+{
+    return GetHostEventTypeStrMap().at(event_type);
+}
 
 std::optional<int64_t> FindHostEventType(std::string_view event_name)
 {
@@ -514,7 +518,9 @@ std::optional<int64_t> FindTfOpEventType(PROFILER_UNUSED std::string_view event_
 }
 
 std::string_view GetStatTypeStr(StatType stat_type)
-{ return GetStatTypeStrMap().at(stat_type); }
+{
+    return GetStatTypeStrMap().at(stat_type);
+}
 
 std::optional<int64_t> FindStatType(std::string_view stat_name)
 {
@@ -526,7 +532,9 @@ std::optional<int64_t> FindStatType(std::string_view stat_name)
 }
 
 std::string_view GetMegaScaleStatTypeStr(MegaScaleStatType stat_type)
-{ return GetMegaScaleStatTypeStrMap().at(stat_type); }
+{
+    return GetMegaScaleStatTypeStrMap().at(stat_type);
+}
 
 std::optional<int64_t> FindMegaScaleStatType(std::string_view stat_name)
 {
@@ -538,7 +546,9 @@ std::optional<int64_t> FindMegaScaleStatType(std::string_view stat_name)
 }
 
 std::string_view GetTaskEnvStatTypeStr(TaskEnvStatType stat_type)
-{ return GetTaskEnvStatTypeStrMap().at(stat_type); }
+{
+    return GetTaskEnvStatTypeStrMap().at(stat_type);
+}
 
 std::optional<int64_t> FindTaskEnvStatType(std::string_view stat_name)
 {

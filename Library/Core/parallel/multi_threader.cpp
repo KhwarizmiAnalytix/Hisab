@@ -71,10 +71,14 @@ void multi_threader::set_global_maximum_number_of_threads(int val)
 }
 
 int multi_threader::get_global_maximum_number_of_threads()
-{ return g_multi_threader_global_maximum_number_of_threads; }
+{
+    return g_multi_threader_global_maximum_number_of_threads;
+}
 
 int multi_threader::get_global_static_maximum_number_of_threads()
-{ return QUARISMA_MAX_THREADS; }
+{
+    return QUARISMA_MAX_THREADS;
+}
 
 // 0 => Not initialized.
 static int g_multi_threader_global_default_number_of_threads = 0;
@@ -178,7 +182,9 @@ multi_threader::~multi_threader()
 }
 
 multi_threader* multi_threader::create()
-{ return new multi_threader(); }
+{
+    return new multi_threader();
+}
 
 //------------------------------------------------------------------------------
 int multi_threader::get_number_of_threads()
@@ -268,7 +274,8 @@ void multi_threader::single_method_execute()
         process_id[thread_loop]                           = CreateThread(  // NOLINT
             nullptr,
             0,
-            reinterpret_cast<LPTHREAD_START_ROUTINE>(single_method_),  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+            reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                single_method_),  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
             static_cast<void*>(&thread_info_array_[thread_loop]),
             0,
             &threadId);
@@ -393,7 +400,9 @@ void multi_threader::multiple_method_execute()
         process_id[thread_loop]                           = CreateThread(  // NOLINT
             nullptr,
             0,
-            reinterpret_cast<LPTHREAD_START_ROUTINE>(multiple_method_[thread_loop]),  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+            reinterpret_cast<LPTHREAD_START_ROUTINE>(
+                multiple_method_
+                    [thread_loop]),  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
             static_cast<void*>(&thread_info_array_[thread_loop]),
             0,
             &threadId);

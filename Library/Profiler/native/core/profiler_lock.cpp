@@ -57,7 +57,9 @@ static_assert(ATOMIC_INT_LOCK_FREE == 2, "Assumed atomic<int> was lock free");
 }  // namespace
 
 /*static*/ bool ProfilerLock::HasActiveSession()
-{ return g_session_active.load(std::memory_order_relaxed) != 0; }
+{
+    return g_session_active.load(std::memory_order_relaxed) != 0;
+}
 
 /*static*/ std::optional<ProfilerLock> ProfilerLock::Acquire()
 {

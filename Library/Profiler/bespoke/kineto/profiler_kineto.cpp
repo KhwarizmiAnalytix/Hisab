@@ -539,11 +539,10 @@ struct KinetoThreadLocalState : public ProfilerStateBase
 
             if (e->finished_)
             {
-                e->visit(
-                    quarisma::overloaded(
-                        [this](ExtraFields<EventType::TorchOp>& i) { invokeCallback(i); },
-                        [this](ExtraFields<EventType::Backend>& i) { invokeCallback(i); },
-                        [](auto&) {}));
+                e->visit(quarisma::overloaded(
+                    [this](ExtraFields<EventType::TorchOp>& i) { invokeCallback(i); },
+                    [this](ExtraFields<EventType::Backend>& i) { invokeCallback(i); },
+                    [](auto&) {}));
 
                 kinetoEvents.emplace_back(e, config_.experimental_config.verbose);
                 AddTensorboardFields const add_tb(e, kinetoEvents.back());
@@ -919,7 +918,9 @@ void enableProfiler(
 }
 
 bool isProfilerEnabledInMainThread()
-{ return profiler_state_info_ptr != nullptr; }
+{
+    return profiler_state_info_ptr != nullptr;
+}
 
 void enableProfilerInChildThread()
 {
@@ -1001,10 +1002,14 @@ void                                                   startMemoryProfile()
 }
 
 void stopMemoryProfile()
-{ memory_tracer->stop(); }
+{
+    memory_tracer->stop();
+}
 
 void exportMemoryProfile(const std::string& filename)
-{ memory_tracer->export_memory_history(filename); }
+{
+    memory_tracer->export_memory_history(filename);
+}
 
 KinetoEvent::KinetoEvent(
     const std::shared_ptr<const quarisma::profiler_impl::impl::Result>& result, const bool verbose)
@@ -1043,31 +1048,49 @@ bool KinetoEvent::isPythonFunction()
 }
 
 bool KinetoEvent::hasShapes() const
-{ return !shapes_.empty(); }
+{
+    return !shapes_.empty();
+}
 
 quarisma::array_ref<std::vector<int64_t>> KinetoEvent::shapes() const
-{ return shapes_; }
+{
+    return shapes_;
+}
 
 bool KinetoEvent::hasTypes() const
-{ return !dtypes_.empty(); }
+{
+    return !dtypes_.empty();
+}
 
 quarisma::array_ref<std::string> KinetoEvent::dtypes() const
-{ return dtypes_; }
+{
+    return dtypes_;
+}
 
 bool KinetoEvent::hasConcreteInputs() const
-{ return !concrete_inputs_.empty(); }
+{
+    return !concrete_inputs_.empty();
+}
 
 quarisma::array_ref<quarisma::IValue> KinetoEvent::concreteInputs() const
-{ return concrete_inputs_; }
+{
+    return concrete_inputs_;
+}
 
 bool KinetoEvent::hasKwinputs() const
-{ return !kwinputs_.empty(); }
+{
+    return !kwinputs_.empty();
+}
 
 bool KinetoEvent::isHiddenEvent() const
-{ return result_ && result_->hidden_; }
+{
+    return result_ && result_->hidden_;
+}
 
 std::unordered_map<std::string, quarisma::IValue> KinetoEvent::kwinputs() const
-{ return kwinputs_; }
+{
+    return kwinputs_;
+}
 
 quarisma::array_ref<std::string> KinetoEvent::stack() const
 {
@@ -1101,33 +1124,37 @@ quarisma::array_ref<std::string> KinetoEvent::moduleHierarchy() const
 }
 
 uint64_t KinetoEvent::endNs() const
-{ return result_->endTimeNS(); }
+{
+    return result_->endTimeNS();
+}
 
 uint64_t KinetoEvent::durationNs() const
-{ return (result_->endTimeNS() - result_->start_time_ns_); }
+{
+    return (result_->endTimeNS() - result_->start_time_ns_);
+}
 
 int64_t KinetoEvent::debugHandle() const
 {
-    return result_->visit(
-        quarisma::overloaded(
-            [](const ExtraFields<EventType::TorchOp>& i) { return i.debug_handle_; },
-            [](const ExtraFields<EventType::Backend>& i) { return i.debug_handle_; },
-            [](const auto&) -> int64_t { return -1; }));
+    return result_->visit(quarisma::overloaded(
+        [](const ExtraFields<EventType::TorchOp>& i) { return i.debug_handle_; },
+        [](const ExtraFields<EventType::Backend>& i) { return i.debug_handle_; },
+        [](const auto&) -> int64_t { return -1; }));
 }
 
 int KinetoEvent::deviceIndex() const
 {
-    return result_->visit(
-        quarisma::overloaded(
-            [](const ExtraFields<EventType::Allocation>& i)
-            { return static_cast<int>(i.device_index_); },
-            [](const ExtraFields<EventType::OutOfMemory>& i)
-            { return static_cast<int>(i.device_index_); },
-            [&](const auto&) { return static_cast<int>(result_->kineto_info_.device); }));
+    return result_->visit(quarisma::overloaded(
+        [](const ExtraFields<EventType::Allocation>& i)
+        { return static_cast<int>(i.device_index_); },
+        [](const ExtraFields<EventType::OutOfMemory>& i)
+        { return static_cast<int>(i.device_index_); },
+        [&](const auto&) { return static_cast<int>(result_->kineto_info_.device); }));
 }
 
 bool KinetoEvent::hasStack() const
-{ return !stack().empty(); }
+{
+    return !stack().empty();
+}
 
 int64_t KinetoEvent::cudaElapsedUs() const
 {
@@ -1165,33 +1192,29 @@ int64_t KinetoEvent::privateuse1ElapsedUs() const
 
 void KinetoEvent::getPerfEventCounters(std::vector<uint64_t>& in) const
 {
-    return result_->visit(
-        quarisma::overloaded(
-            [&in](const ExtraFields<EventType::TorchOp>& e) -> void
+    return result_->visit(quarisma::overloaded(
+        [&in](const ExtraFields<EventType::TorchOp>& e) -> void
+        {
+            const size_t n = e.perf_event_counters_->size();
+            // should be rare
+            if (in.size() < n)
             {
-                const size_t n = e.perf_event_counters_->size();
-                // should be rare
-                if (in.size() < n)
-                {
-                    in.resize(n, 0);
-                }
-                for (size_t i = 0; i < n; ++i)
-                {
-                    in[i] = (*e.perf_event_counters_)[i];
-                }
-            },
-            [](const auto&) -> void { return; }));
+                in.resize(n, 0);
+            }
+            for (size_t i = 0; i < n; ++i)
+            {
+                in[i] = (*e.perf_event_counters_)[i];
+            }
+        },
+        [](const auto&) -> void { return; }));
 }
 
 std::string KinetoEvent::metadataJson() const
 {
-    return result_->visit(
-        quarisma::overloaded(
-            [](const ExtraFields<EventType::TorchOp>& op) -> std::string
-            { return op.metadata_json_; },
-            [](const ExtraFields<EventType::Kineto>& op) -> std::string
-            { return op.metadata_json_; },
-            [](const auto&) -> std::string { return {""}; }));
+    return result_->visit(quarisma::overloaded(
+        [](const ExtraFields<EventType::TorchOp>& op) -> std::string { return op.metadata_json_; },
+        [](const ExtraFields<EventType::Kineto>& op) -> std::string { return op.metadata_json_; },
+        [](const auto&) -> std::string { return {""}; }));
 }
 
 #define FORWARD_FROM_RESULT(method_name, result_expr)                                    \
@@ -1215,14 +1238,13 @@ FORWARD_FROM_RESULT(deviceResourceId, kineto_info_.resource)
 // Most of the fields in `KinetoEvent` only make sense for a single event type.
 // (Generally TorchOp.) For all other types they simply return the default
 // value. This macro provides a succinct way of expressing this behavior.
-#define TYPED_ATTR_WITH_DEFAULT(event_type, method_name, expression, default_value)              \
-    decltype(std::declval<KinetoEvent>().method_name()) KinetoEvent::method_name() const         \
-    {                                                                                            \
-        using out_t = decltype(std::declval<KinetoEvent>().method_name());                       \
-        return result_->visit(                                                                   \
-            quarisma::overloaded(                                                                \
-                [](const ExtraFields<EventType::event_type>& e) -> out_t { return expression; }, \
-                [](const auto&) -> out_t { return default_value; }));                            \
+#define TYPED_ATTR_WITH_DEFAULT(event_type, method_name, expression, default_value)          \
+    decltype(std::declval<KinetoEvent>().method_name()) KinetoEvent::method_name() const     \
+    {                                                                                        \
+        using out_t = decltype(std::declval<KinetoEvent>().method_name());                   \
+        return result_->visit(quarisma::overloaded(                                          \
+            [](const ExtraFields<EventType::event_type>& e) -> out_t { return expression; }, \
+            [](const auto&) -> out_t { return default_value; }));                            \
     }
 
 #define TYPED_ATTR(event_type, method_name, expression) \
@@ -1269,7 +1291,9 @@ ProfilerResult::ProfilerResult()  = default;
 ProfilerResult::~ProfilerResult() = default;
 
 void ProfilerResult::save(const std::string& path)
-{ trace_->save(path); }
+{
+    trace_->save(path);
+}
 
 }  // namespace autograd::profiler_impl
 

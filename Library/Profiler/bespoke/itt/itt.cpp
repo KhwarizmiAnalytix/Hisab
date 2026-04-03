@@ -13,12 +13,16 @@ struct ITTMethods : public ProfilerStubs
 
     float elapsed(const ProfilerVoidEventStub* /*event*/, const ProfilerVoidEventStub* /*event2*/)
         const override
-    { return 0; }
+    {
+        return 0;
+    }
 
     void mark(const char* name) const override { quarisma::profiler_impl::itt_mark(name); }
 
     void rangePush(const char* name) const override
-    { quarisma::profiler_impl::itt_range_push(name); }
+    {
+        quarisma::profiler_impl::itt_range_push(name);
+    }
 
     void rangePop() const override { quarisma::profiler_impl::itt_range_pop(); }
 

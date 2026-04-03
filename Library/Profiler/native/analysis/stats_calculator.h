@@ -106,11 +106,15 @@ public:
 
     // Returns population variance.
     ValueType variance() const
-    { return all_same() ? (ValueType)0 : (ValueType)((squared_sum_ / count_) - (avg() * avg())); }
+    {
+        return all_same() ? (ValueType)0 : (ValueType)((squared_sum_ / count_) - (avg() * avg()));
+    }
 
     // Returns population stddev.
     ValueType std_deviation() const
-    { return all_same() ? (ValueType)0 : (ValueType)std::sqrt(variance()); }
+    {
+        return all_same() ? (ValueType)0 : (ValueType)std::sqrt(variance());
+    }
 
     void output_to_stream(std::ostream* stream) const
     {

@@ -58,5 +58,7 @@ inline constexpr int MILLIS_PER_SECOND  = 1000;
 //-----------------------------------------------------------------------------
 template <typename T>
 inline constexpr bool is_almost_zero(T x, T epsilon = std::numeric_limits<T>::epsilon()) noexcept
-{ return (std::fabs(x) < epsilon); }
+{
+    return (std::fabs(x) < epsilon);
+}
 }  // namespace quarisma

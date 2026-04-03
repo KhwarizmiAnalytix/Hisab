@@ -61,7 +61,9 @@ parallel_tools_api& parallel_tools_api::instance()
 
 //------------------------------------------------------------------------------
 backend_type parallel_tools_api::get_backend_type()
-{ return selected_backend_tools; }
+{
+    return selected_backend_tools;
+}
 
 //------------------------------------------------------------------------------
 const char* parallel_tools_api::get_backend()
@@ -128,27 +130,39 @@ void parallel_tools_api::refresh_number_of_thread()
 
 //------------------------------------------------------------------------------
 int parallel_tools_api::estimated_default_number_of_threads()
-{ return backend_impl_.estimated_default_number_of_threads(); }
+{
+    return backend_impl_.estimated_default_number_of_threads();
+}
 
 //------------------------------------------------------------------------------
 int parallel_tools_api::estimated_number_of_threads()
-{ return backend_impl_.estimated_number_of_threads(); }
+{
+    return backend_impl_.estimated_number_of_threads();
+}
 
 //------------------------------------------------------------------------------
 void parallel_tools_api::set_nested_parallelism(bool is_nested)
-{ backend_impl_.set_nested_parallelism(is_nested); }
+{
+    backend_impl_.set_nested_parallelism(is_nested);
+}
 
 //------------------------------------------------------------------------------
 bool parallel_tools_api::nested_parallelism()
-{ return backend_impl_.nested_parallelism(); }
+{
+    return backend_impl_.nested_parallelism();
+}
 
 //------------------------------------------------------------------------------
 bool parallel_tools_api::is_parallel_scope()
-{ return backend_impl_.is_parallel_scope(); }
+{
+    return backend_impl_.is_parallel_scope();
+}
 
 //------------------------------------------------------------------------------
 bool parallel_tools_api::single_thread()
-{ return backend_impl_.single_thread(); }
+{
+    return backend_impl_.single_thread();
+}
 
 }  // namespace parallel
 }  // namespace detail

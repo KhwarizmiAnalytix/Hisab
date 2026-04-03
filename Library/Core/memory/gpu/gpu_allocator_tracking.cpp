@@ -35,7 +35,6 @@
 #include <sstream>
 #include <utility>
 
-#include "common/configure.h"
 #include "util/exception.h"
 
 namespace quarisma
@@ -51,10 +50,9 @@ cuda_error_info::cuda_error_info(
     : error_code(static_cast<int>(cuda_error)),
       error_message(cudaGetErrorString(cuda_error)),
       cuda_function((function_name != nullptr) ? function_name : "unknown"),
-      timestamp_us(
-          std::chrono::duration_cast<std::chrono::microseconds>(
-              std::chrono::steady_clock::now().time_since_epoch())
-              .count()),
+      timestamp_us(std::chrono::duration_cast<std::chrono::microseconds>(
+                       std::chrono::steady_clock::now().time_since_epoch())
+                       .count()),
       attempted_size(size),
       device_index(device)
 {
@@ -624,13 +622,19 @@ std::vector<enhanced_gpu_alloc_record> gpu_allocator_tracking::GetEnhancedGPURec
 }
 
 void gpu_allocator_tracking::SetGPULoggingLevel(gpu_tracking_log_level level) noexcept
-{ gpu_log_level_.store(level, std::memory_order_relaxed); }
+{
+    gpu_log_level_.store(level, std::memory_order_relaxed);
+}
 
 gpu_tracking_log_level gpu_allocator_tracking::GetGPULoggingLevel() const noexcept
-{ return gpu_log_level_.load(std::memory_order_relaxed); }
+{
+    return gpu_log_level_.load(std::memory_order_relaxed);
+}
 
 void gpu_allocator_tracking::ResetGPUTimingStats() noexcept
-{ gpu_timing_stats_.reset(); }
+{
+    gpu_timing_stats_.reset();
+}
 
 std::tuple<double, double, double> gpu_allocator_tracking::GetGPUEfficiencyMetrics() const
 {
@@ -749,7 +753,9 @@ std::string gpu_allocator_tracking::GenerateGPUReport(
 }
 
 gpu_device_info gpu_allocator_tracking::GetDeviceInfo() const noexcept
-{ return device_info_; }
+{
+    return device_info_;
+}
 
 std::tuple<size_t, size_t, size_t> gpu_allocator_tracking::GetGPUMemoryUsage() const
 {

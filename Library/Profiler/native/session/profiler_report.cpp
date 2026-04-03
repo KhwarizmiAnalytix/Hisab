@@ -343,16 +343,24 @@ bool profiler_report::export_to_file(
 }
 
 bool profiler_report::export_console_report(const std::string& filename) const
-{ return export_to_file(filename, quarisma::profiler_options::output_format_enum::CONSOLE); }
+{
+    return export_to_file(filename, quarisma::profiler_options::output_format_enum::CONSOLE);
+}
 
 bool profiler_report::export_json_report(const std::string& filename) const
-{ return export_to_file(filename, quarisma::profiler_options::output_format_enum::JSON); }
+{
+    return export_to_file(filename, quarisma::profiler_options::output_format_enum::JSON);
+}
 
 bool profiler_report::export_csv_report(const std::string& filename) const
-{ return export_to_file(filename, quarisma::profiler_options::output_format_enum::CSV); }
+{
+    return export_to_file(filename, quarisma::profiler_options::output_format_enum::CSV);
+}
 
 bool profiler_report::export_xml_report(const std::string& filename) const
-{ return export_to_file(filename, quarisma::profiler_options::output_format_enum::STRUCTURED); }
+{
+    return export_to_file(filename, quarisma::profiler_options::output_format_enum::STRUCTURED);
+}
 
 void profiler_report::print_summary()
 {
@@ -737,7 +745,9 @@ std::string profiler_report::escape_csv_field(const std::string& field)
 }
 
 std::string profiler_report::generate_csv_header()
-{ return "Scope,Depth,Thread,Duration(ms),Memory Current,Memory Peak,Memory Delta"; }
+{
+    return "Scope,Depth,Thread,Duration(ms),Memory Current,Memory Peak,Memory Delta";
+}
 
 std::string profiler_report::generate_csv_row(const std::vector<std::string>& fields)
 {
@@ -785,11 +795,15 @@ std::string profiler_report::escape_xml_string(const std::string& str)
 
 std::string profiler_report::generate_xml_element(
     const std::string& tag, const std::string& content)
-{ return "<" + tag + ">" + content + "</" + tag + ">"; }
+{
+    return "<" + tag + ">" + content + "</" + tag + ">";
+}
 
 std::string profiler_report::generate_xml_attribute(
     const std::string& name, const std::string& value)
-{ return name + "=\"" + escape_xml_string(value) + "\""; }
+{
+    return name + "=\"" + escape_xml_string(value) + "\"";
+}
 
 void profiler_report::process_scope_data_recursive(
     const profiler_scope_data& scope, std::stringstream& ss, int indent) const

@@ -108,7 +108,9 @@ exception::~exception() = default;
 exception::exception(
     std::string msg, std::string backtrace, const void* caller, exception_category category)
     : msg_(std::move(msg)), backtrace_(std::move(backtrace)), caller_(caller), category_(category)
-{ refresh_what(); }
+{
+    refresh_what();
+}
 
 //-----------------------------------------------------------------------------
 exception::exception(source_location source_location, std::string msg, exception_category category)
@@ -136,7 +138,9 @@ exception::exception(
       caller_(nullptr),
       nested_exception_(std::move(nested)),  //NOLINT
       category_(category)
-{ refresh_what(); }
+{
+    refresh_what();
+}
 
 //-----------------------------------------------------------------------------
 const char* exception::what() const noexcept
@@ -210,6 +214,8 @@ void exception::add_context(std::string msg)
 namespace details
 {
 void check_fail(const char* func, const char* file, int line, const std::string& msg)
-{ throw quarisma::exception({func, file, line}, msg, quarisma::exception_category::GENERIC); }
+{
+    throw quarisma::exception({func, file, line}, msg, quarisma::exception_category::GENERIC);
+}
 }  // namespace details
 }  // namespace quarisma

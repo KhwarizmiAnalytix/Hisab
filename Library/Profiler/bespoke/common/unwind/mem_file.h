@@ -44,7 +44,9 @@ struct MemFile
     {
         UNWIND_CHECK(
             fd_ != -1, "failed to open {}: {}", filename_, quarisma::utils::str_error(errno));
-        struct stat s{};
+        struct stat s
+        {
+        };
         if (-1 == fstat(fd_, &s))
         {
             close(fd_);  // destructors don't run during exceptions
