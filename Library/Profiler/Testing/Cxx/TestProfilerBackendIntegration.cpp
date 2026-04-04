@@ -13,11 +13,16 @@
 #include <vector>
 
 #include "Testing/baseTest.h"
+#include "native/session/profiler.h"
+
+#if PROFILER_HAS_KINETO || PROFILER_HAS_ITT
 #include "bespoke/base/base.h"
 #include "bespoke/common/orchestration/observer.h"
 #include "bespoke/common/record_function.h"
+#if PROFILER_HAS_KINETO
 #include "bespoke/kineto/profiler_kineto.h"
-#include "native/session/profiler.h"
+#endif
+#endif
 
 namespace
 {
@@ -32,10 +37,12 @@ void busy_wait_for(std::chrono::microseconds duration)
     }
 }
 
+#if PROFILER_HAS_KINETO || PROFILER_HAS_ITT
 std::unordered_set<quarisma::RecordScope> user_scopes()
 {
     return {quarisma::RecordScope::USER_SCOPE};
 }
+#endif
 
 }  // namespace
 
