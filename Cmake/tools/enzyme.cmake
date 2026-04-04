@@ -5,33 +5,25 @@
 # differentiation. Enzyme works by loading as an LLVM plugin and requires
 # special compiler flags to enable differentiation capabilities.
 #
-# Enzyme provides:
-# - Forward-mode automatic differentiation
-# - Reverse-mode automatic differentiation (backpropagation)
-# - High-performance AD with minimal overhead
-# - Works with C and C++ code
+# Discovery is implemented by Cmake/packages/FindEnzyme.cmake; use
+#   find_package(Enzyme [REQUIRED] [QUIET])
+# with CMAKE_MODULE_PATH containing Cmake/packages (set in root CMakeLists.txt).
+# Module mode is used (not CONFIG); upstream may ship EnzymeConfig.cmake separately.
 #
 # Requirements:
 # - Clang/LLVM compiler (GCC not supported)
-# - Installed Enzyme CMake package (EnzymeConfig.cmake), e.g. from Homebrew or
-#   a source build with install; use Enzyme_DIR or CMAKE_PREFIX_PATH if needed
+# - Enzyme plugin library (ClangEnzyme-*.so or LLVMEnzyme-*.so)
 # =============================================================================
 
 cmake_minimum_required(VERSION 3.16)
 
-# Include guard to prevent multiple inclusions
 include_guard(GLOBAL)
 
-# Enzyme AD Support Flag
-# Controls whether Enzyme automatic differentiation is enabled.
-# When enabled, Enzyme provides high-performance AD capabilities.
-# Note: Already defined in main CMakeLists.txt, just documenting here
 if(NOT DEFINED QUARISMA_ENABLE_ENZYME)
   option(QUARISMA_ENABLE_ENZYME "Enable Enzyme automatic differentiation support" OFF)
   mark_as_advanced(QUARISMA_ENABLE_ENZYME)
 endif()
 
-# Only proceed if Enzyme is enabled
 if(NOT QUARISMA_ENABLE_ENZYME)
   message(STATUS "Enzyme automatic differentiation support is disabled (QUARISMA_ENABLE_ENZYME=OFF)")
   return()
@@ -39,10 +31,6 @@ endif()
 
 message(STATUS "Configuring Enzyme automatic differentiation support...")
 
-# =============================================================================
-# Step 1: Verify compiler compatibility
-# =============================================================================
-# Enzyme requires Clang/LLVM compiler
 if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   message(WARNING
     "\n"
@@ -68,131 +56,111 @@ if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   return()
 endif()
 
-message(STATUS "✅ Compiler check passed: ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "Compiler check passed: ${CMAKE_CXX_COMPILER_ID}")
 
-# =============================================================================
-# Step 2: find_package(Enzyme)
-# =============================================================================
-# Upstream Enzyme installs EnzymeConfig.cmake and imported targets such as
-# ClangEnzymeFlags and LLDEnzymeFlags (see enzyme/test/test_find_package).
+set(ENZYME_PLUGIN_PATH "" CACHE PATH
+  "Path to Enzyme plugin library (ClangEnzyme-*.so or LLVMEnzyme-*.so)")
+mark_as_advanced(ENZYME_PLUGIN_PATH)
 
-set(QUARISMA_ENZYME_FLAGS_TARGET
-    "ClangEnzymeFlags"
-    CACHE STRING
-          "Enzyme imported flags target: ClangEnzymeFlags (clang) or LLDEnzymeFlags (lld)"
-)
-mark_as_advanced(QUARISMA_ENZYME_FLAGS_TARGET)
-
-find_package(Enzyme CONFIG)
+find_package(Enzyme QUIET)
 
 if(NOT Enzyme_FOUND)
-  message(WARNING
-    "\n"
-    "================================================================================\n"
-    "WARNING: Enzyme CMake package not found\n"
-    "================================================================================\n"
-    "\n"
-    "Enzyme automatic differentiation requires an installed Enzyme CMake config\n"
-    "(EnzymeConfig.cmake), typically under <prefix>/lib/cmake/Enzyme.\n"
-    "\n"
-    "INSTALLATION:\n"
-    "\n"
-    "1. macOS (Homebrew):\n"
-    "   brew install enzyme\n"
-    "   # If needed:\n"
-    "   cmake -DEnzyme_DIR=/opt/homebrew/opt/enzyme/lib/cmake/Enzyme ..\n"
-    "\n"
-    "2. Build from source:\n"
-    "   git clone https://github.com/EnzymeAD/Enzyme.git\n"
-    "   cd Enzyme/enzyme && mkdir build && cd build\n"
-    "   cmake -G Ninja .. -DLLVM_DIR=/path/to/llvm/lib/cmake/llvm\n"
-    "   cmake --build . && cmake --install . --prefix <install-prefix>\n"
-    "   cmake -DCMAKE_PREFIX_PATH=<install-prefix> ..\n"
-    "\n"
-    "For more information: https://enzyme.mit.edu/\n"
-    "\n"
-    "Disabling Enzyme support.\n"
-    "================================================================================\n"
-  )
+  if(WIN32)
+    message(WARNING
+      "\n"
+      "================================================================================\n"
+      "WARNING: Enzyme plugin library not found\n"
+      "================================================================================\n"
+      "\n"
+      "Enzyme automatic differentiation requires the Enzyme LLVM plugin.\n"
+      "\n"
+      "INSTALLATION METHODS FOR WINDOWS:\n"
+      "\n"
+      "1. Build from source:\n"
+      "   git clone https://github.com/EnzymeAD/Enzyme.git\n"
+      "   cd Enzyme\\enzyme\n"
+      "   mkdir build && cd build\n"
+      "   cmake -G Ninja .. ^\n"
+      "     -DLLVM_DIR=\"C:/Program Files/LLVM/lib/cmake/llvm\" ^\n"
+      "     -DCMAKE_BUILD_TYPE=Release ^\n"
+      "     -DCMAKE_C_COMPILER=\"C:/Program Files/LLVM/bin/clang.exe\" ^\n"
+      "     -DCMAKE_CXX_COMPILER=\"C:/Program Files/LLVM/bin/clang++.exe\"\n"
+      "   ninja\n"
+      "   copy LLVMEnzyme-*.dll \"C:\\Program Files\\LLVM\\bin\\\"\n"
+      "\n"
+      "2. Specify custom path:\n"
+      "   cmake -DENZYME_PLUGIN_PATH=\"C:/path/to/LLVMEnzyme-21.dll\" ..\n"
+      "\n"
+      "For more information: https://enzyme.mit.edu/\n"
+      "\n"
+      "Disabling Enzyme support.\n"
+      "================================================================================\n"
+    )
+  else()
+    message(WARNING
+      "\n"
+      "================================================================================\n"
+      "WARNING: Enzyme plugin library not found\n"
+      "================================================================================\n"
+      "\n"
+      "Enzyme automatic differentiation requires the Enzyme LLVM plugin.\n"
+      "\n"
+      "INSTALLATION METHODS:\n"
+      "\n"
+      "1. Build from source:\n"
+      "   git clone https://github.com/EnzymeAD/Enzyme.git\n"
+      "   cd Enzyme/enzyme\n"
+      "   mkdir build && cd build\n"
+      "   cmake -G Ninja .. \\\n"
+      "     -DLLVM_DIR=/path/to/llvm/lib/cmake/llvm \\\n"
+      "     -DCMAKE_BUILD_TYPE=Release\n"
+      "   ninja\n"
+      "\n"
+      "2. Specify custom path:\n"
+      "   cmake -DENZYME_PLUGIN_PATH=/path/to/ClangEnzyme-*.so ..\n"
+      "\n"
+      "3. macOS (Homebrew):\n"
+      "   brew install enzyme\n"
+      "\n"
+      "For more information: https://enzyme.mit.edu/\n"
+      "\n"
+      "Disabling Enzyme support.\n"
+      "================================================================================\n"
+    )
+  endif()
   set(QUARISMA_ENABLE_ENZYME OFF CACHE BOOL "Enable Enzyme automatic differentiation support" FORCE)
   return()
 endif()
 
-if(NOT TARGET "${QUARISMA_ENZYME_FLAGS_TARGET}")
-  message(WARNING
-    "\n"
-    "================================================================================\n"
-    "WARNING: Enzyme flags target \"${QUARISMA_ENZYME_FLAGS_TARGET}\" not found\n"
-    "================================================================================\n"
-    "\n"
-    "Valid options are typically ClangEnzymeFlags or LLDEnzymeFlags (from the\n"
-    "installed Enzyme package). Set QUARISMA_ENZYME_FLAGS_TARGET accordingly.\n"
-    "\n"
-    "Disabling Enzyme support.\n"
-    "================================================================================\n"
-  )
-  set(QUARISMA_ENABLE_ENZYME OFF CACHE BOOL "Enable Enzyme automatic differentiation support" FORCE)
-  return()
-endif()
+set(ENZYME_COMPILER_FLAGS
+  "-fpass-plugin=${Enzyme_PLUGIN_LIBRARY}"
+)
 
-message(STATUS "Found Enzyme: ${Enzyme_DIR}")
-message(STATUS "Using Enzyme flags target: ${QUARISMA_ENZYME_FLAGS_TARGET}")
-
-# =============================================================================
-# Step 3: Optional extra compiler flags
-# =============================================================================
-# NOTE: -fno-exceptions and -fno-rtti are disabled by default because they
-# conflict with code that uses exceptions and RTTI (which Quarisma does).
-# Enzyme can work with exceptions and RTTI enabled, though it may have
-# slightly lower performance.
 option(ENZYME_ENABLE_OPTIMIZATIONS "Enable Enzyme-specific optimizations (disables exceptions/RTTI)" OFF)
 mark_as_advanced(ENZYME_ENABLE_OPTIMIZATIONS)
 
-set(_quarisma_enzyme_extra_flags "")
 if(ENZYME_ENABLE_OPTIMIZATIONS)
-  list(APPEND _quarisma_enzyme_extra_flags "-fno-exceptions" "-fno-rtti")
+  list(APPEND ENZYME_COMPILER_FLAGS
+    "-fno-exceptions"
+    "-fno-rtti"
+  )
   message(WARNING "Enzyme optimizations enabled: -fno-exceptions and -fno-rtti will be applied. This may break code that uses exceptions or RTTI.")
 endif()
 
-# Legacy cache entry: full compiler flag line is no longer constructed here;
-# the Enzyme package supplies -fpass-plugin via the imported flags target.
-set(ENZYME_COMPILE_OPTIONS "${_quarisma_enzyme_extra_flags}" CACHE STRING "Extra Enzyme-related compiler flags (in addition to find_package targets)" FORCE)
+set(ENZYME_COMPILE_OPTIONS ${ENZYME_COMPILER_FLAGS} CACHE STRING "Enzyme compiler flags" FORCE)
 
-# =============================================================================
-# Step 4: Create Quarisma::enzyme interface target
-# =============================================================================
+message(STATUS "Enzyme compiler flags: ${ENZYME_COMPILE_OPTIONS}")
 
-if(NOT TARGET quarisma_enzyme_iface)
-  add_library(quarisma_enzyme_iface INTERFACE)
-  add_library(Quarisma::enzyme ALIAS quarisma_enzyme_iface)
-  message(STATUS "✅ Created Quarisma::enzyme interface target")
+if(NOT TARGET Quarisma::enzyme)
+  add_library(Quarisma::enzyme INTERFACE IMPORTED GLOBAL)
+  target_compile_options(Quarisma::enzyme INTERFACE ${ENZYME_COMPILE_OPTIONS})
+  target_link_options(Quarisma::enzyme INTERFACE ${ENZYME_COMPILE_OPTIONS})
+  target_compile_definitions(Quarisma::enzyme INTERFACE QUARISMA_HAS_ENZYME=1)
+  message(STATUS "Created Quarisma::enzyme interface target")
 endif()
-
-set_target_properties(
-  quarisma_enzyme_iface
-  PROPERTIES INTERFACE_LINK_LIBRARIES "${QUARISMA_ENZYME_FLAGS_TARGET}" INTERFACE_COMPILE_DEFINITIONS
-             QUARISMA_HAS_ENZYME=1
-)
-
-if(_quarisma_enzyme_extra_flags)
-  set_target_properties(
-    quarisma_enzyme_iface
-    PROPERTIES INTERFACE_COMPILE_OPTIONS "${_quarisma_enzyme_extra_flags}" INTERFACE_LINK_OPTIONS
-               "${_quarisma_enzyme_extra_flags}"
-  )
-else()
-  set_target_properties(quarisma_enzyme_iface PROPERTIES INTERFACE_COMPILE_OPTIONS "" INTERFACE_LINK_OPTIONS "")
-endif()
-
-# =============================================================================
-# Step 5: Export Enzyme information
-# =============================================================================
 
 set(ENZYME_FOUND TRUE CACHE BOOL "Enzyme was found successfully" FORCE)
-# Plugin path is owned by the Enzyme imported targets; kept for compatibility with older docs/tools.
-set(ENZYME_PLUGIN_LIBRARY "" CACHE FILEPATH "Enzyme plugin path (unused with find_package; see Enzyme imported targets)" FORCE)
 
 message(STATUS "Enzyme automatic differentiation configuration complete")
-message(STATUS "  Enzyme_DIR: ${Enzyme_DIR}")
-message(STATUS "  Flags target: ${QUARISMA_ENZYME_FLAGS_TARGET}")
+message(STATUS "  Plugin: ${Enzyme_PLUGIN_LIBRARY}")
 message(STATUS "  Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
