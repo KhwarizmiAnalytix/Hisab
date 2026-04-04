@@ -2,17 +2,18 @@
 
 ## Table of Contents
 1. [Overview](#overview)
-2. [Architecture](#architecture)
-3. [Quick Start](#quick-start)
-4. [Core Components](#core-components)
-5. [API Reference](#api-reference)
-6. [Usage Examples](#usage-examples)
-7. [Function Pipelines](#function-pipelines)
-8. [Intel ITT API Integration](#intel-itt-api-integration)
-9. [Quarisma Kineto Integration](#pytorch-kineto-integration)
-10. [Output Formats](#output-formats)
-11. [Best Practices](#best-practices)
-12. [Troubleshooting](#troubleshooting)
+2. [Profiler backends and build configuration](#profiler-backends-and-build-configuration)
+3. [Architecture](#architecture)
+4. [Quick Start](#quick-start)
+5. [Core Components](#core-components)
+6. [API Reference](#api-reference)
+7. [Usage Examples](#usage-examples)
+8. [Function Pipelines](#function-pipelines)
+9. [Intel ITT API Integration](#intel-itt-api-integration)
+10. [Quarisma Kineto Integration](#pytorch-kineto-integration)
+11. [Output Formats](#output-formats)
+12. [Best Practices](#best-practices)
+13. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -28,7 +29,7 @@ The Quarisma Profiler System is a comprehensive, modular performance analysis fr
 - **Multiple output formats** (console, JSON, CSV, XML, Chrome Trace)
 - **Minimal performance overhead** designed for production use
 - **Intel ITT API integration** for Intel VTune profiling
-- **Quarisma Kineto integration** for comprehensive profiling
+- **Quarisma Kineto integration** for comprehensive profiling (when the Kineto backend is enabled at build time)
 
 ### Key Features
 
@@ -41,6 +42,44 @@ The Quarisma Profiler System is a comprehensive, modular performance analysis fr
 | **Statistical** | Min/max/mean/std dev/percentiles (25th, 50th, 75th, 90th, 95th, 99th) |
 | **Exportable** | JSON, CSV, XML, Chrome Trace, XPlane formats |
 | **Low Overhead** | < 100 nanoseconds per scope, < 1KB per active scope |
+
+---
+
+## Profiler backends and build configuration
+
+Quarisma selects **one** profiler backend at configure time. The preprocessor flags `PROFILER_HAS_NATIVE_PROFILER`, `PROFILER_HAS_KINETO`, and `PROFILER_HAS_ITT` are mutually exclusive.
+
+### Native backend (standalone)
+
+The **native** backend compiles only sources under `Library/Profiler/native/` (plus shared `common/` utilities). It does **not** link libkineto or compile `bespoke/kineto` or `bespoke/itt` sources. Use it for lightweight Chrome Trace / XPlane / session APIs without Kineto.
+
+**CMake**
+
+- Cache variable: `-DQUARISMA_PROFILER_TYPE=NATIVE` (valid values: `KINETO`, `NATIVE`, `ITT`; default is `KINETO`).
+- Helper: from `Scripts/`, `python setup.py config.build.ninja.clang.release --profiler.native` sets the same option.
+
+**Bazel**
+
+- Add `--config=native_profiler` to your build or test command (see root `.bazelrc`: `build:native_profiler --define=quarisma_profiler_type=native`).
+- Equivalent: `--define=quarisma_profiler_type=native`.
+- `//Library/Profiler:Profiler` then exposes include roots for `native/**` only; do not include `bespoke/*` headers unless you also enable Kineto or ITT.
+
+**Headers and API (native mode)**
+
+- Primary session API: `#include "native/session/profiler.h"` (add `Library/Profiler` to your include path, or depend on `Quarisma::Profiler` / `//Library/Profiler:Profiler`).
+- Types and macros live in namespace `quarisma` (for example `quarisma::profiler_session_builder`, `quarisma::profiler_session`, `quarisma::profiler_scope`). Scope macros are in `common/profiler_macros.h` (for example `PROFILER_PROFILE_SCOPE`).
+
+**Tests**
+
+- `ProfilerCxxTests` under native mode excludes Kineto-only sources; shared translation units that reference `bespoke/*` must guard includes and code with `PROFILER_HAS_KINETO` or `PROFILER_HAS_ITT` so Bazel’s stricter include graph matches CMake (where headers may still exist on disk).
+
+### Kineto backend (default in CMake and Bazel)
+
+Default: `QUARISMA_PROFILER_TYPE=KINETO` and Bazel without `native_profiler` / `itt`. Sets `PROFILER_HAS_KINETO=1`, links Kineto where applicable, and compiles `bespoke/kineto` and related sources.
+
+### ITT backend
+
+CMake: `-DQUARISMA_PROFILER_TYPE=ITT`. Bazel: `--config=itt`. Enables `bespoke/itt` and `PROFILER_HAS_ITT=1`.
 
 ---
 
@@ -105,7 +144,7 @@ The Quarisma Profiler System is a comprehensive, modular performance analysis fr
 ### Basic Usage
 
 ```cpp
-#include "profiler/session/profiler.h"
+#include "native/session/profiler.h"
 
 using namespace quarisma;
 
@@ -491,7 +530,7 @@ python setup.py config.build.ninja.clang.debug
 #include <ittnotify.h>
 #endif
 
-#include "profiler/session/profiler.h"
+#include "native/session/profiler.h"
 
 void profile_with_itt() {
 #ifdef PROFILER_HAS_ITT
@@ -795,7 +834,7 @@ The Enhanced Profiler is designed for minimal overhead:
 ### Example: Matrix Multiplication Profiling
 
 ```cpp
-#include "profiler/session/profiler.h"
+#include "native/session/profiler.h"
 #include <vector>
 
 std::vector<std::vector<double>> matrix_multiply(
@@ -1103,4 +1142,4 @@ Timing Statistics:
 - [Intel ITT API Documentation](https://github.com/intel/ittapi)
 - [Quarisma Kineto](https://github.com/pytorch/kineto)
 - [Chrome Trace Format](https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU)
-- [XPlane Format](Library/Core/profiler/exporters/xplane/)
+- [XPlane format](Library/Profiler/native/exporters/xplane/)

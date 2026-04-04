@@ -396,7 +396,7 @@ See the following examples in the codebase:
 
 ## Further Reading
 
-- [Profiler Design Document](Docs/profiler.md)
+- [Profiler design document](profiler.md)
 - [Kineto Integration](Library/Core/profiler/kineto/README.md)
 - [Chrome Trace Format Specification](https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview)
 

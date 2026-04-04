@@ -165,7 +165,7 @@ cmake --build . --config Release --parallel %NUMBER_OF_PROCESSORS%
 
 Quarisma supports **both CMake and Bazel** build systems, providing flexibility for different development workflows and CI/CD environments. The Bazel build system offers fast incremental builds, hermetic builds, and excellent caching capabilities.
 
-> **Note**: Both build systems are fully supported and maintained. Bazel defaults match CMake defaults (LOGURU for logging, native profiler backend).
+> **Note**: Both build systems are fully supported and maintained. Bazel defaults match CMake defaults where applicable (for example LOGURU for logging). The **profiler backend defaults to Kineto** in both CMake (`QUARISMA_PROFILER_TYPE=KINETO`) and Bazel (no `native_profiler` / `itt` config). Enable the **native** backend with CMake `-DQUARISMA_PROFILER_TYPE=NATIVE` or `python setup.py ... --profiler.native`, and with Bazel `--config=native_profiler` (or `--define=quarisma_profiler_type=native`).
 
 #### Prerequisites
 
@@ -882,6 +882,7 @@ Full cross-platform compatibility across Windows, Linux, and macOS with platform
 - **[Cross-Platform Building](Docs/readme/cross-platform-building.md)** - Platform-specific build instructions
 - **[Linting System](Docs/readme/linter.md)** - Comprehensive linter documentation and configuration
 - **[Usage Examples](Docs/readme/usage-examples.md)** - Practical build configuration examples
+- **[Profiler](Docs/profiler/README.md)** - Profiler library, backends (native / Kineto / ITT), examples, and Kineto notes
 
 ### Additional Documentation
 
