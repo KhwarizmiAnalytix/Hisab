@@ -101,7 +101,7 @@ QUARISMATEST(Macros, Likely)
 {
     bool value = true;
     bool result;
-    if (QUARISMA_LIKELY(value))
+    if QUARISMA_LIKELY(value)
         result = true;
     else
         result = false;
@@ -114,7 +114,7 @@ QUARISMATEST(Macros, Unlikely)
 {
     bool value = false;
     bool result;
-    if (QUARISMA_UNLIKELY(value))
+    if QUARISMA_UNLIKELY(value)
         result = true;
     else
         result = false;

@@ -12,6 +12,8 @@ Usage:
     python setup_bazel.py config.build.release.test.cxx20
 """
 
+import glob
+import os
 import platform
 import shutil
 import subprocess
@@ -63,6 +65,56 @@ def get_bazel_command() -> str:
     if cmd:
         return cmd
     raise RuntimeError("Neither bazel nor bazelisk found in PATH")
+
+
+def find_enzyme_pass_plugin() -> Optional[str]:
+    """Resolve the Enzyme LLVM plugin path (mirrors Cmake/tools/enzyme.cmake).
+
+    Prefer LLDEnzyme over ClangEnzyme when multiple matches exist. Honour
+    ENZYME_PLUGIN_PATH when set to an existing file.
+    """
+    env_path = os.environ.get("ENZYME_PLUGIN_PATH", "").strip()
+    if env_path and os.path.isfile(env_path):
+        return env_path
+
+    system = platform.system()
+    search_dirs: List[str] = []
+    if system == "Darwin":
+        search_dirs = ["/opt/homebrew/lib", "/usr/local/lib", "/usr/lib"]
+    elif system == "Linux":
+        search_dirs = ["/usr/lib", "/usr/local/lib"]
+        llvm_dir = os.environ.get("LLVM_DIR", "").strip()
+        if llvm_dir:
+            search_dirs.insert(0, os.path.join(llvm_dir, "lib"))
+    elif system == "Windows":
+        search_dirs = [
+            os.path.join(os.environ.get("LLVM_DIR", ""), "bin"),
+            os.path.join(os.environ.get("LLVM_DIR", ""), "lib"),
+            r"C:\Program Files\LLVM\bin",
+            r"C:\Program Files\LLVM\lib",
+        ]
+
+    patterns: List[str] = []
+    if system == "Darwin":
+        patterns = ["LLDEnzyme-*.dylib", "ClangEnzyme-*.dylib", "LLVMEnzyme-*.dylib"]
+    elif system == "Linux":
+        patterns = ["LLDEnzyme-*.so", "ClangEnzyme-*.so", "LLVMEnzyme-*.so"]
+    elif system == "Windows":
+        patterns = ["LLDEnzyme-*.dll", "ClangEnzyme-*.dll", "LLVMEnzyme-*.dll"]
+
+    candidates: List[str] = []
+    for directory in search_dirs:
+        if not directory or not os.path.isdir(directory):
+            continue
+        for pattern in patterns:
+            candidates.extend(glob.glob(os.path.join(directory, pattern)))
+
+    # Prefer LLDEnzyme (same as CMake enzyme.cmake)
+    for marker in ("LLDEnzyme", "ClangEnzyme", "LLVMEnzyme"):
+        for path in candidates:
+            if marker in os.path.basename(path):
+                return path
+    return candidates[0] if candidates else None
 
 
 class BazelConfiguration:
@@ -290,6 +342,29 @@ class BazelConfiguration:
         # Add all config flags
         for config in self.configs:
             cmd.append(f"--config={config}")
+
+        # Enzyme: CMake applies -fpass-plugin at compile and link for Quarisma::enzyme.
+        # Bazel only toggles QUARISMA_HAS_ENZYME; without the plugin, __enzyme_* calls are
+        # unresolved (crash at null). Restrict --per_file_copt to //Library so GCC-built
+        # third-party targets never see -fpass-plugin.
+        if "enzyme" in self.configs:
+            if self.compiler != "clang":
+                print_status(
+                    "Enzyme requires Clang; skipping -fpass-plugin (Enzyme tests may fail).",
+                    "WARNING",
+                )
+            else:
+                plugin = find_enzyme_pass_plugin()
+                if plugin:
+                    cmd.append(f"--per_file_copt=//Library/.*\\.cpp$@-fpass-plugin={plugin}")
+                    cmd.append(f"--linkopt=-fpass-plugin={plugin}")
+                    print_status(f"Enzyme LLVM pass plugin: {plugin}", "INFO")
+                else:
+                    print_status(
+                        "Enzyme enabled but no plugin found. Set ENZYME_PLUGIN_PATH or install "
+                        "enzyme (e.g. brew install enzyme). Enzyme AD tests may crash.",
+                        "WARNING",
+                    )
 
         # Add C++ standard if specified
         if self.cxx_standard:

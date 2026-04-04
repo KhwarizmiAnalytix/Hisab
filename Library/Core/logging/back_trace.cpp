@@ -27,6 +27,9 @@
 #define SUPPORTS_BACKTRACE 1
 #elif defined(__unix__) || defined(__APPLE__)
 #include <execinfo.h>
+#ifdef __APPLE__
+#include <malloc/malloc.h>
+#endif
 #define SUPPORTS_BACKTRACE 1
 #else
 #define SUPPORTS_BACKTRACE 0
@@ -259,8 +262,25 @@ std::vector<stack_frame> back_trace::capture(const backtrace_options& options)
     callstack.resize(static_cast<size_t>(number_of_frames));
 
     // Get symbol information
-    std::unique_ptr<char*, std::function<void(char**)> > const raw_symbols(
-        ::backtrace_symbols(callstack.data(), static_cast<int>(callstack.size())), free);
+    // backtrace_symbols() allocates via the system allocator. On Apple platforms
+    // mimalloc may have replaced free() in this binary, causing a crash if we
+    // use the default deleter. Use malloc_zone_free to ensure the correct zone's
+    // allocator is used.
+    auto backtrace_free = [](char** p) noexcept
+    {
+        if (p == nullptr)
+            return;
+#ifdef __APPLE__
+        malloc_zone_t* zone = malloc_zone_from_ptr(static_cast<const void*>(p));
+        if (zone != nullptr)
+            malloc_zone_free(zone, static_cast<void*>(p));
+#else
+        ::free(p);
+#endif
+    };
+    std::unique_ptr<char*, decltype(backtrace_free)> const raw_symbols(
+        ::backtrace_symbols(callstack.data(), static_cast<int>(callstack.size())),
+        backtrace_free);
 
     if (!raw_symbols)
     {

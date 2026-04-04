@@ -21,6 +21,7 @@
 #include "common/pointer.h"
 #include "memory/backend/allocator_pool.h"
 #include "memory/cpu/allocator.h"
+#include "util/exception.h"
 #include "memory/helper/memory_allocator.h"
 
 using namespace quarisma;
@@ -352,7 +353,10 @@ QUARISMATEST(AllocatorPool, zero_size_allocation)
     auto [pool_allocator, sub_allocator_ptr] = create_test_pool_allocator();
 
     // Zero-size allocation should be handled gracefully
+    auto prev_mode = quarisma::get_exception_mode();
+    quarisma::set_exception_mode(quarisma::exception_mode::THROW);
     ASSERT_ANY_THROW({ pool_allocator->allocate_raw(64, 0); });
+    quarisma::set_exception_mode(prev_mode);
 
     END_TEST();
 }

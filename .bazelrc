@@ -244,6 +244,10 @@ build:sobol_1111 --define=quarisma_sobol_1111=true
 #
 # quarisma_enzyme_copts()/quarisma_enzyme_linkopts() in //bazel:quarisma.bzl mark
 # the structural intent; the actual flag is user-supplied via .bazelrc.user.
+#
+# Scripts/setup_bazel.py with an "enzyme" token auto-discovers the plugin (same search
+# as CMake enzyme.cmake) and passes --per_file_copt + --linkopt. For raw `bazel` invokes,
+# set ENZYME_PLUGIN_PATH or add the lines from the comment block above to .bazelrc.user.
 build:enzyme --define=quarisma_enable_enzyme=true
 
 # =============================================================================
