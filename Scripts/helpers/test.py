@@ -9,6 +9,8 @@ import os
 import platform
 import subprocess
 
+from helpers.cuda_env import augment_env_for_cuda_toolkit
+
 
 def run_ctest(
     builder: str,
@@ -49,7 +51,7 @@ def run_ctest(
             ctest_cmd.append(verbosity)
 
         # Set up sanitizer suppressions if using a sanitizer
-        env = os.environ.copy()
+        env = augment_env_for_cuda_toolkit()
         if sanitizer_type and source_path:
             suppressions_file = os.path.join(
                 source_path, "Scripts", "suppressions", f"{sanitizer_type}san_suppressions.txt"

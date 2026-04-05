@@ -9,6 +9,8 @@ import os
 import subprocess
 from typing import Optional
 
+from helpers.cuda_env import augment_env_for_cuda_toolkit
+
 
 def get_logical_processor_count() -> Optional[int]:
     """Get the number of logical processors available."""
@@ -63,8 +65,9 @@ def build_project(builder: str, build_enum: str, system: str, shell_flag: bool) 
         else:
             return 1
 
+        env = augment_env_for_cuda_toolkit()
         subprocess.check_call(
-            cmake_cmd_build, stderr=subprocess.STDOUT, shell=shell_flag
+            cmake_cmd_build, stderr=subprocess.STDOUT, shell=shell_flag, env=env
         )
         return 0
 

@@ -8,6 +8,8 @@ Extracted from setup.py for better modularity and maintainability.
 import os
 import subprocess
 
+from helpers.cuda_env import augment_env_for_cuda_toolkit
+
 
 def configure_build(
     source_path: str,
@@ -56,7 +58,10 @@ def configure_build(
         # Add additional CMake flags
         cmake_cmd.extend(cmake_flags)
 
-        subprocess.check_call(cmake_cmd, stderr=subprocess.STDOUT, shell=shell_flag)
+        env = augment_env_for_cuda_toolkit()
+        subprocess.check_call(
+            cmake_cmd, stderr=subprocess.STDOUT, shell=shell_flag, env=env
+        )
         return 0
 
     except subprocess.CalledProcessError:

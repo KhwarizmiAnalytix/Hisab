@@ -19,8 +19,13 @@ if(NOT QUARISMA_ENABLE_CUDA)
 endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-  message(STATUS "CUDA: Using Clang as host compiler ${CMAKE_CXX_COMPILER}")
-  set(CMAKE_CUDA_HOST_COMPILER "${CMAKE_CXX_COMPILER}")
+  # Use Clang directly as the CUDA compiler instead of nvcc.
+  # CMAKE_CUDA_COMPILER must be set as a CACHE variable BEFORE enable_language(CUDA)
+  # so the cmake try_compile subprocess that performs CUDA compiler identification
+  # inherits the value.
+  set(CMAKE_CUDA_COMPILER "${CMAKE_CXX_COMPILER}"
+      CACHE FILEPATH "CUDA compiler (Clang)" FORCE)
+  message(STATUS "CUDA: using Clang ${CMAKE_CXX_COMPILER_VERSION} as CUDA compiler")
 endif()
 
 find_package(CUDAToolkit REQUIRED)
@@ -37,8 +42,9 @@ if(CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA" AND CMAKE_CUDA_COMPILER_VERSION VERS
   message(FATAL_ERROR "QUARISMA CUDA support requires compiler version 9.2+")
 endif()
 
-# Check for version conflicts
-if(NOT CMAKE_CUDA_COMPILER_VERSION VERSION_EQUAL CUDAToolkit_VERSION)
+# Check for version conflicts (nvcc only — Clang reports its own version, not the toolkit version)
+if(CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA"
+   AND NOT CMAKE_CUDA_COMPILER_VERSION VERSION_EQUAL CUDAToolkit_VERSION)
   message(
     FATAL_ERROR "Found two conflicting CUDA versions:\n"
                 "Compiler V${CMAKE_CUDA_COMPILER_VERSION} and\n" "Toolkit V${CUDAToolkit_VERSION}"
@@ -46,17 +52,31 @@ if(NOT CMAKE_CUDA_COMPILER_VERSION VERSION_EQUAL CUDAToolkit_VERSION)
 endif()
 
 message(STATUS "Quarisma: CUDA detected: ${CUDAToolkit_VERSION}")
-message(STATUS "Quarisma: CUDA nvcc is: ${CMAKE_CUDA_COMPILER}")
+message(STATUS "Quarisma: CUDA compiler is: ${CMAKE_CUDA_COMPILER}")
 message(STATUS "Quarisma: CUDA toolkit directory: ${CUDAToolkit_ROOT}")
 
-# Set C++ standard based on CUDA version
-if(CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA" AND CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL
-                                                "11.0"
-)
-  message(STATUS "CUDA supports C++17 standard")
-  set(CMAKE_CUDA_STANDARD 17)
+# Set C++ standard based on CUDA compiler:
+#   Clang:    inherits the host C++ standard (C++17 minimum)
+#   nvcc 12.0+: supports C++20
+#   nvcc 11.0+: supports C++17
+#   nvcc older: falls back to C++14
+if(CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA")
+  if(CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL "12.0")
+    message(STATUS "CUDA supports C++20 standard")
+    set(CMAKE_CUDA_STANDARD 20)
+  elseif(CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL "11.0")
+    message(STATUS "CUDA supports C++17 standard")
+    set(CMAKE_CUDA_STANDARD 17)
+  else()
+    set(CMAKE_CUDA_STANDARD 14)
+  endif()
 else()
-  set(CMAKE_CUDA_STANDARD 14)
+  # Clang as CUDA compiler: match the host C++ standard
+  set(CMAKE_CUDA_STANDARD ${CMAKE_CXX_STANDARD})
+  if(NOT CMAKE_CUDA_STANDARD)
+    set(CMAKE_CUDA_STANDARD 17)
+  endif()
+  message(STATUS "CUDA: Clang will use C++${CMAKE_CUDA_STANDARD} standard")
 endif()
 
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
@@ -143,13 +163,23 @@ list(APPEND QUARISMA_DEPENDENCY_LIBS ${QUARISMA_CUDA_LIBRARIES})
 include_directories(SYSTEM "${CUDAToolkit_INCLUDE_DIRS}")
 include_directories(SYSTEM "${CUDAToolkit_INCLUDE_DIRS}/thrust/system/cuda/detail")
 
-# Add common CUDA flags
-string(APPEND CMAKE_CUDA_FLAGS " -Xnvlink=--suppress-stack-size-warning")
-string(APPEND CMAKE_CUDA_FLAGS " -Wno-deprecated-gpu-targets --expt-extended-lambda")
-
-if(NOT MSVC)
+# Add CUDA compiler flags
+if(CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA")
+  # nvcc-specific flags
+  string(APPEND CMAKE_CUDA_FLAGS " -Xnvlink=--suppress-stack-size-warning")
+  string(APPEND CMAKE_CUDA_FLAGS " -Wno-deprecated-gpu-targets --expt-extended-lambda")
+  if(NOT MSVC)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+      string(APPEND CMAKE_CUDA_FLAGS " -g -G")
+    else()
+      string(APPEND CMAKE_CUDA_FLAGS " -O3")
+    endif()
+  endif()
+else()
+  # Clang CUDA flags
+  string(APPEND CMAKE_CUDA_FLAGS " -Wno-unknown-cuda-version")
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    string(APPEND CMAKE_CUDA_FLAGS " -g -G")
+    string(APPEND CMAKE_CUDA_FLAGS " -g")
   else()
     string(APPEND CMAKE_CUDA_FLAGS " -O3")
   endif()

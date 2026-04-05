@@ -857,6 +857,11 @@ class QuarismaFlags:
                 self.__value["cxxstd"] = std_version
                 # self.builder_suffix += f"_{arg.lower()}"
                 print_status(f"Setting C++ standard to C++{std_version}", "INFO")
+            elif re.match(r'^c\+\+(\d+)$', arg.lower()):
+                # Handle "c++20" style syntax (alternative to "cxx20")
+                std_version = re.match(r'^c\+\+(\d+)$', arg.lower()).group(1)
+                self.__value["cxxstd"] = std_version
+                print_status(f"Setting C++ standard to C++{std_version}", "INFO")
             elif arg.isdigit():
                 self.__value["javasourceversion"] = arg
                 self.__value["javatargetversion"] = arg

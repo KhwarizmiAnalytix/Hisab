@@ -87,7 +87,9 @@
       "Bash(cmd.exe /c \"tasklist 2>&1 | findstr /i \\\\\"bazel java\\\\\"\")",
       "Bash(python Scripts/setup_bazel.py config.build.test.coverage --help)",
       "Bash(python Scripts/setup_bazel.py config.build.test)",
-      "Bash(python Scripts/setup_bazel.py config.BUILD)"
+      "Bash(python Scripts/setup_bazel.py config.BUILD)",
+      "Read(//usr/local/cuda-12.6/targets/x86_64-linux/lib/**)",
+      "Read(//usr/local/lib/**)"
     ],
     "deny": [],
     "ask": []

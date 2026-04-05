@@ -113,8 +113,9 @@ struct cuda_caching_allocator::Impl
         throw_on_cuda_error(cudaGetDeviceCount(&device_count), "cudaGetDeviceCount");
         QUARISMA_CHECK(  //NOLINT
             device >= 0 && device < device_count,
-            "Invalid CUDA device index: " + std::to_string(device) + " (available: 0-" +
-                std::to_string(device_count - 1) + ")");
+            "Invalid CUDA device index: {} (available: 0-{})",
+            device,
+            device_count - 1);
 #endif
     }
 

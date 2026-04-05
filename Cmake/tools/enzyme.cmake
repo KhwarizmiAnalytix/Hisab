@@ -10,6 +10,13 @@
 # with CMAKE_MODULE_PATH containing Cmake/packages (set in root CMakeLists.txt).
 # Module mode is used (not CONFIG); upstream may ship EnzymeConfig.cmake separately.
 #
+# Windows: if CMake reports an unwanted LLVM prefix (e.g. from LLVM_DIR or the
+# compiler path), configure with -DENZYME_RESTRICT_TO_SYSTEM_LLVM_INSTALL=ON
+# so Enzyme is searched only under "Program Files\\LLVM". For Bazel helper
+# discovery, set the same name in the environment to 1/true/on. Also clear
+# LLVM_DIR from the environment or pass -DLLVM_DIR=... to point at the intended
+# install when using find_package(LLVM) elsewhere.
+#
 # Requirements:
 # - Clang/LLVM compiler (GCC not supported)
 # - Enzyme plugin library (ClangEnzyme-*.so or LLVMEnzyme-*.so)

@@ -61,6 +61,11 @@ foreach(_test_source IN ITEMS ${test_sources})
     endif()
   endif()
 
+  # TestEnzymeAD.cu is a standalone executable with its own main() — keep it out of CoreCxxTests
+  if(file_name STREQUAL "TestEnzymeAD.cu")
+    continue()
+  endif()
+
   list(APPEND TestFiles "${_test_source}")
 endforeach()
 
@@ -118,6 +123,17 @@ endif()
 
 if(QUARISMA_ENABLE_ENZYME)
   target_link_libraries(CoreCxxTests PRIVATE Quarisma::enzyme)
+endif()
+
+# TestEnzymeAD.cu: standalone CUDA executable (has its own main(), not GTest-based)
+if(QUARISMA_ENABLE_CUDA AND QUARISMA_ENABLE_ENZYME)
+  add_executable(TestEnzymeAD_CUDA "${CMAKE_CURRENT_SOURCE_DIR}/TestEnzymeAD.cu")
+  target_link_libraries(TestEnzymeAD_CUDA PRIVATE Quarisma::Core Quarisma::enzyme CUDA::cudart)
+  if(COMMAND quarisma_set_target_output_directories)
+    quarisma_set_target_output_directories(TestEnzymeAD_CUDA)
+  endif()
+  add_test(NAME EnzymeAD_CUDA COMMAND TestEnzymeAD_CUDA)
+  message(STATUS "✓ TestEnzymeAD_CUDA registered with CTest")
 endif()
 
 message(STATUS "✓ CoreCxxTests registered with CTest")

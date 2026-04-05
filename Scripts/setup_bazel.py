@@ -87,12 +87,27 @@ def find_enzyme_pass_plugin() -> Optional[str]:
         if llvm_dir:
             search_dirs.insert(0, os.path.join(llvm_dir, "lib"))
     elif system == "Windows":
-        search_dirs = [
-            os.path.join(os.environ.get("LLVM_DIR", ""), "bin"),
-            os.path.join(os.environ.get("LLVM_DIR", ""), "lib"),
-            r"C:\Program Files\LLVM\bin",
-            r"C:\Program Files\LLVM\lib",
-        ]
+        # Match FindEnzyme.cmake: optional ignore of LLVM_DIR for unwanted prefixes.
+        restrict = os.environ.get("ENZYME_RESTRICT_TO_SYSTEM_LLVM_INSTALL", "").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
+        if restrict:
+            search_dirs = [
+                r"C:\Program Files\LLVM\bin",
+                r"C:\Program Files\LLVM\lib",
+                r"C:\Program Files (x86)\LLVM\bin",
+                r"C:\Program Files (x86)\LLVM\lib",
+            ]
+        else:
+            search_dirs = [
+                os.path.join(os.environ.get("LLVM_DIR", ""), "bin"),
+                os.path.join(os.environ.get("LLVM_DIR", ""), "lib"),
+                r"C:\Program Files\LLVM\bin",
+                r"C:\Program Files\LLVM\lib",
+            ]
 
     patterns: List[str] = []
     if system == "Darwin":
