@@ -66,20 +66,11 @@ def configure_build(
 
 
 def handle_xcode_project_opening() -> None:
-    """Handle opening the Xcode project after generation."""
+    """Open the generated Xcode project (non-interactive; always opens)."""
     try:
         xcodeproj_files = [f for f in os.listdir(".") if f.endswith(".xcodeproj")]
         if xcodeproj_files:
             project_file = xcodeproj_files[0]
-            try:
-                response = (
-                    input("Would you like to open the Xcode project? (y/N): ")
-                    .strip()
-                    .lower()
-                )
-                if response in ["y", "yes"]:
-                    subprocess.run(["open", project_file], check=True)
-            except (KeyboardInterrupt, EOFError):
-                pass
+            subprocess.run(["open", project_file], check=True)
     except Exception:
         pass
