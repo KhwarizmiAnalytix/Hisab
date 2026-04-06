@@ -89,7 +89,18 @@
       "Bash(python Scripts/setup_bazel.py config.build.test)",
       "Bash(python Scripts/setup_bazel.py config.BUILD)",
       "Read(//usr/local/cuda-12.6/targets/x86_64-linux/lib/**)",
-      "Read(//usr/local/lib/**)"
+      "Read(//usr/local/lib/**)",
+      "Bash(dumpbin //DEPENDENTS \"C:/Program Files \\(x86\\)/Enzyme/lib/ClangEnzyme-21.dll\")",
+      "Read(//c/src/**)",
+      "Read(//c/Users/toufik/src/**)",
+      "Read(//c/LLVM/bin/**)",
+      "Bash(\"C:/LLVM/bin/clang++.exe\" --version)",
+      "Bash(command -v git ninja cmake)",
+      "Read(//c/msys64/mingw64/bin/**)",
+      "Bash(/c/msys64/mingw64/bin/clang++.exe --version)",
+      "Bash(tasklist /FI \"IMAGENAME eq ctest.exe\")",
+      "Bash(tasklist /FI \"IMAGENAME eq ProfilerCxxTests.exe\")",
+      "Bash(tasklist /FI \"IMAGENAME eq CoreCxxTests.exe\")"
     ],
     "deny": [],
     "ask": []

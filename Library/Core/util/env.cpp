@@ -26,9 +26,11 @@ static std::shared_mutex& get_env_mutex()
 void set_env(const char* name, const char* value, bool overwrite)
 {
     std::scoped_lock const lk(get_env_mutex());
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4996)
+#endif
     if (!overwrite)
     {
         // NOLINTNEXTLINE(concurrency-mt-unsafe)
@@ -39,9 +41,11 @@ void set_env(const char* name, const char* value, bool overwrite)
     }
     auto full_env_variable = fmt::format("{}={}", name, value);
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
-    auto err = putenv(full_env_variable.c_str());
+    auto err = _putenv(full_env_variable.c_str());
     QUARISMA_CHECK(err == 0, "putenv failed for environment \"", name, "\", the error is: ", err);
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 #else
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     auto err = setenv(name, value, static_cast<int>(overwrite));

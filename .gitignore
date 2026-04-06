@@ -38,3 +38,7 @@ Tools/code_coverage/profile/log/log.txt
 # Bazel build artifacts
 bazel-*
 .bazelrc.user
+enzyme_info/*
+.claude/settings.local.json
+.claude/settings.local.json
+.claude/settings.local.json

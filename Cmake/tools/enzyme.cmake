@@ -139,18 +139,27 @@ if(NOT Enzyme_FOUND)
   return()
 endif()
 
-set(ENZYME_COMPILER_FLAGS
-  "-fpass-plugin=${Enzyme_PLUGIN_LIBRARY}"
-)
+# clang-cl (MSVC frontend) does not accept bare -fpass-plugin=; it must be
+# forwarded to the underlying clang driver via /clang:<flag>.
+if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+  set(ENZYME_COMPILER_FLAGS
+    "/clang:-fpass-plugin=${Enzyme_PLUGIN_LIBRARY}"
+  )
+else()
+  set(ENZYME_COMPILER_FLAGS
+    "-fpass-plugin=${Enzyme_PLUGIN_LIBRARY}"
+  )
+endif()
 
 option(ENZYME_ENABLE_OPTIMIZATIONS "Enable Enzyme-specific optimizations (disables exceptions/RTTI)" OFF)
 mark_as_advanced(ENZYME_ENABLE_OPTIMIZATIONS)
 
 if(ENZYME_ENABLE_OPTIMIZATIONS)
-  list(APPEND ENZYME_COMPILER_FLAGS
-    "-fno-exceptions"
-    "-fno-rtti"
-  )
+  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    list(APPEND ENZYME_COMPILER_FLAGS "/clang:-fno-exceptions" "/clang:-fno-rtti")
+  else()
+    list(APPEND ENZYME_COMPILER_FLAGS "-fno-exceptions" "-fno-rtti")
+  endif()
   message(WARNING "Enzyme optimizations enabled: -fno-exceptions and -fno-rtti will be applied. This may break code that uses exceptions or RTTI.")
 endif()
 

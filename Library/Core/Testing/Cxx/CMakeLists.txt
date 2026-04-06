@@ -112,7 +112,8 @@ add_test(NAME CoreCxxTests COMMAND CoreCxxTests
 )
 
 # Set test properties
-set_tests_properties(CoreCxxTests PROPERTIES TIMEOUT 300 LABELS "Core;Unit")
+# Unit tests finish in seconds when healthy; keep timeout modest for faster feedback.
+set_tests_properties(CoreCxxTests PROPERTIES TIMEOUT 120 LABELS "Core;Unit")
 
 # Set coverage environment variable if enabled
 if(QUARISMA_ENABLE_COVERAGE AND DEFINED QUARISMA_LLVM_PROFILE_FILE)

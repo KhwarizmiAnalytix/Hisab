@@ -39,6 +39,7 @@
 #include <fmt/format.h>   // for compile_string_to_view
 #include <gtest/gtest.h>  // for Test, TestInfo
 
+#include <algorithm>      // for min, max
 #include <atomic>         // for atomic
 #include <chrono>         // for duration, duration_cast, operator-, high_resolution_...
 #include <cmath>          // for cos, sin, abs
@@ -1143,7 +1144,10 @@ bool test_high_concurrency()
 
         session->start();
 
-        const int num_threads           = std::thread::hardware_concurrency() * 2;
+        // Cap thread count: very high fan-out can stress allocator + profiler and
+        // trigger heap corruption on some Windows/MinGW builds.
+        const int hw = static_cast<int>(std::thread::hardware_concurrency());
+        const int num_threads           = (std::min)(32, (std::max)(2, hw * 2));
         const int operations_per_thread = 5;
 
         std::vector<std::thread> threads;

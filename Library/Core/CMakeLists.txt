@@ -193,6 +193,11 @@ if(QUARISMA_ENABLE_ENZYME)
   target_link_libraries(Core PRIVATE Quarisma::enzyme)
 endif()
 
+# dbghelp is needed for back_trace.cpp on Windows; #pragma comment(lib) is MSVC-only
+if(WIN32 AND NOT MSVC)
+  target_link_libraries(Core PRIVATE dbghelp)
+endif()
+
 # ============================================================================= Compile Definitions
 # for Optional Features
 # =============================================================================

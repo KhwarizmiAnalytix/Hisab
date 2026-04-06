@@ -1084,7 +1084,7 @@ TEST(EnzymeAD, Tutorial7_ForwardMode_Loops)
 /**
  * @brief Placeholder test when Enzyme is disabled
  */
-TEST(EnzymeAD, DISABLED_EnzymeNotEnabled)
+TEST(EnzymeAD, EnzymeNotEnabled)
 {
     GTEST_SKIP() << "Enzyme AD is not enabled. Configure with -DQUARISMA_ENABLE_ENZYME=ON";
 }

@@ -1,0 +1,27 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "clang-release",
+      "displayName": "Clang CUDA Release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER":        "clang",
+        "CMAKE_CXX_COMPILER":      "clang++",
+        "CMAKE_CUDA_COMPILER":     "clang++",
+        "CMAKE_CUDA_ARCHITECTURES":"89",
+        "CMAKE_BUILD_TYPE":        "Release",
+        "LLVM_ENABLE_ASSERTIONS":  "ON",
+        "LLVM_ENABLE_PROJECTS":    "clang;lld",
+        "LLVM_ENABLE_PLUGINS":     "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "clang-release-build",
+      "configurePreset": "clang-release"
+    }
+  ]
+}

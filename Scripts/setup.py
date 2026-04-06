@@ -1109,7 +1109,7 @@ class QuarismaConfiguration:
             self.__set_gcc_compiler(arg)
         elif self.__is_visual_studio(arg):
             self.__set_visual_studio(arg)
-        elif arg in ["config", "build", "test", "analyze"]:
+        elif arg in ["config", "build", "test", "analyze", "clean"]:
             self.__value[arg] = arg
         elif arg in ["release", "debug", "relwithdebinfo"]:
             self.__value["build_enum"] = arg.capitalize()
@@ -1550,7 +1550,10 @@ class QuarismaConfiguration:
         os.chdir("..")
         build_folder = self.__value["build_folder"]
 
-        if os.path.isdir(build_folder) and self.__value["config"] == "config":
+        # Only wipe the build tree when explicitly requested (e.g. config.build.test.clean...).
+        # Deleting on every config forced a full CMake + compile each run and made
+        # iterative test cycles unnecessarily slow.
+        if os.path.isdir(build_folder) and self.__value.get("clean") == "clean":
             shutil.rmtree(build_folder, ignore_errors=True)
 
         if not os.path.isdir(build_folder):
@@ -1646,6 +1649,11 @@ def parse_args(args):
                 )
                 sys.exit(1)
 
+        elif re.search(r"[/\\]", arg) and re.search(r"[Cc]lang|[Gg][Cc][Cc]|[Gg]\+\+", arg):
+            # Compiler path argument: contains a directory separator and a compiler name.
+            # Pass through verbatim — do NOT split on '.' or '_' or lowercase, as that
+            # would destroy paths like C:/msys64/mingw64/bin/clang.exe.
+            processed_args.append(arg)
         else:
             # Apply the original parsing logic
             processed_args.extend(re.split(r"_|\.|\ ", arg.lower()))
@@ -1664,6 +1672,8 @@ def main():
         print("\nUsage examples:")
         print("  1. Default build (Ninja + Clang):")
         print("     setup.py config.build.test")
+        print("  1b. Full clean reconfigure + build (deletes build dir first):")
+        print("     setup.py config.build.test.clean")
         print("  2. Development build with Python:")
         print("     setup.py config.build.test.python")
         print("  3. Release build with Visual Studio 2022:")
