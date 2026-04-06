@@ -18,18 +18,10 @@ if(NOT QUARISMA_ENABLE_CUDA)
   return()
 endif()
 
-if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND NOT WIN32)
-  # Use Clang directly as the CUDA compiler instead of nvcc (Linux/macOS only).
-  # On Windows, Clang targets the MSVC ABI and CMake's Clang-as-CUDA-compiler
-  # detection is unreliable; fall through to nvcc.
-  # CMAKE_CUDA_COMPILER must be set as a CACHE variable BEFORE enable_language(CUDA)
-  # so the cmake try_compile subprocess that performs CUDA compiler identification
-  # inherits the value.
+if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   set(CMAKE_CUDA_COMPILER "${CMAKE_CXX_COMPILER}"
       CACHE FILEPATH "CUDA compiler (Clang)" FORCE)
   message(STATUS "CUDA: using Clang ${CMAKE_CXX_COMPILER_VERSION} as CUDA compiler")
-elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND WIN32)
-  message(STATUS "CUDA: Windows + Clang detected, using nvcc as CUDA compiler")
 endif()
 
 find_package(CUDAToolkit REQUIRED)
