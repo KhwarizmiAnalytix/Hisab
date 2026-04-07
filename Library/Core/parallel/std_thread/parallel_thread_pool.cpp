@@ -382,10 +382,14 @@ parallel_thread_pool::~parallel_thread_pool()
 {
     joining_.store(true, std::memory_order_release);
 
-    // Wake up all threads so they can see the joining flag
+    // Wake every worker: use notify_all per CV (not notify_one). On some Windows/MinGW
+    // runtimes a single notify_one can be missed relative to the predicate wait in
+    // make_thread(), leaving workers stuck in condition_variable::wait until process
+    // teardown — which surfaces as CTest hitting TIMEOUT on CoreCxxTests while gtest
+    // has already finished.
     for (const auto& thread_data_ptr : threads_)
     {
-        thread_data_ptr->condition_variable_.notify_one();
+        thread_data_ptr->condition_variable_.notify_all();
     }
 
     // Wait for all threads to finish

@@ -857,6 +857,11 @@ class QuarismaFlags:
                 self.__value["cxxstd"] = std_version
                 # self.builder_suffix += f"_{arg.lower()}"
                 print_status(f"Setting C++ standard to C++{std_version}", "INFO")
+            elif re.match(r'^c\+\+(\d+)$', arg.lower()):
+                # Handle "c++20" style syntax (alternative to "cxx20")
+                std_version = re.match(r'^c\+\+(\d+)$', arg.lower()).group(1)
+                self.__value["cxxstd"] = std_version
+                print_status(f"Setting C++ standard to C++{std_version}", "INFO")
             elif arg.isdigit():
                 self.__value["javasourceversion"] = arg
                 self.__value["javatargetversion"] = arg
@@ -1104,7 +1109,7 @@ class QuarismaConfiguration:
             self.__set_gcc_compiler(arg)
         elif self.__is_visual_studio(arg):
             self.__set_visual_studio(arg)
-        elif arg in ["config", "build", "test", "analyze"]:
+        elif arg in ["config", "build", "test", "analyze", "clean"]:
             self.__value[arg] = arg
         elif arg in ["release", "debug", "relwithdebinfo"]:
             self.__value["build_enum"] = arg.capitalize()
@@ -1545,7 +1550,7 @@ class QuarismaConfiguration:
         os.chdir("..")
         build_folder = self.__value["build_folder"]
 
-        if os.path.isdir(build_folder) and self.__value["config"] == "config":
+        if os.path.isdir(build_folder) and self.__value.get("config") == "config":
             shutil.rmtree(build_folder, ignore_errors=True)
 
         if not os.path.isdir(build_folder):
@@ -1641,6 +1646,11 @@ def parse_args(args):
                 )
                 sys.exit(1)
 
+        elif re.search(r"[/\\]", arg) and re.search(r"[Cc]lang|[Gg][Cc][Cc]|[Gg]\+\+", arg):
+            # Compiler path argument: contains a directory separator and a compiler name.
+            # Pass through verbatim — do NOT split on '.' or '_' or lowercase, as that
+            # would destroy paths like C:/msys64/mingw64/bin/clang.exe.
+            processed_args.append(arg)
         else:
             # Apply the original parsing logic
             processed_args.extend(re.split(r"_|\.|\ ", arg.lower()))

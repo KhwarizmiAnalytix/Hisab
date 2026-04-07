@@ -6,14 +6,15 @@
 #include <string>
 
 #include "Testing/baseTest.h"
+//#include "logging/logger.h"
+
+#if PROFILER_HAS_KINETO
 #include "bespoke/common/api.h"
 #include "bespoke/common/record_function.h"
 #include "bespoke/kineto/profiler_kineto.h"
-//#include "logging/logger.h"
 
 namespace
 {
-#if PROFILER_HAS_KINETO
 
 std::string makeTracePath()
 {
@@ -51,8 +52,9 @@ void runSampleWork()
     }
 }
 
-#endif  // PROFILER_HAS_KINETO
 }  // namespace
+
+#endif  // PROFILER_HAS_KINETO
 
 #if PROFILER_HAS_KINETO
 

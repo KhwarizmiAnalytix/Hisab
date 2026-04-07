@@ -7,7 +7,6 @@
 # Discovery
 # =============================================================================
 file(GLOB_RECURSE test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cpp"
-                                                      "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cu"
 )
 
 # Exclude special test files that need separate handling
@@ -107,7 +106,8 @@ add_test(NAME CoreCxxTests COMMAND CoreCxxTests
 )
 
 # Set test properties
-set_tests_properties(CoreCxxTests PROPERTIES TIMEOUT 300 LABELS "Core;Unit")
+# Unit tests finish in seconds when healthy; keep timeout modest for faster feedback.
+set_tests_properties(CoreCxxTests PROPERTIES TIMEOUT 120 LABELS "Core;Unit")
 
 # Set coverage environment variable if enabled
 if(QUARISMA_ENABLE_COVERAGE AND DEFINED QUARISMA_LLVM_PROFILE_FILE)
@@ -118,6 +118,35 @@ endif()
 
 if(QUARISMA_ENABLE_ENZYME)
   target_link_libraries(CoreCxxTests PRIVATE Quarisma::enzyme)
+endif()
+
+if(QUARISMA_ENABLE_CUDA)
+  target_link_libraries(CoreCxxTests PRIVATE ${QUARISMA_CUDA_LIBRARIES})
+endif()
+
+# CudaEnzymeADTest.cu provides the fixture implementation used by TestEnzymeAD.cpp.
+# It must be compiled as a CUDA TU (contains __device__ code and <<<>>> launches).
+#
+# On Windows with the MinGW toolchain, compiling CUDA (.cu) with clang++ regularly fails due to
+# host header / CUDA wrapper incompatibilities (e.g. math_functions.hpp redefinitions and missing
+# texture_fetch_functions.h). Keep the rest of the suite buildable by skipping this CUDA TU.
+if(QUARISMA_ENABLE_CUDA AND QUARISMA_ENABLE_ENZYME)
+  if(WIN32 AND (MINGW OR CMAKE_CXX_COMPILER MATCHES "msys64"))
+    message(
+      WARNING
+        "Skipping CudaEnzymeADTest.cu on Windows+MSYS2/MinGW: Clang CUDA wrapper is incompatible with CUDA 13 headers "
+        "(math_functions.hpp / texture_fetch_functions.h). "
+        "The rest of CoreCxxTests will still build."
+    )
+  else()
+    target_sources(CoreCxxTests PRIVATE
+      "${CMAKE_CURRENT_SOURCE_DIR}/CudaEnzymeADTest.cu"
+    )
+    set_source_files_properties(
+      "${CMAKE_CURRENT_SOURCE_DIR}/CudaEnzymeADTest.cu"
+      PROPERTIES LANGUAGE CUDA
+    )
+  endif()
 endif()
 
 message(STATUS "✓ CoreCxxTests registered with CTest")

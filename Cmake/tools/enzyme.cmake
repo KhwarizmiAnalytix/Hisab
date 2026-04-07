@@ -10,6 +10,13 @@
 # with CMAKE_MODULE_PATH containing Cmake/packages (set in root CMakeLists.txt).
 # Module mode is used (not CONFIG); upstream may ship EnzymeConfig.cmake separately.
 #
+# Windows: if CMake reports an unwanted LLVM prefix (e.g. from LLVM_DIR or the
+# compiler path), configure with -DENZYME_RESTRICT_TO_SYSTEM_LLVM_INSTALL=ON
+# so Enzyme is searched only under "Program Files\\LLVM". For Bazel helper
+# discovery, set the same name in the environment to 1/true/on. Also clear
+# LLVM_DIR from the environment or pass -DLLVM_DIR=... to point at the intended
+# install when using find_package(LLVM) elsewhere.
+#
 # Requirements:
 # - Clang/LLVM compiler (GCC not supported)
 # - Enzyme plugin library (ClangEnzyme-*.so or LLVMEnzyme-*.so)
@@ -132,18 +139,27 @@ if(NOT Enzyme_FOUND)
   return()
 endif()
 
-set(ENZYME_COMPILER_FLAGS
-  "-fpass-plugin=${Enzyme_PLUGIN_LIBRARY}"
-)
+# clang-cl (MSVC frontend) does not accept bare -fpass-plugin=; it must be
+# forwarded to the underlying clang driver via /clang:<flag>.
+if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+  set(ENZYME_COMPILER_FLAGS
+    "/clang:-fpass-plugin=${Enzyme_PLUGIN_LIBRARY}"
+  )
+else()
+  set(ENZYME_COMPILER_FLAGS
+    "-fpass-plugin=${Enzyme_PLUGIN_LIBRARY}"
+  )
+endif()
 
 option(ENZYME_ENABLE_OPTIMIZATIONS "Enable Enzyme-specific optimizations (disables exceptions/RTTI)" OFF)
 mark_as_advanced(ENZYME_ENABLE_OPTIMIZATIONS)
 
 if(ENZYME_ENABLE_OPTIMIZATIONS)
-  list(APPEND ENZYME_COMPILER_FLAGS
-    "-fno-exceptions"
-    "-fno-rtti"
-  )
+  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    list(APPEND ENZYME_COMPILER_FLAGS "/clang:-fno-exceptions" "/clang:-fno-rtti")
+  else()
+    list(APPEND ENZYME_COMPILER_FLAGS "-fno-exceptions" "-fno-rtti")
+  endif()
   message(WARNING "Enzyme optimizations enabled: -fno-exceptions and -fno-rtti will be applied. This may break code that uses exceptions or RTTI.")
 endif()
 

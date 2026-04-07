@@ -9,6 +9,29 @@ import os
 import platform
 import subprocess
 
+from helpers.cuda_env import augment_env_for_cuda_toolkit
+
+
+def _get_compiler_bin_dir_from_cmake_cache() -> str | None:
+    """
+    Read CMAKE_CXX_COMPILER from CMakeCache.txt in the current directory and
+    return its parent bin directory (e.g. C:/msys64/mingw64/bin).
+    Returns None if the cache is absent or the entry is not found.
+    """
+    cache_path = os.path.join(os.getcwd(), "CMakeCache.txt")
+    if not os.path.isfile(cache_path):
+        return None
+    try:
+        with open(cache_path, encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                if line.startswith("CMAKE_CXX_COMPILER:"):
+                    compiler = line.split("=", 1)[-1].strip()
+                    if compiler:
+                        return os.path.dirname(compiler)
+    except OSError:
+        pass
+    return None
+
 
 def run_ctest(
     builder: str,
@@ -48,8 +71,26 @@ def run_ctest(
         if verbosity:
             ctest_cmd.append(verbosity)
 
+        # Run tests in parallel when CTest has multiple tests (faster wall time).
+        # try:
+        #     n_jobs = os.cpu_count() or 4
+        # except (TypeError, NotImplementedError):
+        #     n_jobs = 4
+        # n_jobs = max(1, min(n_jobs, 16))
+        # ctest_cmd.extend(["-j", str(n_jobs)])
+
         # Set up sanitizer suppressions if using a sanitizer
-        env = os.environ.copy()
+        env = augment_env_for_cuda_toolkit()
+
+        # On Windows with a MinGW/non-MSVC compiler, prepend the compiler's bin
+        # directory to PATH so runtime DLLs (libwinpthread-1.dll, etc.) are found.
+        if system == "Windows":
+            compiler_bin = _get_compiler_bin_dir_from_cmake_cache()
+            if compiler_bin and os.path.isdir(compiler_bin):
+                current_path = env.get("PATH", "")
+                if compiler_bin not in current_path.split(os.pathsep):
+                    env["PATH"] = compiler_bin + os.pathsep + current_path
+
         if sanitizer_type and source_path:
             suppressions_file = os.path.join(
                 source_path, "Scripts", "suppressions", f"{sanitizer_type}san_suppressions.txt"

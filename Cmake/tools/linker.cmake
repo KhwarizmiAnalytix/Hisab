@@ -81,8 +81,11 @@ function(quarisma_find_linker)
       message("macOS: Using system linker (ld64.lld not found)")
     endif()
   elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-      # Windows + Clang: prefer lld-link
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
+       AND NOT CMAKE_CXX_COMPILER MATCHES "msys64"
+       AND NOT CMAKE_CXX_COMPILER MATCHES "mingw")
+      # Windows + native LLVM Clang: prefer lld-link.
+      # MSYS2/MinGW Clang uses GNU ABI and its own linker; skip lld-link for it.
       find_program(LLD_LINK_LINKER lld-link)
       if(LLD_LINK_LINKER)
         set(LINKER_NAME "${LLD_LINK_LINKER}")

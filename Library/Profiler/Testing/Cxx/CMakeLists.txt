@@ -74,7 +74,7 @@ add_test(NAME ProfilerCxxTests COMMAND ProfilerCxxTests
          WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
 )
 
-set_tests_properties(ProfilerCxxTests PROPERTIES TIMEOUT 300 LABELS "Profiler;Unit")
+set_tests_properties(ProfilerCxxTests PROPERTIES TIMEOUT 120 LABELS "Profiler;Unit")
 
 if(PROFILER_ENABLE_COVERAGE AND DEFINED PROFILER_LLVM_PROFILE_FILE)
   set_tests_properties(

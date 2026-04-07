@@ -8,6 +8,8 @@ Extracted from setup.py for better modularity and maintainability.
 import os
 import subprocess
 
+from helpers.cuda_env import augment_env_for_cuda_toolkit
+
 
 def configure_build(
     source_path: str,
@@ -56,7 +58,10 @@ def configure_build(
         # Add additional CMake flags
         cmake_cmd.extend(cmake_flags)
 
-        subprocess.check_call(cmake_cmd, stderr=subprocess.STDOUT, shell=shell_flag)
+        env = augment_env_for_cuda_toolkit()
+        subprocess.check_call(
+            cmake_cmd, stderr=subprocess.STDOUT, shell=shell_flag, env=env
+        )
         return 0
 
     except subprocess.CalledProcessError:
@@ -66,20 +71,11 @@ def configure_build(
 
 
 def handle_xcode_project_opening() -> None:
-    """Handle opening the Xcode project after generation."""
+    """Open the generated Xcode project (non-interactive; always opens)."""
     try:
         xcodeproj_files = [f for f in os.listdir(".") if f.endswith(".xcodeproj")]
         if xcodeproj_files:
             project_file = xcodeproj_files[0]
-            try:
-                response = (
-                    input("Would you like to open the Xcode project? (y/N): ")
-                    .strip()
-                    .lower()
-                )
-                if response in ["y", "yes"]:
-                    subprocess.run(["open", project_file], check=True)
-            except (KeyboardInterrupt, EOFError):
-                pass
+            subprocess.run(["open", project_file], check=True)
     except Exception:
         pass

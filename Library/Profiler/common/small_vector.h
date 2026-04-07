@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <functional>
@@ -135,18 +136,24 @@ class SmallVectorTemplateCommon : public SmallVectorBase<SmallVectorSizeType<T>>
     // Space after 'FirstEl' is clobbered, do not add any instance vars after it.
 
 protected:
-    SmallVectorTemplateCommon(size_t Size) : Base(getFirstEl(), Size) {}
+    SmallVectorTemplateCommon(size_t Size)
+        : Base(SmallVectorTemplateCommon::getFirstEl(), Size)
+    {
+    }
 
-    void grow_pod(size_t MinSize, size_t TSize) { Base::grow_pod(getFirstEl(), MinSize, TSize); }
+    void grow_pod(size_t MinSize, size_t TSize)
+    {
+        Base::grow_pod(SmallVectorTemplateCommon::getFirstEl(), MinSize, TSize);
+    }
 
     /// Return true if this is a smallvector which has not had dynamic
     /// memory allocated for it.
-    bool isSmall() const { return this->BeginX == getFirstEl(); }
+    bool isSmall() const { return this->BeginX == SmallVectorTemplateCommon::getFirstEl(); }
 
     /// Put this vector in a state of being small.
     void resetToSmall()
     {
-        this->BeginX = getFirstEl();
+        this->BeginX = SmallVectorTemplateCommon::getFirstEl();
         this->Size = this->Capacity = 0;  // FIXME: Setting Capacity to 0 is suspect.
     }
 

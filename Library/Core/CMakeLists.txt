@@ -164,6 +164,15 @@ if(QUARISMA_DEPENDENCY_INCLUDE_DIRS)
   message(STATUS "Core library include directories: ${QUARISMA_DEPENDENCY_INCLUDE_DIRS}")
 endif()
 
+# When the native profiler backend is active, Core source files include Profiler
+# headers (e.g. native/tracing/traceme.h).  Add Library/Profiler as a PRIVATE
+# include so the build can resolve those headers even though Profiler is
+# configured after Core in the top-level CMakeLists.txt.
+if(QUARISMA_HAS_NATIVE_PROFILER OR PROFILER_ENABLE_NATIVE_PROFILER)
+  target_include_directories(Core PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Library/Profiler>)
+endif()
+
 # Link with build interface target
 target_link_libraries(Core PUBLIC Quarisma::build)
 if(COMMAND quarisma_target_clang_tidy)
@@ -191,6 +200,12 @@ endif()
 
 if(QUARISMA_ENABLE_ENZYME)
   target_link_libraries(Core PRIVATE Quarisma::enzyme)
+endif()
+
+# dbghelp is needed for back_trace.cpp on Windows; #pragma comment(lib) is MSVC-only.
+# MinGW requires the -l prefix; MSVC resolves .lib names without it.
+if(WIN32 AND NOT MSVC)
+  target_link_libraries(Core PRIVATE -ldbghelp)
 endif()
 
 # ============================================================================= Compile Definitions
