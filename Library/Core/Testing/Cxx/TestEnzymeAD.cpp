@@ -19,7 +19,7 @@
  * - Integration with Quarisma test framework
  */
 
-#include <gtest/gtest.h>
+#include "Testing/baseTest.h"
 
 #include <cmath>
 #include <cstdint>
@@ -357,7 +357,7 @@ void compute_loops(float* a, float* b, float* ret)
 /**
  * @brief Test reverse-mode AD on square function
  */
-TEST(EnzymeAD, ReverseMode_Square)
+QUARISMATEST(EnzymeAD, ReverseMode_Square)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Enzyme Reverse-Mode AD: Square Function\n";
@@ -393,7 +393,7 @@ TEST(EnzymeAD, ReverseMode_Square)
 /**
  * @brief Test reverse-mode AD on cubic function
  */
-TEST(EnzymeAD, ReverseMode_Cubic)
+QUARISMATEST(EnzymeAD, ReverseMode_Cubic)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Enzyme Reverse-Mode AD: Cubic Function\n";
@@ -429,7 +429,7 @@ TEST(EnzymeAD, ReverseMode_Cubic)
 /**
  * @brief Test reverse-mode AD on exponential function
  */
-TEST(EnzymeAD, ReverseMode_Exponential)
+QUARISMATEST(EnzymeAD, ReverseMode_Exponential)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Enzyme Reverse-Mode AD: Exponential Function\n";
@@ -465,7 +465,7 @@ TEST(EnzymeAD, ReverseMode_Exponential)
 /**
  * @brief Test reverse-mode AD on multivariate function
  */
-TEST(EnzymeAD, ReverseMode_Multivariate)
+QUARISMATEST(EnzymeAD, ReverseMode_Multivariate)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Enzyme Reverse-Mode AD: Multivariate Function\n";
@@ -514,7 +514,7 @@ TEST(EnzymeAD, ReverseMode_Multivariate)
 /**
  * @brief Test reverse-mode AD on Rosenbrock function
  */
-TEST(EnzymeAD, ReverseMode_Rosenbrock)
+QUARISMATEST(EnzymeAD, ReverseMode_Rosenbrock)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Enzyme Reverse-Mode AD: Rosenbrock Function\n";
@@ -568,7 +568,7 @@ TEST(EnzymeAD, ReverseMode_Rosenbrock)
 /**
  * @brief Test forward-mode AD on square function
  */
-TEST(EnzymeAD, ForwardMode_Square)
+QUARISMATEST(EnzymeAD, ForwardMode_Square)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Enzyme Forward-Mode AD: Square Function\n";
@@ -606,7 +606,7 @@ TEST(EnzymeAD, ForwardMode_Square)
 /**
  * @brief Test forward-mode AD on cubic function
  */
-TEST(EnzymeAD, ForwardMode_Cubic)
+QUARISMATEST(EnzymeAD, ForwardMode_Cubic)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Enzyme Forward-Mode AD: Cubic Function\n";
@@ -644,7 +644,7 @@ TEST(EnzymeAD, ForwardMode_Cubic)
 /**
  * @brief Test numerical accuracy of Enzyme AD
  */
-TEST(EnzymeAD, NumericalAccuracy)
+QUARISMATEST(EnzymeAD, NumericalAccuracy)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Enzyme AD: Numerical Accuracy Test\n";
@@ -693,7 +693,7 @@ TEST(EnzymeAD, NumericalAccuracy)
  * For uniform input in[i] = x: S = n*x, so grad_in[i] = (n*x - n*x) / (n*x)^2 = 0.
  * The test verifies this zero-gradient case and that the primal output is correct.
  */
-TEST(EnzymeAD, Tutorial2_VectorNormalization)
+QUARISMATEST(EnzymeAD, Tutorial2_VectorNormalization)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Tutorial 2: Vector Normalization\n";
@@ -755,7 +755,7 @@ TEST(EnzymeAD, Tutorial2_VectorNormalization)
  * This test uses the default annotation (all active), then verifies the
  * gradient values match the analytical result.
  */
-TEST(EnzymeAD, Tutorial3_DotProduct_AllActive)
+QUARISMATEST(EnzymeAD, Tutorial3_DotProduct_AllActive)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Tutorial 3: Dot Product (all active)\n";
@@ -800,7 +800,7 @@ TEST(EnzymeAD, Tutorial3_DotProduct_AllActive)
  * When A is constant, Enzyme skips computing gradA.  Only gradB and grad_C
  * are produced.  This is the second pass shown in the tutorial.
  */
-TEST(EnzymeAD, Tutorial3_DotProduct_ConstA)
+QUARISMATEST(EnzymeAD, Tutorial3_DotProduct_ConstA)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Tutorial 3: Dot Product (A constant)\n";
@@ -858,7 +858,7 @@ TEST(EnzymeAD, Tutorial3_DotProduct_ConstA)
  * The tolerance is loose (1e-3) because Q_rsqrt is only an approximation
  * of 1/sqrt and the custom gradient propagates that approximation error.
  */
-TEST(EnzymeAD, Tutorial4_InvMag_CustomGradient)
+QUARISMATEST(EnzymeAD, Tutorial4_InvMag_CustomGradient)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Tutorial 4: Inverse Magnitude (custom gradient)\n";
@@ -906,7 +906,7 @@ TEST(EnzymeAD, Tutorial4_InvMag_CustomGradient)
  *
  * At a = 2.0: expected gradient = 1 / (1 + 2) = 1/3.
  */
-TEST(EnzymeAD, Tutorial5_FunctionAliasing)
+QUARISMATEST(EnzymeAD, Tutorial5_FunctionAliasing)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Tutorial 5: Function Aliasing (log1p-like)\n";
@@ -946,7 +946,7 @@ TEST(EnzymeAD, Tutorial5_FunctionAliasing)
  * cache intermediate values.  The gradient is still correct; only performance
  * differs from the restrict version.
  */
-TEST(EnzymeAD, Tutorial6_SquareCopy_Aliased)
+QUARISMATEST(EnzymeAD, Tutorial6_SquareCopy_Aliased)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Tutorial 6: squareCopy gradient (aliased)\n";
@@ -990,7 +990,7 @@ TEST(EnzymeAD, Tutorial6_SquareCopy_Aliased)
  * __restrict__ pointers.  Enzyme can use a recompute strategy instead of
  * caching, potentially improving performance on large arrays.
  */
-TEST(EnzymeAD, Tutorial6_SquareCopy_Restrict)
+QUARISMATEST(EnzymeAD, Tutorial6_SquareCopy_Restrict)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Tutorial 6: squareCopy gradient (__restrict__)\n";
@@ -1043,7 +1043,7 @@ TEST(EnzymeAD, Tutorial6_SquareCopy_Restrict)
  * After the call, `dret` holds the directional derivative and `ret` holds
  * the primal output.
  */
-TEST(EnzymeAD, Tutorial7_ForwardMode_Loops)
+QUARISMATEST(EnzymeAD, Tutorial7_ForwardMode_Loops)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Tutorial 7: Forward-Mode AD with Loops\n";
@@ -1084,7 +1084,7 @@ TEST(EnzymeAD, Tutorial7_ForwardMode_Loops)
 /**
  * @brief Placeholder test when Enzyme is disabled
  */
-TEST(EnzymeAD, EnzymeNotEnabled)
+QUARISMATEST(EnzymeAD, EnzymeNotEnabled)
 {
     GTEST_SKIP() << "Enzyme AD is not enabled. Configure with -DQUARISMA_ENABLE_ENZYME=ON";
 }
@@ -1098,7 +1098,7 @@ TEST(EnzymeAD, EnzymeNotEnabled)
 /**
  * @brief Test that Enzyme compile definition is set correctly
  */
-TEST(EnzymeAD, CompileDefinition)
+QUARISMATEST(EnzymeAD, CompileDefinition)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Enzyme Configuration Check\n";
@@ -1118,11 +1118,148 @@ TEST(EnzymeAD, CompileDefinition)
 #endif
 }
 
-/**
- * @brief Main function for standalone test execution
- */
-int main(int argc, char** argv)
+// ============================================================================
+// CudaEnzymeADTest — CUDA + Enzyme test cases
+//
+// The fixture class (SetUp/TearDown/RunForward/RunGrad) is implemented in
+// CudaEnzymeADTest.cu which must be compiled as a CUDA translation unit.
+// ============================================================================
+#if !defined(__MINGW32__) && QUARISMA_HAS_CUDA
+#include "CudaEnzymeADTest.h"
+
+// ----------------------------------------------------------------------------
+// Forward-kernel tests (primal: y = x^2)
+// ----------------------------------------------------------------------------
+
+TEST_F(CudaEnzymeADTest, ForwardCanonicalValue)
 {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    // f(1.4) = 1.96
+    double out_x, out_y;
+    RunForward(1.4, out_x, out_y);
+    EXPECT_NEAR(out_y, 1.96, 1e-9);
 }
+
+TEST_F(CudaEnzymeADTest, ForwardZero)
+{
+    // f(0) = 0
+    double out_x, out_y;
+    RunForward(0.0, out_x, out_y);
+    EXPECT_NEAR(out_y, 0.0, 1e-12);
+}
+
+TEST_F(CudaEnzymeADTest, ForwardNegativeInput)
+{
+    // f(-3) = 9
+    double out_x, out_y;
+    RunForward(-3.0, out_x, out_y);
+    EXPECT_NEAR(out_y, 9.0, 1e-9);
+}
+
+TEST_F(CudaEnzymeADTest, ForwardUnityInput)
+{
+    // f(1) = 1
+    double out_x, out_y;
+    RunForward(1.0, out_x, out_y);
+    EXPECT_NEAR(out_y, 1.0, 1e-9);
+}
+
+TEST_F(CudaEnzymeADTest, ForwardInputUnchanged)
+{
+    // The primal must not modify x
+    double out_x, out_y;
+    RunForward(2.5, out_x, out_y);
+    EXPECT_DOUBLE_EQ(out_x, 2.5);
+}
+
+// ----------------------------------------------------------------------------
+// Gradient-kernel tests (reverse: dx = 2x * d_y)
+// ----------------------------------------------------------------------------
+
+TEST_F(CudaEnzymeADTest, GradCanonicalValue)
+{
+    // x=1.4, seed=1  →  dx = 2*1.4 = 2.8
+    double ox, odx, oy, ody;
+    RunGrad(1.4, 0.0, 0.0, 1.0, ox, odx, oy, ody);
+    EXPECT_NEAR(odx, 2.8, 1e-9);
+}
+
+TEST_F(CudaEnzymeADTest, GradScaledSeed)
+{
+    // Seed d_y = 3.0  →  dx = 2*1.4*3.0 = 8.4
+    double ox, odx, oy, ody;
+    RunGrad(1.4, 0.0, 0.0, 3.0, ox, odx, oy, ody);
+    EXPECT_NEAR(odx, 8.4, 1e-9);
+}
+
+TEST_F(CudaEnzymeADTest, GradAtZero)
+{
+    // x=0, seed=1  →  dx = 0
+    double ox, odx, oy, ody;
+    RunGrad(0.0, 0.0, 0.0, 1.0, ox, odx, oy, ody);
+    EXPECT_NEAR(odx, 0.0, 1e-12);
+}
+
+TEST_F(CudaEnzymeADTest, GradNegativeInput)
+{
+    // x=-2, seed=1  →  dx = 2*(-2) = -4
+    double ox, odx, oy, ody;
+    RunGrad(-2.0, 0.0, 0.0, 1.0, ox, odx, oy, ody);
+    EXPECT_NEAR(odx, -4.0, 1e-9);
+}
+
+TEST_F(CudaEnzymeADTest, GradAccumulatesIntoExistingDx)
+{
+    // If d_x is pre-seeded with 1.0, reverse-mode Enzyme *adds* to it.
+    // At x=2, dx contribution = 2*2*1 = 4.  Total = 1 + 4 = 5.
+    double ox, odx, oy, ody;
+    RunGrad(2.0, 1.0, 0.0, 1.0, ox, odx, oy, ody);
+    EXPECT_NEAR(odx, 5.0, 1e-9);
+}
+
+TEST_F(CudaEnzymeADTest, GradZeroSeedProducesZeroDx)
+{
+    // d_y = 0  →  dx = 2x * 0 = 0, regardless of x
+    double ox, odx, oy, ody;
+    RunGrad(1.4, 0.0, 0.0, 0.0, ox, odx, oy, ody);
+    EXPECT_NEAR(odx, 0.0, 1e-12);
+}
+
+TEST_F(CudaEnzymeADTest, GradInputXUnchanged)
+{
+    // The reverse sweep must not corrupt the primal input x
+    double ox, odx, oy, ody;
+    RunGrad(1.4, 0.0, 0.0, 1.0, ox, odx, oy, ody);
+    EXPECT_DOUBLE_EQ(ox, 1.4);
+}
+
+TEST_F(CudaEnzymeADTest, GradConsistencyWithFiniteDifference)
+{
+    // Finite-difference check: (f(x+h) - f(x-h)) / (2h) ≈ f'(x)
+    const double hx  = 3.7;
+    const double eps = 1e-5;
+    const double fd  = ((hx + eps) * (hx + eps) - (hx - eps) * (hx - eps)) / (2.0 * eps);
+
+    double ox, odx, oy, ody;
+    RunGrad(hx, 0.0, 0.0, 1.0, ox, odx, oy, ody);
+    EXPECT_NEAR(odx, fd, 1e-6);
+}
+
+// ----------------------------------------------------------------------------
+// Kernel-launch sanity tests
+// ----------------------------------------------------------------------------
+
+TEST_F(CudaEnzymeADTest, ForwardKernelNoLaunchError)
+{
+    // RunForward uses CUDA_CHECK internally; any kernel-launch error is fatal.
+    double out_x, out_y;
+    RunForward(1.0, out_x, out_y);
+}
+
+TEST_F(CudaEnzymeADTest, GradKernelNoLaunchError)
+{
+    // RunGrad uses CUDA_CHECK internally; any kernel-launch error is fatal.
+    double ox, odx, oy, ody;
+    RunGrad(1.0, 0.0, 0.0, 1.0, ox, odx, oy, ody);
+}
+
+#endif  // QUARISMA_HAS_ENZYME 

@@ -861,6 +861,61 @@ add_third_party_library(mimalloc
     INCLUDE_DIR "mimalloc/include"
 )
 
+# mimalloc adds Windows system libraries as bare names (e.g. "psapi") via
+# PRIVATE target_link_libraries.  MinGW's linker treats bare names as file
+# paths; they must have the -l prefix.
+#
+# CMake stores PRIVATE deps of static libraries in two forms:
+#   LINK_LIBRARIES          : plain "psapi"
+#   INTERFACE_LINK_LIBRARIES: "$<LINK_ONLY:psapi>"  (generator expression)
+# Both must be patched; consumers are generated from INTERFACE_LINK_LIBRARIES.
+if(WIN32 AND (MINGW OR CMAKE_CXX_COMPILER MATCHES "msys64") AND TARGET mimalloc-static)
+  set(_mi_win_syslibs psapi shell32 user32 advapi32 bcrypt)
+
+  # --- patch LINK_LIBRARIES (plain names) ---
+  get_target_property(_mi_ll mimalloc-static LINK_LIBRARIES)
+  if(_mi_ll)
+    set(_changed FALSE)
+    foreach(_lib IN LISTS _mi_win_syslibs)
+      if("${_lib}" IN_LIST _mi_ll)
+        list(REMOVE_ITEM _mi_ll "${_lib}")
+        list(APPEND     _mi_ll "-l${_lib}")
+        set(_changed TRUE)
+      endif()
+    endforeach()
+    if(_changed)
+      set_property(TARGET mimalloc-static PROPERTY LINK_LIBRARIES "${_mi_ll}")
+      message(STATUS "mimalloc: patched LINK_LIBRARIES for MinGW (-l prefix)")
+    endif()
+  endif()
+
+  # --- patch INTERFACE_LINK_LIBRARIES ($<LINK_ONLY:name> generator exprs) ---
+  get_target_property(_mi_il mimalloc-static INTERFACE_LINK_LIBRARIES)
+  if(_mi_il)
+    set(_changed FALSE)
+    foreach(_lib IN LISTS _mi_win_syslibs)
+      # bare form (unlikely here, but be safe)
+      if("${_lib}" IN_LIST _mi_il)
+        list(REMOVE_ITEM _mi_il "${_lib}")
+        list(APPEND     _mi_il "-l${_lib}")
+        set(_changed TRUE)
+      endif()
+      # generator-expression form produced by CMake for PRIVATE deps
+      set(_ge  "$<LINK_ONLY:${_lib}>")
+      set(_ge2 "$<LINK_ONLY:-l${_lib}>")
+      if("${_ge}" IN_LIST _mi_il)
+        list(REMOVE_ITEM _mi_il "${_ge}")
+        list(APPEND     _mi_il "${_ge2}")
+        set(_changed TRUE)
+      endif()
+    endforeach()
+    if(_changed)
+      set_property(TARGET mimalloc-static PROPERTY INTERFACE_LINK_LIBRARIES "${_mi_il}")
+      message(STATUS "mimalloc: patched INTERFACE_LINK_LIBRARIES for MinGW (-l prefix)")
+    endif()
+  endif()
+endif()
+
 # Kineto - Quarisma profiling library
 # Aligned with Quarisma's PROFILER_ENABLE_KINETO configuration for feature parity.
 # Supports GPU backends: CUPTI (NVIDIA), ROCtracer (AMD), XPUPTI (Intel XPU), AIUPTI (AI accelerators)

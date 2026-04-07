@@ -1550,10 +1550,7 @@ class QuarismaConfiguration:
         os.chdir("..")
         build_folder = self.__value["build_folder"]
 
-        # Only wipe the build tree when explicitly requested (e.g. config.build.test.clean...).
-        # Deleting on every config forced a full CMake + compile each run and made
-        # iterative test cycles unnecessarily slow.
-        if os.path.isdir(build_folder) and self.__value.get("clean") == "clean":
+        if os.path.isdir(build_folder) and self.__value.get("config") == "config":
             shutil.rmtree(build_folder, ignore_errors=True)
 
         if not os.path.isdir(build_folder):
@@ -1672,8 +1669,6 @@ def main():
         print("\nUsage examples:")
         print("  1. Default build (Ninja + Clang):")
         print("     setup.py config.build.test")
-        print("  1b. Full clean reconfigure + build (deletes build dir first):")
-        print("     setup.py config.build.test.clean")
         print("  2. Development build with Python:")
         print("     setup.py config.build.test.python")
         print("  3. Release build with Visual Studio 2022:")

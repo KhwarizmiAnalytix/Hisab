@@ -12,7 +12,7 @@
 
 #include "logging/logger.h"
 #include "memory/helper/memory_allocator.h"
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
 #include "native/tracing/traceme.h"
 #endif
 #include "util/exception.h"
@@ -65,7 +65,7 @@ basic_gpu_allocator::~basic_gpu_allocator()
 void* basic_gpu_allocator::Alloc(
     QUARISMA_UNUSED size_t alignment, size_t num_bytes, size_t* bytes_received)
 {
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
     quarisma::traceme const traceme("basic_gpu_allocator::Alloc");
 #endif
 
@@ -102,7 +102,7 @@ void* basic_gpu_allocator::Alloc(
 
 void basic_gpu_allocator::Free(void* ptr, size_t num_bytes)
 {
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
     quarisma::traceme const traceme("basic_gpu_allocator::Free");
 #endif
 
@@ -126,7 +126,7 @@ void basic_gpu_allocator::Free(void* ptr, size_t num_bytes)
 allocator_gpu::allocator_gpu(int device_id, const Options& options, std::string name)
     : device_id_(device_id), options_(options), name_(std::move(name))
 {
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
     quarisma::traceme const traceme("allocator_gpu::allocator_gpu");
 #endif
 
@@ -162,7 +162,7 @@ allocator_gpu::allocator_gpu(int device_id, const Options& options, std::string 
 
 allocator_gpu::~allocator_gpu()
 {
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
     quarisma::traceme const traceme("allocator_gpu::~allocator_gpu");
 #endif
 
@@ -212,7 +212,7 @@ void* allocator_gpu::allocate_raw(
     size_t                                       num_bytes,
     QUARISMA_UNUSED const allocation_attributes& allocation_attr)
 {
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
     quarisma::traceme const traceme("allocator_gpu::allocate_raw");
 #endif
 
@@ -255,7 +255,7 @@ void* allocator_gpu::allocate_raw(
 
 void allocator_gpu::deallocate_raw(void* ptr)
 {
-#if QUARISMA_HAS_NATIVE_PROFILER
+#if QUARISMA_HAS_NATIVE_PROFILER && 0
     quarisma::traceme const traceme("allocator_gpu::deallocate_raw");
 #endif
 

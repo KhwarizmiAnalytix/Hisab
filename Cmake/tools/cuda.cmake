@@ -14,6 +14,16 @@ include_guard(GLOBAL)
 option(QUARISMA_ENABLE_CUDA "Enable CUDA compilation" OFF)
 mark_as_advanced(QUARISMA_ENABLE_CUDA)
 
+# CUDA is not supported with the MinGW/MSYS2 toolchain in this project.
+# Keep configuration simple and deterministic: force-disable and skip all CUDA setup.
+if(WIN32 AND (MINGW OR CMAKE_CXX_COMPILER MATCHES "msys64"))
+  if(QUARISMA_ENABLE_CUDA)
+    message(STATUS "CUDA: disabled on Windows+MinGW/MSYS2 toolchains (forcing QUARISMA_ENABLE_CUDA=OFF)")
+  endif()
+  set(QUARISMA_ENABLE_CUDA OFF CACHE BOOL "Enable CUDA compilation" FORCE)
+  return()
+endif()
+
 if(NOT QUARISMA_ENABLE_CUDA)
   return()
 endif()
@@ -38,6 +48,15 @@ endif()
 
 # Enable CUDA language support
 enable_language(CUDA)
+
+# Workaround: Clang as CUDA compiler never loads Compiler/NVIDIA-CUDA.cmake,
+# so _CMAKE_CUDA_WHOLE_FLAG (used by the CMake generator for CUDA link rules)
+# is left undefined.  CMake 4.2 made this a hard error during generation.
+# Setting it to an empty string is safe — Clang does not use whole-archive
+# flags for CUDA device code.
+if(NOT DEFINED _CMAKE_CUDA_WHOLE_FLAG)
+  set(_CMAKE_CUDA_WHOLE_FLAG "")
+endif()
 
 # Version checks using consistent CUDAToolkit variables
 if(CUDAToolkit_VERSION VERSION_LESS "12.0")
@@ -113,8 +132,19 @@ set_property(
 
 # Set architectures based on user selection
 if(QUARISMA_CUDA_ARCH_OPTIONS STREQUAL "native")
-  # Let CMake handle native detection
-  set(CMAKE_CUDA_ARCHITECTURES "native")
+  # "native" requires CMake to probe the GPU at configure time.  When
+  # CMAKE_CUDA_COMPILER_FORCED is set (Clang + CMake 4.2 workaround) that
+  # probe is skipped, so CMake cannot resolve "native" during generation.
+  # Fall back to "all-major" which compiles for every major CUDA SM without
+  # needing a GPU present at configure time.
+  if(CMAKE_CUDA_COMPILER_FORCED)
+    # CUDA 13.0 removed pre-Pascal (sm_52-) libdevice; "all-major" still
+    # expands to sm_52 in CMake 4.x, so use an explicit Turing-and-above list.
+    set(CMAKE_CUDA_ARCHITECTURES "75;80;86;89;90")
+    message(STATUS "CUDA: native arch detection unavailable (COMPILER_FORCED), using 75;80;86;89;90")
+  else()
+    set(CMAKE_CUDA_ARCHITECTURES "native")
+  endif()
 elseif(QUARISMA_CUDA_ARCH_OPTIONS STREQUAL "fermi")
   set(CMAKE_CUDA_ARCHITECTURES "20")
 elseif(QUARISMA_CUDA_ARCH_OPTIONS STREQUAL "kepler")
@@ -193,4 +223,3 @@ endif()
 
 # For backward compatibility, set legacy variables (if needed elsewhere)
 set(QUARISMA_CUDA_FOUND TRUE)
-set(QUARISMA_ENABLE_CUDA ON)

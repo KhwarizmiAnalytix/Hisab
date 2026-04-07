@@ -100,7 +100,10 @@
       "Bash(/c/msys64/mingw64/bin/clang++.exe --version)",
       "Bash(tasklist /FI \"IMAGENAME eq ctest.exe\")",
       "Bash(tasklist /FI \"IMAGENAME eq ProfilerCxxTests.exe\")",
-      "Bash(tasklist /FI \"IMAGENAME eq CoreCxxTests.exe\")"
+      "Bash(tasklist /FI \"IMAGENAME eq CoreCxxTests.exe\")",
+      "Bash(\"C:/msys64/mingw64/bin/clang.exe\" --version)",
+      "Read(//c/msys64/mingw64/lib/**)",
+      "Read(//c/msys64/mingw64/**)"
     ],
     "deny": [],
     "ask": []

@@ -55,6 +55,9 @@
 
 #define QUARISMATEST_CALL(module, name)
 
+// Fixture-based Google Test macro (TEST_F)
+#define QUARISMATEST_F(fixture, name) TEST_F(fixture, name)
+
 #else
 // Simple assertion macros for non-Google Test builds
 #define EXPECT_TRUE(condition)                                                             \
@@ -219,6 +222,10 @@
     void test_##module##testname(QUARISMA_UNUSED int argc, QUARISMA_UNUSED char* argv[])
 
 #define QUARISMATEST_CALL(module, testname) test_##module##testname(argc, argv);
+
+// No fixture support without Google Test; make it explicit.
+#define QUARISMATEST_F(fixture, name)                                                        \
+    static_assert(false, "QUARISMATEST_F requires Google Test (QUARISMA_HAS_GTEST=1)")
 
 #endif
 
