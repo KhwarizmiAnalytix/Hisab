@@ -59,6 +59,30 @@ void __global__ square_grad(double* x, double* d_x, double* y, double* d_y)
 
 void CudaEnzymeADTest::SetUp()
 {
+    // Other CUDA tests may leave the process on an invalid device ordinal.
+    // Always (re)select a valid device before allocating or launching kernels.
+    int device_count = 0;
+    cudaError_t dc_err = cudaGetDeviceCount(&device_count);
+    ASSERT_EQ(dc_err, cudaSuccess)
+        << "CUDA error at cudaGetDeviceCount(): " << cudaGetErrorString(dc_err);
+    ASSERT_GT(device_count, 0) << "No CUDA devices found.";
+
+    int chosen = -1;
+    for (int dev = 0; dev < device_count; ++dev)
+    {
+        cudaError_t sd_err = cudaSetDevice(dev);
+        if (sd_err == cudaSuccess)
+        {
+            chosen = dev;
+            break;
+        }
+    }
+    ASSERT_GE(chosen, 0) << "Failed to select any usable CUDA device out of "
+                         << device_count << " visible devices.";
+
+    // Clear any stale error state from prior CUDA calls in the same process.
+    (void)cudaGetLastError();
+
     CUDA_CHECK(cudaMalloc(&x,   sizeof(double)));
     CUDA_CHECK(cudaMalloc(&d_x, sizeof(double)));
     CUDA_CHECK(cudaMalloc(&y,   sizeof(double)));
