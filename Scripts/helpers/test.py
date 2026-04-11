@@ -8,11 +8,12 @@ Extracted from setup.py for better modularity and maintainability.
 import os
 import platform
 import subprocess
+from typing import Optional
 
 from helpers.cuda_env import augment_env_for_cuda_toolkit
 
 
-def _get_compiler_bin_dir_from_cmake_cache() -> str | None:
+def _get_compiler_bin_dir_from_cmake_cache() -> Optional[str]:
     """
     Read CMAKE_CXX_COMPILER from CMakeCache.txt in the current directory and
     return its parent bin directory (e.g. C:/msys64/mingw64/bin).

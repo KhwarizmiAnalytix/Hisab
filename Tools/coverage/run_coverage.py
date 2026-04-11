@@ -12,7 +12,7 @@ import platform
 import argparse
 import re
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 # Import compiler-specific modules
 from gcc_coverage import generate_lcov_coverage as gcc_generate_coverage
@@ -39,14 +39,14 @@ from common import (
 
 def get_coverage(
     compiler: str = "auto",
-    build_folder: str | Path = ".",
-    source_folder: str | Path = "Library",
-    output_folder: Optional[str | Path] = None,
+    build_folder: Union[str, Path] = ".",
+    source_folder: Union[str, Path] = "Library",
+    output_folder: Optional[Union[str, Path]] = None,
     exclude: Optional[List[str]] = None,
     exclude_patterns: Optional[List[str]] = None,
     verbose: bool = False,
     summary: bool = True,
-    quarisma_root: Optional[str | Path] = None,
+    quarisma_root: Optional[Union[str, Path]] = None,
     output_format: str = "html-and-json",
 ) -> int:
     """Generate code coverage report for the Quarisma project.

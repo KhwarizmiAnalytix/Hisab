@@ -9,7 +9,7 @@ import os
 import subprocess
 import platform
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 import logging
 
 try:
@@ -651,7 +651,7 @@ def _detect_cl_in_path() -> Optional[str]:
     return None
 
 
-def detect_compiler(build_dir: Path | str) -> str:
+def detect_compiler(build_dir: Union[Path, str]) -> str:
     """Detect the compiler used in the build directory.
 
     Detection order:
