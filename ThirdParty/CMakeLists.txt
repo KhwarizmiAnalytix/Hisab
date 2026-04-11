@@ -1077,19 +1077,6 @@ if(QUARISMA_ENABLE_BENCHMARK)
     )
 endif()
 
-# -----------------------------------------------------------------------------
-# Kineto - Special handling for Xcode generator
-# -----------------------------------------------------------------------------
-# Kineto requires special handling because the Xcode generator has trouble
-# materializing the combined kineto static library from object libraries.
-# We need to link component libs directly under Xcode.
-if(PROFILER_ENABLE_KINETO)
-  # Xcode generator has trouble materializing the combined kineto static library from
-  # object libraries. Prefer linking the component libs directly under Xcode.
-  if(CMAKE_GENERATOR STREQUAL "Xcode" AND TARGET kineto_base AND TARGET kineto_api)
-    list(APPEND QUARISMA_DEPENDENCY_LIBS kineto_base kineto_api)
-  endif()
-
   # Disable LLVM coverage instrumentation on Kineto targets — clang-cl ICEs on
   # some Kineto translation units (e.g. ActivityProfilerProxy.cpp) when
   # -fprofile-instr-generate / -fcoverage-mapping are active.
