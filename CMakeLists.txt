@@ -15,6 +15,12 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "In-source build are not supported")
 endif()
 
+# Module path + Xcode LLVM xctoolchain before project() so CMAKE_*_COMPILER matches TOOLCHAINS
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Cmake/tools")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Cmake/flags")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Cmake/packages")
+include(xcode_toolchain)
+
 # Set project name and version
 project(
   Quarisma
@@ -28,11 +34,6 @@ set(QUARISMA_MAJOR_VERSION 1)
 set(QUARISMA_MINOR_VERSION 0)
 set(QUARISMA_BUILD_VERSION 0)
 set(QUARISMA_VERSION_FULL "${QUARISMA_MAJOR_VERSION}.${QUARISMA_MINOR_VERSION}.${QUARISMA_BUILD_VERSION}")
-
-# Add CMake module path
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Cmake/tools")
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Cmake/flags")
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Cmake/packages")
 
 # Distributed compilation with Icecream
 option(QUARISMA_ENABLE_ICECC "Use Icecream distributed compilation" OFF)
@@ -268,7 +269,6 @@ include(CheckSymbolExists)
 
 # Include Quarisma-specific CMake modules
 include(compiler_checks)
-include(xcode_toolchain)
 include(cache)
 include(build_type)
 include(checks)

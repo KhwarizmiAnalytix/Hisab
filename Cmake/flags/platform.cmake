@@ -217,9 +217,19 @@ endif()
 if(APPLE)
   message(STATUS "Applying macOS LLVM linker options")
 
+  if(DEFINED QUARISMA_LLVM_INSTALL_PREFIX AND QUARISMA_LLVM_INSTALL_PREFIX)
+    set(_quarisma_llvm_prefix "${QUARISMA_LLVM_INSTALL_PREFIX}")
+  elseif(EXISTS "/opt/homebrew/opt/llvm/lib")
+    set(_quarisma_llvm_prefix "/opt/homebrew/opt/llvm")
+  elseif(EXISTS "/usr/local/opt/llvm/lib")
+    set(_quarisma_llvm_prefix "/usr/local/opt/llvm")
+  else()
+    set(_quarisma_llvm_prefix "/opt/homebrew/opt/llvm")
+  endif()
+
   set(LLVM_LINK_FLAGS
-      -L/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib
-      -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib
+      -L${_quarisma_llvm_prefix}/lib/c++ -L${_quarisma_llvm_prefix}/lib
+      -Wl,-rpath,${_quarisma_llvm_prefix}/lib/c++ -Wl,-rpath,${_quarisma_llvm_prefix}/lib
   )
 
   # Add each flag only if not already included

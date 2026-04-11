@@ -2,9 +2,12 @@
 # Xcode Toolchain Configuration Module
 # =============================================================================
 # When building with the Xcode generator, this module configures CMake to use
-# Homebrew LLVM instead of the default Apple Clang toolchain. This is required
-# for Enzyme AD support, which needs an LLVM version that matches the installed
-# Enzyme plugin.
+# the same LLVM as both (1) Xcode's TOOLCHAINS setting and (2) CMAKE_*_COMPILER.
+# Compilers are the clang/clang++ inside the registered *.xctoolchain (e.g.
+# LLVM22.1.2.xctoolchain), not a separate path under /opt/homebrew/opt/llvm/bin,
+# so compile and link steps use one toolchain.
+#
+# Include this file before project() so compiler detection picks the xctoolchain.
 #
 # Prerequisites (one-time setup):
 #   brew install llvm
@@ -55,13 +58,29 @@ if(NOT EXISTS "${_XCODE_TC_PATH}")
   return()
 endif()
 
-# ── Apply toolchain ───────────────────────────────────────────────────────────
+# ── Apply Xcode TOOLCHAINS (Homebrew LLVM) ────────────────────────────────────
 set(_BREW_LLVM_TC_ID "org.llvm.${_BREW_LLVM_VERSION}")
 
 set(CMAKE_XCODE_ATTRIBUTE_TOOLCHAINS "${_BREW_LLVM_TC_ID}"
   CACHE STRING "Xcode toolchain identifier (Homebrew LLVM)" FORCE)
 
-message(STATUS "xcode_toolchain: using Homebrew LLVM ${_BREW_LLVM_VERSION}")
+message(STATUS "xcode_toolchain: using LLVM ${_BREW_LLVM_VERSION} xctoolchain for Xcode + CMake")
 message(STATUS "  Identifier : ${_BREW_LLVM_TC_ID}")
 message(STATUS "  Path       : ${_XCODE_TC_PATH}")
-message(STATUS "  Compiler   : ${_BREW_LLVM_PREFIX}/bin/clang")
+
+# ── Compilers: same binaries as the xctoolchain (usr/bin, not brew .../bin) ─
+set(_XCODE_TC_CLANG "${_XCODE_TC_PATH}/usr/bin/clang")
+set(_XCODE_TC_CLANGXX "${_XCODE_TC_PATH}/usr/bin/clang++")
+if(EXISTS "${_XCODE_TC_CLANG}" AND EXISTS "${_XCODE_TC_CLANGXX}")
+  set(CMAKE_C_COMPILER "${_XCODE_TC_CLANG}" CACHE FILEPATH "C compiler (LLVM xctoolchain)" FORCE)
+  set(CMAKE_CXX_COMPILER "${_XCODE_TC_CLANGXX}" CACHE FILEPATH "C++ compiler (LLVM xctoolchain)" FORCE)
+  # libc++ / libLLVM under Homebrew prefix — same install as this xctoolchain
+  set(QUARISMA_LLVM_INSTALL_PREFIX "${_BREW_LLVM_PREFIX}"
+    CACHE PATH "Homebrew LLVM prefix (linker -L/-rpath; matches xctoolchain)" FORCE)
+  message(STATUS "  Compiler   : ${_XCODE_TC_CLANG}")
+else()
+  message(WARNING
+    "xcode_toolchain: missing ${_XCODE_TC_CLANG} or clang++; "
+    "Xcode TOOLCHAINS is set but CMake compilers are unchanged (possible mismatch)."
+  )
+endif()
