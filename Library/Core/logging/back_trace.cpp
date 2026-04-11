@@ -268,12 +268,14 @@ std::vector<stack_frame> back_trace::capture(const backtrace_options& options)
     // allocator is used.
     auto backtrace_free = [](char** p) noexcept
     {
-        if (p == nullptr)
+        if (p == nullptr) {
             return;
+}
 #ifdef __APPLE__
         malloc_zone_t* zone = malloc_zone_from_ptr(static_cast<const void*>(p));
-        if (zone != nullptr)
+        if (zone != nullptr) {
             malloc_zone_free(zone, static_cast<void*>(p));
+}
 #else
         ::free(p);
 #endif
