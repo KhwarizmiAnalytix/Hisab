@@ -1137,8 +1137,24 @@ class QuarismaConfiguration:
                 self.__value["build_folder"] = (
                     f"build_xcode{self.__quarisma_flags.builder_suffix}"
                 )
-                # Set Xcode-specific compiler flags
                 self.__value["compiler_flags"] = ""
+                # Prefer Homebrew LLVM over Apple Clang so that Enzyme (which is
+                # built against Homebrew LLVM) uses the same compiler.
+                # CMAKE_XCODE_ATTRIBUTE_TOOLCHAINS is set by xcode_toolchain.cmake;
+                # we also point CMAKE_C/CXX_COMPILER so CMake's try-compile step
+                # picks the right clang from the start.
+                _brew_clang = "/opt/homebrew/opt/llvm/bin/clang"
+                _brew_clangxx = "/opt/homebrew/opt/llvm/bin/clang++"
+                if os.path.exists(_brew_clang) and not self.__compiler_user_specified:
+                    self.__value["cmake_c_compiler"] = (
+                        f"-DCMAKE_C_COMPILER={_brew_clang}"
+                    )
+                    self.__value["cmake_cxx_compiler"] = (
+                        f"-DCMAKE_CXX_COMPILER={_brew_clangxx}"
+                    )
+                    print_status(
+                        f"Xcode + Homebrew LLVM: {_brew_clang}", "INFO"
+                    )
                 print_status("Using Xcode generator", "SUCCESS")
             else:
                 print_status("Xcode not found, falling back to Ninja", "WARNING")

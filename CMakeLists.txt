@@ -268,6 +268,7 @@ include(CheckSymbolExists)
 
 # Include Quarisma-specific CMake modules
 include(compiler_checks)
+include(xcode_toolchain)
 include(cache)
 include(build_type)
 include(checks)
