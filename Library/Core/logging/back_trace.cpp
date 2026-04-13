@@ -135,13 +135,13 @@ std::optional<FrameInformation> parse_frame_information(const std::string& frame
 }  // namespace quarisma
 #endif  // !defined(_WIN32)
 
-namespace quarisma
+namespace quarisma::back_trace
 {
 // ============================================================================
 // Public API Implementation
 // ============================================================================
 
-std::string back_trace::print(
+std::string print(
     QUARISMA_UNUSED size_t frames_to_skip,
     QUARISMA_UNUSED size_t maximum_number_of_frames,
     QUARISMA_UNUSED bool   skip_python_frames)
@@ -153,13 +153,13 @@ std::string back_trace::print(
     return print(options);
 }
 
-std::string back_trace::print(const backtrace_options& options)
+std::string print(const backtrace_options& options)
 {
     auto frames = capture(options);
     return format(frames, options);
 }
 
-std::vector<stack_frame> back_trace::capture(const backtrace_options& options)
+std::vector<stack_frame> capture(const backtrace_options& options)
 {
     std::vector<stack_frame> result;
 
@@ -247,7 +247,7 @@ std::vector<stack_frame> back_trace::capture(const backtrace_options& options)
         result.push_back(frame);
     }
 
-#else   // Unix/Linux/macOS implementation
+#else  // Unix/Linux/macOS implementation
     std::vector<void*> callstack(frames_to_skip + options.maximum_number_of_frames, nullptr);
 
     // Capture raw stack addresses
@@ -268,21 +268,22 @@ std::vector<stack_frame> back_trace::capture(const backtrace_options& options)
     // allocator is used.
     auto backtrace_free = [](char** p) noexcept
     {
-        if (p == nullptr) {
+        if (p == nullptr)
+        {
             return;
-}
+        }
 #ifdef __APPLE__
         malloc_zone_t* zone = malloc_zone_from_ptr(static_cast<const void*>(p));
-        if (zone != nullptr) {
+        if (zone != nullptr)
+        {
             malloc_zone_free(zone, static_cast<void*>(p));
-}
+        }
 #else
         ::free(p);
 #endif
     };
     std::unique_ptr<char*, decltype(backtrace_free)> const raw_symbols(
-        ::backtrace_symbols(callstack.data(), static_cast<int>(callstack.size())),
-        backtrace_free);
+        ::backtrace_symbols(callstack.data(), static_cast<int>(callstack.size())), backtrace_free);
 
     if (!raw_symbols)
     {
@@ -336,8 +337,7 @@ std::vector<stack_frame> back_trace::capture(const backtrace_options& options)
     return result;
 }
 
-std::string back_trace::format(
-    const std::vector<stack_frame>& frames, const backtrace_options& options)
+std::string format(const std::vector<stack_frame>& frames, const backtrace_options& options)
 {
     if (frames.empty())
     {
@@ -402,7 +402,7 @@ std::string back_trace::format(
     return result;
 }
 
-std::string back_trace::compact(size_t max_frames)
+std::string compact(size_t max_frames)
 {
     backtrace_options options;
     options.frames_to_skip           = 1;  // Skip compact() itself
@@ -414,7 +414,7 @@ std::string back_trace::compact(size_t max_frames)
     return print(options);
 }
 
-bool back_trace::is_supported()
+bool is_supported()
 {
 #if SUPPORTS_BACKTRACE
     return true;
@@ -423,14 +423,14 @@ bool back_trace::is_supported()
 #endif
 }
 
-void back_trace::set_stack_trace_on_error(int enable)
+void set_stack_trace_on_error(int enable)
 {
     // Placeholder for future implementation
     // Could integrate with signal handlers or exception hooks
     (void)enable;
 }
 
-}  // namespace quarisma
+}  // namespace quarisma::back_trace
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif

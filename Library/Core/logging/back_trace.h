@@ -11,7 +11,7 @@ namespace quarisma
 /**
  * @brief Stack frame information for detailed backtrace analysis
  */
-struct QUARISMA_VISIBILITY stack_frame
+struct stack_frame
 {
     std::string function_name;         ///< Demangled function name
     std::string object_file;           ///< Executable or library name
@@ -27,7 +27,7 @@ struct QUARISMA_VISIBILITY stack_frame
 /**
  * @brief Configuration options for stack trace capture
  */
-struct QUARISMA_VISIBILITY backtrace_options
+struct backtrace_options
 {
     size_t frames_to_skip           = 0;      ///< Number of top frames to skip
     size_t maximum_number_of_frames = 64;     ///< Maximum frames to capture
@@ -61,12 +61,9 @@ struct QUARISMA_VISIBILITY backtrace_options
  *
  * **Thread Safety**: All methods are thread-safe
  */
-class QUARISMA_VISIBILITY back_trace
+namespace back_trace
 {
-public:
-    QUARISMA_DELETE_CLASS(back_trace);
-
-    /**
+/**
      * @brief Capture and format current stack trace as string
      *
      * @param frames_to_skip Number of top frames to skip (default: 0)
@@ -81,20 +78,20 @@ public:
      * frame #2: main + 0x12 (0x400512 in app.exe)
      * ```
      */
-    QUARISMA_API static std::string print(
-        size_t frames_to_skip           = 0,
-        size_t maximum_number_of_frames = 64,
-        bool   skip_python_frames       = true);
+QUARISMA_API std::string print(
+    size_t frames_to_skip           = 0,
+    size_t maximum_number_of_frames = 64,
+    bool   skip_python_frames       = true);
 
-    /**
+/**
      * @brief Capture and format stack trace with custom options
      *
      * @param options Configuration for trace capture and formatting
      * @return Formatted stack trace string
      */
-    QUARISMA_API static std::string print(const backtrace_options& options);
+QUARISMA_API std::string print(const backtrace_options& options);
 
-    /**
+/**
      * @brief Capture raw stack frames without formatting
      *
      * @param options Configuration for trace capture
@@ -105,21 +102,20 @@ public:
      * - Programmatic analysis
      * - Caching for later formatting
      */
-    QUARISMA_API static std::vector<stack_frame> capture(
-        const backtrace_options& options = backtrace_options());
+QUARISMA_API std::vector<stack_frame> capture(
+    const backtrace_options& options = backtrace_options());
 
-    /**
+/**
      * @brief Format captured stack frames to string
      *
      * @param frames Previously captured stack frames
      * @param options Formatting options
      * @return Formatted stack trace string
      */
-    QUARISMA_API static std::string format(
-        const std::vector<stack_frame>& frames,
-        const backtrace_options&        options = backtrace_options());
+QUARISMA_API std::string format(
+    const std::vector<stack_frame>& frames, const backtrace_options& options = backtrace_options());
 
-    /**
+/**
      * @brief Get compact single-line stack trace (for logging)
      *
      * @param max_frames Maximum number of frames (default: 5)
@@ -127,22 +123,22 @@ public:
      *
      * **Example**: `"main -> allocate_raw -> malloc -> __libc_start_main"`
      */
-    QUARISMA_API static std::string compact(size_t max_frames = 5);
+QUARISMA_API std::string compact(size_t max_frames = 5);
 
-    /**
+/**
      * @brief Enable/disable automatic stack trace on errors
      *
      * @param enable 1 to enable, 0 to disable
      *
      * **Note**: Currently a no-op placeholder for future implementation
      */
-    QUARISMA_API static void set_stack_trace_on_error(int enable);
+QUARISMA_API void set_stack_trace_on_error(int enable);
 
-    /**
+/**
      * @brief Check if stack trace capture is supported on this platform
      *
      * @return true if backtrace is available, false otherwise
      */
-    QUARISMA_API static bool is_supported();
-};
+QUARISMA_API bool is_supported();
+};  // namespace back_trace
 }  // namespace quarisma
