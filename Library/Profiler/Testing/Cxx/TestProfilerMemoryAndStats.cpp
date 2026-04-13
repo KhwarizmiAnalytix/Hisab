@@ -11,7 +11,7 @@
 #include <thread>
 #include <vector>
 
-#include "baseTest.h"
+#include "ProfilerTest.h"
 #include "native/session/profiler.h"
 
 using namespace quarisma;
@@ -20,7 +20,7 @@ using namespace quarisma;
 // Memory Tracking and Statistical Analysis Tests
 // ============================================================================
 
-QUARISMATEST(Profiler, memory_tracking_enabled)
+PROFILERTEST(Profiler, memory_tracking_enabled)
 {
     profiler_options opts;
     opts.enable_memory_tracking_ = true;
@@ -41,7 +41,7 @@ QUARISMATEST(Profiler, memory_tracking_enabled)
     EXPECT_TRUE(session->stop());
 }
 
-QUARISMATEST(Profiler, memory_tracking_disabled)
+PROFILERTEST(Profiler, memory_tracking_disabled)
 {
     profiler_options opts;
     opts.enable_memory_tracking_ = false;
@@ -58,7 +58,7 @@ QUARISMATEST(Profiler, memory_tracking_disabled)
     EXPECT_TRUE(session->stop());
 }
 
-QUARISMATEST(Profiler, statistical_analysis_enabled)
+PROFILERTEST(Profiler, statistical_analysis_enabled)
 {
     profiler_options opts;
     opts.enable_statistical_analysis_ = true;
@@ -75,7 +75,7 @@ QUARISMATEST(Profiler, statistical_analysis_enabled)
     EXPECT_TRUE(session->stop());
 }
 
-QUARISMATEST(Profiler, statistical_analysis_disabled)
+PROFILERTEST(Profiler, statistical_analysis_disabled)
 {
     profiler_options opts;
     opts.enable_statistical_analysis_ = false;
@@ -92,7 +92,7 @@ QUARISMATEST(Profiler, statistical_analysis_disabled)
     EXPECT_TRUE(session->stop());
 }
 
-QUARISMATEST(Profiler, hierarchical_profiling_enabled)
+PROFILERTEST(Profiler, hierarchical_profiling_enabled)
 {
     profiler_options opts;
     opts.enable_hierarchical_profiling_ = true;
@@ -116,7 +116,7 @@ QUARISMATEST(Profiler, hierarchical_profiling_enabled)
     EXPECT_NE(json.find("inner"), std::string::npos);
 }
 
-QUARISMATEST(Profiler, hierarchical_profiling_disabled)
+PROFILERTEST(Profiler, hierarchical_profiling_disabled)
 {
     profiler_options opts;
     opts.enable_hierarchical_profiling_ = false;
@@ -136,7 +136,7 @@ QUARISMATEST(Profiler, hierarchical_profiling_disabled)
     EXPECT_TRUE(session->stop());
 }
 
-QUARISMATEST(Profiler, timing_enabled)
+PROFILERTEST(Profiler, timing_enabled)
 {
     profiler_options opts;
     opts.enable_timing_ = true;
@@ -153,7 +153,7 @@ QUARISMATEST(Profiler, timing_enabled)
     EXPECT_TRUE(session->stop());
 }
 
-QUARISMATEST(Profiler, timing_disabled)
+PROFILERTEST(Profiler, timing_disabled)
 {
     profiler_options opts;
     opts.enable_timing_ = false;
@@ -170,7 +170,7 @@ QUARISMATEST(Profiler, timing_disabled)
     EXPECT_TRUE(session->stop());
 }
 
-QUARISMATEST(Profiler, multiple_scopes_same_name)
+PROFILERTEST(Profiler, multiple_scopes_same_name)
 {
     auto session = std::make_unique<profiler_session>(profiler_options());
     EXPECT_TRUE(session != nullptr);
@@ -196,7 +196,7 @@ QUARISMATEST(Profiler, multiple_scopes_same_name)
     EXPECT_GE(count, 5);
 }
 
-QUARISMATEST(Profiler, scope_duration_measurement)
+PROFILERTEST(Profiler, scope_duration_measurement)
 {
     auto session = std::make_unique<profiler_session>(profiler_options());
     EXPECT_TRUE(session != nullptr);
@@ -215,7 +215,7 @@ QUARISMATEST(Profiler, scope_duration_measurement)
     EXPECT_GE(duration_ms, 10);
 }
 
-QUARISMATEST(Profiler, all_features_enabled)
+PROFILERTEST(Profiler, all_features_enabled)
 {
     profiler_options opts;
     opts.enable_timing_                 = true;
@@ -246,7 +246,7 @@ QUARISMATEST(Profiler, all_features_enabled)
     EXPECT_NE(json.find("inner"), std::string::npos);
 }
 
-QUARISMATEST(Profiler, all_features_disabled)
+PROFILERTEST(Profiler, all_features_disabled)
 {
     profiler_options opts;
     opts.enable_timing_                 = false;

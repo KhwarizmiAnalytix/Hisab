@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "baseTest.h"
+#include "ProfilerTest.h"
 #include "native/exporters/xplane/xplane.h"
 #include "native/exporters/xplane/xplane_builder.h"
 
@@ -17,14 +17,14 @@ using namespace quarisma;
 // XPlane Schema Tests
 // ============================================================================
 
-QUARISMATEST(Profiler, xspace_empty_initialization)
+PROFILERTEST(Profiler, xspace_empty_initialization)
 {
     x_space space;
 
     EXPECT_EQ(space.planes().size(), 0);
 }
 
-QUARISMATEST(Profiler, xspace_add_plane)
+PROFILERTEST(Profiler, xspace_add_plane)
 {
     x_space space;
     auto*   plane = space.add_planes();
@@ -33,7 +33,7 @@ QUARISMATEST(Profiler, xspace_add_plane)
     EXPECT_NE(plane, nullptr);
 }
 
-QUARISMATEST(Profiler, xplane_set_id_and_name)
+PROFILERTEST(Profiler, xplane_set_id_and_name)
 {
     x_space space;
     auto*   plane = space.add_planes();
@@ -44,7 +44,7 @@ QUARISMATEST(Profiler, xplane_set_id_and_name)
     EXPECT_EQ(plane->name(), "CPU");
 }
 
-QUARISMATEST(Profiler, xplane_add_line)
+PROFILERTEST(Profiler, xplane_add_line)
 {
     x_space space;
     auto*   plane = space.add_planes();
@@ -54,7 +54,7 @@ QUARISMATEST(Profiler, xplane_add_line)
     EXPECT_NE(line, nullptr);
 }
 
-QUARISMATEST(Profiler, xline_set_properties)
+PROFILERTEST(Profiler, xline_set_properties)
 {
     x_space space;
     auto*   plane = space.add_planes();
@@ -69,7 +69,7 @@ QUARISMATEST(Profiler, xline_set_properties)
     EXPECT_EQ(line->timestamp_ns(), 1000000);
 }
 
-QUARISMATEST(Profiler, xline_add_event)
+PROFILERTEST(Profiler, xline_add_event)
 {
     x_space space;
     auto*   plane = space.add_planes();
@@ -80,7 +80,7 @@ QUARISMATEST(Profiler, xline_add_event)
     EXPECT_NE(event, nullptr);
 }
 
-QUARISMATEST(Profiler, xevent_set_properties)
+PROFILERTEST(Profiler, xevent_set_properties)
 {
     x_space space;
     auto*   plane = space.add_planes();
@@ -96,7 +96,7 @@ QUARISMATEST(Profiler, xevent_set_properties)
     EXPECT_EQ(event->metadata_id(), 1);
 }
 
-QUARISMATEST(Profiler, xstat_set_int64_value)
+PROFILERTEST(Profiler, xstat_set_int64_value)
 {
     xstat stat;
     stat.set_value(int64_t(42));
@@ -104,7 +104,7 @@ QUARISMATEST(Profiler, xstat_set_int64_value)
     EXPECT_EQ(stat.int64_value(), 42);
 }
 
-QUARISMATEST(Profiler, xstat_set_uint64_value)
+PROFILERTEST(Profiler, xstat_set_uint64_value)
 {
     xstat stat;
     stat.set_value(uint64_t(100));
@@ -112,7 +112,7 @@ QUARISMATEST(Profiler, xstat_set_uint64_value)
     EXPECT_EQ(stat.uint64_value(), 100);
 }
 
-QUARISMATEST(Profiler, xstat_set_double_value)
+PROFILERTEST(Profiler, xstat_set_double_value)
 {
     xstat stat;
     stat.set_value(3.14);
@@ -120,7 +120,7 @@ QUARISMATEST(Profiler, xstat_set_double_value)
     EXPECT_DOUBLE_EQ(stat.double_value(), 3.14);
 }
 
-QUARISMATEST(Profiler, xstat_set_string_value)
+PROFILERTEST(Profiler, xstat_set_string_value)
 {
     xstat stat;
     stat.set_value(std::string("test"));
@@ -128,7 +128,7 @@ QUARISMATEST(Profiler, xstat_set_string_value)
     EXPECT_EQ(stat.str_value(), "test");
 }
 
-QUARISMATEST(Profiler, xevent_add_stats)
+PROFILERTEST(Profiler, xevent_add_stats)
 {
     x_space space;
     auto*   plane = space.add_planes();
@@ -144,7 +144,7 @@ QUARISMATEST(Profiler, xevent_add_stats)
     EXPECT_EQ(event->stats().size(), 5);
 }
 
-QUARISMATEST(Profiler, xplane_multiple_lines)
+PROFILERTEST(Profiler, xplane_multiple_lines)
 {
     x_space space;
     auto*   plane = space.add_planes();
@@ -159,7 +159,7 @@ QUARISMATEST(Profiler, xplane_multiple_lines)
     EXPECT_EQ(plane->lines_size(), 3);
 }
 
-QUARISMATEST(Profiler, xspace_multiple_planes)
+PROFILERTEST(Profiler, xspace_multiple_planes)
 {
     x_space space;
 
@@ -173,7 +173,7 @@ QUARISMATEST(Profiler, xspace_multiple_planes)
     EXPECT_EQ(space.planes().size(), 2);
 }
 
-QUARISMATEST(Profiler, xplane_complex_structure)
+PROFILERTEST(Profiler, xplane_complex_structure)
 {
     x_space space;
 
@@ -207,7 +207,7 @@ QUARISMATEST(Profiler, xplane_complex_structure)
     EXPECT_EQ(space.planes(0).lines(0).events_size(), 2);
 }
 
-QUARISMATEST(Profiler, xstat_ref_value)
+PROFILERTEST(Profiler, xstat_ref_value)
 {
     xstat stat;
     stat.set_ref_value(12345);
@@ -215,7 +215,7 @@ QUARISMATEST(Profiler, xstat_ref_value)
     EXPECT_EQ(stat.int64_value(), 12345);
 }
 
-QUARISMATEST(Profiler, xline_duration_ps)
+PROFILERTEST(Profiler, xline_duration_ps)
 {
     x_space space;
     auto*   plane = space.add_planes();

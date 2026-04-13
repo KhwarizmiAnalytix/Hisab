@@ -16,7 +16,7 @@
 #include <thread>
 #include <vector>
 
-#include "Testing/baseTest.h"
+#include "CoreTest.h"
 #include "memory/gpu/allocator_gpu.h"
 #include "memory/gpu/cuda_caching_allocator.h"
 

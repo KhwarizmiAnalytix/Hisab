@@ -13,7 +13,7 @@
 #include <thread>
 #include <vector>
 
-#include "Testing/baseTest.h"
+#include "CoreTest.h"
 #include "memory/backend/allocator_bfc.h"
 #include "memory/backend/allocator_pool.h"
 #include "memory/backend/allocator_tracking.h"

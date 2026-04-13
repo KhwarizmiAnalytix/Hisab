@@ -412,7 +412,7 @@
 #include <thread>
 #include <vector>
 
-#include "Testing/baseTest.h"
+#include "ProfilerTest.h"
 #include "native/analysis/statistical_analyzer.h"
 #include "native/memory/memory_tracker.h"
 #include "native/session/profiler.h"
@@ -633,7 +633,7 @@ std::vector<double> generate_test_signal(size_t size)
 }  // anonymous namespace
 
 // Test comprehensive profiling with heavy computational functions
-QUARISMATEST(Profiler, heavy_function_comprehensive_computational_profiling)
+PROFILERTEST(Profiler, heavy_function_comprehensive_computational_profiling)
 {
     // Configure profiler session with all features enabled
     profiler_options opts;
@@ -866,7 +866,7 @@ QUARISMATEST(Profiler, heavy_function_comprehensive_computational_profiling)
 #pragma warning(pop)
 #endif
 
-QUARISMATEST(Profiler, kineto_heavy_function_profiling)
+PROFILERTEST(Profiler, kineto_heavy_function_profiling)
 {
     std::cout << "\n=== Kineto + Quarisma Profiler Heavy Function Test (with Drill-Down) ===\n";
     std::cout << "Note: Kineto's CPU_OP activity type captures GPU-related CPU operations.\n";
@@ -1131,7 +1131,7 @@ QUARISMATEST(Profiler, kineto_heavy_function_profiling)
 
 #include "bespoke/itt/itt_wrapper.h"
 
-QUARISMATEST(Profiler, itt_api_heavy_function_profiling)
+PROFILERTEST(Profiler, itt_api_heavy_function_profiling)
 {
     std::cout
         << "\n=== Intel ITT API + Quarisma Profiler Heavy Function Test (with Drill-Down) ===\n";
@@ -1397,7 +1397,7 @@ QUARISMATEST(Profiler, itt_api_heavy_function_profiling)
 #include "bespoke/itt/itt_wrapper.h"
 #include "bespoke/kineto/kineto_shim.h"
 
-QUARISMATEST(Profiler, combined_kineto_itt_heavy_function_profiling)
+PROFILERTEST(Profiler, combined_kineto_itt_heavy_function_profiling)
 {
     std::cout << "\n=== Combined Kineto + ITT Profiling Test ===\n";
 

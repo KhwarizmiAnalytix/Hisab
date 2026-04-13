@@ -19,7 +19,7 @@
  * - Integration with Quarisma test framework
  */
 
-#include "Testing/baseTest.h"
+#include "CoreTest.h"
 
 #include <cmath>
 #include <cstdint>

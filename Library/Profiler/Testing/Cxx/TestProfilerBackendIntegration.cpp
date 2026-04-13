@@ -12,7 +12,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "Testing/baseTest.h"
+#include "ProfilerTest.h"
 #include "native/session/profiler.h"
 
 #if PROFILER_HAS_KINETO || PROFILER_HAS_ITT
@@ -145,7 +145,7 @@ const quarisma::autograd::profiler_impl::KinetoEvent* find_event_by_name(
 
 }  // namespace
 
-//QUARISMATEST(KinetoIntegration, captures_basic_scope_lifecycle)
+//PROFILERTEST(KinetoIntegration, captures_basic_scope_lifecycle)
 //{
 //    kineto_session_guard session(
 //        make_kineto_config(), {quarisma::autograd::profiler_impl::ActivityType::CPU});
@@ -173,7 +173,7 @@ const quarisma::autograd::profiler_impl::KinetoEvent* find_event_by_name(
 //    EXPECT_FALSE(scope_event->isHiddenEvent());
 //}
 //
-//QUARISMATEST(KinetoIntegration, nested_scopes_preserve_parent_child_timing)
+//PROFILERTEST(KinetoIntegration, nested_scopes_preserve_parent_child_timing)
 //{
 //    kineto_session_guard session(
 //        make_kineto_config(/*with_stack=*/true), {quarisma::autograd::profiler_impl::ActivityType::CPU});
@@ -211,7 +211,7 @@ const quarisma::autograd::profiler_impl::KinetoEvent* find_event_by_name(
 //    EXPECT_GE(parent_event->durationNs(), child_event->durationNs());
 //}
 //
-//QUARISMATEST(KinetoIntegration, thread_local_participation_requires_opt_in)
+//PROFILERTEST(KinetoIntegration, thread_local_participation_requires_opt_in)
 //{
 //    kineto_session_guard session(
 //        make_kineto_config(), {quarisma::autograd::profiler_impl::ActivityType::CPU});
@@ -268,7 +268,7 @@ const quarisma::autograd::profiler_impl::KinetoEvent* find_event_by_name(
 //    EXPECT_FALSE(found_detached);
 //}
 
-//QUARISMATEST(KinetoIntegration, enable_disable_cycles_reset_global_state)
+//PROFILERTEST(KinetoIntegration, enable_disable_cycles_reset_global_state)
 //{
 //    kineto_session_guard first_session(
 //        make_kineto_config(), {quarisma::autograd::profiler_impl::ActivityType::CPU});
@@ -382,7 +382,7 @@ private:
 
 }  // namespace
 
-QUARISMATEST(ITTIntegration, records_basic_scope_sequence)
+PROFILERTEST(ITTIntegration, records_basic_scope_sequence)
 {
     recording_itt_stub stub;
     scoped_itt_stub    stub_guard(stub);
@@ -411,7 +411,7 @@ QUARISMATEST(ITTIntegration, records_basic_scope_sequence)
     EXPECT_EQ(stub.pops_, stub.pushes_.size());
 }
 
-QUARISMATEST(ITTIntegration, nested_scopes_close_in_lifo_order)
+PROFILERTEST(ITTIntegration, nested_scopes_close_in_lifo_order)
 {
     recording_itt_stub stub;
     scoped_itt_stub    stub_guard(stub);
@@ -444,7 +444,7 @@ QUARISMATEST(ITTIntegration, nested_scopes_close_in_lifo_order)
     EXPECT_EQ(stub.closed_.back(), "itt_parent_scope");
 }
 
-//QUARISMATEST(ITTIntegration, callbacks_are_thread_local)
+//PROFILERTEST(ITTIntegration, callbacks_are_thread_local)
 //{
 //    recording_itt_stub stub;
 //    scoped_itt_stub    stub_guard(stub);
@@ -498,7 +498,7 @@ QUARISMATEST(ITTIntegration, nested_scopes_close_in_lifo_order)
 //    EXPECT_FALSE(saw_worker_scope);
 //}
 
-QUARISMATEST(ITTIntegration, handles_empty_and_null_range_names)
+PROFILERTEST(ITTIntegration, handles_empty_and_null_range_names)
 {
     recording_itt_stub stub;
     scoped_itt_stub    stub_guard(stub);
@@ -554,7 +554,7 @@ std::filesystem::path make_temp_trace_path(const std::string& name)
 
 }  // namespace
 
-QUARISMATEST(ProfilerChromeTrace, exports_nested_scope_metadata)
+PROFILERTEST(ProfilerChromeTrace, exports_nested_scope_metadata)
 {
     quarisma::profiler_session_builder builder;
     auto session = builder.with_hierarchical_profiling(true).with_memory_tracking(false).build();
@@ -588,7 +588,7 @@ QUARISMATEST(ProfilerChromeTrace, exports_nested_scope_metadata)
     std::filesystem::remove(trace_path, ec);
 }
 
-QUARISMATEST(ProfilerChromeTrace, write_chrome_trace_rejects_empty_path)
+PROFILERTEST(ProfilerChromeTrace, write_chrome_trace_rejects_empty_path)
 {
     quarisma::profiler_options opts;
     auto                       session = std::make_unique<quarisma::profiler_session>(opts);

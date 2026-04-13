@@ -8,7 +8,7 @@
  * Tests visitor pattern implementation for XPlane data structures
  */
 
-#include "Testing/baseTest.h"
+#include "ProfilerTest.h"
 #include "native/exporters/xplane/xplane.h"
 #include "native/exporters/xplane/xplane_builder.h"
 #include "native/exporters/xplane/xplane_visitor.h"
@@ -20,7 +20,7 @@ using namespace quarisma;
 // ============================================================================
 
 // Test x_stat_visitor int64 value
-QUARISMATEST(XPlaneVisitor, x_stat_visitor_int_value)
+PROFILERTEST(XPlaneVisitor, x_stat_visitor_int_value)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -50,7 +50,7 @@ QUARISMATEST(XPlaneVisitor, x_stat_visitor_int_value)
 }
 
 // Test x_stat_visitor uint64 value
-QUARISMATEST(XPlaneVisitor, x_stat_visitor_uint_value)
+PROFILERTEST(XPlaneVisitor, x_stat_visitor_uint_value)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -80,7 +80,7 @@ QUARISMATEST(XPlaneVisitor, x_stat_visitor_uint_value)
 }
 
 // Test x_stat_visitor double value
-QUARISMATEST(XPlaneVisitor, x_stat_visitor_double_value)
+PROFILERTEST(XPlaneVisitor, x_stat_visitor_double_value)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -110,7 +110,7 @@ QUARISMATEST(XPlaneVisitor, x_stat_visitor_double_value)
 }
 
 // Test x_stat_visitor string value
-QUARISMATEST(XPlaneVisitor, x_stat_visitor_str_value)
+PROFILERTEST(XPlaneVisitor, x_stat_visitor_str_value)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -140,7 +140,7 @@ QUARISMATEST(XPlaneVisitor, x_stat_visitor_str_value)
 }
 
 // Test x_stat_visitor bool value
-QUARISMATEST(XPlaneVisitor, x_stat_visitor_bool_value)
+PROFILERTEST(XPlaneVisitor, x_stat_visitor_bool_value)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -166,7 +166,7 @@ QUARISMATEST(XPlaneVisitor, x_stat_visitor_bool_value)
 }
 
 // Test x_stat_visitor id and name
-QUARISMATEST(XPlaneVisitor, x_stat_visitor_id_and_name)
+PROFILERTEST(XPlaneVisitor, x_stat_visitor_id_and_name)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -200,7 +200,7 @@ QUARISMATEST(XPlaneVisitor, x_stat_visitor_id_and_name)
 // ============================================================================
 
 // Test xevent_visitor basic properties
-QUARISMATEST(XPlaneVisitor, xevent_visitor_basic_properties)
+PROFILERTEST(XPlaneVisitor, xevent_visitor_basic_properties)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -227,7 +227,7 @@ QUARISMATEST(XPlaneVisitor, xevent_visitor_basic_properties)
 }
 
 // Test xevent_visitor timestamp calculations
-QUARISMATEST(XPlaneVisitor, xevent_visitor_timestamps)
+PROFILERTEST(XPlaneVisitor, xevent_visitor_timestamps)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -255,7 +255,7 @@ QUARISMATEST(XPlaneVisitor, xevent_visitor_timestamps)
 }
 
 // Test xevent_visitor timespan
-QUARISMATEST(XPlaneVisitor, xevent_visitor_timespan)
+PROFILERTEST(XPlaneVisitor, xevent_visitor_timespan)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -283,7 +283,7 @@ QUARISMATEST(XPlaneVisitor, xevent_visitor_timespan)
 }
 
 // Test xevent_visitor aggregated events
-QUARISMATEST(XPlaneVisitor, xevent_visitor_aggregated_event)
+PROFILERTEST(XPlaneVisitor, xevent_visitor_aggregated_event)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -308,7 +308,7 @@ QUARISMATEST(XPlaneVisitor, xevent_visitor_aggregated_event)
 }
 
 // Test xevent_visitor comparison
-QUARISMATEST(XPlaneVisitor, xevent_visitor_comparison)
+PROFILERTEST(XPlaneVisitor, xevent_visitor_comparison)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -346,7 +346,7 @@ QUARISMATEST(XPlaneVisitor, xevent_visitor_comparison)
 // ============================================================================
 
 // Test xline_visitor basic properties
-QUARISMATEST(XPlaneVisitor, xline_visitor_basic_properties)
+PROFILERTEST(XPlaneVisitor, xline_visitor_basic_properties)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -367,7 +367,7 @@ QUARISMATEST(XPlaneVisitor, xline_visitor_basic_properties)
 }
 
 // Test xline_visitor display name
-QUARISMATEST(XPlaneVisitor, xline_visitor_display_name)
+PROFILERTEST(XPlaneVisitor, xline_visitor_display_name)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -389,7 +389,7 @@ QUARISMATEST(XPlaneVisitor, xline_visitor_display_name)
 }
 
 // Test xline_visitor event iteration
-QUARISMATEST(XPlaneVisitor, xline_visitor_event_iteration)
+PROFILERTEST(XPlaneVisitor, xline_visitor_event_iteration)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -423,7 +423,7 @@ QUARISMATEST(XPlaneVisitor, xline_visitor_event_iteration)
 // ============================================================================
 
 // Test xplane_visitor basic properties
-QUARISMATEST(XPlaneVisitor, xplane_visitor_basic_properties)
+PROFILERTEST(XPlaneVisitor, xplane_visitor_basic_properties)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -439,7 +439,7 @@ QUARISMATEST(XPlaneVisitor, xplane_visitor_basic_properties)
 }
 
 // Test xplane_visitor multiple lines
-QUARISMATEST(XPlaneVisitor, xplane_visitor_multiple_lines)
+PROFILERTEST(XPlaneVisitor, xplane_visitor_multiple_lines)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -465,7 +465,7 @@ QUARISMATEST(XPlaneVisitor, xplane_visitor_multiple_lines)
 }
 
 // Test xplane_visitor event metadata access
-QUARISMATEST(XPlaneVisitor, xplane_visitor_event_metadata)
+PROFILERTEST(XPlaneVisitor, xplane_visitor_event_metadata)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -485,7 +485,7 @@ QUARISMATEST(XPlaneVisitor, xplane_visitor_event_metadata)
 }
 
 // Test xplane_visitor stat metadata access
-QUARISMATEST(XPlaneVisitor, xplane_visitor_stat_metadata)
+PROFILERTEST(XPlaneVisitor, xplane_visitor_stat_metadata)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -511,7 +511,7 @@ QUARISMATEST(XPlaneVisitor, xplane_visitor_stat_metadata)
 // ============================================================================
 
 // Test complete workflow: build and read back
-QUARISMATEST(XPlaneVisitor, integration_build_and_read)
+PROFILERTEST(XPlaneVisitor, integration_build_and_read)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -577,7 +577,7 @@ QUARISMATEST(XPlaneVisitor, integration_build_and_read)
 // ============================================================================
 
 // Test xevent_visitor raw_event and plane methods
-QUARISMATEST(XPlaneVisitor, xevent_visitor_raw_event_and_plane)
+PROFILERTEST(XPlaneVisitor, xevent_visitor_raw_event_and_plane)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -604,7 +604,7 @@ QUARISMATEST(XPlaneVisitor, xevent_visitor_raw_event_and_plane)
 }
 
 // Test x_stat_visitor raw_stat method
-QUARISMATEST(XPlaneVisitor, x_stat_visitor_raw_stat)
+PROFILERTEST(XPlaneVisitor, x_stat_visitor_raw_stat)
 {
     xplane         plane;
     xplane_builder builder(&plane);

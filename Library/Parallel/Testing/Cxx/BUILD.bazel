@@ -1,0 +1,54 @@
+# =============================================================================
+# Quarisma Parallel Library Tests BUILD Configuration
+# =============================================================================
+# Test targets for the Parallel library using GoogleTest.
+# Equivalent to Library/Parallel/Testing/Cxx/CMakeLists.txt
+# =============================================================================
+
+load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
+
+package(default_visibility = ["//visibility:public"])
+
+# =============================================================================
+# Parallel Tests Target
+# =============================================================================
+
+cc_test(
+    name = "ParallelCxxTests",
+    size = "large",
+    timeout = "long",
+    srcs = glob(["Test*.cpp"], allow_empty = True),
+    copts = quarisma_copts(),
+    defines = quarisma_defines() + [
+        "PARALLEL_GOOGLE_TEST",
+        "USE_GTEST",
+        "_VARIADIC_MAX=10",
+        "PARALLEL_HAS_GTEST=1",
+    ],
+    includes = ["."],
+    linkopts = quarisma_linkopts(),
+    deps = [
+        "//Library/Parallel:Parallel",
+        "//Library/Core/Testing:quarismaTest_header",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+# =============================================================================
+# Benchmark Target
+# Build with: bazel build //Library/Parallel/Testing/Cxx:BenchmarkParallel
+# =============================================================================
+
+cc_binary(
+    name = "BenchmarkParallel",
+    srcs = ["BenchmarkParallel.cpp"],
+    copts = quarisma_copts(),
+    defines = quarisma_defines(),
+    linkopts = quarisma_linkopts(),
+    deps = [
+        "//Library/Parallel:Parallel",
+        "@com_google_benchmark//:benchmark",
+        "@com_google_benchmark//:benchmark_main",
+    ],
+)

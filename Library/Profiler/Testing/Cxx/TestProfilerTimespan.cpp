@@ -8,13 +8,13 @@
  * Tests time interval utilities for profiling
  */
 
-#include "Testing/baseTest.h"
+#include "ProfilerTest.h"
 #include "native/core/timespan.h"
 
 using namespace quarisma;
 
 // Test default constructor
-QUARISMATEST(Profiler, timespan_default_constructor)
+PROFILERTEST(Profiler, timespan_default_constructor)
 {
     timespan ts;
     EXPECT_EQ(ts.begin_ps(), 0);
@@ -22,7 +22,7 @@ QUARISMATEST(Profiler, timespan_default_constructor)
 }
 
 // Test constructor with begin and duration
-QUARISMATEST(Profiler, timespan_constructor_with_values)
+PROFILERTEST(Profiler, timespan_constructor_with_values)
 {
     timespan ts(100, 50);
     EXPECT_EQ(ts.begin_ps(), 100);
@@ -30,35 +30,35 @@ QUARISMATEST(Profiler, timespan_constructor_with_values)
 }
 
 // Test begin_ps accessor
-QUARISMATEST(Profiler, timespan_begin_ps)
+PROFILERTEST(Profiler, timespan_begin_ps)
 {
     timespan ts(1000, 500);
     EXPECT_EQ(ts.begin_ps(), 1000);
 }
 
 // Test duration_ps accessor
-QUARISMATEST(Profiler, timespan_duration_ps)
+PROFILERTEST(Profiler, timespan_duration_ps)
 {
     timespan ts(1000, 500);
     EXPECT_EQ(ts.duration_ps(), 500);
 }
 
 // Test end_ps calculation
-QUARISMATEST(Profiler, timespan_end_ps)
+PROFILERTEST(Profiler, timespan_end_ps)
 {
     timespan ts(1000, 500);
     EXPECT_EQ(ts.end_ps(), 1500);
 }
 
 // Test middle_ps calculation
-QUARISMATEST(Profiler, timespan_middle_ps)
+PROFILERTEST(Profiler, timespan_middle_ps)
 {
     timespan ts(1000, 500);
     EXPECT_EQ(ts.middle_ps(), 1250);
 }
 
 // Test instant detection
-QUARISMATEST(Profiler, timespan_instant)
+PROFILERTEST(Profiler, timespan_instant)
 {
     timespan instant(1000, 0);
     timespan non_instant(1000, 100);
@@ -68,7 +68,7 @@ QUARISMATEST(Profiler, timespan_instant)
 }
 
 // Test empty detection
-QUARISMATEST(Profiler, timespan_empty)
+PROFILERTEST(Profiler, timespan_empty)
 {
     timespan empty;
     timespan non_empty(100, 50);
@@ -78,7 +78,7 @@ QUARISMATEST(Profiler, timespan_empty)
 }
 
 // Test overlaps - overlapping timespans
-QUARISMATEST(Profiler, timespan_overlaps_true)
+PROFILERTEST(Profiler, timespan_overlaps_true)
 {
     timespan ts1(100, 100);  // [100, 200]
     timespan ts2(150, 100);  // [150, 250]
@@ -88,7 +88,7 @@ QUARISMATEST(Profiler, timespan_overlaps_true)
 }
 
 // Test overlaps - non-overlapping timespans
-QUARISMATEST(Profiler, timespan_overlaps_false)
+PROFILERTEST(Profiler, timespan_overlaps_false)
 {
     timespan ts1(100, 50);  // [100, 150]
     timespan ts2(200, 50);  // [200, 250]
@@ -98,7 +98,7 @@ QUARISMATEST(Profiler, timespan_overlaps_false)
 }
 
 // Test overlaps - adjacent timespans
-QUARISMATEST(Profiler, timespan_overlaps_adjacent)
+PROFILERTEST(Profiler, timespan_overlaps_adjacent)
 {
     timespan ts1(100, 50);  // [100, 150]
     timespan ts2(150, 50);  // [150, 200]
@@ -107,7 +107,7 @@ QUARISMATEST(Profiler, timespan_overlaps_adjacent)
 }
 
 // Test includes - timespan includes another
-QUARISMATEST(Profiler, timespan_includes_timespan_true)
+PROFILERTEST(Profiler, timespan_includes_timespan_true)
 {
     timespan outer(100, 200);  // [100, 300]
     timespan inner(150, 50);   // [150, 200]
@@ -117,7 +117,7 @@ QUARISMATEST(Profiler, timespan_includes_timespan_true)
 }
 
 // Test includes - timespan does not include another
-QUARISMATEST(Profiler, timespan_includes_timespan_false)
+PROFILERTEST(Profiler, timespan_includes_timespan_false)
 {
     timespan ts1(100, 50);  // [100, 150]
     timespan ts2(200, 50);  // [200, 250]
@@ -126,7 +126,7 @@ QUARISMATEST(Profiler, timespan_includes_timespan_false)
 }
 
 // Test includes - point in timespan
-QUARISMATEST(Profiler, timespan_includes_point_true)
+PROFILERTEST(Profiler, timespan_includes_point_true)
 {
     timespan ts(100, 100);  // [100, 200]
 
@@ -136,7 +136,7 @@ QUARISMATEST(Profiler, timespan_includes_point_true)
 }
 
 // Test includes - point not in timespan
-QUARISMATEST(Profiler, timespan_includes_point_false)
+PROFILERTEST(Profiler, timespan_includes_point_false)
 {
     timespan ts(100, 100);  // [100, 200]
 
@@ -145,7 +145,7 @@ QUARISMATEST(Profiler, timespan_includes_point_false)
 }
 
 // Test overlapped_duration_ps - overlapping
-QUARISMATEST(Profiler, timespan_overlapped_duration_overlapping)
+PROFILERTEST(Profiler, timespan_overlapped_duration_overlapping)
 {
     timespan ts1(100, 100);  // [100, 200]
     timespan ts2(150, 100);  // [150, 250]
@@ -155,7 +155,7 @@ QUARISMATEST(Profiler, timespan_overlapped_duration_overlapping)
 }
 
 // Test overlapped_duration_ps - non-overlapping
-QUARISMATEST(Profiler, timespan_overlapped_duration_non_overlapping)
+PROFILERTEST(Profiler, timespan_overlapped_duration_non_overlapping)
 {
     timespan ts1(100, 50);  // [100, 150]
     timespan ts2(200, 50);  // [200, 250]
@@ -165,7 +165,7 @@ QUARISMATEST(Profiler, timespan_overlapped_duration_non_overlapping)
 }
 
 // Test expand_to_include
-QUARISMATEST(Profiler, timespan_expand_to_include)
+PROFILERTEST(Profiler, timespan_expand_to_include)
 {
     timespan ts1(100, 50);  // [100, 150]
     timespan ts2(200, 50);  // [200, 250]
@@ -177,7 +177,7 @@ QUARISMATEST(Profiler, timespan_expand_to_include)
 }
 
 // Test operator< - by begin time
-QUARISMATEST(Profiler, timespan_operator_less_begin)
+PROFILERTEST(Profiler, timespan_operator_less_begin)
 {
     timespan ts1(100, 50);
     timespan ts2(200, 50);
@@ -187,7 +187,7 @@ QUARISMATEST(Profiler, timespan_operator_less_begin)
 }
 
 // Test operator< - same begin, different duration
-QUARISMATEST(Profiler, timespan_operator_less_duration)
+PROFILERTEST(Profiler, timespan_operator_less_duration)
 {
     timespan ts1(100, 100);  // longer duration
     timespan ts2(100, 50);   // shorter duration
@@ -198,7 +198,7 @@ QUARISMATEST(Profiler, timespan_operator_less_duration)
 }
 
 // Test operator==
-QUARISMATEST(Profiler, timespan_operator_equal)
+PROFILERTEST(Profiler, timespan_operator_equal)
 {
     timespan ts1(100, 50);
     timespan ts2(100, 50);
@@ -209,7 +209,7 @@ QUARISMATEST(Profiler, timespan_operator_equal)
 }
 
 // Test debug_string
-QUARISMATEST(Profiler, timespan_debug_string)
+PROFILERTEST(Profiler, timespan_debug_string)
 {
     timespan    ts(100, 50);
     std::string debug = ts.debug_string();
@@ -219,7 +219,7 @@ QUARISMATEST(Profiler, timespan_debug_string)
 }
 
 // Test from_end_points - normal case
-QUARISMATEST(Profiler, timespan_from_end_points_normal)
+PROFILERTEST(Profiler, timespan_from_end_points_normal)
 {
     timespan ts = timespan::from_end_points(100, 200);
 
@@ -229,7 +229,7 @@ QUARISMATEST(Profiler, timespan_from_end_points_normal)
 }
 
 // Test from_end_points - begin > end
-QUARISMATEST(Profiler, timespan_from_end_points_invalid)
+PROFILERTEST(Profiler, timespan_from_end_points_invalid)
 {
     timespan ts = timespan::from_end_points(200, 100);
 
@@ -238,7 +238,7 @@ QUARISMATEST(Profiler, timespan_from_end_points_invalid)
 }
 
 // Test by_duration comparator
-QUARISMATEST(Profiler, timespan_by_duration)
+PROFILERTEST(Profiler, timespan_by_duration)
 {
     timespan ts1(100, 50);
     timespan ts2(100, 100);
@@ -248,14 +248,14 @@ QUARISMATEST(Profiler, timespan_by_duration)
 }
 
 // Test milli_to_pico conversion
-QUARISMATEST(Profiler, timespan_milli_to_pico)
+PROFILERTEST(Profiler, timespan_milli_to_pico)
 {
     int64_t picos = timespan::milli_to_pico(1);
     EXPECT_EQ(picos, 1000000000LL);
 }
 
 // Test pico_span helper
-QUARISMATEST(Profiler, timespan_pico_span)
+PROFILERTEST(Profiler, timespan_pico_span)
 {
     timespan ts = pico_span(100, 200);
 
@@ -264,7 +264,7 @@ QUARISMATEST(Profiler, timespan_pico_span)
 }
 
 // Test milli_span helper
-QUARISMATEST(Profiler, timespan_milli_span)
+PROFILERTEST(Profiler, timespan_milli_span)
 {
     timespan ts = milli_span(1.0, 2.0);
 
@@ -273,7 +273,7 @@ QUARISMATEST(Profiler, timespan_milli_span)
 }
 
 // Test large timespan values
-QUARISMATEST(Profiler, timespan_large_values)
+PROFILERTEST(Profiler, timespan_large_values)
 {
     uint64_t large_begin    = 1000000000000ULL;
     uint64_t large_duration = 500000000000ULL;
@@ -286,7 +286,7 @@ QUARISMATEST(Profiler, timespan_large_values)
 }
 
 // Test zero duration timespan
-QUARISMATEST(Profiler, timespan_zero_duration)
+PROFILERTEST(Profiler, timespan_zero_duration)
 {
     timespan ts(1000, 0);
 

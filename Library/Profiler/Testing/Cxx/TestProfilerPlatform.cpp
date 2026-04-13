@@ -13,7 +13,7 @@
 #include <thread>
 #include <vector>
 
-#include "baseTest.h"
+#include "ProfilerTest.h"
 #include "native/platform/env_time.h"
 #include "native/platform/env_var.h"
 
@@ -47,14 +47,14 @@ void unset_env(const char* name)
 // Environment Time Tests
 // ============================================================================
 
-QUARISMATEST(Profiler, env_time_now_nanos_returns_positive)
+PROFILERTEST(Profiler, env_time_now_nanos_returns_positive)
 {
     uint64_t time = env_time::now_nanos();
 
     EXPECT_GT(time, 0);
 }
 
-QUARISMATEST(Profiler, env_time_now_nanos_monotonic)
+PROFILERTEST(Profiler, env_time_now_nanos_monotonic)
 {
     uint64_t time1 = env_time::now_nanos();
     uint64_t time2 = env_time::now_nanos();
@@ -62,7 +62,7 @@ QUARISMATEST(Profiler, env_time_now_nanos_monotonic)
     EXPECT_GE(time2, time1);
 }
 
-QUARISMATEST(Profiler, env_time_now_nanos_increasing)
+PROFILERTEST(Profiler, env_time_now_nanos_increasing)
 {
     uint64_t time1 = env_time::now_nanos();
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -71,14 +71,14 @@ QUARISMATEST(Profiler, env_time_now_nanos_increasing)
     EXPECT_GT(time2, time1);
 }
 
-QUARISMATEST(Profiler, env_time_now_micros_returns_positive)
+PROFILERTEST(Profiler, env_time_now_micros_returns_positive)
 {
     uint64_t time = env_time::now_micros();
 
     EXPECT_GT(time, 0);
 }
 
-QUARISMATEST(Profiler, env_time_now_micros_monotonic)
+PROFILERTEST(Profiler, env_time_now_micros_monotonic)
 {
     uint64_t time1 = env_time::now_micros();
     uint64_t time2 = env_time::now_micros();
@@ -86,14 +86,14 @@ QUARISMATEST(Profiler, env_time_now_micros_monotonic)
     EXPECT_GE(time2, time1);
 }
 
-QUARISMATEST(Profiler, env_time_now_seconds_returns_positive)
+PROFILERTEST(Profiler, env_time_now_seconds_returns_positive)
 {
     uint64_t time = env_time::now_seconds();
 
     EXPECT_GT(time, 0);
 }
 
-QUARISMATEST(Profiler, env_time_now_seconds_monotonic)
+PROFILERTEST(Profiler, env_time_now_seconds_monotonic)
 {
     uint64_t time1 = env_time::now_seconds();
     uint64_t time2 = env_time::now_seconds();
@@ -101,7 +101,7 @@ QUARISMATEST(Profiler, env_time_now_seconds_monotonic)
     EXPECT_GE(time2, time1);
 }
 
-QUARISMATEST(Profiler, env_time_nanos_to_micros_conversion)
+PROFILERTEST(Profiler, env_time_nanos_to_micros_conversion)
 {
     uint64_t nanos  = 1000000;  // 1ms
     uint64_t micros = nanos / 1000;
@@ -109,7 +109,7 @@ QUARISMATEST(Profiler, env_time_nanos_to_micros_conversion)
     EXPECT_EQ(micros, 1000);
 }
 
-QUARISMATEST(Profiler, env_time_nanos_to_seconds_conversion)
+PROFILERTEST(Profiler, env_time_nanos_to_seconds_conversion)
 {
     uint64_t nanos   = 1000000000;  // 1 second
     uint64_t seconds = nanos / 1000000000;
@@ -117,7 +117,7 @@ QUARISMATEST(Profiler, env_time_nanos_to_seconds_conversion)
     EXPECT_EQ(seconds, 1);
 }
 
-QUARISMATEST(Profiler, env_time_micros_to_nanos_conversion)
+PROFILERTEST(Profiler, env_time_micros_to_nanos_conversion)
 {
     uint64_t micros = 1000;  // 1ms
     uint64_t nanos  = micros * 1000;
@@ -125,7 +125,7 @@ QUARISMATEST(Profiler, env_time_micros_to_nanos_conversion)
     EXPECT_EQ(nanos, 1000000);
 }
 
-QUARISMATEST(Profiler, env_time_multiple_reads_consistency)
+PROFILERTEST(Profiler, env_time_multiple_reads_consistency)
 {
     uint64_t time1 = env_time::now_nanos();
     uint64_t time2 = env_time::now_nanos();
@@ -135,7 +135,7 @@ QUARISMATEST(Profiler, env_time_multiple_reads_consistency)
     EXPECT_GE(time3, time2);
 }
 
-QUARISMATEST(Profiler, env_time_sleep_and_measure)
+PROFILERTEST(Profiler, env_time_sleep_and_measure)
 {
     uint64_t time1 = env_time::now_nanos();
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -145,7 +145,7 @@ QUARISMATEST(Profiler, env_time_sleep_and_measure)
     EXPECT_GE(elapsed, 2500000);  // At least 2.5ms
 }
 
-QUARISMATEST(Profiler, env_time_high_resolution_verification)
+PROFILERTEST(Profiler, env_time_high_resolution_verification)
 {
     // Verify we're getting nanosecond precision
     uint64_t time1 = env_time::now_nanos();
@@ -156,7 +156,7 @@ QUARISMATEST(Profiler, env_time_high_resolution_verification)
     EXPECT_LT(diff, 1000000000);  // Less than 1 second
 }
 
-QUARISMATEST(Profiler, env_time_consistency_between_units)
+PROFILERTEST(Profiler, env_time_consistency_between_units)
 {
     uint64_t nanos   = env_time::now_nanos();
     uint64_t micros  = env_time::now_micros();
@@ -171,7 +171,7 @@ QUARISMATEST(Profiler, env_time_consistency_between_units)
     EXPECT_GT(nanos, micros);
 }
 
-QUARISMATEST(Profiler, env_time_large_duration_measurement)
+PROFILERTEST(Profiler, env_time_large_duration_measurement)
 {
     uint64_t time1 = env_time::now_nanos();
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -181,7 +181,7 @@ QUARISMATEST(Profiler, env_time_large_duration_measurement)
     EXPECT_GE(elapsed, 25000000);  // At least 25ms
 }
 
-QUARISMATEST(Profiler, env_time_micros_precision)
+PROFILERTEST(Profiler, env_time_micros_precision)
 {
     uint64_t time1 = env_time::now_micros();
     std::this_thread::sleep_for(std::chrono::microseconds(100));
@@ -191,7 +191,7 @@ QUARISMATEST(Profiler, env_time_micros_precision)
     EXPECT_GE(elapsed, 50);  // At least 50 microseconds
 }
 
-QUARISMATEST(Profiler, env_time_seconds_precision)
+PROFILERTEST(Profiler, env_time_seconds_precision)
 {
     uint64_t time1 = env_time::now_seconds();
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -205,7 +205,7 @@ QUARISMATEST(Profiler, env_time_seconds_precision)
 // Environment Variable Tests
 // ============================================================================
 
-QUARISMATEST(Profiler, env_var_read_bool_values)
+PROFILERTEST(Profiler, env_var_read_bool_values)
 {
     static constexpr char const* var_name = "PROFILER_TEST_ENV_BOOL";
 
@@ -234,7 +234,7 @@ QUARISMATEST(Profiler, env_var_read_bool_values)
     unset_env(var_name);
 }
 
-QUARISMATEST(Profiler, env_var_read_int64_with_trimming_and_fallback)
+PROFILERTEST(Profiler, env_var_read_int64_with_trimming_and_fallback)
 {
     static constexpr char const* var_name = "PROFILER_TEST_ENV_INT";
 
@@ -263,7 +263,7 @@ QUARISMATEST(Profiler, env_var_read_int64_with_trimming_and_fallback)
     EXPECT_EQ(value, 1234);
 }
 
-QUARISMATEST(Profiler, env_var_read_float_with_trimming_and_invalid)
+PROFILERTEST(Profiler, env_var_read_float_with_trimming_and_invalid)
 {
     static constexpr char const* var_name = "PROFILER_TEST_ENV_FLOAT";
 
@@ -292,7 +292,7 @@ QUARISMATEST(Profiler, env_var_read_float_with_trimming_and_invalid)
     EXPECT_FLOAT_EQ(value, 2.5F);
 }
 
-QUARISMATEST(Profiler, env_var_read_string_default_and_override)
+PROFILERTEST(Profiler, env_var_read_string_default_and_override)
 {
     static constexpr char const* var_name = "PROFILER_TEST_ENV_STRING";
 
@@ -311,7 +311,7 @@ QUARISMATEST(Profiler, env_var_read_string_default_and_override)
     unset_env(var_name);
 }
 
-QUARISMATEST(Profiler, env_var_read_strings_with_trimming_and_default)
+PROFILERTEST(Profiler, env_var_read_strings_with_trimming_and_default)
 {
     static constexpr char const* var_name = "PROFILER_TEST_ENV_STRINGS";
 

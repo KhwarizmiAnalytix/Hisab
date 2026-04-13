@@ -5,7 +5,7 @@
 #include <set>
 #include <string>
 
-#include "Testing/baseTest.h"
+#include "ProfilerTest.h"
 //#include "logging/logger.h"
 
 #if PROFILER_HAS_KINETO
@@ -58,7 +58,7 @@ void runSampleWork()
 
 #if PROFILER_HAS_KINETO
 
-QUARISMATEST(profiler, autograd_chrome_trace_export)
+PROFILERTEST(profiler, autograd_chrome_trace_export)
 {
     const std::set<quarisma::autograd::profiler_impl::ActivityType> activities{
         quarisma::autograd::profiler_impl::ActivityType::CPU,

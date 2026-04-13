@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include "Testing/baseTest.h"
+#include "ProfilerTest.h"
 #include "native/exporters/xplane/xplane.h"
 #include "native/exporters/xplane/xplane_builder.h"
 #include "native/exporters/xplane/xplane_utils.h"
@@ -23,7 +23,7 @@ using namespace quarisma;
 // xevent_timespan Tests
 // ============================================================================
 
-QUARISMATEST(XPlaneUtils, xevent_timespan_basic)
+PROFILERTEST(XPlaneUtils, xevent_timespan_basic)
 {
     xevent event;
     event.set_offset_ps(1000);
@@ -34,7 +34,7 @@ QUARISMATEST(XPlaneUtils, xevent_timespan_basic)
     EXPECT_EQ(ts.duration_ps(), 5000);
 }
 
-QUARISMATEST(XPlaneUtils, xevent_timespan_zero_duration)
+PROFILERTEST(XPlaneUtils, xevent_timespan_zero_duration)
 {
     xevent event;
     event.set_offset_ps(1000);
@@ -49,7 +49,7 @@ QUARISMATEST(XPlaneUtils, xevent_timespan_zero_duration)
 // find_mutable_plane_with_name Tests
 // ============================================================================
 
-QUARISMATEST(XPlaneUtils, find_mutable_plane_with_name_found)
+PROFILERTEST(XPlaneUtils, find_mutable_plane_with_name_found)
 {
     x_space space;
     auto*   plane = space.add_planes();
@@ -63,7 +63,7 @@ QUARISMATEST(XPlaneUtils, find_mutable_plane_with_name_found)
     }
 }
 
-QUARISMATEST(XPlaneUtils, find_mutable_plane_with_name_not_found)
+PROFILERTEST(XPlaneUtils, find_mutable_plane_with_name_not_found)
 {
     x_space space;
     auto*   plane = space.add_planes();
@@ -77,7 +77,7 @@ QUARISMATEST(XPlaneUtils, find_mutable_plane_with_name_not_found)
 // find_mutable_planes_with_prefix Tests
 // ============================================================================
 
-QUARISMATEST(XPlaneUtils, find_mutable_planes_with_prefix_found)
+PROFILERTEST(XPlaneUtils, find_mutable_planes_with_prefix_found)
 {
     x_space space;
     auto*   plane1 = space.add_planes();
@@ -89,7 +89,7 @@ QUARISMATEST(XPlaneUtils, find_mutable_planes_with_prefix_found)
     EXPECT_EQ(found.size(), 2);
 }
 
-QUARISMATEST(XPlaneUtils, find_mutable_planes_with_prefix_not_found)
+PROFILERTEST(XPlaneUtils, find_mutable_planes_with_prefix_not_found)
 {
     x_space space;
     auto*   plane = space.add_planes();
@@ -99,7 +99,7 @@ QUARISMATEST(XPlaneUtils, find_mutable_planes_with_prefix_not_found)
     EXPECT_EQ(found.size(), 0);
 }
 
-QUARISMATEST(XPlaneUtils, find_mutable_planes_with_prefix_empty_prefix)
+PROFILERTEST(XPlaneUtils, find_mutable_planes_with_prefix_empty_prefix)
 {
     x_space space;
     auto*   plane1 = space.add_planes();
@@ -115,7 +115,7 @@ QUARISMATEST(XPlaneUtils, find_mutable_planes_with_prefix_empty_prefix)
 // find_line_with_id Tests
 // ============================================================================
 
-QUARISMATEST(XPlaneUtils, find_line_with_id_found)
+PROFILERTEST(XPlaneUtils, find_line_with_id_found)
 {
     x_space space;
     auto*   plane = space.add_planes();
@@ -132,7 +132,7 @@ QUARISMATEST(XPlaneUtils, find_line_with_id_found)
     }
 }
 
-QUARISMATEST(XPlaneUtils, find_line_with_id_not_found)
+PROFILERTEST(XPlaneUtils, find_line_with_id_not_found)
 {
     x_space space;
     auto*   plane = space.add_planes();
@@ -143,7 +143,7 @@ QUARISMATEST(XPlaneUtils, find_line_with_id_not_found)
     EXPECT_EQ(found, nullptr);
 }
 
-QUARISMATEST(XPlaneUtils, find_line_with_id_empty_plane)
+PROFILERTEST(XPlaneUtils, find_line_with_id_empty_plane)
 {
     x_space      space;
     auto*        plane = space.add_planes();
@@ -155,7 +155,7 @@ QUARISMATEST(XPlaneUtils, find_line_with_id_empty_plane)
 // find_line_with_name Tests
 // ============================================================================
 
-QUARISMATEST(XPlaneUtils, find_line_with_name_found)
+PROFILERTEST(XPlaneUtils, find_line_with_name_found)
 {
     x_space space;
     auto*   plane = space.add_planes();
@@ -172,7 +172,7 @@ QUARISMATEST(XPlaneUtils, find_line_with_name_found)
     }
 }
 
-QUARISMATEST(XPlaneUtils, find_line_with_name_not_found)
+PROFILERTEST(XPlaneUtils, find_line_with_name_not_found)
 {
     x_space space;
     auto*   plane = space.add_planes();
@@ -190,7 +190,7 @@ QUARISMATEST(XPlaneUtils, find_line_with_name_not_found)
 // find_or_add_mutable_plane_with_name Tests
 // ============================================================================
 
-QUARISMATEST(XPlaneUtils, find_or_add_mutable_plane_with_name_existing)
+PROFILERTEST(XPlaneUtils, find_or_add_mutable_plane_with_name_existing)
 {
     x_space space;
     auto*   plane = space.add_planes();
@@ -201,7 +201,7 @@ QUARISMATEST(XPlaneUtils, find_or_add_mutable_plane_with_name_existing)
     EXPECT_EQ(space.planes().size(), 1);  // Should not add a new plane
 }
 
-QUARISMATEST(XPlaneUtils, find_or_add_mutable_plane_with_name_new)
+PROFILERTEST(XPlaneUtils, find_or_add_mutable_plane_with_name_new)
 {
     x_space space;
 
@@ -218,7 +218,7 @@ QUARISMATEST(XPlaneUtils, find_or_add_mutable_plane_with_name_new)
 // xlines_comparator_by_name Tests
 // ============================================================================
 
-QUARISMATEST(XPlaneUtils, xlines_comparator_by_name_basic)
+PROFILERTEST(XPlaneUtils, xlines_comparator_by_name_basic)
 {
     xline line1, line2;
     line1.set_name("aaa");
@@ -229,7 +229,7 @@ QUARISMATEST(XPlaneUtils, xlines_comparator_by_name_basic)
     EXPECT_FALSE(comparator(line2, line1));
 }
 
-QUARISMATEST(XPlaneUtils, xlines_comparator_by_name_display_name)
+PROFILERTEST(XPlaneUtils, xlines_comparator_by_name_display_name)
 {
     xline line1, line2;
     line1.set_name("zzz");
@@ -245,13 +245,13 @@ QUARISMATEST(XPlaneUtils, xlines_comparator_by_name_display_name)
 // IsEmpty Tests
 // ============================================================================
 
-QUARISMATEST(XPlaneUtils, is_empty_true)
+PROFILERTEST(XPlaneUtils, is_empty_true)
 {
     x_space space;
     EXPECT_TRUE(IsEmpty(space));
 }
 
-QUARISMATEST(XPlaneUtils, is_empty_false)
+PROFILERTEST(XPlaneUtils, is_empty_false)
 {
     x_space space;
     auto*   plane = space.add_planes();
@@ -268,21 +268,21 @@ QUARISMATEST(XPlaneUtils, is_empty_false)
 // IsHostPlane / IsDevicePlane / IsCustomPlane Tests
 // ============================================================================
 
-QUARISMATEST(XPlaneUtils, is_host_plane)
+PROFILERTEST(XPlaneUtils, is_host_plane)
 {
     xplane plane;
     plane.set_name("/host:CPU");
     EXPECT_TRUE(IsHostPlane(plane));
 }
 
-QUARISMATEST(XPlaneUtils, is_device_plane)
+PROFILERTEST(XPlaneUtils, is_device_plane)
 {
     xplane plane;
     plane.set_name("/device:GPU:0");
     EXPECT_TRUE(IsDevicePlane(plane));
 }
 
-QUARISMATEST(XPlaneUtils, is_custom_plane)
+PROFILERTEST(XPlaneUtils, is_custom_plane)
 {
     xplane plane;
     plane.set_name("/custom:MyPlane");
@@ -293,7 +293,7 @@ QUARISMATEST(XPlaneUtils, is_custom_plane)
 // xevents_comparator Tests
 // ============================================================================
 
-QUARISMATEST(XPlaneUtils, xevents_comparator_basic)
+PROFILERTEST(XPlaneUtils, xevents_comparator_basic)
 {
     xevent event1, event2;
     event1.set_offset_ps(1000);
@@ -306,7 +306,7 @@ QUARISMATEST(XPlaneUtils, xevents_comparator_basic)
     EXPECT_FALSE(comparator(event2, event1));
 }
 
-QUARISMATEST(XPlaneUtils, xevents_comparator_nested_events)
+PROFILERTEST(XPlaneUtils, xevents_comparator_nested_events)
 {
     xevent event1, event2;
     // event1: offset=1000, duration=1000 (ends at 2000)

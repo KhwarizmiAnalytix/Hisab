@@ -77,12 +77,11 @@ target_compile_definitions(CoreCxxTests PRIVATE QUARISMA_GOOGLE_TEST USE_GTEST _
 # around the ICE
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   set_source_files_properties(
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestPointer.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestAsyncParallel.cpp" PROPERTIES COMPILE_FLAGS "-O1"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestPointer.cpp" PROPERTIES COMPILE_FLAGS "-O1"
   )
   message(
     STATUS
-      "Applied Clang ICE workaround: TestPointer.cpp and TestAsyncParallel.cpp compiled with -O1"
+      "Applied Clang ICE workaround: TestPointer.cpp compiled with -O1"
   )
 endif()
 

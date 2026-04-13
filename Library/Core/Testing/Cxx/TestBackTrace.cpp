@@ -1,7 +1,7 @@
 #include <string>
 #include <vector>
 
-#include "baseTest.h"
+#include "CoreTest.h"
 #include "logging/back_trace.h"
 
 namespace quarisma

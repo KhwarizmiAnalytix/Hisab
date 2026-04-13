@@ -11,7 +11,7 @@
 #include <thread>
 #include <vector>
 
-#include "baseTest.h"
+#include "ProfilerTest.h"
 #include "native/session/profiler.h"
 #include "native/session/profiler_report.h"
 
@@ -24,7 +24,7 @@ using namespace quarisma;
 // Test 1: Session State Management and Lifecycle
 // Tests: double start, stop without start, double stop, is_active, current_session,
 //        destructor behavior, and multiple sequential sessions
-QUARISMATEST(Profiler, session_state_management_and_lifecycle)
+PROFILERTEST(Profiler, session_state_management_and_lifecycle)
 {
     // Test double start fails
     {
@@ -129,7 +129,7 @@ QUARISMATEST(Profiler, session_state_management_and_lifecycle)
 // Test 2: Scope Edge Cases
 // Tests: scope without session, scope after session stop, empty name, very long name,
 //        immediate destruction, and scopes with various naming scenarios
-QUARISMATEST(Profiler, scope_edge_cases)
+PROFILERTEST(Profiler, scope_edge_cases)
 {
     // Test scope without active session
     {
@@ -198,7 +198,7 @@ QUARISMATEST(Profiler, scope_edge_cases)
 // Test 3: Session Configuration Options
 // Tests: disabled features, memory tracking, statistical analysis,
 //        hierarchical profiling disabled, timing disabled, thread safety disabled
-QUARISMATEST(Profiler, session_configuration_options)
+PROFILERTEST(Profiler, session_configuration_options)
 {
     // Test with all features disabled
     {
@@ -309,7 +309,7 @@ QUARISMATEST(Profiler, session_configuration_options)
 
 // Test 4: Threading and Concurrency
 // Tests: many concurrent scopes with thread safety
-QUARISMATEST(Profiler, threading_and_concurrency)
+PROFILERTEST(Profiler, threading_and_concurrency)
 {
     profiler_options opts;
     auto             session = std::make_unique<profiler_session>(opts);
@@ -341,7 +341,7 @@ QUARISMATEST(Profiler, threading_and_concurrency)
 
 // Test 5: Advanced Scope Features
 // Tests: duration calculations, deeply nested hierarchies
-QUARISMATEST(Profiler, advanced_scope_features)
+PROFILERTEST(Profiler, advanced_scope_features)
 {
     // Test duration calculations
     {
@@ -390,7 +390,7 @@ QUARISMATEST(Profiler, advanced_scope_features)
 // Test 6: Session Methods and Data Access
 // Tests: create_scope, generate_report, export_report, print_report,
 //        collected_xspace, has_collected_xspace
-QUARISMATEST(Profiler, session_methods_and_data_access)
+PROFILERTEST(Profiler, session_methods_and_data_access)
 {
     // Test create_scope method
     {
@@ -500,7 +500,7 @@ QUARISMATEST(Profiler, session_methods_and_data_access)
 
 // Test 7: Chrome Trace Operations
 // Tests: write_chrome_trace with invalid path, generate before stop
-QUARISMATEST(Profiler, chrome_trace_operations)
+PROFILERTEST(Profiler, chrome_trace_operations)
 {
     // Test write_chrome_trace with invalid path
     {
@@ -543,7 +543,7 @@ QUARISMATEST(Profiler, chrome_trace_operations)
 // Test 8: Report Generation with Data
 // Tests: comprehensive report generation with multiple scopes,
 //        all report formats (console, JSON, CSV, XML)
-QUARISMATEST(Profiler, report_generation_with_data)
+PROFILERTEST(Profiler, report_generation_with_data)
 {
     profiler_options opts;
     auto             session = std::make_unique<profiler_session>(opts);
@@ -582,7 +582,7 @@ QUARISMATEST(Profiler, report_generation_with_data)
 
 // Test 9: Report Customization - Display Options
 // Tests: precision, time_unit, memory_unit settings
-QUARISMATEST(Profiler, report_customization_display_options)
+PROFILERTEST(Profiler, report_customization_display_options)
 {
     profiler_options opts;
     auto             session = std::make_unique<profiler_session>(opts);
@@ -617,7 +617,7 @@ QUARISMATEST(Profiler, report_customization_display_options)
 
 // Test 10: Report Customization - Data Inclusion Options
 // Tests: thread_info, hierarchical_data inclusion settings
-QUARISMATEST(Profiler, report_customization_data_inclusion)
+PROFILERTEST(Profiler, report_customization_data_inclusion)
 {
     profiler_options opts;
     auto             session = std::make_unique<profiler_session>(opts);

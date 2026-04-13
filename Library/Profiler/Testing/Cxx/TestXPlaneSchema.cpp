@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include "Testing/baseTest.h"
+#include "ProfilerTest.h"
 #include "native/exporters/xplane/xplane_schema.h"
 
 using namespace quarisma;
@@ -19,7 +19,7 @@ using namespace quarisma;
 // ContextType Tests - Consolidated
 // ============================================================================
 
-QUARISMATEST(XPlaneSchema, context_type_string_conversion)
+PROFILERTEST(XPlaneSchema, context_type_string_conversion)
 {
     // Test kLegacy - returns empty string
     const char* result = GetContextTypeString(ContextType::kLegacy);
@@ -86,7 +86,7 @@ QUARISMATEST(XPlaneSchema, context_type_string_conversion)
     EXPECT_STREQ(result, "pjrt_library_call");
 }
 
-QUARISMATEST(XPlaneSchema, context_type_safe_conversion)
+PROFILERTEST(XPlaneSchema, context_type_safe_conversion)
 {
     // Test valid context type conversion
     ContextType result = GetSafeContextType(static_cast<uint32_t>(ContextType::kGpuLaunch));
@@ -101,7 +101,7 @@ QUARISMATEST(XPlaneSchema, context_type_safe_conversion)
 // HostEventType Tests - Consolidated
 // ============================================================================
 
-QUARISMATEST(XPlaneSchema, host_event_type_operations)
+PROFILERTEST(XPlaneSchema, host_event_type_operations)
 {
     // Test getting valid host event type string
     std::string_view result = GetHostEventTypeStr(HostEventType::kFirstHostEventType);
@@ -128,7 +128,7 @@ QUARISMATEST(XPlaneSchema, host_event_type_operations)
 // StatType Tests - Consolidated
 // ============================================================================
 
-QUARISMATEST(XPlaneSchema, stat_type_operations)
+PROFILERTEST(XPlaneSchema, stat_type_operations)
 {
     // Test getting valid stat type string
     std::string_view result = GetStatTypeStr(StatType::kFirstStatType);
@@ -155,7 +155,7 @@ QUARISMATEST(XPlaneSchema, stat_type_operations)
 // XFlow Tests - Consolidated
 // ============================================================================
 
-QUARISMATEST(XPlaneSchema, xflow_construction_and_properties)
+PROFILERTEST(XPlaneSchema, xflow_construction_and_properties)
 {
     // Test construction and basic properties
     uint64_t             flow_id   = 12345;
@@ -169,7 +169,7 @@ QUARISMATEST(XPlaneSchema, xflow_construction_and_properties)
     EXPECT_EQ(flow.Category(), context);
 }
 
-QUARISMATEST(XPlaneSchema, xflow_encoding_and_decoding)
+PROFILERTEST(XPlaneSchema, xflow_encoding_and_decoding)
 {
     // Test encoding and decoding with all flow directions
     uint64_t flow_id = 54321;
@@ -202,7 +202,7 @@ QUARISMATEST(XPlaneSchema, xflow_encoding_and_decoding)
     }
 }
 
-QUARISMATEST(XPlaneSchema, xflow_unique_id_generation)
+PROFILERTEST(XPlaneSchema, xflow_unique_id_generation)
 {
     // Test unique ID generation - should be monotonically increasing
     uint64_t id1 = XFlow::GetUniqueId();
@@ -216,7 +216,7 @@ QUARISMATEST(XPlaneSchema, xflow_unique_id_generation)
     EXPECT_LT(id2, id3);
 }
 
-QUARISMATEST(XPlaneSchema, xflow_hash_based_id_generation)
+PROFILERTEST(XPlaneSchema, xflow_hash_based_id_generation)
 {
     // Test that GetFlowId generates consistent hashes
     std::string key1 = "test_key_1";
@@ -234,7 +234,7 @@ QUARISMATEST(XPlaneSchema, xflow_hash_based_id_generation)
 // Hash Function Tests - Consolidated
 // ============================================================================
 
-QUARISMATEST(XPlaneSchema, hash_basic_types)
+PROFILERTEST(XPlaneSchema, hash_basic_types)
 {
     // Test HashOf with int64_t
     int64_t int_value = 12345;
@@ -268,7 +268,7 @@ QUARISMATEST(XPlaneSchema, hash_basic_types)
     EXPECT_EQ(HashOf(str), HashOf(sv));
 }
 
-QUARISMATEST(XPlaneSchema, hash_consistency_and_uniqueness)
+PROFILERTEST(XPlaneSchema, hash_consistency_and_uniqueness)
 {
     // Test that same values produce same hashes
     int64_t value1 = 12345;
@@ -283,7 +283,7 @@ QUARISMATEST(XPlaneSchema, hash_consistency_and_uniqueness)
     EXPECT_NE(hash1, hash3);
 }
 
-QUARISMATEST(XPlaneSchema, hash_combine_operations)
+PROFILERTEST(XPlaneSchema, hash_combine_operations)
 {
     // Test basic hash combination
     size_t hash1    = HashOf(int64_t(123));

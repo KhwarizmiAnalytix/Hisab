@@ -10,7 +10,7 @@
  * - Domain creation
  */
 
-#include "baseTest.h"
+#include "ProfilerTest.h"
 
 #if PROFILER_HAS_ITT
 
@@ -22,7 +22,7 @@ using namespace quarisma::profiler_impl;
 // ITT Initialization Tests
 // ============================================================================
 
-QUARISMATEST(ITTWrapper, Initialization)
+PROFILERTEST(ITTWrapper, Initialization)
 {
     // Test ITT initialization
     itt_init();
@@ -31,7 +31,7 @@ QUARISMATEST(ITTWrapper, Initialization)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(ITTWrapper, MultipleInitialization)
+PROFILERTEST(ITTWrapper, MultipleInitialization)
 {
     // Test that multiple initializations don't cause issues
     itt_init();
@@ -45,7 +45,7 @@ QUARISMATEST(ITTWrapper, MultipleInitialization)
 // Event Marking Tests
 // ============================================================================
 
-QUARISMATEST(ITTWrapper, EventMarking)
+PROFILERTEST(ITTWrapper, EventMarking)
 {
     // Test basic event marking
     itt_init();
@@ -54,7 +54,7 @@ QUARISMATEST(ITTWrapper, EventMarking)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(ITTWrapper, EventMarkingMultiple)
+PROFILERTEST(ITTWrapper, EventMarkingMultiple)
 {
     // Test multiple event markings
     itt_init();
@@ -66,7 +66,7 @@ QUARISMATEST(ITTWrapper, EventMarkingMultiple)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(ITTWrapper, EventMarkingWithSpecialChars)
+PROFILERTEST(ITTWrapper, EventMarkingWithSpecialChars)
 {
     // Test event marking with special characters
     itt_init();
@@ -78,7 +78,7 @@ QUARISMATEST(ITTWrapper, EventMarkingWithSpecialChars)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(ITTWrapper, EventMarkingNullName)
+PROFILERTEST(ITTWrapper, EventMarkingNullName)
 {
     // Test event marking with null name (should not crash)
     itt_init();
@@ -91,7 +91,7 @@ QUARISMATEST(ITTWrapper, EventMarkingNullName)
 // Task Range Tests
 // ============================================================================
 
-QUARISMATEST(ITTWrapper, TaskRangePushPop)
+PROFILERTEST(ITTWrapper, TaskRangePushPop)
 {
     // Test task range push and pop
     itt_init();
@@ -102,7 +102,7 @@ QUARISMATEST(ITTWrapper, TaskRangePushPop)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(ITTWrapper, TaskRangeNested)
+PROFILERTEST(ITTWrapper, TaskRangeNested)
 {
     // Test nested task ranges
     itt_init();
@@ -115,7 +115,7 @@ QUARISMATEST(ITTWrapper, TaskRangeNested)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(ITTWrapper, TaskRangeMultiple)
+PROFILERTEST(ITTWrapper, TaskRangeMultiple)
 {
     // Test multiple sequential task ranges
     itt_init();
@@ -130,7 +130,7 @@ QUARISMATEST(ITTWrapper, TaskRangeMultiple)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(ITTWrapper, TaskRangeDeepNesting)
+PROFILERTEST(ITTWrapper, TaskRangeDeepNesting)
 {
     // Test deeply nested task ranges
     itt_init();
@@ -153,7 +153,7 @@ QUARISMATEST(ITTWrapper, TaskRangeDeepNesting)
 // String Handle Tests
 // ============================================================================
 
-QUARISMATEST(ITTWrapper, StringHandleCreation)
+PROFILERTEST(ITTWrapper, StringHandleCreation)
 {
     // Test string handle creation
     itt_init();
@@ -164,7 +164,7 @@ QUARISMATEST(ITTWrapper, StringHandleCreation)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(ITTWrapper, StringHandleReuse)
+PROFILERTEST(ITTWrapper, StringHandleReuse)
 {
     // Test that string handles are reused for same strings
     itt_init();
@@ -182,7 +182,7 @@ QUARISMATEST(ITTWrapper, StringHandleReuse)
 // Domain Tests
 // ============================================================================
 
-QUARISMATEST(ITTWrapper, DomainCreation)
+PROFILERTEST(ITTWrapper, DomainCreation)
 {
     // Test ITT domain creation
     itt_init();
@@ -196,7 +196,7 @@ QUARISMATEST(ITTWrapper, DomainCreation)
 // Integration Tests
 // ============================================================================
 
-QUARISMATEST(ITTWrapper, MixedOperations)
+PROFILERTEST(ITTWrapper, MixedOperations)
 {
     // Test mixed ITT operations
     itt_init();
@@ -216,7 +216,7 @@ QUARISMATEST(ITTWrapper, MixedOperations)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(ITTWrapper, ComplexScenario)
+PROFILERTEST(ITTWrapper, ComplexScenario)
 {
     // Test complex scenario with multiple operations
     itt_init();
@@ -246,7 +246,7 @@ QUARISMATEST(ITTWrapper, ComplexScenario)
 // Error Handling Tests
 // ============================================================================
 
-QUARISMATEST(ITTWrapper, UnmatchedPop)
+PROFILERTEST(ITTWrapper, UnmatchedPop)
 {
     // Test unmatched pop (should not crash)
     itt_init();
@@ -257,7 +257,7 @@ QUARISMATEST(ITTWrapper, UnmatchedPop)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(ITTWrapper, LongEventNames)
+PROFILERTEST(ITTWrapper, LongEventNames)
 {
     // Test with very long event names
     itt_init();

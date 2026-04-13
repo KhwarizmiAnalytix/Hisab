@@ -9,7 +9,7 @@
  * - Configuration management
  */
 
-#include "baseTest.h"
+#include "ProfilerTest.h"
 
 #if PROFILER_HAS_PROFILER
 

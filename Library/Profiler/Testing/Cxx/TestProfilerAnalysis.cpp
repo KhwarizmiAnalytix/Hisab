@@ -10,7 +10,7 @@
 #include <cmath>
 #include <sstream>
 
-#include "baseTest.h"
+#include "ProfilerTest.h"
 #include "native/analysis/stats_calculator.h"
 
 using namespace quarisma;
@@ -19,7 +19,7 @@ using namespace quarisma;
 // Consolidated Stat Template Tests
 // ============================================================================
 
-QUARISMATEST(Profiler, stat_basic_operations_and_initialization)
+PROFILERTEST(Profiler, stat_basic_operations_and_initialization)
 {
     // Test 1: Empty initialization
     quarisma::stat<int64_t> s;
@@ -48,7 +48,7 @@ QUARISMATEST(Profiler, stat_basic_operations_and_initialization)
     EXPECT_DOUBLE_EQ(avg, 20.0);
 }
 
-QUARISMATEST(Profiler, stat_min_max_and_aggregations)
+PROFILERTEST(Profiler, stat_min_max_and_aggregations)
 {
     quarisma::stat<int64_t> s;
 
@@ -68,7 +68,7 @@ QUARISMATEST(Profiler, stat_min_max_and_aggregations)
     EXPECT_EQ(squared_sum, 29.0);
 }
 
-QUARISMATEST(Profiler, stat_variance_and_statistical_calculations)
+PROFILERTEST(Profiler, stat_variance_and_statistical_calculations)
 {
     // Test 1: All same values - variance should be 0
     quarisma::stat<int64_t> s1;
@@ -104,7 +104,7 @@ QUARISMATEST(Profiler, stat_variance_and_statistical_calculations)
     EXPECT_GE(sample_var, 0);
 }
 
-QUARISMATEST(Profiler, stat_reset_and_state_management)
+PROFILERTEST(Profiler, stat_reset_and_state_management)
 {
     quarisma::stat<int64_t> s;
     s.update_stat(10);
@@ -119,7 +119,7 @@ QUARISMATEST(Profiler, stat_reset_and_state_management)
     EXPECT_EQ(s.sum(), 0);
 }
 
-QUARISMATEST(Profiler, stat_output_stream_operations)
+PROFILERTEST(Profiler, stat_output_stream_operations)
 {
     // Test 1: Empty stat output
     quarisma::stat<int64_t> s1;
@@ -157,7 +157,7 @@ QUARISMATEST(Profiler, stat_output_stream_operations)
     EXPECT_NE(output4.find("count=2"), std::string::npos);
 }
 
-QUARISMATEST(Profiler, stat_edge_cases_and_special_values)
+PROFILERTEST(Profiler, stat_edge_cases_and_special_values)
 {
     // Test 1: Negative values
     quarisma::stat<int64_t> s1;
@@ -188,7 +188,7 @@ QUARISMATEST(Profiler, stat_edge_cases_and_special_values)
     EXPECT_DOUBLE_EQ(s3.sum(), 7.5);
 }
 
-QUARISMATEST(Profiler, stat_with_percentiles_basic_operations)
+PROFILERTEST(Profiler, stat_with_percentiles_basic_operations)
 {
     // Test 1: Empty initialization
     quarisma::stat_with_percentiles<int64_t> s1;
@@ -217,7 +217,7 @@ QUARISMATEST(Profiler, stat_with_percentiles_basic_operations)
     EXPECT_LE(p50_two, 20);
 }
 
-QUARISMATEST(Profiler, stat_with_percentiles_calculations)
+PROFILERTEST(Profiler, stat_with_percentiles_calculations)
 {
     // Prepare dataset 1-100
     quarisma::stat_with_percentiles<int64_t> s;
@@ -258,7 +258,7 @@ QUARISMATEST(Profiler, stat_with_percentiles_calculations)
     EXPECT_TRUE(std::isnan(static_cast<double>(p_invalid)) || p_invalid == 0);
 }
 
-QUARISMATEST(Profiler, stat_with_percentiles_output_stream)
+PROFILERTEST(Profiler, stat_with_percentiles_output_stream)
 {
     quarisma::stat_with_percentiles<int64_t> s;
     for (int i = 1; i <= 100; ++i)

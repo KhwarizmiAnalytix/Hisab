@@ -8,13 +8,13 @@
  * Tests hierarchical annotation tracking for CPU profiling
  */
 
-#include "Testing/baseTest.h"
+#include "ProfilerTest.h"
 #include "native/cpu/annotation_stack.h"
 
 using namespace quarisma::profiler_impl;
 
 // Test push_annotation single level
-QUARISMATEST(Profiler, annotation_stack_push_single)
+PROFILERTEST(Profiler, annotation_stack_push_single)
 {
     annotation_stack::enable(true);
     // Clear any existing annotations
@@ -30,7 +30,7 @@ QUARISMATEST(Profiler, annotation_stack_push_single)
 }
 
 // Test pop_annotation single level
-QUARISMATEST(Profiler, annotation_stack_pop_single)
+PROFILERTEST(Profiler, annotation_stack_pop_single)
 {
     annotation_stack::enable(true);
     // Clear any existing annotations
@@ -47,7 +47,7 @@ QUARISMATEST(Profiler, annotation_stack_pop_single)
 }
 
 // Test push_annotation multiple levels
-QUARISMATEST(Profiler, annotation_stack_push_multiple)
+PROFILERTEST(Profiler, annotation_stack_push_multiple)
 {
     annotation_stack::enable(true);
     // Clear any existing annotations
@@ -65,7 +65,7 @@ QUARISMATEST(Profiler, annotation_stack_push_multiple)
 }
 
 // Test pop_annotation multiple levels
-QUARISMATEST(Profiler, annotation_stack_pop_multiple)
+PROFILERTEST(Profiler, annotation_stack_pop_multiple)
 {
     annotation_stack::enable(true);
     // Clear any existing annotations
@@ -83,7 +83,7 @@ QUARISMATEST(Profiler, annotation_stack_pop_multiple)
 }
 
 // Test get_scope_range_ids single level
-QUARISMATEST(Profiler, annotation_stack_scope_range_ids_single)
+PROFILERTEST(Profiler, annotation_stack_scope_range_ids_single)
 {
     annotation_stack::enable(true);
     // Clear any existing annotations
@@ -99,7 +99,7 @@ QUARISMATEST(Profiler, annotation_stack_scope_range_ids_single)
 }
 
 // Test get_scope_range_ids multiple levels
-QUARISMATEST(Profiler, annotation_stack_scope_range_ids_multiple)
+PROFILERTEST(Profiler, annotation_stack_scope_range_ids_multiple)
 {
     annotation_stack::enable(true);
     // Clear any existing annotations
@@ -116,7 +116,7 @@ QUARISMATEST(Profiler, annotation_stack_scope_range_ids_multiple)
 }
 
 // Test enable/disable functionality
-QUARISMATEST(Profiler, annotation_stack_enable_disable)
+PROFILERTEST(Profiler, annotation_stack_enable_disable)
 {
     annotation_stack::enable(true);
     EXPECT_TRUE(annotation_stack::is_enabled());
@@ -126,21 +126,21 @@ QUARISMATEST(Profiler, annotation_stack_enable_disable)
 }
 
 // Test is_enabled when enabled
-QUARISMATEST(Profiler, annotation_stack_is_enabled_true)
+PROFILERTEST(Profiler, annotation_stack_is_enabled_true)
 {
     annotation_stack::enable(true);
     EXPECT_TRUE(annotation_stack::is_enabled());
 }
 
 // Test is_enabled when disabled
-QUARISMATEST(Profiler, annotation_stack_is_enabled_false)
+PROFILERTEST(Profiler, annotation_stack_is_enabled_false)
 {
     annotation_stack::enable(false);
     EXPECT_FALSE(annotation_stack::is_enabled());
 }
 
 // Test push with empty name
-QUARISMATEST(Profiler, annotation_stack_push_empty_name)
+PROFILERTEST(Profiler, annotation_stack_push_empty_name)
 {
     annotation_stack::enable(true);
     annotation_stack::push_annotation("");
@@ -150,7 +150,7 @@ QUARISMATEST(Profiler, annotation_stack_push_empty_name)
 }
 
 // Test push with special characters
-QUARISMATEST(Profiler, annotation_stack_push_special_chars)
+PROFILERTEST(Profiler, annotation_stack_push_special_chars)
 {
     annotation_stack::enable(true);
     annotation_stack::push_annotation("test_123");
@@ -160,7 +160,7 @@ QUARISMATEST(Profiler, annotation_stack_push_special_chars)
 }
 
 // Test push with long name
-QUARISMATEST(Profiler, annotation_stack_push_long_name)
+PROFILERTEST(Profiler, annotation_stack_push_long_name)
 {
     annotation_stack::enable(true);
     // Clear any existing annotations
@@ -177,7 +177,7 @@ QUARISMATEST(Profiler, annotation_stack_push_long_name)
 }
 
 // Test nested push/pop sequence
-QUARISMATEST(Profiler, annotation_stack_nested_sequence)
+PROFILERTEST(Profiler, annotation_stack_nested_sequence)
 {
     annotation_stack::enable(true);
     // Clear any existing annotations
@@ -206,7 +206,7 @@ QUARISMATEST(Profiler, annotation_stack_nested_sequence)
 }
 
 // Test deep nesting
-QUARISMATEST(Profiler, annotation_stack_deep_nesting)
+PROFILERTEST(Profiler, annotation_stack_deep_nesting)
 {
     annotation_stack::enable(true);
     // Clear any existing annotations
@@ -232,7 +232,7 @@ QUARISMATEST(Profiler, annotation_stack_deep_nesting)
 }
 
 // Test separator in annotation names
-QUARISMATEST(Profiler, annotation_stack_separator_in_name)
+PROFILERTEST(Profiler, annotation_stack_separator_in_name)
 {
     annotation_stack::enable(true);
     annotation_stack::push_annotation("outer");
@@ -243,7 +243,7 @@ QUARISMATEST(Profiler, annotation_stack_separator_in_name)
 }
 
 // Test multiple push/pop cycles
-QUARISMATEST(Profiler, annotation_stack_multiple_cycles)
+PROFILERTEST(Profiler, annotation_stack_multiple_cycles)
 {
     annotation_stack::enable(true);
     // Clear any existing annotations
@@ -263,7 +263,7 @@ QUARISMATEST(Profiler, annotation_stack_multiple_cycles)
 }
 
 // Test scope range IDs are unique
-QUARISMATEST(Profiler, annotation_stack_scope_range_ids_unique)
+PROFILERTEST(Profiler, annotation_stack_scope_range_ids_unique)
 {
     annotation_stack::enable(true);
     // Clear any existing annotations
@@ -285,7 +285,7 @@ QUARISMATEST(Profiler, annotation_stack_scope_range_ids_unique)
 }
 
 // Test get returns reference
-QUARISMATEST(Profiler, annotation_stack_get_returns_reference)
+PROFILERTEST(Profiler, annotation_stack_get_returns_reference)
 {
     annotation_stack::enable(true);
     annotation_stack::push_annotation("test");
@@ -297,7 +297,7 @@ QUARISMATEST(Profiler, annotation_stack_get_returns_reference)
 }
 
 // Test get_scope_range_ids returns reference
-QUARISMATEST(Profiler, annotation_stack_get_scope_range_ids_returns_reference)
+PROFILERTEST(Profiler, annotation_stack_get_scope_range_ids_returns_reference)
 {
     annotation_stack::enable(true);
     annotation_stack::push_annotation("test");
@@ -309,7 +309,7 @@ QUARISMATEST(Profiler, annotation_stack_get_scope_range_ids_returns_reference)
 }
 
 // Test enable multiple times
-QUARISMATEST(Profiler, annotation_stack_enable_multiple_times)
+PROFILERTEST(Profiler, annotation_stack_enable_multiple_times)
 {
     annotation_stack::enable(true);
     EXPECT_TRUE(annotation_stack::is_enabled());
@@ -325,7 +325,7 @@ QUARISMATEST(Profiler, annotation_stack_enable_multiple_times)
 }
 
 // Test push with numeric string
-QUARISMATEST(Profiler, annotation_stack_push_numeric_string)
+PROFILERTEST(Profiler, annotation_stack_push_numeric_string)
 {
     annotation_stack::enable(true);
     annotation_stack::push_annotation("12345");
@@ -335,7 +335,7 @@ QUARISMATEST(Profiler, annotation_stack_push_numeric_string)
 }
 
 // Test push with whitespace
-QUARISMATEST(Profiler, annotation_stack_push_whitespace)
+PROFILERTEST(Profiler, annotation_stack_push_whitespace)
 {
     annotation_stack::enable(true);
     // Clear any existing annotations

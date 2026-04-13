@@ -17,7 +17,7 @@
 #include <sstream>
 #include <vector>
 
-#include "Testing/baseTest.h"
+#include "CoreTest.h"
 #include "memory/helper/memory_allocator.h"
 #include "memory/unified_memory_stats.h"
 #include "memory/visualization/ascii_visualizer.h"

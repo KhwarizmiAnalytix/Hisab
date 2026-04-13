@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-#include "Testing/baseTest.h"
+#include "ProfilerTest.h"
 #include "native/core/timespan.h"
 #include "native/exporters/xplane/xplane.h"
 #include "native/exporters/xplane/xplane_builder.h"
@@ -26,7 +26,7 @@ using namespace quarisma;
 // simple_atoi Tests - Consolidated
 // ============================================================================
 
-QUARISMATEST(XPlaneBuilder, simple_atoi_valid_inputs)
+PROFILERTEST(XPlaneBuilder, simple_atoi_valid_inputs)
 {
     // Test valid positive integer
     int64_t result = 0;
@@ -67,7 +67,7 @@ QUARISMATEST(XPlaneBuilder, simple_atoi_valid_inputs)
     EXPECT_EQ(result, 0);
 }
 
-QUARISMATEST(XPlaneBuilder, simple_atoi_invalid_inputs)
+PROFILERTEST(XPlaneBuilder, simple_atoi_invalid_inputs)
 {
     int64_t result = 0;
 
@@ -88,7 +88,7 @@ QUARISMATEST(XPlaneBuilder, simple_atoi_invalid_inputs)
     EXPECT_FALSE(simple_atoi("123 ", &result));
 }
 
-QUARISMATEST(XPlaneBuilder, simple_atoi_overflow_and_limits)
+PROFILERTEST(XPlaneBuilder, simple_atoi_overflow_and_limits)
 {
     int64_t result = 0;
 
@@ -108,7 +108,7 @@ QUARISMATEST(XPlaneBuilder, simple_atoi_overflow_and_limits)
 // simple_atod Tests - Consolidated
 // ============================================================================
 
-QUARISMATEST(XPlaneBuilder, simple_atod_valid_inputs)
+PROFILERTEST(XPlaneBuilder, simple_atod_valid_inputs)
 {
     // Test valid positive double
     double result = 0.0;
@@ -146,7 +146,7 @@ QUARISMATEST(XPlaneBuilder, simple_atod_valid_inputs)
     EXPECT_DOUBLE_EQ(result, 123.0);
 }
 
-QUARISMATEST(XPlaneBuilder, simple_atod_scientific_notation)
+PROFILERTEST(XPlaneBuilder, simple_atod_scientific_notation)
 {
     // Test positive exponent
     double result = 0.0;
@@ -164,7 +164,7 @@ QUARISMATEST(XPlaneBuilder, simple_atod_scientific_notation)
     EXPECT_DOUBLE_EQ(result, 1500.0);
 }
 
-QUARISMATEST(XPlaneBuilder, simple_atod_invalid_inputs)
+PROFILERTEST(XPlaneBuilder, simple_atod_invalid_inputs)
 {
     double result = 0.0;
 
@@ -189,7 +189,7 @@ QUARISMATEST(XPlaneBuilder, simple_atod_invalid_inputs)
 // xplane_builder Tests - Consolidated
 // ============================================================================
 
-QUARISMATEST(XPlaneBuilder, xplane_builder_basic_operations)
+PROFILERTEST(XPlaneBuilder, xplane_builder_basic_operations)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -209,7 +209,7 @@ QUARISMATEST(XPlaneBuilder, xplane_builder_basic_operations)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(XPlaneBuilder, xplane_builder_line_management)
+PROFILERTEST(XPlaneBuilder, xplane_builder_line_management)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -228,7 +228,7 @@ QUARISMATEST(XPlaneBuilder, xplane_builder_line_management)
     EXPECT_EQ(plane.lines_size(), 4);  // Including the initial line with ID 100
 }
 
-QUARISMATEST(XPlaneBuilder, xplane_builder_metadata_management)
+PROFILERTEST(XPlaneBuilder, xplane_builder_metadata_management)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -275,7 +275,7 @@ QUARISMATEST(XPlaneBuilder, xplane_builder_metadata_management)
 // xline_builder Tests - Consolidated
 // ============================================================================
 
-QUARISMATEST(XPlaneBuilder, xline_builder_basic_operations)
+PROFILERTEST(XPlaneBuilder, xline_builder_basic_operations)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -297,7 +297,7 @@ QUARISMATEST(XPlaneBuilder, xline_builder_basic_operations)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(XPlaneBuilder, xline_builder_event_management)
+PROFILERTEST(XPlaneBuilder, xline_builder_event_management)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -329,7 +329,7 @@ QUARISMATEST(XPlaneBuilder, xline_builder_event_management)
 // xevent_builder Tests - Consolidated
 // ============================================================================
 
-QUARISMATEST(XPlaneBuilder, xevent_builder_timing_operations)
+PROFILERTEST(XPlaneBuilder, xevent_builder_timing_operations)
 {
     xplane         plane;
     xplane_builder builder(&plane);
@@ -379,7 +379,7 @@ QUARISMATEST(XPlaneBuilder, xevent_builder_timing_operations)
 #endif
 }
 
-QUARISMATEST(XPlaneBuilder, xevent_builder_stats_and_occurrences)
+PROFILERTEST(XPlaneBuilder, xevent_builder_stats_and_occurrences)
 {
     xplane         plane;
     xplane_builder builder(&plane);

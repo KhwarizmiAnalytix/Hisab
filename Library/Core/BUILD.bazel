@@ -1,8 +1,9 @@
 # =============================================================================
 # Quarisma Core Library BUILD Configuration
 # =============================================================================
-# Core library containing parallel computing and memory management.
-# Profiler is //Library/Profiler and is built separately; link both when you need profiling.
+# Core library containing memory management, logging, and utilities.
+# Parallel is //Library/Parallel and is built separately.
+# Profiler is //Library/Profiler and is built separately.
 # =============================================================================
 
 load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_enzyme_copts", "quarisma_enzyme_linkopts", "quarisma_linkopts")
@@ -22,8 +23,6 @@ filegroup(
             "logging/*.h",
             "memory/*.h",
             "memory/**/*.h",
-            "parallel/*.h",
-            "parallel/**/*.h",
             "c17/*.h",
         ],
         allow_empty = True,
@@ -39,18 +38,10 @@ filegroup(
             "logging/*.cpp",
             "memory/*.cpp",
             "memory/**/*.cpp",
-            "parallel/*.cpp",
-            "parallel/**/*.cpp",
         ],
         exclude = [
             "memory/gpu/*.cpp",
             "memory/cpu/allocator_device.cpp",
-            # Backend-specific impls are added via select (paths match on-disk dirs: tbb/, std_thread/, openmp/)
-            "parallel/tbb/*.cpp",
-            "parallel/TBB/*.cpp",
-            "parallel/std_thread/*.cpp",
-            "parallel/STDThread/*.cpp",
-            "parallel/openmp/*.cpp",
             # logging.cpp is excluded here and added back via select in core_lib
             # (excluded only for native logging backend — matches CMake QUARISMA_USE_NATIVE_LOGGING)
             "logging/logging.cpp",
@@ -76,11 +67,6 @@ cc_library(
         "//bazel:enable_hip": glob(["memory/gpu/*.cpp", "memory/cpu/allocator_device.cpp"], allow_empty = True),
         "//conditions:default": [],
     }) + select({
-        # Parallel backend: TBB > OpenMP > std_thread (matches CMake exclusion logic)
-        "//bazel:enable_tbb": glob(["parallel/tbb/*.cpp"], allow_empty = True),
-        "//bazel:enable_openmp": glob(["parallel/openmp/*.cpp"], allow_empty = True),
-        "//conditions:default": glob(["parallel/std_thread/*.cpp"], allow_empty = True),
-    }) + select({
         # Compression — matches CMake QUARISMA_ENABLE_COMPRESSION + QUARISMA_COMPRESSION_TYPE=SNAPPY
         "//bazel:compression_snappy": glob(["compression/snappy.cpp"], allow_empty = True),
         "//conditions:default": [],
@@ -91,10 +77,6 @@ cc_library(
         "//bazel:enable_cuda": glob(["memory/gpu/*.h", "memory/cpu/allocator_device.h"], allow_empty = True),
         "//bazel:enable_hip": glob(["memory/gpu/*.h", "memory/cpu/allocator_device.h"], allow_empty = True),
         "//conditions:default": [],
-    }) + select({
-        "//bazel:enable_tbb": glob(["parallel/tbb/*.h", "parallel/tbb/*.hxx"], allow_empty = True),
-        "//bazel:enable_openmp": glob(["parallel/openmp/*.h", "parallel/openmp/*.hxx"], allow_empty = True),
-        "//conditions:default": glob(["parallel/std_thread/*.h", "parallel/std_thread/*.hxx"], allow_empty = True),
     }) + select({
         "//bazel:compression_snappy": glob(["compression/snappy.h"], allow_empty = True),
         "//conditions:default": [],
@@ -131,12 +113,6 @@ cc_library(
         "//bazel:enable_native_profiler": [],
         "//bazel:enable_itt": [],
         "//conditions:default": ["@kineto//:kineto"],
-    }) + select({
-        "//bazel:enable_tbb": [
-            "@tbb//:tbb",
-            "@tbb//:tbbmalloc",
-        ],
-        "//conditions:default": [],
     }) + select({
         "//bazel:enable_cuda": ["@local_config_cuda//:cuda"],
         "//conditions:default": [],

@@ -10,7 +10,7 @@
 #include <chrono>
 #include <thread>
 
-#include "baseTest.h"
+#include "ProfilerTest.h"
 #include "native/utils/time_utils.h"
 
 using namespace quarisma;
@@ -20,14 +20,14 @@ using namespace quarisma::profiler_impl;
 // Time Utilities Tests
 // ============================================================================
 
-QUARISMATEST(Profiler, get_current_time_nanos_returns_positive)
+PROFILERTEST(Profiler, get_current_time_nanos_returns_positive)
 {
     int64_t time1 = get_current_time_nanos();
 
     EXPECT_GT(time1, 0);
 }
 
-QUARISMATEST(Profiler, get_current_time_nanos_monotonic)
+PROFILERTEST(Profiler, get_current_time_nanos_monotonic)
 {
     int64_t time1 = get_current_time_nanos();
     int64_t time2 = get_current_time_nanos();
@@ -35,7 +35,7 @@ QUARISMATEST(Profiler, get_current_time_nanos_monotonic)
     EXPECT_GE(time2, time1);
 }
 
-QUARISMATEST(Profiler, get_current_time_nanos_increasing)
+PROFILERTEST(Profiler, get_current_time_nanos_increasing)
 {
     int64_t time1 = get_current_time_nanos();
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -44,7 +44,7 @@ QUARISMATEST(Profiler, get_current_time_nanos_increasing)
     EXPECT_GT(time2, time1);
 }
 
-QUARISMATEST(Profiler, sleep_for_nanos_basic)
+PROFILERTEST(Profiler, sleep_for_nanos_basic)
 {
     int64_t time1 = get_current_time_nanos();
     sleep_for_nanos(1000000);  // 1ms
@@ -54,7 +54,7 @@ QUARISMATEST(Profiler, sleep_for_nanos_basic)
     EXPECT_GE(elapsed, 500000);  // At least 0.5ms
 }
 
-QUARISMATEST(Profiler, sleep_for_nanos_zero)
+PROFILERTEST(Profiler, sleep_for_nanos_zero)
 {
     int64_t time1 = get_current_time_nanos();
     sleep_for_nanos(0);
@@ -64,7 +64,7 @@ QUARISMATEST(Profiler, sleep_for_nanos_zero)
     EXPECT_GE(time2, time1);
 }
 
-QUARISMATEST(Profiler, sleep_for_micros_basic)
+PROFILERTEST(Profiler, sleep_for_micros_basic)
 {
     int64_t time1 = get_current_time_nanos();
     sleep_for_micros(1000);  // 1ms
@@ -74,7 +74,7 @@ QUARISMATEST(Profiler, sleep_for_micros_basic)
     EXPECT_GE(elapsed, 500000);  // At least 0.5ms
 }
 
-QUARISMATEST(Profiler, sleep_for_millis_basic)
+PROFILERTEST(Profiler, sleep_for_millis_basic)
 {
     int64_t time1 = get_current_time_nanos();
     sleep_for_millis(1);
@@ -84,7 +84,7 @@ QUARISMATEST(Profiler, sleep_for_millis_basic)
     EXPECT_GE(elapsed, 500000);  // At least 0.5ms
 }
 
-QUARISMATEST(Profiler, sleep_for_seconds_basic)
+PROFILERTEST(Profiler, sleep_for_seconds_basic)
 {
     int64_t time1 = get_current_time_nanos();
     sleep_for_millis(1);  // 1ms
@@ -94,7 +94,7 @@ QUARISMATEST(Profiler, sleep_for_seconds_basic)
     EXPECT_GE(elapsed, 500000);  // At least 0.5ms
 }
 
-QUARISMATEST(Profiler, spin_for_nanos_basic)
+PROFILERTEST(Profiler, spin_for_nanos_basic)
 {
     int64_t time1 = get_current_time_nanos();
     spin_for_nanos(100000);  // 0.1ms
@@ -104,7 +104,7 @@ QUARISMATEST(Profiler, spin_for_nanos_basic)
     EXPECT_GE(elapsed, 50000);  // At least 0.05ms
 }
 
-QUARISMATEST(Profiler, spin_for_nanos_zero)
+PROFILERTEST(Profiler, spin_for_nanos_zero)
 {
     int64_t time1 = get_current_time_nanos();
     spin_for_nanos(0);
@@ -114,7 +114,7 @@ QUARISMATEST(Profiler, spin_for_nanos_zero)
     EXPECT_GE(time2, time1);
 }
 
-QUARISMATEST(Profiler, spin_for_micros_basic)
+PROFILERTEST(Profiler, spin_for_micros_basic)
 {
     int64_t time1 = get_current_time_nanos();
     spin_for_micros(100);  // 0.1ms
@@ -124,7 +124,7 @@ QUARISMATEST(Profiler, spin_for_micros_basic)
     EXPECT_GE(elapsed, 50000);  // At least 0.05ms
 }
 
-QUARISMATEST(Profiler, multiple_sleeps_cumulative)
+PROFILERTEST(Profiler, multiple_sleeps_cumulative)
 {
     int64_t time1 = get_current_time_nanos();
     sleep_for_millis(1);
@@ -136,7 +136,7 @@ QUARISMATEST(Profiler, multiple_sleeps_cumulative)
     EXPECT_GE(elapsed, 1500000);  // At least 1.5ms
 }
 
-QUARISMATEST(Profiler, time_measurement_consistency)
+PROFILERTEST(Profiler, time_measurement_consistency)
 {
     int64_t time1 = get_current_time_nanos();
     int64_t time2 = get_current_time_nanos();
@@ -146,7 +146,7 @@ QUARISMATEST(Profiler, time_measurement_consistency)
     EXPECT_GE(time3, time2);
 }
 
-QUARISMATEST(Profiler, large_sleep_duration)
+PROFILERTEST(Profiler, large_sleep_duration)
 {
     int64_t time1 = get_current_time_nanos();
     sleep_for_millis(10);
@@ -156,7 +156,7 @@ QUARISMATEST(Profiler, large_sleep_duration)
     EXPECT_GE(elapsed, 5000000);  // At least 5ms
 }
 
-QUARISMATEST(Profiler, spin_vs_sleep_accuracy)
+PROFILERTEST(Profiler, spin_vs_sleep_accuracy)
 {
     // Spin should be more accurate for short durations
     int64_t spin_time1 = get_current_time_nanos();
@@ -175,7 +175,7 @@ QUARISMATEST(Profiler, spin_vs_sleep_accuracy)
     EXPECT_GE(sleep_elapsed, 25000);
 }
 
-QUARISMATEST(Profiler, get_current_time_nanos_high_resolution)
+PROFILERTEST(Profiler, get_current_time_nanos_high_resolution)
 {
     // Verify we're getting nanosecond precision
     int64_t time1 = get_current_time_nanos();

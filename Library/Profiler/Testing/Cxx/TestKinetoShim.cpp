@@ -8,7 +8,7 @@
  * - GPU backend configuration
  */
 
-#include "baseTest.h"
+#include "ProfilerTest.h"
 
 #if PROFILER_HAS_KINETO && 0
 
@@ -33,7 +33,7 @@ using namespace quarisma::profiler_impl;
 // Kineto Initialization Tests
 // ============================================================================
 
-QUARISMATEST(KinetoShim, Initialization)
+PROFILERTEST(KinetoShim, Initialization)
 {
     // Test Kineto initialization via prepareTrace
     impl::kineto::ActivitySet activities;
@@ -46,7 +46,7 @@ QUARISMATEST(KinetoShim, Initialization)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(KinetoShim, MultipleInitialization)
+PROFILERTEST(KinetoShim, MultipleInitialization)
 {
 #if 0
     // Test that multiple initializations don't cause issues
@@ -65,7 +65,7 @@ QUARISMATEST(KinetoShim, MultipleInitialization)
 // Activity Profiler Tests
 // ============================================================================
 
-QUARISMATEST(KinetoShim, ActivityProfilerAccess)
+PROFILERTEST(KinetoShim, ActivityProfilerAccess)
 {
     // Test accessing the activity profiler
     impl::kineto::ActivitySet activities;
@@ -79,7 +79,7 @@ QUARISMATEST(KinetoShim, ActivityProfilerAccess)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(KinetoShim, PrepareTrace)
+PROFILERTEST(KinetoShim, PrepareTrace)
 {
     // Test preparing a trace with CPU activities
     impl::kineto::ActivitySet activities;
@@ -93,7 +93,7 @@ QUARISMATEST(KinetoShim, PrepareTrace)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(KinetoShim, StartStopTrace)
+PROFILERTEST(KinetoShim, StartStopTrace)
 {
     // Test starting and stopping a trace
     impl::kineto::ActivitySet activities;
@@ -111,7 +111,7 @@ QUARISMATEST(KinetoShim, StartStopTrace)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(KinetoShim, TraceCollection)
+PROFILERTEST(KinetoShim, TraceCollection)
 {
     // Test trace collection with activities
     impl::kineto::ActivitySet activities;
@@ -137,7 +137,7 @@ QUARISMATEST(KinetoShim, TraceCollection)
 // Trace Export Tests
 // ============================================================================
 
-QUARISMATEST(KinetoShim, TraceExport)
+PROFILERTEST(KinetoShim, TraceExport)
 {
     // Test exporting a trace
     impl::kineto::ActivitySet activities;
@@ -158,7 +158,7 @@ QUARISMATEST(KinetoShim, TraceExport)
 // GPU Backend Configuration Tests
 // ============================================================================
 
-QUARISMATEST(KinetoShim, GPUBackendConfiguration)
+PROFILERTEST(KinetoShim, GPUBackendConfiguration)
 {
     // Test GPU backend configuration with CUDA activities
     impl::kineto::ActivitySet activities;
@@ -172,7 +172,7 @@ QUARISMATEST(KinetoShim, GPUBackendConfiguration)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(KinetoShim, CUDAActivities)
+PROFILERTEST(KinetoShim, CUDAActivities)
 {
     // Test CUDA activity types
     impl::kineto::ActivitySet activities;
@@ -190,7 +190,7 @@ QUARISMATEST(KinetoShim, CUDAActivities)
 // Integration Tests
 // ============================================================================
 
-QUARISMATEST(KinetoShim, FullProfilerCycle)
+PROFILERTEST(KinetoShim, FullProfilerCycle)
 {
     // Test full profiler cycle: init -> prepare -> start -> work -> stop
     impl::kineto::ActivitySet activities;
@@ -211,7 +211,7 @@ QUARISMATEST(KinetoShim, FullProfilerCycle)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(KinetoShim, MultipleTraces)
+PROFILERTEST(KinetoShim, MultipleTraces)
 {
     // Test collecting multiple traces
     impl::kineto::ActivitySet activities;
@@ -230,7 +230,7 @@ QUARISMATEST(KinetoShim, MultipleTraces)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(KinetoShim, ConcurrentTracing)
+PROFILERTEST(KinetoShim, ConcurrentTracing)
 {
     // Test concurrent tracing operations
     impl::kineto::ActivitySet activities;
@@ -272,7 +272,7 @@ QUARISMATEST(KinetoShim, ConcurrentTracing)
 // Error Handling Tests
 // ============================================================================
 
-QUARISMATEST(KinetoShim, StopWithoutStart)
+PROFILERTEST(KinetoShim, StopWithoutStart)
 {
     // Test stopping trace without starting (should handle gracefully)
     impl::kineto::ActivitySet activities;
@@ -286,7 +286,7 @@ QUARISMATEST(KinetoShim, StopWithoutStart)
     EXPECT_TRUE(true);
 }
 
-QUARISMATEST(KinetoShim, EmptyActivitySet)
+PROFILERTEST(KinetoShim, EmptyActivitySet)
 {
     // Test with empty activity set
     impl::kineto::ActivitySet activities;
@@ -481,7 +481,7 @@ static void complex_cpu_workload()
     }
 }
 
-QUARISMATEST(KinetoShim, EndToEndDetailedProfiling)
+PROFILERTEST(KinetoShim, EndToEndDetailedProfiling)
 {
     // ========================================================================
     // IMPORTANT: Kineto JSON Format vs Chrome Trace Event Format

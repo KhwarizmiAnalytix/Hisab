@@ -1,0 +1,103 @@
+# =============================================================================
+# Quarisma Parallel Library BUILD Configuration
+# =============================================================================
+# Standalone parallel computing library. No dependency on //Library/Core.
+# Include root is Library/Parallel so that:
+#   "common/parallel_export.h"              -> Library/Parallel/common/parallel_export.h
+#   "parallel_tools.h"                      -> Library/Parallel/parallel_tools.h
+#   "common/parallel_tools_api.h"           -> Library/Parallel/common/...
+# =============================================================================
+
+load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
+
+package(default_visibility = ["//visibility:public"])
+
+# =============================================================================
+# Source File Groups
+# =============================================================================
+
+filegroup(
+    name = "parallel_hdrs",
+    srcs = glob(
+        [
+            "*.h",
+            "common/*.h",
+        ],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "parallel_srcs",
+    srcs = glob(
+        [
+            "*.cpp",
+            "common/*.cpp",
+        ],
+        allow_empty = True,
+    ),
+)
+
+# =============================================================================
+# Parallel implementation library
+# =============================================================================
+
+cc_library(
+    name = "parallel_lib",
+    srcs = [
+        ":parallel_srcs",
+    ] + select({
+        # Parallel backend: TBB > OpenMP > std_thread (matches CMake exclusion logic)
+        "//bazel:enable_tbb": glob(["tbb/*.cpp"], allow_empty = True),
+        "//bazel:enable_openmp": glob(["openmp/*.cpp"], allow_empty = True),
+        "//conditions:default": glob(["std_thread/*.cpp"], allow_empty = True),
+    }),
+    hdrs = [
+        ":parallel_hdrs",
+    ] + select({
+        "//bazel:enable_tbb": glob(["tbb/*.h", "tbb/*.hxx"], allow_empty = True),
+        "//bazel:enable_openmp": glob(["openmp/*.h", "openmp/*.hxx"], allow_empty = True),
+        "//conditions:default": glob(["std_thread/*.h", "std_thread/*.hxx"], allow_empty = True),
+    }),
+    copts = quarisma_copts(),
+    defines = quarisma_defines() + select({
+        "//bazel:shared_libs": ["PARALLEL_SHARED_DEFINE", "PARALLEL_BUILDING_DLL"],
+        "//conditions:default": ["PARALLEL_STATIC_DEFINE"],
+    }),
+    includes = [
+        ".",
+        "Testing",
+    ],
+    linkopts = quarisma_linkopts() + select({
+        "@platforms//os:windows": [],
+        "@platforms//os:macos": [],
+        "//conditions:default": ["-lpthread"],
+    }),
+    linkstatic = select({
+        "//bazel:shared_libs": False,
+        "//conditions:default": True,
+    }),
+    deps = select({
+        "//bazel:enable_tbb": [
+            "@tbb//:tbb",
+            "@tbb//:tbbmalloc",
+        ],
+        "//conditions:default": [],
+    }),
+    alwayslink = False,
+    visibility = [
+        "//Library/Parallel:__pkg__",
+    ],
+)
+
+# =============================================================================
+# Public Parallel target
+# =============================================================================
+
+cc_library(
+    name = "Parallel",
+    deps = [
+        ":parallel_lib",
+    ],
+    visibility = ["//visibility:public"],
+)

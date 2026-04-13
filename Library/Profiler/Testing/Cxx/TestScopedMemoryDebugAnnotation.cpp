@@ -11,7 +11,7 @@
 #include <string>
 #include <thread>
 
-#include "Testing/baseTest.h"
+#include "ProfilerTest.h"
 #include "native/memory/scoped_memory_debug_annotation.h"
 
 using namespace quarisma;
@@ -20,7 +20,7 @@ using namespace quarisma;
 // Basic Constructor Tests
 // ============================================================================
 
-QUARISMATEST(ScopedMemoryDebugAnnotation, constructor_with_op_name)
+PROFILERTEST(ScopedMemoryDebugAnnotation, constructor_with_op_name)
 {
     {
         scoped_memory_debug_annotation annotation("test_op");
@@ -37,7 +37,7 @@ QUARISMATEST(ScopedMemoryDebugAnnotation, constructor_with_op_name)
     EXPECT_EQ(current.pending_op_name, nullptr);
 }
 
-QUARISMATEST(ScopedMemoryDebugAnnotation, constructor_with_op_name_and_step_id)
+PROFILERTEST(ScopedMemoryDebugAnnotation, constructor_with_op_name_and_step_id)
 {
     {
         scoped_memory_debug_annotation annotation("test_op", 42);
@@ -55,7 +55,7 @@ QUARISMATEST(ScopedMemoryDebugAnnotation, constructor_with_op_name_and_step_id)
     EXPECT_EQ(current.pending_step_id, 0);
 }
 
-QUARISMATEST(ScopedMemoryDebugAnnotation, constructor_with_region_and_shape)
+PROFILERTEST(ScopedMemoryDebugAnnotation, constructor_with_region_and_shape)
 {
     auto shape_func = []() { return "shape[10,20]"; };
 
@@ -76,7 +76,7 @@ QUARISMATEST(ScopedMemoryDebugAnnotation, constructor_with_region_and_shape)
     EXPECT_EQ(current.pending_region_type, nullptr);
 }
 
-QUARISMATEST(ScopedMemoryDebugAnnotation, constructor_with_all_parameters)
+PROFILERTEST(ScopedMemoryDebugAnnotation, constructor_with_all_parameters)
 {
     auto shape_func = []() { return "shape[5,10,15]"; };
 
@@ -102,7 +102,7 @@ QUARISMATEST(ScopedMemoryDebugAnnotation, constructor_with_all_parameters)
 // Nested Annotation Tests
 // ============================================================================
 
-QUARISMATEST(ScopedMemoryDebugAnnotation, nested_annotations_basic)
+PROFILERTEST(ScopedMemoryDebugAnnotation, nested_annotations_basic)
 {
     {
         scoped_memory_debug_annotation outer("outer_op");
@@ -125,7 +125,7 @@ QUARISMATEST(ScopedMemoryDebugAnnotation, nested_annotations_basic)
     EXPECT_EQ(current.pending_op_name, nullptr);
 }
 
-QUARISMATEST(ScopedMemoryDebugAnnotation, nested_annotations_with_step_id)
+PROFILERTEST(ScopedMemoryDebugAnnotation, nested_annotations_with_step_id)
 {
     {
         scoped_memory_debug_annotation outer("outer_op", 10);
@@ -147,7 +147,7 @@ QUARISMATEST(ScopedMemoryDebugAnnotation, nested_annotations_with_step_id)
     }
 }
 
-QUARISMATEST(ScopedMemoryDebugAnnotation, nested_annotations_preserve_parent_op_name)
+PROFILERTEST(ScopedMemoryDebugAnnotation, nested_annotations_preserve_parent_op_name)
 {
     auto shape_func = []() { return "shape[1,2,3]"; };
 
@@ -175,7 +175,7 @@ QUARISMATEST(ScopedMemoryDebugAnnotation, nested_annotations_preserve_parent_op_
     }
 }
 
-QUARISMATEST(ScopedMemoryDebugAnnotation, nested_annotations_no_parent_op_name)
+PROFILERTEST(ScopedMemoryDebugAnnotation, nested_annotations_no_parent_op_name)
 {
     auto shape_func = []() { return "shape[4,5,6]"; };
 
@@ -195,7 +195,7 @@ QUARISMATEST(ScopedMemoryDebugAnnotation, nested_annotations_no_parent_op_name)
 // Thread-Local Storage Tests
 // ============================================================================
 
-QUARISMATEST(ScopedMemoryDebugAnnotation, thread_local_isolation)
+PROFILERTEST(ScopedMemoryDebugAnnotation, thread_local_isolation)
 {
     std::string thread1_op;
     std::string thread2_op;
@@ -229,7 +229,7 @@ QUARISMATEST(ScopedMemoryDebugAnnotation, thread_local_isolation)
 // Shape Function Tests
 // ============================================================================
 
-QUARISMATEST(ScopedMemoryDebugAnnotation, default_shape_function)
+PROFILERTEST(ScopedMemoryDebugAnnotation, default_shape_function)
 {
     {
         scoped_memory_debug_annotation annotation("test_op");
@@ -240,7 +240,7 @@ QUARISMATEST(ScopedMemoryDebugAnnotation, default_shape_function)
     }
 }
 
-QUARISMATEST(ScopedMemoryDebugAnnotation, custom_shape_function)
+PROFILERTEST(ScopedMemoryDebugAnnotation, custom_shape_function)
 {
     auto shape_func = []() { return "custom_shape[100,200,300]"; };
 
@@ -252,7 +252,7 @@ QUARISMATEST(ScopedMemoryDebugAnnotation, custom_shape_function)
     }
 }
 
-QUARISMATEST(ScopedMemoryDebugAnnotation, shape_function_with_capture)
+PROFILERTEST(ScopedMemoryDebugAnnotation, shape_function_with_capture)
 {
     int  dim1 = 10, dim2 = 20, dim3 = 30;
     auto shape_func = [dim1, dim2, dim3]()
@@ -273,7 +273,7 @@ QUARISMATEST(ScopedMemoryDebugAnnotation, shape_function_with_capture)
 // Edge Cases and Boundary Tests
 // ============================================================================
 
-QUARISMATEST(ScopedMemoryDebugAnnotation, zero_step_id)
+PROFILERTEST(ScopedMemoryDebugAnnotation, zero_step_id)
 {
     {
         scoped_memory_debug_annotation annotation("test_op", 0);
@@ -284,7 +284,7 @@ QUARISMATEST(ScopedMemoryDebugAnnotation, zero_step_id)
     }
 }
 
-QUARISMATEST(ScopedMemoryDebugAnnotation, negative_step_id)
+PROFILERTEST(ScopedMemoryDebugAnnotation, negative_step_id)
 {
     {
         scoped_memory_debug_annotation annotation("test_op", -1);
@@ -295,7 +295,7 @@ QUARISMATEST(ScopedMemoryDebugAnnotation, negative_step_id)
     }
 }
 
-QUARISMATEST(ScopedMemoryDebugAnnotation, large_step_id)
+PROFILERTEST(ScopedMemoryDebugAnnotation, large_step_id)
 {
     {
         scoped_memory_debug_annotation annotation("test_op", 9223372036854775807LL);
@@ -306,7 +306,7 @@ QUARISMATEST(ScopedMemoryDebugAnnotation, large_step_id)
     }
 }
 
-QUARISMATEST(ScopedMemoryDebugAnnotation, zero_data_type)
+PROFILERTEST(ScopedMemoryDebugAnnotation, zero_data_type)
 {
     auto shape_func = []() { return ""; };
 

@@ -7,7 +7,7 @@
 
 #include <string_view>
 
-#include "Testing/baseTest.h"
+#include "ProfilerTest.h"
 #include "native/utils/parse_annotation.h"
 
 using namespace quarisma::profiler_impl;
@@ -17,7 +17,7 @@ using namespace std::literals;
 // parse_annotation tests
 // ============================================================================
 
-QUARISMATEST(Profiler, parse_annotation_parses_metadata_pairs)
+PROFILERTEST(Profiler, parse_annotation_parses_metadata_pairs)
 {
     const auto anno = parse_annotation("matrix_multiply#rows=128,cols=256#");
 
@@ -29,7 +29,7 @@ QUARISMATEST(Profiler, parse_annotation_parses_metadata_pairs)
     EXPECT_EQ(anno.metadata[1].value, "256"sv);
 }
 
-QUARISMATEST(Profiler, parse_annotation_without_metadata_returns_name_only)
+PROFILERTEST(Profiler, parse_annotation_without_metadata_returns_name_only)
 {
     const auto anno = parse_annotation("simple_operation");
 
@@ -37,7 +37,7 @@ QUARISMATEST(Profiler, parse_annotation_without_metadata_returns_name_only)
     EXPECT_TRUE(anno.metadata.empty());
 }
 
-QUARISMATEST(Profiler, parse_annotation_trims_whitespace_and_skips_invalid_pairs)
+PROFILERTEST(Profiler, parse_annotation_trims_whitespace_and_skips_invalid_pairs)
 {
     const auto anno = parse_annotation(" compute # threads = 4 , invalid , depth=  3 #");
 
@@ -49,7 +49,7 @@ QUARISMATEST(Profiler, parse_annotation_trims_whitespace_and_skips_invalid_pairs
     EXPECT_EQ(anno.metadata[1].value, "3"sv);
 }
 
-QUARISMATEST(Profiler, parse_annotation_preserves_nested_metadata_tokens)
+PROFILERTEST(Profiler, parse_annotation_preserves_nested_metadata_tokens)
 {
     const auto anno = parse_annotation("kernel#attr={a:1,b:2},shape=[1,2,3],label=\"conv2d\"#");
 
@@ -63,7 +63,7 @@ QUARISMATEST(Profiler, parse_annotation_preserves_nested_metadata_tokens)
     EXPECT_EQ(anno.metadata[2].value, "\"conv2d\""sv);
 }
 
-QUARISMATEST(Profiler, parse_annotation_handles_missing_metadata_after_marker)
+PROFILERTEST(Profiler, parse_annotation_handles_missing_metadata_after_marker)
 {
     const auto anno = parse_annotation("name_with_marker#");
 
@@ -75,7 +75,7 @@ QUARISMATEST(Profiler, parse_annotation_handles_missing_metadata_after_marker)
 // parse_annotation_stack tests
 // ============================================================================
 
-QUARISMATEST(Profiler, parse_annotation_stack_parses_multiple_entries)
+PROFILERTEST(Profiler, parse_annotation_stack_parses_multiple_entries)
 {
     const auto annos =
         parse_annotation_stack("outer_scope#level=1#::inner_scope#level=2,phase=forward#");
@@ -94,7 +94,7 @@ QUARISMATEST(Profiler, parse_annotation_stack_parses_multiple_entries)
     EXPECT_EQ(annos[1].metadata[1].value, "forward"sv);
 }
 
-QUARISMATEST(Profiler, parse_annotation_stack_ignores_empty_segments)
+PROFILERTEST(Profiler, parse_annotation_stack_ignores_empty_segments)
 {
     const auto annos = parse_annotation_stack("::outer#id=1#::::inner#id=2#::");
 
@@ -107,7 +107,7 @@ QUARISMATEST(Profiler, parse_annotation_stack_ignores_empty_segments)
 // has_metadata tests
 // ============================================================================
 
-QUARISMATEST(Profiler, has_metadata_detects_trailing_marker)
+PROFILERTEST(Profiler, has_metadata_detects_trailing_marker)
 {
     EXPECT_TRUE(has_metadata("kernel#"));
     EXPECT_FALSE(has_metadata("kernel"));

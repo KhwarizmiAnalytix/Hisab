@@ -18,7 +18,7 @@
 #include <thread>
 #include <vector>
 
-#include "baseTest.h"
+#include "CoreTest.h"
 #include "common/pointer.h"
 #include "memory/backend/allocator_pool.h"
 #include "memory/backend/allocator_tracking.h"

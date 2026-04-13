@@ -25,7 +25,7 @@
 #include <sstream>
 #include <utility>
 
-#include "baseTest.h"
+#include "ProfilerTest.h"
 // IWYU pragma: keep
 //#include "logging/logger.h"
 #include "native/core/profiler_factory.h"
@@ -42,7 +42,7 @@
 // Enhanced ProfilerOptions Tests
 // ============================================================================
 
-QUARISMATEST(Profiler, enhanced_profiler_options_default_values)
+PROFILERTEST(Profiler, enhanced_profiler_options_default_values)
 {
     quarisma::profiler_options opts;
     EXPECT_TRUE(opts.enable_timing_);
@@ -56,91 +56,91 @@ QUARISMATEST(Profiler, enhanced_profiler_options_default_values)
     EXPECT_TRUE(opts.track_memory_deltas_);
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_options_disable_timing)
+PROFILERTEST(Profiler, enhanced_profiler_options_disable_timing)
 {
     quarisma::profiler_options opts;
     opts.enable_timing_ = false;
     EXPECT_FALSE(opts.enable_timing_);
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_options_disable_memory_tracking)
+PROFILERTEST(Profiler, enhanced_profiler_options_disable_memory_tracking)
 {
     quarisma::profiler_options opts;
     opts.enable_memory_tracking_ = false;
     EXPECT_FALSE(opts.enable_memory_tracking_);
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_options_disable_hierarchical_profiling)
+PROFILERTEST(Profiler, enhanced_profiler_options_disable_hierarchical_profiling)
 {
     quarisma::profiler_options opts;
     opts.enable_hierarchical_profiling_ = false;
     EXPECT_FALSE(opts.enable_hierarchical_profiling_);
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_options_disable_statistical_analysis)
+PROFILERTEST(Profiler, enhanced_profiler_options_disable_statistical_analysis)
 {
     quarisma::profiler_options opts;
     opts.enable_statistical_analysis_ = false;
     EXPECT_FALSE(opts.enable_statistical_analysis_);
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_options_disable_thread_safety)
+PROFILERTEST(Profiler, enhanced_profiler_options_disable_thread_safety)
 {
     quarisma::profiler_options opts;
     opts.enable_thread_safety_ = false;
     EXPECT_FALSE(opts.enable_thread_safety_);
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_options_set_output_format_json)
+PROFILERTEST(Profiler, enhanced_profiler_options_set_output_format_json)
 {
     quarisma::profiler_options opts;
     opts.output_format_ = quarisma::profiler_options::output_format_enum::JSON;
     EXPECT_EQ(opts.output_format_, quarisma::profiler_options::output_format_enum::JSON);
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_options_set_output_format_csv)
+PROFILERTEST(Profiler, enhanced_profiler_options_set_output_format_csv)
 {
     quarisma::profiler_options opts;
     opts.output_format_ = quarisma::profiler_options::output_format_enum::CSV;
     EXPECT_EQ(opts.output_format_, quarisma::profiler_options::output_format_enum::CSV);
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_options_set_output_file_path)
+PROFILERTEST(Profiler, enhanced_profiler_options_set_output_file_path)
 {
     quarisma::profiler_options opts;
     opts.output_file_path_ = "/tmp/profile.json";
     EXPECT_EQ(opts.output_file_path_, "/tmp/profile.json");
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_options_set_max_samples)
+PROFILERTEST(Profiler, enhanced_profiler_options_set_max_samples)
 {
     quarisma::profiler_options opts;
     opts.max_samples_ = 5000;
     EXPECT_EQ(opts.max_samples_, 5000);
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_options_disable_percentiles)
+PROFILERTEST(Profiler, enhanced_profiler_options_disable_percentiles)
 {
     quarisma::profiler_options opts;
     opts.calculate_percentiles_ = false;
     EXPECT_FALSE(opts.calculate_percentiles_);
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_options_disable_peak_memory_tracking)
+PROFILERTEST(Profiler, enhanced_profiler_options_disable_peak_memory_tracking)
 {
     quarisma::profiler_options opts;
     opts.track_peak_memory_ = false;
     EXPECT_FALSE(opts.track_peak_memory_);
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_options_disable_memory_deltas)
+PROFILERTEST(Profiler, enhanced_profiler_options_disable_memory_deltas)
 {
     quarisma::profiler_options opts;
     opts.track_memory_deltas_ = false;
     EXPECT_FALSE(opts.track_memory_deltas_);
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_options_set_thread_pool_size)
+PROFILERTEST(Profiler, enhanced_profiler_options_set_thread_pool_size)
 {
     quarisma::profiler_options opts;
     opts.thread_pool_size_ = 16;
@@ -151,14 +151,14 @@ QUARISMATEST(Profiler, enhanced_profiler_options_set_thread_pool_size)
 // Enhanced Profiler Session Tests
 // ============================================================================
 
-QUARISMATEST(Profiler, enhanced_profiler_session_basic_creation)
+PROFILERTEST(Profiler, enhanced_profiler_session_basic_creation)
 {
     quarisma::profiler_options opts;
     auto                       session = std::make_unique<quarisma::profiler_session>(opts);
     EXPECT_TRUE(session != nullptr);
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_session_start_stop)
+PROFILERTEST(Profiler, enhanced_profiler_session_start_stop)
 {
     quarisma::profiler_options opts;
     auto                       session = std::make_unique<quarisma::profiler_session>(opts);
@@ -167,7 +167,7 @@ QUARISMATEST(Profiler, enhanced_profiler_session_start_stop)
     EXPECT_TRUE(session->stop());
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_session_with_timing_enabled)
+PROFILERTEST(Profiler, enhanced_profiler_session_with_timing_enabled)
 {
     quarisma::profiler_options opts;
     opts.enable_timing_ = true;
@@ -183,7 +183,7 @@ QUARISMATEST(Profiler, enhanced_profiler_session_with_timing_enabled)
     EXPECT_TRUE(session->stop());
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_session_with_memory_tracking)
+PROFILERTEST(Profiler, enhanced_profiler_session_with_memory_tracking)
 {
     quarisma::profiler_options opts;
     opts.enable_memory_tracking_ = true;
@@ -203,7 +203,7 @@ QUARISMATEST(Profiler, enhanced_profiler_session_with_memory_tracking)
     EXPECT_TRUE(session->stop());
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_session_with_hierarchical_profiling)
+PROFILERTEST(Profiler, enhanced_profiler_session_with_hierarchical_profiling)
 {
     quarisma::profiler_options opts;
     opts.enable_hierarchical_profiling_ = true;
@@ -224,7 +224,7 @@ QUARISMATEST(Profiler, enhanced_profiler_session_with_hierarchical_profiling)
     EXPECT_TRUE(session->stop());
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_session_with_statistical_analysis)
+PROFILERTEST(Profiler, enhanced_profiler_session_with_statistical_analysis)
 {
     quarisma::profiler_options opts;
     opts.enable_statistical_analysis_ = true;
@@ -241,7 +241,7 @@ QUARISMATEST(Profiler, enhanced_profiler_session_with_statistical_analysis)
     EXPECT_TRUE(session->stop());
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_session_all_features_enabled)
+PROFILERTEST(Profiler, enhanced_profiler_session_all_features_enabled)
 {
     quarisma::profiler_options opts;
     opts.enable_timing_                 = true;
@@ -270,7 +270,7 @@ QUARISMATEST(Profiler, enhanced_profiler_session_all_features_enabled)
     EXPECT_TRUE(session->stop());
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_session_generate_chrome_trace_json)
+PROFILERTEST(Profiler, enhanced_profiler_session_generate_chrome_trace_json)
 {
     quarisma::profiler_options opts;
     opts.enable_timing_ = true;
@@ -290,7 +290,7 @@ QUARISMATEST(Profiler, enhanced_profiler_session_generate_chrome_trace_json)
     EXPECT_NE(json.find("json_test_scope"), std::string::npos);
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_session_multiple_scopes)
+PROFILERTEST(Profiler, enhanced_profiler_session_multiple_scopes)
 {
     quarisma::profiler_options opts;
     auto                       session = std::make_unique<quarisma::profiler_session>(opts);
@@ -306,7 +306,7 @@ QUARISMATEST(Profiler, enhanced_profiler_session_multiple_scopes)
     EXPECT_TRUE(session->stop());
 }
 
-QUARISMATEST(Profiler, enhanced_profiler_session_deeply_nested_scopes)
+PROFILERTEST(Profiler, enhanced_profiler_session_deeply_nested_scopes)
 {
     quarisma::profiler_options opts;
     opts.enable_hierarchical_profiling_ = true;

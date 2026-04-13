@@ -23,7 +23,7 @@
 #include <thread>
 #include <vector>
 
-#include "baseTest.h"
+#include "CoreTest.h"
 #include "util/exception.h"
 
 using namespace quarisma;

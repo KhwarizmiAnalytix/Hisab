@@ -3,7 +3,7 @@
  * @brief Comprehensive test suite for Web dashboard monitoring system
  */
 
-#include "Testing/baseTest.h"
+#include "CoreTest.h"
 #include "memory/visualization/web_dashboard.h"
 #include "memory/cpu/allocator.h"
 

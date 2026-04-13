@@ -39,7 +39,7 @@
 #include "memory/cpu/allocator_device.h"  // for allocator_device
 #endif
 
-#include "baseTest.h"  // for QUARISMATEST_CALL, QUARISMATEST, END_TEST, QUARISMATEST
+#include "CoreTest.h"  // for QUARISMATEST_CALL, QUARISMATEST, END_TEST, QUARISMATEST
 #include "memory/helper/memory_allocator.h"  // for free, allocate
 #include "memory/helper/process_state.h"     // for process_state
 #include "memory/unified_memory_stats.h"  // for atomic_timing_stats, unified_resource_stats, memory_fragment...

@@ -26,7 +26,7 @@
 #include <thread>
 #include <vector>
 
-#include "baseTest.h"
+#include "ProfilerTest.h"
 #include "native/tracing/traceme.h"
 #include "native/tracing/traceme_encode.h"
 #include "native/tracing/traceme_recorder.h"
@@ -37,7 +37,7 @@ using namespace quarisma;
 // Consolidated Test 1: Basic Constructors and Move Semantics
 // ============================================================================
 
-QUARISMATEST(TracemeTest, constructors_and_move_semantics)
+PROFILERTEST(TracemeTest, constructors_and_move_semantics)
 {
     // Test basic constructor with string_view
     {
@@ -86,7 +86,7 @@ QUARISMATEST(TracemeTest, constructors_and_move_semantics)
 // Consolidated Test 2: Static API - Activity Start/End
 // ============================================================================
 
-QUARISMATEST(TracemeTest, static_activity_api)
+PROFILERTEST(TracemeTest, static_activity_api)
 {
     // Test static activity_start and activity_end with string_view
     {
@@ -140,7 +140,7 @@ QUARISMATEST(TracemeTest, static_activity_api)
 // Consolidated Test 3: Stop Method and Active State
 // ============================================================================
 
-QUARISMATEST(TracemeTest, stop_and_active_state)
+PROFILERTEST(TracemeTest, stop_and_active_state)
 {
     // Test explicit stop method
     {
@@ -196,7 +196,7 @@ QUARISMATEST(TracemeTest, stop_and_active_state)
 // Consolidated Test 4: Metadata and Encoding
 // ============================================================================
 
-QUARISMATEST(TracemeTest, metadata_and_encoding)
+PROFILERTEST(TracemeTest, metadata_and_encoding)
 {
     // Test append_metadata functionality
     {
@@ -261,7 +261,7 @@ QUARISMATEST(TracemeTest, metadata_and_encoding)
 // Consolidated Test 5: Recorder Integration and Level-based Filtering
 // ============================================================================
 
-QUARISMATEST(TracemeTest, recorder_integration_and_levels)
+PROFILERTEST(TracemeTest, recorder_integration_and_levels)
 {
     // Test traceme_recorder start/stop functionality
     {
@@ -311,7 +311,7 @@ QUARISMATEST(TracemeTest, recorder_integration_and_levels)
 // Consolidated Test 6: Threading and Concurrency
 // ============================================================================
 
-QUARISMATEST(TracemeTest, threading_and_concurrency)
+PROFILERTEST(TracemeTest, threading_and_concurrency)
 {
     // Test concurrent tracing from multiple threads
     {
@@ -351,7 +351,7 @@ QUARISMATEST(TracemeTest, threading_and_concurrency)
 // Consolidated Test 7: Stress Tests - Nested and Rapid Traces
 // ============================================================================
 
-QUARISMATEST(TracemeTest, stress_tests)
+PROFILERTEST(TracemeTest, stress_tests)
 {
     // Test many nested traces
     {
@@ -387,7 +387,7 @@ QUARISMATEST(TracemeTest, stress_tests)
 // Consolidated Test 8: Documentation Examples and Integration Tests
 // ============================================================================
 
-QUARISMATEST(TracemeTest, documentation_examples)
+PROFILERTEST(TracemeTest, documentation_examples)
 {
     // Test the basic usage example from documentation
     {
@@ -499,7 +499,7 @@ QUARISMATEST(TracemeTest, documentation_examples)
 // Consolidated Test 9: Edge Cases - Empty Names, Long Names, Special Characters
 // ============================================================================
 
-QUARISMATEST(TracemeTest, edge_cases_robustness)
+PROFILERTEST(TracemeTest, edge_cases_robustness)
 {
     // Test handling of empty names
     {
@@ -609,7 +609,7 @@ QUARISMATEST(TracemeTest, edge_cases_robustness)
 // Consolidated Test 10: Zero Duration Traces
 // ============================================================================
 
-QUARISMATEST(TracemeTest, zero_duration_traces)
+PROFILERTEST(TracemeTest, zero_duration_traces)
 {
     // Test traces with potentially zero duration
     bool started = traceme_recorder::start(1);

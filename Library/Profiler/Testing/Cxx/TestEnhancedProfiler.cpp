@@ -55,7 +55,7 @@
 #include <utility>        // for max, pair
 #include <vector>         // for vector, _Vector_const_iterator, _Vector_iterato
 
-#include "baseTest.h"  // for END_TEST, QUARISMATEST
+#include "ProfilerTest.h"  // for END_TEST, PROFILERTEST
 //#include "logging/logger.h"                        // for PROFILER_LOG_INFO, PROFILER_LOG_IF
 #include "native/analysis/statistical_analyzer.h"  // for statistical_analyzer, statistical_metrics, time_seri...
 #include "native/memory/memory_tracker.h"  // for memory_tracker
@@ -1199,7 +1199,7 @@ bool test_high_concurrency()
 }  // namespace
 
 // Main test function
-QUARISMATEST(Profiler, enhanced_profiler_comprehensive_test)
+PROFILERTEST(Profiler, enhanced_profiler_comprehensive_test)
 {
     std::cout << "=== Enhanced Profiler Comprehensive Test Suite ===" << std::endl;
     std::cout << "Running comprehensive tests for Enhanced Profiler..." << std::endl;

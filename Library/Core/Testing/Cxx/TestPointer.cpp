@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "Testing/baseTest.h"
+#include "CoreTest.h"
 #include "common/intrusive_ptr.h"
 
 using quarisma::intrusive_ptr;

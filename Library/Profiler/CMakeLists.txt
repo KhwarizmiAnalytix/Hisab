@@ -148,7 +148,15 @@ target_include_directories(
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Testing>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/Testing>
     $<INSTALL_INTERFACE:include>
+)
+
+# Generate per-project test header from template
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/Testing/ProfilerTest.h.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/Testing/ProfilerTest.h"
+  @ONLY
 )
 
 # Add centralized third-party include directories as PUBLIC

@@ -18,7 +18,6 @@ file(
   "${CMAKE_CURRENT_SOURCE_DIR}/logging/*.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/memory/*.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/c17/*.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/parallel/*.h"
   ${quarisma_headers}
 )
 
@@ -30,7 +29,6 @@ file(
   "${CMAKE_CURRENT_SOURCE_DIR}/logging/*.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/memory/*.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/c17/*.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/parallel/*.cpp"
   ${quarisma_sources}
 )
 
@@ -66,30 +64,6 @@ if(QUARISMA_USE_NATIVE_LOGGING)
     STATUS
       "NATIVE logging backend: Excluding logging.cpp and logging.h (using simplified fmt-based implementation)"
   )
-endif()
-
-# Remove TBB SMP files if TBB is not enabled The TBB backend requires TBB headers and libraries, so
-# we must exclude these files when TBB is disabled to avoid compilation errors (missing
-# tbb/blocked_range.h, etc.)
-if(NOT QUARISMA_ENABLE_TBB)
-  file(GLOB_RECURSE TBB_PARALLEL_SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/parallel/tbb/*.cpp")
-  file(GLOB_RECURSE TBB_PARALLEL_HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/parallel/tbb/*.h")
-  list(REMOVE_ITEM sources ${TBB_PARALLEL_SOURCE_FILES})
-  list(REMOVE_ITEM headers ${TBB_PARALLEL_HEADER_FILES})
-  message(STATUS "TBB disabled: Excluding TBB SMP source files from build")
-endif()
-
-# Remove OpenMP SMP files if OpenMP is not enabled The OpenMP backend requires OpenMP headers and
-# libraries, so we must exclude these files when OpenMP is disabled to avoid compilation errors
-# (missing omp.h, etc.)
-if(NOT QUARISMA_ENABLE_OPENMP)
-  file(GLOB_RECURSE OPENMP_PARALLEL_SOURCE_FILES
-       "${CMAKE_CURRENT_SOURCE_DIR}/parallel/openmp/*.cpp"
-  )
-  file(GLOB_RECURSE OPENMP_PARALLEL_HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/parallel/openmp/*.h")
-  list(REMOVE_ITEM sources ${OPENMP_PARALLEL_SOURCE_FILES})
-  list(REMOVE_ITEM headers ${OPENMP_PARALLEL_HEADER_FILES})
-  message(STATUS "OpenMP disabled: Excluding OpenMP SMP source files from build")
 endif()
 
 # Create the Core library Respect BUILD_SHARED_LIBS setting for library type
@@ -153,8 +127,16 @@ target_include_directories(
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Testing>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/Testing>
          $<INSTALL_INTERFACE:include>
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# Generate per-project test header from template
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/Testing/CoreTest.h.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/Testing/CoreTest.h"
+  @ONLY
 )
 
 # Add centralized third-party include directories as PUBLIC so they propagate to dependent targets
@@ -242,7 +224,9 @@ install(FILES ${headers} DESTINATION include/Quarisma/Core COMPONENT Development
 
 # Install configured headers
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/quarisma_version_macros.h"
-              "${CMAKE_CURRENT_BINARY_DIR}/quarisma_threads.h" DESTINATION include/Quarisma/Core
+              "${CMAKE_CURRENT_BINARY_DIR}/quarisma_threads.h"
+              "${CMAKE_CURRENT_BINARY_DIR}/Testing/CoreTest.h"
+        DESTINATION include/Quarisma/Core
         COMPONENT Development
 )
 

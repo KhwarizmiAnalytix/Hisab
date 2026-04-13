@@ -12,7 +12,7 @@
 #include <sstream>
 #include <thread>
 
-#include "baseTest.h"
+#include "ProfilerTest.h"
 #include "native/session/profiler.h"
 
 using namespace quarisma;
@@ -21,7 +21,7 @@ using namespace quarisma;
 // Chrome Trace Export with Hierarchical Profiling Tests
 // ============================================================================
 
-QUARISMATEST(Profiler, chrome_trace_hierarchical_single_scope)
+PROFILERTEST(Profiler, chrome_trace_hierarchical_single_scope)
 {
     profiler_options opts;
     auto             session = std::make_unique<profiler_session>(opts);
@@ -41,7 +41,7 @@ QUARISMATEST(Profiler, chrome_trace_hierarchical_single_scope)
     EXPECT_NE(json.find("traceEvents"), std::string::npos);
 }
 
-QUARISMATEST(Profiler, chrome_trace_hierarchical_nested_scopes)
+PROFILERTEST(Profiler, chrome_trace_hierarchical_nested_scopes)
 {
     profiler_options opts;
     auto             session = std::make_unique<profiler_session>(opts);
@@ -63,7 +63,7 @@ QUARISMATEST(Profiler, chrome_trace_hierarchical_nested_scopes)
     EXPECT_NE(json.find("inner_scope"), std::string::npos);
 }
 
-QUARISMATEST(Profiler, chrome_trace_hierarchical_multiple_threads)
+PROFILERTEST(Profiler, chrome_trace_hierarchical_multiple_threads)
 {
     profiler_options opts;
     auto             session = std::make_unique<profiler_session>(opts);
@@ -94,7 +94,7 @@ QUARISMATEST(Profiler, chrome_trace_hierarchical_multiple_threads)
     EXPECT_NE(json.find("thread2_scope"), std::string::npos);
 }
 
-QUARISMATEST(Profiler, chrome_trace_write_to_file)
+PROFILERTEST(Profiler, chrome_trace_write_to_file)
 {
     profiler_options opts;
     auto             session = std::make_unique<profiler_session>(opts);
@@ -127,7 +127,7 @@ QUARISMATEST(Profiler, chrome_trace_write_to_file)
     std::remove(filename.c_str());
 }
 
-QUARISMATEST(Profiler, chrome_trace_hierarchical_deep_nesting)
+PROFILERTEST(Profiler, chrome_trace_hierarchical_deep_nesting)
 {
     profiler_options opts;
     auto             session = std::make_unique<profiler_session>(opts);
@@ -157,7 +157,7 @@ QUARISMATEST(Profiler, chrome_trace_hierarchical_deep_nesting)
     EXPECT_NE(json.find("level4"), std::string::npos);
 }
 
-QUARISMATEST(Profiler, chrome_trace_hierarchical_sibling_scopes)
+PROFILERTEST(Profiler, chrome_trace_hierarchical_sibling_scopes)
 {
     profiler_options opts;
     auto             session = std::make_unique<profiler_session>(opts);
@@ -184,7 +184,7 @@ QUARISMATEST(Profiler, chrome_trace_hierarchical_sibling_scopes)
     EXPECT_NE(json.find("child2"), std::string::npos);
 }
 
-QUARISMATEST(Profiler, chrome_trace_json_format_validation)
+PROFILERTEST(Profiler, chrome_trace_json_format_validation)
 {
     profiler_options opts;
     auto             session = std::make_unique<profiler_session>(opts);
@@ -211,7 +211,7 @@ QUARISMATEST(Profiler, chrome_trace_json_format_validation)
     EXPECT_NE(json.find("\"dur\""), std::string::npos);
 }
 
-QUARISMATEST(Profiler, chrome_trace_empty_session)
+PROFILERTEST(Profiler, chrome_trace_empty_session)
 {
     profiler_options opts;
     auto             session = std::make_unique<profiler_session>(opts);
@@ -224,7 +224,7 @@ QUARISMATEST(Profiler, chrome_trace_empty_session)
     EXPECT_NE(json.find("traceEvents"), std::string::npos);
 }
 
-QUARISMATEST(Profiler, chrome_trace_scope_with_special_characters)
+PROFILERTEST(Profiler, chrome_trace_scope_with_special_characters)
 {
     profiler_options opts;
     auto             session = std::make_unique<profiler_session>(opts);

@@ -24,7 +24,7 @@
 #include <string>
 #include <thread>
 
-#include "baseTest.h"
+#include "CoreTest.h"
 #include "logging/logger.h"
 
 // Control the order of operations between the threads

@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-#include "baseTest.h"
+#include "CoreTest.h"
 #include "util/flat_hash.h"
 
 using namespace quarisma;
