@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cmath>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -39,7 +40,7 @@ void runSampleWork()
             for (int i = 0; i < n; ++i)
             {
                 double x = static_cast<double>(i / 1000.0);
-                accumulator += sinh(x) / x;
+                accumulator += std::sinh(x) / x;
             }
 
             if (accumulator == -1)
