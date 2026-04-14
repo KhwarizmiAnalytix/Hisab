@@ -33,12 +33,12 @@ limitations under the License.
 ==============================================================================*/
 #include <memory>  // for unique_ptr
 
-//#include "logging/logger.h"
+//#include "logger.h"
 #include "native/core/profiler_factory.h"    // for register_profiler_factory
 #include "native/core/profiler_interface.h"  // for profiler_interface
 #include "native/core/profiler_options.h"    // for profile_options
 
-namespace quarisma
+namespace profiler
 {
 namespace profiler_impl
 {
@@ -85,4 +85,4 @@ auto register_python_tracer_factory = []
 
 }  // namespace
 }  // namespace profiler_impl
-}  // namespace quarisma
+}  // namespace profiler

@@ -1,7 +1,7 @@
 #pragma once
 
-//#include <Quarisma/core/ivalue.h>
-//#include <Quarisma/core/operator_name.h>
+//#include <Profiler/core/ivalue.h>
+//#include <Profiler/core/operator_name.h>
 #include <array>
 #include <functional>
 #include <memory>
@@ -14,12 +14,12 @@
 #include "common/profiler_export.h"
 #include "common/small_vector.h"
 
-namespace quarisma
+namespace profiler
 {
 class PROFILER_VISIBILITY OperatorHandle;
 }
 
-namespace quarisma
+namespace profiler
 {
 struct IValue
 {
@@ -38,7 +38,7 @@ extern PROFILER_API const std::string kParamCommsCallName;
 // Kind of record function scope;
 enum class RecordScope : uint8_t
 {
-    // quarisma/Quarisma ops, autograd nodes
+    // profiler/Profiler ops, autograd nodes
     FUNCTION = 0,
     // Functions/nodes called from the autograd
     BACKWARD_FUNCTION,
@@ -60,21 +60,21 @@ enum class RecordScope : uint8_t
     NUM_SCOPES,  // must be the last in the list
 };
 
-}  // namespace quarisma
+}  // namespace profiler
 
 namespace std
 {
 template <>
-struct hash<quarisma::RecordScope>
+struct hash<profiler::RecordScope>
 {
-    size_t operator()(const quarisma::RecordScope& sc) const
+    size_t operator()(const profiler::RecordScope& sc) const
     {
         return static_cast<std::size_t>(sc);
     }
 };
 }  // namespace std
 
-namespace quarisma
+namespace profiler
 {
 
 struct PROFILER_VISIBILITY StringView
@@ -120,14 +120,14 @@ protected:
     ObserverContext() = default;
 };
 
-typedef quarisma::small_vector<uint64_t, kSoftLimitCallbacks> CallbackHandles;
-typedef quarisma::small_vector<std::unique_ptr<ObserverContext>, kSoftLimitCallbacks>
+typedef profiler::small_vector<uint64_t, kSoftLimitCallbacks> CallbackHandles;
+typedef profiler::small_vector<std::unique_ptr<ObserverContext>, kSoftLimitCallbacks>
                  ObserverContextList;
 typedef uint64_t RecordFunctionHandle;
 struct RecordFunction;
 
 //
-// Quarisma callbacks/observers API:
+// Profiler callbacks/observers API:
 //
 
 /**
@@ -247,7 +247,7 @@ private:
 //  - a typical use case for thread local callbacks is profiler and code
 //    execution tracer
 //  - note, thread local callbacks are automatically propagated with
-//    ThreadLocalState across JIT continuations and async tasks (quarisma::launch)
+//    ThreadLocalState across JIT continuations and async tasks (profiler::launch)
 
 typedef uint64_t CallbackHandle;
 
@@ -285,7 +285,7 @@ struct StepCallbacks
         RecordFunctionCallback::EndCallback   end_;
     };
 
-    using StartEndPairs = quarisma::small_vector<StartEndPair, kSoftLimitCallbacks>;
+    using StartEndPairs = profiler::small_vector<StartEndPair, kSoftLimitCallbacks>;
 
     StartEndPairs callbacks_;
     uint64_t      thread_id_{0};
@@ -304,12 +304,12 @@ struct PROFILER_VISIBILITY RecordFunction
     PROFILER_API explicit RecordFunction(RecordScope scope = RecordScope::FUNCTION);
     PROFILER_API explicit RecordFunction(StepCallbacks&& step_callbacks);
 
-    using schema_ref_t       = std::reference_wrapper<const quarisma::FunctionSchema>;
+    using schema_ref_t       = std::reference_wrapper<const profiler::FunctionSchema>;
     using FunctionDescriptor = std::variant<std::string_view, schema_ref_t>;
 
     void before(
         FunctionDescriptor                          fn,
-        quarisma::array_ref<const quarisma::IValue> args,
+        profiler::array_ref<const profiler::IValue> args,
         int64_t                                     current_sequence_nr = -1)
     {
         if (!isActive())
@@ -322,7 +322,7 @@ struct PROFILER_VISIBILITY RecordFunction
 
     void before(
         FunctionDescriptor                             fn,
-        quarisma::array_ref<const quarisma::IValue>    args,
+        profiler::array_ref<const profiler::IValue>    args,
         const std::unordered_map<std::string, IValue>* kwargs,
         int64_t                                        current_sequence_nr = -1)
     {
@@ -352,7 +352,7 @@ struct PROFILER_VISIBILITY RecordFunction
     {
         before(
             fn,
-            quarisma::array_ref<const quarisma::IValue>(args->data(), args->size()),
+            profiler::array_ref<const profiler::IValue>(args->data(), args->size()),
             current_sequence_nr);
     }
 
@@ -383,7 +383,7 @@ struct PROFILER_VISIBILITY RecordFunction
 
     int64_t seqNr() const { return sequence_nr_; }
 
-    quarisma::array_ref<const IValue> inputs() const
+    profiler::array_ref<const IValue> inputs() const
     {
         // PROFILER_CHECK_DEBUG(
         // inputs_valid_, "Called inputs() outside RecordFunction start callback");
@@ -397,11 +397,11 @@ struct PROFILER_VISIBILITY RecordFunction
         return kwinputs_;
     }
 
-    const std::vector<quarisma::IValue>& outputs() const { return outputs_; }
+    const std::vector<profiler::IValue>& outputs() const { return outputs_; }
 
-    void setOutputs(std::vector<quarisma::IValue>&& outputs) { outputs_ = std::move(outputs); }
+    void setOutputs(std::vector<profiler::IValue>&& outputs) { outputs_ = std::move(outputs); }
 
-    void setOutputs(quarisma::array_ref<quarisma::IValue> outputs) { outputs_ = outputs.vec(); }
+    void setOutputs(profiler::array_ref<profiler::IValue> outputs) { outputs_ = outputs.vec(); }
 
     PROFILER_API size_t num_inputs() const;
     PROFILER_API size_t num_outputs() const;
@@ -502,9 +502,9 @@ private:
     std::variant<std::string, schema_ref_t> fn_;
 
     int64_t                                 sequence_nr_ = -1;
-    quarisma::array_ref<const IValue>       inputs_;
+    profiler::array_ref<const IValue>       inputs_;
     std::unordered_map<std::string, IValue> kwinputs_;
-    std::vector<quarisma::IValue>           outputs_;
+    std::vector<profiler::IValue>           outputs_;
 
     // For backward functions - thread id of the forward function
     uint64_t fwd_thread_id_ = 0;
@@ -549,7 +549,7 @@ void record_function_with_scope(
     {
         guard.before(
             fn,
-            quarisma::array_ref<const quarisma::IValue>(inputs.data(), inputs.size()),
+            profiler::array_ref<const profiler::IValue>(inputs.data(), inputs.size()),
             std::forward<Args>(args)...);
     }
     else
@@ -571,7 +571,7 @@ void record_function_with_scope_and_debug_handle(
     {
         guard.before(
             fn,
-            quarisma::array_ref<const quarisma::IValue>(inputs.data(), inputs.size()),
+            profiler::array_ref<const profiler::IValue>(inputs.data(), inputs.size()),
             std::forward<Args>(args)...);
     }
     else
@@ -584,10 +584,10 @@ template <typename... Args>
 void record_function_with_scope(
     RecordFunction&                             guard,
     RecordFunction::FunctionDescriptor          fn,
-    quarisma::array_ref<const quarisma::IValue> inputs,
+    profiler::array_ref<const profiler::IValue> inputs,
     Args&&... args)
 {
-    return record_function_with_scope<quarisma::array_ref<const quarisma::IValue>, Args...>(
+    return record_function_with_scope<profiler::array_ref<const profiler::IValue>, Args...>(
         guard, fn, inputs, std::forward<Args>(args)...);
 }
 
@@ -596,11 +596,11 @@ void record_function_with_scope_and_debug_handle(
     RecordFunction&                             guard,
     RecordFunction::FunctionDescriptor          fn,
     int64_t                                     debug_handle,
-    quarisma::array_ref<const quarisma::IValue> inputs,
+    profiler::array_ref<const profiler::IValue> inputs,
     Args&&... args)
 {
     return record_function_with_scope_and_debug_handle<
-        quarisma::array_ref<const quarisma::IValue>,
+        profiler::array_ref<const profiler::IValue>,
         Args...>(guard, fn, debug_handle, inputs, std::forward<Args>(args)...);
 }
 
@@ -608,14 +608,14 @@ void record_function_with_scope_and_debug_handle(
 
 // optional argument - function's seq_no
 #define RECORD_FUNCTION_WITH_SCOPE(scope, fn, inputs, ...)                                \
-    quarisma::RecordFunction guard(scope);                                                \
+    profiler::RecordFunction guard(scope);                                                \
     if (guard.isActive())                                                                 \
     {                                                                                     \
-        ::quarisma::detail::record_function_with_scope(guard, fn, inputs, ##__VA_ARGS__); \
+        ::profiler::detail::record_function_with_scope(guard, fn, inputs, ##__VA_ARGS__); \
     }
 
 #define RECORD_FUNCTION_WITH_SCOPE_INPUTS_OUTPUTS(scope, fn, inputs, outputs, ...) \
-    quarisma::RecordFunction guard(scope);                                         \
+    profiler::RecordFunction guard(scope);                                         \
     if (guard.isActive())                                                          \
     {                                                                              \
         if (guard.needsInputs())                                                   \
@@ -633,45 +633,45 @@ void record_function_with_scope_and_debug_handle(
     }
 
 #define RECORD_FUNCTION(fn, inputs, ...) \
-    RECORD_FUNCTION_WITH_SCOPE(quarisma::RecordScope::FUNCTION, fn, inputs, ##__VA_ARGS__)
+    RECORD_FUNCTION_WITH_SCOPE(profiler::RecordScope::FUNCTION, fn, inputs, ##__VA_ARGS__)
 
 #define RECORD_TORCHSCRIPT_FUNCTION(mn, inputs) \
-    RECORD_FUNCTION_WITH_SCOPE(quarisma::RecordScope::TORCHSCRIPT_FUNCTION, mn, inputs)
+    RECORD_FUNCTION_WITH_SCOPE(profiler::RecordScope::TORCHSCRIPT_FUNCTION, mn, inputs)
 
 #define RECORD_FUNCTION_WITH_INPUTS_OUTPUTS(fn, inputs, outputs, ...) \
     RECORD_FUNCTION_WITH_SCOPE_INPUTS_OUTPUTS(                        \
-        quarisma::RecordScope::FUNCTION, fn, inputs, outputs, ##__VA_ARGS__)
+        profiler::RecordScope::FUNCTION, fn, inputs, outputs, ##__VA_ARGS__)
 
 // Custom user scopes in C++; similar to Python's 'with record_function("..."):'
 #define RECORD_USER_SCOPE(fn)   \
     RECORD_FUNCTION_WITH_SCOPE( \
-        quarisma::RecordScope::USER_SCOPE, fn, quarisma::array_ref<const quarisma::IValue>{})
+        profiler::RecordScope::USER_SCOPE, fn, profiler::array_ref<const profiler::IValue>{})
 
 // RECORD_USER_SCOPE with inputs
 #define RECORD_USER_SCOPE_WITH_INPUTS(fn, inputs) \
-    RECORD_FUNCTION_WITH_SCOPE(quarisma::RecordScope::USER_SCOPE, fn, inputs)
+    RECORD_FUNCTION_WITH_SCOPE(profiler::RecordScope::USER_SCOPE, fn, inputs)
 
 #define RECORD_USER_SCOPE_WITH_KWARGS_ONLY(fn, kwargs) \
     RECORD_FUNCTION_WITH_SCOPE(                        \
-        quarisma::RecordScope::USER_SCOPE,             \
+        profiler::RecordScope::USER_SCOPE,             \
         fn,                                            \
-        quarisma::array_ref<const quarisma::IValue>{}, \
+        profiler::array_ref<const profiler::IValue>{}, \
         kwargs)
 
 // Helper macro to pass in debug handle that is used to
 // post process events
 #define RECORD_WITH_SCOPE_DEBUG_HANDLE_AND_INPUTS(scope, fn, debug_handle, inputs, ...) \
-    quarisma::RecordFunction guard(scope);                                              \
+    profiler::RecordFunction guard(scope);                                              \
     if (guard.isActive())                                                               \
     {                                                                                   \
-        ::quarisma::detail::record_function_with_scope_and_debug_handle(                \
+        ::profiler::detail::record_function_with_scope_and_debug_handle(                \
             guard, fn, debug_handle, inputs, ##__VA_ARGS__);                            \
     }
 
 // Helper macros to record LITE INTERPRETER scope events with debug handles
 #define RECORD_EDGE_SCOPE_WITH_DEBUG_HANDLE_AND_INPUTS(fn, debug_handle, inputs) \
     RECORD_WITH_SCOPE_DEBUG_HANDLE_AND_INPUTS(                                   \
-        quarisma::RecordScope::LITE_INTERPRETER, fn, debug_handle, inputs)
+        profiler::RecordScope::LITE_INTERPRETER, fn, debug_handle, inputs)
 
 // Bookend to the RECORD_FUNCTION macros.  Use this after the kernel
 // launch to let the profiler bind the outputs to the op that produced
@@ -680,7 +680,7 @@ void record_function_with_scope_and_debug_handle(
 #define RECORD_OUTPUTS(outputs)                                                          \
     if (guard.needsOutputs())                                                            \
     {                                                                                    \
-        guard.setOutputs(std::vector<quarisma::IValue>(outputs.begin(), outputs.end())); \
+        guard.setOutputs(std::vector<profiler::IValue>(outputs.begin(), outputs.end())); \
     }
 
 /**
@@ -793,4 +793,4 @@ PROFILER_API void set_record_function_tls_(const RecordFunctionTLS& tls);
 
 PROFILER_API void set_record_function_seed_for_testing(uint32_t seed);
 
-}  // namespace quarisma
+}  // namespace profiler

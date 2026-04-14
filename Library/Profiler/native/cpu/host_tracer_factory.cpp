@@ -38,7 +38,7 @@ limitations under the License.
 #include "native/core/profiler_options.h"
 #include "native/cpu/host_tracer.h"
 
-namespace quarisma
+namespace profiler
 {
 namespace profiler_impl
 {
@@ -59,4 +59,4 @@ auto register_host_tracer_factory = []
 
 }  // namespace
 }  // namespace profiler_impl
-}  // namespace quarisma
+}  // namespace profiler

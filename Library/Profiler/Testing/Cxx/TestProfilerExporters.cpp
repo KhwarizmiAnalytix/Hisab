@@ -1,6 +1,6 @@
 #if PROFILER_HAS_NATIVE_PROFILER
 /*
- * Quarisma: High-Performance Computational Library
+ * Profiler: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  */
@@ -17,8 +17,8 @@
 #include "native/exporters/chrome_trace_exporter.h"
 #include "native/exporters/xplane/xplane_builder.h"
 
-using namespace quarisma;
-using namespace quarisma::profiler_impl;
+using namespace profiler;
+using namespace profiler::profiler_impl;
 
 // ============================================================================
 // Chrome Trace Exporter Tests
@@ -457,7 +457,7 @@ PROFILERTEST(Profiler, chrome_trace_export_file_success_path)
     (*metadata)[1].set_name("write_event");
 
     const auto temp_dir  = std::filesystem::temp_directory_path();
-    const auto file_path = temp_dir / "quarisma_chrome_trace_test.json";
+    const auto file_path = temp_dir / "profiler_chrome_trace_test.json";
 
     std::error_code ec;
     std::filesystem::remove(file_path, ec);

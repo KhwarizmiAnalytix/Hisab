@@ -43,7 +43,7 @@ using std::chrono::duration_cast;
 using std::chrono::nanoseconds;
 using std::chrono::system_clock;
 
-namespace quarisma
+namespace profiler
 {
 
 namespace
@@ -93,5 +93,5 @@ uint64_t env_time::now_nanos()
     return duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 }
 
-}  // namespace quarisma
+}  // namespace profiler
 #endif

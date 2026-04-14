@@ -16,7 +16,7 @@
 
 #include "bespoke/itt/itt_wrapper.h"
 
-using namespace quarisma::profiler_impl;
+using namespace profiler::profiler_impl;
 
 // ============================================================================
 // ITT Initialization Tests

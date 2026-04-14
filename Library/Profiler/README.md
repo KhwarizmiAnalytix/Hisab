@@ -1,4 +1,4 @@
-# Quarisma Profiler (`Library/Profiler`)
+# Profiler Profiler (`Library/Profiler`)
 
 Profiler **implementation** (sources, tests, Bazel/Cmake targets) lives in this directory.
 

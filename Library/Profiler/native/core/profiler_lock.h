@@ -39,7 +39,7 @@ limitations under the License.
 
 #include "common/profiler_export.h"  // for PROFILER_API
 
-namespace quarisma
+namespace profiler
 {
 
 constexpr std::string_view kProfilerLockContention = "Another profiling session active.";
@@ -86,4 +86,4 @@ private:
     bool active_ = false;
 };
 
-}  // namespace quarisma
+}  // namespace profiler

@@ -34,7 +34,7 @@
 #include <utility>
 #include <vector>
 
-//#include "logging/logger.h"
+//#include "logger.h"
 #include "common/flat_hash.h"
 #include "common/lock_free_queue.h"
 #include "common/per_thread.h"
@@ -51,12 +51,12 @@
 #endif
 #endif
 
-namespace quarisma
+namespace profiler
 {
 static inline std::string get_thread_name()
 {
     return "";
-    //quarisma::logger::GetThreadName();
+    //profiler::logger::GetThreadName();
 }
 
 namespace internal
@@ -290,4 +290,4 @@ private:
     return static_cast<int64_t>(thread_id) << 32 | per_thread_activity_id++;
 }
 
-}  // namespace quarisma
+}  // namespace profiler

@@ -21,7 +21,7 @@ foreach(_test_source IN ITEMS ${test_sources})
 
   # Exclude GPU-related test files based on compile flags When both CUDA and HIP are disabled,
   # exclude all GPU tests
-  if(NOT QUARISMA_ENABLE_CUDA AND NOT QUARISMA_ENABLE_HIP)
+  if(NOT MEMORY_ENABLE_CUDA AND NOT MEMORY_ENABLE_HIP)
     if(file_name MATCHES "TestGpu" OR file_name MATCHES "TestGPU")
       message(STATUS "Excluding GPU test (no GPU support): ${file_name}")
       continue()
@@ -29,7 +29,7 @@ foreach(_test_source IN ITEMS ${test_sources})
   endif()
 
   # When CUDA is disabled, exclude CUDA-specific tests
-  if(NOT QUARISMA_ENABLE_CUDA)
+  if(NOT MEMORY_ENABLE_CUDA)
     if(file_name MATCHES "TestCuda")
       message(STATUS "Excluding CUDA test (CUDA disabled): ${file_name}")
       continue()
@@ -37,7 +37,7 @@ foreach(_test_source IN ITEMS ${test_sources})
   endif()
 
   # When HIP is disabled, exclude HIP-specific tests
-  if(NOT QUARISMA_ENABLE_HIP)
+  if(NOT MEMORY_ENABLE_HIP)
     if(file_name MATCHES "TestHip")
       message(STATUS "Excluding HIP test (HIP disabled): ${file_name}")
       continue()
@@ -53,7 +53,7 @@ foreach(_test_source IN ITEMS ${test_sources})
   endif()
 
   # When Enzyme is disabled, exclude Enzyme-specific tests
-  if(NOT QUARISMA_ENABLE_ENZYME)
+  if(NOT CORE_ENABLE_ENZYME)
     if(file_name MATCHES "TestEnzyme")
       message(STATUS "Excluding Enzyme test (Enzyme disabled): ${file_name}")
       continue()
@@ -69,7 +69,9 @@ endforeach()
 add_executable(CoreCxxTests ${TestFiles})
 
 # Compile definitions
-target_compile_definitions(CoreCxxTests PRIVATE QUARISMA_GOOGLE_TEST USE_GTEST _VARIADIC_MAX=10)
+target_compile_definitions(
+  CoreCxxTests PRIVATE QUARISMA_HAS_GTEST=1 QUARISMA_GOOGLE_TEST USE_GTEST _VARIADIC_MAX=10
+)
 
 # Workaround for Clang 20/21.x compiler crash in register allocator The crash occurs in the Greedy
 # Register Allocator pass when compiling with -O3 This is a known Clang bug:
@@ -85,9 +87,13 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   )
 endif()
 
-# Link libraries Core library is linked which transitively brings in all centralized dependencies
-# via QUARISMA_DEPENDENCY_LIBS
-target_link_libraries(CoreCxxTests PRIVATE Quarisma::gtest Quarisma::gtest_main Quarisma::Core)
+# Link libraries Core library is linked which transitively brings in Core-local dependencies
+# via CORE_DEPENDENCY_LIBS
+target_link_libraries(CoreCxxTests PRIVATE Core::gtest Core::gtest_main Core::Core)
+
+if(PROFILER_HAS_NATIVE_PROFILER OR PROFILER_ENABLE_NATIVE_PROFILER)
+  target_include_directories(CoreCxxTests PRIVATE "${CMAKE_SOURCE_DIR}/Library/Profiler")
+endif()
 
 # Set target properties
 set_target_properties(
@@ -109,18 +115,18 @@ add_test(NAME CoreCxxTests COMMAND CoreCxxTests
 set_tests_properties(CoreCxxTests PROPERTIES TIMEOUT 120 LABELS "Core;Unit")
 
 # Set coverage environment variable if enabled
-if(QUARISMA_ENABLE_COVERAGE AND DEFINED QUARISMA_LLVM_PROFILE_FILE)
+if(PROJECT_ENABLE_COVERAGE AND DEFINED PROJECT_LLVM_PROFILE_FILE)
   set_tests_properties(
-    CoreCxxTests PROPERTIES ENVIRONMENT "LLVM_PROFILE_FILE=${QUARISMA_LLVM_PROFILE_FILE}"
+    CoreCxxTests PROPERTIES ENVIRONMENT "LLVM_PROFILE_FILE=${PROJECT_LLVM_PROFILE_FILE}"
   )
 endif()
 
-if(QUARISMA_ENABLE_ENZYME)
-  target_link_libraries(CoreCxxTests PRIVATE Quarisma::enzyme)
+if(CORE_ENABLE_ENZYME)
+  target_link_libraries(CoreCxxTests PRIVATE Core::enzyme)
 endif()
 
-if(QUARISMA_ENABLE_CUDA)
-  target_link_libraries(CoreCxxTests PRIVATE ${QUARISMA_CUDA_LIBRARIES})
+if(MEMORY_ENABLE_CUDA)
+  target_link_libraries(CoreCxxTests PRIVATE ${PROJECT_CUDA_LIBRARIES})
 endif()
 
 # CudaEnzymeADTest.cu provides the fixture implementation used by TestEnzymeAD.cpp.
@@ -129,7 +135,7 @@ endif()
 # On Windows with the MinGW toolchain, compiling CUDA (.cu) with clang++ regularly fails due to
 # host header / CUDA wrapper incompatibilities (e.g. math_functions.hpp redefinitions and missing
 # texture_fetch_functions.h). Keep the rest of the suite buildable by skipping this CUDA TU.
-if(QUARISMA_ENABLE_CUDA AND QUARISMA_ENABLE_ENZYME)
+if(MEMORY_ENABLE_CUDA AND CORE_ENABLE_ENZYME)
   if(WIN32 AND (MINGW OR CMAKE_CXX_COMPILER MATCHES "msys64"))
     message(
       WARNING
@@ -165,7 +171,7 @@ endif()
 # Selective rebuilding (only rebuild changed benchmarks) - Independent execution (run specific
 # benchmarks in isolation) - Better CTest integration (individual test reporting)
 # =============================================================================
-if(QUARISMA_ENABLE_BENCHMARK)
+if(CORE_ENABLE_BENCHMARK)
 
   # Discover all benchmark source files
   file(GLOB_RECURSE bench_sources LIST_DIRECTORIES false
@@ -178,7 +184,7 @@ if(QUARISMA_ENABLE_BENCHMARK)
     get_filename_component(file_name "${_bench_source}" NAME)
 
     # Exclude CUDA-related benchmarks when GPU support is disabled
-    if(NOT QUARISMA_ENABLE_CUDA AND NOT QUARISMA_ENABLE_HIP)
+    if(NOT MEMORY_ENABLE_CUDA AND NOT MEMORY_ENABLE_HIP)
       if(file_name MATCHES ".*[Cc]uda.*")
         message(STATUS "Excluding CUDA benchmark (no GPU support): ${file_name}")
         continue()
@@ -203,10 +209,10 @@ if(QUARISMA_ENABLE_BENCHMARK)
     # Create the executable
     add_executable(${target_name} "${_bench_source}")
 
-    # Link libraries - Quarisma::benchmark: Google Benchmark library - Quarisma::benchmark_main:
-    # Provides main() function - Quarisma::Core: Core library with all dependencies
+    # Link libraries - Core::benchmark: Google Benchmark library - Core::benchmark_main:
+    # Provides main() function - Core::Core: Core library with all dependencies
     target_link_libraries(
-      ${target_name} PRIVATE Quarisma::benchmark Quarisma::benchmark_main Quarisma::Core
+      ${target_name} PRIVATE Core::benchmark Core::benchmark_main Core::Core
     )
 
     # Set target properties
@@ -215,7 +221,7 @@ if(QUARISMA_ENABLE_BENCHMARK)
     )
 
     # Apply Quarisma output directory configuration This ensures benchmarks are placed in
-    # ${QUARISMA_BINARY_DIR}/bin
+    # ${PROJECT_BINARY_DIR}/bin
     if(COMMAND quarisma_set_target_output_directories)
       quarisma_set_target_output_directories(${target_name})
     else()

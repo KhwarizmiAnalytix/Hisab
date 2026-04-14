@@ -10,7 +10,7 @@
 #include "common/approximate_clock.h"
 #include "common/strong_type.h"
 
-namespace quarisma::profiler_impl::impl
+namespace profiler::profiler_impl::impl
 {
 
 class RecordQueue;
@@ -26,7 +26,7 @@ struct CompressedEvent
     TraceKey                  key_;
     uint64_t                  system_tid_{};
     kineto::DeviceAndResource kineto_info_{};
-    quarisma::time_t          enter_t_{};
+    profiler::time_t          enter_t_{};
 };
 
 /*
@@ -36,9 +36,9 @@ to ingest the data that we collect from the Python tracer. (`PyEval_SetProfile`)
 
 In order to solve this dependency issue we define a virtual base and a function
 to register a getter. The python tracer then implements these functions and
-exposes itself by calling `registerTracer` from `quarisma/csrc/autograd/init.cpp`.
+exposes itself by calling `registerTracer` from `profiler/csrc/autograd/init.cpp`.
 This pattern of registration for faux python dependencies in libtorch is common
-in the Quarisma codebase.
+in the Profiler codebase.
 */
 struct PROFILER_VISIBILITY PythonTracerBase
 {
@@ -49,9 +49,9 @@ struct PROFILER_VISIBILITY PythonTracerBase
     virtual void                                 restart()              = 0;
     virtual void                                 register_gc_callback() = 0;
     virtual std::vector<std::shared_ptr<Result>> getEvents(
-        std::function<quarisma::time_t(quarisma::approx_time_t)> time_converter,
+        std::function<profiler::time_t(profiler::approx_time_t)> time_converter,
         std::vector<CompressedEvent>&                            enters,
-        quarisma::time_t                                         end_time_ns) = 0;
+        profiler::time_t                                         end_time_ns) = 0;
 };
 
 using MakeFn = std::unique_ptr<PythonTracerBase> (*)(RecordQueue*);
@@ -74,4 +74,4 @@ using MakeMemoryFn = std::unique_ptr<PythonMemoryTracerBase> (*)();
 PROFILER_API void registerMemoryTracer(MakeMemoryFn make_memory_tracer);
 
 }  // namespace python_tracer
-}  // namespace quarisma::profiler_impl::impl
+}  // namespace profiler::profiler_impl::impl

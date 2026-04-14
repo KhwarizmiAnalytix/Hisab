@@ -29,7 +29,7 @@
 #include "native/memory/memory_tracker.h"
 #include "native/session/profiler.h"
 
-namespace quarisma
+namespace profiler
 {
 
 /**
@@ -45,7 +45,7 @@ public:
      * @brief Construct a new profiler report
      * @param session Reference to the profiler session to generate report from
      */
-    PROFILER_API explicit profiler_report(const quarisma::profiler_session& session);
+    PROFILER_API explicit profiler_report(const profiler::profiler_session& session);
 
     /**
      * @brief Default destructor
@@ -83,7 +83,7 @@ public:
      * @return true if export successful, false otherwise
      */
     PROFILER_API bool export_to_file(
-        const std::string& filename, quarisma::profiler_options::output_format_enum format) const;
+        const std::string& filename, profiler::profiler_options::output_format_enum format) const;
 
     /**
      * @brief Export console report to file
@@ -128,7 +128,7 @@ public:
     void set_include_hierarchical_data(bool include) { include_hierarchical_data_ = include; }
 
 private:
-    const quarisma::profiler_session& session_;
+    const profiler::profiler_session& session_;
 
     // Formatting options
     int         precision_                 = 3;
@@ -169,11 +169,11 @@ private:
 
     // Hierarchical data processing
     void process_scope_data_recursive(
-        const quarisma::profiler_scope_data& scope, std::stringstream& ss, int indent = 0) const;
+        const profiler::profiler_scope_data& scope, std::stringstream& ss, int indent = 0) const;
     void process_scope_data_json_recursive(
-        const quarisma::profiler_scope_data& scope, std::stringstream& ss, int indent = 0) const;
+        const profiler::profiler_scope_data& scope, std::stringstream& ss, int indent = 0) const;
     void process_scope_data_csv_recursive(
-        const quarisma::profiler_scope_data& scope,
+        const profiler::profiler_scope_data& scope,
         std::vector<std::string>&            rows,
         int                                  depth = 0) const;
 };
@@ -182,7 +182,7 @@ private:
 class PROFILER_VISIBILITY profiler_report_builder
 {
 public:
-    PROFILER_API explicit profiler_report_builder(const quarisma::profiler_session& session);
+    PROFILER_API explicit profiler_report_builder(const profiler::profiler_session& session);
 
     profiler_report_builder& with_precision(int precision)
     {
@@ -226,10 +226,10 @@ public:
         return *this;
     }
 
-    PROFILER_API std::unique_ptr<quarisma::profiler_report> build() const;
+    PROFILER_API std::unique_ptr<profiler::profiler_report> build() const;
 
 private:
-    const quarisma::profiler_session& session_;
+    const profiler::profiler_session& session_;
     int                               precision_                    = 3;
     std::string                       time_unit_                    = "ms";
     std::string                       memory_unit_                  = "MB";
@@ -239,4 +239,4 @@ private:
     bool                              include_memory_details_       = true;
 };
 
-}  // namespace quarisma
+}  // namespace profiler

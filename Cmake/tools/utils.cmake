@@ -61,19 +61,19 @@ check_cxx_source_compiles(
           eptr = std::current_exception();
       }
     }"
-  QUARISMA_EXCEPTION_PTR_SUPPORTED
+  PROJECT_EXCEPTION_PTR_SUPPORTED
 )
 
-if(QUARISMA_EXCEPTION_PTR_SUPPORTED)
+if(PROJECT_EXCEPTION_PTR_SUPPORTED)
   message("--std::exception_ptr is supported.")
-  set(QUARISMA_HAS_EXCEPTION_PTR 1)
+  set(PROJECT_HAS_EXCEPTION_PTR 1)
 else()
   message("--std::exception_ptr is NOT supported.")
 endif()
 cmake_pop_check_state()
 
 # ---[ Check for NUMA support
-if(QUARISMA_ENABLE_NUMA)
+if(PROJECT_ENABLE_NUMA)
   cmake_push_check_state(RESET)
   set(CMAKE_REQUIRED_FLAGS "-std=c++17")
   check_cxx_source_compiles(
@@ -82,18 +82,18 @@ if(QUARISMA_ENABLE_NUMA)
 
     int main(int argc, char** argv) {
     }"
-    QUARISMA_IS_NUMA_AVAILABLE
+    PROJECT_IS_NUMA_AVAILABLE
   )
-  if(QUARISMA_IS_NUMA_AVAILABLE)
+  if(PROJECT_IS_NUMA_AVAILABLE)
     message("--NUMA is available")
   else()
     message("--NUMA is not available")
-    set(QUARISMA_ENABLE_NUMA OFF)
+    set(PROJECT_ENABLE_NUMA OFF)
   endif()
   cmake_pop_check_state()
 else()
   message("--NUMA is disabled")
-  set(QUARISMA_ENABLE_NUMA OFF)
+  set(PROJECT_ENABLE_NUMA OFF)
 endif()
 
 # ---[ Check if we want to turn off deprecated warning due to glog. Note(jiayq): on ubuntu 14.04,
@@ -101,10 +101,10 @@ endif()
 # this is the environment we are building under. If yes, we will turn off deprecation warning for a
 # cleaner build output. cmake_push_check_state(RESET) set(CMAKE_REQUIRED_FLAGS "-std=c++17")
 # check_cxx_source_compiles( "#include <glog/stl_logging.h> int main(int argc, char** argv) { return
-# 0; }" QUARISMA_NEED_TO_TURN_OFF_DEPRECATION_WARNING FAIL_REGEX
+# 0; }" PROJECT_NEED_TO_TURN_OFF_DEPRECATION_WARNING FAIL_REGEX
 # ".*-Wno-deprecated.*")
 
-if(NOT QUARISMA_NEED_TO_TURN_OFF_DEPRECATION_WARNING AND NOT MSVC)
+if(NOT PROJECT_NEED_TO_TURN_OFF_DEPRECATION_WARNING AND NOT MSVC)
   message("--Turning off deprecation warning.")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated")
 endif()
@@ -125,12 +125,12 @@ if(NOT INTERN_BUILD_MOBILE)
         _mm_add_ps(a, a);
         return 0;
       }"
-    QUARISMA_COMPILER_SUPPORTS_SSE_EXTENSIONS
+    PROJECT_COMPILER_SUPPORTS_SSE_EXTENSIONS
   )
-  if(QUARISMA_COMPILER_SUPPORTS_SSE_EXTENSIONS)
+  if(PROJECT_COMPILER_SUPPORTS_SSE_EXTENSIONS)
     message("--Current compiler supports sse extension.")
-    if(QUARISMA_VECTORIZATION_TYPE STREQUAL "sse")
-      set(QUARISMA_SSE 1)
+    if(PROJECT_VECTORIZATION_TYPE STREQUAL "sse")
+      set(PROJECT_SSE 1)
       set(VECTORIZATION ON)
       set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
     endif()
@@ -153,12 +153,12 @@ if(NOT INTERN_BUILD_MOBILE)
         _mm256_add_ps (a,a);
         return 0;
       }"
-    QUARISMA_COMPILER_SUPPORTS_AVX_EXTENSIONS
+    PROJECT_COMPILER_SUPPORTS_AVX_EXTENSIONS
   )
-  if(QUARISMA_COMPILER_SUPPORTS_AVX_EXTENSIONS)
+  if(PROJECT_COMPILER_SUPPORTS_AVX_EXTENSIONS)
     message("--Current compiler supports avx extension.")
-    if(QUARISMA_VECTORIZATION_TYPE STREQUAL "avx")
-      set(QUARISMA_AVX 1)
+    if(PROJECT_VECTORIZATION_TYPE STREQUAL "avx")
+      set(PROJECT_AVX 1)
       set(VECTORIZATION ON)
       set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
     endif()
@@ -183,12 +183,12 @@ if(NOT INTERN_BUILD_MOBILE)
         _mm256_extract_epi64(x, 0); // we rely on this in our AVX2 code
         return 0;
       }"
-    QUARISMA_COMPILER_SUPPORTS_AVX2_EXTENSIONS
+    PROJECT_COMPILER_SUPPORTS_AVX2_EXTENSIONS
   )
-  if(QUARISMA_COMPILER_SUPPORTS_AVX2_EXTENSIONS)
+  if(PROJECT_COMPILER_SUPPORTS_AVX2_EXTENSIONS)
     message("--Current compiler supports avx2 extension.")
-    if(QUARISMA_VECTORIZATION_TYPE STREQUAL "avx2")
-      set(QUARISMA_AVX2 1)
+    if(PROJECT_VECTORIZATION_TYPE STREQUAL "avx2")
+      set(PROJECT_AVX2 1)
       set(VECTORIZATION ON)
       set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
     endif()
@@ -223,12 +223,12 @@ if(NOT INTERN_BUILD_MOBILE)
        __mmask16 m = _mm512_cmp_epi32_mask(a, a, _MM_CMPINT_EQ);
        __m512i r = _mm512_andnot_si512(a, a);
      }"
-    QUARISMA_COMPILER_SUPPORTS_AVX512_EXTENSIONS
+    PROJECT_COMPILER_SUPPORTS_AVX512_EXTENSIONS
   )
-  if(QUARISMA_COMPILER_SUPPORTS_AVX512_EXTENSIONS)
+  if(PROJECT_COMPILER_SUPPORTS_AVX512_EXTENSIONS)
     message("--Current compiler supports avx512f extension.")
-    if(QUARISMA_VECTORIZATION_TYPE STREQUAL "avx512")
-      set(QUARISMA_AVX512 1)
+    if(PROJECT_VECTORIZATION_TYPE STREQUAL "avx512")
+      set(PROJECT_AVX512 1)
       set(VECTORIZATION ON)
       set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
     endif()
@@ -257,9 +257,9 @@ if(NOT INTERN_BUILD_MOBILE)
         a = _mm_fmadd_ps(a,b,b);
         return 0;
       }"
-    QUARISMA_COMPILER_SUPPORTS_FMA_EXTENSIONS
+    PROJECT_COMPILER_SUPPORTS_FMA_EXTENSIONS
   )
-  if(QUARISMA_COMPILER_SUPPORTS_FMA_EXTENSIONS)
+  if(PROJECT_COMPILER_SUPPORTS_FMA_EXTENSIONS)
     message("--Current compiler supports fma extension.")
     set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
   endif()
@@ -283,14 +283,14 @@ if(NOT INTERN_BUILD_MOBILE)
         b = _mm256_tanh_ps(a);
         return 0;
       }"
-    QUARISMA_COMPILER_SUPPORTS_SVML_EXTENSIONS
+    PROJECT_COMPILER_SUPPORTS_SVML_EXTENSIONS
   )
 
-  if(NOT QUARISMA_COMPILER_SUPPORTS_SVML_EXTENSIONS AND VECTORIZATION)
-    message("--Current compiler does not supports SVML functoins. Turn ON QUARISMA_ENABLE_SVML")
-    set(QUARISMA_ENABLE_SVML 1)
+  if(NOT PROJECT_COMPILER_SUPPORTS_SVML_EXTENSIONS AND VECTORIZATION)
+    message("--Current compiler does not supports SVML functoins. Turn ON PROJECT_ENABLE_SVML")
+    set(PROJECT_ENABLE_SVML 1)
   else()
-    message("--Current compiler supports SVML functoins. Turn OFF QUARISMA_ENABLE_SVML")
+    message("--Current compiler supports SVML functoins. Turn OFF PROJECT_ENABLE_SVML")
   endif()
   cmake_pop_check_state()
 endif()

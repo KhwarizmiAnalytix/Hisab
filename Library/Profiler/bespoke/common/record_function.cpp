@@ -1,4 +1,4 @@
-//#include <Quarisma/core/dispatch/Dispatcher.h>
+//#include <Profiler/core/dispatch/Dispatcher.h>
 //#include "util/thread_local.h"
 
 #include "bespoke/common/record_function.h"
@@ -15,7 +15,7 @@
 #include "common/small_vector.h"
 #include "common/strong_type.h"
 
-namespace quarisma
+namespace profiler
 {
 
 extern const std::string kParamCommsCallName = "record_param_comms";
@@ -168,7 +168,7 @@ private:
     std::mt19937* generator_{nullptr};
 
     // Includes sampling callbacks which are waiting to run.
-    quarisma::small_vector<CallbackAndCounter, kSoftLimitCallbacks> callbacks_;
+    profiler::small_vector<CallbackAndCounter, kSoftLimitCallbacks> callbacks_;
     RecordScope                                                     scope_{RecordScope::FUNCTION};
 
     StepCallbacks active_callbacks_;
@@ -409,7 +409,7 @@ int CacheEntry::sampleTries(double p) const
 LocalCallbackManager& LocalCallbackManager::get()
 {
 #ifdef PROFILER_PREFER_CUSTOM_THREAD_LOCAL_STORAGE
-    static quarisma::ThreadLocal<LocalCallbackManager> manager;
+    static profiler::ThreadLocal<LocalCallbackManager> manager;
     return manager.get();
 #else   // defined(PROFILER_PREFER_CUSTOM_THREAD_LOCAL_STORAGE)
     static thread_local LocalCallbackManager manager;
@@ -419,7 +419,7 @@ LocalCallbackManager& LocalCallbackManager::get()
 
 LocalCallbackManager::LocalCallbackManager()
 {
-    for (auto i : quarisma::irange(NumRecordScopes))
+    for (auto i : profiler::irange(NumRecordScopes))
     {
         active_callbacks_[i] = CacheEntry(&generator_, static_cast<RecordScope>(i));
     }
@@ -505,7 +505,7 @@ void LocalCallbackManager::clearCallbacks()
 void LocalCallbackManager::rebuild_all(const GlobalCallbackManager::snapshot_t& global_snapshot)
 {
     global_version_ = global_snapshot.first;
-    for (auto i : quarisma::irange(NumRecordScopes))
+    for (auto i : profiler::irange(NumRecordScopes))
     {
         rebuild_scope(global_snapshot, static_cast<RecordScope>(i));
     }
@@ -518,7 +518,7 @@ void LocalCallbackManager::rebuild_callback_scopes(
     if (global_snapshot.first == global_version_)
     {
         // Only rebuild scopes associated with `callback`
-        for (auto i : quarisma::irange(NumRecordScopes))
+        for (auto i : profiler::irange(NumRecordScopes))
         {
             if (callback.checkScope(static_cast<RecordScope>(i)))
             {
@@ -610,7 +610,7 @@ RecordFunction::RecordFunction(StepCallbacks&& step_callbacks)
 
 void RecordFunction::runStartCallbacks()
 {
-    for (const auto i : quarisma::irange(step_callbacks_.callbacks_.size()))
+    for (const auto i : profiler::irange(step_callbacks_.callbacks_.size()))
     {
         tryRunCallback</*is_start=*/true>(step_callbacks_.callbacks_[i], *this, ctx_[i]);
     }
@@ -621,7 +621,7 @@ void RecordFunction::end()
 {
     if (called_start_callbacks_)
     {
-        for (const auto i : quarisma::irange(step_callbacks_.callbacks_.size()))
+        for (const auto i : profiler::irange(step_callbacks_.callbacks_.size()))
         {
             tryRunCallback</*is_start=*/false>(step_callbacks_.callbacks_[i], *this, ctx_[i]);
         }
@@ -634,7 +634,7 @@ void RecordFunction::end()
 const char* RecordFunction::name() const
 {
     return std::visit(
-        quarisma::overloaded(
+        profiler::overloaded(
             [](const std::string& name) { return name.c_str(); },
             [](const schema_ref_t schema) { return schema.get().name().c_str(); }),
         fn_);
@@ -643,7 +643,7 @@ const char* RecordFunction::name() const
 size_t RecordFunction::num_inputs() const
 {
     return std::visit(
-        quarisma::overloaded(
+        profiler::overloaded(
             [&](const std::string&) { return inputs_.size(); },
             [](const schema_ref_t schema) { return schema.get().arguments().size(); }),
         fn_);
@@ -652,7 +652,7 @@ size_t RecordFunction::num_inputs() const
 size_t RecordFunction::num_outputs() const
 {
     return std::visit(
-        quarisma::overloaded(
+        profiler::overloaded(
             [&](const std::string&) { return outputs_.size(); },
             [](const schema_ref_t schema) { return schema.get().returns().size(); }),
         fn_);
@@ -661,7 +661,7 @@ size_t RecordFunction::num_outputs() const
 std::optional<OperatorName> RecordFunction::operator_name() const
 {
     return std::visit(
-        quarisma::overloaded(
+        profiler::overloaded(
             [&](const std::string&) -> std::optional<OperatorName> { return std::nullopt; },
             [](const schema_ref_t schema) -> std::optional<OperatorName>
             { return schema.get().operator_name(); }),
@@ -672,7 +672,7 @@ std::optional<OperatorName> RecordFunction::operator_name() const
 const char* RecordFunction::name() const
 {
     return std::visit(
-        quarisma::overloaded(
+        profiler::overloaded(
             [](const std::string& name) { return name.c_str(); },
             [](const schema_ref_t /*schema*/) { return ""; }),
         fn_);
@@ -681,7 +681,7 @@ const char* RecordFunction::name() const
 size_t RecordFunction::num_inputs() const
 {
     return std::visit(
-        quarisma::overloaded(
+        profiler::overloaded(
             [&](const std::string&) { return inputs_.size(); },
             [](const schema_ref_t /*schema*/) { return static_cast<size_t>(0); }),
         fn_);
@@ -690,7 +690,7 @@ size_t RecordFunction::num_inputs() const
 size_t RecordFunction::num_outputs() const
 {
     return std::visit(
-        quarisma::overloaded(
+        profiler::overloaded(
             [&](const std::string&) { return outputs_.size(); },
             [](const schema_ref_t /*schema*/) { return static_cast<size_t>(0); }),
         fn_);
@@ -699,7 +699,7 @@ size_t RecordFunction::num_outputs() const
 std::optional<OperatorName> RecordFunction::operator_name() const
 {
     return std::visit(
-        quarisma::overloaded(
+        profiler::overloaded(
             [&](const std::string&) -> std::optional<OperatorName> { return std::nullopt; },
             [](const schema_ref_t /*schema*/) -> std::optional<OperatorName>
             { return std::nullopt; }),
@@ -707,13 +707,13 @@ std::optional<OperatorName> RecordFunction::operator_name() const
 }
 #endif
 
-std::optional<quarisma::FunctionSchema> RecordFunction::operator_schema() const
+std::optional<profiler::FunctionSchema> RecordFunction::operator_schema() const
 {
     return std::visit(
-        quarisma::overloaded(
-            [&](const std::string&) -> std::optional<quarisma::FunctionSchema>
+        profiler::overloaded(
+            [&](const std::string&) -> std::optional<profiler::FunctionSchema>
             { return std::nullopt; },
-            [](const schema_ref_t schema) -> std::optional<quarisma::FunctionSchema>
+            [](const schema_ref_t schema) -> std::optional<profiler::FunctionSchema>
             { return schema.get(); }),
         fn_);
 }
@@ -723,7 +723,7 @@ const char* RecordFunction::overload_name()
 {
 #if 0
     return std::visit(
-        quarisma::overloaded(
+        profiler::overloaded(
             [&](const std::string&) -> const char* { return ""; },
             [](const schema_ref_t schema) -> const char*
             { return schema.get().overload_name().c_str(); }),
@@ -931,4 +931,4 @@ bool RecordFunction::isStaticRuntimeOutVariant() const
     }
     return false;
 }
-}  // namespace quarisma
+}  // namespace profiler

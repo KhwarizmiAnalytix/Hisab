@@ -47,7 +47,7 @@ limitations under the License.
 
 #include "native/analysis/stat_summarizer_options.h"
 
-namespace quarisma
+namespace profiler
 {
 
 constexpr int kNodeTypeWidth = 40;
@@ -379,4 +379,4 @@ void stats_calculator::add_node_stats(
     detail_ptr->mem_used.update_stat(mem_used);
     detail_ptr->times_called++;
 }
-}  // namespace quarisma
+}  // namespace profiler

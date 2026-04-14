@@ -31,14 +31,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-#ifndef XLA_BACKENDS_PROFILER_CPU_PYTHON_TRACER_H_
-#define XLA_BACKENDS_PROFILER_CPU_PYTHON_TRACER_H_
+#pragma once
 #if 0
 #include <memory>
 
 #include "native/core/profiler_interface.h"
 
-namespace quarisma
+namespace profiler
 {
 namespace profiler_impl
 {
@@ -60,7 +59,6 @@ std::unique_ptr<profiler_interface> create_python_tracer(
     const python_tracer_options& options);
 
 }  // namespace profiler_impl
-}  // namespace quarisma
+}  // namespace profiler
 
 #endif  // 0 (python tracer stub disabled)
-#endif  // XLA_BACKENDS_PROFILER_CPU_PYTHON_TRACER_H_

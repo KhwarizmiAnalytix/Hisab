@@ -1,34 +1,34 @@
 #pragma once
 /*
-#include <quarisma/core/Allocator.h>
-#include <quarisma/core/DeviceType.h>
-#include <quarisma/core/DispatchKey.h>
-#include <quarisma/core/DispatchKeySet.h>
-#include <quarisma/core/InferenceMode.h>
-#include <quarisma/core/Layout.h>
-#include <quarisma/core/MemoryFormat.h>
-#include <quarisma/core/ScalarType.h>
-#include <quarisma/core/ScalarTypeToTypeMeta.h>
-#include <quarisma/core/Storage.h>
-#include <quarisma/core/SymBool.h>
-#include <quarisma/core/SymInt.h>
-#include <quarisma/core/SymIntArrayRef.h>
-#include <quarisma/core/SymbolicShapeMeta.h>
-#include <quarisma/core/WrapDimMinimal.h>
-#include <quarisma/core/device_option.h>
-#include <quarisma/core/impl/PyObjectSlot.h>
-#include <quarisma/core/impl/SizesAndStrides.h>
-#include <quarisma/macros/Export.h>
-#include <quarisma/macros/Macros.h>
-#include <quarisma/util/DimVector.h>
-#include <quarisma/util/Exception.h>
-#include <quarisma/util/Flags.h>
-#include <quarisma/util/accumulate.h>
-#include <quarisma/util/array_ref.h>
-#include <quarisma/util/intrusive_ptr.h>
-#include <quarisma/util/irange.h>
-#include <quarisma/util/safe_numerics.h>
-#include <quarisma/util/typeid.h>
+#include <profiler/core/Allocator.h>
+#include <profiler/core/DeviceType.h>
+#include <profiler/core/DispatchKey.h>
+#include <profiler/core/DispatchKeySet.h>
+#include <profiler/core/InferenceMode.h>
+#include <profiler/core/Layout.h>
+#include <profiler/core/MemoryFormat.h>
+#include <profiler/core/ScalarType.h>
+#include <profiler/core/ScalarTypeToTypeMeta.h>
+#include <profiler/core/Storage.h>
+#include <profiler/core/SymBool.h>
+#include <profiler/core/SymInt.h>
+#include <profiler/core/SymIntArrayRef.h>
+#include <profiler/core/SymbolicShapeMeta.h>
+#include <profiler/core/WrapDimMinimal.h>
+#include <profiler/core/device_option.h>
+#include <profiler/core/impl/PyObjectSlot.h>
+#include <profiler/core/impl/SizesAndStrides.h>
+#include <profiler/macros/Export.h>
+#include <profiler/macros/Macros.h>
+#include <profiler/util/DimVector.h>
+#include <profiler/util/Exception.h>
+#include <profiler/util/Flags.h>
+#include <profiler/util/accumulate.h>
+#include <profiler/util/array_ref.h>
+#include <profiler/util/intrusive_ptr.h>
+#include <profiler/util/irange.h>
+#include <profiler/util/safe_numerics.h>
+#include <profiler/util/typeid.h>
 */
 #include <algorithm>
 #include <atomic>
@@ -45,12 +45,12 @@
 #include "bespoke/common/orchestration/observer.h"
 #include "common/profiler_export.h"
 //#include "common/intrusive_ptr.h"
-//#include "memory/device.h"
+//#include "common/device.h"
 #include "common/array_ref.h"
 //#include "util/exception.h"
 
 #if 1
-namespace quarisma
+namespace profiler
 {
 // Stub for Storage - used in execution trace observer and tensor implementations
 struct Storage
@@ -71,24 +71,24 @@ struct TensorImpl
     size_t            storage_offset() const noexcept { return 0; }
     int64_t           numel() const noexcept { return 0; }
     size_t            itemsize() const noexcept { return 0; }
-    quarisma::Storage storage() const noexcept { return quarisma::Storage(); }
+    profiler::Storage storage() const noexcept { return profiler::Storage(); }
 };
 
 struct Tensor
 {
     // Basic tensor metadata accessors expected by the profiler. All return safe defaults.
     int scalar_type() const noexcept { return 0; }
-    int layout() const noexcept { return 0; /* quarisma::kStrided */ }
+    int layout() const noexcept { return 0; /* profiler::kStrided */ }
 
     // Dimensions and strides; empty by default.
-    quarisma::IntArrayRef sizes() const noexcept { return {}; }
-    quarisma::IntArrayRef strides() const noexcept { return {}; }
+    profiler::IntArrayRef sizes() const noexcept { return {}; }
+    profiler::IntArrayRef strides() const noexcept { return {}; }
 
     // Device information; default to CPU, index -1 (undefined).
-    quarisma::device_option device() const noexcept
+    profiler::device_option device() const noexcept
     {
-        quarisma::device_option d{};
-        d.type_  = quarisma::device_enum::CPU;
+        profiler::device_option d{};
+        d.type_  = profiler::device_enum::CPU;
         d.index_ = -1;
         return d;
     }
@@ -98,9 +98,9 @@ struct Tensor
     bool is_nested() const noexcept { return false; }
 
     // Unsafe access to underlying impl; nullptr in stub (guarded by defined()).
-    const quarisma::TensorImpl* unsafeGetTensorImpl() const noexcept { return nullptr; }
+    const profiler::TensorImpl* unsafeGetTensorImpl() const noexcept { return nullptr; }
 };
-}  // namespace quarisma
+}  // namespace profiler
 #else
 
 // A global boolean variable to control whether we free memory when a Tensor
@@ -118,7 +118,7 @@ struct Tensor
 // respect caffe2_keep_on_shrink.
 //PROFILER_DECLARE_int64(caffe2_max_keep_on_shrink_memory);
 
-namespace quarisma
+namespace profiler
 {
 class Tensor;
 class TensorBase;
@@ -137,7 +137,7 @@ inline std::vector<int64_t> ToVectorint64_t(const array_ref<int>& src)
 inline int64_t size_from_dim_(int k, IntArrayRef dims)
 {
     int64_t r = 1;
-    for (const auto i : quarisma::irange(k, dims.size()))
+    for (const auto i : profiler::irange(k, dims.size()))
     {
         r *= dims[i];
     }
@@ -149,7 +149,7 @@ inline int64_t size_to_dim_(int k, IntArrayRef dims)
 {
     // PROFILER_CHECK(k >= 0 && static_cast<size_t>(k) <= dims.size());
     int64_t r = 1;
-    for (const auto i : quarisma::irange(k))
+    for (const auto i : profiler::irange(k))
     {
         r *= dims[i];
     }
@@ -267,7 +267,7 @@ struct PROFILER_API AutogradMetaFactoryRegisterer
     {
         SetAutogradMetaFactory(factory);
     }  // namespace impl
-};  // namespace quarisma
+};  // namespace profiler
 
 }  // namespace impl
 
@@ -309,9 +309,9 @@ struct PROFILER_API BackendMeta : intrusive_ptr_target
 
 struct PROFILER_API ExtraMeta
 {
-    std::unique_ptr<quarisma::SymbolicShapeMeta>        symbolic_shape_meta_       = nullptr;
-    std::unique_ptr<quarisma::NamedTensorMetaInterface> named_tensor_meta_         = nullptr;
-    intrusive_ptr<quarisma::BackendMeta>                backend_meta_              = nullptr;
+    std::unique_ptr<profiler::SymbolicShapeMeta>        symbolic_shape_meta_       = nullptr;
+    std::unique_ptr<profiler::NamedTensorMetaInterface> named_tensor_meta_         = nullptr;
+    intrusive_ptr<profiler::BackendMeta>                backend_meta_              = nullptr;
     std::optional<std::string>                          custom_data_ptr_error_msg_ = std::nullopt;
     std::optional<std::string>                          custom_storage_error_msg_  = std::nullopt;
 
@@ -322,7 +322,7 @@ struct PROFILER_API ExtraMeta
         if (other.symbolic_shape_meta_)
         {
             symbolic_shape_meta_ =
-                std::make_unique<quarisma::SymbolicShapeMeta>(*other.symbolic_shape_meta_);
+                std::make_unique<profiler::SymbolicShapeMeta>(*other.symbolic_shape_meta_);
         }
         if (other.named_tensor_meta_)
         {
@@ -346,9 +346,9 @@ struct PROFILER_API ExtraMeta
     ExtraMeta& operator=(ExtraMeta&& other)      = delete;
 
     ExtraMeta(
-        std::unique_ptr<quarisma::SymbolicShapeMeta>        symbolic_shape_meta,
-        std::unique_ptr<quarisma::NamedTensorMetaInterface> named_tensor_meta,
-        intrusive_ptr<quarisma::BackendMeta>                backend_meta,
+        std::unique_ptr<profiler::SymbolicShapeMeta>        symbolic_shape_meta,
+        std::unique_ptr<profiler::NamedTensorMetaInterface> named_tensor_meta,
+        intrusive_ptr<profiler::BackendMeta>                backend_meta,
         std::optional<std::string> custom_data_ptr_error_msg       = std::nullopt,
         std::optional<std::string> custom_storage_access_error_msg = std::nullopt)
         : symbolic_shape_meta_(std::move(symbolic_shape_meta)),
@@ -411,7 +411,7 @@ private:
         VersionCounter(uint32_t version) : version_(version) {}
         std::atomic<uint32_t> version_;
     };
-    quarisma::intrusive_ptr<VersionCounter> version_counter_;
+    profiler::intrusive_ptr<VersionCounter> version_counter_;
 
 public:
     // Note [Disabled VariableVersion]
@@ -440,7 +440,7 @@ public:
     // leaves it in a persistently undefined state. See
     // https://cplusplus.github.io/LWG/issue2334.
     VariableVersion(uint32_t version)
-        : version_counter_(quarisma::make_intrusive<VersionCounter>(version))
+        : version_counter_(profiler::make_intrusive<VersionCounter>(version))
     {
     }
     VariableVersion(Disabled /*unused*/ = DISABLED) {}
@@ -624,7 +624,7 @@ struct PROFILER_API TensorImpl
     TensorImpl(
         DispatchKeySet /*key_set*/,
         const caffe2::TypeMeta                 data_type,
-        std::optional<quarisma::device_option> device_opt);
+        std::optional<profiler::device_option> device_opt);
 
     // Legacy constructors so I don't have to go update call sites.
     // TODO: When Variable is added, delete these constructors
@@ -635,7 +635,7 @@ struct PROFILER_API TensorImpl
     TensorImpl(
         DispatchKey                            dispatch_key,
         const caffe2::TypeMeta                 data_type,
-        std::optional<quarisma::device_option> device_opt)
+        std::optional<profiler::device_option> device_opt)
         : TensorImpl(DispatchKeySet(dispatch_key), data_type, device_opt)
     {
     }
@@ -649,7 +649,7 @@ private:
         Storage&& storage,
         DispatchKeySet /*key_set*/,
         const caffe2::TypeMeta data_type,
-        std::optional<quarisma::device_option> /*device_opt*/);
+        std::optional<profiler::device_option> /*device_opt*/);
 
 public:
     TensorImpl(const TensorImpl&)            = delete;
@@ -709,7 +709,7 @@ public:
             return sym_sizes_custom();
         }
         // Sizes guaranteed to be non-negative, so unchecked cast is OK
-        return quarisma::fromIntArrayRefKnownNonNegative(sizes_and_strides_.sizes_arrayref());
+        return profiler::fromIntArrayRefKnownNonNegative(sizes_and_strides_.sizes_arrayref());
     }
 
     IntArrayRef sizes_default() const
@@ -730,7 +730,7 @@ public:
         else
         {
             // Sizes guaranteed to be non-negative, so unchecked cast is OK
-            return quarisma::fromIntArrayRefKnownNonNegative(sizes_default());
+            return profiler::fromIntArrayRefKnownNonNegative(sizes_default());
         }
     }
 
@@ -738,8 +738,8 @@ public:
     array_ref<T> generic_sizes()
     {
         static_assert(
-            std::is_same_v<T, int64_t> || std::is_same_v<T, quarisma::SymInt>,
-            "Only supports int64_t and quarisma::SymInt.");
+            std::is_same_v<T, int64_t> || std::is_same_v<T, profiler::SymInt>,
+            "Only supports int64_t and profiler::SymInt.");
 
         if constexpr (std::is_same_v<T, int64_t>)
         {
@@ -755,8 +755,8 @@ public:
     array_ref<T> generic_strides()
     {
         static_assert(
-            std::is_same_v<T, int64_t> || std::is_same_v<T, quarisma::SymInt>,
-            "Only supports int64_t and quarisma::SymInt.");
+            std::is_same_v<T, int64_t> || std::is_same_v<T, profiler::SymInt>,
+            "Only supports int64_t and profiler::SymInt.");
 
         if constexpr (std::is_same_v<T, int64_t>)
         {
@@ -772,8 +772,8 @@ public:
     T generic_storage_offset()
     {
         static_assert(
-            std::is_same_v<T, int64_t> || std::is_same_v<T, quarisma::SymInt>,
-            "Only supports int64_t and quarisma::SymInt.");
+            std::is_same_v<T, int64_t> || std::is_same_v<T, profiler::SymInt>,
+            "Only supports int64_t and profiler::SymInt.");
 
         if constexpr (std::is_same_v<T, int64_t>)
         {
@@ -802,13 +802,13 @@ public:
         return numel_;
     }
 
-    quarisma::SymInt sym_numel() const
+    profiler::SymInt sym_numel() const
     {
         if PROFILER_UNLIKELY (matches_policy(SizesStridesPolicy::CustomSizes))
         {
             return sym_numel_custom();
         }
-        return quarisma::SymInt(SymInt::UNCHECKED, numel_);
+        return profiler::SymInt(SymInt::UNCHECKED, numel_);
     }
 
     int64_t numel_default() const
@@ -820,7 +820,7 @@ public:
         return numel_;
     }
 
-    quarisma::SymInt sym_numel_default() const
+    profiler::SymInt sym_numel_default() const
     {
         if (has_symbolic_sizes_strides_)
         {
@@ -828,7 +828,7 @@ public:
         }
         else
         {
-            return quarisma::SymInt(SymInt::UNCHECKED, numel_);
+            return profiler::SymInt(SymInt::UNCHECKED, numel_);
         }
     }
 
@@ -874,13 +874,13 @@ public:
         return storage_offset_;
     }
 
-    quarisma::SymInt sym_storage_offset() const
+    profiler::SymInt sym_storage_offset() const
     {
         if PROFILER_UNLIKELY (matches_policy(SizesStridesPolicy::CustomSizes))
         {
             return sym_storage_offset_custom();
         }
-        return quarisma::SymInt(SymInt::UNCHECKED, storage_offset_);
+        return profiler::SymInt(SymInt::UNCHECKED, storage_offset_);
     }
 
     int64_t storage_offset_default() const
@@ -892,7 +892,7 @@ public:
         return storage_offset_;
     }
 
-    quarisma::SymInt sym_storage_offset_default() const
+    profiler::SymInt sym_storage_offset_default() const
     {
         if (has_symbolic_sizes_strides_)
         {
@@ -900,7 +900,7 @@ public:
         }
         else
         {
-            return quarisma::SymInt(SymInt::UNCHECKED, storage_offset_);
+            return profiler::SymInt(SymInt::UNCHECKED, storage_offset_);
         }
     }
 
@@ -917,13 +917,13 @@ public:
         return sizes_and_strides_.strides_arrayref();
     }
 
-    quarisma::SymIntArrayRef sym_strides() const
+    profiler::SymIntArrayRef sym_strides() const
     {
         if PROFILER_UNLIKELY (matches_policy(SizesStridesPolicy::CustomStrides))
         {
             return sym_strides_custom();
         }
-        return quarisma::fromIntArrayRefKnownNonNegative(strides_default());
+        return profiler::fromIntArrayRefKnownNonNegative(strides_default());
     }
 
     IntArrayRef strides_default() const
@@ -935,7 +935,7 @@ public:
         return sizes_and_strides_.strides_arrayref();
     }
 
-    quarisma::SymIntArrayRef sym_strides_default() const
+    profiler::SymIntArrayRef sym_strides_default() const
     {
         if (has_symbolic_sizes_strides_)
         {
@@ -943,11 +943,11 @@ public:
         }
         else
         {
-            return quarisma::fromIntArrayRefKnownNonNegative(strides_default());
+            return profiler::fromIntArrayRefKnownNonNegative(strides_default());
         }
     }
 
-    quarisma::SymBool sym_is_contiguous(
+    profiler::SymBool sym_is_contiguous(
         at::MemoryFormat memory_format = at::MemoryFormat::Contiguous) const
     {
         if PROFILER_UNLIKELY (matches_policy(SizesStridesPolicy::CustomStrides))
@@ -991,9 +991,9 @@ public:
         return is_contiguous_default_impl<bool>(memory_format);
     }
 
-    quarisma::SymBool sym_is_contiguous_default(at::MemoryFormat memory_format) const
+    profiler::SymBool sym_is_contiguous_default(at::MemoryFormat memory_format) const
     {
-        return is_contiguous_default_impl<quarisma::SymBool>(memory_format);
+        return is_contiguous_default_impl<profiler::SymBool>(memory_format);
     }
 
     /**
@@ -1087,7 +1087,7 @@ public:
         return sizes_and_strides_.size_at_unchecked(d);
     }
 
-    quarisma::SymInt sym_size(int64_t d) const
+    profiler::SymInt sym_size(int64_t d) const
     {
         if PROFILER_UNLIKELY (matches_policy(SizesStridesPolicy::CustomSizes))
         {
@@ -1168,14 +1168,14 @@ protected:
 
     virtual bool is_strides_like_custom(at::MemoryFormat memory_format) const;
 
-    virtual quarisma::SymBool sym_is_non_overlapping_and_dense_custom() const;
+    virtual profiler::SymBool sym_is_non_overlapping_and_dense_custom() const;
 
     bool is_non_overlapping_and_dense_custom() const
     {
         return sym_is_non_overlapping_and_dense_custom().guard_bool(__FILE__, __LINE__);
     }
 
-    virtual quarisma::SymBool sym_is_contiguous_custom(at::MemoryFormat memory_format) const;
+    virtual profiler::SymBool sym_is_contiguous_custom(at::MemoryFormat memory_format) const;
 
     bool is_contiguous_custom(at::MemoryFormat memory_format) const
     {
@@ -1194,7 +1194,7 @@ protected:
         return sizes_custom()[d];  // unchecked (maybe_wrap_dim enforces bounds)
     }
 
-    virtual quarisma::SymInt sym_size_custom(int64_t d) const
+    virtual profiler::SymInt sym_size_custom(int64_t d) const
     {
         // TODO: We could add support to Python dispatch here.
         // TODO: We could call into aten::size.int instead of
@@ -1211,10 +1211,10 @@ protected:
     virtual device_option device_custom() const;
     virtual Layout        layout_custom() const;
 
-    virtual quarisma::SymIntArrayRef sym_sizes_custom() const;
-    virtual quarisma::SymIntArrayRef sym_strides_custom() const;
-    virtual quarisma::SymInt         sym_numel_custom() const;
-    virtual quarisma::SymInt         sym_storage_offset_custom() const;
+    virtual profiler::SymIntArrayRef sym_sizes_custom() const;
+    virtual profiler::SymIntArrayRef sym_strides_custom() const;
+    virtual profiler::SymInt         sym_numel_custom() const;
+    virtual profiler::SymInt         sym_storage_offset_custom() const;
 
 public:
 /**
@@ -1280,14 +1280,14 @@ public:
     {
         // NB: This method is not virtual and avoid dispatches for performance
         // reasons.
-        return key_set_.has_all(quarisma::sparse_ks);
+        return key_set_.has_all(profiler::sparse_ks);
     }
 
     // Whether a tensor is sparse CSR or not.
     bool is_sparse_csr() const { return layout() == kSparseCsr; }
 
     // Whether a tensor is sparse CSR/CSC/BSR/BSC or not.
-    bool is_sparse_compressed() const { return key_set_.has_all(quarisma::sparse_csr_ks); }
+    bool is_sparse_compressed() const { return key_set_.has_all(profiler::sparse_csr_ks); }
 
     bool is_quantized() const
     {
@@ -1422,7 +1422,7 @@ public:
         return device_opt_.has_value() && device_opt_->type() == kPrivateUse1;
     }
 
-    bool is_mkldnn() const { return key_set_.has_all(quarisma::mkldnn_ks); }
+    bool is_mkldnn() const { return key_set_.has_all(profiler::mkldnn_ks); }
 
     bool is_vulkan() const
     {
@@ -1466,7 +1466,7 @@ public:
     // keys
     //       in TensorImpl constructor.
     // DON'T USE THIS API!! It's only created for testing purpose in
-    // file aten/src/Quarisma/core/boxing/impl/test_helpers.h
+    // file aten/src/Profiler/core/boxing/impl/test_helpers.h
     void remove_autograd_key() { key_set_ = key_set_ - autograd_dispatch_keyset; }
 
     // Inference tensor doesn't have autograd or ADInplaceOrView key.
@@ -1474,8 +1474,8 @@ public:
     //   Inference tensor has version_counter_.enabled() == false
     bool is_inference()
     {
-        bool no_ADInplaceOrView = !key_set_.has_any(quarisma::inplace_or_view_ks);
-        bool no_Autograd        = !key_set_.has_any(quarisma::autograd_dispatch_keyset);
+        bool no_ADInplaceOrView = !key_set_.has_any(profiler::inplace_or_view_ks);
+        bool no_Autograd        = !key_set_.has_any(profiler::autograd_dispatch_keyset);
         TORCH_INTERNAL_ASSERT_DEBUG_ONLY(
             no_ADInplaceOrView == no_Autograd,
             "ADInplaceOrView and Autograd keys must be on/off at the same time.");
@@ -1501,7 +1501,7 @@ public:
     }
 
 protected:
-    quarisma::device_option device_default() const
+    profiler::device_option device_default() const
     {
         // PROFILER_CHECK(device_opt_.has_value(), "tensor does not have a device");
         // See NOTE [std::optional operator usage in CUDA]
@@ -1522,7 +1522,7 @@ public:
         // This keyset must also be kept in sync with the logic in
         // is_sparse() / is_sparse_csr() / is_mkldnn()
         constexpr auto sparse_and_sparsecsr_and_mkldnn_ks =
-            quarisma::sparse_ks | quarisma::sparse_csr_ks | quarisma::mkldnn_ks;
+            profiler::sparse_ks | profiler::sparse_csr_ks | profiler::mkldnn_ks;
         if (!key_set_.has_any(sparse_and_sparsecsr_and_mkldnn_ks))
         {
             return kStrided;
@@ -1669,7 +1669,7 @@ public:
    * Update the backend component related keys to the backend component
    * corresponding to this device.
    */
-    void _change_backend_component_keys(quarisma::device_option device);
+    void _change_backend_component_keys(profiler::device_option device);
 
     /**
    * Whether or not the tensor is a zerotensor
@@ -1951,12 +1951,12 @@ public:
         return data_type_.itemsize();
     }
 
-    void set_backend_meta(intrusive_ptr<quarisma::BackendMeta> backend_meta)
+    void set_backend_meta(intrusive_ptr<profiler::BackendMeta> backend_meta)
     {
         get_extra_meta().backend_meta_ = std::move(backend_meta);
     }
 
-    quarisma::BackendMeta* get_backend_meta()
+    profiler::BackendMeta* get_backend_meta()
     {
         if (!extra_meta_)
         {
@@ -1965,7 +1965,7 @@ public:
         return extra_meta_->backend_meta_.get();
     }
 
-    intrusive_ptr<quarisma::BackendMeta> get_backend_meta_intrusive_ptr() const
+    intrusive_ptr<profiler::BackendMeta> get_backend_meta_intrusive_ptr() const
     {
         if (!extra_meta_)
         {
@@ -2002,13 +2002,13 @@ private:
         return *extra_meta_;
     }
 
-    quarisma::SymbolicShapeMeta& symbolic_shape_meta()
+    profiler::SymbolicShapeMeta& symbolic_shape_meta()
     {
         // PROFILER_CHECK_DEBUG(extra_meta_ && extra_meta_->symbolic_shape_meta_);
         return *extra_meta_->symbolic_shape_meta_;
     }
 
-    const quarisma::SymbolicShapeMeta& symbolic_shape_meta() const
+    const profiler::SymbolicShapeMeta& symbolic_shape_meta() const
     {
         // PROFILER_CHECK_DEBUG(extra_meta_ && extra_meta_->symbolic_shape_meta_);
         return *extra_meta_->symbolic_shape_meta_;
@@ -2023,12 +2023,12 @@ public:
     // if we are going to use sym sizes, we should be setting sym strides at the
     // same time, otherwise it's very easy to misuse this API
     void set_sizes_and_strides(
-        quarisma::SymIntArrayRef        sizes,
-        quarisma::SymIntArrayRef        strides,
-        std::optional<quarisma::SymInt> storage_offset = std::nullopt);
+        profiler::SymIntArrayRef        sizes,
+        profiler::SymIntArrayRef        strides,
+        std::optional<profiler::SymInt> storage_offset = std::nullopt);
     // This is renamed to avoid breaking overload BC
-    void generic_set_sizes_contiguous(quarisma::SymIntArrayRef sizes);
-    void generic_set_sizes_contiguous(quarisma::IntArrayRef sizes) { set_sizes_contiguous(sizes); }
+    void generic_set_sizes_contiguous(profiler::SymIntArrayRef sizes);
+    void generic_set_sizes_contiguous(profiler::IntArrayRef sizes) { set_sizes_contiguous(sizes); }
 
     /**
    * Change the size at some dimension.  This DOES NOT update strides;
@@ -2167,7 +2167,7 @@ public:
                     else
                     {
                         // Keep stride monotonically increasing to match NumPy.
-                        overflowed |= quarisma::mul_overflows(
+                        overflowed |= profiler::mul_overflows(
                             sizes_and_strides_.stride_at_unchecked(dim + 1),
                             std::max<int64_t>(sizes_and_strides_.size_at_unchecked(dim + 1), 1),
                             std::addressof(sizes_and_strides_.stride_at_unchecked(dim)));
@@ -2209,19 +2209,19 @@ public:
     /**
    * Set the pointer to autograd metadata.
    */
-    void set_autograd_meta(std::unique_ptr<quarisma::AutogradMetaInterface> autograd_meta);
+    void set_autograd_meta(std::unique_ptr<profiler::AutogradMetaInterface> autograd_meta);
 
     /**
    * Return the pointer to autograd metadata.  May return nullptr if the
    * tensor does not track gradients.
    */
-    quarisma::AutogradMetaInterface* autograd_meta() const;
+    profiler::AutogradMetaInterface* autograd_meta() const;
 
     /**
    * Set the pointer to named tensor metadata.
    */
     void set_named_tensor_meta(
-        std::unique_ptr<quarisma::NamedTensorMetaInterface> named_tensor_meta)
+        std::unique_ptr<profiler::NamedTensorMetaInterface> named_tensor_meta)
     {
         TORCH_WARN_ONCE(
             "Named tensors and all their associated APIs are an experimental feature ",
@@ -2252,20 +2252,20 @@ public:
     {
         if (k)
         {
-            key_set_ = key_set_.add(quarisma::python_ks);
+            key_set_ = key_set_.add(profiler::python_ks);
         }
         else
         {
-            key_set_ = key_set_ - quarisma::python_ks;
+            key_set_ = key_set_ - profiler::python_ks;
         }
     }
 
-    bool is_python_dispatch() const { return key_set_.has_all(quarisma::python_ks); }
+    bool is_python_dispatch() const { return key_set_.has_all(profiler::python_ks); }
 
     /**
    * Return the pointer to named tensor metadata.
    */
-    const quarisma::NamedTensorMetaInterface* named_tensor_meta() const
+    const profiler::NamedTensorMetaInterface* named_tensor_meta() const
     {
         if (!extra_meta_)
         {
@@ -2274,7 +2274,7 @@ public:
         return extra_meta_->named_tensor_meta_.get();
     }
 
-    quarisma::NamedTensorMetaInterface* named_tensor_meta()
+    profiler::NamedTensorMetaInterface* named_tensor_meta()
     {
         if (!extra_meta_)
         {
@@ -2376,7 +2376,7 @@ public:
 
 private:
     template <typename VariableVersion>
-    quarisma::intrusive_ptr<TensorImpl> shallow_copy_and_detach_core(
+    profiler::intrusive_ptr<TensorImpl> shallow_copy_and_detach_core(
         VariableVersion&& version_counter, bool allow_tensor_metadata_change) const;
 
 public:
@@ -2386,8 +2386,8 @@ public:
    * For usage of `version_counter` and `allow_tensor_metadata_change`,
    * see NOTE [ TensorImpl Shallow-Copying ].
    */
-    virtual quarisma::intrusive_ptr<TensorImpl> shallow_copy_and_detach(
-        const quarisma::VariableVersion& version_counter, bool allow_tensor_metadata_change) const;
+    virtual profiler::intrusive_ptr<TensorImpl> shallow_copy_and_detach(
+        const profiler::VariableVersion& version_counter, bool allow_tensor_metadata_change) const;
 
     /**
    * Return a TensorImpl that is a shallow-copy of this TensorImpl.
@@ -2395,8 +2395,8 @@ public:
    * For usage of `version_counter` and `allow_tensor_metadata_change`,
    * see NOTE [ TensorImpl Shallow-Copying ].
    */
-    virtual quarisma::intrusive_ptr<TensorImpl> shallow_copy_and_detach(
-        quarisma::VariableVersion&& version_counter, bool allow_tensor_metadata_change) const;
+    virtual profiler::intrusive_ptr<TensorImpl> shallow_copy_and_detach(
+        profiler::VariableVersion&& version_counter, bool allow_tensor_metadata_change) const;
 
     /**
    * Shallow-copies data from another TensorImpl into this TensorImpl.
@@ -2404,7 +2404,7 @@ public:
    * For why this function doesn't check this TensorImpl's
    * `allow_tensor_metadata_change_`, see NOTE [ TensorImpl Shallow-Copying ].
    */
-    virtual void shallow_copy_from(const quarisma::intrusive_ptr<TensorImpl>& impl)
+    virtual void shallow_copy_from(const profiler::intrusive_ptr<TensorImpl>& impl)
     {
         copy_tensor_metadata(
             /*src_impl=*/impl.get(),
@@ -2415,7 +2415,7 @@ public:
 
     // Inference tensor doesn't have version counter,
     // set_version_counter is no-op for them.
-    void set_version_counter(const quarisma::VariableVersion& version_counter)
+    void set_version_counter(const profiler::VariableVersion& version_counter)
     {
         // PROFILER_CHECK(
         // !(is_inference() && version_counter.enabled()),
@@ -2423,7 +2423,7 @@ public:
         version_counter_ = version_counter;
     }
 
-    void set_version_counter(quarisma::VariableVersion&& version_counter)
+    void set_version_counter(profiler::VariableVersion&& version_counter)
     {
         // PROFILER_CHECK(
         // !(is_inference() && version_counter.enabled()),
@@ -2431,7 +2431,7 @@ public:
         version_counter_ = std::move(version_counter);
     }
 
-    const quarisma::VariableVersion& version_counter() const noexcept { return version_counter_; }
+    const profiler::VariableVersion& version_counter() const noexcept { return version_counter_; }
 
     void bump_version() { version_counter_.bump(); }
 
@@ -2443,7 +2443,7 @@ private:
     // See NOTE [std::optional operator usage in CUDA]
     // We probably don't want to expose this publicly until
     // the note is addressed.
-    std::optional<quarisma::device_option> device_opt() const { return device_opt_; }
+    std::optional<profiler::device_option> device_opt() const { return device_opt_; }
 
 public:
     /**
@@ -2700,7 +2700,7 @@ public:
                 sizes_and_strides_.stride_at_unchecked(last_idx) = 1;
                 for (auto i = last_idx - 1; i >= 0; --i)
                 {
-                    overflowed |= quarisma::mul_overflows(
+                    overflowed |= profiler::mul_overflows(
                         sizes_and_strides_.stride_at_unchecked(i + 1),
                         std::max<int64_t>(sizes_and_strides_.size_at_unchecked(i + 1), 1),
                         std::addressof(sizes_and_strides_.stride_at_unchecked(i)));
@@ -2801,7 +2801,7 @@ private:
         auto old_numel = numel_;
         sizes_and_strides_.resize(src.size());
         int64_t new_numel = 1;
-        for (const auto i : quarisma::irange(src.size()))
+        for (const auto i : profiler::irange(src.size()))
         {
             new_numel *= src[i];
             sizes_and_strides_.size_at_unchecked(i) = src[i];
@@ -2846,7 +2846,7 @@ private:
         // Use overflow checks if supported by the compiler
         return safe_compute_numel();
 #else
-        return quarisma::multiply_integers(sizes_and_strides_.sizes_arrayref());
+        return profiler::multiply_integers(sizes_and_strides_.sizes_arrayref());
 #endif
     }
 
@@ -2859,7 +2859,7 @@ private:
     {
         TORCH_INTERNAL_ASSERT_DEBUG_ONLY(!has_symbolic_sizes_strides_);
         uint64_t n         = 1;
-        bool     overflows = quarisma::safe_multiplies_u64(sizes_and_strides_.sizes_arrayref(), &n);
+        bool     overflows = profiler::safe_multiplies_u64(sizes_and_strides_.sizes_arrayref(), &n);
         constexpr auto numel_max = std::min(
             static_cast<uint64_t>(std::numeric_limits<int64_t>::max()),
             static_cast<uint64_t>(std::numeric_limits<size_t>::max()));
@@ -3053,7 +3053,7 @@ protected:
     static void copy_tensor_metadata(
         const TensorImpl*                src_impl,
         TensorImpl*                      dest_impl,
-        const quarisma::VariableVersion& version_counter,
+        const profiler::VariableVersion& version_counter,
         bool                             allow_tensor_metadata_change);
 
     /**
@@ -3066,7 +3066,7 @@ protected:
     static void copy_tensor_metadata(
         const TensorImpl*           src_impl,
         TensorImpl*                 dest_impl,
-        quarisma::VariableVersion&& version_counter,
+        profiler::VariableVersion&& version_counter,
         bool                        allow_tensor_metadata_change);
 
 private:
@@ -3166,16 +3166,16 @@ private:
     //    2. autograd_meta_ is default constructed (semantically, same as (1))
     //    3. autograd_meta_ has nontrivial information content
     //
-    std::unique_ptr<quarisma::AutogradMetaInterface> autograd_meta_ = nullptr;
+    std::unique_ptr<profiler::AutogradMetaInterface> autograd_meta_ = nullptr;
 
 protected:
-    std::unique_ptr<quarisma::ExtraMeta> extra_meta_ = nullptr;
+    std::unique_ptr<profiler::ExtraMeta> extra_meta_ = nullptr;
 
-    quarisma::VariableVersion version_counter_;
+    profiler::VariableVersion version_counter_;
 
     impl::PyObjectSlot pyobj_slot_;
 
-    quarisma::impl::SizesAndStrides sizes_and_strides_;
+    profiler::impl::SizesAndStrides sizes_and_strides_;
 
     int64_t storage_offset_ = 0;
     // If sizes and strides are empty, the numel is 1!!  However, most of the
@@ -3200,7 +3200,7 @@ protected:
     //
     // INVARIANT: device_opt_ is only nullopt for undefined tensors
     // (which do not have a device.)
-    std::optional<quarisma::device_option> device_opt_;
+    std::optional<profiler::device_option> device_opt_;
 
     // default member initializers for bit-fields only available with -std=c++2a
     // or -std=gnu++2a
@@ -3567,5 +3567,5 @@ static_assert(
 #undef PROFILER_GCC_VERSION
 #undef PROFILER_GCC_VERSION_MINOR
 
-}  // namespace quarisma
+}  // namespace profiler
 #endif

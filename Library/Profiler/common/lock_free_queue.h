@@ -42,11 +42,11 @@ limitations under the License.
 #include <utility>
 
 #include "common/profiler_macros.h"
-//#include "logging/logger.h"
+//#include "logger.h"
 //#include "util/exception.h"
 #include "common/no_init.h"
 
-namespace quarisma
+namespace profiler
 {
 namespace QueueBaseInternal
 {
@@ -377,4 +377,4 @@ public:
     }
 };
 
-}  // namespace quarisma
+}  // namespace profiler

@@ -12,7 +12,7 @@ foreach(_test_source IN ITEMS ${test_sources})
   get_filename_component(file_name "${_test_source}" NAME)
 
   # When TBB is disabled, exclude TBB-specific parallel tests
-  if(NOT QUARISMA_ENABLE_TBB)
+  if(NOT PARALLEL_ENABLE_TBB)
     if(file_name MATCHES "TestTbb" OR file_name MATCHES "TestTBB")
       message(STATUS "Excluding TBB parallel test (TBB disabled): ${file_name}")
       continue()
@@ -20,7 +20,7 @@ foreach(_test_source IN ITEMS ${test_sources})
   endif()
 
   # When OpenMP is disabled, exclude OpenMP-specific parallel tests
-  if(NOT QUARISMA_ENABLE_OPENMP)
+  if(NOT PARALLEL_ENABLE_OPENMP)
     if(file_name MATCHES "TestOpenMP" OR file_name MATCHES "TestOmp")
       message(STATUS "Excluding OpenMP parallel test (OpenMP disabled): ${file_name}")
       continue()
@@ -47,7 +47,13 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   )
 endif()
 
-target_link_libraries(ParallelCxxTests PRIVATE Quarisma::gtest Quarisma::gtest_main Quarisma::Parallel)
+target_link_libraries(ParallelCxxTests PRIVATE Parallel::gtest Parallel::gtest_main Parallel::Parallel)
+if(EXISTS "${CMAKE_SOURCE_DIR}/ThirdParty/loguru")
+  target_include_directories(ParallelCxxTests PRIVATE "${CMAKE_SOURCE_DIR}/ThirdParty/loguru")
+endif()
+if(TARGET Logging::loguru)
+  target_link_libraries(ParallelCxxTests PRIVATE Logging::loguru)
+endif()
 
 set_target_properties(
   ParallelCxxTests PROPERTIES FOLDER "Tests" VS_DEBUGGER_WORKING_DIRECTORY
@@ -60,14 +66,14 @@ add_test(NAME ParallelCxxTests COMMAND ParallelCxxTests
 
 set_tests_properties(ParallelCxxTests PROPERTIES TIMEOUT 120 LABELS "Parallel;Unit")
 
-if(QUARISMA_ENABLE_COVERAGE AND DEFINED QUARISMA_LLVM_PROFILE_FILE)
+if(PARALLEL_ENABLE_COVERAGE AND DEFINED PARALLEL_LLVM_PROFILE_FILE)
   set_tests_properties(
-    ParallelCxxTests PROPERTIES ENVIRONMENT "LLVM_PROFILE_FILE=${QUARISMA_LLVM_PROFILE_FILE}"
+    ParallelCxxTests PROPERTIES ENVIRONMENT "LLVM_PROFILE_FILE=${PARALLEL_LLVM_PROFILE_FILE}"
   )
 endif()
 
-if(COMMAND quarisma_set_target_output_directories)
-  quarisma_set_target_output_directories(ParallelCxxTests)
+if(COMMAND parallel_set_target_output_directories)
+  parallel_set_target_output_directories(ParallelCxxTests)
 endif()
 
 message(STATUS "✓ ParallelCxxTests registered with CTest")
@@ -76,7 +82,7 @@ message(STATUS "  - Working directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 # =============================================================================
 # Individual Benchmark Executables
 # =============================================================================
-if(QUARISMA_ENABLE_BENCHMARK)
+if(PARALLEL_ENABLE_BENCHMARK)
 
   file(GLOB_RECURSE bench_sources LIST_DIRECTORIES false
        "${CMAKE_CURRENT_SOURCE_DIR}/Benchmark*.cpp"
@@ -92,15 +98,15 @@ if(QUARISMA_ENABLE_BENCHMARK)
     add_executable(${target_name} "${_bench_source}")
 
     target_link_libraries(
-      ${target_name} PRIVATE Quarisma::benchmark Quarisma::benchmark_main Quarisma::Parallel
+      ${target_name} PRIVATE Parallel::benchmark Parallel::benchmark_main Parallel::Parallel
     )
 
     set_target_properties(
       ${target_name} PROPERTIES FOLDER "Benchmarks" OUTPUT_NAME "${target_name}"
     )
 
-    if(COMMAND quarisma_set_target_output_directories)
-      quarisma_set_target_output_directories(${target_name})
+    if(COMMAND parallel_set_target_output_directories)
+      parallel_set_target_output_directories(${target_name})
     else()
       set_target_properties(
         ${target_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"

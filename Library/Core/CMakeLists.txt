@@ -1,11 +1,7 @@
-# Core module CMakeLists.txt
+# Core module: utilities, shared ownership, compression — Memory and Logging are //Library/Memory and
+# //Library/Logging (CMake + Bazel), same pattern as Parallel.
 cmake_minimum_required(VERSION 3.16)
 
-# Note: Threading configuration is now handled centrally by Cmake/tools/threads.cmake The variables
-# QUARISMA_USE_PTHREADS, QUARISMA_USE_WIN32_THREADS, and QUARISMA_MAX_THREADS are set by the
-# threads.cmake module and available here for configure_file()
-
-# Configure header files
 set(quarisma_headers)
 set(quarisma_sources)
 set(quarisma_templates)
@@ -15,8 +11,6 @@ file(
   LIST_DIRECTORIES false
   "${CMAKE_CURRENT_SOURCE_DIR}/util/*.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/common/*.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/logging/*.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/memory/*.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/c17/*.h"
   ${quarisma_headers}
 )
@@ -26,8 +20,6 @@ file(
   LIST_DIRECTORIES false
   "${CMAKE_CURRENT_SOURCE_DIR}/common/*.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/util/*.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/logging/*.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/memory/*.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/c17/*.h"
   ${quarisma_sources}
 )
@@ -36,43 +28,20 @@ file(
   GLOB_RECURSE templates
   LIST_DIRECTORIES false
   "${CMAKE_CURRENT_SOURCE_DIR}/util/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/common/*.hxx"
-  "${CMAKE_CURRENT_SOURCE_DIR}/logging/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/memory/*.hxx"
   ${quarisma_templates}
 )
-# Remove GPU files if neither CUDA nor HIP is enabled
-if(NOT QUARISMA_ENABLE_CUDA OR QUARISMA_ENABLE_HIP)
-  file(GLOB_RECURSE GPU_SOURCE_FILES memory/gpu/*.cpp)
-  file(GLOB_RECURSE GPU_HEADER_FILES memory/gpu/*.h memory/gpu/*.hxx)
-  list(REMOVE_ITEM headers ${GPU_HEADER_FILES})
-  list(REMOVE_ITEM sources ${GPU_SOURCE_FILES})
-  list(REMOVE_ITEM sources "${CMAKE_CURRENT_SOURCE_DIR}/memory/cpu/allocator_device.cpp")
-  list(REMOVE_ITEM headers "${CMAKE_CURRENT_SOURCE_DIR}/memory/cpu/allocator_device.h")
-endif()
 
-if(QUARISMA_ENABLE_COMPRESSION)
-  if(QUARISMA_COMPRESSION_TYPE STREQUAL "SNAPPY")
+if(CORE_ENABLE_COMPRESSION)
+  if(CORE_COMPRESSION_TYPE STREQUAL "SNAPPY")
     list(APPEND headers "${CMAKE_CURRENT_SOURCE_DIR}/compression/snappy.h")
     list(APPEND sources "${CMAKE_CURRENT_SOURCE_DIR}/compression/snappy.cpp")
   endif()
 endif()
 
-# Remove logging.cpp and logging.h for NATIVE backend (uses simplified implementation in logger.cpp)
-if(QUARISMA_USE_NATIVE_LOGGING)
-  list(REMOVE_ITEM sources "${CMAKE_CURRENT_SOURCE_DIR}/logging/logging.cpp")
-  list(REMOVE_ITEM headers "${CMAKE_CURRENT_SOURCE_DIR}/logging/logging.h")
-  message(
-    STATUS
-      "NATIVE logging backend: Excluding logging.cpp and logging.h (using simplified fmt-based implementation)"
-  )
-endif()
-
-# Create the Core library Respect BUILD_SHARED_LIBS setting for library type
 add_library(Core ${sources} ${headers} ${templates})
 
-# Set appropriate compile definitions based on library type
 if(BUILD_SHARED_LIBS)
   target_compile_definitions(Core PUBLIC QUARISMA_SHARED_DEFINE PRIVATE QUARISMA_BUILDING_DLL)
-  # Set output directories using Quarisma's standardized approach
   if(COMMAND quarisma_set_target_output_directories)
     quarisma_set_target_output_directories(Core)
   endif()
@@ -80,47 +49,34 @@ else()
   target_compile_definitions(Core PUBLIC QUARISMA_STATIC_DEFINE)
 endif()
 
-# Create alias for consistent naming
 add_library(Quarisma::Core ALIAS Core)
+add_library(Core::Core ALIAS Core)
 
-# Enable Link Time Optimization (LTO) for Core library if enabled LTO is disabled for third-party
-# libraries via FILTER_FLAGS to avoid conflicts
-if(QUARISMA_ENABLE_LTO)
+if(CORE_ENABLE_LTO)
   set_target_properties(Core PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
   message(STATUS "Core library: Link Time Optimization (LTO) enabled")
 else()
   message(STATUS "Core library: Link Time Optimization (LTO) disabled")
 endif()
 
-# Apply IWYU to the Core target (if available)
 if(COMMAND quarisma_apply_iwyu)
   quarisma_apply_iwyu(Core)
 endif()
 
-# Configure Visual Studio source groups to preserve directory structure This ensures the Solution
-# Explorer shows the actual filesystem hierarchy
 quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 
 message(STATUS "Compiler: ${CMAKE_CXX_COMPILER}")
-message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}, std++=${QUARISMA_CXX_STANDARD}")
+message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}, std++=${PROJECT_CXX_STANDARD}")
 
-# Set target properties
 set_target_properties(
-  Core PROPERTIES CXX_STANDARD ${QUARISMA_CXX_STANDARD} CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF
+  Core PROPERTIES CXX_STANDARD ${PROJECT_CXX_STANDARD} CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF
 )
 
 if(MSVC)
   target_compile_options(Core PRIVATE /WX)
 else()
-  # Force include cstdlib to ensure malloc/free are visible when using fmt library
   target_compile_options(Core PRIVATE -include cstdlib)
 endif()
-
-# ============================================================================= Include Directories
-# =============================================================================
-# Core library include directories are split into: 1. Core's own directories (PUBLIC for external
-# consumers) 2. Centralized third-party include directories (PUBLIC to propagate to dependent
-# targets like tests)
 
 target_include_directories(
   Core
@@ -132,83 +88,48 @@ target_include_directories(
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-# Generate per-project test header from template
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/Testing/CoreTest.h.in"
   "${CMAKE_CURRENT_BINARY_DIR}/Testing/CoreTest.h"
   @ONLY
 )
 
-# Add centralized third-party include directories as PUBLIC so they propagate to dependent targets
-# (e.g., test executables that link to Quarisma::Core)
-if(QUARISMA_DEPENDENCY_INCLUDE_DIRS)
-  target_include_directories(Core PUBLIC ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})
-  message(STATUS "Core library include directories: ${QUARISMA_DEPENDENCY_INCLUDE_DIRS}")
+if(CORE_DEPENDENCY_INCLUDE_DIRS)
+  target_include_directories(Core PUBLIC ${CORE_DEPENDENCY_INCLUDE_DIRS})
+  message(STATUS "Core library include directories: ${CORE_DEPENDENCY_INCLUDE_DIRS}")
 endif()
 
-# When the native profiler backend is active, Core source files include Profiler
-# headers (e.g. native/tracing/traceme.h).  Add Library/Profiler as a PRIVATE
-# include so the build can resolve those headers even though Profiler is
-# configured after Core in the top-level CMakeLists.txt.
-if(QUARISMA_HAS_NATIVE_PROFILER OR PROFILER_ENABLE_NATIVE_PROFILER)
-  target_include_directories(Core PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Library/Profiler>)
-endif()
+target_link_libraries(
+  Core
+  PUBLIC Core::build
+         Logging::Logging
+         Memory::Memory
+)
 
-# Link with build interface target
-target_link_libraries(Core PUBLIC Quarisma::build)
 if(COMMAND quarisma_target_clang_tidy)
   quarisma_target_clang_tidy(Core)
   set_source_files_properties(PROPERTIES SKIP_LINTING ON)
 endif()
 
-# ============================================================================= Link with
-# Centralized Dependencies
-# =============================================================================
-# All third-party and system library dependencies are now managed centrally via
-# QUARISMA_DEPENDENCY_LIBS, which is populated by Cmake/tools/dependencies.cmake based on enabled
-# feature flags. This ensures consistent linking across all targets.
-#
-# Dependencies are linked as PUBLIC so they propagate to dependent targets (e.g., test executables)
-# that link to Quarisma::Core. This is necessary because Core's public headers include headers from
-# these dependencies (e.g., fmt/format.h in logger.h), so consumers of Core must also link with
-# them.
-
-# Link with centralized dependency list
-if(QUARISMA_DEPENDENCY_LIBS)
-  target_link_libraries(Core PUBLIC ${QUARISMA_DEPENDENCY_LIBS})
-  message(STATUS "Core library linked with centralized dependencies: ${QUARISMA_DEPENDENCY_LIBS}")
+# Core-local dependency list (e.g. fmt/cpuinfo for util).
+if(CORE_DEPENDENCY_LIBS)
+  target_link_libraries(Core PUBLIC ${CORE_DEPENDENCY_LIBS})
+  message(STATUS "Core library linked with dependencies: ${CORE_DEPENDENCY_LIBS}")
 endif()
 
-if(QUARISMA_ENABLE_ENZYME)
-  target_link_libraries(Core PRIVATE Quarisma::enzyme)
+if(CORE_ENABLE_ENZYME)
+  target_link_libraries(Core PRIVATE Core::enzyme)
 endif()
 
-# dbghelp is needed for back_trace.cpp on Windows; #pragma comment(lib) is MSVC-only.
-# MinGW requires the -l prefix; MSVC resolves .lib names without it.
-if(WIN32 AND NOT MSVC)
-  target_link_libraries(Core PRIVATE -ldbghelp)
+if(CORE_DEPENDENCY_COMPILE_DEFINITIONS)
+  target_compile_definitions(Core PUBLIC ${CORE_DEPENDENCY_COMPILE_DEFINITIONS})
+  message(STATUS "Core library compile definitions: ${CORE_DEPENDENCY_COMPILE_DEFINITIONS}")
 endif()
 
-# ============================================================================= Compile Definitions
-# for Optional Features
-# =============================================================================
-# Feature-related compile definitions are now centrally managed via
-# QUARISMA_DEPENDENCY_COMPILE_DEFINITIONS, which is populated by Cmake/tools/dependencies.cmake
-# based on enabled feature flags. These definitions are PUBLIC to propagate to dependent targets,
-# ensuring feature macros are available in test files and other dependent code.
-
-# Apply centralized compile definitions
-if(QUARISMA_DEPENDENCY_COMPILE_DEFINITIONS)
-  target_compile_definitions(Core PUBLIC ${QUARISMA_DEPENDENCY_COMPILE_DEFINITIONS})
-  message(STATUS "Core library compile definitions: ${QUARISMA_DEPENDENCY_COMPILE_DEFINITIONS}")
+if(MEMORY_ENABLE_MIMALLOC AND TARGET Memory::mimalloc)
+  add_dependencies(Core Memory::mimalloc)
 endif()
 
-# Handle Mimalloc dependency tracking
-if(QUARISMA_ENABLE_MIMALLOC AND TARGET Quarisma::mimalloc)
-  add_dependencies(Core Quarisma::mimalloc)
-endif()
-# Install targets
 install(
   TARGETS Core
   EXPORT QuarismaTargets
@@ -219,10 +140,8 @@ install(
   DESTINATION include
 )
 
-# Install headers
 install(FILES ${headers} DESTINATION include/Quarisma/Core COMPONENT Development)
 
-# Install configured headers
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/quarisma_version_macros.h"
               "${CMAKE_CURRENT_BINARY_DIR}/quarisma_threads.h"
               "${CMAKE_CURRENT_BINARY_DIR}/Testing/CoreTest.h"
@@ -230,7 +149,6 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/quarisma_version_macros.h"
         COMPONENT Development
 )
 
-# Configure testing
-if(QUARISMA_BUILD_TESTING STREQUAL "ON" OR QUARISMA_BUILD_TESTING STREQUAL "WANT")
+if(BUILD_TESTING)
   add_subdirectory(Testing/Cxx)
 endif()

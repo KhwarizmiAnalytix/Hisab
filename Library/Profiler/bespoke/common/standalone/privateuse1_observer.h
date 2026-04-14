@@ -1,11 +1,11 @@
 #pragma once
 #include "bespoke/common/api.h"
 
-namespace quarisma::profiler_impl::impl
+namespace profiler::profiler_impl::impl
 {
 
 using CallBackFnPtr =
-    void (*)(const ProfilerConfig& config, const std::unordered_set<quarisma::RecordScope>& scopes);
+    void (*)(const ProfilerConfig& config, const std::unordered_set<profiler::RecordScope>& scopes);
 
 struct PushPRIVATEUSE1CallbacksStub
 {
@@ -43,4 +43,4 @@ struct RegisterPRIVATEUSE1Observer
 
 #define REGISTER_PRIVATEUSE1_OBSERVER(name, fn) \
     static RegisterPRIVATEUSE1Observer name##__register(name, fn);
-}  // namespace quarisma::profiler_impl::impl
+}  // namespace profiler::profiler_impl::impl

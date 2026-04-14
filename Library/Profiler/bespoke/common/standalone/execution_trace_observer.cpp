@@ -39,10 +39,10 @@
 #include <string>
 #include <vector>
 
-// TODO: Missing Quarisma dependencies - original includes were:
-// //#include <Quarisma/core/TensorBody.h>
-// //#include <Quarisma/core/function_schema.h>
-// //#include <Quarisma/core/stack.h>
+// TODO: Missing Profiler dependencies - original includes were:
+// //#include <Profiler/core/TensorBody.h>
+// //#include <Profiler/core/function_schema.h>
+// //#include <Profiler/core/stack.h>
 #include "bespoke/base/thread_local_debug_info.h"
 #include "bespoke/common/record_function.h"
 #include "bespoke/common/standalone/execution_trace_observer.h"
@@ -51,20 +51,20 @@
 #include "common/irange.h"
 
 #ifdef USE_DISTRIBUTED
-#include <quarisma/csrc/distributed/c10d/ParamCommsUtils.hpp>
+#include <profiler/csrc/distributed/c10d/ParamCommsUtils.hpp>
 #endif  // USE_DISTRIBUTED
 
-using namespace quarisma;
+using namespace profiler;
 
 // Stub declarations for types not available in profiler-only build
-namespace quarisma
+namespace profiler
 {
 // Stub for StorageImpl - used in execution trace observer (no intrusive ref-count in stub build)
 struct StorageImpl
 {
     static const void* data() { return nullptr; }
 };
-}  // namespace quarisma
+}  // namespace profiler
 
 namespace
 {
@@ -94,11 +94,11 @@ constexpr auto kETProcessGroupName = "pg_name";
 constexpr auto kETProcessGroupDesc = "pg_desc";
 #endif  // USE_DISTRIBUTED
 
-namespace quarisma::profiler_impl::impl
+namespace profiler::profiler_impl::impl
 {
 
 //******************************************************************************
-// JSON output utility functions. To be merged with Quarisma profiler.
+// JSON output utility functions. To be merged with Profiler profiler.
 //******************************************************************************
 template <typename T>
 static std::string vectorToString(const std::vector<T>& v)
@@ -112,7 +112,7 @@ constexpr size_t kMaxNumElements = 4096;
 
 #if 0
 // Disabled: IValue methods (isDouble, toDouble, isInt, toInt, isBool, toBool, isString, toStringRef) not available in profiler-only build
-static std::string getScalarValue(const quarisma::IValue& val)
+static std::string getScalarValue(const profiler::IValue& val)
 {
     if (val.isDouble())
     {
@@ -142,7 +142,7 @@ static std::string getScalarValue(const quarisma::IValue& val)
 }
 #else
 // Stub implementation
-[[maybe_unused]] static std::string getScalarValue(const quarisma::IValue& /*val*/)
+[[maybe_unused]] static std::string getScalarValue(const profiler::IValue& /*val*/)
 {
     return "";
 #endif
@@ -189,7 +189,7 @@ struct PROFILER_VISIBILITY ExecutionTraceObserver
     // unique id.
     std::map<const void*, ID> objectId;
 
-    using weak_storage_ptr = std::weak_ptr<quarisma::StorageImpl>;
+    using weak_storage_ptr = std::weak_ptr<profiler::StorageImpl>;
     std::unordered_map<const void*, ID>
         data_ptr_to_storage_id;  // cppcheck-suppress unusedStructMember
     std::unordered_map<const void*, weak_storage_ptr>
@@ -197,7 +197,7 @@ struct PROFILER_VISIBILITY ExecutionTraceObserver
 
 #if 0
     // Disabled: Storage::getWeakStorageImpl() not available in profiler-only build
-    ID get_tensor_storage_ID(const quarisma::Storage& t_storage)
+    ID get_tensor_storage_ID(const profiler::Storage& t_storage)
     {
         const std::lock_guard<std::recursive_mutex> lock(gMutex);
 
@@ -232,7 +232,7 @@ struct PROFILER_VISIBILITY ExecutionTraceObserver
     }
 #else
     // Stub implementation
-    ID get_tensor_storage_ID(const quarisma::Storage& /*t_storage*/)
+    ID get_tensor_storage_ID(const profiler::Storage& /*t_storage*/)
     {
         const std::scoped_lock lock(gMutex);
         return storage_id_++;
@@ -378,7 +378,7 @@ static std::ofstream openOutputFile(const std::string& name)
     else
     {
         // Disabled: Logging macros not available in profiler-only build.
-        VLOG(1) << "Quarisma Execution Trace: writing to " << name;
+        VLOG(1) << "Profiler Execution Trace: writing to " << name;
 
     }
 #endif
@@ -549,7 +549,7 @@ static void finalizeExecutionTraceOutput(ExecutionTraceObserver& ob)
     ob.out.close();
 #if 0
     // Disabled: Logging macros not available in profiler-only build.
-    VLOG(1) << "Quarisma Execution Trace: written to file " << ob.fileName;
+    VLOG(1) << "Profiler Execution Trace: written to file " << ob.fileName;
 #endif
 }
 
@@ -570,7 +570,7 @@ static void finalizeExecutionTraceOutput(ExecutionTraceObserver& ob)
 }
 
 [[maybe_unused]] static void dumpTensorData2File(
-    const std::string& tensor_dump_file_name, quarisma::Tensor& tensor_on_host)
+    const std::string& tensor_dump_file_name, profiler::Tensor& tensor_on_host)
 {
     std::fstream fs;
     fs.open(tensor_dump_file_name, std::fstream::out | std::fstream::binary);
@@ -594,7 +594,7 @@ static std::tuple<std::string, std::string, std::string, std::string> convertIVa
     int&                                  tensorIndex,
     std::map<int, std::pair<long, long>>& tensor_index_min_max_map,
     bool                                  isInput,
-    const quarisma::IValue&                 val,
+    const profiler::IValue&                 val,
     const bool                            baseType    = true,
     const size_t                          maxArrayLen = kMaxNumElements)
 {
@@ -630,14 +630,14 @@ static std::tuple<std::string, std::string, std::string, std::string> convertIVa
         // symbolic sizes/strides implies t->storage_offset() will fail
         if (tensor_impl->has_storage() && !tensor_impl->has_symbolic_sizes_strides())
         {
-            const quarisma::Storage& t_storage = tensor_impl->storage();
+            const profiler::Storage& t_storage = tensor_impl->storage();
             storage_id                       = ob.get_tensor_storage_ID(t_storage);
             offset                           = tensor_impl->storage_offset();
             numel                            = tensor_impl->numel();
             itemsize                         = tensor_impl->itemsize();
             device_str                       = tensor_impl->device().str();
 
-            if (isInput && quarisma::isIntegralType(tensor.scalar_type(), false) &&
+            if (isInput && profiler::isIntegralType(tensor.scalar_type(), false) &&
                 tensor.numel() != 0)
             {
                 enableRecordFunction(false);
@@ -676,7 +676,7 @@ static std::tuple<std::string, std::string, std::string, std::string> convertIVa
         std::vector<std::string> stride_array;
         std::vector<std::string> type_array;
         std::vector<std::string> value_array;
-        for (const auto j : quarisma::irange(tuple_size))
+        for (const auto j : profiler::irange(tuple_size))
         {
             auto tuple = convertIValue(
                 ob,
@@ -709,7 +709,7 @@ static std::tuple<std::string, std::string, std::string, std::string> convertIVa
         std::vector<std::string> stride_array;
         std::vector<std::string> type_array;
         std::vector<std::string> value_array;
-        for (const auto j : quarisma::irange(list_size))
+        for (const auto j : profiler::irange(list_size))
         {
             auto tuple = convertIValue(
                 ob,
@@ -759,7 +759,7 @@ static std::tuple<std::string, std::string, std::string, std::string> convertIVa
     int& /*tensorIndex*/,
     std::map<int, std::pair<long, long>>& /*tensor_index_min_max_map*/,
     bool /*isInput*/,
-    const quarisma::IValue& /*val*/,
+    const profiler::IValue& /*val*/,
     const bool /*baseType*/      = true,
     const size_t /*maxArrayLen*/ = kMaxNumElements)
 {
@@ -774,7 +774,7 @@ static void appendValueInfo(
     int&                                  tensorIndex,
     std::map<int, std::pair<long, long>>& tensor_index_min_max_map,
     bool                                  isInput,
-    const quarisma::IValue&               val,
+    const profiler::IValue&               val,
     std::vector<std::string>&             shapes,
     std::vector<std::string>&             strides,
     std::vector<std::string>&             types,
@@ -834,7 +834,7 @@ static inline std::string getCommsNodeAttrs(const RecordFunction& fn)
     std::vector<std::string> attrs;  // cppcheck-suppress unusedVariable
     // We rely on paramcommsdebug object that is available in thread local info
     const auto* const debugInfo = dynamic_cast<ParamCommsDebugInfo*>(
-        quarisma::thread_local_debug_info::get(quarisma::DebugInfoKind::PARAM_COMMS_INFO));
+        profiler::thread_local_debug_info::get(profiler::DebugInfoKind::PARAM_COMMS_INFO));
     if (debugInfo == nullptr)
     {
         // LOG(WARNING) << "ParamCommsDebugInfo not available for function: " << fn.name();
@@ -930,7 +930,7 @@ static void recordOperatorStart(
         // tensor_index is the index of the flattened tensor list for all input
         // tensors
         int tensor_index = 0;
-        for (const auto i : quarisma::irange(input_start, inputs.size()))
+        for (const auto i : profiler::irange(input_start, inputs.size()))
         {
             appendValueInfo(
                 ob,
@@ -1063,7 +1063,7 @@ static void onFunctionExit(const RecordFunction& fn, ObserverContext* ctx_ptr)
         try
         {
             int tensor_index = 0;
-            for (const auto i : quarisma::irange(output_start, outputs.size()))
+            for (const auto i : profiler::irange(output_start, outputs.size()))
             {
                 appendValueInfo(
                     *ob,
@@ -1084,8 +1084,8 @@ static void onFunctionExit(const RecordFunction& fn, ObserverContext* ctx_ptr)
             if (op_schema.has_value())
             {
 #if 0
-                // Disabled: quarisma::toString not available in profiler-only build
-                op_schema_str = json_str_escape(quarisma::toString(op_schema.value()));
+                // Disabled: profiler::toString not available in profiler-only build
+                op_schema_str = json_str_escape(profiler::toString(op_schema.value()));
 #else
                 op_schema_str = "";  // Stub: toString not available
 #endif
@@ -1194,7 +1194,7 @@ bool addExecutionTraceObserver(const std::string& output_file_path)
         // Default to disabled.
         ob.setState(ExecutionTraceObserver::RunState::disabled);
 
-        // VLOG(1) << "Quarisma Execution Trace: added observer, output=" << output_file_path;
+        // VLOG(1) << "Profiler Execution Trace: added observer, output=" << output_file_path;
     }
     else if (ObserverManager::get()->cbHandle != INVALID_CALLBACK_HANDLE)
     {
@@ -1222,7 +1222,7 @@ void removeExecutionTraceObserver()
             // PROFILER_CHECK(
             // ObserverManager::pop() != nullptr,
             // "Global state ptr cannot be null before resetting");
-            // VLOG(1) << "Quarisma Execution Trace: removed observer";
+            // VLOG(1) << "Profiler Execution Trace: removed observer";
         }
         else
         {
@@ -1263,4 +1263,4 @@ void disableExecutionTraceObserver()
         // LOG(WARNING) << "Trying to disable Execution Trace Observer when it's already disabled.";
     }
 }
-}  // namespace quarisma::profiler_impl::impl
+}  // namespace profiler::profiler_impl::impl

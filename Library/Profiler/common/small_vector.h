@@ -10,10 +10,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-// Quarisma: modified from llvm::small_vector.
+// Profiler: modified from llvm::small_vector.
 // used std::is_trivially_{copy,move}_constructible
 // replaced iterator_range constructor with inline Container&& constructor
-// replaced LLVM_NODISCARD, LLVM_LIKELY, and LLVM_UNLIKELY with quarisma equivalents
+// replaced LLVM_NODISCARD, LLVM_LIKELY, and LLVM_UNLIKELY with profiler equivalents
 // removed LLVM_GSL_OWNER
 // added small_vector::at
 // added operator<< for std::ostream
@@ -43,7 +43,7 @@
 #include "common/profiler_export.h"
 #include "common/profiler_macros.h"
 
-namespace quarisma
+namespace profiler
 {
 
 /// This is all the stuff common to all SmallVectors.
@@ -1482,21 +1482,21 @@ to_vector(R&& Range)
     return {std::begin(Range), std::end(Range)};
 }
 
-}  // end namespace quarisma
+}  // end namespace profiler
 
 namespace std
 {
 
 /// Implement std::swap in terms of small_vector swap.
 template <typename T>
-inline void swap(quarisma::SmallVectorImpl<T>& LHS, quarisma::SmallVectorImpl<T>& RHS) noexcept
+inline void swap(profiler::SmallVectorImpl<T>& LHS, profiler::SmallVectorImpl<T>& RHS) noexcept
 {
     LHS.swap(RHS);
 }
 
 /// Implement std::swap in terms of small_vector swap.
 template <typename T, unsigned N>
-inline void swap(quarisma::small_vector<T, N>& LHS, quarisma::small_vector<T, N>& RHS) noexcept
+inline void swap(profiler::small_vector<T, N>& LHS, profiler::small_vector<T, N>& RHS) noexcept
 {
     LHS.swap(RHS);
 }

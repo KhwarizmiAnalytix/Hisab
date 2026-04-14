@@ -38,11 +38,11 @@ limitations under the License.
 //#include "absl/status/status.h"
 //#include "xla/python/profiler/internal/python_hooks.h"
 //#include "tsl/platform/errors.h"
-//#include "logging/logger.h"
+//#include "logger.h"
 #include "native/core/profiler_interface.h"
 #include "native/exporters/xplane/xplane.h"
 
-namespace quarisma
+namespace profiler
 {
 namespace profiler_impl
 {
@@ -129,5 +129,5 @@ std::unique_ptr<ProfilerInterface> CreatePythonTracer(
 }
 
 }  // namespace profiler_impl
-}  // namespace quarisma
+}  // namespace profiler
 #endif

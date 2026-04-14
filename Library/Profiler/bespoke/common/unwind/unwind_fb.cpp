@@ -1,18 +1,18 @@
 #if defined(__linux__) && (defined(__x86_64__) || defined(__aarch64__)) && defined(FBCODE_CAFFE2)
 
 #include <llvm/DebugInfo/Symbolize/Symbolize.h>
-#include <quarisma/util/flat_hash_map.h>
+#include <profiler/util/flat_hash_map.h>
 
 #include "bespoke/common/unwind/unwind.h"
 
-namespace quarisma::unwind
+namespace profiler::unwind
 {
 
 std::vector<Frame> symbolize(const std::vector<void*>& frames, Mode mode)
 {
     static std::mutex                            symbolize_mutex;
     static llvm::symbolize::LLVMSymbolizer       symbolizer;
-    static quarisma::flat_hash_map<void*, Frame> frame_map_;
+    static profiler::flat_hash_map<void*, Frame> frame_map_;
 
     std::lock_guard<std::mutex> guard(symbolize_mutex);
     std::vector<Frame>          results;
@@ -43,6 +43,6 @@ std::vector<Frame> symbolize(const std::vector<void*>& frames, Mode mode)
     return results;
 }
 
-}  // namespace quarisma::unwind
+}  // namespace profiler::unwind
 
 #endif

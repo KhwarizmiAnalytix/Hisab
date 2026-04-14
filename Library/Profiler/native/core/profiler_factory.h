@@ -40,7 +40,7 @@ limitations under the License.
 #include "native/core/profiler_interface.h"
 #include "native/core/profiler_options.h"
 
-namespace quarisma
+namespace profiler
 {
 
 /**
@@ -79,4 +79,4 @@ PROFILER_API std::vector<std::unique_ptr<profiler_interface>> create_profilers(
  */
 PROFILER_API void clear_registered_profilers_for_test();
 
-}  // namespace quarisma
+}  // namespace profiler

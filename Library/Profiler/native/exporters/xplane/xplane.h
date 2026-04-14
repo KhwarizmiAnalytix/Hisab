@@ -27,7 +27,7 @@
 
 #include "common/flat_hash.h"
 
-namespace quarisma
+namespace profiler
 {
 
 // xstat class
@@ -456,8 +456,8 @@ public:
     const xplane& planes(size_t i) const { return planes_[i]; }
     xplane*       mutable_planes(size_t i) { return &planes_[i]; }
 
-    const std::vector<quarisma::xplane>& planes() const { return planes_; }
-    std::vector<quarisma::xplane>*       mutable_planes() { return &planes_; }
+    const std::vector<profiler::xplane>& planes() const { return planes_; }
+    std::vector<profiler::xplane>*       mutable_planes() { return &planes_; }
     xplane*                              add_planes()
     {
         planes_.emplace_back();
@@ -477,10 +477,10 @@ public:
     void add_hostname(std::string hostname) { hostnames_.push_back(std::move(hostname)); }
 
 private:
-    std::vector<quarisma::xplane> planes_;
+    std::vector<profiler::xplane> planes_;
     std::vector<std::string>      errors_;
     std::vector<std::string>      warnings_;
     std::vector<std::string>      hostnames_;
 };
 
-}  // namespace quarisma
+}  // namespace profiler

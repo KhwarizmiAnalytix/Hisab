@@ -40,7 +40,7 @@ limitations under the License.
 #include <vector>
 
 #include "common/profiler_macros.h"
-//#include "logging/logger.h"
+//#include "logger.h"
 #include "native/core/profiler_collection.h"
 #include "native/core/profiler_interface.h"
 #include "native/cpu/host_tracer_utils.h"
@@ -52,7 +52,7 @@ limitations under the License.
 #include "native/tracing/traceme.h"
 #include "native/tracing/traceme_recorder.h"
 
-namespace quarisma::profiler_impl
+namespace profiler::profiler_impl
 {
 namespace
 {
@@ -178,4 +178,4 @@ std::unique_ptr<profiler_interface> create_host_tracer(const host_tracer_options
     }
     return std::make_unique<profiler_collection>(std::move(profilers));
 }
-}  // namespace quarisma::profiler_impl
+}  // namespace profiler::profiler_impl

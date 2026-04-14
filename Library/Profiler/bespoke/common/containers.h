@@ -10,7 +10,7 @@
 #include "common/array_ref.h"
 #include "common/profiler_macros.h"
 
-namespace quarisma::profiler_impl::impl
+namespace profiler::profiler_impl::impl
 {
 
 // ============================================================================
@@ -74,7 +74,7 @@ public:
 
     template <typename T0>
     std::enable_if_t<std::is_same_v<T0, T> && std::is_trivially_copyable_v<T>> copy(
-        quarisma::array_ref<T0> src)
+        profiler::array_ref<T0> src)
     {
         size_t n = src.size();
         if PROFILER_UNLIKELY (n == 0)
@@ -210,4 +210,4 @@ protected:
     typename std::forward_list<array_t>::iterator buffer_last_;
 };
 
-}  // namespace quarisma::profiler_impl::impl
+}  // namespace profiler::profiler_impl::impl

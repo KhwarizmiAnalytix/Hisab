@@ -1,12 +1,12 @@
 #pragma once
 #if 0
-// TODO: Missing Quarisma dependency - original include was:
-// #include <quarisma/csrc/jit/runtime/interpreter.h>
-// This is a Quarisma-specific header not available in Quarisma
+// TODO: Missing Profiler dependency - original include was:
+// #include <profiler/csrc/jit/runtime/interpreter.h>
+// This is a Profiler-specific header not available in Profiler
 
 #include "bespoke/common/unwind/unwind.h"
 
-namespace quarisma
+namespace profiler
 {
 
 // struct that holds the result of symbolizing multiple tracebacks
@@ -21,7 +21,7 @@ struct PROFILER_VISIBILITY SymbolizedTracebacks
     std::vector<std::vector<uint64_t>> tracebacks;
 };
 
-struct PROFILER_VISIBILITY CapturedTraceback : public quarisma::GatheredContext
+struct PROFILER_VISIBILITY CapturedTraceback : public profiler::GatheredContext
 {
     struct PyFrame
     {
@@ -73,5 +73,5 @@ private:
 
 PROFILER_API SymbolizedTracebacks symbolize(const std::vector<CapturedTraceback*>& to_symbolize);
 
-}  // namespace quarisma
+}  // namespace profiler
 #endif

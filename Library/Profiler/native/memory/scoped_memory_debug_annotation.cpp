@@ -33,7 +33,7 @@ limitations under the License.
 ==============================================================================*/
 #include "native/memory/scoped_memory_debug_annotation.h"
 
-namespace quarisma
+namespace profiler
 {
 
 /*static*/ memory_debug_annotation* scoped_memory_debug_annotation::thread_memory_debug_annotation()
@@ -42,4 +42,4 @@ namespace quarisma
     return &annotation;
 }
 
-}  // namespace quarisma
+}  // namespace profiler

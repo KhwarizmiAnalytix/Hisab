@@ -32,8 +32,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef PROFILER_PROFILER_CPU_HOST_TRACER_UTILS_H_
-#define PROFILER_PROFILER_CPU_HOST_TRACER_UTILS_H_
+#pragma once
 
 #include <cstdint>
 
@@ -42,7 +41,7 @@ limitations under the License.
 #include "native/exporters/xplane/xplane.h"
 #include "native/tracing/traceme_recorder.h"
 
-namespace quarisma
+namespace profiler
 {
 namespace profiler_impl
 {
@@ -67,6 +66,5 @@ PROFILER_API void convert_complete_events_to_xplane(
     uint64_t start_timestamp_ns, traceme_recorder::Events&& events, xplane* raw_plane);
 
 }  // namespace profiler_impl
-}  // namespace quarisma
+}  // namespace profiler
 
-#endif  // PROFILER_PROFILER_CPU_HOST_TRACER_UTILS_H_

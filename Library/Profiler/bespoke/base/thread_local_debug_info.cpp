@@ -4,7 +4,7 @@
 
 #include "common/profiler_export.h"
 
-namespace quarisma
+namespace profiler
 {
 
 static thread_local std::shared_ptr<thread_local_debug_info> tls_debug_info;
@@ -98,4 +98,4 @@ DebugInfoGuard::DebugInfoGuard(std::shared_ptr<thread_local_debug_info> info)
     active_    = true;
 }
 
-}  // namespace quarisma
+}  // namespace profiler

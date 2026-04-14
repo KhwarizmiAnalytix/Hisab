@@ -28,7 +28,7 @@ class ActivityTraceInterface;
 }  // namespace libkineto
 #endif
 
-namespace quarisma
+namespace profiler
 {
 namespace profiler_impl
 {
@@ -79,7 +79,7 @@ struct TraceWrapper
     TraceWrapper(const int64_t start_time, const std::string& name);
 
     // The caller is expected to hold a mutex when calling `addCPUActivity`.
-    // TODO: Quarisma-specific method commented out
+    // TODO: Profiler-specific method commented out
     activity_t* addCPUActivity(
         const std::string&      name,
         const activity_type_t   type,
@@ -115,12 +115,12 @@ private:
 #endif
 };
 
-// TODO: Quarisma-specific types commented out
-using ActivitySet = std::set<quarisma::autograd::profiler_impl::ActivityType>;
+// TODO: Profiler-specific types commented out
+using ActivitySet = std::set<profiler::autograd::profiler_impl::ActivityType>;
 PROFILER_API void prepareTrace(
     const bool                                               cpuOnly,
     const ActivitySet&                                       activities,
-    const quarisma::profiler_impl::impl::ExperimentalConfig& config,
+    const profiler::profiler_impl::impl::ExperimentalConfig& config,
     const std::string&                                       trace_id = "");
 
 PROFILER_API void                 toggleCollectionDynamic(const bool enable);
@@ -145,9 +145,9 @@ PROFILER_API void logInvariantViolation(
 
 namespace autograd::profiler_impl
 {
-// TODO: Quarisma-specific function commented out
-quarisma::device_enum deviceTypeFromActivity(
-    quarisma::profiler_impl::impl::kineto::activity_type_t activity_type);
+// TODO: Profiler-specific function commented out
+profiler::device_enum deviceTypeFromActivity(
+    profiler::profiler_impl::impl::kineto::activity_type_t activity_type);
 
 PROFILER_API void addMetadataJson(const std::string& key, const std::string& value);
 
@@ -155,4 +155,4 @@ PROFILER_API void profilerStep();
 
 }  // namespace autograd::profiler_impl
 
-}  // namespace quarisma
+}  // namespace profiler

@@ -13,12 +13,12 @@ include_guard(GLOBAL)
 # Experimental Features Support Flag Controls whether experimental features are enabled.
 # When enabled, provides access to features that are under active development and may
 # change or be removed in future releases. Use with caution in production environments.
-option(QUARISMA_ENABLE_EXPERIMENTAL "Enable experimental features (use with caution)" OFF)
-mark_as_advanced(QUARISMA_ENABLE_EXPERIMENTAL)
+option(PROJECT_ENABLE_EXPERIMENTAL "Enable experimental features (use with caution)" OFF)
+mark_as_advanced(PROJECT_ENABLE_EXPERIMENTAL)
 
 # Only proceed if experimental features are enabled
-if(NOT QUARISMA_ENABLE_EXPERIMENTAL)
-  message(WARNING "Experimental features are disabled (QUARISMA_ENABLE_EXPERIMENTAL=OFF)")
+if(NOT PROJECT_ENABLE_EXPERIMENTAL)
+  message(WARNING "Experimental features are disabled (PROJECT_ENABLE_EXPERIMENTAL=OFF)")
   return()
 endif()
 
@@ -30,7 +30,7 @@ message(STATUS "Configuring experimental features...")
 # =============================================================================
 
 # Set flag to indicate experimental features are available
-set(QUARISMA_EXPERIMENTAL_FOUND TRUE CACHE BOOL "Experimental features are enabled" FORCE)
+set(PROJECT_EXPERIMENTAL_FOUND TRUE CACHE BOOL "Experimental features are enabled" FORCE)
 
 message(WARNING "✅ Experimental features enabled")
 message(WARNING "   WARNING: Experimental features may be unstable or incomplete")

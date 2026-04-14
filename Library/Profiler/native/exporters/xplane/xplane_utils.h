@@ -43,7 +43,7 @@ limitations under the License.
 #include "native/exporters/xplane/xplane.h"
 #include "native/exporters/xplane/xplane_visitor.h"
 
-namespace quarisma
+namespace profiler
 {
 
 // Returns a timespan from an xevent.
@@ -251,4 +251,4 @@ PROFILER_API bool IsHostPlane(const xplane& plane);
 // Return whether this is a device plan.
 PROFILER_API bool IsDevicePlane(const xplane& plane);
 
-}  // namespace quarisma
+}  // namespace profiler

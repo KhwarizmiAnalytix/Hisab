@@ -27,23 +27,20 @@
 #include <stdexcept>
 #include <string>
 
-#include "common/macros.h"
-#include "logging/logger.h"
-
 // Include Google Test if available
-#if QUARISMA_HAS_GTEST
+#if PROFILER_HAS_GTEST
 #include <gtest/gtest.h>
 #endif
 
 // Logging macros for tests
-#if QUARISMA_HAS_GTEST
+#if PROFILER_HAS_GTEST
 #define END_TEST()
 #else
 #define END_TEST() return EXIT_SUCCESS
 #endif
 
 // Test assertion macros
-#if QUARISMA_HAS_GTEST
+#if PROFILER_HAS_GTEST
 
 #define PROFILERTEST(module, name) TEST(module, name)
 #define PROFILERTEST_VOID(module, name) TEST(module, name)
@@ -207,19 +204,19 @@
     } while (0)
 
 #define PROFILERTEST(module, testname) \
-    int Test##testname(QUARISMA_UNUSED int argc, QUARISMA_UNUSED char* argv[])
+    int Test##testname(PROFILER_UNUSED int argc, PROFILER_UNUSED char* argv[])
 
 #define PROFILERTEST_VOID(module, testname) \
-    void test_##module##testname(QUARISMA_UNUSED int argc, QUARISMA_UNUSED char* argv[])
+    void test_##module##testname(PROFILER_UNUSED int argc, PROFILER_UNUSED char* argv[])
 
 #define PROFILERTEST_CALL(module, testname) test_##module##testname(argc, argv);
 
 #define PROFILERTEST_F(fixture, name)                                                        \
-    static_assert(false, "PROFILERTEST_F requires Google Test (QUARISMA_HAS_GTEST=1)")
+    static_assert(false, "PROFILERTEST_F requires Google Test (PROFILER_HAS_GTEST=1)")
 
 #endif
 
-namespace quarisma
+namespace profiler
 {
 inline bool IsAligned(void* ptr, size_t alignment)
 {
@@ -238,6 +235,6 @@ inline bool ValidateMemory(const void* ptr, size_t size, uint8_t pattern)
     }
     return true;
 }
-}  // namespace quarisma
+}  // namespace profiler
 
 #endif  // PROFILER_TEST_H

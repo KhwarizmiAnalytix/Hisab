@@ -12,12 +12,12 @@ include_guard(GLOBAL)
 # Spell Checking Flag Controls whether spell checking with automatic corrections is enabled. When
 # enabled, runs codespell during build to fix spelling errors in source files. WARNING: This
 # modifies source files directly. Ensure changes are committed first.
-option(QUARISMA_ENABLE_SPELL
+option(PROJECT_ENABLE_SPELL
        "Enable spell checking with automatic corrections (WARNING: modifies source files)" OFF
 )
-mark_as_advanced(QUARISMA_ENABLE_SPELL)
+mark_as_advanced(PROJECT_ENABLE_SPELL)
 
-if(NOT QUARISMA_ENABLE_SPELL)
+if(NOT PROJECT_ENABLE_SPELL)
   return()
 endif()
 
@@ -54,7 +54,7 @@ Please install codespell:
   - macOS: brew install codespell
   - Windows: pip install codespell
 
-Or set QUARISMA_ENABLE_SPELL=OFF to disable spell checking"
+Or set PROJECT_ENABLE_SPELL=OFF to disable spell checking"
   )
 else()
   message(STATUS "Found codespell: ${CODESPELL_EXECUTABLE}")
@@ -97,7 +97,7 @@ else()
   # Warning message about automatic corrections
   message(
     WARNING
-      "QUARISMA_ENABLE_SPELL is ON: codespell will modify source files directly to fix spelling errors. "
+      "PROJECT_ENABLE_SPELL is ON: codespell will modify source files directly to fix spelling errors. "
       "Ensure you have committed your changes before building."
   )
 endif()

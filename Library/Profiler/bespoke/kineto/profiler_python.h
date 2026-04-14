@@ -1,6 +1,6 @@
 #pragma once
 #if 0
-namespace quarisma::autograd::profiler_impl::python_tracer {
+namespace profiler::autograd::profiler_impl::python_tracer {
 
 void init();
 

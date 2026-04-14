@@ -1,6 +1,6 @@
 #if PROFILER_HAS_NATIVE_PROFILER
 /*
- * Quarisma: High-Performance Computational Library
+ * Profiler: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  */
@@ -15,7 +15,7 @@
 #include "native/session/profiler.h"
 #include "native/session/profiler_report.h"
 
-using namespace quarisma;
+using namespace profiler;
 
 // ============================================================================
 // Profiler Session Edge Cases and Error Handling Tests (Consolidated)

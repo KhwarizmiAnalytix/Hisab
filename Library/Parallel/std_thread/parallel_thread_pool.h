@@ -31,8 +31,7 @@
  * destructor joins threads and finish the jobs in the queue.
  */
 
-#ifndef PARALLEL_THREAD_POOL_H
-#define PARALLEL_THREAD_POOL_H
+#pragma once
 
 #include <atomic>      // For std::atomic
 #include <functional>  // For std::function
@@ -163,4 +162,3 @@ private:
 }  // namespace detail
 }  // namespace parallel
 
-#endif

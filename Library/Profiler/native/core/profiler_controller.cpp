@@ -37,12 +37,12 @@ limitations under the License.
 #include <string>
 #include <utility>
 
-//#include "logging/logger.h"
+//#include "logger.h"
 #include "common/profiler_macros.h"
 #include "native/core/profiler_interface.h"
 #include "native/exporters/xplane/xplane.h"
 
-namespace quarisma
+namespace profiler
 {
 
 profiler_controller::profiler_controller(std::unique_ptr<profiler_interface> profiler)
@@ -128,4 +128,4 @@ profiler_status profiler_controller::collect_data(x_space* space)
     return status_;
 }
 
-}  // namespace quarisma
+}  // namespace profiler

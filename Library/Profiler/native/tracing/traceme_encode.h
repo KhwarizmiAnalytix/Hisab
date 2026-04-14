@@ -39,10 +39,10 @@ limitations under the License.
 #include <string>
 
 #include "common/profiler_macros.h"
-//#include "logging/logger.h"
+//#include "logger.h"
 #include "common/profiler_strings.h"
 
-namespace quarisma
+namespace profiler
 {
 
 /**
@@ -422,4 +422,4 @@ inline std::string traceme_op_override(const char* op_name, const char* op_type)
     return strings::str_cat("#tf_op=", op_name, ":", op_type, "#");
 }
 
-}  // namespace quarisma
+}  // namespace profiler

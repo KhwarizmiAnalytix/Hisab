@@ -7,7 +7,7 @@
 
 #include "bespoke/common/unwind/unwind_error.h"
 
-namespace quarisma::unwind
+namespace profiler::unwind
 {
 // helper to open a process with stdin/stdout/stderr streams.
 struct Communicate
@@ -72,4 +72,4 @@ private:
     std::unique_ptr<std::ostream>                   err_;
 };
 
-}  // namespace quarisma::unwind
+}  // namespace profiler::unwind

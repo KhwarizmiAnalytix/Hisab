@@ -14,7 +14,7 @@
 #include <unordered_map>
 #endif
 
-namespace quarisma
+namespace profiler
 {
 namespace profiler_impl
 {
@@ -23,7 +23,7 @@ namespace profiler_impl
 
 namespace
 {
-// Global ITT domain for Quarisma
+// Global ITT domain for Profiler
 __itt_domain* g_itt_domain = nullptr;
 std::mutex    g_itt_init_mutex;
 
@@ -37,7 +37,7 @@ void itt_init()
 
     if (g_itt_domain == nullptr)
     {
-        g_itt_domain = __itt_domain_create("Quarisma");
+        g_itt_domain = __itt_domain_create("Profiler");
     }
 }
 
@@ -90,4 +90,4 @@ __itt_domain* itt_get_domain()
 #endif  // PROFILER_HAS_ITT
 
 }  // namespace profiler_impl
-}  // namespace quarisma
+}  // namespace profiler

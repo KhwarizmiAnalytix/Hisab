@@ -1,7 +1,7 @@
 # =============================================================================
-# Quarisma Profiler Library (matches Library/Profiler/CMakeLists.txt backend splits)
+# Profiler Profiler Library (matches Library/Profiler/CMakeLists.txt backend splits)
 # =============================================================================
-load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
+load("//bazel:profiler.bzl", "profiler_copts", "profiler_defines", "profiler_linkopts")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -113,10 +113,10 @@ cc_library(
         "//bazel:enable_itt": _ITT_BACKEND_HDRS,
         "//conditions:default": _KINETO_BACKEND_HDRS,
     }),
-    copts = quarisma_copts(),
-    defines = quarisma_defines() + select({
-        "//bazel:shared_libs": ["QUARISMA_SHARED_DEFINE", "QUARISMA_BUILDING_DLL"],
-        "//conditions:default": ["QUARISMA_STATIC_DEFINE"],
+    copts = profiler_copts(),
+    defines = profiler_defines() + select({
+        "//bazel:shared_libs": ["PROFILER_SHARED_DEFINE", "PROFILER_BUILDING_DLL"],
+        "//conditions:default": ["PROFILER_STATIC_DEFINE"],
     }),
     includes = [
         ".",
@@ -125,7 +125,7 @@ cc_library(
         "//bazel:enable_itt": [],
         "//conditions:default": ["kineto"],
     }),
-    linkopts = quarisma_linkopts(),
+    linkopts = profiler_linkopts(),
     linkstatic = select({
         "//bazel:shared_libs": False,
         "//conditions:default": True,

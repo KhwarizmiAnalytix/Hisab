@@ -71,35 +71,3 @@ cc_test(
     ],
 )
 
-# =============================================================================
-# Benchmark Targets (matches CMake QUARISMA_ENABLE_BENCHMARK targets)
-# Note: BenchmarkParallel has moved to //Library/Parallel/Testing/Cxx:BenchmarkParallel
-# Build with: bazel build //Library/Core/Testing/Cxx:BenchmarkAllocatorComparison
-#             bazel build //Library/Core/Testing/Cxx:BenchmarkCPUMemoryAllocators
-# =============================================================================
-
-cc_binary(
-    name = "BenchmarkAllocatorComparison",
-    srcs = ["BenchmarkAllocatorComparison.cpp"],
-    copts = quarisma_copts(),
-    defines = quarisma_defines(),
-    linkopts = quarisma_linkopts(),
-    deps = [
-        "//Library/Core:Core",
-        "@com_google_benchmark//:benchmark",
-        "@com_google_benchmark//:benchmark_main",
-    ],
-)
-
-cc_binary(
-    name = "BenchmarkCPUMemoryAllocators",
-    srcs = ["BenchmarkCPUMemoryAllocators.cpp"],
-    copts = quarisma_copts(),
-    defines = quarisma_defines(),
-    linkopts = quarisma_linkopts(),
-    deps = [
-        "//Library/Core:Core",
-        "@com_google_benchmark//:benchmark",
-        "@com_google_benchmark//:benchmark_main",
-    ],
-)

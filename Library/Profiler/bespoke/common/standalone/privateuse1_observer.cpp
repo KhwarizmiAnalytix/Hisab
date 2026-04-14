@@ -1,8 +1,8 @@
 #include "bespoke/common/standalone/privateuse1_observer.h"
 
-namespace quarisma::profiler_impl::impl
+namespace profiler::profiler_impl::impl
 {
 
 PushPRIVATEUSE1CallbacksStub pushPRIVATEUSE1CallbacksStub;
 
-}  // namespace quarisma::profiler_impl::impl
+}  // namespace profiler::profiler_impl::impl

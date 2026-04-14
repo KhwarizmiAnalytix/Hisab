@@ -13,7 +13,7 @@
 #include <vector>
 
 #include "ParallelTest.h"
-#include "threaded_task_queue.h"
+#include "tools/threaded_task_queue.h"
 
 namespace parallel
 {

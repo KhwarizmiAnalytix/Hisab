@@ -52,7 +52,7 @@ limitations under the License.
 #include "native/core/timespan.h"
 #include "native/exporters/xplane/xplane.h"
 
-namespace quarisma
+namespace profiler
 {
 
 class xplane_builder;
@@ -529,7 +529,7 @@ private:
 
 // Provides methods to build an xplane.
 // NOTE: avoid to use two builders to wrap the same xplane.
-class xplane_builder : public xstats_builder<quarisma::xplane>
+class xplane_builder : public xstats_builder<profiler::xplane>
 {
 public:
     PROFILER_API explicit xplane_builder(xplane* plane);
@@ -650,4 +650,4 @@ std::string_view xstats_builder<T>::StrOrRefValue(const xstat& stat)
     }
 }
 
-}  // namespace quarisma
+}  // namespace profiler

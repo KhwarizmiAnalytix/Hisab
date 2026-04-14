@@ -33,11 +33,11 @@
 #include <unordered_map>
 #include <vector>
 
-//#include "logging/logger.h"
+//#include "logger.h"
 #include "native/analysis/statistical_analyzer.h"
 #include "native/session/profiler.h"
 
-namespace quarisma
+namespace profiler
 {
 namespace
 {
@@ -124,7 +124,7 @@ std::vector<std::pair<std::string, ValueT>> sort_map_by_value_desc(
 // profiler_report Implementation
 //=============================================================================
 
-profiler_report::profiler_report(const quarisma::profiler_session& session) : session_(session) {}
+profiler_report::profiler_report(const profiler::profiler_session& session) : session_(session) {}
 
 std::string profiler_report::generate_console_report() const
 {
@@ -307,23 +307,23 @@ std::string profiler_report::generate_xml_report() const
 }
 
 bool profiler_report::export_to_file(
-    const std::string& filename, quarisma::profiler_options::output_format_enum format) const
+    const std::string& filename, profiler::profiler_options::output_format_enum format) const
 {
     std::string content;
 
     switch (format)
     {
-    case quarisma::profiler_options::output_format_enum::CONSOLE:
-    case quarisma::profiler_options::output_format_enum::FILE:
+    case profiler::profiler_options::output_format_enum::CONSOLE:
+    case profiler::profiler_options::output_format_enum::FILE:
         content = generate_console_report();
         break;
-    case quarisma::profiler_options::output_format_enum::JSON:
+    case profiler::profiler_options::output_format_enum::JSON:
         content = generate_json_report();
         break;
-    case quarisma::profiler_options::output_format_enum::CSV:
+    case profiler::profiler_options::output_format_enum::CSV:
         content = generate_csv_report();
         break;
-    case quarisma::profiler_options::output_format_enum::STRUCTURED:
+    case profiler::profiler_options::output_format_enum::STRUCTURED:
         content = generate_xml_report();
         break;
     default:
@@ -344,22 +344,22 @@ bool profiler_report::export_to_file(
 
 bool profiler_report::export_console_report(const std::string& filename) const
 {
-    return export_to_file(filename, quarisma::profiler_options::output_format_enum::CONSOLE);
+    return export_to_file(filename, profiler::profiler_options::output_format_enum::CONSOLE);
 }
 
 bool profiler_report::export_json_report(const std::string& filename) const
 {
-    return export_to_file(filename, quarisma::profiler_options::output_format_enum::JSON);
+    return export_to_file(filename, profiler::profiler_options::output_format_enum::JSON);
 }
 
 bool profiler_report::export_csv_report(const std::string& filename) const
 {
-    return export_to_file(filename, quarisma::profiler_options::output_format_enum::CSV);
+    return export_to_file(filename, profiler::profiler_options::output_format_enum::CSV);
 }
 
 bool profiler_report::export_xml_report(const std::string& filename) const
 {
-    return export_to_file(filename, quarisma::profiler_options::output_format_enum::STRUCTURED);
+    return export_to_file(filename, profiler::profiler_options::output_format_enum::STRUCTURED);
 }
 
 void profiler_report::print_summary()
@@ -455,7 +455,7 @@ std::string profiler_report::format_double(double value) const
 std::string profiler_report::generate_header_section() const
 {
     std::stringstream ss;
-    ss << "=== Quarisma Profiler Report ===\n";
+    ss << "=== Profiler Profiler Report ===\n";
     ss << "Session active: " << (session_.is_active() ? "yes" : "no") << "\n";
 
     auto const start_time = session_.session_start_time();
@@ -876,14 +876,14 @@ void profiler_report::process_scope_data_csv_recursive(
 // profiler_report_builder Implementation
 //=============================================================================
 
-profiler_report_builder::profiler_report_builder(const quarisma::profiler_session& session)
+profiler_report_builder::profiler_report_builder(const profiler::profiler_session& session)
     : session_(session)
 {
 }
 
-std::unique_ptr<quarisma::profiler_report> profiler_report_builder::build() const
+std::unique_ptr<profiler::profiler_report> profiler_report_builder::build() const
 {
-    auto report = std::make_unique<quarisma::profiler_report>(session_);
+    auto report = std::make_unique<profiler::profiler_report>(session_);
     report->set_precision(precision_);
     report->set_time_unit(time_unit_);
     report->set_memory_unit(memory_unit_);
@@ -892,4 +892,4 @@ std::unique_ptr<quarisma::profiler_report> profiler_report_builder::build() cons
     return report;
 }
 
-}  // namespace quarisma
+}  // namespace profiler

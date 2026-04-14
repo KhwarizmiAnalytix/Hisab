@@ -39,7 +39,7 @@ limitations under the License.
 
 #include "common/profiler_strings.h"
 
-namespace quarisma
+namespace profiler
 {
 
 // A timespan is the time extent of an event: a pair of (begin, duration).
@@ -168,4 +168,4 @@ inline timespan milli_span(double start_ms, double end_ms)
         timespan::milli_to_pico((int64_t)start_ms), timespan::milli_to_pico((int64_t)end_ms));
 }
 
-}  // namespace quarisma
+}  // namespace profiler

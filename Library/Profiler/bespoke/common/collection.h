@@ -7,11 +7,11 @@
 #include <utility>
 #include <variant>
 
-// TODO: Missing Quarisma dependencies - original includes were:
-// //#include <Quarisma/Context.h>
-// #include <quarisma/csrc/utils/python_stub.h>
-// These are Quarisma-specific headers not available in Quarisma
-// #include <quarisma/core/TensorImpl.h>
+// TODO: Missing Profiler dependencies - original includes were:
+// //#include <Profiler/Context.h>
+// #include <profiler/csrc/utils/python_stub.h>
+// These are Profiler-specific headers not available in Profiler
+// #include <profiler/core/TensorImpl.h>
 #include "bespoke/base/base.h"
 #include "bespoke/base/perf.h"
 #include "bespoke/common/containers.h"
@@ -21,18 +21,18 @@
 #include "bespoke/common/util.h"
 #include "bespoke/kineto/kineto_shim.h"
 #include "common/profiler_macros.h"
-//#include "memory/device.h"
+//#include "common/device.h"
 #include "common/approximate_clock.h"
 #include "common/flat_hash.h"
 #include "common/strong_type.h"
 
 // Minimal layout constant expected by profiler code for Tensor::layout()
-namespace quarisma
+namespace profiler
 {
 inline constexpr int kStrided = 0;
 }
 
-namespace quarisma::profiler_impl::impl
+namespace profiler::profiler_impl::impl
 {
 
 enum class EventType : uint8_t
@@ -54,7 +54,7 @@ enum class EventType : uint8_t
 struct PROFILER_VISIBILITY RawTensorMetadataBase
 {
     RawTensorMetadataBase() = default;
-    explicit RawTensorMetadataBase(const quarisma::Tensor& t);
+    explicit RawTensorMetadataBase(const profiler::Tensor& t);
 
     StorageImplData data_;
     int             dtype_{0};
@@ -71,12 +71,12 @@ struct PROFILER_VISIBILITY RawTensorMetadata : RawTensorMetadataBase
     RawTensorMetadata& operator=(const RawTensorMetadata&)     = default;
     RawTensorMetadata& operator=(RawTensorMetadata&&) noexcept = default;
     ~RawTensorMetadata()                                       = default;
-    explicit RawTensorMetadata(const quarisma::Tensor& t);
+    explicit RawTensorMetadata(const profiler::Tensor& t);
 
     // Wrap `weak_self_` in `std::optional` and split device into components to
     // keep struct default constructable. (which the std::array initializer needs)
     std::optional<WeakTensor> weak_self_;
-    quarisma::device_enum     device_type_{quarisma::device_enum::CPU};
+    profiler::device_enum     device_type_{profiler::device_enum::CPU};
     int16_t                   device_index_{-1};
 };
 
@@ -89,7 +89,7 @@ struct PROFILER_VISIBILITY TensorMetadata : public RawTensorMetadataBase
     TensorImplAddress impl() const { return {}; }
 
     WeakTensor              weak_self_;
-    quarisma::device_option device_;
+    profiler::device_option device_;
     std::vector<int64_t>    sizes_;
     std::vector<int64_t>    strides_;
 
@@ -113,7 +113,7 @@ struct PROFILER_VISIBILITY ProfilerStepInfo
 };
 
 using op_input_t =
-    std::variant<TensorMetadata, std::vector<TensorMetadata>, quarisma::IValue, std::nullopt_t>;
+    std::variant<TensorMetadata, std::vector<TensorMetadata>, profiler::IValue, std::nullopt_t>;
 
 // ============================================================================
 // == ExtraFields =============================================================
@@ -125,7 +125,7 @@ struct TorchOpBasicFields
 {
     int64_t               sequence_number_{0};
     uint64_t              forward_tid_{0};
-    quarisma::RecordScope scope_{};
+    profiler::RecordScope scope_{};
     bool                  is_async_{false};
     uint64_t              record_function_id_{0};
     int64_t               debug_handle_{0};
@@ -138,9 +138,9 @@ struct TorchOpBasicFields
 
 using jit_stack_t   = std::vector<std::string>;
 using jit_modules_t = std::vector<std::string>;
-using extra_args_t  = std::unordered_map<std::string, quarisma::IValue>;
+using extra_args_t  = std::unordered_map<std::string, profiler::IValue>;
 using extra_meta_t  = std::unordered_map<std::string, std::string>;
-using kwinputs_t    = std::unordered_map<std::string, quarisma::IValue>;
+using kwinputs_t    = std::unordered_map<std::string, profiler::IValue>;
 
 struct FallbackPair
 {
@@ -154,7 +154,7 @@ struct ExtraFields<EventType::TorchOp> : TorchOpBasicFields
     ExtraFields(
         TorchOpBasicFields&&               f,
         uint64_t                           correlation_id,
-        quarisma::time_t                   end_time_ns,
+        profiler::time_t                   end_time_ns,
         std::vector<op_input_t>&&          inputs,
         std::vector<op_input_t>&&          concrete_inputs,
         jit_stack_t&&                      jit_stack,
@@ -181,7 +181,7 @@ struct ExtraFields<EventType::TorchOp> : TorchOpBasicFields
     {
     }
     uint64_t                         correlation_id_;
-    quarisma::time_t                 end_time_ns_;
+    profiler::time_t                 end_time_ns_;
     std::vector<op_input_t>          inputs_;
     std::vector<op_input_t>          concrete_inputs_;
     jit_stack_t                      jit_stack_;
@@ -201,7 +201,7 @@ struct ExtraFields<EventType::Backend>
     int64_t               start_time_us_;
     int64_t               end_time_us_;
     int64_t               debug_handle_;
-    quarisma::RecordScope scope_;
+    profiler::RecordScope scope_;
     std::string           name_;
     std::string           backend_;
     jit_stack_t           jit_stack_;
@@ -218,7 +218,7 @@ struct ExtraFields<EventType::PythonGC>
 template <>
 struct ExtraFields<EventType::Vulkan>
 {
-    using raw_event_t = std::pair<quarisma::approx_time_t, vulkan_id_t>;
+    using raw_event_t = std::pair<profiler::approx_time_t, vulkan_id_t>;
     std::string name_;
     int64_t     duration_ns_{0};
     // While building the event tree, we want to report a vulkan event's duration
@@ -228,12 +228,12 @@ struct ExtraFields<EventType::Vulkan>
 
 struct RawAllocation
 {
-    quarisma::approx_time_t start_time_;
+    profiler::approx_time_t start_time_;
     void*                   ptr_;
     int64_t                 alloc_size_;
     size_t                  total_allocated_;
     size_t                  total_reserved_;
-    quarisma::device_enum   device_type_;
+    profiler::device_enum   device_type_;
     int16_t                 device_index_;
 };
 
@@ -245,9 +245,9 @@ struct ExtraFields<EventType::Allocation> : RawAllocation
 {
     ExtraFields(const RawAllocation& allocation) : RawAllocation(allocation) {}
 
-    quarisma::device_option device() const
+    profiler::device_option device() const
     {
-        quarisma::device_option d{};
+        profiler::device_option d{};
         d.type_  = device_type_;
         d.index_ = device_index_;
         return d;
@@ -260,11 +260,11 @@ struct ExtraFields<EventType::Allocation> : RawAllocation
 template <>
 struct ExtraFields<EventType::OutOfMemory>
 {
-    quarisma::approx_time_t start_time_;
+    profiler::approx_time_t start_time_;
     int64_t                 alloc_size_;
     size_t                  total_allocated_;
     size_t                  total_reserved_;
-    quarisma::device_enum   device_type_;
+    profiler::device_enum   device_type_;
     int16_t                 device_index_;
 };
 
@@ -276,8 +276,8 @@ static_assert(
 struct PyFrameState
 {
     int                  line_no_;
-    quarisma::StringView filename_;
-    quarisma::StringView funcname_;
+    profiler::StringView filename_;
+    profiler::StringView funcname_;
 };
 
 template <typename T, typename Tag>
@@ -300,7 +300,7 @@ struct NNModuleInfo
 
     PyModuleSelf       self_;
     PyModuleCls        cls_;
-    quarisma::StringView cls_name_;
+    profiler::StringView cls_name_;
 
     std::vector<ParameterInfo> parameters_;
     // Indicates that `self_` is the kth instance of `cls_` observed.
@@ -318,19 +318,19 @@ struct OptimizerInfo
 
     PyOptimizerSelf    self_;
     PyOptimizerCls     cls_;
-    quarisma::StringView cls_name_;
+    profiler::StringView cls_name_;
 
     std::vector<ParameterInfo> parameters_;
 };
 
 struct PyExtraFieldsBase
 {
-    PyExtraFieldsBase(quarisma::time_t end_time_ns, size_t python_tid, PyFrameState caller)
+    PyExtraFieldsBase(profiler::time_t end_time_ns, size_t python_tid, PyFrameState caller)
         : end_time_ns_{end_time_ns}, python_tid_{python_tid}, caller_{std::move(caller)}
     {
     }
 
-    quarisma::time_t end_time_ns_;
+    profiler::time_t end_time_ns_;
     size_t         python_tid_;
     PyFrameState   caller_;
 
@@ -348,7 +348,7 @@ struct ExtraFields<EventType::PyCall> : public PyExtraFieldsBase
         std::optional<OptimizerInfo> optimizer_info_;
     };
 
-    ExtraFields(quarisma::time_t end_time_ns, size_t python_tid, PyFrameState caller, args_t args)
+    ExtraFields(profiler::time_t end_time_ns, size_t python_tid, PyFrameState caller, args_t args)
         : PyExtraFieldsBase(end_time_ns, python_tid, std::move(caller)),
           callsite_{std::move(args.frame_state_)},
           module_{std::move(args.module_info_)},
@@ -364,15 +364,15 @@ struct ExtraFields<EventType::PyCall> : public PyExtraFieldsBase
 template <>
 struct ExtraFields<EventType::PyCCall> : public PyExtraFieldsBase
 {
-    using args_t = quarisma::StringView;
+    using args_t = profiler::StringView;
 
-    ExtraFields(quarisma::time_t end_time_ns, size_t python_tid, PyFrameState caller, args_t args)
+    ExtraFields(profiler::time_t end_time_ns, size_t python_tid, PyFrameState caller, args_t args)
         : PyExtraFieldsBase(end_time_ns, python_tid, std::move(caller)),
           function_name_{std::move(args)}
     {
     }
 
-    quarisma::StringView function_name_;
+    profiler::StringView function_name_;
 };
 #endif
 
@@ -446,7 +446,7 @@ struct PROFILER_VISIBILITY Result : public std::enable_shared_from_this<Result>
     uint64_t                correlationID() const;
     int64_t                 endTimeNS() const;
     uint64_t                endTID() const;
-    quarisma::device_enum   deviceType() const;
+    profiler::device_enum   deviceType() const;
 
     int64_t                   start_time_ns_;
     uint64_t                  start_tid_;
@@ -467,7 +467,7 @@ struct PROFILER_VISIBILITY Result : public std::enable_shared_from_this<Result>
     std::vector<std::shared_ptr<Result>>                     children_;
     bool                                                     finished_{false};
     bool                                                     hidden_{false};
-    const quarisma::profiler_impl::impl::kineto::activity_t* kineto_activity_{nullptr};
+    const profiler::profiler_impl::impl::kineto::activity_t* kineto_activity_{nullptr};
 
 private:
     template <EventType E>
@@ -490,15 +490,15 @@ private:
     }
 };
 
-struct KinetoObserverContext : public quarisma::ObserverContext
+struct KinetoObserverContext : public profiler::ObserverContext
 {
     struct Event
     {
         TorchOpBasicFields      basic_fields_;
-        quarisma::approx_time_t start_time_;
+        profiler::approx_time_t start_time_;
 
         // Set in the exit callback.
-        quarisma::approx_time_t end_time_{std::numeric_limits<quarisma::approx_time_t>::min()};
+        profiler::approx_time_t end_time_{std::numeric_limits<profiler::approx_time_t>::min()};
 
         bool                             allow_tf32_cublas_;
         std::unique_ptr<perf_counters_t> counters_;
@@ -524,7 +524,7 @@ constexpr int SCALAR_LIST_LENGTH_LIMIT = 30;
 class InputOutputEncoder final
 {
 public:
-    void push(quarisma::array_ref<const quarisma::IValue> values);
+    void push(profiler::array_ref<const profiler::IValue> values);
 
     // Used during post-processing to unpack the encoded data.
     // Each method returns a "supplier" lambda which takes no arguments;
@@ -536,7 +536,7 @@ public:
     auto getInputShapeGenerator();
     auto getConcreteInputGenerator();
 
-    static bool isSupportedScalarList(const quarisma::IValue& list_candidate);
+    static bool isSupportedScalarList(const profiler::IValue& list_candidate);
 
     void clear();
 
@@ -559,7 +559,7 @@ public:
     };
 
 private:
-    void push(const quarisma::Tensor& t);
+    void push(const profiler::Tensor& t);
 
     // Implementation detail for getInputShapeGenerator and
     // getConcreteInputGenerator
@@ -568,17 +568,17 @@ private:
     AppendOnlyList<Tag, IO_ENCODER_DEFAULT_BLOCK_SIZE>               tags_;
     AppendOnlyList<RawTensorMetadata, IO_ENCODER_DEFAULT_BLOCK_SIZE> tensor_metadata_;
     AppendOnlyList<int64_t, IO_ENCODER_DEFAULT_BLOCK_SIZE>           tensor_sizes_strides_;
-    AppendOnlyList<quarisma::IValue, IO_ENCODER_DEFAULT_BLOCK_SIZE>  ivalues_;
+    AppendOnlyList<profiler::IValue, IO_ENCODER_DEFAULT_BLOCK_SIZE>  ivalues_;
 };
 
-using perf_profiler_t = quarisma::profiler_impl::impl::linux_perf::PerfProfiler;
+using perf_profiler_t = profiler::profiler_impl::impl::linux_perf::PerfProfiler;
 
 class PROFILER_VISIBILITY ThreadLocalSubqueue
 {
 public:
     ThreadLocalSubqueue(const uint64_t tid, ProfilerConfig config);
 
-    std::unique_ptr<KinetoObserverContext> begin_op(const quarisma::RecordFunction& fn);
+    std::unique_ptr<KinetoObserverContext> begin_op(const profiler::RecordFunction& fn);
 
     template <class... Args>
     void emplace_backend_event(Args&&... args)
@@ -641,7 +641,7 @@ private:
         void materialize(
             std::vector<std::shared_ptr<Result>>&                           out,
             std::vector<ProfilerStepInfo>&                                  step_info,
-            const std::function<quarisma::time_t(quarisma::approx_time_t)>& time_converter,
+            const std::function<profiler::time_t(profiler::approx_time_t)>& time_converter,
             const uint64_t                                                  tid,
             const kineto::DeviceAndResource&                                kineto_info);
 
@@ -701,10 +701,10 @@ private:
     AppendOnlyList<ExtraFields<EventType::OutOfMemory>, BlockSize> ooms_;
 
     // with_stack (Python)
-    AppendOnlyList<std::pair<python_tracer::TraceKey, quarisma::approx_time_t>, BlockSize>
+    AppendOnlyList<std::pair<python_tracer::TraceKey, profiler::approx_time_t>, BlockSize>
         py_calls_;
     // gc with_stack (Python)
-    AppendOnlyList<std::pair<std::string, quarisma::approx_time_t>, BlockSize> pythongc_;
+    AppendOnlyList<std::pair<std::string, profiler::approx_time_t>, BlockSize> pythongc_;
 };
 
 class PROFILER_VISIBILITY RecordQueue
@@ -721,9 +721,9 @@ public:
     // NB: This is a destructive operation.
     std::pair<
         std::vector<std::shared_ptr<Result>>,
-        std::unique_ptr<quarisma::profiler_impl::impl::kineto::ActivityTraceWrapper>>
+        std::unique_ptr<profiler::profiler_impl::impl::kineto::ActivityTraceWrapper>>
     getRecords(
-        std::function<quarisma::time_t(quarisma::approx_time_t)> time_converter,
+        std::function<profiler::time_t(profiler::approx_time_t)> time_converter,
         uint64_t                                                 start_time_ns,
         uint64_t                                                 end_time_ns);
 
@@ -731,7 +731,7 @@ private:
     uint32_t                                                                id_;
     ProfilerConfig                                                          config_;
     std::set<ActivityType>                                                  activities_;
-    quarisma::flat_hash_map<uint64_t, std::unique_ptr<ThreadLocalSubqueue>> sub_queues_;
+    profiler::flat_hash_map<uint64_t, std::unique_ptr<ThreadLocalSubqueue>> sub_queues_;
     std::mutex                                                              sub_queue_mutex_;
     std::unique_ptr<python_tracer::PythonTracerBase>                        python_tracer_;
 };
@@ -754,4 +754,4 @@ PROFILER_API bool get_record_tensor_addrs_enabled();
 PROFILER_API void set_record_tensor_addrs_enabled_fn(std::function<bool()> /*fn*/);
 PROFILER_API void set_record_tensor_addrs_enabled_val(bool /*val*/);
 
-}  // namespace quarisma::profiler_impl::impl
+}  // namespace profiler::profiler_impl::impl

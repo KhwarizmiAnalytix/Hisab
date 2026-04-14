@@ -21,8 +21,7 @@
  *   Licensed under BSD-3-Clause
  */
 
-#ifndef STDTHREAD_PARALLEL_TOOLS_IMPL_H
-#define STDTHREAD_PARALLEL_TOOLS_IMPL_H
+#pragma once
 
 #include <algorithm>   // For std::sort
 #include <functional>  // For std::bind
@@ -104,4 +103,3 @@ PARALLEL_API bool parallel_tools_impl<backend_type::std_thread>::is_parallel_sco
 }  // namespace detail
 }  // namespace parallel
 
-#endif

@@ -11,20 +11,20 @@ include_guard(GLOBAL)
 
 # CUDA Support Flag Controls whether CUDA GPU acceleration is enabled for the build. When enabled,
 # requires CUDA 12.0+ and configures GPU compilation.
-option(QUARISMA_ENABLE_CUDA "Enable CUDA compilation" OFF)
-mark_as_advanced(QUARISMA_ENABLE_CUDA)
+option(PROJECT_ENABLE_CUDA "Enable CUDA compilation" OFF)
+mark_as_advanced(PROJECT_ENABLE_CUDA)
 
 # CUDA is not supported with the MinGW/MSYS2 toolchain in this project.
 # Keep configuration simple and deterministic: force-disable and skip all CUDA setup.
 if(WIN32 AND (MINGW OR CMAKE_CXX_COMPILER MATCHES "msys64"))
-  if(QUARISMA_ENABLE_CUDA)
-    message(STATUS "CUDA: disabled on Windows+MinGW/MSYS2 toolchains (forcing QUARISMA_ENABLE_CUDA=OFF)")
+  if(PROJECT_ENABLE_CUDA)
+    message(STATUS "CUDA: disabled on Windows+MinGW/MSYS2 toolchains (forcing PROJECT_ENABLE_CUDA=OFF)")
   endif()
-  set(QUARISMA_ENABLE_CUDA OFF CACHE BOOL "Enable CUDA compilation" FORCE)
+  set(PROJECT_ENABLE_CUDA OFF CACHE BOOL "Enable CUDA compilation" FORCE)
   return()
 endif()
 
-if(NOT QUARISMA_ENABLE_CUDA)
+if(NOT PROJECT_ENABLE_CUDA)
   return()
 endif()
 
@@ -112,9 +112,9 @@ if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
 endif()
 
 # GPU Architecture options
-set(QUARISMA_CUDA_ARCH_OPTIONS "native" CACHE STRING "Which GPU Architecture(s) to compile for")
+set(PROJECT_CUDA_ARCH_OPTIONS "native" CACHE STRING "Which GPU Architecture(s) to compile for")
 set_property(
-  CACHE QUARISMA_CUDA_ARCH_OPTIONS
+  CACHE PROJECT_CUDA_ARCH_OPTIONS
   PROPERTY STRINGS
            native
            fermi
@@ -131,7 +131,7 @@ set_property(
 )
 
 # Set architectures based on user selection
-if(QUARISMA_CUDA_ARCH_OPTIONS STREQUAL "native")
+if(PROJECT_CUDA_ARCH_OPTIONS STREQUAL "native")
   # "native" requires CMake to probe the GPU at configure time.  When
   # CMAKE_CUDA_COMPILER_FORCED is set (Clang + CMake 4.2 workaround) that
   # probe is skipped, so CMake cannot resolve "native" during generation.
@@ -145,55 +145,55 @@ if(QUARISMA_CUDA_ARCH_OPTIONS STREQUAL "native")
   else()
     set(CMAKE_CUDA_ARCHITECTURES "native")
   endif()
-elseif(QUARISMA_CUDA_ARCH_OPTIONS STREQUAL "fermi")
+elseif(PROJECT_CUDA_ARCH_OPTIONS STREQUAL "fermi")
   set(CMAKE_CUDA_ARCHITECTURES "20")
-elseif(QUARISMA_CUDA_ARCH_OPTIONS STREQUAL "kepler")
+elseif(PROJECT_CUDA_ARCH_OPTIONS STREQUAL "kepler")
   set(CMAKE_CUDA_ARCHITECTURES "30;35")
-elseif(QUARISMA_CUDA_ARCH_OPTIONS STREQUAL "maxwell")
+elseif(PROJECT_CUDA_ARCH_OPTIONS STREQUAL "maxwell")
   set(CMAKE_CUDA_ARCHITECTURES "50")
-elseif(QUARISMA_CUDA_ARCH_OPTIONS STREQUAL "pascal")
+elseif(PROJECT_CUDA_ARCH_OPTIONS STREQUAL "pascal")
   set(CMAKE_CUDA_ARCHITECTURES "60;61")
-elseif(QUARISMA_CUDA_ARCH_OPTIONS STREQUAL "volta")
+elseif(PROJECT_CUDA_ARCH_OPTIONS STREQUAL "volta")
   set(CMAKE_CUDA_ARCHITECTURES "70")
-elseif(QUARISMA_CUDA_ARCH_OPTIONS STREQUAL "turing")
+elseif(PROJECT_CUDA_ARCH_OPTIONS STREQUAL "turing")
   set(CMAKE_CUDA_ARCHITECTURES "75")
-elseif(QUARISMA_CUDA_ARCH_OPTIONS STREQUAL "ampere")
+elseif(PROJECT_CUDA_ARCH_OPTIONS STREQUAL "ampere")
   set(CMAKE_CUDA_ARCHITECTURES "80;86")
-elseif(QUARISMA_CUDA_ARCH_OPTIONS STREQUAL "ada")
+elseif(PROJECT_CUDA_ARCH_OPTIONS STREQUAL "ada")
   set(CMAKE_CUDA_ARCHITECTURES "89;90")
-elseif(QUARISMA_CUDA_ARCH_OPTIONS STREQUAL "hopper")
+elseif(PROJECT_CUDA_ARCH_OPTIONS STREQUAL "hopper")
   set(CMAKE_CUDA_ARCHITECTURES "90")
-elseif(QUARISMA_CUDA_ARCH_OPTIONS STREQUAL "all")
+elseif(PROJECT_CUDA_ARCH_OPTIONS STREQUAL "all")
   set(CMAKE_CUDA_ARCHITECTURES "50;60;70;75;80;86;89;90")
-elseif(QUARISMA_CUDA_ARCH_OPTIONS STREQUAL "none")
+elseif(PROJECT_CUDA_ARCH_OPTIONS STREQUAL "none")
   # Don't set any architectures, let parent project handle it
 endif()
 
 # CUDA Allocation Strategy Configuration (defined in main CMakeLists.txt)
-message(STATUS "CUDA allocation strategy: ${QUARISMA_GPU_ALLOC}")
+message(STATUS "CUDA allocation strategy: ${PROJECT_GPU_ALLOC}")
 
 # Set preprocessor definitions based on allocation strategy
-if(QUARISMA_GPU_ALLOC STREQUAL "SYNC")
-  add_compile_definitions(QUARISMA_CUDA_ALLOC_SYNC)
+if(PROJECT_GPU_ALLOC STREQUAL "SYNC")
+  add_compile_definitions(PROJECT_CUDA_ALLOC_SYNC)
   message(STATUS "Using synchronous CUDA allocation (cuMemAlloc/cuMemFree)")
-elseif(QUARISMA_GPU_ALLOC STREQUAL "ASYNC")
-  add_compile_definitions(QUARISMA_CUDA_ALLOC_ASYNC)
+elseif(PROJECT_GPU_ALLOC STREQUAL "ASYNC")
+  add_compile_definitions(PROJECT_CUDA_ALLOC_ASYNC)
   message(STATUS "Using asynchronous CUDA allocation (cuMemAllocAsync/cuMemFreeAsync)")
-elseif(QUARISMA_GPU_ALLOC STREQUAL "POOL_ASYNC")
-  add_compile_definitions(QUARISMA_CUDA_ALLOC_POOL_ASYNC)
+elseif(PROJECT_GPU_ALLOC STREQUAL "POOL_ASYNC")
+  add_compile_definitions(PROJECT_CUDA_ALLOC_POOL_ASYNC)
   message(STATUS "Using pool-based asynchronous CUDA allocation (cuMemAllocFromPoolAsync)")
 endif()
 
 # Set up CUDA libraries using modern imported targets
-set(QUARISMA_CUDA_LIBRARIES CUDA::cudart CUDA::cuda_driver CUDA::cusparse CUDA::curand CUDA::cublas)
+set(PROJECT_CUDA_LIBRARIES CUDA::cudart CUDA::cuda_driver CUDA::cusparse CUDA::curand CUDA::cublas)
 
 # Add nvperf_host if available (required by Kineto for CUPTI range profiler)
 if(TARGET CUDA::nvperf_host)
-  list(APPEND QUARISMA_CUDA_LIBRARIES CUDA::nvperf_host)
+  list(APPEND PROJECT_CUDA_LIBRARIES CUDA::nvperf_host)
 endif()
 
 # Add CUDA libraries to the dependency list
-list(APPEND QUARISMA_DEPENDENCY_LIBS ${QUARISMA_CUDA_LIBRARIES})
+list(APPEND PROJECT_DEPENDENCY_LIBS ${PROJECT_CUDA_LIBRARIES})
 
 # Add include directories (using modern CUDAToolkit variables)
 include_directories(SYSTEM "${CUDAToolkit_INCLUDE_DIRS}")
@@ -222,4 +222,4 @@ else()
 endif()
 
 # For backward compatibility, set legacy variables (if needed elsewhere)
-set(QUARISMA_CUDA_FOUND TRUE)
+set(PROJECT_CUDA_FOUND TRUE)

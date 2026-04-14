@@ -1,6 +1,6 @@
 #if PROFILER_HAS_NATIVE_PROFILER
 /*
- * Quarisma: High-Performance Computational Library
+ * Profiler: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -12,7 +12,7 @@
 #include "native/analysis/stat_summarizer_options.h"
 #include "native/analysis/stats_calculator.h"
 
-using namespace quarisma;
+using namespace profiler;
 
 // Test stats_calculator initialization
 PROFILERTEST(Profiler, stats_calculator_default_initialization)

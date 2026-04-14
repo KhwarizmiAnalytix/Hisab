@@ -47,7 +47,7 @@ limitations under the License.
 #include "common/profiler_export.h"
 #include "native/analysis/stat_summarizer_options.h"
 
-namespace quarisma
+namespace profiler
 {
 
 template <typename ValueType, typename HighPrecisionValueType = double>
@@ -279,4 +279,4 @@ private:
     stat_summarizer_options       options_;
 };
 
-}  // namespace quarisma
+}  // namespace profiler

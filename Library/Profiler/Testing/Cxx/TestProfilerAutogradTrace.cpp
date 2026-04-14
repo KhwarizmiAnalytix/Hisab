@@ -6,7 +6,7 @@
 #include <string>
 
 #include "ProfilerTest.h"
-//#include "logging/logger.h"
+//#include "logger.h"
 
 #if PROFILER_HAS_KINETO
 #include "bespoke/common/api.h"
@@ -19,7 +19,7 @@ namespace
 std::string makeTracePath()
 {
     const auto timestamp = std::chrono::steady_clock::now().time_since_epoch().count();
-    return "quarisma_autograd_trace.json";
+    return "profiler_autograd_trace.json";
 }
 
 void runSampleWork()
@@ -29,10 +29,10 @@ void runSampleWork()
 
     const auto start_time = std::chrono::steady_clock::now();
 
-    auto step_callbacks = quarisma::getStepCallbacksUnlessEmpty(quarisma::RecordScope::FUNCTION);
+    auto step_callbacks = profiler::getStepCallbacksUnlessEmpty(profiler::RecordScope::FUNCTION);
     if PROFILER_UNLIKELY (step_callbacks.has_value())
     {
-        quarisma::RecordFunction guard(std::move(*step_callbacks));
+        profiler::RecordFunction guard(std::move(*step_callbacks));
         auto                     f = [](int n)
         {
             double accumulator = 0.;
@@ -60,15 +60,15 @@ void runSampleWork()
 
 PROFILERTEST(profiler, autograd_chrome_trace_export)
 {
-    const std::set<quarisma::autograd::profiler_impl::ActivityType> activities{
-        quarisma::autograd::profiler_impl::ActivityType::CPU,
+    const std::set<profiler::autograd::profiler_impl::ActivityType> activities{
+        profiler::autograd::profiler_impl::ActivityType::CPU,
     };
 
     // Enable RecordFunction FIRST before enabling profiler
-    //quarisma::RecordFunctionGuard record_function_guard(/*is_enabled=*/true);
+    //profiler::RecordFunctionGuard record_function_guard(/*is_enabled=*/true);
 
-    quarisma::autograd::profiler_impl::ProfilerConfig config(
-        quarisma::autograd::profiler_impl::ProfilerState::KINETO,
+    profiler::autograd::profiler_impl::ProfilerConfig config(
+        profiler::autograd::profiler_impl::ProfilerState::KINETO,
         /*report_input_shapes=*/true,
         /*profile_memory=*/true,
         /*with_stack=*/true,
@@ -76,18 +76,18 @@ PROFILERTEST(profiler, autograd_chrome_trace_export)
         /*with_modules=*/false);
 
     // Specify USER_SCOPE to capture RECORD_USER_SCOPE events
-    const std::unordered_set<quarisma::RecordScope> scopes = {quarisma::RecordScope::FUNCTION};
+    const std::unordered_set<profiler::RecordScope> scopes = {profiler::RecordScope::FUNCTION};
 
-    quarisma::autograd::profiler_impl::prepareProfiler(config, activities);
-    quarisma::autograd::profiler_impl::enableProfiler(config, activities, scopes);
+    profiler::autograd::profiler_impl::prepareProfiler(config, activities);
+    profiler::autograd::profiler_impl::enableProfiler(config, activities, scopes);
 
-    EXPECT_TRUE(quarisma::hasCallbacks()) << "RecordFunction callbacks not registered for profiler";
+    EXPECT_TRUE(profiler::hasCallbacks());
 
-    std::cout << "Callbacks registered: " << quarisma::hasCallbacks() << std::endl;
+    std::cout << "Callbacks registered: " << profiler::hasCallbacks() << std::endl;
 
     runSampleWork();
 
-    auto result = quarisma::autograd::profiler_impl::disableProfiler();
+    auto result = profiler::autograd::profiler_impl::disableProfiler();
     EXPECT_NE(result, nullptr);
     const auto trace_path = makeTracePath();
     result->save(trace_path);
@@ -95,7 +95,7 @@ PROFILERTEST(profiler, autograd_chrome_trace_export)
     std::ifstream trace_input(trace_path, std::ios::binary | std::ios::ate);
     EXPECT_TRUE(trace_input.is_open());
     const auto file_size = static_cast<std::size_t>(trace_input.tellg());
-    EXPECT_GT(file_size, 0) << "Trace file is empty";
+    EXPECT_GT(file_size, 0);
     trace_input.close();
 
     // Keep the file for inspection - comment out deletion

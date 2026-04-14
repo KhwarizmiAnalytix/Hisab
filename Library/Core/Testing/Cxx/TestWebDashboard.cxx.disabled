@@ -4,8 +4,8 @@
  */
 
 #include "CoreTest.h"
-#include "memory/visualization/web_dashboard.h"
-#include "memory/cpu/allocator.h"
+#include "visualization/web_dashboard.h"
+#include "cpu/allocator.h"
 
 #include <memory>
 #include <iostream>

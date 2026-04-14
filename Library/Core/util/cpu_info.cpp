@@ -121,12 +121,12 @@ void cpu_info::info()
     fmt::print("                     Flags                        \n");
     fmt::print("==================================================\n");
 
-#if QUARISMA_HAS_MKL
+#if CORE_HAS_MKL
     fmt::print("MKL is enabled!\n");
-#endif  // QUARISMA_HAS_MKL
-#if QUARISMA_HAS_TBB
+#endif  // CORE_HAS_MKL
+#if PROJECT_HAS_TBB
     fmt::print("TBB is enabled!\n");
-#endif  // QUARISMA_HAS_MKL
+#endif  // CORE_HAS_MKL
 }
 
 void cpu_info::cpuinfo_cach(

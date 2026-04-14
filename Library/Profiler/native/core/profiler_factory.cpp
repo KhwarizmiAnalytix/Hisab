@@ -42,7 +42,7 @@ limitations under the License.
 #include "native/core/profiler_interface.h"
 #include "native/core/profiler_options.h"
 
-namespace quarisma
+namespace profiler
 {
 
 namespace
@@ -137,4 +137,4 @@ void clear_registered_profilers_for_test()
     factory_registry::instance().clear_factories();
 }
 
-}  // namespace quarisma
+}  // namespace profiler

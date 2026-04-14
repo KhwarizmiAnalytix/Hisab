@@ -28,10 +28,10 @@
 #include "native/exporters/xplane/xplane.h"
 #include "native/tracing/tracing.h"
 
-namespace quarisma::profiler_impl
+namespace profiler::profiler_impl
 {
 
-class threadpool_event_collector : public quarisma::tracing::event_collector
+class threadpool_event_collector : public profiler::tracing::event_collector
 {
 public:
     threadpool_event_collector() = default;
@@ -56,4 +56,4 @@ private:
 
 std::unique_ptr<profiler_interface> create_threadpool_profiler();
 
-}  // namespace quarisma::profiler_impl
+}  // namespace profiler::profiler_impl

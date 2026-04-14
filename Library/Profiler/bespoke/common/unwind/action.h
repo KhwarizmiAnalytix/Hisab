@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <ostream>
 
-namespace quarisma::unwind
+namespace profiler::unwind
 {
 
 enum
@@ -63,4 +63,4 @@ struct Action
     }
 };
 
-}  // namespace quarisma::unwind
+}  // namespace profiler::unwind

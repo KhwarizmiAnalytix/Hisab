@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-namespace quarisma
+namespace profiler
 {
 namespace detail
 {
@@ -34,4 +34,4 @@ detail::overloaded_t<Ts...> overloaded(Ts... ts)
     return {std::move(ts)...};
 }
 
-}  // namespace quarisma
+}  // namespace profiler

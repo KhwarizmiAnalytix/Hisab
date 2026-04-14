@@ -7,7 +7,7 @@
 #include "bespoke/common/collection.h"
 #include "common/overloaded.h"
 
-namespace quarisma::profiler_impl::impl
+namespace profiler::profiler_impl::impl
 {
 
 namespace
@@ -16,7 +16,7 @@ constexpr TensorImplAddress NoTensorImpl{nullptr};
 
 struct DataFlowHash
 {
-    size_t operator()(const std::pair<StorageImplData, quarisma::device_option>& x) const noexcept
+    size_t operator()(const std::pair<StorageImplData, profiler::device_option>& x) const noexcept
     {
         size_t h = std::hash<StorageImplData>{}(x.first);
         h ^= std::hash<int>{}(static_cast<int>(x.second.type_)) + 0x9e3779b9 + (h << 6) + (h >> 2);
@@ -37,7 +37,7 @@ struct RawTensorInfo
 {
     TensorImplAddress       impl_;
     StorageImplData         storage_;
-    quarisma::device_option device_;
+    profiler::device_option device_;
     bool                    is_free_;
 
     // Used to assign back to the original structs.
@@ -108,7 +108,7 @@ void calculateUniqueTensorIDs(std::vector<std::shared_ptr<Result>>& sorted_resul
         for (auto& result : sorted_results)
         {
             result->visit(
-                quarisma::overloaded(
+                profiler::overloaded(
                     [&](ExtraFields<EventType::TorchOp>& torch_op)
                     {
                         for (auto& i : torch_op.inputs_)
@@ -118,7 +118,7 @@ void calculateUniqueTensorIDs(std::vector<std::shared_ptr<Result>>& sorted_resul
                     },
                     [&](ExtraFields<EventType::PyCall>& py_call)
                     {
-                        // quarisma.nn.Module
+                        // profiler.nn.Module
                         if (py_call.module_.has_value() &&
                             seen_modules.insert(py_call.module_->self_).second)
                         {
@@ -129,7 +129,7 @@ void calculateUniqueTensorIDs(std::vector<std::shared_ptr<Result>>& sorted_resul
                             }
                         }
 
-                        // quarisma.optim.Optimizer
+                        // profiler.optim.Optimizer
                         if (py_call.optimizer_.has_value() &&
                             seen_optimizers.insert(py_call.optimizer_->self_).second)
                         {
@@ -150,7 +150,7 @@ void calculateUniqueTensorIDs(std::vector<std::shared_ptr<Result>>& sorted_resul
         // Simplified path: only process TorchOp events when Python support is disabled.
         for (auto& result : sorted_results)
         {
-            result->visit(quarisma::overloaded(
+            result->visit(profiler::overloaded(
                 [&](ExtraFields<EventType::TorchOp>& torch_op)
                 {
                     for (auto& i : torch_op.inputs_)
@@ -168,8 +168,8 @@ void calculateUniqueTensorIDs(std::vector<std::shared_ptr<Result>>& sorted_resul
     // --------------------------------------------------------------------------
     {
         size_t counter{1};
-        using key_t = std::pair<StorageImplData, quarisma::device_option>;
-        quarisma::flat_hash_map<key_t, size_t, DataFlowHash> versions;
+        using key_t = std::pair<StorageImplData, profiler::device_option>;
+        profiler::flat_hash_map<key_t, size_t, DataFlowHash> versions;
         for (auto& t : tensors)
         {
             auto inserted = versions.insert({{t.storage_, t.device_}, counter});
@@ -185,7 +185,7 @@ void calculateUniqueTensorIDs(std::vector<std::shared_ptr<Result>>& sorted_resul
     // Handle any allocation events which we cannot prove are for Tensor storage.
     // --------------------------------------------------------------------------
     {
-        quarisma::flat_hash_set<AllocationID> tensor_set;
+        profiler::flat_hash_set<AllocationID> tensor_set;
         for (const auto& t : tensors)
         {
             if (t.impl_ != NoTensorImpl)
@@ -209,9 +209,9 @@ void calculateUniqueTensorIDs(std::vector<std::shared_ptr<Result>>& sorted_resul
     // Handle the case that the storage of a TensorImpl changed.
     // --------------------------------------------------------------------------
     using storage_id_pair_t = std::pair<AllocationID, AllocationID>;
-    quarisma::flat_hash_set<storage_id_pair_t, DataFlowHash> same_group_set;
+    profiler::flat_hash_set<storage_id_pair_t, DataFlowHash> same_group_set;
     {
-        quarisma::flat_hash_map<TensorImplAddress, AllocationID> impl_map;
+        profiler::flat_hash_map<TensorImplAddress, AllocationID> impl_map;
         for (const auto& t : tensors)
         {
             // Storage allocations / frees don't have an associated TensorImpl, so
@@ -233,7 +233,7 @@ void calculateUniqueTensorIDs(std::vector<std::shared_ptr<Result>>& sorted_resul
 
     // Coalesce groups and assign final IDs.
     // --------------------------------------------------------------------------
-    quarisma::flat_hash_map<AllocationID, size_t> id_map;
+    profiler::flat_hash_map<AllocationID, size_t> id_map;
     {
         std::vector<storage_id_pair_t> unique_pairs;
         unique_pairs.reserve(same_group_set.size());
@@ -259,4 +259,4 @@ void calculateUniqueTensorIDs(std::vector<std::shared_ptr<Result>>& sorted_resul
     }
 }
 
-}  // namespace quarisma::profiler_impl::impl
+}  // namespace profiler::profiler_impl::impl

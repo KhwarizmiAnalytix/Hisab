@@ -11,7 +11,7 @@
 
 #include "bespoke/common/events.h"
 
-namespace quarisma::profiler_impl::impl::linux_perf
+namespace profiler::profiler_impl::impl::linux_perf
 {
 
 /*
@@ -100,4 +100,4 @@ private:
     std::vector<PerfEvent>      events_;
     std::stack<perf_counters_t> start_values_;
 };
-}  // namespace quarisma::profiler_impl::impl::linux_perf
+}  // namespace profiler::profiler_impl::impl::linux_perf

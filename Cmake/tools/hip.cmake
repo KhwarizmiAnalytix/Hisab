@@ -9,14 +9,14 @@
 include_guard(GLOBAL)
 
 # HIP GPU Support Flag Controls whether HIP GPU acceleration is enabled for AMD GPUs. When enabled,
-# requires CMake 3.21+ and ROCm/HIP toolkit. Mutually exclusive with QUARISMA_ENABLE_CUDA.
+# requires CMake 3.21+ and ROCm/HIP toolkit. Mutually exclusive with PROJECT_ENABLE_CUDA.
 cmake_dependent_option(
-  QUARISMA_ENABLE_HIP "Support HIP backend accelerator" OFF
-  "CMAKE_VERSION VERSION_GREATER_EQUAL 3.21;NOT QUARISMA_ENABLE_CUDA" OFF
+  PROJECT_ENABLE_HIP "Support HIP backend accelerator" OFF
+  "CMAKE_VERSION VERSION_GREATER_EQUAL 3.21;NOT PROJECT_ENABLE_CUDA" OFF
 )
-mark_as_advanced(QUARISMA_ENABLE_HIP)
+mark_as_advanced(PROJECT_ENABLE_HIP)
 
-if(NOT QUARISMA_ENABLE_HIP)
+if(NOT PROJECT_ENABLE_HIP)
   return()
 endif()
 
@@ -26,7 +26,7 @@ if(CMAKE_VERSION VERSION_LESS "3.21")
 endif()
 
 # Ensure CUDA is not enabled when HIP is enabled
-if(QUARISMA_ENABLE_CUDA)
+if(PROJECT_ENABLE_CUDA)
   message(FATAL_ERROR "Cannot enable both CUDA and HIP simultaneously. Please choose one.")
 endif()
 
@@ -59,9 +59,9 @@ if(NOT DEFINED CMAKE_HIP_ARCHITECTURES)
 endif()
 
 # GPU Architecture options for AMD GPUs
-set(QUARISMA_HIP_ARCH_OPTIONS "native" CACHE STRING "Which AMD GPU Architecture(s) to compile for")
+set(PROJECT_HIP_ARCH_OPTIONS "native" CACHE STRING "Which AMD GPU Architecture(s) to compile for")
 set_property(
-  CACHE QUARISMA_HIP_ARCH_OPTIONS
+  CACHE PROJECT_HIP_ARCH_OPTIONS
   PROPERTY STRINGS
            native
            gfx803 # Fiji (R9 Fury, R9 Nano)
@@ -76,49 +76,49 @@ set_property(
 )
 
 # Set architectures based on user selection
-if(QUARISMA_HIP_ARCH_OPTIONS STREQUAL "native")
+if(PROJECT_HIP_ARCH_OPTIONS STREQUAL "native")
   # Let CMake handle native detection
   set(CMAKE_HIP_ARCHITECTURES "native")
-elseif(QUARISMA_HIP_ARCH_OPTIONS STREQUAL "gfx803")
+elseif(PROJECT_HIP_ARCH_OPTIONS STREQUAL "gfx803")
   set(CMAKE_HIP_ARCHITECTURES "gfx803")
-elseif(QUARISMA_HIP_ARCH_OPTIONS STREQUAL "gfx900")
+elseif(PROJECT_HIP_ARCH_OPTIONS STREQUAL "gfx900")
   set(CMAKE_HIP_ARCHITECTURES "gfx900")
-elseif(QUARISMA_HIP_ARCH_OPTIONS STREQUAL "gfx906")
+elseif(PROJECT_HIP_ARCH_OPTIONS STREQUAL "gfx906")
   set(CMAKE_HIP_ARCHITECTURES "gfx906")
-elseif(QUARISMA_HIP_ARCH_OPTIONS STREQUAL "gfx908")
+elseif(PROJECT_HIP_ARCH_OPTIONS STREQUAL "gfx908")
   set(CMAKE_HIP_ARCHITECTURES "gfx908")
-elseif(QUARISMA_HIP_ARCH_OPTIONS STREQUAL "gfx90a")
+elseif(PROJECT_HIP_ARCH_OPTIONS STREQUAL "gfx90a")
   set(CMAKE_HIP_ARCHITECTURES "gfx90a")
-elseif(QUARISMA_HIP_ARCH_OPTIONS STREQUAL "gfx1030")
+elseif(PROJECT_HIP_ARCH_OPTIONS STREQUAL "gfx1030")
   set(CMAKE_HIP_ARCHITECTURES "gfx1030")
-elseif(QUARISMA_HIP_ARCH_OPTIONS STREQUAL "gfx1100")
+elseif(PROJECT_HIP_ARCH_OPTIONS STREQUAL "gfx1100")
   set(CMAKE_HIP_ARCHITECTURES "gfx1100")
-elseif(QUARISMA_HIP_ARCH_OPTIONS STREQUAL "all")
+elseif(PROJECT_HIP_ARCH_OPTIONS STREQUAL "all")
   set(CMAKE_HIP_ARCHITECTURES "gfx803;gfx900;gfx906;gfx908;gfx90a;gfx1030;gfx1100")
-elseif(QUARISMA_HIP_ARCH_OPTIONS STREQUAL "none")
+elseif(PROJECT_HIP_ARCH_OPTIONS STREQUAL "none")
   # Don't set any architectures, let parent project handle it
 endif()
 
 # HIP Allocation Strategy Configuration (uses same flag as CUDA)
-message(STATUS "HIP allocation strategy: ${QUARISMA_GPU_ALLOC}")
+message(STATUS "HIP allocation strategy: ${PROJECT_GPU_ALLOC}")
 
 # Set preprocessor definitions based on allocation strategy
-if(QUARISMA_GPU_ALLOC STREQUAL "SYNC")
-  add_compile_definitions(QUARISMA_HIP_ALLOC_SYNC)
+if(PROJECT_GPU_ALLOC STREQUAL "SYNC")
+  add_compile_definitions(PROJECT_HIP_ALLOC_SYNC)
   message(STATUS "Using synchronous HIP allocation (hipMalloc/hipFree)")
-elseif(QUARISMA_GPU_ALLOC STREQUAL "ASYNC")
-  add_compile_definitions(QUARISMA_HIP_ALLOC_ASYNC)
+elseif(PROJECT_GPU_ALLOC STREQUAL "ASYNC")
+  add_compile_definitions(PROJECT_HIP_ALLOC_ASYNC)
   message(STATUS "Using asynchronous HIP allocation (hipMallocAsync/hipFreeAsync)")
-elseif(QUARISMA_GPU_ALLOC STREQUAL "POOL_ASYNC")
-  add_compile_definitions(QUARISMA_HIP_ALLOC_POOL_ASYNC)
+elseif(PROJECT_GPU_ALLOC STREQUAL "POOL_ASYNC")
+  add_compile_definitions(PROJECT_HIP_ALLOC_POOL_ASYNC)
   message(STATUS "Using pool-based asynchronous HIP allocation (hipMallocFromPoolAsync)")
 endif()
 
 # Set up HIP libraries using modern imported targets
-set(QUARISMA_HIP_LIBRARIES hip::host hip::device)
+set(PROJECT_HIP_LIBRARIES hip::host hip::device)
 
 # Add HIP libraries to the dependency list
-list(APPEND QUARISMA_DEPENDENCY_LIBS ${QUARISMA_HIP_LIBRARIES})
+list(APPEND PROJECT_DEPENDENCY_LIBS ${PROJECT_HIP_LIBRARIES})
 
 # Add include directories
 include_directories(SYSTEM "${HIP_INCLUDE_DIRS}")
@@ -135,9 +135,9 @@ if(NOT MSVC)
 endif()
 
 # For backward compatibility, set legacy variables (if needed elsewhere)
-set(QUARISMA_HIP_FOUND TRUE)
-set(QUARISMA_ENABLE_HIP ON)
+set(PROJECT_HIP_FOUND TRUE)
+set(PROJECT_ENABLE_HIP ON)
 
 # Enable GPU compilation for HIP
-add_compile_definitions(QUARISMA_ENABLE_GPU)
-add_compile_definitions(QUARISMA_ENABLE_HIP)
+add_compile_definitions(PROJECT_ENABLE_GPU)
+add_compile_definitions(PROJECT_ENABLE_HIP)

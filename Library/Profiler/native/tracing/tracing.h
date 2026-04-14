@@ -26,7 +26,7 @@
 
 #include "common/profiler_export.h"
 
-namespace quarisma::tracing
+namespace profiler::tracing
 {
 
 // Identifiers for CPU profiler events emitted through the tracing interface.
@@ -97,6 +97,6 @@ private:
 // Return the pathname of the directory where profiler logs are written.
 PROFILER_API const char* get_log_dir();
 
-}  // namespace quarisma::tracing
+}  // namespace profiler::tracing
 
 #include "native/tracing/tracing_impl.h"

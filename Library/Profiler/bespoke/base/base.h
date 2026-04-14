@@ -5,12 +5,12 @@
 #include <memory>
 
 #include "common/profiler_export.h"
-//#include "memory/device.h"
+//#include "common/device.h"
 #include "common/strong_type.h"
 
 struct CUevent_st;
 
-namespace quarisma::profiler_impl::impl
+namespace profiler::profiler_impl::impl
 {
 
 // ----------------------------------------------------------------------------
@@ -47,4 +47,4 @@ using vulkan_id_t = strong::type<
     strong::convertible_to<int64_t>,
     strong::hashable>;
 
-}  // namespace quarisma::profiler_impl::impl
+}  // namespace profiler::profiler_impl::impl

@@ -7,7 +7,7 @@
 
 // Overview of the format described in
 // https://refspecs.linuxfoundation.org/LSB_1.3.0/gLSB/gLSB/ehframehdr.html
-namespace quarisma::unwind
+namespace profiler::unwind
 {
 
 struct EHFrameHdr
@@ -108,4 +108,4 @@ private:
     uint32_t table_size_;
 };
 
-}  // namespace quarisma::unwind
+}  // namespace profiler::unwind

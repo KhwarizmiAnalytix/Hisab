@@ -21,7 +21,7 @@
 
 /**
  * @file profiler.h
- * @brief Enhanced profiler system for comprehensive performance analysis in Quarisma applications
+ * @brief Enhanced profiler system for comprehensive performance analysis in Profiler applications
  *
  * This header provides a high-performance, thread-safe profiling system with:
  * - High-precision timing measurements (nanosecond accuracy)
@@ -31,7 +31,7 @@
  * - Multiple output formats (console, JSON, CSV, XML)
  * - Minimal performance overhead designed for production use
  *
- * @author Quarisma Development Team
+ * @author Profiler Development Team
  * @version 1.0
  * @date 2024
  */
@@ -65,7 +65,7 @@
 #include "native/memory/scoped_memory_debug_annotation.h"
 #include "native/tracing/traceme.h"
 
-namespace quarisma
+namespace profiler
 {
 
 // Forward declarations for enhanced profiler components
@@ -239,10 +239,10 @@ struct profiler_scope_data
     std::chrono::high_resolution_clock::time_point end_time_;
 
     /// Memory usage statistics for this scope
-    quarisma::memory_stats memory_stats_;
+    profiler::memory_stats memory_stats_;
 
     /// Timing statistics for this scope
-    quarisma::timing_stats timing_stats_;
+    profiler::timing_stats timing_stats_;
 
     /// ID of the thread that executed this scope
     std::thread::id thread_id_;
@@ -251,10 +251,10 @@ struct profiler_scope_data
     size_t depth_level_ = 0;
 
     /// Child scopes nested within this scope
-    std::vector<std::unique_ptr<quarisma::profiler_scope_data>> children_;
+    std::vector<std::unique_ptr<profiler::profiler_scope_data>> children_;
 
     /// Pointer to parent scope (nullptr for root scope)
-    quarisma::profiler_scope_data* parent_ = nullptr;
+    profiler::profiler_scope_data* parent_ = nullptr;
 
     /**
      * @brief Get the duration of this scope in milliseconds
@@ -292,7 +292,7 @@ public:
      * @brief Construct a new enhanced profiler session
      * @param options Configuration options for the profiler
      */
-    PROFILER_API explicit profiler_session(quarisma::profiler_options options);
+    PROFILER_API explicit profiler_session(profiler::profiler_options options);
 
     /**
      * @brief Destructor - automatically stops profiling if active
@@ -322,31 +322,31 @@ public:
      * @param name Human-readable name for the scope
      * @return Unique pointer to the created profiler scope
      */
-    PROFILER_API std::unique_ptr<quarisma::profiler_scope> create_scope(const std::string& name);
+    PROFILER_API std::unique_ptr<profiler::profiler_scope> create_scope(const std::string& name);
 
     /**
      * @brief Get reference to the memory tracker component
      * @return Reference to the memory tracker
      */
-    quarisma::memory_tracker& memory_tracker() { return *memory_tracker_; }
+    profiler::memory_tracker& memory_tracker() { return *memory_tracker_; }
 
     /**
      * @brief Get reference to the statistical analyzer component
      * @return Reference to the statistical analyzer
      */
-    quarisma::statistical_analyzer& statistical_analyzer() { return *statistical_analyzer_; }
+    profiler::statistical_analyzer& statistical_analyzer() { return *statistical_analyzer_; }
 
     /**
      * @brief Generate a comprehensive profiling report
      * @return Unique pointer to the generated report
      */
-    PROFILER_API std::unique_ptr<quarisma::profiler_report> generate_report() const;
+    PROFILER_API std::unique_ptr<profiler::profiler_report> generate_report() const;
 
     /**
      * @brief Access the raw XSpace captured during profiling.
      * @return Const reference to the collected XSpace timeline.
      */
-    const quarisma::x_space& collected_xspace() const { return xspace_; }
+    const profiler::x_space& collected_xspace() const { return xspace_; }
 
     /**
      * @brief Check whether the session captured any XSpace data.
@@ -392,12 +392,12 @@ public:
     /**
      * @brief Access the memory tracker in read-only form
      */
-    const quarisma::memory_tracker* memory_tracker_ptr() const { return memory_tracker_.get(); }
+    const profiler::memory_tracker* memory_tracker_ptr() const { return memory_tracker_.get(); }
 
     /**
      * @brief Access the statistical analyzer in read-only form
      */
-    const quarisma::statistical_analyzer* statistical_analyzer_ptr() const
+    const profiler::statistical_analyzer* statistical_analyzer_ptr() const
     {
         return statistical_analyzer_.get();
     }
@@ -418,13 +418,13 @@ public:
      * @brief Get read-only access to the root profiling scope
      * @return Const pointer to root scope data
      */
-    const quarisma::profiler_scope_data* get_root_scope() const { return root_scope_.get(); }
+    const profiler::profiler_scope_data* get_root_scope() const { return root_scope_.get(); }
 
 private:
     friend class profiler_session_builder;
 
     /// Configuration options for this profiler session
-    quarisma::profiler_options options_;
+    profiler::profiler_options options_;
 
     /// Atomic flag indicating if profiling is currently active
     std::atomic<bool> active_{false};
@@ -440,22 +440,22 @@ private:
     uint64_t end_time_ns_   = 0;
 
     /// Memory tracking component
-    std::unique_ptr<quarisma::memory_tracker> memory_tracker_;
+    std::unique_ptr<profiler::memory_tracker> memory_tracker_;
 
     /// Statistical analysis component
-    std::unique_ptr<quarisma::statistical_analyzer> statistical_analyzer_;
+    std::unique_ptr<profiler::statistical_analyzer> statistical_analyzer_;
 
     /// Mutex for thread-safe access to hierarchical profiling data
     mutable std::mutex scope_mutex_;
 
     /// Root scope of the profiling hierarchy
-    std::unique_ptr<quarisma::profiler_scope_data> root_scope_;
+    std::unique_ptr<profiler::profiler_scope_data> root_scope_;
 
     /// Pointer to the currently active scope
-    quarisma::profiler_scope_data* current_scope_ = nullptr;
+    profiler::profiler_scope_data* current_scope_ = nullptr;
 
     /// Thread-local storage for current scope (DLL-compatible implementation)
-    static thread_local quarisma::profiler_scope_data* thread_current_scope_;
+    static thread_local profiler::profiler_scope_data* thread_current_scope_;
 
     /**
      * @brief Initialize all profiler components
@@ -468,36 +468,36 @@ private:
     void cleanup_components();
 
     /// Build backend profiling options for registered profilers
-    quarisma::profile_options build_backend_profile_options() const;
+    profiler::profile_options build_backend_profile_options() const;
 
     /// Normalize timestamps of captured XSpace relative to session start
     void normalize_xspace(x_space* space) const;
 
     /// Profiler lock to avoid concurrent sessions
-    quarisma::ProfilerLock profiler_lock_;
+    profiler::ProfilerLock profiler_lock_;
 
     /// Backend profiler configuration and collection
-    quarisma::profile_options                      backend_profile_options_;
-    std::unique_ptr<quarisma::profiler_collection> backend_profilers_;
+    profiler::profile_options                      backend_profile_options_;
+    std::unique_ptr<profiler::profiler_collection> backend_profilers_;
 
     /// Captured XSpace timeline from backend profilers
-    quarisma::x_space xspace_;
+    profiler::x_space xspace_;
     bool              xspace_ready_ = false;
 
     /// Allow profiler_scope to access private registration methods
-    friend class quarisma::profiler_scope;
+    friend class profiler::profiler_scope;
 
     /**
      * @brief Register the start of a profiling scope
      * @param scope Pointer to the scope being started
      */
-    void register_scope_start(const quarisma::profiler_scope* scope);
+    void register_scope_start(const profiler::profiler_scope* scope);
 
     /**
      * @brief Register the end of a profiling scope
      * @param scope Pointer to the scope being ended
      */
-    void register_scope_end(const quarisma::profiler_scope* scope);
+    void register_scope_end(const profiler::profiler_scope* scope);
 };
 
 /**
@@ -576,7 +576,7 @@ public:
      * @return Reference to this profiler_session_builder for method chaining
      */
     profiler_session_builder& with_output_format(
-        quarisma::profiler_options::output_format_enum format)
+        profiler::profiler_options::output_format_enum format)
     {
         options_.output_format_ = format;
         return *this;
@@ -652,14 +652,14 @@ public:
      * @brief Build the configured profiler session
      * @return Unique pointer to the created profiler session
      */
-    std::unique_ptr<quarisma::profiler_session> build()
+    std::unique_ptr<profiler::profiler_session> build()
     {
-        return std::make_unique<quarisma::profiler_session>(options_);
+        return std::make_unique<profiler::profiler_session>(options_);
     }
 
 private:
     /// Configuration options being built
-    quarisma::profiler_options options_;
+    profiler::profiler_options options_;
 };
 
 /**
@@ -680,7 +680,7 @@ public:
      * @param session Pointer to the profiler session (uses current session if nullptr)
      */
     PROFILER_API explicit profiler_scope(
-        const std::string& name, quarisma::profiler_session* session = nullptr);
+        const std::string& name, profiler::profiler_session* session = nullptr);
 
     /**
      * @brief Destructor - automatically stops profiling
@@ -701,7 +701,7 @@ public:
      * @brief Get read-only access to the scope data
      * @return Const reference to the profiler scope data
      */
-    const quarisma::profiler_scope_data& data() const { return *data_; }
+    const profiler::profiler_scope_data& data() const { return *data_; }
 
     /// Disable copy constructor to ensure RAII semantics
     profiler_scope(const profiler_scope&) = delete;
@@ -717,13 +717,13 @@ public:
 
 private:
     /// Scope data containing timing and memory measurements
-    std::unique_ptr<quarisma::profiler_scope_data> data_;
+    std::unique_ptr<profiler::profiler_scope_data> data_;
 
     /// Pointer to the profiler session managing this scope
-    quarisma::profiler_session* session_;
+    profiler::profiler_session* session_;
 
     /// Memory stats snapshot captured at scope start (for delta computation)
-    quarisma::memory_stats start_memory_stats_;
+    profiler::memory_stats start_memory_stats_;
 
     /// Whether start_memory_stats_ contains valid data
     bool has_start_memory_stats_ = false;
@@ -745,8 +745,8 @@ private:
  * the current code block until the scope ends.
  */
 #define PROFILER_PROFILE_SCOPE(name)                                      \
-    PROFILER_UNUSED quarisma::profiler_scope PROFILER_ANONYMOUS_VARIABLE( \
-        _quarisma_profile_scope_)(name)
+    PROFILER_UNUSED profiler::profiler_scope PROFILER_ANONYMOUS_VARIABLE( \
+        _profiler_profile_scope_)(name)
 
 /**
  * @brief Convenience macro for profiling the current function
@@ -756,7 +756,7 @@ private:
  */
 #define PROFILER_PROFILE_FUNCTION() \
     PROFILER_UNUSED                 \
-    quarisma::profiler_scope PROFILER_ANONYMOUS_VARIABLE(_quarisma_profile_scope_)(__FUNCTION__)
+    profiler::profiler_scope PROFILER_ANONYMOUS_VARIABLE(_profiler_profile_scope_)(__FUNCTION__)
 
 /**
  * @brief Convenience macro for profiling a specific code block
@@ -766,8 +766,8 @@ private:
  * the immediately following block or statement.
  */
 #define PROFILER_PROFILE_BLOCK(name)                                          \
-    if (PROFILER_UNUSED quarisma::profiler_scope PROFILER_ANONYMOUS_VARIABLE( \
-            _quarisma_profile_scope_)(name);                                  \
+    if (PROFILER_UNUSED profiler::profiler_scope PROFILER_ANONYMOUS_VARIABLE( \
+            _profiler_profile_scope_)(name);                                  \
         true)
 
-}  // namespace quarisma
+}  // namespace profiler

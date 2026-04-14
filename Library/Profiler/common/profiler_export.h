@@ -8,8 +8,7 @@
  * - PROFILER_BUILDING_DLL — building the shared library (Windows)
  */
 
-#ifndef __profiler_export_h__
-#define __profiler_export_h__
+#pragma once
 
 #define PROFILER_VISIBILITY_ENUM
 
@@ -56,4 +55,3 @@
     "PROFILER_HAS_KINETO, PROFILER_HAS_ITT, and PROFILER_HAS_NATIVE_PROFILER are mutually exclusive. Only one may equal 1."
 #endif
 
-#endif  // __profiler_export_h__

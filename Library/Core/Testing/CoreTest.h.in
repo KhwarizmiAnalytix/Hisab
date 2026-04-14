@@ -28,7 +28,7 @@
 #include <string>
 
 #include "common/macros.h"
-#include "logging/logger.h"
+#include "logger.h"
 
 // Include Google Test if available
 #if QUARISMA_HAS_GTEST

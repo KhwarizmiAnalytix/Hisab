@@ -12,7 +12,7 @@
 #include "bespoke/common/unwind/unwind.h"
 #include "bespoke/common/unwind/unwind_error.h"
 
-namespace quarisma::unwind
+namespace profiler::unwind
 {
 
 #define UNWIND_WARN(w, ...)                       \
@@ -122,4 +122,4 @@ private:
     std::vector<std::string>                                   warnings_;
 };
 
-}  // namespace quarisma::unwind
+}  // namespace profiler::unwind

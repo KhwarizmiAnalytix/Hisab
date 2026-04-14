@@ -44,11 +44,11 @@ limitations under the License.
 #include "native/core/timespan.h"
 #include "native/exporters/xplane/xplane.h"
 
-namespace quarisma
+namespace profiler
 {
 
 xplane_builder::xplane_builder(xplane* plane)
-    : xstats_builder<quarisma::xplane>(plane, this), plane_(plane)
+    : xstats_builder<profiler::xplane>(plane, this), plane_(plane)
 {
     for (auto& id_and_metadata : *plane->mutable_event_metadata())
     {
@@ -232,4 +232,4 @@ void xline_builder::set_time_stamp_ns_and_adjust_event_offsets(int64_t timestamp
     }
 }
 
-}  // namespace quarisma
+}  // namespace profiler

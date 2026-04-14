@@ -667,36 +667,36 @@ class QuarismaFlags:
         debug_print("Build cmake flag")
         self.__name = {
             # Valid CMake options that exist in CMakeLists.txt
-            "cuda": "QUARISMA_ENABLE_CUDA",
-            "tbb": "QUARISMA_ENABLE_TBB",
-            "openmp": "QUARISMA_ENABLE_OPENMP",
-            "mkl": "QUARISMA_ENABLE_MKL",
-            "numa": "QUARISMA_ENABLE_NUMA",
-            "memkind": "QUARISMA_ENABLE_MEMKIND",
-            "vectorisation": "QUARISMA_VECTORIZATION_TYPE",
+            "cuda": "PROJECT_ENABLE_CUDA",
+            "tbb": "PARALLEL_ENABLE_TBB",
+            "openmp": "PARALLEL_ENABLE_OPENMP",
+            "mkl": "PROJECT_ENABLE_MKL",
+            "numa": "PROJECT_ENABLE_NUMA",
+            "memkind": "PROJECT_ENABLE_MEMKIND",
+            "vectorisation": "PROJECT_VECTORIZATION_TYPE",
             "static": "BUILD_SHARED_LIBS",
-            "clangtidy": "QUARISMA_ENABLE_CLANGTIDY",
-            "iwyu": "QUARISMA_ENABLE_IWYU",
-            "sanitizer": "QUARISMA_ENABLE_SANITIZER",
-            "sanitizer_enum": "QUARISMA_SANITIZER_TYPE",
-            "benchmark": "QUARISMA_ENABLE_BENCHMARK",
-            "gtest": "QUARISMA_ENABLE_GTEST",
-            "valgrind": "QUARISMA_ENABLE_VALGRIND",
-            "coverage": "QUARISMA_ENABLE_COVERAGE",
-            "test": "QUARISMA_BUILD_TESTING",
-            "logging_backend": "QUARISMA_LOGGING_BACKEND",
-            "lto": "QUARISMA_ENABLE_LTO",
-            "magic_enum": "QUARISMA_ENABLE_MAGICENUM",
-            "mimalloc": "QUARISMA_ENABLE_MIMALLOC",
-            "external": "QUARISMA_ENABLE_EXTERNAL",
-            "profiler_type": "QUARISMA_PROFILER_TYPE",
-            "cxxstd": "QUARISMA_CXX_STANDARD",
-            "cppcheck": "QUARISMA_ENABLE_CPPCHECK",
-            "spell": "QUARISMA_ENABLE_SPELL",
-            "fix": "QUARISMA_ENABLE_FIX",
-            "cache_type": "QUARISMA_CACHE_BACKEND",
-            "enzyme": "QUARISMA_ENABLE_ENZYME",
-            "parallel_backend": "QUARISMA_PARALLEL_BACKEND",
+            "clangtidy": "PROJECT_ENABLE_CLANGTIDY",
+            "iwyu": "PROJECT_ENABLE_IWYU",
+            "sanitizer": "PROJECT_ENABLE_SANITIZER",
+            "sanitizer_enum": "PROJECT_SANITIZER_TYPE",
+            "benchmark": "PROJECT_ENABLE_BENCHMARK",
+            "gtest": "PROJECT_ENABLE_GTEST",
+            "valgrind": "PROJECT_ENABLE_VALGRIND",
+            "coverage": "PROJECT_ENABLE_COVERAGE",
+            "test": "PROJECT_BUILD_TESTING",
+            "logging_backend": "LOGGING_BACKEND",
+            "lto": "PROJECT_ENABLE_LTO",
+            "magic_enum": "PROJECT_ENABLE_MAGICENUM",
+            "mimalloc": "MEMORY_ENABLE_MIMALLOC",
+            "external": "PROJECT_ENABLE_EXTERNAL",
+            "profiler_type": "PROFILER_TYPE",
+            "cxxstd": "PROJECT_CXX_STANDARD",
+            "cppcheck": "PROJECT_ENABLE_CPPCHECK",
+            "spell": "PROJECT_ENABLE_SPELL",
+            "fix": "PROJECT_ENABLE_FIX",
+            "cache_type": "PROJECT_CACHE_BACKEND",
+            "enzyme": "CORE_ENABLE_ENZYME",
+            "parallel_backend": "PARALLEL_BACKEND",
             # Non-CMake flags (for internal use, not passed to CMake)
             "mkl_threading": "MKL_THREADING",
             "mkl_link": "MKL_LINK",
@@ -742,7 +742,7 @@ class QuarismaFlags:
             {
                 "vectorisation": "",  # Special case: string value
                 "static": self.ON,  # BUILD_SHARED_LIBS default is OFF, so static=ON
-                "test": self.ON,  # QUARISMA_BUILD_TESTING default is ON
+                "test": self.ON,  # PROJECT_BUILD_TESTING default is ON
                 "javasourceversion": 1.8,  # Special case: numeric value
                 "javatargetversion": 1.8,  # Special case: numeric value
                 "cxxstd": "",  # Special case: let CMake decide
@@ -750,25 +750,25 @@ class QuarismaFlags:
                 "cache_type": "none",  # Default cache type is none
                 "parallel_backend": "std",  # Default SMP backend is std_thread for maximum compatibility
                 # CMake options with default OFF - keep OFF in setup.py
-                "lto": self.OFF,  # QUARISMA_ENABLE_LTO default is OFF
-                "gtest": self.ON,  # QUARISMA_ENABLE_GTEST default is ON
-                "magic_enum": self.ON,  # QUARISMA_ENABLE_MAGIC_ENUM default is ON
-                "mimalloc": self.ON,  # QUARISMA_ENABLE_MIMALLOC default is ON
+                "lto": self.OFF,  # PROJECT_ENABLE_LTO default is OFF
+                "gtest": self.ON,  # PROJECT_ENABLE_GTEST default is ON
+                "magic_enum": self.ON,  # PROJECT_ENABLE_MAGIC_ENUM default is ON
+                "mimalloc": self.ON,  # MEMORY_ENABLE_MIMALLOC default is ON
                 "profiler_type": "KINETO",
                 # CMake options with default OFF - keep OFF in setup.py
                 # (already set by dict.fromkeys above)
-                # "benchmark": self.OFF,  # QUARISMA_ENABLE_BENCHMARK default is OFF (changed from ON)
-                # "cuda": self.OFF,  # QUARISMA_ENABLE_CUDA default is OFF
-                # "mkl": self.OFF,  # QUARISMA_ENABLE_MKL default is OFF
-                # "numa": self.OFF,  # QUARISMA_ENABLE_NUMA default is OFF
-                # "memkind": self.OFF,  # QUARISMA_ENABLE_MEMKIND default is OFF
-                # "tbb": self.OFF,  # QUARISMA_ENABLE_TBB default is OFF
-                # "iwyu": self.OFF,  # QUARISMA_ENABLE_IWYU default is OFF
-                # "clangtidy": self.OFF,  # QUARISMA_ENABLE_CLANGTIDY default is OFF
-                # "cppcheck": self.OFF,  # QUARISMA_ENABLE_CPPCHECK default is OFF
-                # "valgrind": self.OFF,  # QUARISMA_ENABLE_VALGRIND default is OFF
-                # "coverage": self.OFF,  # QUARISMA_ENABLE_COVERAGE default is OFF
-                # "sanitizer": self.OFF,  # QUARISMA_ENABLE_SANITIZER default is OFF
+                # "benchmark": self.OFF,  # PROJECT_ENABLE_BENCHMARK default is OFF (changed from ON)
+                # "cuda": self.OFF,  # PROJECT_ENABLE_CUDA default is OFF
+                # "mkl": self.OFF,  # PROJECT_ENABLE_MKL default is OFF
+                # "numa": self.OFF,  # PROJECT_ENABLE_NUMA default is OFF
+                # "memkind": self.OFF,  # PROJECT_ENABLE_MEMKIND default is OFF
+                # "tbb": self.OFF,  # PARALLEL_ENABLE_TBB default is OFF
+                # "iwyu": self.OFF,  # PROJECT_ENABLE_IWYU default is OFF
+                # "clangtidy": self.OFF,  # PROJECT_ENABLE_CLANGTIDY default is OFF
+                # "cppcheck": self.OFF,  # PROJECT_ENABLE_CPPCHECK default is OFF
+                # "valgrind": self.OFF,  # PROJECT_ENABLE_VALGRIND default is OFF
+                # "coverage": self.OFF,  # PROJECT_ENABLE_COVERAGE default is OFF
+                # "sanitizer": self.OFF,  # PROJECT_ENABLE_SANITIZER default is OFF
             }
         )
 
@@ -835,8 +835,8 @@ class QuarismaFlags:
                 # - openmp:  OpenMP parallel processing - optimized for OpenMP-aware code
                 # - tbb:     Intel Threading Building Blocks - high-performance parallel execution
                 # Only one backend can be active at a time. The selected backend affects:
-                # - QUARISMA_HAS_TBB compile definition (1 if tbb selected, 0 otherwise)
-                # - QUARISMA_HAS_OPENMP compile definition (1 if openmp selected, 0 otherwise)
+                # - PROJECT_HAS_TBB compile definition (1 if tbb selected, 0 otherwise)
+                # - PROJECT_HAS_OPENMP compile definition (1 if openmp selected, 0 otherwise)
                 # - Build directory suffix (e.g., build_ninja_parallel_tbb)
                 backend_value = arg.split(".", 1)[1].lower()
                 if backend_value in parallel_backend_list:
@@ -1636,9 +1636,9 @@ def parse_args(args):
             # - --parallel.tbb:     Use Intel Threading Building Blocks
             #
             # The selected backend controls which CMake options are enabled:
-            # - std:     QUARISMA_ENABLE_TBB=OFF, QUARISMA_ENABLE_OPENMP=OFF
-            # - openmp:  QUARISMA_ENABLE_OPENMP=ON, QUARISMA_ENABLE_TBB=OFF
-            # - tbb:     QUARISMA_ENABLE_TBB=ON, QUARISMA_ENABLE_OPENMP=OFF
+            # - std:     PARALLEL_ENABLE_TBB=OFF, PARALLEL_ENABLE_OPENMP=OFF
+            # - openmp:  PARALLEL_ENABLE_OPENMP=ON, PARALLEL_ENABLE_TBB=OFF
+            # - tbb:     PARALLEL_ENABLE_TBB=ON, PARALLEL_ENABLE_OPENMP=OFF
             backend_value = arg.split(".", 1)[1].lower()
             valid_backends = ["std", "openmp", "tbb"]
             if backend_value in valid_backends:

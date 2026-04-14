@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// Quarisma: modified from llvm::array_ref.
+// Profiler: modified from llvm::array_ref.
 // removed llvm-specific functionality
 // removed some implicit const -> non-const conversions that rely on
 // complicated std::enable_if meta-programming
@@ -28,7 +28,7 @@
 //#include "util/exception.h"
 #include "common/small_vector.h"
 
-namespace quarisma
+namespace profiler
 {
 /// array_ref - Represent a constant reference to an array (0 or more elements
 /// consecutively in memory), i.e. a start pointer and a length.  It allows
@@ -334,43 +334,43 @@ array_ref<T> makeArrayRef(const T (&Arr)[N])
 }
 
 // WARNING: Template instantiation will NOT be willing to do an implicit
-// conversions to get you to an quarisma::array_ref, which is why we need so
+// conversions to get you to an profiler::array_ref, which is why we need so
 // many overloads.
 
 template <typename T>
-bool operator==(quarisma::array_ref<T> a1, quarisma::array_ref<T> a2)
+bool operator==(profiler::array_ref<T> a1, profiler::array_ref<T> a2)
 {
     return a1.equals(a2);
 }
 
 template <typename T>
-bool operator!=(quarisma::array_ref<T> a1, quarisma::array_ref<T> a2)
+bool operator!=(profiler::array_ref<T> a1, profiler::array_ref<T> a2)
 {
     return !a1.equals(a2);
 }
 
 template <typename T>
-bool operator==(const std::vector<T>& a1, quarisma::array_ref<T> a2)
+bool operator==(const std::vector<T>& a1, profiler::array_ref<T> a2)
 {
-    return quarisma::array_ref<T>(a1).equals(a2);
+    return profiler::array_ref<T>(a1).equals(a2);
 }
 
 template <typename T>
-bool operator!=(const std::vector<T>& a1, quarisma::array_ref<T> a2)
+bool operator!=(const std::vector<T>& a1, profiler::array_ref<T> a2)
 {
-    return !quarisma::array_ref<T>(a1).equals(a2);
+    return !profiler::array_ref<T>(a1).equals(a2);
 }
 
 template <typename T>
-bool operator==(quarisma::array_ref<T> a1, const std::vector<T>& a2)
+bool operator==(profiler::array_ref<T> a1, const std::vector<T>& a2)
 {
-    return a1.equals(quarisma::array_ref<T>(a2));
+    return a1.equals(profiler::array_ref<T>(a2));
 }
 
 template <typename T>
-bool operator!=(quarisma::array_ref<T> a1, const std::vector<T>& a2)
+bool operator!=(profiler::array_ref<T> a1, const std::vector<T>& a2)
 {
-    return !a1.equals(quarisma::array_ref<T>(a2));
+    return !a1.equals(profiler::array_ref<T>(a2));
 }
 
 using IntArrayRef = array_ref<int64_t>;
@@ -379,4 +379,4 @@ using IntList [[deprecated(
     "This alias is deprecated because it doesn't make ownership semantics obvious. Use IntArrayRef "
     "instead!")]] = array_ref<int64_t>;
 
-}  // namespace quarisma
+}  // namespace profiler

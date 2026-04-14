@@ -50,7 +50,7 @@
 #include <chrono>
 #include <iostream>
 #include <utility>
-namespace quarisma
+namespace profiler
 {
 
 //=============================================================================
@@ -109,7 +109,7 @@ void memory_tracker::track_allocation(void* ptr, size_t size, const std::string&
         return;
     }
 
-    quarisma::memory_allocation allocation;
+    profiler::memory_allocation allocation;
     allocation.address_   = ptr;
     allocation.size_      = size;
     allocation.timestamp_ = std::chrono::high_resolution_clock::now();
@@ -155,9 +155,9 @@ void memory_tracker::track_deallocation(void* ptr)
     }
 }
 
-quarisma::memory_stats memory_tracker::get_current_stats() const
+profiler::memory_stats memory_tracker::get_current_stats() const
 {
-    quarisma::memory_stats stats;
+    profiler::memory_stats stats;
     stats.current_usage_     = current_usage_.load();
     stats.peak_usage_        = peak_usage_.load();
     stats.total_allocated_   = total_allocated_.load();
@@ -252,10 +252,10 @@ void memory_tracker::reset()
     }
 }
 
-std::vector<quarisma::memory_allocation> memory_tracker::get_active_allocations() const
+std::vector<profiler::memory_allocation> memory_tracker::get_active_allocations() const
 {
     std::scoped_lock const                   lock(allocations_mutex_);
-    std::vector<quarisma::memory_allocation> allocations;
+    std::vector<profiler::memory_allocation> allocations;
     allocations.reserve(active_allocations_.size());
 
     // Use std::transform to extract allocation values
@@ -276,13 +276,13 @@ size_t memory_tracker::get_allocation_count() const
 
 void memory_tracker::take_snapshot(const std::string& label)
 {
-    quarisma::memory_stats const stats = get_current_stats();
+    profiler::memory_stats const stats = get_current_stats();
 
     std::scoped_lock const lock(snapshots_mutex_);
     snapshots_.emplace_back(label, stats);
 }
 
-std::vector<std::pair<std::string, quarisma::memory_stats>> memory_tracker::get_snapshots() const
+std::vector<std::pair<std::string, profiler::memory_stats>> memory_tracker::get_snapshots() const
 {
     std::scoped_lock const lock(snapshots_mutex_);
     return snapshots_;
@@ -387,7 +387,7 @@ void memory_tracker::update_peak_usage(size_t current)
 // memory_tracking_scope Implementation
 //=============================================================================
 
-memory_tracking_scope::memory_tracking_scope(quarisma::memory_tracker& tracker, std::string label)
+memory_tracking_scope::memory_tracking_scope(profiler::memory_tracker& tracker, std::string label)
     : tracker_(tracker), label_(std::move(label))
 {
     start_stats_ = tracker_.get_current_stats();
@@ -402,10 +402,10 @@ memory_tracking_scope::~memory_tracking_scope()
     }
 }
 
-quarisma::memory_stats memory_tracking_scope::get_delta_stats() const
+profiler::memory_stats memory_tracking_scope::get_delta_stats() const
 {
-    quarisma::memory_stats const current_stats = tracker_.get_current_stats();
-    quarisma::memory_stats       delta_stats;
+    profiler::memory_stats const current_stats = tracker_.get_current_stats();
+    profiler::memory_stats       delta_stats;
 
     delta_stats.current_usage_   = current_stats.current_usage_;
     delta_stats.peak_usage_      = (std::max)(current_stats.peak_usage_, start_stats_.peak_usage_);
@@ -418,4 +418,4 @@ quarisma::memory_stats memory_tracking_scope::get_delta_stats() const
     return delta_stats;
 }
 
-}  // namespace quarisma
+}  // namespace profiler

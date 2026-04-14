@@ -23,12 +23,12 @@
 #include "common/irange.h"
 #include "common/overloaded.h"
 
-namespace quarisma::profiler_impl::impl
+namespace profiler::profiler_impl::impl
 {
 using result_ptr_t = std::shared_ptr<Result>;
-using trace_ptr_t  = std::unique_ptr<quarisma::profiler_impl::impl::kineto::ActivityTraceWrapper>;
+using trace_ptr_t  = std::unique_ptr<profiler::profiler_impl::impl::kineto::ActivityTraceWrapper>;
 
-RawTensorMetadataBase::RawTensorMetadataBase(const quarisma::Tensor& t)
+RawTensorMetadataBase::RawTensorMetadataBase(const profiler::Tensor& t)
     : data_{nullptr},
       dtype_{t.scalar_type()},
       layout_{t.layout()},
@@ -46,7 +46,7 @@ RawTensorMetadataBase::RawTensorMetadataBase(const quarisma::Tensor& t)
     // t.strides().size());
 }
 
-RawTensorMetadata::RawTensorMetadata(const quarisma::Tensor& t)
+RawTensorMetadata::RawTensorMetadata(const profiler::Tensor& t)
     : RawTensorMetadataBase(t),
       weak_self_{WeakTensor(t)},
       device_type_{t.device().type()},
@@ -58,7 +58,7 @@ TensorMetadata::TensorMetadata(
     const RawTensorMetadata& r, std::vector<int64_t> sizes, std::vector<int64_t> strides)
     // NOLINTNEXTLINE(cppcoreguidelines-slicing)
     : RawTensorMetadataBase(r),
-      weak_self_{r.weak_self_.value_or(WeakTensor(quarisma::Tensor()))},
+      weak_self_{r.weak_self_.value_or(WeakTensor(profiler::Tensor()))},
       device_{r.device_index_, r.device_type_},
       sizes_{std::move(sizes)},
       strides_{std::move(strides)}
@@ -67,7 +67,7 @@ TensorMetadata::TensorMetadata(
 }
 
 // ============================================================================
-// == Quarisma Ops =============================================================
+// == Profiler Ops =============================================================
 // ============================================================================
 
 namespace
@@ -105,7 +105,7 @@ static_assert(allTagsMapped(), "tag_map is out of order");
 // ----------------------------
 // |  Input / Output encoder  |
 // ----------------------------
-void InputOutputEncoder::push(quarisma::array_ref<const quarisma::IValue> values)
+void InputOutputEncoder::push(profiler::array_ref<const profiler::IValue> values)
 {
     // Disabled: IValue methods (isTensor, toTensor, isScalar, isTensorList, toTensorList) not available in profiler-only build.
     for (const auto& value : values)
@@ -150,7 +150,7 @@ void InputOutputEncoder::push(quarisma::array_ref<const quarisma::IValue> values
     tags_.emplace_back(Tag::TERMINATOR);
 }
 
-void InputOutputEncoder::push(const quarisma::Tensor& t)
+void InputOutputEncoder::push(const profiler::Tensor& t)
 {
     // TODO fix nested and symbolic sizes
     if (t.defined() && !t.is_nested() && !t.unsafeGetTensorImpl()->has_symbolic_sizes_strides())
@@ -158,7 +158,7 @@ void InputOutputEncoder::push(const quarisma::Tensor& t)
         tags_.emplace_back(Tag::Tensor);
         tensor_metadata_.emplace_back(t);
         tensor_sizes_strides_.copy(t.sizes());
-        if (t.layout() == quarisma::kStrided)
+        if (t.layout() == profiler::kStrided)
         {
             // Only Strided layout tensors have strides
             tensor_sizes_strides_.copy(t.strides());
@@ -172,7 +172,7 @@ void InputOutputEncoder::push(const quarisma::Tensor& t)
 
 #if 0
 // Disabled: IValue methods (isList, toListRef, isScalar) not available in profiler-only build.
-bool InputOutputEncoder::isSupportedScalarList(const quarisma::IValue& list_candidate)
+bool InputOutputEncoder::isSupportedScalarList(const profiler::IValue& list_candidate)
 {
     // Scalar list can be very long. If a list is too long, we shouldn't
     // collect it. This function checks whether the list is a scalar list
@@ -204,14 +204,14 @@ bool InputOutputEncoder::isSupportedScalarList(const quarisma::IValue& list_cand
 }
 #else
 // Stub implementation when IValue methods are not available
-bool InputOutputEncoder::isSupportedScalarList(const quarisma::IValue& /*list_candidate*/)
+bool InputOutputEncoder::isSupportedScalarList(const profiler::IValue& /*list_candidate*/)
 {
     return false;
 }
 #endif
 
 #if 0
-// Disabled: This function uses many IValue methods and quarisma::irange that are not available in profiler-only build.
+// Disabled: This function uses many IValue methods and profiler::irange that are not available in profiler-only build.
 // This function returns a lambda which is a custom-iterator-like getter.
 // Each invocation of the lambda returns input values for one op.
 //
@@ -239,7 +239,7 @@ auto InputOutputEncoder::getIValueGenerator(const IOType& io_type)
                 return {RawTensorMetadata(), sizes, strides};
             }
             const auto& raw_metadata = *tensor_metadata_it++;
-            for ([[maybe_unused]] const auto _ : quarisma::irange(raw_metadata.size_dim_))
+            for ([[maybe_unused]] const auto _ : profiler::irange(raw_metadata.size_dim_))
             {
                 if (tensor_size_strides_it.exhausted())
                 {
@@ -249,9 +249,9 @@ auto InputOutputEncoder::getIValueGenerator(const IOType& io_type)
                 }
                 sizes.push_back(*tensor_size_strides_it++);
             }
-            if (raw_metadata.layout_ == quarisma::kStrided)
+            if (raw_metadata.layout_ == profiler::kStrided)
             {
-                for ([[maybe_unused]] const auto _ : quarisma::irange(raw_metadata.size_dim_))
+                for ([[maybe_unused]] const auto _ : profiler::irange(raw_metadata.size_dim_))
                 {
                     if (tensor_size_strides_it.exhausted())
                     {
@@ -397,12 +397,12 @@ uint64_t ThreadLocalSubqueue::TorchOpStorage::EventBlock<T, ChunkSize>::correlat
 // |  Collection (Observer logic)  |
 // ---------------------------------
 std::unique_ptr<KinetoObserverContext> ThreadLocalSubqueue::begin_op(
-    const quarisma::RecordFunction& fn)
+    const profiler::RecordFunction& fn)
 {
     const auto* overload_name =
         config_.experimental_config.capture_overload_names ? fn.overload_name() : "";
     auto [event, corr_id] =
-        torch_ops_.op_events_.emplace_back(quarisma::profiler_impl::impl::TorchOpBasicFields{
+        torch_ops_.op_events_.emplace_back(profiler::profiler_impl::impl::TorchOpBasicFields{
             fn.seqNr(),
             fn.forwardThreadId(),
             fn.scope(),
@@ -419,13 +419,13 @@ std::unique_ptr<KinetoObserverContext> ThreadLocalSubqueue::begin_op(
     }
     if (!config_.experimental_config.disable_external_correlation)
     {
-        if (fn.scope() == quarisma::RecordScope::USER_SCOPE)
+        if (fn.scope() == profiler::RecordScope::USER_SCOPE)
         {
-            quarisma::profiler_impl::impl::kineto::pushUserCorrelationId(corr_id);
+            profiler::profiler_impl::impl::kineto::pushUserCorrelationId(corr_id);
         }
         else
         {
-            quarisma::profiler_impl::impl::kineto::pushCorrelationId(corr_id);
+            profiler::profiler_impl::impl::kineto::pushCorrelationId(corr_id);
         }
     }
 
@@ -434,12 +434,12 @@ std::unique_ptr<KinetoObserverContext> ThreadLocalSubqueue::begin_op(
     // TODO: consider using C++ stack trace
 #if 0
     // Disabled: jit::currentCallstack() and jit::currentModuleHierarchy() not available in profiler-only build
-    if (config_.with_stack && fn.scope() != quarisma::RecordScope::BACKWARD_FUNCTION)
+    if (config_.with_stack && fn.scope() != profiler::RecordScope::BACKWARD_FUNCTION)
     {
-        auto cs = quarisma::profiler_impl::impl::prepareCallstack(jit::currentCallstack());
+        auto cs = profiler::profiler_impl::impl::prepareCallstack(jit::currentCallstack());
         torch_ops_.jit_stack_.emplace_back(callstackStr(cs));
     }
-    if (config_.with_modules && fn.scope() != quarisma::RecordScope::BACKWARD_FUNCTION)
+    if (config_.with_modules && fn.scope() != profiler::RecordScope::BACKWARD_FUNCTION)
     {
         torch_ops_.jit_modules_.emplace_back(jit::currentModuleHierarchy());
     }
@@ -447,7 +447,7 @@ std::unique_ptr<KinetoObserverContext> ThreadLocalSubqueue::begin_op(
 #endif
     if (config_.with_flops)
     {
-        torch_ops_.extra_args_.emplace_back(quarisma::profiler_impl::impl::saveExtraArgs(fn));
+        torch_ops_.extra_args_.emplace_back(profiler::profiler_impl::impl::saveExtraArgs(fn));
     }
 
     auto out = std::make_unique<KinetoObserverContext>(event);
@@ -456,10 +456,10 @@ std::unique_ptr<KinetoObserverContext> ThreadLocalSubqueue::begin_op(
         // Record NCCL metadata for specific CPU ops, switch off output
         // introspection in this begin_op callback, we will do that in exit callback
         // if needed.
-        quarisma::profiler_impl::impl::SaveNcclMetaConfig const ncclMetaConfig{
+        profiler::profiler_impl::impl::SaveNcclMetaConfig const ncclMetaConfig{
             true, true, true, false};
         out->event_->extra_nccl_meta_ = torch_ops_.extra_meta_.emplace_back(
-            quarisma::profiler_impl::impl::saveNcclMeta(fn, ncclMetaConfig));
+            profiler::profiler_impl::impl::saveNcclMeta(fn, ncclMetaConfig));
     }
     else
     {
@@ -469,22 +469,22 @@ std::unique_ptr<KinetoObserverContext> ThreadLocalSubqueue::begin_op(
     if (config_.state == ProfilerState::KINETO_GPU_FALLBACK)
     {
         out->fallback_ = torch_ops_.device_fallback_.emplace_back();
-        quarisma::profiler_impl::impl::cudaStubs()->record(
+        profiler::profiler_impl::impl::cudaStubs()->record(
             nullptr, &out->fallback_->device_event_start_, nullptr);
     }
     else if (config_.state == ProfilerState::KINETO_PRIVATEUSE1_FALLBACK)
     {
         out->fallback_ = torch_ops_.device_fallback_.emplace_back();
-        quarisma::profiler_impl::impl::privateuse1Stubs()->record(
+        profiler::profiler_impl::impl::privateuse1Stubs()->record(
             nullptr, &out->fallback_->device_event_start_, nullptr);
     }
 
-    event->start_time_ = quarisma::getApproximateTime();
+    event->start_time_ = profiler::getApproximateTime();
 #if 0
-    // Disabled: quarisma::globalContext() not available in profiler-only build
-    event->allow_tf32_cublas_ = quarisma::globalContext().float32Precision(
-                                    quarisma::Float32Backend::CUDA, quarisma::Float32Op::MATMUL) ==
-                                quarisma::Float32Precision::TF32;
+    // Disabled: profiler::globalContext() not available in profiler-only build
+    event->allow_tf32_cublas_ = profiler::globalContext().float32Precision(
+                                    profiler::Float32Backend::CUDA, profiler::Float32Op::MATMUL) ==
+                                profiler::Float32Precision::TF32;
 #else
     event->allow_tf32_cublas_ = false;
 #endif
@@ -535,7 +535,7 @@ struct StealOrDefault
 void ThreadLocalSubqueue::TorchOpStorage::materialize(
     std::vector<std::shared_ptr<Result>>& /*out*/,
     std::vector<ProfilerStepInfo>& /*step_info*/,
-    const std::function<quarisma::time_t(quarisma::approx_time_t)>& /*time_converter*/,
+    const std::function<profiler::time_t(profiler::approx_time_t)>& /*time_converter*/,
     const uint64_t /*tid*/,
     const kineto::DeviceAndResource& /*kineto_info*/)
 {
@@ -544,12 +544,12 @@ void ThreadLocalSubqueue::TorchOpStorage::materialize(
     // Plumb Autograd info to the top level annotation.
     auto it = op_events_.begin();
     for ([[maybe_unused]] const auto _ :
-         quarisma::irange(static_cast<int64_t>(op_events_.size()) - 1))
+         profiler::irange(static_cast<int64_t>(op_events_.size()) - 1))
     {
         auto& first  = it->basic_fields_;
         auto& second = (++it)->basic_fields_;
-        if (first.scope_ == quarisma::RecordScope::FUNCTION &&
-            second.scope_ == quarisma::RecordScope::BACKWARD_FUNCTION &&
+        if (first.scope_ == profiler::RecordScope::FUNCTION &&
+            second.scope_ == profiler::RecordScope::BACKWARD_FUNCTION &&
             first.name_.rfind("autograd::engine::evaluate_function: ", 0) == 0)
         {
             first.sequence_number_ = second.sequence_number_;
@@ -559,9 +559,9 @@ void ThreadLocalSubqueue::TorchOpStorage::materialize(
 #endif
 
     // `AccumulateGrad` is an important marker for profile analysis; however the
-    // annotation relies on `quarisma::demangle` which is platform dependent. In
+    // annotation relies on `profiler::demangle` which is platform dependent. In
     // particular, Windows will add a "struct " prefix.
-    const std::string accumulate_grad = "quarisma::autograd::AccumulateGrad";
+    const std::string accumulate_grad = "profiler::autograd::AccumulateGrad";
     const std::string windows_pattern = std::string("struct ") + accumulate_grad;
     for (auto& event : op_events_)
     {
@@ -618,19 +618,19 @@ void ThreadLocalSubqueue::TorchOpStorage::materialize(
 }
 
 #if 0
-// Disabled: quarisma::profiler_impl::impl::vulkan not available in profiler-only build
+// Disabled: profiler::profiler_impl::impl::vulkan not available in profiler-only build
 template <size_t BlockSize>
 static void materialize_vulkan(
     std::vector<std::shared_ptr<Result>>&                                   out,
     AppendOnlyList<ExtraFields<EventType::Vulkan>::raw_event_t, BlockSize>& raw_events,
-    const std::function<quarisma::time_t(quarisma::approx_time_t)>&             time_converter,
+    const std::function<profiler::time_t(profiler::approx_time_t)>&             time_converter,
     const uint64_t                                                          tid,
     const kineto::DeviceAndResource&                                        kineto_info)
 {
     for (const auto& i : raw_events)
     {
         const auto name_and_duration_ns =
-            quarisma::profiler_impl::impl::vulkan::getShaderNameAndDurationNs(i.second);
+            profiler::profiler_impl::impl::vulkan::getShaderNameAndDurationNs(i.second);
 
         out.emplace_back(
             Result::create(
@@ -652,7 +652,7 @@ template <size_t BlockSize>
 static void materialize_vulkan(
     std::vector<std::shared_ptr<Result>>& /*out*/,
     AppendOnlyList<ExtraFields<EventType::Vulkan>::raw_event_t, BlockSize>& raw_events,
-    const std::function<quarisma::time_t(quarisma::approx_time_t)>& /*time_converter*/,
+    const std::function<profiler::time_t(profiler::approx_time_t)>& /*time_converter*/,
     const uint64_t /*tid*/,
     const kineto::DeviceAndResource& /*kineto_info*/)
 {
@@ -701,9 +701,9 @@ std::string toString(const ExtraFields<EventType::PyCall>& e)
 }
 #endif
 
-auto scopeToType(quarisma::RecordScope scope)
+auto scopeToType(profiler::RecordScope scope)
 {
-    return scope == quarisma::RecordScope::USER_SCOPE ? libkineto::ActivityType::USER_ANNOTATION
+    return scope == profiler::RecordScope::USER_SCOPE ? libkineto::ActivityType::USER_ANNOTATION
                                                       : libkineto::ActivityType::CPU_OP;
 }
 
@@ -712,7 +712,7 @@ int64_t torchOpEndNS(
     const bool                             finished,
     const std::weak_ptr<Result>&           parent)
 {
-    if (finished && e.end_time_ns_ == std::numeric_limits<quarisma::time_t>::min())
+    if (finished && e.end_time_ns_ == std::numeric_limits<profiler::time_t>::min())
     {
         auto p = parent.lock();
         if (p)
@@ -747,7 +747,7 @@ auto kinetoEventCorrelationID(
 std::string Result::name() const
 {
     return visit(
-        quarisma::overloaded(
+        profiler::overloaded(
             ATTRIBUTE(Vulkan, std::string(e.name_)),
             ATTRIBUTE(Allocation, std::string("[memory]")),
             ATTRIBUTE(OutOfMemory, std::string("[OutOfMemory]")),
@@ -760,7 +760,7 @@ std::string Result::name() const
 // Stub implementation
 std::string Result::name() const
 {
-    return visit(quarisma::overloaded(
+    return visit(profiler::overloaded(
         ATTRIBUTE(Vulkan, std::string(e.name_)),
         ATTRIBUTE(Allocation, std::string("[memory]")),
         ATTRIBUTE(OutOfMemory, std::string("[OutOfMemory]")),
@@ -771,14 +771,14 @@ std::string Result::name() const
 
 std::string Result::overload_name() const
 {
-    return visit(quarisma::overloaded(
+    return visit(profiler::overloaded(
         ATTRIBUTE(TorchOp, std::string(e.overload_name_)),
         [](const auto& /*e*/) -> std::string { return ""; }));
 }
 
 libkineto::ActivityType Result::kinetoType() const
 {
-    return visit(quarisma::overloaded(
+    return visit(profiler::overloaded(
         ATTRIBUTE(TorchOp, scopeToType(e.scope_)),
         ATTRIBUTE(Backend, scopeToType(e.scope_)),
         ATTRIBUTE(Vulkan, libkineto::ActivityType::CPU_OP),
@@ -792,7 +792,7 @@ libkineto::ActivityType Result::kinetoType() const
 
 uint64_t Result::correlationID() const
 {
-    return visit(quarisma::overloaded(
+    return visit(profiler::overloaded(
         ATTRIBUTE(TorchOp, e.correlation_id_),
         ATTRIBUTE(Kineto, kinetoEventCorrelationID(e, parent_)),
         [&](const auto&) -> uint64_t { return 0; }));
@@ -800,7 +800,7 @@ uint64_t Result::correlationID() const
 
 int64_t Result::endTimeNS() const
 {
-    auto end_time_ns = visit(quarisma::overloaded(
+    auto end_time_ns = visit(profiler::overloaded(
         ATTRIBUTE(TorchOp, torchOpEndNS(e, finished_, parent_)),
         ATTRIBUTE(Backend, e.end_time_us_ * 1000),
         ATTRIBUTE(Vulkan, start_time_ns_ + (e.in_tree_building_ ? 0 : e.duration_ns_)),
@@ -820,29 +820,29 @@ int64_t Result::endTimeNS() const
 
 uint64_t Result::endTID() const
 {
-    return visit(quarisma::overloaded(
+    return visit(profiler::overloaded(
         ATTRIBUTE(TorchOp, e.end_tid_), [&](const auto&) -> uint64_t { return start_tid_; }));
 }
 
-quarisma::device_enum Result::deviceType() const
+profiler::device_enum Result::deviceType() const
 {
-    using quarisma::autograd::profiler_impl::deviceTypeFromActivity;
-    return visit(quarisma::overloaded(
+    using profiler::autograd::profiler_impl::deviceTypeFromActivity;
+    return visit(profiler::overloaded(
         ATTRIBUTE(Allocation, e.device_type_),
         ATTRIBUTE(OutOfMemory, e.device_type_),
         ATTRIBUTE(Kineto, deviceTypeFromActivity(e.activity_type_)),
-        [&](const auto&) { return quarisma::device_enum::CPU; }));
+        [&](const auto&) { return profiler::device_enum::CPU; }));
 }
 #undef ATTRIBUTE
 
 ThreadLocalSubqueue::ThreadLocalSubqueue(const uint64_t tid, ProfilerConfig config)
     : tid_{tid}, config_{std::move(config)}, kineto_info_{kineto::kineto_ids()}
 {
-    quarisma::profiler_impl::impl::kineto::recordThreadInfo();
+    profiler::profiler_impl::impl::kineto::recordThreadInfo();
     if (!config_.experimental_config.performance_events.empty())
     {
         perf_profiler_ =
-            std::make_unique<quarisma::profiler_impl::impl::linux_perf::PerfProfiler>();
+            std::make_unique<profiler::profiler_impl::impl::linux_perf::PerfProfiler>();
         perf_profiler_->Configure(config_.experimental_config.performance_events);
     }
 }
@@ -885,7 +885,7 @@ ThreadLocalSubqueue* RecordQueue::getSubqueue()
         return sub_queue_cache_.ref_;
     }
 
-    const auto             tid = quarisma::RecordFunction::currentThreadId();
+    const auto             tid = profiler::RecordFunction::currentThreadId();
     std::scoped_lock const guard(sub_queue_mutex_);
     auto                   it = sub_queues_.find(tid);
     if (it == sub_queues_.end())
@@ -974,7 +974,7 @@ void generateForwardBackwardLink(
         {
             // Now the sequence number is only incremented on creating a "Node"
             // object for backward pass, by calling
-            // "quarisma::sequence_number::get_and_increment()". Among all ops with same
+            // "profiler::sequence_number::get_and_increment()". Among all ops with same
             // sequence number, the one with biggest startTime is the one launching
             // backward op.
             if (activity.startTime >= iter->second->startTime)
@@ -987,7 +987,7 @@ void generateForwardBackwardLink(
 #endif  // PROFILER_HAS_KINETO
 
 void generateForwardBackwardLinks(
-    const std::unique_ptr<quarisma::profiler_impl::impl::kineto::trace_t>& cpu_trace,
+    const std::unique_ptr<profiler::profiler_impl::impl::kineto::trace_t>& cpu_trace,
     const std::vector<std::shared_ptr<Result>>&                            results)
 {
 #ifndef PROFILER_HAS_KINETO
@@ -1005,7 +1005,7 @@ void generateForwardBackwardLinks(
     using result_activity_t = std::pair<Result*, libkineto::GenericTraceActivity*>;
     std::vector<result_activity_t> torch_events;
 
-    for (const auto idx : quarisma::irange(cpu_trace->activities.size()))
+    for (const auto idx : profiler::irange(cpu_trace->activities.size()))
     {
         const auto& profiler_result = results[idx];
         auto&       activity        = cpu_trace->activities[idx];
@@ -1052,11 +1052,11 @@ void passEventsToKineto(
     uint64_t                                    end_time_ns,
     const ProfilerConfig&                       config)
 {
-    using namespace quarisma::profiler_impl::impl::kineto;
-    TraceWrapper cpu_trace(static_cast<int64_t>(start_time_ns), "Quarisma Profiler");
+    using namespace profiler::profiler_impl::impl::kineto;
+    TraceWrapper cpu_trace(static_cast<int64_t>(start_time_ns), "Profiler Profiler");
 
-    // Generate Kineto events for each event recorded by the Quarisma profiler.
-    for (const auto i : quarisma::irange(results.size()))
+    // Generate Kineto events for each event recorded by the Profiler profiler.
+    for (const auto i : profiler::irange(results.size()))
     {
         const auto& e = results[i];
         // Here we are essentially setting the duration to -1 if the event never
@@ -1111,14 +1111,14 @@ void passEventsToKineto(
 // the events that it collected to point to the profiler op.
 //
 // However, this is not a sufficient description because it does not retain
-// dependency information between kineto ops. Consider a call to `quarisma.add`.
+// dependency information between kineto ops. Consider a call to `profiler.add`.
 // Three events will be collected:
 //   `aten::add`          (TorchOp, collected by profiler)
 //   `cudaLaunchKernel`   (CUDA runtime event, collected by Kineto)
-//   `quarisma::vectorized_...` (GPU kernel, collected by Kineto)
+//   `profiler::vectorized_...` (GPU kernel, collected by Kineto)
 // If we only relied on correlation IDs we would set both Kineto events as
-// children of the `quarisma::add`, rather than the correct
-//   `quarisma::add -> cudaLaunchKernel -> quarisma::vectorized_...`
+// children of the `profiler::add`, rather than the correct
+//   `profiler::add -> cudaLaunchKernel -> profiler::vectorized_...`
 //
 // Kineto surfaces this information through a second concept called a "flow".
 // In this example, the `cudaLaunchKernel` event is the start of a flow and the
@@ -1131,7 +1131,7 @@ void passEventsToKineto(
 class TransferEvents
 {
     using itrace_t   = libkineto::ITraceActivity;
-    using activity_t = quarisma::profiler_impl::impl::kineto::activity_t;
+    using activity_t = profiler::profiler_impl::impl::kineto::activity_t;
 
 public:
     TransferEvents(
@@ -1226,7 +1226,7 @@ private:
         // PROFILER_CHECK(activity != nullptr);
 
         // Kineto is inconsistent with types, so we have to cast to int32.
-        quarisma::profiler_impl::impl::kineto::DeviceAndResource const device_and_resource{
+        profiler::profiler_impl::impl::kineto::DeviceAndResource const device_and_resource{
             static_cast<int32_t>(activity->deviceId()),
             static_cast<int32_t>(activity->resourceId())};
 
@@ -1263,12 +1263,12 @@ private:
                              type == libkineto::ActivityType::PYTHON_FUNCTION))
         {
             /* PROFILER_LOG_WARNING(
-                "Detected an event which was likely passed to kineto by the Quarisma "
+                "Detected an event which was likely passed to kineto by the Profiler "
                 "profiler, but is not present in the set of known events: ",
                 activity->name(),
                 " This most likely means that Kineto has not "
                 "maintained address stability for this event. Please report this to "
-                "the Quarisma team.");
+                "the Profiler team.");
             */
             return nullptr;
         }
@@ -1291,7 +1291,7 @@ private:
             {
                 if (config_.experimental_config.expose_kineto_event_metadata)
                 {
-                    e->visit(quarisma::overloaded(
+                    e->visit(profiler::overloaded(
                         [&](ExtraFields<EventType::TorchOp>& i)
                         { i.metadata_json_ = activity->metadataJson(); },
                         [&](ExtraFields<EventType::Kineto>& i)
@@ -1301,7 +1301,7 @@ private:
                 const auto* linked_activity = activity->linkedActivity();
                 if (linked_activity != nullptr)
                 {
-                    e->visit(quarisma::overloaded(
+                    e->visit(profiler::overloaded(
                         [&](ExtraFields<EventType::Kineto>& i)
                         { i.linked_activity_ = toResult(linked_activity); },
                         [](auto&) { /* PROFILER_CHECK(false); */ }));
@@ -1312,12 +1312,12 @@ private:
 
     void setKinetoTID(std::shared_ptr<Result>& r, std::shared_ptr<Result> parent)
     {
-        r->visit(quarisma::overloaded(
+        r->visit(profiler::overloaded(
             [&]([[maybe_unused]] ExtraFields<EventType::Kineto>& i)
             {
                 // PROFILER_CHECK(r->start_tid_ == noTID);
                 r->start_tid_ =
-                    parent ? parent->start_tid_ : quarisma::RecordFunction::currentThreadId();
+                    parent ? parent->start_tid_ : profiler::RecordFunction::currentThreadId();
             },
             [](auto&) {}));
 
@@ -1330,11 +1330,11 @@ private:
     void setParents()
     {
         // First pass: Collect start events and set parent to linked event.
-        quarisma::flat_hash_map<uint32_t, std::shared_ptr<Result>> flow_map;
+        profiler::flat_hash_map<uint32_t, std::shared_ptr<Result>> flow_map;
         for (auto& e : results_.get())
         {
             // PROFILER_CHECK(e != nullptr);
-            e->visit(quarisma::overloaded(
+            e->visit(profiler::overloaded(
                 [&](const ExtraFields<EventType::Kineto>& i)
                 {
                     if (i.flow.type == libkineto::kLinkAsyncCpuGpu && i.flow.start)
@@ -1360,7 +1360,7 @@ private:
         // Second pass
         for (auto& e : results_.get())
         {
-            e->visit(quarisma::overloaded(
+            e->visit(profiler::overloaded(
                 [&](const ExtraFields<EventType::Kineto>& i)
                 {
                     // Flow takes priority over linked event.
@@ -1397,7 +1397,7 @@ private:
     std::reference_wrapper<std::vector<std::shared_ptr<Result>>>      results_;
     const ProfilerConfig&                                             config_;
     std::vector<const itrace_t*>                                      trace_activities_;
-    quarisma::flat_hash_map<const itrace_t*, std::shared_ptr<Result>> kineto_events_;
+    profiler::flat_hash_map<const itrace_t*, std::shared_ptr<Result>> kineto_events_;
 };
 #else
 class TransferEvents
@@ -1416,7 +1416,7 @@ trace_ptr_t addKinetoEvents(
     uint64_t                              end_time_ns,
     const ProfilerConfig&                 config)
 {
-    using namespace quarisma::profiler_impl::impl::kineto;
+    using namespace profiler::profiler_impl::impl::kineto;
     passEventsToKineto(results, start_time_ns, end_time_ns, config);
 
     // In on demand mode kineto is directly controlled by other machinery.
@@ -1445,7 +1445,7 @@ void set_in_tree_building(const std::vector<result_ptr_t>& results, const bool v
 {
     for (result_ptr_t const& r : results)
     {
-        r->visit(quarisma::overloaded(
+        r->visit(profiler::overloaded(
             [value](ExtraFields<EventType::Vulkan>& i) { i.in_tree_building_ = value; },
             [&](auto&)
             {
@@ -1459,7 +1459,7 @@ void build_tree(std::vector<std::shared_ptr<Result>>& sorted_events)
     set_in_tree_building(sorted_events, true);
 
     using op_fields = ExtraFields<EventType::TorchOp>;
-    quarisma::flat_hash_map<uint64_t, std::shared_ptr<Result>>                  stacks;
+    profiler::flat_hash_map<uint64_t, std::shared_ptr<Result>>                  stacks;
     std::priority_queue<result_ptr_t, std::vector<result_ptr_t>, ResultGreater> end_events_;
 
     auto push_event = [&stacks, &end_events_](std::shared_ptr<Result>& event)
@@ -1484,7 +1484,7 @@ void build_tree(std::vector<std::shared_ptr<Result>>& sorted_events)
         auto parent_it = stacks.find(event->start_tid_);
         if (parent_it == stacks.end())
         {
-            auto fwd_tid = event->visit(quarisma::overloaded(
+            auto fwd_tid = event->visit(profiler::overloaded(
                 [](const op_fields& i) { return i.forward_tid_; },
                 [](const auto&) -> uint64_t { return 0; }));
             if (fwd_tid)
@@ -1504,7 +1504,7 @@ void build_tree(std::vector<std::shared_ptr<Result>>& sorted_events)
             stacks[event->start_tid_] = event;
             end_events_.push(event);
         }
-        else if (event->endTimeNS() == std::numeric_limits<quarisma::time_t>::min())
+        else if (event->endTimeNS() == std::numeric_limits<profiler::time_t>::min())
         {
             // We use min time to indicate the lack of a termination event, so if we
             // encounter such a case we don't push to `end_events_`.
@@ -1584,7 +1584,7 @@ int64_t adjust_durations_dfs(std::shared_ptr<Result>& r)
 
         if (children_total_duration > original_duration)
         {
-            r->visit(quarisma::overloaded(
+            r->visit(profiler::overloaded(
                 [&r, &children_total_duration](ExtraFields<EventType::TorchOp>& i)
                 { i.end_time_ns_ = r->start_time_ns_ + children_total_duration; },
                 [&children_total_duration](ExtraFields<EventType::Vulkan>& i)
@@ -1623,7 +1623,7 @@ int64_t adjust_timestamps_dfs(std::shared_ptr<Result>& r, int64_t new_start_time
         if (r->start_time_ns_ != new_start_time)
         {
             // Adjust start time (keeping duration constant)
-            r->visit(quarisma::overloaded(
+            r->visit(profiler::overloaded(
                 [&r, &new_start_time](ExtraFields<EventType::TorchOp>& i)
                 { i.end_time_ns_ = new_start_time + (i.end_time_ns_ - r->start_time_ns_); },
                 []([[maybe_unused]] ExtraFields<EventType::Vulkan>& i)
@@ -1692,16 +1692,16 @@ void adjust_timestamps(std::vector<std::shared_ptr<Result>>& out)
 
 std::pair<
     std::vector<std::shared_ptr<Result>>,
-    std::unique_ptr<quarisma::profiler_impl::impl::kineto::ActivityTraceWrapper>>
+    std::unique_ptr<profiler::profiler_impl::impl::kineto::ActivityTraceWrapper>>
 RecordQueue::getRecords(
-    std::function<quarisma::time_t(quarisma::approx_time_t)> time_converter,
+    std::function<profiler::time_t(profiler::approx_time_t)> time_converter,
     uint64_t                                                 start_time_ns,
     uint64_t                                                 end_time_ns)
 {
-    auto converter = [&](quarisma::approx_time_t t)
+    auto converter = [&](profiler::approx_time_t t)
     {
-        return t == std::numeric_limits<quarisma::approx_time_t>::min()
-                   ? std::numeric_limits<quarisma::time_t>::min()
+        return t == std::numeric_limits<profiler::approx_time_t>::min()
+                   ? std::numeric_limits<profiler::time_t>::min()
                    : time_converter(t);
     };
 
@@ -1723,7 +1723,7 @@ RecordQueue::getRecords(
         {
             for (auto& i : events)
             {
-                quarisma::time_t start_time_ns = 0;
+                profiler::time_t start_time_ns = 0;
                 if constexpr (std::is_same_v<
                                   std::remove_reference_t<decltype(i)>,
                                   ExtraFields<EventType::Backend>>)
@@ -1800,11 +1800,11 @@ RecordQueue::getRecords(
 
     if (python_tracer_)
     {
-        std::vector<std::shared_ptr<quarisma::profiler_impl::impl::Result>> ev;
+        std::vector<std::shared_ptr<profiler::profiler_impl::impl::Result>> ev;
         try
         {
             ev = python_tracer_->getEvents(
-                converter, python_enters, static_cast<quarisma::time_t>(end_time_ns));
+                converter, python_enters, static_cast<profiler::time_t>(end_time_ns));
         }
         catch (std::exception&)
         {
@@ -1812,7 +1812,7 @@ RecordQueue::getRecords(
             // exception happens here then the events will never be stopped and future
             // runs will be broken - so make sure to stopTrace() if we see an
             // exception.
-            quarisma::profiler_impl::impl::kineto::stopTrace();
+            profiler::profiler_impl::impl::kineto::stopTrace();
             throw;
         }
         // Placeholder for if we run out of ProfilerStep annotations
@@ -1980,4 +1980,4 @@ void set_record_tensor_addrs_enabled_val(bool val)
 {
     record_tensor_addrs_enabled() = [val]() { return val; };
 }
-}  // namespace quarisma::profiler_impl::impl
+}  // namespace profiler::profiler_impl::impl

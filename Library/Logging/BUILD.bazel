@@ -1,0 +1,75 @@
+# Standalone logging library. Include root is Library/Logging (no Logging/logging/ nesting).
+load("//bazel:logging.bzl", "logging_copts", "logging_defines", "logging_linkopts")
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "logging_hdrs",
+    srcs = glob(
+        [
+            "*.h",
+            "common/*.h",
+            "util/*.h",
+            "logger/*.h",
+        ],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "logging_srcs",
+    srcs = glob(
+        [
+            "util/*.cpp",
+        ],
+        allow_empty = True,
+    ),
+)
+
+cc_library(
+    name = "logging_lib",
+    srcs = [
+        ":logging_srcs",
+        "logger/back_trace.cpp",
+    ] + select({
+        "//bazel:logging_native": [],
+        "//conditions:default": glob(["logger/logger.cpp"], allow_empty = True),
+    }),
+    hdrs = [":logging_hdrs"],
+    copts = logging_copts(),
+    defines = logging_defines() + select({
+        "//bazel:shared_libs": ["LOGGING_SHARED_DEFINE", "LOGGING_BUILDING_DLL"],
+        "//conditions:default": ["LOGGING_STATIC_DEFINE"],
+    }),
+    includes = [".", "logger"],
+    linkopts = logging_linkopts() + select({
+        "@platforms//os:windows": [],
+        "//conditions:default": [],
+    }),
+    linkstatic = select({
+        "//bazel:shared_libs": False,
+        "//conditions:default": True,
+    }),
+    deps = [
+        "@fmt//:fmt",
+    ] + select({
+        "//bazel:disable_magic_enum": [],
+        "//conditions:default": ["@magic_enum//:magic_enum"],
+    }) + select({
+        "//bazel:logging_glog": ["@glog//:glog"],
+        "//bazel:logging_loguru": ["@loguru//:loguru"],
+        "//conditions:default": ["@loguru//:loguru"],
+    }),
+    alwayslink = False,
+    visibility = [
+        "//Library/Logging:__pkg__",
+        "//Library/Core:__pkg__",
+        "//Library/Memory:__pkg__",
+    ],
+)
+
+cc_library(
+    name = "Logging",
+    deps = [":logging_lib"],
+    visibility = ["//visibility:public"],
+)

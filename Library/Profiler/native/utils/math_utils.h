@@ -32,12 +32,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef PROFILER_PROFILER_UTILS_MATH_UTILS_H_
-#define PROFILER_PROFILER_UTILS_MATH_UTILS_H_
+#pragma once
 
 #include <cstdint>
 
-namespace quarisma
+namespace profiler
 {
 namespace profiler_impl
 {
@@ -203,6 +202,5 @@ inline double gibibytes_per_second(double bytes, double ns)
 }
 
 }  // namespace profiler_impl
-}  // namespace quarisma
+}  // namespace profiler
 
-#endif  // PROFILER_PROFILER_UTILS_MATH_UTILS_H_

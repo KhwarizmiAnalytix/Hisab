@@ -1,6 +1,6 @@
 #if PROFILER_HAS_NATIVE_PROFILER
 /*
- * Quarisma: High-Performance Computational Library
+ * Profiler: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  */
@@ -13,7 +13,7 @@
 #include "ProfilerTest.h"
 #include "native/analysis/stats_calculator.h"
 
-using namespace quarisma;
+using namespace profiler;
 
 // ============================================================================
 // Consolidated Stat Template Tests
@@ -22,7 +22,7 @@ using namespace quarisma;
 PROFILERTEST(Profiler, stat_basic_operations_and_initialization)
 {
     // Test 1: Empty initialization
-    quarisma::stat<int64_t> s;
+    profiler::stat<int64_t> s;
     EXPECT_TRUE(s.empty());
     EXPECT_EQ(s.count(), 0);
 
@@ -50,7 +50,7 @@ PROFILERTEST(Profiler, stat_basic_operations_and_initialization)
 
 PROFILERTEST(Profiler, stat_min_max_and_aggregations)
 {
-    quarisma::stat<int64_t> s;
+    profiler::stat<int64_t> s;
 
     // Test min/max tracking
     s.update_stat(10);
@@ -60,7 +60,7 @@ PROFILERTEST(Profiler, stat_min_max_and_aggregations)
     EXPECT_EQ(s.max(), 20);
 
     // Test squared_sum calculation (4 + 9 + 16 = 29)
-    quarisma::stat<int64_t> s2;
+    profiler::stat<int64_t> s2;
     s2.update_stat(2);
     s2.update_stat(3);
     s2.update_stat(4);
@@ -71,7 +71,7 @@ PROFILERTEST(Profiler, stat_min_max_and_aggregations)
 PROFILERTEST(Profiler, stat_variance_and_statistical_calculations)
 {
     // Test 1: All same values - variance should be 0
-    quarisma::stat<int64_t> s1;
+    profiler::stat<int64_t> s1;
     s1.update_stat(10);
     s1.update_stat(10);
     s1.update_stat(10);
@@ -80,13 +80,13 @@ PROFILERTEST(Profiler, stat_variance_and_statistical_calculations)
     EXPECT_EQ(s1.std_deviation(), 0);
 
     // Test 2: Different values - variance should be > 0
-    quarisma::stat<int64_t> s2;
+    profiler::stat<int64_t> s2;
     s2.update_stat(10);
     s2.update_stat(20);
     EXPECT_FALSE(s2.all_same());
 
     // Test 3: Variance calculation with multiple values
-    quarisma::stat<int64_t> s3;
+    profiler::stat<int64_t> s3;
     s3.update_stat(1);
     s3.update_stat(2);
     s3.update_stat(3);
@@ -96,7 +96,7 @@ PROFILERTEST(Profiler, stat_variance_and_statistical_calculations)
     EXPECT_GT(variance, 0);
 
     // Test 4: Sample variance
-    quarisma::stat<int64_t> s4;
+    profiler::stat<int64_t> s4;
     s4.update_stat(1);
     s4.update_stat(2);
     s4.update_stat(3);
@@ -106,7 +106,7 @@ PROFILERTEST(Profiler, stat_variance_and_statistical_calculations)
 
 PROFILERTEST(Profiler, stat_reset_and_state_management)
 {
-    quarisma::stat<int64_t> s;
+    profiler::stat<int64_t> s;
     s.update_stat(10);
     s.update_stat(20);
     s.update_stat(30);
@@ -122,14 +122,14 @@ PROFILERTEST(Profiler, stat_reset_and_state_management)
 PROFILERTEST(Profiler, stat_output_stream_operations)
 {
     // Test 1: Empty stat output
-    quarisma::stat<int64_t> s1;
+    profiler::stat<int64_t> s1;
     std::ostringstream      oss1;
     s1.output_to_stream(&oss1);
     std::string output1 = oss1.str();
     EXPECT_NE(output1.find("count=0"), std::string::npos);
 
     // Test 2: Output with data
-    quarisma::stat<int64_t> s2;
+    profiler::stat<int64_t> s2;
     s2.update_stat(10);
     s2.update_stat(20);
     std::ostringstream oss2;
@@ -138,7 +138,7 @@ PROFILERTEST(Profiler, stat_output_stream_operations)
     EXPECT_NE(output2.find("count=2"), std::string::npos);
 
     // Test 3: Output with all same values
-    quarisma::stat<int64_t> s3;
+    profiler::stat<int64_t> s3;
     s3.update_stat(10);
     s3.update_stat(10);
     s3.update_stat(10);
@@ -148,7 +148,7 @@ PROFILERTEST(Profiler, stat_output_stream_operations)
     EXPECT_NE(output3.find("all same"), std::string::npos);
 
     // Test 4: Output stream operator
-    quarisma::stat<int64_t> s4;
+    profiler::stat<int64_t> s4;
     s4.update_stat(10);
     s4.update_stat(20);
     std::ostringstream oss4;
@@ -160,7 +160,7 @@ PROFILERTEST(Profiler, stat_output_stream_operations)
 PROFILERTEST(Profiler, stat_edge_cases_and_special_values)
 {
     // Test 1: Negative values
-    quarisma::stat<int64_t> s1;
+    profiler::stat<int64_t> s1;
     s1.update_stat(-10);
     s1.update_stat(-5);
     s1.update_stat(0);
@@ -171,7 +171,7 @@ PROFILERTEST(Profiler, stat_edge_cases_and_special_values)
     EXPECT_EQ(s1.sum(), 0);
 
     // Test 2: Large values
-    quarisma::stat<int64_t> s2;
+    profiler::stat<int64_t> s2;
     s2.update_stat(1000000000);
     s2.update_stat(2000000000);
     s2.update_stat(3000000000);
@@ -179,7 +179,7 @@ PROFILERTEST(Profiler, stat_edge_cases_and_special_values)
     EXPECT_EQ(s2.sum(), 6000000000LL);
 
     // Test 3: Double type support
-    quarisma::stat<double> s3;
+    profiler::stat<double> s3;
     s3.update_stat(1.5);
     s3.update_stat(2.5);
     s3.update_stat(3.5);
@@ -191,11 +191,11 @@ PROFILERTEST(Profiler, stat_edge_cases_and_special_values)
 PROFILERTEST(Profiler, stat_with_percentiles_basic_operations)
 {
     // Test 1: Empty initialization
-    quarisma::stat_with_percentiles<int64_t> s1;
+    profiler::stat_with_percentiles<int64_t> s1;
     EXPECT_TRUE(s1.empty());
 
     // Test 2: Multiple updates and count tracking
-    quarisma::stat_with_percentiles<int64_t> s2;
+    profiler::stat_with_percentiles<int64_t> s2;
     for (int i = 1; i <= 100; ++i)
     {
         s2.update_stat(i);
@@ -203,13 +203,13 @@ PROFILERTEST(Profiler, stat_with_percentiles_basic_operations)
     EXPECT_EQ(s2.count(), 100);
 
     // Test 3: Single value percentile
-    quarisma::stat_with_percentiles<int64_t> s3;
+    profiler::stat_with_percentiles<int64_t> s3;
     s3.update_stat(42);
     int64_t p50_single = s3.percentile(50);
     EXPECT_EQ(p50_single, 42);
 
     // Test 4: Two values percentile
-    quarisma::stat_with_percentiles<int64_t> s4;
+    profiler::stat_with_percentiles<int64_t> s4;
     s4.update_stat(10);
     s4.update_stat(20);
     int64_t p50_two = s4.percentile(50);
@@ -220,7 +220,7 @@ PROFILERTEST(Profiler, stat_with_percentiles_basic_operations)
 PROFILERTEST(Profiler, stat_with_percentiles_calculations)
 {
     // Prepare dataset 1-100
-    quarisma::stat_with_percentiles<int64_t> s;
+    profiler::stat_with_percentiles<int64_t> s;
     for (int i = 1; i <= 100; ++i)
     {
         s.update_stat(i);
@@ -260,7 +260,7 @@ PROFILERTEST(Profiler, stat_with_percentiles_calculations)
 
 PROFILERTEST(Profiler, stat_with_percentiles_output_stream)
 {
-    quarisma::stat_with_percentiles<int64_t> s;
+    profiler::stat_with_percentiles<int64_t> s;
     for (int i = 1; i <= 100; ++i)
     {
         s.update_stat(i);

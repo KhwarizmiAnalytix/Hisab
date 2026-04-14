@@ -32,8 +32,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef PROFILER_PROFILER_UTILS_TIME_UTILS_H_
-#define PROFILER_PROFILER_UTILS_TIME_UTILS_H_
+#pragma once
 
 #include <cstdint>
 
@@ -41,7 +40,7 @@ limitations under the License.
 #include "common/profiler_macros.h"
 #include "native/utils/math_utils.h"
 
-namespace quarisma
+namespace profiler
 {
 namespace profiler_impl
 {
@@ -118,6 +117,5 @@ inline void spin_for_micros(int64_t us)
 }
 
 }  // namespace profiler_impl
-}  // namespace quarisma
+}  // namespace profiler
 
-#endif  // PROFILER_PROFILER_UTILS_TIME_UTILS_H_

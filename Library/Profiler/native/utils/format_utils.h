@@ -32,8 +32,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef PROFILER_PROFILER_UTILS_FORMAT_UTILS_H_
-#define PROFILER_PROFILER_UTILS_FORMAT_UTILS_H_
+#pragma once
 
 #include <cassert>
 #include <cstdio>
@@ -41,7 +40,7 @@ limitations under the License.
 
 #include "common/profiler_macros.h"
 
-namespace quarisma
+namespace profiler
 {
 namespace profiler_impl
 {
@@ -114,6 +113,5 @@ inline std::string max_precision(double d)
 }
 
 }  // namespace profiler_impl
-}  // namespace quarisma
+}  // namespace profiler
 
-#endif  // PROFILER_PROFILER_UTILS_FORMAT_UTILS_H_

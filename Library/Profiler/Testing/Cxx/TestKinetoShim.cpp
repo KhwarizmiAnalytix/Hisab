@@ -27,7 +27,7 @@
 #include "bespoke/common/orchestration/observer.h"
 #include "bespoke/kineto/kineto_shim.h"
 
-using namespace quarisma::profiler_impl;
+using namespace profiler::profiler_impl;
 
 // ============================================================================
 // Kineto Initialization Tests
@@ -503,8 +503,8 @@ PROFILERTEST(KinetoShim, EndToEndDetailedProfiling)
     // - Designed for chrome://tracing and Perfetto
     //
     // To get Chrome Trace compatible output, use:
-    // - Quarisma's profiler_session with Kineto integration
-    // - Quarisma's export_to_chrome_trace_json() function
+    // - Profiler's profiler_session with Kineto integration
+    // - Profiler's export_to_chrome_trace_json() function
     // - RecordFunction instrumentation for CPU events
     //
     // This test demonstrates:
@@ -617,7 +617,7 @@ PROFILERTEST(KinetoShim, EndToEndDetailedProfiling)
     std::cout << "  ✗ This JSON is NOT compatible with chrome://tracing" << std::endl;
     std::cout << "  ✗ Kineto uses its own schema, not Chrome Trace Event Format" << std::endl;
     std::cout << "\nTo get Chrome Trace compatible output:" << std::endl;
-    std::cout << "  1. Use Quarisma's profiler_session with Kineto integration" << std::endl;
+    std::cout << "  1. Use Profiler's profiler_session with Kineto integration" << std::endl;
     std::cout << "  2. Use export_to_chrome_trace_json() function" << std::endl;
     std::cout << "  3. See TestProfilerChromeTraceHierarchical.cpp for examples" << std::endl;
     std::cout << "\nKineto JSON can be viewed with:" << std::endl;

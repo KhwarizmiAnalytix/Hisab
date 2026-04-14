@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 3.16)
 set(profiler_headers)
 set(profiler_sources)
 
+if(NOT DEFINED PROFILER_CXX_STANDARD OR PROFILER_CXX_STANDARD STREQUAL "")
+  set(PROFILER_CXX_STANDARD ${CMAKE_CXX_STANDARD})
+endif()
+
 # =============================================================================
 # Common utilities (always compiled: approximate_clock, small_vector, etc.)
 # =============================================================================
@@ -109,20 +113,20 @@ add_library(Profiler ${profiler_sources} ${profiler_headers})
 # Set appropriate compile definitions based on library type
 if(BUILD_SHARED_LIBS)
   target_compile_definitions(Profiler PUBLIC PROFILER_SHARED_DEFINE PRIVATE PROFILER_BUILDING_DLL)
-  # Set output directories using Quarisma's standardized approach
-  if(COMMAND quarisma_set_target_output_directories)
-    quarisma_set_target_output_directories(Profiler)
+  # Set output directories using Profiler's standardized approach
+  if(COMMAND profiler_set_target_output_directories)
+    profiler_set_target_output_directories(Profiler)
   endif()
 else()
   target_compile_definitions(Profiler PUBLIC PROFILER_STATIC_DEFINE)
 endif()
 
 # Create alias for consistent naming
-add_library(Quarisma::Profiler ALIAS Profiler)
+add_library(Profiler::Profiler ALIAS Profiler)
 
 # Enable Link Time Optimization (LTO) for Profiler library if enabled LTO is disabled for third-party
 # libraries via FILTER_FLAGS to avoid conflicts
-if(QUARISMA_ENABLE_LTO)
+if(PROFILER_ENABLE_LTO)
   set_target_properties(Profiler PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
   message(STATUS "Profiler library: Link Time Optimization (LTO) enabled")
 else()
@@ -130,15 +134,17 @@ else()
 endif()
 
 # Apply IWYU to the Profiler target (if available)
-if(COMMAND quarisma_apply_iwyu)
-  quarisma_apply_iwyu(Profiler)
+if(COMMAND profiler_apply_iwyu)
+  profiler_apply_iwyu(Profiler)
 endif()
 
 # Configure Visual Studio source groups to preserve directory structure
-quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
+if(COMMAND profiler_module_create_filters)
+  profiler_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
 
 set_target_properties(
-  Profiler PROPERTIES CXX_STANDARD ${QUARISMA_CXX_STANDARD} CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF
+  Profiler PROPERTIES CXX_STANDARD ${PROFILER_CXX_STANDARD} CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF
 )
 target_include_directories(
   Profiler
@@ -160,27 +166,27 @@ configure_file(
 )
 
 # Add centralized third-party include directories as PUBLIC
-if(QUARISMA_DEPENDENCY_INCLUDE_DIRS)
-  target_include_directories(Profiler PUBLIC ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})
-  message(STATUS "Profiler library include directories: ${QUARISMA_DEPENDENCY_INCLUDE_DIRS}")
+if(PROFILER_DEPENDENCY_INCLUDE_DIRS)
+  target_include_directories(Profiler PUBLIC ${PROFILER_DEPENDENCY_INCLUDE_DIRS})
+  message(STATUS "Profiler library include directories: ${PROFILER_DEPENDENCY_INCLUDE_DIRS}")
 endif()
 
-target_link_libraries(Profiler PUBLIC Quarisma::build)
+target_link_libraries(Profiler PUBLIC Profiler::build)
 
 # Link with centralized dependency list
-if(QUARISMA_DEPENDENCY_LIBS)
-  target_link_libraries(Profiler PUBLIC ${QUARISMA_DEPENDENCY_LIBS})
-  message(STATUS "Profiler library linked with centralized dependencies: ${QUARISMA_DEPENDENCY_LIBS}")
+if(PROFILER_DEPENDENCY_LIBS)
+  target_link_libraries(Profiler PUBLIC ${PROFILER_DEPENDENCY_LIBS})
+  message(STATUS "Profiler library linked with centralized dependencies: ${PROFILER_DEPENDENCY_LIBS}")
 endif()
 
 # Apply centralized compile definitions
-if(QUARISMA_DEPENDENCY_COMPILE_DEFINITIONS)
-  target_compile_definitions(Profiler PUBLIC ${QUARISMA_DEPENDENCY_COMPILE_DEFINITIONS})
-  message(STATUS "Profiler library compile definitions: ${QUARISMA_DEPENDENCY_COMPILE_DEFINITIONS}")
+if(PROFILER_DEPENDENCY_COMPILE_DEFINITIONS)
+  target_compile_definitions(Profiler PUBLIC ${PROFILER_DEPENDENCY_COMPILE_DEFINITIONS})
+  message(STATUS "Profiler library compile definitions: ${PROFILER_DEPENDENCY_COMPILE_DEFINITIONS}")
 endif()
 # =============================================================================
 # Testing
 # =============================================================================
-if(QUARISMA_BUILD_TESTING STREQUAL "ON" OR QUARISMA_BUILD_TESTING STREQUAL "WANT")
+if(BUILD_TESTING)
   add_subdirectory(Testing/Cxx)
 endif()

@@ -1,14 +1,14 @@
 # =============================================================================
-# Quarisma Parallel Library BUILD Configuration
+# Parallel Parallel Library BUILD Configuration
 # =============================================================================
 # Standalone parallel computing library. No dependency on //Library/Core.
 # Include root is Library/Parallel so that:
 #   "common/parallel_export.h"              -> Library/Parallel/common/parallel_export.h
-#   "parallel_tools.h"                      -> Library/Parallel/parallel_tools.h
+#   "tools/parallel_tools.h"                -> Library/Parallel/tools/parallel_tools.h
 #   "common/parallel_tools_api.h"           -> Library/Parallel/common/...
 # =============================================================================
 
-load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
+load("//bazel:parallel.bzl", "parallel_copts", "parallel_defines", "parallel_linkopts")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -20,7 +20,7 @@ filegroup(
     name = "parallel_hdrs",
     srcs = glob(
         [
-            "*.h",
+            "tools/*.h",
             "common/*.h",
         ],
         allow_empty = True,
@@ -31,7 +31,7 @@ filegroup(
     name = "parallel_srcs",
     srcs = glob(
         [
-            "*.cpp",
+            "tools/*.cpp",
             "common/*.cpp",
         ],
         allow_empty = True,
@@ -59,8 +59,8 @@ cc_library(
         "//bazel:enable_openmp": glob(["openmp/*.h", "openmp/*.hxx"], allow_empty = True),
         "//conditions:default": glob(["std_thread/*.h", "std_thread/*.hxx"], allow_empty = True),
     }),
-    copts = quarisma_copts(),
-    defines = quarisma_defines() + select({
+    copts = parallel_copts(),
+    defines = parallel_defines() + select({
         "//bazel:shared_libs": ["PARALLEL_SHARED_DEFINE", "PARALLEL_BUILDING_DLL"],
         "//conditions:default": ["PARALLEL_STATIC_DEFINE"],
     }),
@@ -68,7 +68,7 @@ cc_library(
         ".",
         "Testing",
     ],
-    linkopts = quarisma_linkopts() + select({
+    linkopts = parallel_linkopts() + select({
         "@platforms//os:windows": [],
         "@platforms//os:macos": [],
         "//conditions:default": ["-lpthread"],

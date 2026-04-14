@@ -44,7 +44,7 @@ limitations under the License.
 #include "common/flat_hash.h"
 #include "common/profiler_macros.h"
 
-namespace quarisma
+namespace profiler
 {
 namespace
 {
@@ -668,4 +668,4 @@ const std::string_view kThreadpoolListenerRecord      = "ThreadpoolListener::Rec
 const std::string_view kThreadpoolListenerStartRegion = "ThreadpoolListener::StartRegion";
 const std::string_view kThreadpoolListenerStopRegion  = "ThreadpoolListener::StopRegion";
 const std::string_view kThreadpoolListenerRegion      = "ThreadpoolListener::Region";
-}  // namespace quarisma
+}  // namespace profiler

@@ -7,7 +7,7 @@
 
 #if !defined(__linux__) || !defined(__x86_64__) || !defined(__has_include) || \
     !__has_include("ext/stdio_filebuf.h")
-namespace quarisma::unwind
+namespace profiler::unwind
 {
 std::vector<void*> unwind()
 {
@@ -35,7 +35,7 @@ Stats stats()
     return {};
 }
 
-}  // namespace quarisma::unwind
+}  // namespace profiler::unwind
 
 #else
 
@@ -62,7 +62,7 @@ Stats stats()
 extern "C" void unwind_c(std::vector<void*>* result, int64_t rsp, int64_t rbp);
 extern "C" void unwind_entry(std::vector<void*>* result);
 
-namespace quarisma::unwind
+namespace profiler::unwind
 {
 struct UpgradeExclusive
 {
@@ -160,7 +160,7 @@ struct UnwindCache
                 auto     self      = (UnwindCache*)data;
                 uint64_t last_addr = 0;
                 auto     segments  = (Elf64_Phdr*)info->dlpi_phdr;
-                for (auto i : quarisma::irange(info->dlpi_phnum))
+                for (auto i : profiler::irange(info->dlpi_phnum))
                 {
                     if (segments[i].p_type == PT_LOAD)
                     {
@@ -267,7 +267,7 @@ struct UnwindCache
         return *r;
     }
 
-    quarisma::unwind::Stats stats() { return stats_; }
+    profiler::unwind::Stats stats() { return stats_; }
 
 private:
     const LibraryInfo* searchFor(uint64_t addr)
@@ -300,9 +300,9 @@ private:
 
     // sorted by load_bias
     std::vector<LibraryInfo>                    all_libraries_;
-    quarisma::flat_hash_map<uint64_t, Unwinder> ip_cache_;
+    profiler::flat_hash_map<uint64_t, Unwinder> ip_cache_;
 
-    quarisma::unwind::Stats stats_;
+    profiler::unwind::Stats stats_;
 
     // to keep track of whether we need to refresh this info
     Version last_version_;
@@ -350,7 +350,7 @@ struct Symbolizer
 {
     Symbolizer()
     {
-        auto envar = quarisma::utils::get_env("PROFILER_ADDR2LINE_BINARY");
+        auto envar = profiler::utils::get_env("PROFILER_ADDR2LINE_BINARY");
         if (envar.has_value())
         {
             // currently we take user's input as is without checking
@@ -428,8 +428,8 @@ private:
         std::vector<void*>           queried;
         size_t                       completed = 0;
     };
-    quarisma::flat_hash_map<std::string, Entry> entries_;
-    quarisma::flat_hash_map<void*, Frame>       frame_map_;
+    profiler::flat_hash_map<std::string, Entry> entries_;
+    profiler::flat_hash_map<void*, Frame>       frame_map_;
     bool                                        has_pending_results_ = true;
 
     Entry& getOrCreate(const std::string& name)
@@ -469,7 +469,7 @@ private:
 static std::vector<Frame> symbolize_fast(const std::vector<void*>& frames, Mode mode)
 {
     static std::mutex                                           cache_mutex;
-    static std::array<quarisma::flat_hash_map<void*, Frame>, 2> frame_maps;
+    static std::array<profiler::flat_hash_map<void*, Frame>, 2> frame_maps;
     auto& frame_map = frame_maps[mode == Mode::fast ? 0 : 1];
 
     std::vector<uint32_t> indices_to_lookup;
@@ -477,7 +477,7 @@ static std::vector<Frame> symbolize_fast(const std::vector<void*>& frames, Mode 
     results.reserve(frames.size());
     {
         std::lock_guard<std::mutex> lock(cache_mutex);
-        for (auto i : quarisma::irange(frames.size()))
+        for (auto i : profiler::irange(frames.size()))
         {
             void* f  = frames.at(i);
             auto  it = frame_map.find(f);
@@ -563,25 +563,25 @@ Stats stats()
     return unwind_cache.stats();
 }
 
-}  // namespace quarisma::unwind
+}  // namespace profiler::unwind
 
 extern "C" PROFILER_USED void unwind_c(std::vector<void*>* result, int64_t rsp, int64_t rbp)
 {
-    std::shared_lock              lock(quarisma::unwind::cache_mutex_);
-    quarisma::unwind::UnwindState state{};
+    std::shared_lock              lock(profiler::unwind::cache_mutex_);
+    profiler::unwind::UnwindState state{};
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     state.rip = *(int64_t*)rsp;
     // +8 because we saved rsp after the return address was already pushed
     // to the stack
     state.rsp = rsp + 8;
     state.rbp = rbp;
-    quarisma::unwind::unwind_cache.checkRefresh(lock);
+    profiler::unwind::unwind_cache.checkRefresh(lock);
     while (true)
     {  // unwind for _start sets rip as being undefined
         // NOLINTNEXTLINE(performance-no-int-to-ptr)
         result->push_back((void*)state.rip);
-        const quarisma::unwind::Unwinder& uw =
-            quarisma::unwind::unwind_cache.unwinderFor(state.rip, lock);
+        const profiler::unwind::Unwinder& uw =
+            profiler::unwind::unwind_cache.unwinderFor(state.rip, lock);
         if (uw.terminator())
         {
             if (uw.isUnknown())

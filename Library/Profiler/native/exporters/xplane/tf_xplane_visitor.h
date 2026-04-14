@@ -37,7 +37,7 @@ limitations under the License.
 #include "native/exporters/xplane/xplane_schema.h"
 #include "native/exporters/xplane/xplane_visitor.h"
 
-namespace quarisma
+namespace profiler
 {
 
 inline xplane_visitor CreateTfXPlaneVisitor(const xplane* plane)
@@ -45,4 +45,4 @@ inline xplane_visitor CreateTfXPlaneVisitor(const xplane* plane)
     return xplane_visitor(plane, {FindHostEventType, FindTfOpEventType}, {FindStatType});
 }
 
-}  // namespace quarisma
+}  // namespace profiler

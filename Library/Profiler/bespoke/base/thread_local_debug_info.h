@@ -5,7 +5,7 @@
 
 #include "common/profiler_export.h"
 
-namespace quarisma
+namespace profiler
 {
 
 enum class PROFILER_VISIBILITY_ENUM DebugInfoKind : uint8_t
@@ -86,4 +86,4 @@ private:
     std::shared_ptr<thread_local_debug_info> prev_info_ = nullptr;
 };
 
-}  // namespace quarisma
+}  // namespace profiler

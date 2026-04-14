@@ -25,7 +25,7 @@
 #include <variant>
 #include <vector>
 
-namespace quarisma
+namespace profiler
 {
 
 /**
@@ -299,4 +299,4 @@ private:
     uint64_t                 max_session_duration_ms_       = 0;
     uint64_t                 delay_ms_                      = 0;
 };
-}  // namespace quarisma
+}  // namespace profiler

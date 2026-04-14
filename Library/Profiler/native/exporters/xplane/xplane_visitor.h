@@ -46,7 +46,7 @@ limitations under the License.
 #include "native/core/timespan.h"
 #include "native/exporters/xplane/xplane.h"
 
-namespace quarisma
+namespace profiler
 {
 class xplane_visitor;
 
@@ -296,7 +296,7 @@ private:
 using TypeGetter     = std::function<std::optional<int64_t>(std::string_view)>;
 using TypeGetterList = std::vector<TypeGetter>;
 
-class xplane_visitor : public xstats_owner<quarisma::xplane>
+class xplane_visitor : public xstats_owner<profiler::xplane>
 {
 public:
     // REQUIRED: plane cannot be nullptr.
@@ -391,4 +391,4 @@ void xevent_metadata_visitor::for_each_child(ForEachChildFunc&& for_each_child) 
     }
 }
 
-}  // namespace quarisma
+}  // namespace profiler

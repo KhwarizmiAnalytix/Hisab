@@ -33,7 +33,7 @@
 #endif
 #endif
 
-namespace quarisma
+namespace profiler
 {
 
 using time_t         = int64_t;
@@ -120,4 +120,4 @@ private:
     time_pairs start_times_;
 };
 
-}  // namespace quarisma
+}  // namespace profiler

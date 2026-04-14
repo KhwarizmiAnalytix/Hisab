@@ -46,7 +46,7 @@ limitations under the License.
 #include "native/tracing/traceme_recorder.h"
 #include "native/utils/parse_annotation.h"
 
-namespace quarisma
+namespace profiler
 {
 namespace profiler_impl
 {
@@ -54,7 +54,7 @@ namespace
 {
 
 // Helper function to add display name to event metadata if needed
-// This can be extended to handle Quarisma-specific operation naming conventions
+// This can be extended to handle Profiler-specific operation naming conventions
 void may_add_display_name(xevent_metadata* xevent_metadata)
 {
     if (!xevent_metadata->display_name().empty())
@@ -62,7 +62,7 @@ void may_add_display_name(xevent_metadata* xevent_metadata)
         return;
     }
 
-    // For now, we don't have Quarisma-specific op name processing
+    // For now, we don't have Profiler-specific op name processing
     // This is where you would add logic similar to TfOpEventName()
     // to extract and format operation names for better display
 
@@ -215,4 +215,4 @@ void convert_complete_events_to_xplane(
 }
 
 }  // namespace profiler_impl
-}  // namespace quarisma
+}  // namespace profiler

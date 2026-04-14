@@ -6,7 +6,7 @@
 #include "bespoke/common/unwind/dwarf_enums.h"
 #include "bespoke/common/unwind/unwind_error.h"
 
-namespace quarisma::unwind
+namespace profiler::unwind
 {
 
 template <bool checked>
@@ -171,4 +171,4 @@ private:
 using CheckedLexer = LexerImpl<true>;
 using Lexer        = LexerImpl<false>;
 
-}  // namespace quarisma::unwind
+}  // namespace profiler::unwind

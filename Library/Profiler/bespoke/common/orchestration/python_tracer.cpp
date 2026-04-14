@@ -1,6 +1,6 @@
 #include "bespoke/common/orchestration/python_tracer.h"
 
-namespace quarisma::profiler_impl::impl::python_tracer
+namespace profiler::profiler_impl::impl::python_tracer
 {
 namespace
 {
@@ -16,9 +16,9 @@ struct NoOpPythonTracer : public PythonTracerBase
     void                                 restart() override {}
     void                                 register_gc_callback() override {}
     std::vector<std::shared_ptr<Result>> getEvents(
-        std::function<quarisma::time_t(quarisma::approx_time_t)> /*time_converter*/,
+        std::function<profiler::time_t(profiler::approx_time_t)> /*time_converter*/,
         std::vector<CompressedEvent>& /*enters*/,
-        quarisma::time_t /*end_time_ns*/) override
+        profiler::time_t /*end_time_ns*/) override
     {
         return {};
     }
@@ -62,4 +62,4 @@ std::unique_ptr<PythonMemoryTracerBase> PythonMemoryTracerBase::make()
     }
     return memory_make_fn();
 }
-}  // namespace quarisma::profiler_impl::impl::python_tracer
+}  // namespace profiler::profiler_impl::impl::python_tracer

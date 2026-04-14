@@ -11,11 +11,11 @@ include_guard(GLOBAL)
 # OpenMP Support Flag Controls whether OpenMP is enabled for parallel processing.
 # When enabled, provides industry-standard parallel programming support with automatic
 # fallback if OpenMP is not available on the system.
-option(QUARISMA_ENABLE_OPENMP "Enable OpenMP parallel processing support" OFF)
-mark_as_advanced(QUARISMA_ENABLE_OPENMP)
+option(PROJECT_ENABLE_OPENMP "Enable OpenMP parallel processing support" OFF)
+mark_as_advanced(PROJECT_ENABLE_OPENMP)
 # Only proceed if OpenMP is enabled
-if(NOT QUARISMA_ENABLE_OPENMP)
-  message("OpenMP support is disabled (QUARISMA_ENABLE_OPENMP=OFF)")
+if(NOT PROJECT_ENABLE_OPENMP)
+  message("OpenMP support is disabled (PROJECT_ENABLE_OPENMP=OFF)")
   return()
 endif()
 
@@ -35,12 +35,12 @@ if(OpenMP_CXX_FOUND)
   # Add OpenMP libraries to the dependency list
   # OpenMP::OpenMP_CXX is the modern CMake imported target
   if(TARGET OpenMP::OpenMP_CXX)
-    list(APPEND QUARISMA_DEPENDENCY_LIBS OpenMP::OpenMP_CXX)
+    list(APPEND PROJECT_DEPENDENCY_LIBS OpenMP::OpenMP_CXX)
     message(STATUS "   OpenMP::OpenMP_CXX target available")
   endif()
   
   # Set flag to indicate OpenMP is available
-  set(QUARISMA_OPENMP_FOUND TRUE CACHE BOOL "OpenMP was found successfully" FORCE)
+  set(PROJECT_OPENMP_FOUND TRUE CACHE BOOL "OpenMP was found successfully" FORCE)
   
   message(STATUS "OpenMP configuration complete")
 else()
@@ -49,8 +49,8 @@ else()
   message(STATUS "   The code will fall back to non-OpenMP implementations")
   
   # Disable OpenMP since it's not available
-  set(QUARISMA_ENABLE_OPENMP OFF CACHE BOOL "Enable OpenMP parallel processing support" FORCE)
-  set(QUARISMA_OPENMP_FOUND FALSE CACHE BOOL "OpenMP was found successfully" FORCE)
+  set(PROJECT_ENABLE_OPENMP OFF CACHE BOOL "Enable OpenMP parallel processing support" FORCE)
+  set(PROJECT_OPENMP_FOUND FALSE CACHE BOOL "OpenMP was found successfully" FORCE)
   
   # Provide helpful information for users who want OpenMP
   if(APPLE)

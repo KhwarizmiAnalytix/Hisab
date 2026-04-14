@@ -11,8 +11,7 @@
  * Project home: https://github.com/rollbear/strong_type
  */
 
-#ifndef ROLLBEAR_STRONG_TYPE_HPP_INCLUDED
-#define ROLLBEAR_STRONG_TYPE_HPP_INCLUDED
+#pragma once
 
 #include <functional>
 #include <istream>
@@ -1344,4 +1343,3 @@ struct formatter<
 };
 }  // namespace fmt
 #endif
-#endif  //ROLLBEAR_STRONG_TYPE_HPP_INCLUDED

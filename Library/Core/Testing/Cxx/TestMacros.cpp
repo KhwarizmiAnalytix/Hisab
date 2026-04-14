@@ -36,13 +36,13 @@ static_assert((QUARISMA_ALIGNMENT & (QUARISMA_ALIGNMENT - 1)) == 0,
 // QUARISMA_COMPILE_TIME_MAX_GPUS must be positive
 static_assert(QUARISMA_COMPILE_TIME_MAX_GPUS > 0, "QUARISMA_COMPILE_TIME_MAX_GPUS must be > 0");
 
-// QUARISMA_HAS_THREE_WAY_COMPARISON must be 0 or 1
-static_assert(QUARISMA_HAS_THREE_WAY_COMPARISON == 0 || QUARISMA_HAS_THREE_WAY_COMPARISON == 1,
-              "QUARISMA_HAS_THREE_WAY_COMPARISON must be 0 or 1");
+// PROJECT_HAS_THREE_WAY_COMPARISON must be 0 or 1
+static_assert(PROJECT_HAS_THREE_WAY_COMPARISON == 0 || PROJECT_HAS_THREE_WAY_COMPARISON == 1,
+              "PROJECT_HAS_THREE_WAY_COMPARISON must be 0 or 1");
 
-// QUARISMA_HAS_CXA_DEMANGLE must be 0 or 1
-static_assert(QUARISMA_HAS_CXA_DEMANGLE == 0 || QUARISMA_HAS_CXA_DEMANGLE == 1,
-              "QUARISMA_HAS_CXA_DEMANGLE must be 0 or 1");
+// PROJECT_HAS_CXA_DEMANGLE must be 0 or 1
+static_assert(PROJECT_HAS_CXA_DEMANGLE == 0 || PROJECT_HAS_CXA_DEMANGLE == 1,
+              "PROJECT_HAS_CXA_DEMANGLE must be 0 or 1");
 
 // ============================================================================
 // Token-pasting macros
@@ -585,9 +585,9 @@ QUARISMATEST(Macros, LockAnnotations)
 QUARISMATEST(Macros, ThreeWayComparison)
 {
 #if __cplusplus >= 202002L
-    EXPECT_EQ(QUARISMA_HAS_THREE_WAY_COMPARISON, 1);
+    EXPECT_EQ(PROJECT_HAS_THREE_WAY_COMPARISON, 1);
 #else
-    EXPECT_EQ(QUARISMA_HAS_THREE_WAY_COMPARISON, 0);
+    EXPECT_EQ(PROJECT_HAS_THREE_WAY_COMPARISON, 0);
 #endif
 
     END_TEST();

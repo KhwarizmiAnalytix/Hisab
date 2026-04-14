@@ -31,14 +31,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-#ifndef PROFILER_TSL_PLATFORM_ENV_TIME_H_
-#define PROFILER_TSL_PLATFORM_ENV_TIME_H_
+#pragma once
 
 #include <cstdint>  // for uint64_t
 
 #include "common/profiler_export.h"  // for PROFILER_API
 
-namespace quarisma
+namespace profiler
 {
 
 /// \brief An interface used by the tsl implementation to
@@ -83,6 +82,5 @@ public:
     }
 };
 
-}  // namespace quarisma
+}  // namespace profiler
 
-#endif  // PROFILER_TSL_PLATFORM_ENV_TIME_H_

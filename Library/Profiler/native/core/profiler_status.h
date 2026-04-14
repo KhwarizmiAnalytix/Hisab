@@ -22,7 +22,7 @@
 #include <string>
 #include <utility>
 
-namespace quarisma
+namespace profiler
 {
 
 class profiler_status
@@ -46,4 +46,4 @@ private:
     std::string message_;
 };
 
-}  // namespace quarisma
+}  // namespace profiler

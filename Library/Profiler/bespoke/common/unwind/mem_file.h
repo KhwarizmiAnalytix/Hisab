@@ -21,7 +21,7 @@
 #include "bespoke/common/unwind/unwind_error.h"
 #include "common/error.h"
 
-namespace quarisma::unwind
+namespace profiler::unwind
 {
 
 struct Section
@@ -43,7 +43,7 @@ struct MemFile
     explicit MemFile(const char* filename_) : fd_(open(filename_, O_RDONLY)), name_(filename_)
     {
         UNWIND_CHECK(
-            fd_ != -1, "failed to open {}: {}", filename_, quarisma::utils::str_error(errno));
+            fd_ != -1, "failed to open {}: {}", filename_, profiler::utils::str_error(errno));
         struct stat s
         {
         };
@@ -51,7 +51,7 @@ struct MemFile
         {
             close(fd_);  // destructors don't run during exceptions
             UNWIND_CHECK(
-                false, "failed to stat {}: {}", filename_, quarisma::utils::str_error(errno));
+                false, "failed to stat {}: {}", filename_, profiler::utils::str_error(errno));
         }
         n_bytes_ = s.st_size;
         UNWIND_CHECK(n_bytes_ > sizeof(Elf64_Ehdr), "empty shared library: {}", filename_);
@@ -60,7 +60,7 @@ struct MemFile
         {
             close(fd_);
             UNWIND_CHECK(
-                false, "failed to mmap {}: {}", filename_, quarisma::utils::str_error(errno));
+                false, "failed to mmap {}: {}", filename_, profiler::utils::str_error(errno));
         }
         ehdr_ = (Elf64_Ehdr*)mem_;
 #define ELF_CHECK(cond) UNWIND_CHECK(cond, "not an ELF file: {}", filename_)
@@ -148,4 +148,4 @@ private:
     Section     strtab_ = {nullptr, 0};
 };
 
-}  // namespace quarisma::unwind
+}  // namespace profiler::unwind

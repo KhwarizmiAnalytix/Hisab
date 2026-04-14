@@ -29,7 +29,7 @@
 #include <ittnotify.h>
 #endif
 
-namespace quarisma
+namespace profiler
 {
 namespace profiler_impl
 {
@@ -49,7 +49,7 @@ constexpr bool kITTAvailable{false};
 /**
  * @brief Initialize ITT API
  *
- * Creates the global Quarisma ITT domain. Should be called once before
+ * Creates the global Profiler ITT domain. Should be called once before
  * any ITT operations.
  */
 PROFILER_API void itt_init();
@@ -82,7 +82,7 @@ PROFILER_API void itt_mark(const char* name);
 /**
  * @brief Get the global ITT domain
  *
- * @return Pointer to the global Quarisma ITT domain, or nullptr if ITT not available
+ * @return Pointer to the global Profiler ITT domain, or nullptr if ITT not available
  */
 PROFILER_API __itt_domain* itt_get_domain();
 
@@ -101,4 +101,4 @@ inline void* itt_get_domain()
 #endif  // PROFILER_HAS_ITT
 
 }  // namespace profiler_impl
-}  // namespace quarisma
+}  // namespace profiler

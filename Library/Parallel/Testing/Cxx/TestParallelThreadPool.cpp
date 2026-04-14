@@ -27,7 +27,7 @@
 #include "ParallelTest.h"
 
 // Only compile these tests for std_thread backend
-#if !QUARISMA_HAS_OPENMP && !QUARISMA_HAS_TBB
+#if !PARALLEL_HAS_OPENMP && !PARALLEL_HAS_TBB
 
 #include "std_thread/parallel_thread_pool.h"
 
@@ -549,4 +549,4 @@ PARALLELTEST(ParallelThreadPool, integration_tests)
 
 }  // namespace parallel
 
-#endif  // !QUARISMA_HAS_OPENMP && !QUARISMA_HAS_TBB
+#endif  // !PARALLEL_HAS_OPENMP && !PARALLEL_HAS_TBB

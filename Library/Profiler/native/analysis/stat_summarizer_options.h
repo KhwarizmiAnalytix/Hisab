@@ -33,7 +33,7 @@ limitations under the License.
 ==============================================================================*/
 #pragma once
 
-namespace quarisma
+namespace profiler
 {
 // Used to control the output of the statistics summarizer;
 struct stat_summarizer_options
@@ -61,4 +61,4 @@ struct stat_summarizer_options
     bool show_summary;
     bool format_as_csv;
 };
-}  // namespace quarisma
+}  // namespace profiler

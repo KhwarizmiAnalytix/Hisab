@@ -1,18 +1,12 @@
 # =============================================================================
-# Quarisma Core Library BUILD Configuration
-# =============================================================================
-# Core library containing memory management, logging, and utilities.
-# Parallel is //Library/Parallel and is built separately.
-# Profiler is //Library/Profiler and is built separately.
+# Quarisma Core Library — utilities, intrusive_ptr, compression.
+# Memory is //Library/Memory; Logging is //Library/Logging (standalone macro headers per module).
+# Parallel is //Library/Parallel; Profiler is //Library/Profiler.
 # =============================================================================
 
 load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_enzyme_copts", "quarisma_enzyme_linkopts", "quarisma_linkopts")
 
 package(default_visibility = ["//visibility:public"])
-
-# =============================================================================
-# Source Files (Core without profiler sources; profiler is //Library/Profiler)
-# =============================================================================
 
 filegroup(
     name = "core_hdrs",
@@ -20,9 +14,6 @@ filegroup(
         [
             "util/*.h",
             "common/*.h",
-            "logging/*.h",
-            "memory/*.h",
-            "memory/**/*.h",
             "c17/*.h",
         ],
         allow_empty = True,
@@ -35,49 +26,22 @@ filegroup(
         [
             "common/*.cpp",
             "util/*.cpp",
-            "logging/*.cpp",
-            "memory/*.cpp",
-            "memory/**/*.cpp",
-        ],
-        exclude = [
-            "memory/gpu/*.cpp",
-            "memory/cpu/allocator_device.cpp",
-            # logging.cpp is excluded here and added back via select in core_lib
-            # (excluded only for native logging backend — matches CMake QUARISMA_USE_NATIVE_LOGGING)
-            "logging/logging.cpp",
         ],
         allow_empty = True,
     ),
 )
-
-# =============================================================================
-# Core implementation library (linked by //Library/Profiler:Profiler)
-# =============================================================================
 
 cc_library(
     name = "core_lib",
     srcs = [
         ":core_srcs",
     ] + select({
-        # logging.cpp excluded from native logging backend (matches CMake QUARISMA_USE_NATIVE_LOGGING)
-        "//bazel:logging_native": [],
-        "//conditions:default": glob(["logging/logging.cpp"], allow_empty = True),
-    }) + select({
-        "//bazel:enable_cuda": glob(["memory/gpu/*.cpp", "memory/cpu/allocator_device.cpp"], allow_empty = True),
-        "//bazel:enable_hip": glob(["memory/gpu/*.cpp", "memory/cpu/allocator_device.cpp"], allow_empty = True),
-        "//conditions:default": [],
-    }) + select({
-        # Compression — matches CMake QUARISMA_ENABLE_COMPRESSION + QUARISMA_COMPRESSION_TYPE=SNAPPY
         "//bazel:compression_snappy": glob(["compression/snappy.cpp"], allow_empty = True),
         "//conditions:default": [],
     }),
     hdrs = [
         ":core_hdrs",
     ] + select({
-        "//bazel:enable_cuda": glob(["memory/gpu/*.h", "memory/cpu/allocator_device.h"], allow_empty = True),
-        "//bazel:enable_hip": glob(["memory/gpu/*.h", "memory/cpu/allocator_device.h"], allow_empty = True),
-        "//conditions:default": [],
-    }) + select({
         "//bazel:compression_snappy": glob(["compression/snappy.h"], allow_empty = True),
         "//conditions:default": [],
     }),
@@ -101,6 +65,8 @@ cc_library(
     }),
     deps = [
         "@fmt//:fmt",
+        "//Library/Logging:logging_lib",
+        "//Library/Memory:memory_lib",
         "//ThirdParty/cpuinfo:cpuinfo",
     ] + select({
         "//bazel:disable_magic_enum": [],
@@ -113,16 +79,6 @@ cc_library(
         "//bazel:enable_native_profiler": [],
         "//bazel:enable_itt": [],
         "//conditions:default": ["@kineto//:kineto"],
-    }) + select({
-        "//bazel:enable_cuda": ["@local_config_cuda//:cuda"],
-        "//conditions:default": [],
-    }) + select({
-        "//bazel:enable_mkl": ["@mkl//:mkl"],
-        "//conditions:default": [],
-    }) + select({
-        "//bazel:logging_glog": ["@glog//:glog"],
-        "//bazel:logging_loguru": ["@loguru//:loguru"],
-        "//conditions:default": ["@loguru//:loguru"],
     }),
     alwayslink = False,
     visibility = [
@@ -130,10 +86,6 @@ cc_library(
         "//Library/Core:__pkg__",
     ],
 )
-
-# =============================================================================
-# Public Core target (core implementation only; Profiler is separate)
-# =============================================================================
 
 cc_library(
     name = "Core",

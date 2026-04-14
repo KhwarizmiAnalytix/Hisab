@@ -14,8 +14,8 @@
 #include "common/profiler_macros.h"
 //#include "util/hash.h"
 
-// #include <quarisma/csrc/jit/frontend/source_range.h>
-// These are Quarisma-specific headers not available in Quarisma
+// #include <profiler/csrc/jit/frontend/source_range.h>
+// These are Profiler-specific headers not available in Profiler
 
 // TODO: replace with pytorch/rfcs#43 when it is ready.
 #define SOFT_ASSERT(cond, ...)                                                   \
@@ -23,21 +23,21 @@
     {                                                                            \
         if PROFILER_UNLIKELY (!(cond))                                           \
         {                                                                        \
-            quarisma::profiler_impl::impl::logSoftAssert(                        \
+            profiler::profiler_impl::impl::logSoftAssert(                        \
                 __func__, __FILE__, static_cast<uint32_t>(__LINE__), #cond, ""); \
             return false;                                                        \
         }                                                                        \
         return true;                                                             \
     }()
 
-namespace quarisma::jit
+namespace profiler::jit
 {
 struct StackEntry
 {
 };
-}  // namespace quarisma::jit
+}  // namespace profiler::jit
 
-namespace quarisma::detail
+namespace profiler::detail
 {
 struct CompileTimeEmptyString
 {
@@ -48,21 +48,21 @@ struct CompileTimeEmptyString
     }
     operator const char*() const { return ""; }
 };
-}  // namespace quarisma::detail
+}  // namespace profiler::detail
 
-namespace quarisma::profiler_impl::impl
+namespace profiler::profiler_impl::impl
 {
 PROFILER_API bool softAssertRaises();
 PROFILER_API void setSoftAssertRaises(std::optional<bool> value);
 PROFILER_API void logSoftAssert(
     const char* func, const char* file, uint32_t line, const char* cond, const char* args);
-//TODO: Quarisma-specific functions commented out
+//TODO: Profiler-specific functions commented out
 inline void logSoftAssert(
     const char*                                func,
     const char*                                file,
     uint32_t                                   line,
     const char*                                cond,
-    ::quarisma::detail::CompileTimeEmptyString args)
+    ::profiler::detail::CompileTimeEmptyString args)
 {
     logSoftAssert(func, file, line, cond, (const char*)args);
 }
@@ -76,8 +76,8 @@ std::string getNvtxStr(
     const char*                                                      name,
     int64_t                                                          sequence_nr,
     const std::vector<std::vector<int64_t>>&                         shapes,
-    quarisma::RecordFunctionHandle                                   op_id        = 0,
-    const std::list<std::pair<quarisma::RecordFunctionHandle, int>>& input_op_ids = {});
+    profiler::RecordFunctionHandle                                   op_id        = 0,
+    const std::list<std::pair<profiler::RecordFunctionHandle, int>>& input_op_ids = {});
 
 struct PROFILER_VISIBILITY FileLineFunc
 {
@@ -115,28 +115,28 @@ PROFILER_API std::vector<FileLineFunc> prepareCallstack(const std::vector<jit::S
 PROFILER_API std::vector<std::string> callstackStr(const std::vector<FileLineFunc>& cs);
 PROFILER_API std::string stacksToStr(const std::vector<std::string>& stacks, const char* delim);
 PROFILER_API std::vector<std::vector<int64_t>> inputSizes(
-    const quarisma::RecordFunction& fn, const bool flatten_list_enabled = false);
+    const profiler::RecordFunction& fn, const bool flatten_list_enabled = false);
 PROFILER_API std::string variantShapesToStr(const std::vector<shape>& shapes);
 PROFILER_API std::string shapesToStr(const std::vector<std::vector<int64_t>>& shapes);
 PROFILER_API std::string strListToStr(const std::vector<std::string>& types);
 PROFILER_API std::string inputOpIdsToStr(
-    const std::list<std::pair<quarisma::RecordFunctionHandle, int>>& input_op_ids);
-PROFILER_API std::string ivalueToStr(const quarisma::IValue& val, bool isString);
-PROFILER_API std::string ivalueListToStr(const std::vector<quarisma::IValue>& list);
-PROFILER_API std::vector<std::string> inputTypes(const quarisma::RecordFunction& fn);
+    const std::list<std::pair<profiler::RecordFunctionHandle, int>>& input_op_ids);
+PROFILER_API std::string ivalueToStr(const profiler::IValue& val, bool isString);
+PROFILER_API std::string ivalueListToStr(const std::vector<profiler::IValue>& list);
+PROFILER_API std::vector<std::string> inputTypes(const profiler::RecordFunction& fn);
 
-std::unordered_map<std::string, quarisma::IValue> PROFILER_API
-saveExtraArgs(const quarisma::RecordFunction& fn);
+std::unordered_map<std::string, profiler::IValue> PROFILER_API
+saveExtraArgs(const profiler::RecordFunction& fn);
 std::unordered_map<std::string, std::string> PROFILER_API saveNcclMeta(
-    const quarisma::RecordFunction& fn, const SaveNcclMetaConfig& config = SaveNcclMetaConfig());
-int  getTensorStartHint(const quarisma::Tensor& t);
-bool checkFunctionOutputsForLogging(const quarisma::RecordFunction& fn);
-bool checkFunctionInputsForLogging(const quarisma::RecordFunction& fn);
+    const profiler::RecordFunction& fn, const SaveNcclMetaConfig& config = SaveNcclMetaConfig());
+int  getTensorStartHint(const profiler::Tensor& t);
+bool checkFunctionOutputsForLogging(const profiler::RecordFunction& fn);
+bool checkFunctionInputsForLogging(const profiler::RecordFunction& fn);
 std::pair<bool, std::variant<int, std::vector<int>>> findStartAddrForTensors(
-    const quarisma::IValue& val);
+    const profiler::IValue& val);
 uint64_t PROFILER_API computeFlops(
     const std::string&                                       op_name,
-    const std::unordered_map<std::string, quarisma::IValue>& extra_args);
+    const std::unordered_map<std::string, profiler::IValue>& extra_args);
 
 std::string shapeToStr(const std::vector<int64_t>& shape);
 
@@ -182,19 +182,19 @@ private:
 //     template <typename T0, typename T1>
 //     size_t operator()(const std::pair<T0, T1>& i)
 //     {
-//         return quarisma::get_hash((*this)(i.first), (*this)(i.second));
+//         return profiler::get_hash((*this)(i.first), (*this)(i.second));
 //     }
 
 //     template <typename... Args>
 //     size_t operator()(const std::tuple<Args...>& i)
 //     {
-//         return quarisma::get_hash(i);
+//         return profiler::get_hash(i);
 //     }
 
 //     template <typename T>
 //     size_t operator()(const T& i)
 //     {
-//         return quarisma::get_hash(i);
+//         return profiler::get_hash(i);
 //     }
 // };
 
@@ -218,4 +218,4 @@ constexpr auto kInTensorsStart   = "Input Tensors start";
 constexpr auto kOutTensorsStart  = "Output Tensors start";
 #endif  // USE_DISTRIBUTED
 
-}  // namespace quarisma::profiler_impl::impl
+}  // namespace profiler::profiler_impl::impl

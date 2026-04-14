@@ -42,7 +42,7 @@ limitations under the License.
 #include "common/flat_hash.h"
 #include "native/exporters/xplane/xplane.h"
 
-namespace quarisma
+namespace profiler
 {
 
 x_stat_visitor::x_stat_visitor(const xplane_visitor* plane, const xstat* stat)
@@ -116,7 +116,7 @@ xplane_visitor::xplane_visitor(
     const xplane*         plane,
     const TypeGetterList& event_type_getter_list,
     const TypeGetterList& stat_type_getter_list)
-    : xstats_owner<quarisma::xplane>(this, plane), plane_(plane)
+    : xstats_owner<profiler::xplane>(this, plane), plane_(plane)
 {
     build_event_type_map(plane, event_type_getter_list);
     build_stat_type_map(plane, stat_type_getter_list);
@@ -230,4 +230,4 @@ const x_stat_metadata* xplane_visitor::get_stat_metadata_by_type(int64_t stat_ty
     }
     return nullptr;
 }
-}  // namespace quarisma
+}  // namespace profiler

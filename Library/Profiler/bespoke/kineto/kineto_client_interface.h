@@ -1,15 +1,15 @@
 #pragma once
 
-// TODO: Missing Quarisma dependency - original include was:
-// #include <quarisma/csrc/jit/runtime/interpreter.h>
-// This is a Quarisma-specific header not available in Quarisma
+// TODO: Missing Profiler dependency - original include was:
+// #include <profiler/csrc/jit/runtime/interpreter.h>
+// This is a Profiler-specific header not available in Profiler
 
 #include "bespoke/common/unwind/unwind.h"
 
-namespace quarisma
+namespace profiler
 {
 
 // declare global_kineto_init for libtorch_cpu.so to call
 PROFILER_API void global_kineto_init();
 
-}  // namespace quarisma
+}  // namespace profiler

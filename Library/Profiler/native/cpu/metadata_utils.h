@@ -32,8 +32,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef XLA_BACKENDS_PROFILER_CPU_METADATA_UTILS_H_
-#define XLA_BACKENDS_PROFILER_CPU_METADATA_UTILS_H_
+#pragma once
 
 #include "native/exporters/xplane/xplane.h"
 //#include "xla/service/hlo.pb.h"
@@ -41,7 +40,7 @@ limitations under the License.
 #include "native/exporters/xplane/xplane_builder.h"
 #include "native/exporters/xplane/xplane_schema.h"
 
-namespace quarisma
+namespace profiler
 {
 namespace profiler_impl
 {
@@ -73,6 +72,5 @@ private:
 };
 
 }  // namespace profiler_impl
-}  // namespace quarisma
+}  // namespace profiler
 
-#endif  // XLA_BACKENDS_PROFILER_CPU_METADATA_UTILS_H_

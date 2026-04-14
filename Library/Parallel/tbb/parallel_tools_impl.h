@@ -21,8 +21,7 @@
  *   Licensed under BSD-3-Clause
  */
 
-#ifndef TBB_PARALLEL_TOOLS_IMPL_H
-#define TBB_PARALLEL_TOOLS_IMPL_H
+#pragma once
 
 #include "common/parallel_export.h"
 #include "common/parallel_tools_impl.h"
@@ -185,4 +184,3 @@ PARALLEL_API bool parallel_tools_impl<backend_type::TBB>::single_thread();
 }  // namespace detail
 }  // namespace parallel
 
-#endif

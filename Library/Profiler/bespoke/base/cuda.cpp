@@ -8,14 +8,14 @@
 #endif
 #else   // ROCM_ON_WINDOWS
 #endif  // ROCM_ON_WINDOWS
-#include <quarisma/cuda/CUDAGuard.h>
-#include <quarisma/util/ApproximateClock.h>
+#include <profiler/cuda/CUDAGuard.h>
+#include <profiler/util/ApproximateClock.h>
 
 #include "bespoke/base/base.h"
 #include "bespoke/common/util.h"
 #include "common/irange.h"
 
-namespace quarisma::profiler_impl::impl {
+namespace profiler::profiler_impl::impl {
 namespace {
 
 static void cudaCheck(cudaError_t result, const char* file, int line) {
@@ -47,16 +47,16 @@ struct CUDAMethods : public ProfilerStubs {
       ProfilerVoidEventStub* event,
       int64_t* cpu_ns) const override {
     if (device) {
-      PROFILER_CUDA_CHECK(quarisma::cuda::GetDevice(device));
+      PROFILER_CUDA_CHECK(profiler::cuda::GetDevice(device));
     }
     CUevent_st* cuda_event_ptr{nullptr};
     PROFILER_CUDA_CHECK(cudaEventCreate(&cuda_event_ptr));
     *event = std::shared_ptr<CUevent_st>(cuda_event_ptr, [](CUevent_st* ptr) {
       PROFILER_CUDA_CHECK(cudaEventDestroy(ptr));
     });
-    auto stream = quarisma::cuda::getCurrentCUDAStream();
+    auto stream = profiler::cuda::getCurrentCUDAStream();
     if (cpu_ns) {
-      *cpu_ns = quarisma::getTime();
+      *cpu_ns = profiler::getTime();
     }
     PROFILER_CUDA_CHECK(cudaEventRecord(cuda_event_ptr, stream));
   }
@@ -102,8 +102,8 @@ struct CUDAMethods : public ProfilerStubs {
 #endif
 
   void onEachDevice(std::function<void(int)> op) const override {
-    quarisma::cuda::OptionalCUDAGuard device_guard;
-    for (const auto i : quarisma::irange(quarisma::cuda::device_count())) {
+    profiler::cuda::OptionalCUDAGuard device_guard;
+    for (const auto i : profiler::irange(profiler::cuda::device_count())) {
       device_guard.set_index(i);
       op(i);
     }
@@ -127,5 +127,5 @@ struct RegisterCUDAMethods {
 RegisterCUDAMethods reg;
 
 } // namespace
-} // namespace quarisma::profiler_impl::impl
+} // namespace profiler::profiler_impl::impl
 #endif  // 0

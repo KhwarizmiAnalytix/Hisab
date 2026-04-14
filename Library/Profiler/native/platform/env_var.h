@@ -41,7 +41,7 @@ limitations under the License.
 
 #include "common/profiler_export.h"
 
-namespace quarisma
+namespace profiler
 {
 
 // Returns a boolean into "value" from the environmental variable
@@ -73,4 +73,4 @@ PROFILER_API bool read_string_from_env_var(
 PROFILER_API bool read_strings_from_env_var(
     std::string_view env_var_name, std::string_view default_val, std::vector<std::string>& value);
 
-}  // namespace quarisma
+}  // namespace profiler

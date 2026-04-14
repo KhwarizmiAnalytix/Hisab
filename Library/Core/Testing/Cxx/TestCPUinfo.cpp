@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "CoreTest.h"        // for END_TEST, QUARISMATEST
-#include "logging/logger.h"  // for END_LOG_TO_FILE_NAME, START_LOG_TO_FILE_NAME
+#include "logger.h"  // for END_LOG_TO_FILE_NAME, START_LOG_TO_FILE_NAME
 #include "util/cpu_info.h"   // for cpu_info
 
 QUARISMATEST(CPUinfo, CPUinfo)

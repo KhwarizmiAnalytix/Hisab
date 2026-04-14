@@ -2,15 +2,15 @@
 
 #include <memory>
 
-////#include <Quarisma/core/TensorBody.h>
+////#include <Profiler/core/TensorBody.h>
 #include "common/TensorImpl.h"
 #include "common/profiler_macros.h"
 #include "common/strong_type.h"
 
-namespace quarisma::profiler_impl::impl
+namespace profiler::profiler_impl::impl
 {
 
-// Identity is a complex concept in Quarisma. A Tensor might not have a
+// Identity is a complex concept in Profiler. A Tensor might not have a
 // an associated storage, multiple Tensors might share the same underlying
 // storage, the storage of a Tensor might change over time, etc.
 //
@@ -36,7 +36,7 @@ using AllocationID =
 // data flow graph. We do not hold an owning reference so we wrap them in strong
 // types to prevent direct access.
 using TensorImplAddress = strong::type<
-    const quarisma::TensorImpl*,
+    const profiler::TensorImpl*,
     struct TensorImplAddress_,
     strong::regular,
     strong::hashable,
@@ -56,7 +56,7 @@ using StorageImplData = strong::
 // store a raw TensorImpl* pointer the TensorImpl might be deleted and a new
 // TensorImpl might be created that reuses the address. (ABA problem)
 //
-// Fortunately, there is a feature of `quarisma::intrusive_ptr` that we can use to
+// Fortunately, there is a feature of `profiler::intrusive_ptr` that we can use to
 // prevent address reuse for the duration of profiling: the weak intrusive ptr.
 // When a Tensor's refcount reaches zero but there are outstanding weak
 // references (`weakcount_ > 0`) it will free the underlying managed resources
@@ -66,7 +66,7 @@ using StorageImplData = strong::
 class WeakTensor
 {
 public:
-    explicit WeakTensor(PROFILER_UNUSED const quarisma::Tensor&){};
+    explicit WeakTensor(PROFILER_UNUSED const profiler::Tensor&){};
 
     /*: weak_self_(t.getIntrusivePtr()) {}*/
 
@@ -77,11 +77,11 @@ public:
     }
 
 private:
-    //quarisma::weak_intrusive_ptr<quarisma::TensorImpl> weak_self_;
+    //profiler::weak_intrusive_ptr<profiler::TensorImpl> weak_self_;
 };
 
 struct Result;
 
 void calculateUniqueTensorIDs(std::vector<std::shared_ptr<Result>>& sorted_results);
 
-}  // namespace quarisma::profiler_impl::impl
+}  // namespace profiler::profiler_impl::impl

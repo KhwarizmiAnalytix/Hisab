@@ -23,7 +23,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace quarisma::tracing
+namespace profiler::tracing
 {
 namespace
 {
@@ -53,7 +53,7 @@ const char* get_event_category_name(event_category category)
 
 void event_collector::set_current_thread_name(const char* /*name*/)
 {
-    //quarisma::logger::SetThreadName(name);
+    //profiler::logger::SetThreadName(name);
 }
 
 void set_event_collector(event_category category, const event_collector* collector)
@@ -130,4 +130,4 @@ const char* get_log_dir()
     return "";
 }
 
-}  // namespace quarisma::tracing
+}  // namespace profiler::tracing

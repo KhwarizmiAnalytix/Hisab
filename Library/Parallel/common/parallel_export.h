@@ -19,8 +19,7 @@
  * - PARALLEL_BUILDING_DLL when building the shared library
  */
 
-#ifndef __parallel_export_h__
-#define __parallel_export_h__
+#pragma once
 
 #define PARALLEL_VISIBILITY_ENUM
 
@@ -66,4 +65,3 @@
 #define PARALLEL_HIDDEN
 #endif
 
-#endif  // __parallel_export_h__

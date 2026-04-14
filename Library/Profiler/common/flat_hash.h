@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace quarisma
+namespace profiler
 {
 
 template <
@@ -21,4 +21,4 @@ template <
     typename Allocator = std::allocator<Key>>
 using flat_hash_set = std::unordered_set<Key, Hash, KeyEqual, Allocator>;
 
-}  // namespace quarisma
+}  // namespace profiler

@@ -36,7 +36,7 @@ limitations under the License.
 
 #include <utility>
 
-namespace quarisma
+namespace profiler
 {
 
 // Wraps T into a union so that we can avoid the cost of automatic construction
@@ -54,7 +54,7 @@ union no_init
         new (&value) T(std::forward<Ts>(args)...);
     }
 
-    // Quarisma standards-compliant lowercase aliases
+    // Profiler standards-compliant lowercase aliases
     template <typename... Ts>
     void emplace(Ts&&... args)
     {
@@ -70,10 +70,10 @@ union no_init
         return v;
     }
 
-    // Quarisma standards-compliant lowercase alias
+    // Profiler standards-compliant lowercase alias
     T consume() && { return std::move(*this).Consume(); }
 
     T value;
 };
 
-}  // namespace quarisma
+}  // namespace profiler

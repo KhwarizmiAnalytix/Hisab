@@ -1,10 +1,8 @@
-#ifndef ITT_H
-#define ITT_H
+#pragma once
 #if 0
-#include <quarisma/csrc/utils/pybind.h>
+#include <profiler/csrc/utils/pybind.h>
 
-namespace quarisma::profiler_impl {
-void initIttBindings(PyObject* module); // namespace quarisma::profiler_impl
+namespace profiler::profiler_impl {
+void initIttBindings(PyObject* module); // namespace profiler::profiler_impl
 }
 #endif  // 0
-#endif  // ITT_H

@@ -26,15 +26,15 @@
 #include <string>
 
 #include "common/macros.h"
-#include "logging/logger.h"
+#include "logger.h"
 
 // Include Google Test if available
-#if QUARISMA_HAS_GTEST
+#if PROJECT_HAS_GTEST
 #include <gtest/gtest.h>
 #endif
 
 // Logging macros for tests
-#if QUARISMA_HAS_GTEST
+#if PROJECT_HAS_GTEST
 // Google Test functions are void, so END_TEST should not return anything
 #define END_TEST()
 #else
@@ -43,7 +43,7 @@
 #endif
 
 // Test assertion macros
-#if QUARISMA_HAS_GTEST
+#if PROJECT_HAS_GTEST
 // Use Google Test macros when available (Google Test uses EXPECT_*, not GTEST_EXPECT_*)
 // Note: The macros are already defined by Google Test, so we don't need to redefine them
 // Just ensure they're available by including gtest.h above
@@ -225,7 +225,7 @@
 
 // No fixture support without Google Test; make it explicit.
 #define QUARISMATEST_F(fixture, name)                                                        \
-    static_assert(false, "QUARISMATEST_F requires Google Test (QUARISMA_HAS_GTEST=1)")
+    static_assert(false, "QUARISMATEST_F requires Google Test (PROJECT_HAS_GTEST=1)")
 
 #endif
 

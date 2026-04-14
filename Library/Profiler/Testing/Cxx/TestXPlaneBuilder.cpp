@@ -1,6 +1,6 @@
 #if PROFILER_HAS_NATIVE_PROFILER
 /*
- * Quarisma: High-Performance Computational Library
+ * Profiler: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -20,7 +20,7 @@
 #include "native/exporters/xplane/xplane.h"
 #include "native/exporters/xplane/xplane_builder.h"
 
-using namespace quarisma;
+using namespace profiler;
 
 // ============================================================================
 // simple_atoi Tests - Consolidated

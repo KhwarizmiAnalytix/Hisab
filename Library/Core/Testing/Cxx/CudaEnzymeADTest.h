@@ -10,7 +10,7 @@
 
 #pragma once
 
-#if QUARISMA_HAS_ENZYME
+#if CORE_HAS_ENZYME
 
 #include <gtest/gtest.h>
 
@@ -33,4 +33,4 @@ protected:
     void RunForward(double hx, double& out_x, double& out_y);
 };
 
-#endif  // QUARISMA_HAS_ENZYME
+#endif  // CORE_HAS_ENZYME

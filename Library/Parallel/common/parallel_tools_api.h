@@ -21,18 +21,17 @@
  *   Licensed under BSD-3-Clause
  */
 
-#ifndef PARALLEL_TOOLS_API_H
-#define PARALLEL_TOOLS_API_H
+#pragma once
 
 #include <memory>
 
 #include "common/parallel_export.h"
 #include "common/parallel_tools_impl.h"
-#include "parallel.h"
+#include "tools/parallel.h"
 
-#if QUARISMA_HAS_TBB
+#if PARALLEL_HAS_TBB
 #include "tbb/parallel_tools_impl.h"
-#elif QUARISMA_HAS_OPENMP
+#elif PARALLEL_HAS_OPENMP
 #include "openmp/parallel_tools_impl.h"
 #else
 #include "std_thread/parallel_tools_impl.h"
@@ -47,9 +46,9 @@ namespace parallel_impl
 
 // Compile-time backend selection based on availability
 // Priority: TBB > OpenMP > std_thread
-#if QUARISMA_HAS_TBB
+#if PARALLEL_HAS_TBB
 constexpr backend_type selected_backend_tools = backend_type::TBB;
-#elif QUARISMA_HAS_OPENMP
+#elif PARALLEL_HAS_OPENMP
 constexpr backend_type selected_backend_tools = backend_type::OpenMP;
 #else
 constexpr backend_type selected_backend_tools = backend_type::std_thread;
@@ -159,4 +158,3 @@ private:
 }  // namespace detail
 }  // namespace parallel
 
-#endif

@@ -8,7 +8,7 @@
 // ERROR HANDLING UTILITIES
 // =============================================================================
 
-namespace quarisma
+namespace profiler
 {
 namespace utils
 {
@@ -59,4 +59,4 @@ inline std::string str_error(int err_num)
 }
 
 }  // namespace utils
-}  // namespace quarisma
+}  // namespace profiler

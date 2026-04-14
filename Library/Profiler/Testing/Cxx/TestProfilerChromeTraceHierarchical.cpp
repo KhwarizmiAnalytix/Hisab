@@ -1,6 +1,6 @@
 #if PROFILER_HAS_NATIVE_PROFILER
 /*
- * Quarisma: High-Performance Computational Library
+ * Profiler: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  */
@@ -15,7 +15,7 @@
 #include "ProfilerTest.h"
 #include "native/session/profiler.h"
 
-using namespace quarisma;
+using namespace profiler;
 
 // ============================================================================
 // Chrome Trace Export with Hierarchical Profiling Tests

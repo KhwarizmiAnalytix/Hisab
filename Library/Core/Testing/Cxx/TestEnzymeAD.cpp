@@ -348,7 +348,7 @@ void compute_loops(float* a, float* b, float* ret)
 // Google Test Suite for Enzyme AD
 // =============================================================================
 
-#if QUARISMA_HAS_ENZYME
+#if CORE_HAS_ENZYME
 
 // ---------------------------------------------------------------------------
 // Reverse-mode tests (original suite)
@@ -1079,7 +1079,7 @@ QUARISMATEST(EnzymeAD, Tutorial7_ForwardMode_Loops)
     EXPECT_NEAR(dret, expected_dret, 1e-3f) << "compute_loops forward-mode dret mismatch";
 }
 
-#else  // !QUARISMA_HAS_ENZYME
+#else  // !CORE_HAS_ENZYME
 
 /**
  * @brief Placeholder test when Enzyme is disabled
@@ -1089,7 +1089,7 @@ QUARISMATEST(EnzymeAD, EnzymeNotEnabled)
     GTEST_SKIP() << "Enzyme AD is not enabled. Configure with -DQUARISMA_ENABLE_ENZYME=ON";
 }
 
-#endif  // QUARISMA_HAS_ENZYME
+#endif  // CORE_HAS_ENZYME
 
 // =============================================================================
 // Integration Test
@@ -1104,17 +1104,17 @@ QUARISMATEST(EnzymeAD, CompileDefinition)
     std::cout << "  Enzyme Configuration Check\n";
     std::cout << "========================================\n";
 
-#if QUARISMA_HAS_ENZYME
-    std::cout << "QUARISMA_HAS_ENZYME: ENABLED (1)\n";
+#if CORE_HAS_ENZYME
+    std::cout << "CORE_HAS_ENZYME: ENABLED (1)\n";
     std::cout << "Status: ✓ Enzyme is properly configured\n";
     std::cout << "Plugin: Linked via -fpass-plugin\n";
     std::cout << "========================================\n";
-    EXPECT_TRUE(true) << "QUARISMA_HAS_ENZYME is defined correctly";
+    EXPECT_TRUE(true) << "CORE_HAS_ENZYME is defined correctly";
 #else
-    std::cout << "QUARISMA_HAS_ENZYME: DISABLED (0)\n";
+    std::cout << "CORE_HAS_ENZYME: DISABLED (0)\n";
     std::cout << "Status: Enzyme is not enabled\n";
     std::cout << "========================================\n";
-    EXPECT_TRUE(true) << "QUARISMA_HAS_ENZYME is not defined (Enzyme disabled)";
+    EXPECT_TRUE(true) << "CORE_HAS_ENZYME is not defined (Enzyme disabled)";
 #endif
 }
 
@@ -1124,7 +1124,7 @@ QUARISMATEST(EnzymeAD, CompileDefinition)
 // The fixture class (SetUp/TearDown/RunForward/RunGrad) is implemented in
 // CudaEnzymeADTest.cu which must be compiled as a CUDA translation unit.
 // ============================================================================
-#if !defined(__MINGW32__) && QUARISMA_HAS_CUDA
+#if !defined(__MINGW32__) && PROJECT_HAS_CUDA
 #include "CudaEnzymeADTest.h"
 
 // ----------------------------------------------------------------------------
@@ -1262,4 +1262,4 @@ TEST_F(CudaEnzymeADTest, GradKernelNoLaunchError)
     RunGrad(1.0, 0.0, 0.0, 1.0, ox, odx, oy, ody);
 }
 
-#endif  // QUARISMA_HAS_ENZYME 
+#endif  // CORE_HAS_ENZYME 

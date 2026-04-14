@@ -8,7 +8,7 @@
 #include "bespoke/common/unwind/lexer.h"
 #include "common/irange.h"
 
-namespace quarisma::unwind
+namespace profiler::unwind
 {
 
 struct TableState
@@ -18,7 +18,7 @@ struct TableState
     friend std::ostream&           operator<<(std::ostream& out, const TableState& self)
     {
         out << "cfa = " << self.cfa << "; ";
-        for (auto r : quarisma::irange(self.registers.size()))
+        for (auto r : profiler::irange(self.registers.size()))
         {
             if (self.registers.at(r).kind != A_UNDEFINED)
             {
@@ -477,4 +477,4 @@ private:
     bool hasAugmentation(const char* s) { return strstr(augmentation_string_, s) != nullptr; }
 };
 
-}  // namespace quarisma::unwind
+}  // namespace profiler::unwind

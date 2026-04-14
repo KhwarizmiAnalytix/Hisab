@@ -1,5 +1,5 @@
 #if PROFILER_HAS_KINETO
-//#include <Quarisma/Context.h>
+//#include <Profiler/Context.h>
 #include "bespoke/kineto/kineto_client_interface.h"
 
 #include <libkineto.h>
@@ -17,7 +17,7 @@
 #define ENABLE_GLOBAL_OBSERVER (1)
 #endif
 
-namespace quarisma
+namespace profiler
 {
 
 namespace profiler_impl::impl
@@ -26,14 +26,14 @@ namespace profiler_impl::impl
 namespace
 {
 
-using namespace quarisma::autograd::profiler_impl;
+using namespace profiler::autograd::profiler_impl;
 
 class LibKinetoClient : public libkineto::ClientInterface
 {
 public:
 #if 0
-    // Disabled: ::quarisma::mtia::initMemoryProfiler() not available in profiler-only build
-    void init() override { ::quarisma::mtia::initMemoryProfiler(); }
+    // Disabled: ::profiler::mtia::initMemoryProfiler() not available in profiler-only build
+    void init() override { ::profiler::mtia::initMemoryProfiler(); }
 #else
     void init() override { /* Stub: mtia not available */ }
 #endif
@@ -62,10 +62,10 @@ public:
             /*with_flops=*/withFlops_,
             /*with_modules=*/withModules_};
         std::set<ActivityType> const              activities{ActivityType::CPU};
-        std::unordered_set<quarisma::RecordScope> scopes;
-        scopes.insert(quarisma::RecordScope::FUNCTION);
-        scopes.insert(quarisma::RecordScope::USER_SCOPE);
-        scopes.insert(quarisma::RecordScope::BACKWARD_FUNCTION);
+        std::unordered_set<profiler::RecordScope> scopes;
+        scopes.insert(profiler::RecordScope::FUNCTION);
+        scopes.insert(profiler::RecordScope::USER_SCOPE);
+        scopes.insert(profiler::RecordScope::BACKWARD_FUNCTION);
         enableProfiler(cfg, activities, scopes);
     }
 
@@ -112,7 +112,7 @@ void global_kineto_init()
     if (envar != nullptr)
     {
         libkineto_init(
-            /*cpuOnly=*/!(quarisma::hasCUDA() /*|| quarisma::hasXPU() || quarisma::hasMTIA()*/),
+            /*cpuOnly=*/!(profiler::hasCUDA() /*|| profiler::hasXPU() || profiler::hasMTIA()*/),
             /*logOnError=*/true);
         libkineto::api().suppressLogMessages();
     }
@@ -135,5 +135,5 @@ struct RegisterLibKinetoClient
 }  // namespace
 #endif
 
-}  // namespace quarisma
+}  // namespace profiler
 #endif  // PROFILER_HAS_KINETO

@@ -10,10 +10,10 @@
 # =============================================================================
 
 # Guard against multiple inclusions for performance
-if(QUARISMA_BUILD_TYPE_CONFIGURED)
+if(PROJECT_BUILD_TYPE_CONFIGURED)
   return()
 endif()
-set(QUARISMA_BUILD_TYPE_CONFIGURED TRUE CACHE INTERNAL "Build type module loaded")
+set(PROJECT_BUILD_TYPE_CONFIGURED TRUE CACHE INTERNAL "Build type module loaded")
 
 # Set default build type with caching for performance
 if(NOT CMAKE_BUILD_TYPE)
@@ -25,4 +25,4 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Cache build type for performance optimization
-set(QUARISMA_CACHED_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE INTERNAL "Cached build type")
+set(PROJECT_CACHED_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE INTERNAL "Cached build type")

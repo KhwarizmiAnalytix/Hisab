@@ -40,12 +40,12 @@ limitations under the License.
 #include <type_traits>
 #include <utility>
 
-////#include "logging/logger.h"
+////#include "logger.h"
 #include "common/no_init.h"
 #include "native/tracing/traceme_encode.h"
 #include "native/tracing/traceme_recorder.h"
 
-namespace quarisma
+namespace profiler
 {
 
 /**
@@ -784,4 +784,4 @@ inline bool tf_op_details_enabled()
     return traceme::active(static_cast<int>(traceme_level_enum::VERBOSE));
 }
 
-}  // namespace quarisma
+}  // namespace profiler

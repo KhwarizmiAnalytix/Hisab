@@ -26,13 +26,13 @@ cmake_minimum_required(VERSION 3.16)
 
 include_guard(GLOBAL)
 
-if(NOT DEFINED QUARISMA_ENABLE_ENZYME)
-  option(QUARISMA_ENABLE_ENZYME "Enable Enzyme automatic differentiation support" OFF)
-  mark_as_advanced(QUARISMA_ENABLE_ENZYME)
+if(NOT DEFINED PROJECT_ENABLE_ENZYME)
+  option(PROJECT_ENABLE_ENZYME "Enable Enzyme automatic differentiation support" OFF)
+  mark_as_advanced(PROJECT_ENABLE_ENZYME)
 endif()
 
-if(NOT QUARISMA_ENABLE_ENZYME)
-  message(STATUS "Enzyme automatic differentiation support is disabled (QUARISMA_ENABLE_ENZYME=OFF)")
+if(NOT PROJECT_ENABLE_ENZYME)
+  message(STATUS "Enzyme automatic differentiation support is disabled (PROJECT_ENABLE_ENZYME=OFF)")
   return()
 endif()
 
@@ -59,7 +59,7 @@ if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     "Disabling Enzyme support.\n"
     "================================================================================\n"
   )
-  set(QUARISMA_ENABLE_ENZYME OFF CACHE BOOL "Enable Enzyme automatic differentiation support" FORCE)
+  set(PROJECT_ENABLE_ENZYME OFF CACHE BOOL "Enable Enzyme automatic differentiation support" FORCE)
   return()
 endif()
 
@@ -135,7 +135,7 @@ if(NOT Enzyme_FOUND)
       "================================================================================\n"
     )
   endif()
-  set(QUARISMA_ENABLE_ENZYME OFF CACHE BOOL "Enable Enzyme automatic differentiation support" FORCE)
+  set(PROJECT_ENABLE_ENZYME OFF CACHE BOOL "Enable Enzyme automatic differentiation support" FORCE)
   return()
 endif()
 
@@ -171,7 +171,7 @@ if(NOT TARGET Quarisma::enzyme)
   add_library(Quarisma::enzyme INTERFACE IMPORTED GLOBAL)
   target_compile_options(Quarisma::enzyme INTERFACE ${ENZYME_COMPILE_OPTIONS})
   target_link_options(Quarisma::enzyme INTERFACE ${ENZYME_COMPILE_OPTIONS})
-  target_compile_definitions(Quarisma::enzyme INTERFACE QUARISMA_HAS_ENZYME=1)
+  target_compile_definitions(Quarisma::enzyme INTERFACE PROJECT_HAS_ENZYME=1)
   message(STATUS "Created Quarisma::enzyme interface target")
 endif()
 

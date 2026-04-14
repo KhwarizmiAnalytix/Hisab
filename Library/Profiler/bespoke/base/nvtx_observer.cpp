@@ -4,7 +4,7 @@
 #include "bespoke/base/thread_local_debug_info.h"
 #include "bespoke/common/util.h"
 
-namespace quarisma::profiler_impl::impl
+namespace profiler::profiler_impl::impl
 {
 
 struct NVTXThreadLocalState : ProfilerStateBase
@@ -26,7 +26,7 @@ struct NVTXThreadLocalState : ProfilerStateBase
         int64_t /*alloc_size*/,
         size_t /*total_allocated*/,
         size_t /*total_reserved*/,
-        quarisma::device_option /*device*/) override
+        profiler::device_option /*device*/) override
     {
     }
 
@@ -35,32 +35,32 @@ struct NVTXThreadLocalState : ProfilerStateBase
         auto* tls = ProfilerStateBase::get(/*global=*/false);
         return static_cast<NVTXThreadLocalState*>(tls);
     }
-    static std::pair<quarisma::RecordFunctionHandle, int> getOpIdFromInput(
-        const quarisma::Tensor& tensor);
+    static std::pair<profiler::RecordFunctionHandle, int> getOpIdFromInput(
+        const profiler::Tensor& tensor);
 
     void setProducerTensorMap(
-        quarisma::TensorImpl* tensor, quarisma::RecordFunctionHandle op_id, int output_nr)
+        profiler::TensorImpl* tensor, profiler::RecordFunctionHandle op_id, int output_nr)
     {
         producer_tensor_map_[static_cast<void*>(tensor)] =
-            std::pair<quarisma::RecordFunctionHandle, int>{op_id, output_nr};
+            std::pair<profiler::RecordFunctionHandle, int>{op_id, output_nr};
     }
 
 protected:
     // Maps the address of an output Tensor to a unique op id and output
     // index of the tensor.
-    // quarisma::TensorImpl* is the actual type of the key, but using void*
+    // profiler::TensorImpl* is the actual type of the key, but using void*
     // to indicate the pointer is just being used as a key
     // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
-    std::unordered_map<void*, std::pair<quarisma::RecordFunctionHandle, int>> producer_tensor_map_;
+    std::unordered_map<void*, std::pair<profiler::RecordFunctionHandle, int>> producer_tensor_map_;
 };
 
-std::pair<quarisma::RecordFunctionHandle, int> NVTXThreadLocalState::getOpIdFromInput(
-    const quarisma::Tensor& /*tensor*/)
+std::pair<profiler::RecordFunctionHandle, int> NVTXThreadLocalState::getOpIdFromInput(
+    const profiler::Tensor& /*tensor*/)
 {
-    std::pair<quarisma::RecordFunctionHandle, int> producer_op_pair(0, -1);
+    std::pair<profiler::RecordFunctionHandle, int> producer_op_pair(0, -1);
     //if (tensor.defined())
     //{
-    //    quarisma::TensorImpl* ten_addr = tensor.unsafeGetTensorImpl();
+    //    profiler::TensorImpl* ten_addr = tensor.unsafeGetTensorImpl();
     //    // See if Address is in the map already
     //    if (producer_tensor_map_.count((void*)ten_addr) > 0)
     //    {
@@ -70,17 +70,17 @@ std::pair<quarisma::RecordFunctionHandle, int> NVTXThreadLocalState::getOpIdFrom
     return producer_op_pair;
 }
 
-// static std::list<std::pair<quarisma::RecordFunctionHandle, int>> flattenOpIdList(
-//     const quarisma::List<quarisma::IValue>& list)
+// static std::list<std::pair<profiler::RecordFunctionHandle, int>> flattenOpIdList(
+//     const profiler::List<profiler::IValue>& list)
 // {
-//     std::list<std::pair<quarisma::RecordFunctionHandle, int>> input_op_id_list;
+//     std::list<std::pair<profiler::RecordFunctionHandle, int>> input_op_id_list;
 //     auto state_ptr = NVTXThreadLocalState::getTLS();
 //     PROFILER_CHECK(state_ptr, "Expected profiler state set");
-//     for (const quarisma::IValue& input : list)
+//     for (const profiler::IValue& input : list)
 //     {
 //         if (input.isTensor())
 //         {
-//             const quarisma::Tensor& tensor           = input.toTensor();
+//             const profiler::Tensor& tensor           = input.toTensor();
 //             auto                  producer_op_pair = state_ptr->getOpIdFromInput(tensor);
 //             input_op_id_list.push_back(producer_op_pair);
 //         }
@@ -88,18 +88,18 @@ std::pair<quarisma::RecordFunctionHandle, int> NVTXThreadLocalState::getOpIdFrom
 //     return input_op_id_list;
 // }
 
-static std::list<std::pair<quarisma::RecordFunctionHandle, int>> getInputTensorOpIds()
+static std::list<std::pair<profiler::RecordFunctionHandle, int>> getInputTensorOpIds()
 {
     // Note: undefined_op_pair was used in commented-out code below
-    // std::pair<quarisma::RecordFunctionHandle, int> const undefined_op_pair(0, -1);
-    std::list<std::pair<quarisma::RecordFunctionHandle, int>> input_producer_ops_;
+    // std::pair<profiler::RecordFunctionHandle, int> const undefined_op_pair(0, -1);
+    std::list<std::pair<profiler::RecordFunctionHandle, int>> input_producer_ops_;
     /*auto state_ptr = NVTXThreadLocalState::getTLS();
     // PROFILER_CHECK(state_ptr, "Expected profiler state set");
-    for (const quarisma::IValue& input_item : fn.inputs())
+    for (const profiler::IValue& input_item : fn.inputs())
     {
         if (input_item.isTensor())
         {
-            const quarisma::Tensor& tensor        = input_item.toTensor();
+            const profiler::Tensor& tensor        = input_item.toTensor();
             auto                  producer_pair = state_ptr->getOpIdFromInput(tensor);
             input_producer_ops_.push_back(producer_pair);
         }
@@ -107,7 +107,7 @@ static std::list<std::pair<quarisma::RecordFunctionHandle, int>> getInputTensorO
         {
             if (input_item.isList())
             {
-                std::list<std::pair<quarisma::RecordFunctionHandle, int>> tmp_op_ids =
+                std::list<std::pair<profiler::RecordFunctionHandle, int>> tmp_op_ids =
                     flattenOpIdList(input_item.toList());
                 // Extend the current sizes array by the array returned from input sizes
                 if (!tmp_op_ids.empty())
@@ -128,16 +128,16 @@ static std::list<std::pair<quarisma::RecordFunctionHandle, int>> getInputTensorO
     return input_producer_ops_;
 }
 
-//static void updateOutputTensorTracker(const quarisma::RecordFunction& fn)
+//static void updateOutputTensorTracker(const profiler::RecordFunction& fn)
 //{
 //    int  output_nr = 0;
 //    auto state_ptr = NVTXThreadLocalState::getTLS();
 //    PROFILER_CHECK(state_ptr, "Expected profiler state set");
-//    for (const quarisma::IValue& s_tensor : fn.outputs())
+//    for (const profiler::IValue& s_tensor : fn.outputs())
 //    {
 //        if (s_tensor.isTensor())
 //        {
-//            const quarisma::Tensor& tensor = s_tensor.toTensor();
+//            const profiler::Tensor& tensor = s_tensor.toTensor();
 //            if (tensor.defined())
 //            {
 //                auto ten_addr = tensor.unsafeGetTensorImpl();
@@ -149,45 +149,45 @@ static std::list<std::pair<quarisma::RecordFunctionHandle, int>> getInputTensorO
 //}
 
 template <bool report_input_shapes>
-static std::unique_ptr<quarisma::ObserverContext> enterNVTX(const quarisma::RecordFunction& fn)
+static std::unique_ptr<profiler::ObserverContext> enterNVTX(const profiler::RecordFunction& fn)
 {
     if (NVTXThreadLocalState::getTLS() != nullptr)
     {
         auto input_op_ids = getInputTensorOpIds();
-        quarisma::profiler_impl::impl::cudaStubs()->rangePush(
-            quarisma::profiler_impl::impl::getNvtxStr(
+        profiler::profiler_impl::impl::cudaStubs()->rangePush(
+            profiler::profiler_impl::impl::getNvtxStr(
                 fn.name(),
                 fn.seqNr(),
-                report_input_shapes ? quarisma::profiler_impl::impl::inputSizes(fn, true)
+                report_input_shapes ? profiler::profiler_impl::impl::inputSizes(fn, true)
                                     : std::vector<std::vector<int64_t>>(),
                 fn.handle(),
                 report_input_shapes ? input_op_ids
-                                    : std::list<std::pair<quarisma::RecordFunctionHandle, int>>())
+                                    : std::list<std::pair<profiler::RecordFunctionHandle, int>>())
                 .c_str());
     }
     return nullptr;
 }
 
 void pushNVTXCallbacks(
-    const ProfilerConfig& config, const std::unordered_set<quarisma::RecordScope>& scopes)
+    const ProfilerConfig& config, const std::unordered_set<profiler::RecordScope>& scopes)
 {
     // PROFILER_CHECK(
-    // quarisma::profiler_impl::impl::cudaStubs()->enabled(),
-    // "Can't use NVTX profiler - Quarisma was compiled without CUDA");
+    // profiler::profiler_impl::impl::cudaStubs()->enabled(),
+    // "Can't use NVTX profiler - Profiler was compiled without CUDA");
 
-    quarisma::thread_local_debug_info::_push(
-        quarisma::DebugInfoKind::PROFILER_STATE, std::make_shared<NVTXThreadLocalState>(config));
+    profiler::thread_local_debug_info::_push(
+        profiler::DebugInfoKind::PROFILER_STATE, std::make_shared<NVTXThreadLocalState>(config));
 
     auto* state_ptr = NVTXThreadLocalState::getTLS();
     // PROFILER_CHECK(state_ptr, "Expected profiler state set");
 
-    auto handle = quarisma::addThreadLocalCallback(
-        quarisma::RecordFunctionCallback(
+    auto handle = profiler::addThreadLocalCallback(
+        profiler::RecordFunctionCallback(
             state_ptr->config().report_input_shapes ? &enterNVTX</*report_input_shapes=*/true>
                                                     : &enterNVTX</*report_input_shapes=*/false>,
-            [](const quarisma::RecordFunction& /*fn*/, quarisma::ObserverContext* /*ctx*/)
+            [](const profiler::RecordFunction& /*fn*/, profiler::ObserverContext* /*ctx*/)
             {
-                quarisma::profiler_impl::impl::cudaStubs()->rangePop();
+                profiler::profiler_impl::impl::cudaStubs()->rangePop();
                 //updateOutputTensorTracker(fn);
             })
             .needsInputs(config.report_input_shapes)
@@ -197,4 +197,4 @@ void pushNVTXCallbacks(
     state_ptr->setCallbackHandle(handle);
 }
 
-}  // namespace quarisma::profiler_impl::impl
+}  // namespace profiler::profiler_impl::impl

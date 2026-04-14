@@ -10,7 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// Quarisma: modified from llvm::small_vector.
+// Profiler: modified from llvm::small_vector.
 // replaced llvm::safe_malloc with std::bad_alloc
 // deleted LLVM_ENABLE_EXCEPTIONS
 
@@ -19,7 +19,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include <string>
-using namespace quarisma;
+using namespace profiler;
 
 // Check that no bytes are wasted and everything is well-aligned.
 namespace
@@ -163,14 +163,14 @@ void SmallVectorBase<Size_T>::grow_pod(const void* FirstEl, size_t MinSize, size
     this->Capacity = NewCapacity;
 }
 
-template class quarisma::SmallVectorBase<uint32_t>;
+template class profiler::SmallVectorBase<uint32_t>;
 
 // Disable the uint64_t instantiation for 32-bit builds.
 // Both uint32_t and uint64_t instantiations are needed for 64-bit builds.
 // This instantiation will never be used in 32-bit builds, and will cause
 // warnings when sizeof(Size_T) > sizeof(size_t).
 #if SIZE_MAX > UINT32_MAX
-template class quarisma::SmallVectorBase<uint64_t>;
+template class profiler::SmallVectorBase<uint64_t>;
 
 // Assertions to ensure this #if stays in sync with SmallVectorSizeType.
 static_assert(

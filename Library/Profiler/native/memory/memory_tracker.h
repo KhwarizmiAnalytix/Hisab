@@ -34,7 +34,7 @@
  * This component provides memory profiling capabilities but is not required
  * for basic profiling functionality. Can be disabled to reduce binary size.
  *
- * @author Quarisma Development Team
+ * @author Profiler Development Team
  * @version 1.0
  * @date 2024
  */
@@ -59,7 +59,7 @@
 #include <unistd.h>
 #endif
 
-namespace quarisma
+namespace profiler
 {
 
 /**
@@ -156,7 +156,7 @@ public:
      * @brief Get current memory usage statistics
      * @return Complete memory statistics structure
      */
-    PROFILER_API quarisma::memory_stats get_current_stats() const;
+    PROFILER_API profiler::memory_stats get_current_stats() const;
 
     /**
      * @brief Get current memory usage in bytes
@@ -208,7 +208,7 @@ public:
      * @brief Get a copy of all currently active allocations (thread-safe)
      * @return Vector of active memory allocations
      */
-    PROFILER_API std::vector<quarisma::memory_allocation> get_active_allocations() const;
+    PROFILER_API std::vector<profiler::memory_allocation> get_active_allocations() const;
 
     /**
      * @brief Get the number of currently active allocations
@@ -226,7 +226,7 @@ public:
      * @brief Get all memory usage snapshots
      * @return Vector of labeled memory statistics snapshots
      */
-    PROFILER_API std::vector<std::pair<std::string, quarisma::memory_stats>> get_snapshots() const;
+    PROFILER_API std::vector<std::pair<std::string, profiler::memory_stats>> get_snapshots() const;
 
 private:
     /// Atomic flag indicating if tracking is active
@@ -236,7 +236,7 @@ private:
     mutable std::mutex allocations_mutex_;
 
     /// Map of active memory allocations (using custom hash for void*)
-    std::unordered_map<void*, quarisma::memory_allocation, quarisma::void_ptr_hash>
+    std::unordered_map<void*, profiler::memory_allocation, profiler::void_ptr_hash>
         active_allocations_;
 
     /// Atomic counter for current memory usage
@@ -255,7 +255,7 @@ private:
     mutable std::mutex snapshots_mutex_;
 
     /// Vector of labeled memory usage snapshots
-    std::vector<std::pair<std::string, quarisma::memory_stats>> snapshots_;
+    std::vector<std::pair<std::string, profiler::memory_stats>> snapshots_;
 
     /**
      * @brief Get current process memory usage (platform-specific)
@@ -291,7 +291,7 @@ public:
      * @param tracker Reference to the memory tracker to use
      * @param label Optional label for this tracking scope
      */
-    explicit memory_tracking_scope(quarisma::memory_tracker& tracker, std::string label = "");
+    explicit memory_tracking_scope(profiler::memory_tracker& tracker, std::string label = "");
 
     /**
      * @brief Destructor - automatically captures final memory statistics
@@ -302,17 +302,17 @@ public:
      * @brief Get memory usage delta since scope creation
      * @return Memory statistics showing the change since scope start
      */
-    quarisma::memory_stats get_delta_stats() const;
+    profiler::memory_stats get_delta_stats() const;
 
 private:
     /// Reference to the memory tracker
-    quarisma::memory_tracker& tracker_;
+    profiler::memory_tracker& tracker_;
 
     /// Optional label for this scope
     std::string label_;
 
     /// Memory statistics captured at scope start
-    quarisma::memory_stats start_stats_;
+    profiler::memory_stats start_stats_;
 
     /// Flag indicating if the scope is still active
     bool active_ = true;
@@ -353,7 +353,7 @@ public:
      * @brief Construct allocator with optional memory tracker
      * @param tracker Pointer to memory tracker (nullptr to disable tracking)
      */
-    explicit tracked_allocator(quarisma::memory_tracker* tracker = nullptr) : tracker_(tracker) {}
+    explicit tracked_allocator(profiler::memory_tracker* tracker = nullptr) : tracker_(tracker) {}
 
     /**
      * @brief Copy constructor for different types
@@ -430,11 +430,11 @@ public:
 
 private:
     /// Pointer to the memory tracker
-    quarisma::memory_tracker* tracker_;
+    profiler::memory_tracker* tracker_;
 
     /// Allow access to tracker_ from other template instantiations
     template <typename U>
     friend class tracked_allocator;
 };
 
-}  // namespace quarisma
+}  // namespace profiler

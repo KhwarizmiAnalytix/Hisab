@@ -1,9 +1,9 @@
 #if 0
 #include "bespoke/common/combined_traceback.h"
 
-//#include <quarisma/csrc/utils/cpp_stacktraces.h>
+//#include <profiler/csrc/utils/cpp_stacktraces.h>
 
-namespace quarisma
+namespace profiler
 {
 
 static std::atomic<CapturedTraceback::Python*> python_support_ = nullptr;
@@ -23,7 +23,7 @@ std::shared_ptr<CapturedTraceback> CapturedTraceback::gather(bool python, bool s
     }
     if (script)
     {
-        r->script_frames_ = quarisma::jit::currentCallstack();
+        r->script_frames_ = profiler::jit::currentCallstack();
     }
     if (cpp)
     {
@@ -94,7 +94,7 @@ SymbolizedTracebacks symbolize(const std::vector<CapturedTraceback*>& to_symboli
     // gather symbol names for C++ frames
     if (!all_cpp_ips.empty())
     {
-        r.all_frames = unwind::symbolize(all_cpp_ips, quarisma::get_symbolize_mode());
+        r.all_frames = unwind::symbolize(all_cpp_ips, profiler::get_symbolize_mode());
     }
 
     // batch symbolization requests so we dedup frame objects
@@ -191,7 +191,7 @@ SymbolizedTracebacks symbolize(const std::vector<CapturedTraceback*>& to_symboli
                 }
             }
             else if (
-                uf.funcname.rfind("quarisma::jit::InterpreterStateImpl::run", 0) != std::string::npos)
+                uf.funcname.rfind("profiler::jit::InterpreterStateImpl::run", 0) != std::string::npos)
             {
                 append_jit();
             }
@@ -219,5 +219,5 @@ void CapturedTraceback::addPythonUnwinder(CapturedTraceback::Python* p)
     } while (!python_support_.compare_exchange_strong(old_unwinder, p));
 }
 
-}  // namespace quarisma
+}  // namespace profiler
 #endif

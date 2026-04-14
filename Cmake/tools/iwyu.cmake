@@ -11,22 +11,22 @@ include_guard(GLOBAL)
 # Include-What-You-Use Analysis Flag Controls whether IWYU include analysis is enabled during
 # compilation. When enabled, analyzes include dependencies and suggests optimizations. Helps
 # maintain clean and efficient include hierarchies.
-option(QUARISMA_ENABLE_IWYU "Enable include-what-you-use (iwyu) support." OFF)
-mark_as_advanced(QUARISMA_ENABLE_IWYU)
+option(PROJECT_ENABLE_IWYU "Enable include-what-you-use (iwyu) support." OFF)
+mark_as_advanced(PROJECT_ENABLE_IWYU)
 
-if(NOT QUARISMA_ENABLE_IWYU)
+if(NOT PROJECT_ENABLE_IWYU)
   return()
 endif()
 
 find_program(
-  QUARISMA_IWYU_EXECUTABLE
+  PROJECT_IWYU_EXECUTABLE
   NAMES include-what-you-use iwyu
   PATHS "C:/Program Files (x86)/include-what-you-use/bin"
         "C:/Program Files/include-what-you-use/bin"
   PATH_SUFFIXES bin
 )
 
-if(NOT QUARISMA_IWYU_EXECUTABLE)
+if(NOT PROJECT_IWYU_EXECUTABLE)
   message(
     FATAL_ERROR
       "IWYU requested but not found!
@@ -39,10 +39,10 @@ Please install include-what-you-use:
   - Windows: Download from https://include-what-you-use.org/
   - Manual: Build from https://github.com/include-what-you-use/include-what-you-use
 
-Or set QUARISMA_ENABLE_IWYU=OFF to disable include analysis"
+Or set PROJECT_ENABLE_IWYU=OFF to disable include analysis"
   )
 else()
-  message(STATUS "IWYU found: ${QUARISMA_IWYU_EXECUTABLE}")
+  message(STATUS "IWYU found: ${PROJECT_IWYU_EXECUTABLE}")
 
   # Check if mapping file exists
   set(IWYU_MAPPING_FILE "${CMAKE_SOURCE_DIR}/Scripts/iwyu/iwyu_exclusion.imp")
@@ -54,12 +54,12 @@ else()
   endif()
 
   # Locate IWYU's built-in mapping files (ship alongside the executable)
-  get_filename_component(_iwyu_bin_dir "${QUARISMA_IWYU_EXECUTABLE}" DIRECTORY)
+  get_filename_component(_iwyu_bin_dir "${PROJECT_IWYU_EXECUTABLE}" DIRECTORY)
   get_filename_component(_iwyu_prefix "${_iwyu_bin_dir}" DIRECTORY)
   set(_iwyu_share "${_iwyu_prefix}/share/include-what-you-use")
   # Also try the libexec layout used by Homebrew (bin is a symlink into libexec/bin)
   if(NOT EXISTS "${_iwyu_share}")
-    get_filename_component(_iwyu_real_exec "${QUARISMA_IWYU_EXECUTABLE}" REALPATH)
+    get_filename_component(_iwyu_real_exec "${PROJECT_IWYU_EXECUTABLE}" REALPATH)
     get_filename_component(_iwyu_real_bin "${_iwyu_real_exec}" DIRECTORY)
     get_filename_component(_iwyu_real_prefix "${_iwyu_real_bin}" DIRECTORY)
     set(_iwyu_share "${_iwyu_real_prefix}/share/include-what-you-use")
@@ -84,7 +84,7 @@ else()
   set(IWYU_LOG_FILE "${CMAKE_BINARY_DIR}/iwyu.log")
 
   # Prepare IWYU arguments with crash-resistant settings
-  set(QUARISMA_IWYU_ARGS
+  set(PROJECT_IWYU_ARGS
       "-Xiwyu"
       "--cxx17ns"
       "-Xiwyu"
@@ -110,18 +110,18 @@ else()
                                                                    ERROR_QUIET
     )
     if(MACOS_SDK_PATH)
-      list(APPEND QUARISMA_IWYU_ARGS "-isysroot" "${MACOS_SDK_PATH}")
+      list(APPEND PROJECT_IWYU_ARGS "-isysroot" "${MACOS_SDK_PATH}")
       message(STATUS "IWYU using macOS SDK: ${MACOS_SDK_PATH}")
     endif()
   endif()
 
   if(IWYU_MAPPING_FILE)
-    list(PREPEND QUARISMA_IWYU_ARGS "-Xiwyu" "--mapping_file=${IWYU_MAPPING_FILE}")
+    list(PREPEND PROJECT_IWYU_ARGS "-Xiwyu" "--mapping_file=${IWYU_MAPPING_FILE}")
   endif()
 
   # Prepend built-in mapping files so the custom file's rules take precedence
   foreach(_builtin_map IN LISTS IWYU_BUILTIN_MAPPING_FILES)
-    list(PREPEND QUARISMA_IWYU_ARGS "-Xiwyu" "--mapping_file=${_builtin_map}")
+    list(PREPEND PROJECT_IWYU_ARGS "-Xiwyu" "--mapping_file=${_builtin_map}")
   endforeach()
 
   # Create configure detector script path
@@ -166,7 +166,7 @@ function(quarisma_create_iwyu_wrapper target_name lang)
 
   # Build per-item list(APPEND) calls to safely embed all IWYU args in the generated script
   set(IWYU_ARGS_INIT_CODE "set(IWYU_EXTRA_ARGS)\n")
-  foreach(arg IN LISTS QUARISMA_IWYU_ARGS)
+  foreach(arg IN LISTS PROJECT_IWYU_ARGS)
     string(APPEND IWYU_ARGS_INIT_CODE "list(APPEND IWYU_EXTRA_ARGS \"${arg}\")\n")
   endforeach()
   foreach(arg IN LISTS ARGN)
@@ -181,7 +181,7 @@ function(quarisma_create_iwyu_wrapper target_name lang)
 # Invoked by CMake as: cmake -P <this_script> <source_file> [compile_flags...]
 # IWYU writes its include suggestions to stderr, which we capture to iwyu.log.
 
-set(IWYU_EXECUTABLE \"${QUARISMA_IWYU_EXECUTABLE}\")
+set(IWYU_EXECUTABLE \"${PROJECT_IWYU_EXECUTABLE}\")
 set(IWYU_LOG_FILE \"${IWYU_LOG_FILE}\")
 
 # Embed IWYU-specific flags (generated at configure time)
@@ -215,7 +215,7 @@ endfunction()
 
 # Function to apply IWYU to a target
 function(quarisma_apply_iwyu target_name)
-  if(NOT QUARISMA_ENABLE_IWYU OR NOT QUARISMA_IWYU_EXECUTABLE)
+  if(NOT PROJECT_ENABLE_IWYU OR NOT PROJECT_IWYU_EXECUTABLE)
     return()
   endif()
 
@@ -232,7 +232,7 @@ function(quarisma_apply_iwyu target_name)
   if(NOT EXISTS "${IWYU_LOG_FILE}")
     file(WRITE "${IWYU_LOG_FILE}" "# IWYU Analysis Log for Quarisma Project\n")
     file(APPEND "${IWYU_LOG_FILE}" "# Generated by CMake IWYU integration\n")
-    file(APPEND "${IWYU_LOG_FILE}" "# IWYU executable: ${QUARISMA_IWYU_EXECUTABLE}\n")
+    file(APPEND "${IWYU_LOG_FILE}" "# IWYU executable: ${PROJECT_IWYU_EXECUTABLE}\n")
     file(APPEND "${IWYU_LOG_FILE}" "# Mapping file: ${IWYU_MAPPING_FILE}\n")
     file(APPEND "${IWYU_LOG_FILE}" "# Use Scripts/run_iwyu_analysis.py for detailed analysis\n")
     file(APPEND "${IWYU_LOG_FILE}" "\n")

@@ -12,7 +12,11 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "quarismaTest_header",
-    hdrs = ["baseTest.h"],
+    hdrs = [
+        "CoreTest.h",
+        "CoreTest.h.in",
+        "baseTest.h",
+    ],
     includes = [
         ".",
         "../..",

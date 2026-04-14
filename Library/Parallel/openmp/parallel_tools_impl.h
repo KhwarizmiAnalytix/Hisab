@@ -21,8 +21,7 @@
  *   Licensed under BSD-3-Clause
  */
 
-#ifndef OPENMP_PARALLEL_TOOLS_IMPL_H
-#define OPENMP_PARALLEL_TOOLS_IMPL_H
+#pragma once
 
 #include <algorithm>  // For std::sort
 
@@ -131,4 +130,3 @@ PARALLEL_API bool parallel_tools_impl<backend_type::OpenMP>::single_thread();
 }  // namespace detail
 }  // namespace parallel
 
-#endif

@@ -31,18 +31,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-#ifndef PROFILER_TSL_PROFILER_LIB_PROFILER_INTERFACE_H_
-#define PROFILER_TSL_PROFILER_LIB_PROFILER_INTERFACE_H_
+#pragma once
 
 #include "common/profiler_export.h"
 #include "native/core/profiler_status.h"
 #include "native/exporters/xplane/xplane.h"
 
-namespace quarisma
+namespace profiler
 {
 
 /**
- * @brief Interface for Quarisma profiler plugins (REQUIRED COMPONENT)
+ * @brief Interface for Profiler profiler plugins (REQUIRED COMPONENT)
  *
  * profile_session calls each of these methods at most once per instance, and
  * implementations can rely on that guarantee for simplicity.
@@ -79,6 +78,5 @@ public:
     virtual profiler_status collect_data(x_space* space) = 0;
 };
 
-}  // namespace quarisma
+}  // namespace profiler
 
-#endif  // PROFILER_TSL_PROFILER_LIB_PROFILER_INTERFACE_H_

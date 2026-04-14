@@ -36,16 +36,16 @@ limitations under the License.
 #include <memory>  // for unique_ptr
 
 #include "native/core/profiler_interface.h"  // for profiler_interface
-namespace quarisma
+namespace profiler
 {
 class x_space;
 }
 
-namespace quarisma
+namespace profiler
 {
 
 /**
- * @brief Decorator for Quarisma profiler plugins (REQUIRED COMPONENT)
+ * @brief Decorator for Profiler profiler plugins (REQUIRED COMPONENT)
  *
  * Tracks that calls to the underlying profiler interface functions are made
  * in the expected order: start, stop and collect_data. Making the calls
@@ -104,4 +104,4 @@ private:
     profiler_status                     status_;             ///< Result of calls to profiler_
 };
 
-}  // namespace quarisma
+}  // namespace profiler

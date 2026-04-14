@@ -3,7 +3,7 @@
 #include <atomic>
 #include <utility>
 
-namespace quarisma
+namespace profiler
 {
 
 /**
@@ -131,4 +131,4 @@ private:
     T value_;
 };
 
-}  // namespace quarisma
+}  // namespace profiler

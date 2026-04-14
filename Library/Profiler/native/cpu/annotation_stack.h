@@ -32,8 +32,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef PROFILER_PROFILER_CPU_ANNOTATION_STACK_H_
-#define PROFILER_PROFILER_CPU_ANNOTATION_STACK_H_
+#pragma once
 
 #include <atomic>
 #include <cstdint>
@@ -44,7 +43,7 @@ limitations under the License.
 #include "common/profiler_export.h"
 #include "common/profiler_macros.h"
 
-namespace quarisma
+namespace profiler
 {
 namespace profiler_impl
 {
@@ -143,6 +142,5 @@ private:
 };
 
 }  // namespace profiler_impl
-}  // namespace quarisma
+}  // namespace profiler
 
-#endif  // PROFILER_PROFILER_CPU_ANNOTATION_STACK_H_

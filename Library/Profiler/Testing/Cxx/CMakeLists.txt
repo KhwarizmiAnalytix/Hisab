@@ -58,11 +58,13 @@ endif()
 
 add_executable(ProfilerCxxTests ${TestFiles})
 
-target_compile_definitions(ProfilerCxxTests PRIVATE PROFILER_GOOGLE_TEST USE_GTEST _VARIADIC_MAX=10)
+target_compile_definitions(
+  ProfilerCxxTests PRIVATE PROFILER_HAS_GTEST=1 PROFILER_GOOGLE_TEST USE_GTEST _VARIADIC_MAX=10
+)
 
 # Profiler links Core privately; executables may need Core explicitly when linking static archives.
 target_link_libraries(
-  ProfilerCxxTests PRIVATE Quarisma::gtest Quarisma::gtest_main Quarisma::Profiler Quarisma::Core
+  ProfilerCxxTests PRIVATE Profiler::gtest Profiler::gtest_main Profiler::Profiler Profiler::Core
 )
 
 set_target_properties(
@@ -83,11 +85,11 @@ if(PROFILER_ENABLE_COVERAGE AND DEFINED PROFILER_LLVM_PROFILE_FILE)
 endif()
 
 if(PROFILER_ENABLE_ENZYME)
-  target_link_libraries(ProfilerCxxTests PRIVATE Quarisma::enzyme)
+  target_link_libraries(ProfilerCxxTests PRIVATE Profiler::enzyme)
 endif()
 
-if(COMMAND quarisma_set_target_output_directories)
-  quarisma_set_target_output_directories(ProfilerCxxTests)
+if(COMMAND profiler_set_target_output_directories)
+  profiler_set_target_output_directories(ProfilerCxxTests)
 endif()
 
 message(STATUS "ProfilerCxxTests registered with CTest")

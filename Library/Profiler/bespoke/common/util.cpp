@@ -1,4 +1,4 @@
-//#include <quarisma/csrc/autograd/function.h>
+//#include <profiler/csrc/autograd/function.h>
 
 #include "bespoke/common/util.h"
 
@@ -16,10 +16,10 @@
 #include <libkineto.h>
 #endif
 #ifdef USE_DISTRIBUTED
-#include <quarisma/csrc/distributed/c10d/ParamCommsUtils.hpp>
+#include <profiler/csrc/distributed/c10d/ParamCommsUtils.hpp>
 #endif  // USE_DISTRIBUTED
 
-namespace quarisma::profiler_impl::impl
+namespace profiler::profiler_impl::impl
 {
 
 namespace
@@ -86,8 +86,8 @@ std::string getNvtxStr(
     const char*                                                      name,
     int64_t                                                          sequence_nr,
     const std::vector<std::vector<int64_t>>&                         shapes,
-    quarisma::RecordFunctionHandle                                   op_id,
-    const std::list<std::pair<quarisma::RecordFunctionHandle, int>>& input_op_ids)
+    profiler::RecordFunctionHandle                                   op_id,
+    const std::list<std::pair<profiler::RecordFunctionHandle, int>>& input_op_ids)
 {
     if (sequence_nr >= -1 || !shapes.empty())
     {
@@ -197,15 +197,15 @@ std::string stacksToStr(const std::vector<std::string>& stacks, const char* deli
 }
 
 #if 0
-// Disabled: quarisma::List and IValue methods (isTensor, toTensor) not available in profiler-only build
-static std::vector<std::vector<int64_t>> flattenList(const quarisma::IValue& list)
+// Disabled: profiler::List and IValue methods (isTensor, toTensor) not available in profiler-only build
+static std::vector<std::vector<int64_t>> flattenList(const profiler::IValue& list)
 {
     std::vector<std::vector<int64_t>> tensor_dims;
-    // for (const quarisma::IValue& input : list)
+    // for (const profiler::IValue& input : list)
     // {
     //     if (input.isTensor())
     //     {
-    //         const quarisma::Tensor& tensor = input.toTensor();
+    //         const profiler::Tensor& tensor = input.toTensor();
     //         if (tensor.defined())
     //         {
     //             tensor_dims.push_back(input.toTensor().sizes().vec());
@@ -217,7 +217,7 @@ static std::vector<std::vector<int64_t>> flattenList(const quarisma::IValue& lis
 #else
 // Stub implementation
 [[maybe_unused]] static std::vector<std::vector<int64_t>> flattenList(
-    const quarisma::IValue& /*list*/)
+    const profiler::IValue& /*list*/)
 {
     return {};
 }
@@ -226,15 +226,15 @@ static std::vector<std::vector<int64_t>> flattenList(const quarisma::IValue& lis
 #if 0
 // Disabled: IValue methods (isTensor, toTensor, isList, toList) not available in profiler-only build
 std::vector<std::vector<int64_t>> inputSizes(
-    const quarisma::RecordFunction& fn, bool flatten_list_enabled)
+    const profiler::RecordFunction& fn, bool flatten_list_enabled)
 {
     std::vector<std::vector<int64_t>> sizes;
     sizes.reserve(fn.inputs().size());
-    for (const quarisma::IValue& input : fn.inputs())
+    for (const profiler::IValue& input : fn.inputs())
     {
         if (input.isTensor())
         {
-            const quarisma::Tensor& tensor = input.toTensor();
+            const profiler::Tensor& tensor = input.toTensor();
             if (tensor.defined())
             {
                 sizes.push_back(input.toTensor().sizes().vec());
@@ -271,7 +271,7 @@ std::vector<std::vector<int64_t>> inputSizes(
 #else
 // Stub implementation
 std::vector<std::vector<int64_t>> inputSizes(
-    const quarisma::RecordFunction& /*fn*/, bool /*flatten_list_enabled*/)
+    const profiler::RecordFunction& /*fn*/, bool /*flatten_list_enabled*/)
 {
     return {};
 }
@@ -280,7 +280,7 @@ std::vector<std::vector<int64_t>> inputSizes(
 std::string shapesToStr(const std::vector<std::vector<int64_t>>& shapes)
 {
     std::string str("[");
-    for (const auto t_idx : quarisma::irange(shapes.size()))
+    for (const auto t_idx : profiler::irange(shapes.size()))
     {
         if (t_idx > 0)
         {
@@ -295,7 +295,7 @@ std::string shapesToStr(const std::vector<std::vector<int64_t>>& shapes)
 std::string variantShapesToStr(const std::vector<shape>& shapes)
 {
     std::string str("[");
-    for (const auto t_idx : quarisma::irange(shapes.size()))
+    for (const auto t_idx : profiler::irange(shapes.size()))
     {
         if (t_idx > 0)
         {
@@ -316,7 +316,7 @@ std::string variantShapesToStr(const std::vector<shape>& shapes)
                 continue;
             }
             str = fmt::format("{}[", str);
-            for (const auto s_idx : quarisma::irange(tensor_shape.size()))
+            for (const auto s_idx : profiler::irange(tensor_shape.size()))
             {
                 if (s_idx > 0)
                 {
@@ -334,7 +334,7 @@ std::string variantShapesToStr(const std::vector<shape>& shapes)
 std::string shapeToStr(const std::vector<int64_t>& shape)
 {
     std::string str("[");
-    for (const auto s_idx : quarisma::irange(shape.size()))
+    for (const auto s_idx : profiler::irange(shape.size()))
     {
         if (s_idx > 0)
         {
@@ -347,7 +347,7 @@ std::string shapeToStr(const std::vector<int64_t>& shape)
 }
 
 std::string inputOpIdsToStr(
-    const std::list<std::pair<quarisma::RecordFunctionHandle, int>>& input_op_ids)
+    const std::list<std::pair<profiler::RecordFunctionHandle, int>>& input_op_ids)
 {
     std::string str("[");
     int         idx = 0;
@@ -384,7 +384,7 @@ std::string strListToStr(const std::vector<std::string>& types)
 }
 #if 0
 // Disabled: IValue methods (isNone, isBool, operator<<) not available in profiler-only build.
-std::string ivalueToStr(const quarisma::IValue& val, bool isString)
+std::string ivalueToStr(const profiler::IValue& val, bool isString)
 {
     std::stringstream ss;
     if (val.isNone())
@@ -423,7 +423,7 @@ std::string ivalueToStr(const quarisma::IValue& val, bool isString)
 }
 #else
 // Stub implementation when IValue methods are not available.
-std::string ivalueToStr(const quarisma::IValue& /*val*/, bool /*isString*/)
+std::string ivalueToStr(const profiler::IValue& /*val*/, bool /*isString*/)
 {
     return "\"None\"";
 }
@@ -431,7 +431,7 @@ std::string ivalueToStr(const quarisma::IValue& /*val*/, bool /*isString*/)
 
 #if 0
 // Disabled: IValue methods (isNone, operator<<) not available in profiler-only build.
-std::string ivalueListToStr(const std::vector<quarisma::IValue>& list)
+std::string ivalueListToStr(const std::vector<profiler::IValue>& list)
 {
     std::vector<std::string> concrete_str_inputs;
     std::stringstream        ss;
@@ -452,7 +452,7 @@ std::string ivalueListToStr(const std::vector<quarisma::IValue>& list)
 }
 #else
 // Stub implementation when IValue methods are not available.
-std::string ivalueListToStr(const std::vector<quarisma::IValue>& /*list*/)
+std::string ivalueListToStr(const std::vector<profiler::IValue>& /*list*/)
 {
     return "[]";
 }
@@ -460,15 +460,15 @@ std::string ivalueListToStr(const std::vector<quarisma::IValue>& /*list*/)
 
 #if 0
 // Disabled: IValue methods (isTensor, toTensor, isScalar, isList, tagKind) not available in profiler-only build.
-std::vector<std::string> inputTypes(const quarisma::RecordFunction& fn)
+std::vector<std::string> inputTypes(const profiler::RecordFunction& fn)
 {
     std::vector<std::string> types;
     types.reserve(fn.inputs().size());
-    for (const quarisma::IValue& input : fn.inputs())
+    for (const profiler::IValue& input : fn.inputs())
     {
         if (input.isTensor())
         {
-            const quarisma::Tensor& tensor = input.toTensor();
+            const profiler::Tensor& tensor = input.toTensor();
             if (tensor.defined())
             {
                 types.push_back(static_cast<std::string>(input.toTensor().dtype().name()));
@@ -491,7 +491,7 @@ std::vector<std::string> inputTypes(const quarisma::RecordFunction& fn)
 }
 #else
 // Stub implementation when IValue methods are not available.
-std::vector<std::string> inputTypes(const quarisma::RecordFunction& fn)
+std::vector<std::string> inputTypes(const profiler::RecordFunction& fn)
 {
     std::vector<std::string> types;
     types.reserve(fn.inputs().size());
@@ -544,7 +544,7 @@ static inline std::string format_list(
 #if 0
 // Disabled: IValue methods (isTensor, toTensor, isTuple, toTupleRef, isList, toList) not available in profiler-only build.
 std::pair<bool, std::variant<int, std::vector<int>>> findStartAddrForTensors(
-    const quarisma::IValue& val)
+    const profiler::IValue& val)
 {
     if (val.isTensor())
     {
@@ -560,7 +560,7 @@ std::pair<bool, std::variant<int, std::vector<int>>> findStartAddrForTensors(
         size_t           tuple_size = val_tuple.size();
         std::vector<int> responses;
         responses.reserve(tuple_size);
-        for (const auto j : quarisma::irange(tuple_size))
+        for (const auto j : profiler::irange(tuple_size))
         {
             auto [is_list, res] = findStartAddrForTensors(val_tuple[j]);
             if (is_list)
@@ -581,7 +581,7 @@ std::pair<bool, std::variant<int, std::vector<int>>> findStartAddrForTensors(
         size_t           list_size = val_list.size();
         std::vector<int> responses;
         responses.reserve(list_size);
-        for (const auto j : quarisma::irange(list_size))
+        for (const auto j : profiler::irange(list_size))
         {
             auto [is_list, res] = findStartAddrForTensors(val_list[j]);
             if (is_list)
@@ -605,7 +605,7 @@ std::pair<bool, std::variant<int, std::vector<int>>> findStartAddrForTensors(
 #else
 // Stub implementation when IValue methods are not available.
 std::pair<bool, std::variant<int, std::vector<int>>> findStartAddrForTensors(
-    const quarisma::IValue& /*val*/)
+    const profiler::IValue& /*val*/)
 {
     return {false, -1};
 }
@@ -613,14 +613,14 @@ std::pair<bool, std::variant<int, std::vector<int>>> findStartAddrForTensors(
 
 std::unordered_map<std::string, std::string> saveNcclMeta(
     // @lint-ignore CLANGTIDY
-    const quarisma::RecordFunction& /*fn*/,
+    const profiler::RecordFunction& /*fn*/,
     // @lint-ignore CLANGTIDY
     const SaveNcclMetaConfig& /*config*/)
 {
     std::unordered_map<std::string, std::string> map;
 #ifdef USE_DISTRIBUTED
     auto debugInfo = dynamic_cast<ParamCommsDebugInfo*>(
-        quarisma::thread_local_debug_info::get(quarisma::DebugInfoKind::PARAM_COMMS_INFO));
+        profiler::thread_local_debug_info::get(profiler::DebugInfoKind::PARAM_COMMS_INFO));
 
     if (config.introspectMetadata)
     {
@@ -632,7 +632,7 @@ std::unordered_map<std::string, std::string> saveNcclMeta(
         }
         auto& collective_name = debugInfo->getCollectiveName();
         map.emplace(kCommsName, fmt::format("\"{}\"", collective_name));
-        map.emplace(kDtype, fmt::format("\"{}\"", quarisma::toString(debugInfo->getDType())));
+        map.emplace(kDtype, fmt::format("\"{}\"", profiler::toString(debugInfo->getDType())));
         map.emplace(kInMsgNelems, std::to_string(debugInfo->getInMessageNelems()));
         map.emplace(kOutMsgNelems, std::to_string(debugInfo->getOutMessageNelems()));
 
@@ -696,9 +696,9 @@ std::unordered_map<std::string, std::string> saveNcclMeta(
             {
                 // need to account for Stack mode where the inputs are at the end.
                 size_t input_start = inputs.size() - num_inputs;
-                for (const auto i : quarisma::irange(input_start, inputs.size()))
+                for (const auto i : profiler::irange(input_start, inputs.size()))
                 {
-                    const quarisma::IValue& val = inputs[i];
+                    const profiler::IValue& val = inputs[i];
                     auto [is_list, result]      = findStartAddrForTensors(val);
                     if (is_list)
                     {
@@ -728,9 +728,9 @@ std::unordered_map<std::string, std::string> saveNcclMeta(
             {
                 // need to account for Stack mode where the outputs are at the end.
                 size_t output_start = outputs.size() - num_outputs;
-                for (const auto i : quarisma::irange(output_start, outputs.size()))
+                for (const auto i : profiler::irange(output_start, outputs.size()))
                 {
-                    const quarisma::IValue& val = outputs[i];
+                    const profiler::IValue& val = outputs[i];
                     auto [is_list, result]      = findStartAddrForTensors(val);
                     if (is_list)
                     {
@@ -783,11 +783,11 @@ static constexpr auto kMatSize    = "mat_size";
 static constexpr auto kMat1Size   = "mat1_size";
 static constexpr auto kMat2Size   = "mat2_size";
 
-static std::vector<quarisma::IntArrayRef> getInputSizes(
+static std::vector<profiler::IntArrayRef> getInputSizes(
     const std::string&                      op_name,
     size_t                                  min_size,
-    quarisma::array_ref<const quarisma::IValue> inputs,
-    const quarisma::array_ref<int>&           should_be_tensor)
+    profiler::array_ref<const profiler::IValue> inputs,
+    const profiler::array_ref<int>&           should_be_tensor)
 {
     std::stringstream ss;
     if (inputs.size() < min_size)
@@ -797,7 +797,7 @@ static std::vector<quarisma::IntArrayRef> getInputSizes(
         // PROFILER_LOG_WARNING(ss.str());
         return {};
     }
-    std::vector<quarisma::IntArrayRef> inputSizes = {};
+    std::vector<profiler::IntArrayRef> inputSizes = {};
     for (auto index : should_be_tensor)
     {
         if (!inputs[index].isTensor())
@@ -807,7 +807,7 @@ static std::vector<quarisma::IntArrayRef> getInputSizes(
             // PROFILER_LOG_WARNING(ss.str());
             return {};
         }
-        quarisma::Tensor t = inputs[index].toTensor();
+        profiler::Tensor t = inputs[index].toTensor();
         if (t.is_nested())
         {
             ss << "Failed to save extra arguments for flops computation of op " << op_name
@@ -820,10 +820,10 @@ static std::vector<quarisma::IntArrayRef> getInputSizes(
     return inputSizes;
 }
 
-std::unordered_map<std::string, quarisma::IValue> saveExtraArgs(const quarisma::RecordFunction& fn)
+std::unordered_map<std::string, profiler::IValue> saveExtraArgs(const profiler::RecordFunction& fn)
 {
     // for specific types of fn, return the saved extra args for computing flops
-    std::unordered_map<std::string, quarisma::IValue> map;
+    std::unordered_map<std::string, profiler::IValue> map;
     auto                                            inputs = fn.inputs();
     std::string                                     fname(fn.name());
 
@@ -847,8 +847,8 @@ std::unordered_map<std::string, quarisma::IValue> saveExtraArgs(const quarisma::
                 "tensor."); */
             return map;
         }
-        map[kInputSize]  = quarisma::IValue(inputSizes[0]);
-        map[kWeightSize] = quarisma::IValue(inputSizes[1]);
+        map[kInputSize]  = profiler::IValue(inputSizes[0]);
+        map[kWeightSize] = profiler::IValue(inputSizes[1]);
         map[kStride]     = inputs[kConv2dStride];
         map[kPadding]    = inputs[kConv2dPadding];
         map[kDilation]   = inputs[kConv2dDilation];
@@ -862,8 +862,8 @@ std::unordered_map<std::string, quarisma::IValue> saveExtraArgs(const quarisma::
             return map;
         }
 
-        map[kMat1Size] = quarisma::IValue(inputSizes[0]);
-        map[kMat2Size] = quarisma::IValue(inputSizes[1]);
+        map[kMat1Size] = profiler::IValue(inputSizes[0]);
+        map[kMat2Size] = profiler::IValue(inputSizes[1]);
     }
     else if (fname == kAddMMOp)
     {
@@ -876,8 +876,8 @@ std::unordered_map<std::string, quarisma::IValue> saveExtraArgs(const quarisma::
         // just assume these are +=1.
         // (similar to http://www.netlib.org/lapack/lawnspdf/lawn41.pdf,
         // "Operations Count for the BLAS and LAPACK", Table 3, SGEMM)
-        map[kMat1Size] = quarisma::IValue(inputSizes[1]);
-        map[kMat2Size] = quarisma::IValue(inputSizes[2]);
+        map[kMat1Size] = profiler::IValue(inputSizes[1]);
+        map[kMat2Size] = profiler::IValue(inputSizes[2]);
     }
     else if (fname == kMulOp)
     {
@@ -886,7 +886,7 @@ std::unordered_map<std::string, quarisma::IValue> saveExtraArgs(const quarisma::
         {
             return map;
         }
-        map[kMatSize] = quarisma::IValue(inputSizes[0]);
+        map[kMatSize] = profiler::IValue(inputSizes[0]);
     }
     else if (fname == kAddOp)
     {
@@ -895,7 +895,7 @@ std::unordered_map<std::string, quarisma::IValue> saveExtraArgs(const quarisma::
         {
             return map;
         }
-        map[kMatSize] = quarisma::IValue(inputSizes[0]);
+        map[kMatSize] = profiler::IValue(inputSizes[0]);
     }
     else if (fname == kBMMOp)
     {
@@ -905,8 +905,8 @@ std::unordered_map<std::string, quarisma::IValue> saveExtraArgs(const quarisma::
             return map;
         }
 
-        map[kMat1Size] = quarisma::IValue(inputSizes[0]);
-        map[kMat2Size] = quarisma::IValue(inputSizes[1]);
+        map[kMat1Size] = profiler::IValue(inputSizes[0]);
+        map[kMat2Size] = profiler::IValue(inputSizes[1]);
     }
     else if (fname == kBAddBMMOp)
     {
@@ -920,15 +920,15 @@ std::unordered_map<std::string, quarisma::IValue> saveExtraArgs(const quarisma::
         // just assume these are +=1.
         // (similar to http://www.netlib.org/lapack/lawnspdf/lawn41.pdf,
         // "Operations Count for the BLAS and LAPACK", Table 3, SGEMM)
-        map[kMat1Size] = quarisma::IValue(inputSizes[1]);
-        map[kMat2Size] = quarisma::IValue(inputSizes[2]);
+        map[kMat1Size] = profiler::IValue(inputSizes[1]);
+        map[kMat2Size] = profiler::IValue(inputSizes[2]);
     }
 
     return map;
 }
 
 uint64_t computeFlops(
-    const std::string& op_name, const std::unordered_map<std::string, quarisma::IValue>& extra_args)
+    const std::string& op_name, const std::unordered_map<std::string, profiler::IValue>& extra_args)
 {
     if (op_name == kConv2dOp)
     {
@@ -999,7 +999,7 @@ uint64_t computeFlops(
             return 0;
         }
         // format of the input is defined in
-        // quarisma.ao.nn.quantized.functional.conv2d()
+        // profiler.ao.nn.quantized.functional.conv2d()
         const uint64_t conv2d_multiply_factor = 2;
         auto [minibatch, in_channels, input_h, input_w] =
             std::make_tuple(input_sizes[0], input_sizes[1], input_sizes[2], input_sizes[3]);
@@ -1172,24 +1172,24 @@ uint64_t computeFlops(
 }
 #else
 // Stub implementations when IValue methods are not available.
-[[maybe_unused]] static std::vector<quarisma::IntArrayRef> getInputSizes(
+[[maybe_unused]] static std::vector<profiler::IntArrayRef> getInputSizes(
     const std::string& /*op_name*/,
     size_t /*min_size*/,
-    quarisma::array_ref<const quarisma::IValue> /*inputs*/,
-    const quarisma::array_ref<int>& /*should_be_tensor*/)
+    profiler::array_ref<const profiler::IValue> /*inputs*/,
+    const profiler::array_ref<int>& /*should_be_tensor*/)
 {
     return {};
 }
 
-std::unordered_map<std::string, quarisma::IValue> saveExtraArgs(
-    const quarisma::RecordFunction& /*fn*/)
+std::unordered_map<std::string, profiler::IValue> saveExtraArgs(
+    const profiler::RecordFunction& /*fn*/)
 {
     return {};
 }
 
 uint64_t computeFlops(
     const std::string& /*op_name*/,
-    const std::unordered_map<std::string, quarisma::IValue>& /*extra_args*/)
+    const std::unordered_map<std::string, profiler::IValue>& /*extra_args*/)
 {
     return 0;
 }
@@ -1199,7 +1199,7 @@ uint64_t computeFlops(
 // and returns a conventional string representation of the IValue
 // Currently it returns int representation of the last 20 bits of the address
 // value
-int getTensorStartHint(const quarisma::Tensor& t)
+int getTensorStartHint(const profiler::Tensor& t)
 {
     const auto* const tensor_impl  = t.unsafeGetTensorImpl();
     uintptr_t         storage_addr = 0;
@@ -1208,7 +1208,7 @@ int getTensorStartHint(const quarisma::Tensor& t)
     return last_bits;
 }
 
-bool checkFunctionOutputsForLogging(const quarisma::RecordFunction& fn)
+bool checkFunctionOutputsForLogging(const profiler::RecordFunction& fn)
 {
     const auto& outputs     = fn.outputs();
     auto        num_outputs = fn.num_outputs();
@@ -1220,7 +1220,7 @@ bool checkFunctionOutputsForLogging(const quarisma::RecordFunction& fn)
     return num_outputs <= outputs.size();
 }
 
-bool checkFunctionInputsForLogging(const quarisma::RecordFunction& fn)
+bool checkFunctionInputsForLogging(const profiler::RecordFunction& fn)
 {
     auto       num_inputs = fn.num_inputs();
     const auto inputs     = fn.inputs();
@@ -1231,4 +1231,4 @@ bool checkFunctionInputsForLogging(const quarisma::RecordFunction& fn)
     // PROFILER_CHECK(num_inputs <= inputs.size());
     return num_inputs <= inputs.size();
 }
-}  // namespace quarisma::profiler_impl::impl
+}  // namespace profiler::profiler_impl::impl

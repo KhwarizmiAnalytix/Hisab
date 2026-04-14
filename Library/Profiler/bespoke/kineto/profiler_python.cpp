@@ -1,7 +1,7 @@
 #if 0
 #include <Python.h>
 #include <frameobject.h>
-#include <quarisma/csrc/autograd/profiler_python.h>
+#include <profiler/csrc/autograd/profiler_python.h>
 
 #include <atomic>
 #include <cstdint>
@@ -13,15 +13,15 @@
 #include <utility>
 #include <vector>
 
-//#include <Quarisma/core/TensorBase.h>
-#include <quarisma/csrc/autograd/python_variable.h>
-#include <quarisma/csrc/utils/pybind.h>
-#include <quarisma/csrc/utils/python_compat.h>
-#include <quarisma/csrc/utils/python_numbers.h>
-#include <quarisma/csrc/utils/python_strings.h>
-#include <quarisma/util/ApproximateClock.h>
-#include <quarisma/util/Logging.h>
-#include <quarisma/util/flat_hash_map.h>
+//#include <Profiler/core/TensorBase.h>
+#include <profiler/csrc/autograd/python_variable.h>
+#include <profiler/csrc/utils/pybind.h>
+#include <profiler/csrc/utils/python_compat.h>
+#include <profiler/csrc/utils/python_numbers.h>
+#include <profiler/csrc/utils/python_strings.h>
+#include <profiler/util/ApproximateClock.h>
+#include <profiler/util/Logging.h>
+#include <profiler/util/flat_hash_map.h>
 
 #include <optional>
 
@@ -34,7 +34,7 @@
 
 namespace py = pybind11;
 
-namespace quarisma::profiler_impl::impl {
+namespace profiler::profiler_impl::impl {
 namespace {
 enum CallType { PyCall = 0, PyModuleCall, PyCCall, PyOptimizerCall };
 static constexpr size_t CallTypeSize = 4;
@@ -70,7 +70,7 @@ template <>
 PyCodeObject* getCode<CallType::PyModuleCall>() {
   static auto module_call_code = []() {
     pybind11::gil_scoped_acquire gil;
-    auto res = py::module::import("quarisma.nn")
+    auto res = py::module::import("profiler.nn")
                    .attr("Module")
                    .attr("__call__")
                    .attr("__code__")
@@ -85,7 +85,7 @@ template <>
 PyCodeObject* getCode<CallType::PyOptimizerCall>() {
   static auto optimizer_step_code = []() {
     pybind11::gil_scoped_acquire gil;
-    auto res = py::module::import("quarisma.optim")
+    auto res = py::module::import("profiler.optim")
                    .attr("Optimizer")
                    .attr("_optimizer_step_code")
                    .attr("__code__")
@@ -97,16 +97,16 @@ PyCodeObject* getCode<CallType::PyOptimizerCall>() {
 }
 
 } // namespace
-} // namespace quarisma::profiler_impl::impl
+} // namespace profiler::profiler_impl::impl
 
 template <>
-struct std::hash<quarisma::profiler_impl::impl::CodeLocation> {
-  size_t operator()(const quarisma::profiler_impl::impl::CodeLocation& x) {
-    return quarisma::get_hash(x.filename_, x.name_, x.line_number_);
+struct std::hash<profiler::profiler_impl::impl::CodeLocation> {
+  size_t operator()(const profiler::profiler_impl::impl::CodeLocation& x) {
+    return profiler::get_hash(x.filename_, x.name_, x.line_number_);
   }
 };
 
-namespace quarisma::profiler_impl::impl {
+namespace profiler::profiler_impl::impl {
 namespace {
 // ============================================================================
 // == CallTypeHelper: Tools for generic programming on specializations. =======
@@ -197,7 +197,7 @@ template <>
 struct Config<CallType::PyCall> {
   using key_t = CodeLocation;
   using ephemeral_t = no_ephemeral_t;
-  using cache_t = quarisma::flat_hash_map<key_t, PyFrameState>;
+  using cache_t = profiler::flat_hash_map<key_t, PyFrameState>;
   static constexpr EventType event_type = EventType::PyCall;
 };
 
@@ -215,8 +215,8 @@ struct ExtendedPyCallConfig {
   struct Cache {
     // `nn.Module.forward` or `optim.Optimizer._optimizer_step_code`
     std::optional<CodeLocation> location_;
-    quarisma::flat_hash_map<key_t, ClsAndParameters> cls_and_parameters_;
-    quarisma::flat_hash_map<cls_t, quarisma::StringView> cls_names_;
+    profiler::flat_hash_map<key_t, ClsAndParameters> cls_and_parameters_;
+    profiler::flat_hash_map<cls_t, profiler::StringView> cls_names_;
   };
   using cache_t = Cache;
 
@@ -239,7 +239,7 @@ template <>
 struct Config<CallType::PyCCall> {
   using key_t = PyMethod;
   using ephemeral_t = PyObject*;
-  using cache_t = quarisma::flat_hash_map<key_t, quarisma::StringView>;
+  using cache_t = profiler::flat_hash_map<key_t, profiler::StringView>;
   static constexpr EventType event_type = EventType::PyCCall;
 };
 
@@ -292,7 +292,7 @@ class ValueCache {
     auto caller = load<CallType::PyCall>(callsite.caller_);
     // PROFILER_CHECK(!caller.module_info_.has_value());
     return ExtraFields<Config<C>::event_type>{
-        /*end_time_ns=*/std::numeric_limits<quarisma::time_t>::min(),
+        /*end_time_ns=*/std::numeric_limits<profiler::time_t>::min(),
         python_tid,
         caller.frame_state_,
         load<C>(callsite.value_)};
@@ -331,7 +331,7 @@ typename Config<C>::cls_t set_class(
   auto cls = typename Config<C>::cls_t(cls_handle.ptr());
   if (cache.cls_names_.find(cls) == cache.cls_names_.end()) {
     cache.cls_names_[cls] =
-        quarisma::StringView(py::str(cls_handle.attr("__name__")));
+        profiler::StringView(py::str(cls_handle.attr("__name__")));
   }
   return cls;
 }
@@ -343,7 +343,7 @@ TensorMetadata toTensorMetadata(PyObject* self) {
   return TensorMetadata{
       m,
       t.sizes().vec(),
-      m.layout_ == quarisma::kStrided ? t.strides().vec() : std::vector<int64_t>()};
+      m.layout_ == profiler::kStrided ? t.strides().vec() : std::vector<int64_t>()};
 }
 
 std::optional<TensorMetadata> ValueCache::recordIfTensor(py::handle p) {
@@ -373,8 +373,8 @@ void ValueCache::store<CallType::PyCall>(
   if PROFILER_UNLIKELY(locations.find(key) == locations.end()) {
     locations[key] = {
         key.line_number_,
-        quarisma::StringView(key.filename_),
-        quarisma::StringView(key.name_)};
+        profiler::StringView(key.filename_),
+        profiler::StringView(key.name_)};
   }
 }
 
@@ -478,7 +478,7 @@ void ValueCache::store<CallType::PyCCall>(
     Config<CallType::PyCCall>::ephemeral_t arg) {
   auto& names = std::get<CallType::PyCCall>(state_);
   if PROFILER_UNLIKELY(names.find(key) == names.end()) {
-    names[key] = quarisma::StringView(py::repr(arg));
+    names[key] = profiler::StringView(py::repr(arg));
   }
 }
 
@@ -492,7 +492,7 @@ ExtraFields<EventType::PyCCall>::args_t ValueCache::load<CallType::PyCCall>(
 void ValueCache::trimPrefixes() {
   static const auto prefixes = []() {
     pybind11::gil_scoped_acquire gil;
-    return py::module::import("quarisma.profiler.python_tracer")
+    return py::module::import("profiler.profiler.python_tracer")
         .attr("_prefix_regex")()
         .cast<std::vector<std::string>>();
   }();
@@ -502,7 +502,7 @@ void ValueCache::trimPrefixes() {
     for (const auto& p : prefixes) {
       if (filename.compare(0, p.size(), p) == 0) {
         filename.erase(0, p.size());
-        it.second.filename_ = quarisma::StringView(filename);
+        it.second.filename_ = profiler::StringView(filename);
         break;
       }
     }
@@ -523,7 +523,7 @@ template <CallType C>
 struct TraceKeyCacheState {
   struct Hash {
     size_t operator()(const Callsite<C>& key) {
-      return quarisma::get_hash(key.value_, key.caller_);
+      return profiler::get_hash(key.value_, key.caller_);
     }
   };
 
@@ -546,7 +546,7 @@ struct TraceKeyCacheState {
         value_cache.load<CallType::PyCall>(callsite.caller_));
   }
 
-  quarisma::flat_hash_map<Callsite<C>, TraceKey, Hash> state_;
+  profiler::flat_hash_map<Callsite<C>, TraceKey, Hash> state_;
 };
 
 // ============================================================================
@@ -675,8 +675,8 @@ struct ThreadLocalResults {
   ValueCache* value_cache_;
   PythonTracer* active_tracer_;
   CallTypeHelper<TraceKeyCacheState>::tuple_type trace_keys_;
-  AppendOnlyList<quarisma::approx_time_t, BLOCK_SIZE> exit_times_;
-  AppendOnlyList<quarisma::approx_time_t, BLOCK_SIZE> c_exit_times_;
+  AppendOnlyList<profiler::approx_time_t, BLOCK_SIZE> exit_times_;
+  AppendOnlyList<profiler::approx_time_t, BLOCK_SIZE> c_exit_times_;
 
   int active_frames_{0};
   int remaining_start_frames_{0};
@@ -698,7 +698,7 @@ static PyObject* c_call_callback(
 
 class PythonTracer final : public python_tracer::PythonTracerBase {
  public:
-  PythonTracer(quarisma::profiler_impl::impl::RecordQueue* queue);
+  PythonTracer(profiler::profiler_impl::impl::RecordQueue* queue);
   // NOLINTNEXTLINE(bugprone-exception-escape)
   ~PythonTracer() override;
 
@@ -711,13 +711,13 @@ class PythonTracer final : public python_tracer::PythonTracerBase {
   void stop() override;
   void restart() override;
   std::vector<std::shared_ptr<Result>> getEvents(
-      std::function<quarisma::time_t(quarisma::approx_time_t)> time_converter,
+      std::function<profiler::time_t(profiler::approx_time_t)> time_converter,
       std::vector<python_tracer::CompressedEvent>& enters,
-      quarisma::time_t end_time_ns) override;
+      profiler::time_t end_time_ns) override;
 
   struct StartFrame {
     TraceKey trace_key_;
-    quarisma::approx_time_t start_time{};
+    profiler::approx_time_t start_time{};
   };
 
  private:
@@ -740,7 +740,7 @@ class PythonTracer final : public python_tracer::PythonTracerBase {
   bool active_{false};
   bool gc_callback_registered_{false};
 
-  quarisma::profiler_impl::impl::RecordQueue* queue_;
+  profiler::profiler_impl::impl::RecordQueue* queue_;
   PyInterpreterState* interpreter_{nullptr};
   PyCodeObject* module_call_code_;
   PyCodeObject* optimizer_hook_;
@@ -778,7 +778,7 @@ struct _PyEventHandler {
 
 static PyTypeObject _PyEventHandler_Type = {
     PyVarObject_HEAD_INIT(&PyType_Type, 0) /* ob_base */
-    "quarisma.profiler.python_tracer_event_handler", /* tp_name */
+    "profiler.profiler.python_tracer_event_handler", /* tp_name */
     sizeof(_PyEventHandler), /* tp_basicsize */
     0, /* tp_itemsize */
     (destructor)PyObject_Free, /* tp_dealloc */
@@ -864,7 +864,7 @@ static void registerMonitoringCallback() {
     return;
   }
   auto result = THPObjectPtr(PyObject_CallMethod(
-      monitoring, "use_tool_id", "is", PROFILER_ID, "Quarisma Profiler"));
+      monitoring, "use_tool_id", "is", PROFILER_ID, "Profiler Profiler"));
   if (!result) {
     // PROFILER_LOG_WARNING("Failed to call sys.monitoring.use_tool_id");
     PyErr_Clear();
@@ -932,7 +932,7 @@ static void unregisterMonitoringCallback() {
     return;
   }
   const char* str = THPUtils_unpackStringView(tool_name).data();
-  if (strcmp(str, "Quarisma Profiler") != 0) {
+  if (strcmp(str, "Profiler Profiler") != 0) {
     return;
   }
   auto none = THPObjectPtr(Py_None);
@@ -996,11 +996,11 @@ PyObject* PythonTracer::gc_event_callback(PyObject* self, PyObject* args) {
     return nullptr;
   }
   instance->queue_->getSubqueue()->emplace_gc_call(
-      phase, quarisma::getApproximateTime());
+      phase, profiler::getApproximateTime());
   Py_RETURN_NONE;
 }
 
-PythonTracer::PythonTracer(quarisma::profiler_impl::impl::RecordQueue* queue)
+PythonTracer::PythonTracer(profiler::profiler_impl::impl::RecordQueue* queue)
     : queue_(queue),
 
       module_call_code_(getCode<CallType::PyModuleCall>()),
@@ -1237,7 +1237,7 @@ void PythonTracer::recordPyCall(
       return tls.intern<CallType::PyCall, E>(no_ephemeral_t(), frame, f_back);
     }
   }();
-  const auto time = quarisma::getApproximateTime();
+  const auto time = profiler::getApproximateTime();
   is_startup_frame ? start_frames_.push_back({key, time})
                    : queue_->getSubqueue()->emplace_py_call(key, time);
   ++tls.active_frames_;
@@ -1259,7 +1259,7 @@ void PythonTracer::recordCCall(
   //     `frame->f_back`.
   auto key = tls.intern<CallType::PyCCall, EventType::PyCCall>(
       arg, (void*)(fn->m_ml), frame);
-  queue_->getSubqueue()->emplace_py_call(key, quarisma::getApproximateTime());
+  queue_->getSubqueue()->emplace_py_call(key, profiler::getApproximateTime());
   ++tls.active_frames_;
 }
 
@@ -1271,19 +1271,19 @@ struct Exit {
     return t_ > other.t_;
   }
 
-  quarisma::time_t t_;
+  profiler::time_t t_;
   size_t python_tid_;
 };
 
 class PostProcess {
  public:
   PostProcess(
-      std::function<quarisma::time_t(quarisma::approx_time_t)> time_converter,
+      std::function<profiler::time_t(profiler::approx_time_t)> time_converter,
       std::deque<ThreadLocalResults>& tls,
       const ValueCache& value_cache,
-      quarisma::time_t end_time_ns)
+      profiler::time_t end_time_ns)
       : end_time_{end_time_ns}, time_converter_{std::move(time_converter)} {
-    for (size_t python_tid : quarisma::irange(tls.size())) {
+    for (size_t python_tid : profiler::irange(tls.size())) {
       CallTypeHelper<TraceKeyCacheState>::map(
           tls[python_tid].trace_keys_, *this, value_cache, python_tid);
 
@@ -1318,7 +1318,7 @@ class PostProcess {
 
   template <EventType E, size_t N>
   void addExits(
-      AppendOnlyList<quarisma::approx_time_t, N>& exits,
+      AppendOnlyList<profiler::approx_time_t, N>& exits,
       size_t python_tid) {
     for (const auto i : exits) {
       get_state<E>().exits_.push({time_converter_(i), python_tid});
@@ -1344,7 +1344,7 @@ class PostProcess {
       std::vector<std::shared_ptr<Result>>& out) {
     using stack_t = std::vector<std::shared_ptr<Result>>;
     const auto initial_size = out.size();
-    auto pop = [](stack_t& stack, quarisma::time_t t) {
+    auto pop = [](stack_t& stack, profiler::time_t t) {
       if (!stack.empty()) {
         std::get<ExtraFields<E>>(stack.back()->extra_fields_).end_time_ns_ = t;
         stack.pop_back();
@@ -1355,7 +1355,7 @@ class PostProcess {
       }
     };
 
-    quarisma::flat_hash_map<size_t, stack_t> stacks;
+    profiler::flat_hash_map<size_t, stack_t> stacks;
     auto& state = get_state<E>();
     // We already own the GIL at this point
     for (const auto& enter : enters) {
@@ -1387,10 +1387,10 @@ class PostProcess {
 
     // Assign system TIDs to start events based on the system TID of the next
     // observed event with the same Python TID.
-    quarisma::flat_hash_map<size_t, std::pair<size_t, kineto::DeviceAndResource>>
+    profiler::flat_hash_map<size_t, std::pair<size_t, kineto::DeviceAndResource>>
         tid_map;
     auto it = out.rbegin();
-    for ([[maybe_unused]] auto _ : quarisma::irange(initial_size, out.size())) {
+    for ([[maybe_unused]] auto _ : profiler::irange(initial_size, out.size())) {
       const auto python_tid =
           std::get<ExtraFields<E>>((*it)->extra_fields_).python_tid_;
       if ((*it)->start_tid_ == NoTID && SOFT_ASSERT(E == EventType::PyCall)) {
@@ -1407,7 +1407,7 @@ class PostProcess {
 
   template <EventType E>
   struct State {
-    quarisma::flat_hash_map<TraceKey, ExtraFields<E>> fields_;
+    profiler::flat_hash_map<TraceKey, ExtraFields<E>> fields_;
     std::priority_queue<Exit, std::vector<Exit>, std::greater<>> exits_;
   };
 
@@ -1416,8 +1416,8 @@ class PostProcess {
     return std::get < E == EventType::PyCall ? 0 : 1 > (state_);
   }
 
-  quarisma::time_t end_time_;
-  std::function<quarisma::time_t(quarisma::approx_time_t)> time_converter_;
+  profiler::time_t end_time_;
+  std::function<profiler::time_t(profiler::approx_time_t)> time_converter_;
   std::tuple<State<EventType::PyCall>, State<EventType::PyCCall>> state_;
 };
 
@@ -1439,14 +1439,14 @@ struct PythonIDVisitor {
   void operator()(T& /*unused*/) {}
 
   size_t current_python_id_{0};
-  quarisma::flat_hash_map<PyModuleCls, quarisma::flat_hash_map<PyModuleSelf, size_t>>
+  profiler::flat_hash_map<PyModuleCls, profiler::flat_hash_map<PyModuleSelf, size_t>>
       module_ids_;
 };
 
 std::vector<std::shared_ptr<Result>> PythonTracer::getEvents(
-    std::function<quarisma::time_t(quarisma::approx_time_t)> time_converter,
+    std::function<profiler::time_t(profiler::approx_time_t)> time_converter,
     std::vector<python_tracer::CompressedEvent>& enters,
-    quarisma::time_t end_time_ns) {
+    profiler::time_t end_time_ns) {
   value_cache_.trimPrefixes();
   PostProcess post_process(
       std::move(time_converter),
@@ -1484,7 +1484,7 @@ class PythonMemoryTracer final : public python_tracer::PythonMemoryTracerBase {
 static void toggle_memory_tracing(bool enable) {
   pybind11::gil_scoped_acquire gil;
   THPObjectPtr torch_cuda_memory_module(
-      PyImport_ImportModule("quarisma.cuda.memory"));
+      PyImport_ImportModule("profiler.cuda.memory"));
   if (!torch_cuda_memory_module) {
     return;
   }
@@ -1515,7 +1515,7 @@ void PythonMemoryTracer::start() {
 void PythonMemoryTracer::export_memory_history(const std::string& path) {
   pybind11::gil_scoped_acquire gil;
   THPObjectPtr torch_cuda_memory_module(
-      PyImport_ImportModule("quarisma.cuda.memory"));
+      PyImport_ImportModule("profiler.cuda.memory"));
   if (!torch_cuda_memory_module) {
     return;
   }
@@ -1558,7 +1558,7 @@ int PythonTracer::pyProfileFn(
       break;
 
     case PyTrace_RETURN:
-      local_results.exit_times_.emplace_back(quarisma::getApproximateTime());
+      local_results.exit_times_.emplace_back(profiler::getApproximateTime());
       local_results.active_frames_--;
       if (local_results.active_frames_ <
           local_results.remaining_start_frames_) {
@@ -1570,7 +1570,7 @@ int PythonTracer::pyProfileFn(
     case PyTrace_C_RETURN:
       if (local_results.active_frames_ >
           local_results.remaining_start_frames_) {
-        local_results.c_exit_times_.emplace_back(quarisma::getApproximateTime());
+        local_results.c_exit_times_.emplace_back(profiler::getApproximateTime());
         local_results.active_frames_--;
       }
       break;
@@ -1579,7 +1579,7 @@ int PythonTracer::pyProfileFn(
 }
 
 std::unique_ptr<python_tracer::PythonTracerBase> getTracer(
-    quarisma::profiler_impl::impl::RecordQueue* queue) {
+    profiler::profiler_impl::impl::RecordQueue* queue) {
   return std::make_unique<PythonTracer>(queue);
 }
 
@@ -1588,17 +1588,17 @@ std::unique_ptr<python_tracer::PythonMemoryTracerBase> getMemoryTracer() {
 }
 
 } // namespace
-} // namespace quarisma::profiler_impl::impl
+} // namespace profiler::profiler_impl::impl
 
-namespace quarisma::autograd::profiler_impl::python_tracer {
+namespace profiler::autograd::profiler_impl::python_tracer {
 
 void init() {
   pybind11::gil_scoped_acquire gil;
-  // PROFILER_CHECK(PyType_Ready(&quarisma::profiler_impl::impl::TraceContextType) == 0);
-  quarisma::profiler_impl::impl::python_tracer::registerTracer(
-      &quarisma::profiler_impl::impl::getTracer);
-  quarisma::profiler_impl::impl::python_tracer::registerMemoryTracer(
-      &quarisma::profiler_impl::impl::getMemoryTracer);
+  // PROFILER_CHECK(PyType_Ready(&profiler::profiler_impl::impl::TraceContextType) == 0);
+  profiler::profiler_impl::impl::python_tracer::registerTracer(
+      &profiler::profiler_impl::impl::getTracer);
+  profiler::profiler_impl::impl::python_tracer::registerMemoryTracer(
+      &profiler::profiler_impl::impl::getMemoryTracer);
 }
-} // namespace quarisma::autograd::profiler_impl::python_tracer
+} // namespace profiler::autograd::profiler_impl::python_tracer
 #endif

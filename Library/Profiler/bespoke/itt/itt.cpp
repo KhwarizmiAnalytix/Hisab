@@ -2,7 +2,7 @@
 #include "bespoke/itt/itt_wrapper.h"
 #include "common/irange.h"
 
-namespace quarisma::profiler_impl::impl
+namespace profiler::profiler_impl::impl
 {
 namespace
 {
@@ -17,14 +17,14 @@ struct ITTMethods : public ProfilerStubs
         return 0;
     }
 
-    void mark(const char* name) const override { quarisma::profiler_impl::itt_mark(name); }
+    void mark(const char* name) const override { profiler::profiler_impl::itt_mark(name); }
 
     void rangePush(const char* name) const override
     {
-        quarisma::profiler_impl::itt_range_push(name);
+        profiler::profiler_impl::itt_range_push(name);
     }
 
-    void rangePop() const override { quarisma::profiler_impl::itt_range_pop(); }
+    void rangePop() const override { profiler::profiler_impl::itt_range_pop(); }
 
     void onEachDevice(std::function<void(int)> op) const override {}
 
@@ -44,4 +44,4 @@ struct RegisterITTMethods
 RegisterITTMethods reg;
 
 }  // namespace
-}  // namespace quarisma::profiler_impl::impl
+}  // namespace profiler::profiler_impl::impl

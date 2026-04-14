@@ -19,12 +19,12 @@
 
 /**
  * @file profiler.cpp
- * @brief Implementation of the enhanced profiler system for Quarisma applications
+ * @brief Implementation of the enhanced profiler system for Profiler applications
  *
  * Provides high-performance, thread-safe profiling capabilities with comprehensive
  * timing, memory tracking, and statistical analysis features.
  *
- * @author Quarisma Development Team
+ * @author Profiler Development Team
  * @version 1.0
  * @date 2024
  */
@@ -48,7 +48,7 @@
 #include <utility>
 
 #include "common/profiler_macros.h"
-//#include "logging/logger.h"
+//#include "logger.h"
 #include "native/analysis/statistical_analyzer.h"
 #include "native/core/profiler_collection.h"
 #include "native/core/profiler_factory.h"
@@ -65,7 +65,7 @@
 
 #include <limits>
 
-namespace quarisma
+namespace profiler
 {
 namespace
 {
@@ -143,7 +143,7 @@ std::string ConvertScopeDataToChromeTrace(
     // Add process metadata
     append_event(
         std::string(R"({"ph":"M","pid":0,"name":"process_name","args":{"name":)") +
-        JsonQuote("Quarisma CPU Profiler") + "}}");
+        JsonQuote("Profiler CPU Profiler") + "}}");
 
     // Track threads we've seen
     std::map<std::thread::id, int64_t> thread_to_tid;
@@ -236,7 +236,7 @@ std::string ConvertXSpaceToChromeTrace(const x_space& space)
 
     append_event(
         std::string(R"({"ph":"M","pid":0,"name":"process_name","args":{"name":)") +
-        JsonQuote("Quarisma CPU Profiler") + "}}");
+        JsonQuote("Profiler CPU Profiler") + "}}");
     append_event(R"({"ph":"M","pid":0,"name":"process_sort_index","args":{"sort_index":0}})");
 
     for (const xplane& plane : space.planes())
@@ -323,10 +323,10 @@ std::string ConvertXSpaceToChromeTrace(const x_space& space)
 }  // namespace
 
 // Static thread-local storage for current scope (DLL-compatible implementation)
-thread_local quarisma::profiler_scope_data* profiler_session::thread_current_scope_ = nullptr;
+thread_local profiler::profiler_scope_data* profiler_session::thread_current_scope_ = nullptr;
 
 // Static current session management with atomic operations for thread safety
-static std::atomic<quarisma::profiler_session*> g_current_session{nullptr};
+static std::atomic<profiler::profiler_session*> g_current_session{nullptr};
 
 //=============================================================================
 // timing_stats Implementation
@@ -432,7 +432,7 @@ double profiler_scope_data::get_duration_ns() const
 // profiler_session Implementation
 //=============================================================================
 
-profiler_session::profiler_session(quarisma::profiler_options options)
+profiler_session::profiler_session(profiler::profiler_options options)
     : options_(std::move(options))
 {
     initialize_components();
@@ -468,7 +468,7 @@ bool profiler_session::start()
     start_time_ns_ = start_ns;
     xspace_ready_  = false;
 
-    auto profilers = quarisma::create_profilers(backend_profile_options_);
+    auto profilers = profiler::create_profilers(backend_profile_options_);
     if (!profilers.empty())
     {
         backend_profilers_ = std::make_unique<profiler_collection>(std::move(profilers));
@@ -494,7 +494,7 @@ bool profiler_session::start()
     if (options_.enable_hierarchical_profiling_)
     {
         std::scoped_lock const lock(scope_mutex_);
-        root_scope_               = std::make_unique<quarisma::profiler_scope_data>();
+        root_scope_               = std::make_unique<profiler::profiler_scope_data>();
         root_scope_->name_        = "ROOT";
         root_scope_->start_time_  = start_time_;
         root_scope_->thread_id_   = std::this_thread::get_id();
@@ -602,14 +602,14 @@ bool profiler_session::stop()
     return true;
 }
 
-std::unique_ptr<quarisma::profiler_scope> profiler_session::create_scope(const std::string& name)
+std::unique_ptr<profiler::profiler_scope> profiler_session::create_scope(const std::string& name)
 {
-    return std::make_unique<quarisma::profiler_scope>(name, this);
+    return std::make_unique<profiler::profiler_scope>(name, this);
 }
 
-std::unique_ptr<quarisma::profiler_report> profiler_session::generate_report() const
+std::unique_ptr<profiler::profiler_report> profiler_session::generate_report() const
 {
-    return std::make_unique<quarisma::profiler_report>(*this);
+    return std::make_unique<profiler::profiler_report>(*this);
 }
 
 void profiler_session::export_report(const std::string& filename) const
@@ -629,7 +629,7 @@ profiler_session* profiler_session::current_session()
     return g_current_session.load();
 }
 
-void profiler_session::set_current_session(quarisma::profiler_session* session)
+void profiler_session::set_current_session(profiler::profiler_session* session)
 {
     g_current_session.store(session);
 }
@@ -638,12 +638,12 @@ void profiler_session::initialize_components()
 {
     if (options_.enable_memory_tracking_)
     {
-        memory_tracker_ = std::make_unique<quarisma::memory_tracker>();
+        memory_tracker_ = std::make_unique<profiler::memory_tracker>();
     }
 
     if (options_.enable_statistical_analysis_)
     {
-        statistical_analyzer_ = std::make_unique<quarisma::statistical_analyzer>();
+        statistical_analyzer_ = std::make_unique<profiler::statistical_analyzer>();
         statistical_analyzer_->set_max_samples_per_series(options_.max_samples_);
         statistical_analyzer_->set_worker_threads_hint(options_.thread_pool_size_);
     }
@@ -705,7 +705,7 @@ void profiler_session::normalize_xspace(x_space* space) const
         space->add_hostname("localhost");
     }
 }
-void profiler_session::register_scope_start(const quarisma::profiler_scope* scope)
+void profiler_session::register_scope_start(const profiler::profiler_scope* scope)
 {
     if (!options_.enable_hierarchical_profiling_ || !active_.load())
     {
@@ -715,7 +715,7 @@ void profiler_session::register_scope_start(const quarisma::profiler_scope* scop
     std::scoped_lock const lock(scope_mutex_);
 
     // Find the current scope for this thread
-    quarisma::profiler_scope_data* parent_scope = thread_current_scope_;
+    profiler::profiler_scope_data* parent_scope = thread_current_scope_;
     if (parent_scope == nullptr)
     {
         parent_scope = root_scope_.get();
@@ -724,14 +724,14 @@ void profiler_session::register_scope_start(const quarisma::profiler_scope* scop
     if (parent_scope != nullptr)
     {
         // Add as child to current scope
-        auto child_scope          = std::make_unique<quarisma::profiler_scope_data>();
+        auto child_scope          = std::make_unique<profiler::profiler_scope_data>();
         child_scope->name_        = scope->data().name_;
         child_scope->start_time_  = scope->data().start_time_;
         child_scope->thread_id_   = std::this_thread::get_id();
         child_scope->depth_level_ = parent_scope->depth_level_ + 1;
         child_scope->parent_      = parent_scope;
 
-        quarisma::profiler_scope_data* child_ptr = child_scope.get();
+        profiler::profiler_scope_data* child_ptr = child_scope.get();
         parent_scope->children_.push_back(std::move(child_scope));
 
         // Update thread-local current scope
@@ -739,7 +739,7 @@ void profiler_session::register_scope_start(const quarisma::profiler_scope* scop
     }
 }
 
-void profiler_session::register_scope_end(const quarisma::profiler_scope* scope)
+void profiler_session::register_scope_end(const profiler::profiler_scope* scope)
 {
     if (!options_.enable_hierarchical_profiling_ || !active_.load())
     {
@@ -763,9 +763,9 @@ void profiler_session::register_scope_end(const quarisma::profiler_scope* scope)
 // profiler_scope Implementation
 //=============================================================================
 
-profiler_scope::profiler_scope(const std::string& name, quarisma::profiler_session* session)
-    : data_(std::make_unique<quarisma::profiler_scope_data>()),
-      session_((session != nullptr) ? session : quarisma::profiler_session::current_session())
+profiler_scope::profiler_scope(const std::string& name, profiler::profiler_session* session)
+    : data_(std::make_unique<profiler::profiler_scope_data>()),
+      session_((session != nullptr) ? session : profiler::profiler_session::current_session())
 {
     data_->name_      = name;
     data_->thread_id_ = std::this_thread::get_id();
@@ -930,4 +930,4 @@ bool profiler_session::write_chrome_trace(const std::string& filename) const
     return out.good();
 }
 
-}  // namespace quarisma
+}  // namespace profiler

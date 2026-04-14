@@ -24,7 +24,7 @@
 
 #include "ParallelTest.h"
 #include "common/parallel_tools_api.h"
-#include "parallel.h"
+#include "tools/parallel.h"
 
 namespace parallel
 {
@@ -137,7 +137,7 @@ PARALLELTEST(ParallelToolsApi, singleton_and_backend_identification)
         EXPECT_FALSE(result);
     }
 
-#if QUARISMA_HAS_OPENMP
+#if PARALLEL_HAS_OPENMP
     {
         parallel_tools_api& api = parallel_tools_api::instance();
 
@@ -148,7 +148,7 @@ PARALLELTEST(ParallelToolsApi, singleton_and_backend_identification)
     }
 #endif
 
-#if QUARISMA_HAS_TBB
+#if PARALLEL_HAS_TBB
     {
         parallel_tools_api& api = parallel_tools_api::instance();
 
@@ -159,7 +159,7 @@ PARALLELTEST(ParallelToolsApi, singleton_and_backend_identification)
     }
 #endif
 
-#if !QUARISMA_HAS_OPENMP && !QUARISMA_HAS_TBB
+#if !PARALLEL_HAS_OPENMP && !PARALLEL_HAS_TBB
     {
         parallel_tools_api& api = parallel_tools_api::instance();
 

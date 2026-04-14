@@ -22,14 +22,14 @@
 #include <string>
 #include <utility>
 
-//#include "logging/logger.h"
+//#include "logger.h"
 #include "native/cpu/threadpool_listener_state.h"
 #include "native/exporters/xplane/xplane_schema.h"
 #include "native/tracing/traceme.h"
 #include "native/tracing/traceme_encode.h"
 #include "native/tracing/traceme_recorder.h"
 
-namespace quarisma::profiler_impl
+namespace profiler::profiler_impl
 {
 namespace
 {
@@ -122,4 +122,4 @@ std::unique_ptr<profiler_interface> create_threadpool_profiler()
     return std::make_unique<threadpool_profiler_interface>();
 }
 
-}  // namespace quarisma::profiler_impl
+}  // namespace profiler::profiler_impl

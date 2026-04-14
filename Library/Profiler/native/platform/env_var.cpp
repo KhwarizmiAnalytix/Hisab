@@ -43,13 +43,13 @@ limitations under the License.
 #include <string_view>
 #include <vector>
 
-//#include "logging/logger.h"  // for PROFILER_LOG_ERROR
-//#include "util/string_util.h"  // for quarisma::strings::to_lower
+//#include "logger.h"  // for PROFILER_LOG_ERROR
+//#include "util/string_util.h"  // for profiler::strings::to_lower
 #include "common/profiler_export.h"
 #include "common/profiler_macros.h"
 #include "common/profiler_strings.h"
 
-namespace quarisma
+namespace profiler
 {
 bool read_bool_from_env_var(std::string_view env_var_name, bool default_val, bool* value)
 {
@@ -212,4 +212,4 @@ bool read_strings_from_env_var(
     return true;
 }
 
-}  // namespace quarisma
+}  // namespace profiler

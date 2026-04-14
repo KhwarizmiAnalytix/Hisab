@@ -4,7 +4,7 @@
 #include "bespoke/base/thread_local_debug_info.h"
 #include "bespoke/common/util.h"
 
-namespace quarisma::profiler_impl::impl
+namespace profiler::profiler_impl::impl
 {
 
 struct ITTThreadLocalState : ProfilerStateBase
@@ -26,7 +26,7 @@ struct ITTThreadLocalState : ProfilerStateBase
         int64_t /*alloc_size*/,
         size_t /*total_allocated*/,
         size_t /*total_reserved*/,
-        quarisma::device_option /*device*/) override
+        profiler::device_option /*device*/) override
     {
     }
 
@@ -38,37 +38,37 @@ struct ITTThreadLocalState : ProfilerStateBase
 };
 
 template <bool report_input_shapes>
-static std::unique_ptr<quarisma::ObserverContext> enterITT(const quarisma::RecordFunction& fn)
+static std::unique_ptr<profiler::ObserverContext> enterITT(const profiler::RecordFunction& fn)
 {
     if (ITTThreadLocalState::getTLS() != nullptr)
     {
-        quarisma::profiler_impl::impl::ittStubs()->rangePush(fn.name());
+        profiler::profiler_impl::impl::ittStubs()->rangePush(fn.name());
     }
     return nullptr;
 }
 
 void pushITTCallbacks(
-    const ProfilerConfig& config, const std::unordered_set<quarisma::RecordScope>& scopes)
+    const ProfilerConfig& config, const std::unordered_set<profiler::RecordScope>& scopes)
 {
     // PROFILER_CHECK(
-    // quarisma::profiler_impl::impl::ittStubs()->enabled(),
-    // "Can't use ITT profiler - Quarisma was compiled without ITT");
+    // profiler::profiler_impl::impl::ittStubs()->enabled(),
+    // "Can't use ITT profiler - Profiler was compiled without ITT");
 
-    quarisma::thread_local_debug_info::_push(
-        quarisma::DebugInfoKind::PROFILER_STATE, std::make_shared<ITTThreadLocalState>(config));
+    profiler::thread_local_debug_info::_push(
+        profiler::DebugInfoKind::PROFILER_STATE, std::make_shared<ITTThreadLocalState>(config));
 
     auto* state_ptr = ITTThreadLocalState::getTLS();
     // PROFILER_CHECK(state_ptr, "Expected profiler state set");
 
-    auto handle = quarisma::addThreadLocalCallback(
-        quarisma::RecordFunctionCallback(
+    auto handle = profiler::addThreadLocalCallback(
+        profiler::RecordFunctionCallback(
             state_ptr->config().report_input_shapes ? &enterITT</*report_input_shapes=*/true>
                                                     : &enterITT</*report_input_shapes=*/false>,
-            [](const quarisma::RecordFunction&, quarisma::ObserverContext*)
-            { quarisma::profiler_impl::impl::ittStubs()->rangePop(); })
+            [](const profiler::RecordFunction&, profiler::ObserverContext*)
+            { profiler::profiler_impl::impl::ittStubs()->rangePop(); })
             .needsInputs(config.report_input_shapes)
             .scopes(scopes));
     state_ptr->setCallbackHandle(handle);
 }
 
-}  // namespace quarisma::profiler_impl::impl
+}  // namespace profiler::profiler_impl::impl

@@ -6,7 +6,7 @@
 
 #include "common/profiler_export.h"
 
-namespace quarisma::unwind
+namespace profiler::unwind
 {
 // gather current stack, relatively fast.
 // gets faster once the cache of program counter locations is warm.
@@ -46,4 +46,4 @@ struct Stats
 };
 Stats stats();
 
-}  // namespace quarisma::unwind
+}  // namespace profiler::unwind

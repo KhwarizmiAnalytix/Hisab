@@ -37,7 +37,7 @@
 #include "common/flat_hash.h"
 #include "native/session/profiler.h"
 
-namespace quarisma
+namespace profiler
 {
 
 // Statistical metrics for a series of measurements
@@ -100,25 +100,25 @@ public:
         const std::string& series_name, double value, const std::string& label = "");
 
     // Statistical analysis
-    PROFILER_API quarisma::statistical_metrics calculate_timing_stats(
+    PROFILER_API profiler::statistical_metrics calculate_timing_stats(
         const std::string& name) const;
-    PROFILER_API quarisma::statistical_metrics calculate_memory_stats(
+    PROFILER_API profiler::statistical_metrics calculate_memory_stats(
         const std::string& name) const;
-    PROFILER_API quarisma::statistical_metrics calculate_custom_stats(
+    PROFILER_API profiler::statistical_metrics calculate_custom_stats(
         const std::string& name) const;
 
     // Batch analysis
-    PROFILER_API std::unordered_map<std::string, quarisma::statistical_metrics>
+    PROFILER_API std::unordered_map<std::string, profiler::statistical_metrics>
                  calculate_all_timing_stats() const;
-    PROFILER_API std::unordered_map<std::string, quarisma::statistical_metrics>
+    PROFILER_API std::unordered_map<std::string, profiler::statistical_metrics>
                  calculate_all_memory_stats() const;
-    PROFILER_API std::unordered_map<std::string, quarisma::statistical_metrics>
+    PROFILER_API std::unordered_map<std::string, profiler::statistical_metrics>
                  calculate_all_custom_stats() const;
 
     // Time series analysis
-    PROFILER_API std::vector<quarisma::time_series_point> get_time_series(
+    PROFILER_API std::vector<profiler::time_series_point> get_time_series(
         const std::string& series_name) const;
-    PROFILER_API quarisma::statistical_metrics analyze_time_series(
+    PROFILER_API profiler::statistical_metrics analyze_time_series(
         const std::string& series_name) const;
 
     // Trend analysis
@@ -149,7 +149,7 @@ public:
     PROFILER_API void set_worker_threads_hint(size_t threads);
 
     // Public helper for external use
-    PROFILER_API quarisma::statistical_metrics calculate_metrics(
+    PROFILER_API profiler::statistical_metrics calculate_metrics(
         const std::vector<double>& data) const;
 
 private:
@@ -164,7 +164,7 @@ private:
     std::unordered_map<std::string, std::vector<double>>                      timing_data_;
     std::unordered_map<std::string, std::vector<double>>                      memory_data_;
     std::unordered_map<std::string, std::vector<double>>                      custom_data_;
-    std::unordered_map<std::string, std::vector<quarisma::time_series_point>> time_series_data_;
+    std::unordered_map<std::string, std::vector<profiler::time_series_point>> time_series_data_;
 
     // Configuration
     size_t              max_samples_per_series_ = 10000;
@@ -177,7 +177,7 @@ private:
         std::vector<double> data, const std::vector<double>& percentiles);
     static std::vector<double> detect_outliers(const std::vector<double>& data, double threshold);
     void                       trim_series_if_needed(std::vector<double>& series) const;
-    void trim_time_series_if_needed(std::vector<quarisma::time_series_point>& series) const;
+    void trim_time_series_if_needed(std::vector<profiler::time_series_point>& series) const;
 };
 
 // RAII statistical analysis scope
@@ -185,14 +185,14 @@ class PROFILER_VISIBILITY statistical_analysis_scope
 {
 public:
     PROFILER_API explicit statistical_analysis_scope(
-        quarisma::statistical_analyzer& analyzer, std::string name);
+        profiler::statistical_analyzer& analyzer, std::string name);
     PROFILER_API ~statistical_analysis_scope();
 
     PROFILER_API void add_checkpoint(const std::string& label);
-    PROFILER_API quarisma::statistical_metrics get_checkpoint_stats() const;
+    PROFILER_API profiler::statistical_metrics get_checkpoint_stats() const;
 
 private:
-    quarisma::statistical_analyzer&                analyzer_;
+    profiler::statistical_analyzer&                analyzer_;
     std::string                                    name_;
     std::chrono::high_resolution_clock::time_point start_time_;
     std::vector<std::pair<std::string, std::chrono::high_resolution_clock::time_point>>
@@ -200,4 +200,4 @@ private:
     bool active_ = true;
 };
 
-}  // namespace quarisma
+}  // namespace profiler

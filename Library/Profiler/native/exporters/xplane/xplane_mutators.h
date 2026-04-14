@@ -38,7 +38,7 @@ limitations under the License.
 
 #include "native/exporters/xplane/xplane_builder.h"
 
-namespace quarisma
+namespace profiler
 {
 
 /*
@@ -75,4 +75,4 @@ protected:
     XplaneEventMutatorFactory() = default;
 };
 
-}  // namespace quarisma
+}  // namespace profiler

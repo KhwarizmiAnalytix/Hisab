@@ -1,10 +1,10 @@
 #if PROFILER_HAS_NATIVE_PROFILER
 /*
- * Quarisma: High-Performance Computational Library
+ * Profiler: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of Profiler and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -14,8 +14,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@profiler.co.uk
+ * Website: https://www.profiler.co.uk
  */
 
 /**
@@ -29,9 +29,9 @@
  * - Statistical analysis and reporting
  * - Thread safety and concurrent operations
  * - Performance overhead measurements
- * - Integration with Quarisma components
+ * - Integration with Profiler components
  *
- * @author Quarisma Development Team
+ * @author Profiler Development Team
  * @version 1.0
  * @date 2024
  */
@@ -56,13 +56,13 @@
 #include <vector>         // for vector, _Vector_const_iterator, _Vector_iterato
 
 #include "ProfilerTest.h"  // for END_TEST, PROFILERTEST
-//#include "logging/logger.h"                        // for PROFILER_LOG_INFO, PROFILER_LOG_IF
+//#include "logger.h"                        // for PROFILER_LOG_INFO, PROFILER_LOG_IF
 #include "native/analysis/statistical_analyzer.h"  // for statistical_analyzer, statistical_metrics, time_seri...
 #include "native/memory/memory_tracker.h"  // for memory_tracker
 #include "native/session/profiler.h"  // for profiler_session, profiler_session_builder, profiler...
 #include "native/session/profiler_report.h"  // for profiler_report
 
-using namespace quarisma;
+using namespace profiler;
 
 namespace
 {

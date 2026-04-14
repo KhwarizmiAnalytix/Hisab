@@ -23,10 +23,10 @@
 #include <sstream>
 #include <string>
 
-//#include "logging/logger.h"
+//#include "logger.h"
 #include "native/exporters/xplane/xplane.h"
 
-namespace quarisma::profiler_impl
+namespace profiler::profiler_impl
 {
 
 namespace
@@ -250,4 +250,4 @@ bool export_to_chrome_trace_json_file(
     }
 }
 
-}  // namespace quarisma::profiler_impl
+}  // namespace profiler::profiler_impl

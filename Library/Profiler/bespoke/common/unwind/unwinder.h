@@ -5,7 +5,7 @@
 #include "bespoke/common/unwind/action.h"
 #include "bespoke/common/unwind/unwind_error.h"
 
-namespace quarisma::unwind
+namespace profiler::unwind
 {
 
 struct UnwindState
@@ -92,4 +92,4 @@ private:
     bool     deref_{false};
 };
 
-}  // namespace quarisma::unwind
+}  // namespace profiler::unwind

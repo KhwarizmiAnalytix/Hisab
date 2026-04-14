@@ -31,14 +31,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-#ifndef XLA_BACKENDS_PROFILER_CPU_HOST_TRACER_H_
-#define XLA_BACKENDS_PROFILER_CPU_HOST_TRACER_H_
+#pragma once
 
 #include <memory>
 
 #include "native/core/profiler_interface.h"
 
-namespace quarisma
+namespace profiler
 {
 namespace profiler_impl
 {
@@ -64,6 +63,5 @@ struct host_tracer_options
 std::unique_ptr<profiler_interface> create_host_tracer(const host_tracer_options& options);
 
 }  // namespace profiler_impl
-}  // namespace quarisma
+}  // namespace profiler
 
-#endif  // XLA_BACKENDS_PROFILER_CPU_HOST_TRACER_H_

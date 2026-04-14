@@ -75,7 +75,7 @@ if(EXISTS "${_XCODE_TC_CLANG}" AND EXISTS "${_XCODE_TC_CLANGXX}")
   set(CMAKE_C_COMPILER "${_XCODE_TC_CLANG}" CACHE FILEPATH "C compiler (LLVM xctoolchain)" FORCE)
   set(CMAKE_CXX_COMPILER "${_XCODE_TC_CLANGXX}" CACHE FILEPATH "C++ compiler (LLVM xctoolchain)" FORCE)
   # libc++ / libLLVM under Homebrew prefix — same install as this xctoolchain
-  set(QUARISMA_LLVM_INSTALL_PREFIX "${_BREW_LLVM_PREFIX}"
+  set(PROJECT_LLVM_INSTALL_PREFIX "${_BREW_LLVM_PREFIX}"
     CACHE PATH "Homebrew LLVM prefix (linker -L/-rpath; matches xctoolchain)" FORCE)
   message(STATUS "  Compiler   : ${_XCODE_TC_CLANG}")
 else()

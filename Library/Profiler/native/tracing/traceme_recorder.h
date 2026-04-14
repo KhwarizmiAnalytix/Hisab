@@ -29,7 +29,7 @@
 #include "common/profiler_export.h"
 #include "common/profiler_macros.h"
 
-namespace quarisma
+namespace profiler
 {
 namespace internal
 {
@@ -331,4 +331,4 @@ private:
     PROFILER_API static Events consume();
 };
 
-}  // namespace quarisma
+}  // namespace profiler

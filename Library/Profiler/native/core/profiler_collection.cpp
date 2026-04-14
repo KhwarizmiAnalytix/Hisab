@@ -41,7 +41,7 @@ limitations under the License.
 #include "native/core/profiler_interface.h"
 #include "native/exporters/xplane/xplane.h"
 
-namespace quarisma
+namespace profiler
 {
 
 profiler_collection::profiler_collection(std::vector<std::unique_ptr<profiler_interface>> profilers)
@@ -134,4 +134,4 @@ profiler_status profiler_collection::collect_data(x_space* space)
     return errors.empty() ? profiler_status::Error("Failed to collect profiler backend data.")
                           : profiler_status::Error(std::move(errors));
 }
-}  // namespace quarisma
+}  // namespace profiler

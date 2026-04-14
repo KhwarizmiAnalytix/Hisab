@@ -5,7 +5,7 @@
 #include <cstring>
 #include <vector>
 
-namespace quarisma::profiler_impl
+namespace profiler::profiler_impl
 {
 
 /* A vector type to hold a list of performance counters */
@@ -27,4 +27,4 @@ constexpr std::array<const char*, 2> ProfilerPerfEvents = {
      * be more or less invariant. Measured in uint64_t. PE can be non cpu.
      */
     "instructions"};
-}  // namespace quarisma::profiler_impl
+}  // namespace profiler::profiler_impl

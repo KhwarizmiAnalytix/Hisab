@@ -5,18 +5,18 @@
 
 //#include "util/env.h"
 
-namespace quarisma
+namespace profiler
 {
 namespace
 {
 bool compute_cpp_stack_traces_enabled()
 {
-    return quarisma::utils::check_env("PROFILER_SHOW_CPP_STACKTRACES") == true;
+    return profiler::utils::check_env("PROFILER_SHOW_CPP_STACKTRACES") == true;
 }
 
 bool compute_disable_addr2line()
 {
-    return quarisma::utils::check_env("PROFILER_DISABLE_ADDR2LINE") == true;
+    return profiler::utils::check_env("PROFILER_DISABLE_ADDR2LINE") == true;
 }
 }  // namespace
 
@@ -26,9 +26,9 @@ bool get_cpp_stacktraces_enabled()
     return enabled;
 }
 
-static quarisma::unwind::Mode compute_symbolize_mode()
+static profiler::unwind::Mode compute_symbolize_mode()
 {
-    auto envar_c = quarisma::utils::get_env("PROFILER_SYMBOLIZE_MODE");
+    auto envar_c = profiler::utils::get_env("PROFILER_SYMBOLIZE_MODE");
     if (envar_c.has_value())
     {
         if (envar_c == "dladdr")
@@ -61,4 +61,4 @@ unwind::Mode get_symbolize_mode()
     return mode;
 }
 
-}  // namespace quarisma
+}  // namespace profiler

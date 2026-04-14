@@ -51,7 +51,7 @@ namespace parallel_impl
 {
 
 static std::unique_ptr<tbb::task_arena> task_arena;
-static std::unique_ptr<std::mutex>      quarisma_parallel_tools_cs;
+static std::unique_ptr<std::mutex>      parallel_parallel_tools_cs;
 static std::unique_ptr<std::stack<int>> thread_id_stack;
 static std::unique_ptr<std::mutex>      thread_id_stack_lock;
 static int                              specified_num_threads_tbb;  // Default initialized to zero
@@ -68,7 +68,7 @@ parallel_tools_impl_tbb_initialize::parallel_tools_impl_tbb_initialize()
     if (++parallel_tools_impl_tbb_initialize_count == 1)
     {
         task_arena                 = std::make_unique<tbb::task_arena>();
-        quarisma_parallel_tools_cs = std::make_unique<std::mutex>();
+        parallel_parallel_tools_cs = std::make_unique<std::mutex>();
         thread_id_stack            = std::make_unique<std::stack<int>>();
         thread_id_stack_lock       = std::make_unique<std::mutex>();
     }
@@ -92,7 +92,7 @@ parallel_tools_impl<backend_type::TBB>::parallel_tools_impl() : nested_activated
 template <>
 void parallel_tools_impl<backend_type::TBB>::initialize(int num_threads)
 {
-    quarisma_parallel_tools_cs->lock();
+    parallel_parallel_tools_cs->lock();
 
     if (num_threads == 0)
     {
@@ -124,7 +124,7 @@ void parallel_tools_impl<backend_type::TBB>::initialize(int num_threads)
         specified_num_threads_tbb = num_threads;
     }
 
-    quarisma_parallel_tools_cs->unlock();
+    parallel_parallel_tools_cs->unlock();
 }
 
 //------------------------------------------------------------------------------

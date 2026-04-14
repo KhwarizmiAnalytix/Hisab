@@ -1,14 +1,14 @@
 #pragma once
 /*
-//#include <Quarisma/core/DimVector.h>
-//#include <Quarisma/core/TensorBody.h>
-//#include <Quarisma/core/blob.h>
-//#include <Quarisma/core/custom_class.h>
-//#include <Quarisma/core/ivalue_to.h>
-//#include <Quarisma/core/jit_type_base.h>
-//#include <Quarisma/core/type_factory.h>
-#include <quarisma/core/SymBool.h>
-#include <quarisma/core/SymFloat.h>
+//#include <Profiler/core/DimVector.h>
+//#include <Profiler/core/TensorBody.h>
+//#include <Profiler/core/blob.h>
+//#include <Profiler/core/custom_class.h>
+//#include <Profiler/core/ivalue_to.h>
+//#include <Profiler/core/jit_type_base.h>
+//#include <Profiler/core/type_factory.h>
+#include <profiler/core/SymBool.h>
+#include <profiler/core/SymFloat.h>
 */
 #if 0
 #include <complex>
@@ -24,20 +24,20 @@
 // profiler_xxx note: this copy intentionally disables Tensor functionality.
 #define PROFILER_XXX_DISABLE_TENSOR 1
 
-namespace quarisma
+namespace profiler
 {
-class PROFILER_VISIBILITY CustomClassHolder : public quarisma::intrusive_ptr_target
+class PROFILER_VISIBILITY CustomClassHolder : public profiler::intrusive_ptr_target
 {
 };
 namespace jit
 {
-using ::quarisma::CustomClassHolder;
+using ::profiler::CustomClassHolder;
 struct Function;
 struct CompilationUnit;
 struct Module;
 }  // namespace jit
-}  // namespace quarisma
-namespace quarisma
+}  // namespace profiler
+namespace profiler
 {
 template <class Key, class Value>
 class Dict;
@@ -55,8 +55,8 @@ using ClassTypePtr = std::shared_ptr<ClassType>;
 
 PROFILER_API bool _fastEqualsForContainer(const IValue& lhs, const IValue& rhs);
 
-PROFILER_API quarisma::jit::Function* checkObjectSortSchema(
-    const quarisma::ClassTypePtr& t, std::stringstream& why_not);
+PROFILER_API profiler::jit::Function* checkObjectSortSchema(
+    const profiler::ClassTypePtr& t, std::stringstream& why_not);
 
 // A comparator that checks ordering of two IValues of same type.
 typedef std::function<bool(const IValue& a, const IValue& b)> IValueComparator;
@@ -78,7 +78,7 @@ struct EnumHolder;
 // only take 64 bits. Since ComplexDouble takes up 128 bits, and is too big
 // to fit in the IValue directly, we indirect complex numbers through an
 // intrusive pointer to ComplexHolder (which contains a std::complex).
-struct ComplexHolder : quarisma::intrusive_ptr_target
+struct ComplexHolder : profiler::intrusive_ptr_target
 {
 public:
     template <typename T>
@@ -93,12 +93,12 @@ public:
 #if 0
 // Disabled: StreamData3 type not available in profiler-only build.
 // Similar to ComplexHolder, for StreamData3
-struct StreamData3Holder : quarisma::intrusive_ptr_target
+struct StreamData3Holder : profiler::intrusive_ptr_target
 {
 public:
-    StreamData3Holder(struct quarisma::StreamData3 d) : val(d) {}
+    StreamData3Holder(struct profiler::StreamData3 d) : val(d) {}
     StreamData3Holder() = delete;
-    struct quarisma::StreamData3 val;
+    struct profiler::StreamData3 val;
 };
 #endif
 
@@ -134,7 +134,7 @@ struct OptionalArray
     // Used when saving an argument for the backwards pass.
 #if 0
     // Disabled: OptionalArrayRef type not available in profiler-only build.
-    OptionalArray& operator=(quarisma::OptionalArrayRef<T> ref)
+    OptionalArray& operator=(profiler::OptionalArrayRef<T> ref)
     {
         if (ref)
         {
@@ -148,7 +148,7 @@ struct OptionalArray
     }
 #endif
 
-    operator std::optional<quarisma::array_ref<T>>()
+    operator std::optional<profiler::array_ref<T>>()
     {
         if (!list)
         {
@@ -159,7 +159,7 @@ struct OptionalArray
 
 #if 0
     // Disabled: OptionalArrayRef type not available in profiler-only build.
-    operator quarisma::OptionalArrayRef<T>()
+    operator profiler::OptionalArrayRef<T>()
     {
         if (!list)
         {
@@ -172,15 +172,15 @@ struct OptionalArray
 
 // Capsule is an internal implementation detail of custom C++ classes. We
 // define it as an owning wrapper for
-// quarisma::intrusive_ptr<quarisma::CustomClassHolder> This wrapper is here to serve as
+// profiler::intrusive_ptr<profiler::CustomClassHolder> This wrapper is here to serve as
 // an abstraction of the type erased custom class object pointer. It also allow
 // pybind11 to treat this as a standalone class to register as a separate type
 // caster, instead of a custom pointer holder which the pointer holder type
 // caster try to "unwrap" it automatically.
 struct Capsule
 {
-    quarisma::intrusive_ptr<quarisma::CustomClassHolder> obj_ptr;
-    explicit Capsule(quarisma::intrusive_ptr<quarisma::CustomClassHolder> ptr)
+    profiler::intrusive_ptr<profiler::CustomClassHolder> obj_ptr;
+    explicit Capsule(profiler::intrusive_ptr<profiler::CustomClassHolder> ptr)
         : obj_ptr(std::move(ptr))
     {
     }
@@ -190,7 +190,7 @@ struct Capsule
 // all value types.
 // It is a 16-byte object with an 8-byte payload and an 8-byte tag.
 // The tag is currently 4 bytes to determine the type, and 1 byte
-// to mark whether that type is a subtype of quarisma::intrusive_ptr_target and needs
+// to mark whether that type is a subtype of profiler::intrusive_ptr_target and needs
 // retain/release calls.
 
 #define PROFILER_FORALL_TAGS(_) \
@@ -232,10 +232,10 @@ struct Capsule
 /// supported by the TorchScript interpreter. IValues contain their
 /// values as an `IValue::Payload`, which holds primitive types
 /// (`int64_t`, `bool`, `double`, `device_option`) and `Tensor` as values,
-/// and all other types as a `quarisma::intrusive_ptr`. In order to
+/// and all other types as a `profiler::intrusive_ptr`. In order to
 /// optimize performance of the destructor and related operations by
-/// making the `Tensor` and `quarisma::intrusive_ptr` paths generate the
-/// same code, we represent a null `quarisma::intrusive_ptr` as
+/// making the `Tensor` and `profiler::intrusive_ptr` paths generate the
+/// same code, we represent a null `profiler::intrusive_ptr` as
 /// `UndefinedTensorImpl::singleton()`, *not* `nullptr`.
 ///
 /// IValues are used as inputs to and outputs from the TorchScript interpreter.
@@ -248,7 +248,7 @@ struct Capsule
 /// .. code-block:: cpp
 ///
 ///   // Make the IValue
-///   quarisma::IValue my_ivalue(26);
+///   profiler::IValue my_ivalue(26);
 ///   std::cout << my_ivalue << "\n";
 ///
 ///   // Unwrap the IValue
@@ -257,7 +257,7 @@ struct Capsule
 ///
 ///   // This will throw an error!
 ///   // `my_ivalue` is tagged as an int and cannot be used as another type
-///   quarisma::Tensor my_tensor = my_ivalue.toTensor();
+///   profiler::Tensor my_tensor = my_ivalue.toTensor();
 /// \endrst
 #if 0
 // Disabled: Full IValue struct requires types (UndefinedTensorImpl, Payload, Tag, etc.) not available in profiler-only build.
@@ -267,9 +267,9 @@ struct PROFILER_VISIBILITY IValue final
     IValue(const IValue& rhs) : IValue(rhs.payload, rhs.tag)
     {
         if (isIntrusivePtr() &&
-            payload.u.as_intrusive_ptr != quarisma::UndefinedTensorImpl::singleton())
+            payload.u.as_intrusive_ptr != profiler::UndefinedTensorImpl::singleton())
         {
-            quarisma::raw::intrusive_ptr::incref(payload.u.as_intrusive_ptr);
+            profiler::raw::intrusive_ptr::incref(payload.u.as_intrusive_ptr);
         }
     }
 
@@ -302,7 +302,7 @@ struct PROFILER_VISIBILITY IValue final
    * Equality comparison. The semantics are the same as Python's `==`:
    * 1. Numerical types are compared by value.
    * 2. Tensors compute element-wise equality, returning a BoolTensor (see:
-   * `quarisma.eq()`)
+   * `profiler.eq()`)
    * 3. Strings are compared by value.
    * 4. Sequence types (list, tuple) are compared lexicographically by
    *    comparing their elements. Different sequence types never compare equal.
@@ -310,7 +310,7 @@ struct PROFILER_VISIBILITY IValue final
    * 6. If not listed above, the default behavior for is to test identity
    * equality (e.g. pointer equality).
    *
-   * Why does this return an IValue instead of a bool? Because in Quarisma,
+   * Why does this return an IValue instead of a bool? Because in Profiler,
    * `tensor1 == tensor2` returns a `BoolTensor`, not a bool.
    *
    * NOTE: we (like Python) assume that identity equality implies value equality
@@ -347,7 +347,7 @@ struct PROFILER_VISIBILITY IValue final
    *   dict), following Python. Calling `hash()` on these types will throw.
    */
     IValue hash() const { return (int64_t)IValue::hash(*this); }
-    // This is defined because `quarisma::hash` dispatches to a function of this
+    // This is defined because `profiler::hash` dispatches to a function of this
     // signature. See the member function `hash()`.
     static size_t hash(const IValue& iv);
 
@@ -357,7 +357,7 @@ struct PROFILER_VISIBILITY IValue final
    * This is an equality implementation that assumes objects with the same
    * identity equal themselves, for efficiency reasons. We primarily have this
    * for consistency, because Python does the same thing. This actually
-   * provokes user-visible changes in behavior due to quirks in quarisma:
+   * provokes user-visible changes in behavior due to quirks in profiler:
    *      [tensor1] == [tensor1] -> True (because container equality will first
    * compare identity) [tensor1] == [tensor1_copy] -> RuntimeError:
    * Boolean value of Tensor with more than one value is ambiguous
@@ -447,11 +447,11 @@ public:
             return 1;
         }
 
-        if (payload.u.as_intrusive_ptr == quarisma::UndefinedTensorImpl::singleton())
+        if (payload.u.as_intrusive_ptr == profiler::UndefinedTensorImpl::singleton())
         {
             return 0;
         }
-        return quarisma::raw::intrusive_ptr::use_count(payload.u.as_intrusive_ptr);
+        return profiler::raw::intrusive_ptr::use_count(payload.u.as_intrusive_ptr);
     }
 
     /// @private [doxygen private]
@@ -538,8 +538,8 @@ public:
         payload.u.as_intrusive_ptr = null_to_undefined_tensor(s.unsafeReleaseStorageImpl());
     }
     bool            isStorage() const { return Tag::Storage == tag; }
-    quarisma::Storage toStorage() &&;
-    quarisma::Storage toStorage() const&;
+    profiler::Storage toStorage() &&;
+    profiler::Storage toStorage() const&;
 
     const IValue& toIValue() const { return *this; }
     IValue&       toIValue() { return *this; }
@@ -556,31 +556,31 @@ public:
     bool isBlob() const { return Tag::Blob == tag; }
 
     /// @private [doxygen private]
-    quarisma::intrusive_ptr<caffe2::Blob> toBlob() &&;
+    profiler::intrusive_ptr<caffe2::Blob> toBlob() &&;
 
     /// @private [doxygen private]
-    quarisma::intrusive_ptr<caffe2::Blob> toBlob() const&;
+    profiler::intrusive_ptr<caffe2::Blob> toBlob() const&;
 
     // Capsule. No new callsites of these APIs should
     // be introduced.
-    static inline IValue make_capsule(intrusive_ptr<quarisma::CustomClassHolder> blob);
+    static inline IValue make_capsule(intrusive_ptr<profiler::CustomClassHolder> blob);
     bool                 isCapsule() const { return Tag::Capsule == tag; }
-    quarisma::intrusive_ptr<quarisma::CustomClassHolder> toCapsule() &&;
-    quarisma::intrusive_ptr<quarisma::CustomClassHolder> toCapsule() const&;
+    profiler::intrusive_ptr<profiler::CustomClassHolder> toCapsule() &&;
+    profiler::intrusive_ptr<profiler::CustomClassHolder> toCapsule() const&;
 
     // Custom C++ classes
     template <
         typename T,
-        std::enable_if_t<std::is_base_of_v<quarisma::CustomClassHolder, T>, int> = 0>
+        std::enable_if_t<std::is_base_of_v<profiler::CustomClassHolder, T>, int> = 0>
     IValue(intrusive_ptr<T> custom_class);
     bool isCustomClass() const;
     template <typename T>
-    quarisma::intrusive_ptr<T> toCustomClass() &&;
+    profiler::intrusive_ptr<T> toCustomClass() &&;
     template <typename T>
-    quarisma::intrusive_ptr<T> toCustomClass() const&;
+    profiler::intrusive_ptr<T> toCustomClass() const&;
 
     // Tuple
-    IValue(quarisma::intrusive_ptr<ivalue::Tuple> v);
+    IValue(profiler::intrusive_ptr<ivalue::Tuple> v);
 
     template <
         typename... Args,
@@ -599,8 +599,8 @@ public:
             std::nullptr_t> = nullptr>
     IValue(std::tuple<Args...>&& t);
     bool                                 isTuple() const { return Tag::Tuple == tag; }
-    quarisma::intrusive_ptr<ivalue::Tuple> toTuple() &&;
-    quarisma::intrusive_ptr<ivalue::Tuple> toTuple() const&;
+    profiler::intrusive_ptr<ivalue::Tuple> toTuple() &&;
+    profiler::intrusive_ptr<ivalue::Tuple> toTuple() const&;
     [[nodiscard]] ivalue::Tuple&         toTupleRef() const;
 
     // Double
@@ -629,32 +629,32 @@ public:
     std::complex<double> toComplexDouble() const;
 
     // Future
-    IValue(quarisma::intrusive_ptr<ivalue::Future> v);
+    IValue(profiler::intrusive_ptr<ivalue::Future> v);
     bool                                  isFuture() const { return Tag::Future == tag; }
-    quarisma::intrusive_ptr<ivalue::Future> toFuture() &&;
-    quarisma::intrusive_ptr<ivalue::Future> toFuture() const&;
+    profiler::intrusive_ptr<ivalue::Future> toFuture() &&;
+    profiler::intrusive_ptr<ivalue::Future> toFuture() const&;
 
-    IValue(quarisma::intrusive_ptr<ivalue::Await> v);
+    IValue(profiler::intrusive_ptr<ivalue::Await> v);
     bool                                 isAwait() const { return Tag::Await == tag; }
-    quarisma::intrusive_ptr<ivalue::Await> toAwait() &&;
-    quarisma::intrusive_ptr<ivalue::Await> toAwait() const&;
+    profiler::intrusive_ptr<ivalue::Await> toAwait() &&;
+    profiler::intrusive_ptr<ivalue::Await> toAwait() const&;
 
     // RRef
-    IValue(quarisma::intrusive_ptr<quarisma::RRefInterface> v);
+    IValue(profiler::intrusive_ptr<profiler::RRefInterface> v);
     bool                                         isRRef() const { return Tag::RRef == tag; }
-    quarisma::intrusive_ptr<quarisma::RRefInterface> toRRef() &&;
-    quarisma::intrusive_ptr<quarisma::RRefInterface> toRRef() const&;
+    profiler::intrusive_ptr<profiler::RRefInterface> toRRef() &&;
+    profiler::intrusive_ptr<profiler::RRefInterface> toRRef() const&;
 
     // Quantizer
-    IValue(quarisma::intrusive_ptr<at::Quantizer> v);
+    IValue(profiler::intrusive_ptr<at::Quantizer> v);
     bool                                 isQuantizer() const { return Tag::Quantizer == tag; }
-    quarisma::intrusive_ptr<at::Quantizer> toQuantizer() &&;
-    quarisma::intrusive_ptr<at::Quantizer> toQuantizer() const&;
+    profiler::intrusive_ptr<at::Quantizer> toQuantizer() &&;
+    profiler::intrusive_ptr<at::Quantizer> toQuantizer() const&;
 
     // Int
     IValue(int64_t i) : tag(Tag::Int) { payload.u.as_int = i; }
 
-    IValue(const quarisma::SymInt& i)
+    IValue(const profiler::SymInt& i)
     {
         if (auto mi = i.maybe_as_int())
         {
@@ -670,10 +670,10 @@ public:
 
     bool isSymInt() const { return Tag::SymInt == tag; }
 
-    quarisma::SymInt toSymInt() &&;
-    quarisma::SymInt toSymInt() const&;
+    profiler::SymInt toSymInt() &&;
+    profiler::SymInt toSymInt() const&;
 
-    IValue(const quarisma::SymFloat& i)
+    IValue(const profiler::SymFloat& i)
     {
         if (i.is_symbolic())
         {
@@ -689,10 +689,10 @@ public:
 
     bool isSymFloat() const { return Tag::SymFloat == tag; }
 
-    quarisma::SymFloat toSymFloat() &&;
-    quarisma::SymFloat toSymFloat() const&;
+    profiler::SymFloat toSymFloat() &&;
+    profiler::SymFloat toSymFloat() const&;
 
-    IValue(const quarisma::SymBool& i)
+    IValue(const profiler::SymBool& i)
     {
         if (auto mi = i.maybe_as_bool())
         {
@@ -715,8 +715,8 @@ public:
 
     bool isSymBool() const { return Tag::SymBool == tag; }
 
-    quarisma::SymBool toSymBool() &&;
-    quarisma::SymBool toSymBool() const&;
+    profiler::SymBool toSymBool() &&;
+    profiler::SymBool toSymBool() const&;
 
     // allow you to pass literals (3, 4) without ambiguity
     IValue(int32_t i) : IValue(static_cast<int64_t>(i)) {}
@@ -746,7 +746,7 @@ public:
     }
 
     // See Note [Meaning of HAS_u]
-    // IValue type model closely follows that of quarisma::Scalar
+    // IValue type model closely follows that of profiler::Scalar
     // Where all integers are upcast to 64-bit representation, and `as_int` is used as default
     // representation unless value could not be represented as signed int
     bool isUnsigned() const
@@ -798,54 +798,54 @@ public:
     // IntList
     bool                         isIntList() const;
     bool                         isSymIntList() const;
-    quarisma::List<int64_t>        toIntList() &&;
-    quarisma::List<int64_t>        toIntList() const&;
+    profiler::List<int64_t>        toIntList() &&;
+    profiler::List<int64_t>        toIntList() const&;
     std::vector<int64_t>         toIntVector() const;
-    quarisma::List<quarisma::SymInt> toSymIntList() &&;
-    quarisma::List<quarisma::SymInt> toSymIntList() const&;
-    std::vector<quarisma::SymInt>  toSymIntVector() const;
+    profiler::List<profiler::SymInt> toSymIntList() &&;
+    profiler::List<profiler::SymInt> toSymIntList() const&;
+    std::vector<profiler::SymInt>  toSymIntVector() const;
     at::DimVector                toDimVector() const;
 
     // ConstantString
-    IValue(quarisma::intrusive_ptr<ivalue::ConstantString> v);
+    IValue(profiler::intrusive_ptr<ivalue::ConstantString> v);
     IValue(std::string v);
     IValue(const char* v) : IValue(std::string(v)) {}
     IValue(std::string_view v) : IValue(std::string(v)) {}
     bool                                          isString() const { return Tag::String == tag; }
-    quarisma::intrusive_ptr<ivalue::ConstantString> toString() &&;
-    quarisma::intrusive_ptr<ivalue::ConstantString> toString() const&;
+    profiler::intrusive_ptr<ivalue::ConstantString> toString() &&;
+    profiler::intrusive_ptr<ivalue::ConstantString> toString() const&;
     const std::string&                            toStringRef() const;
     std::optional<std::reference_wrapper<const std::string>> toOptionalStringRef() const;
     std::string_view                                         toStringView() const;
 
     // DoubleList
     bool                 isDoubleList() const;
-    quarisma::List<double> toDoubleList() &&;
-    quarisma::List<double> toDoubleList() const&;
+    profiler::List<double> toDoubleList() &&;
+    profiler::List<double> toDoubleList() const&;
     std::vector<double>  toDoubleVector() const;
 
     // ComplexDoubleList
     bool                               isComplexDoubleList() const;
-    quarisma::List<std::complex<double>> toComplexDoubleList() &&;
-    quarisma::List<std::complex<double>> toComplexDoubleList() const&;
+    profiler::List<std::complex<double>> toComplexDoubleList() &&;
+    profiler::List<std::complex<double>> toComplexDoubleList() const&;
     std::vector<std::complex<double>>  toComplexDoubleVector() const;
 
     // BoolList
     bool               isBoolList() const;
-    quarisma::List<bool> toBoolList() &&;
-    quarisma::List<bool> toBoolList() const&;
+    profiler::List<bool> toBoolList() &&;
+    profiler::List<bool> toBoolList() const&;
 
 #if !PROFILER_XXX_DISABLE_TENSOR
     // TensorList
     bool                     isTensorList() const;
-    quarisma::List<at::Tensor> toTensorList() &&;
-    quarisma::List<at::Tensor> toTensorList() const&;
+    profiler::List<at::Tensor> toTensorList() &&;
+    profiler::List<at::Tensor> toTensorList() const&;
     std::vector<at::Tensor>  toTensorVector() const;
 
     // OptionalTensorList
     bool                                    isOptionalTensorList() const;
-    quarisma::List<std::optional<at::Tensor>> toOptionalTensorList() &&;
-    quarisma::List<std::optional<at::Tensor>> toOptionalTensorList() const&;
+    profiler::List<std::optional<at::Tensor>> toOptionalTensorList() &&;
+    profiler::List<std::optional<at::Tensor>> toOptionalTensorList() const&;
     std::vector<std::optional<at::Tensor>>  toOptionalTensorVector() const;
 #else
     bool isTensorList() const { return false; }
@@ -853,11 +853,11 @@ public:
 #endif
 
     // GenericList
-    IValue(quarisma::List<IValue> v);
+    IValue(profiler::List<IValue> v);
     bool                      isList() const { return Tag::GenericList == tag; }
-    quarisma::List<IValue>      toList() &&;
-    quarisma::List<IValue>      toList() const&;
-    quarisma::array_ref<IValue> toListRef() const;
+    profiler::List<IValue>      toList() &&;
+    profiler::List<IValue>      toList() const&;
+    profiler::array_ref<IValue> toListRef() const;
 
     // Some template constructors of IValue calls another constructor recursively.
     // This SFINAEs the called constructor exists.
@@ -875,13 +875,13 @@ public:
     // they're not selectable.
     template <class T>
     using enable_if_list_is_ivalue_constructible = std::enable_if_t<
-        std::is_constructible_v<IValue, T> && !std::is_same_v<T, quarisma::SymInt>,
+        std::is_constructible_v<IValue, T> && !std::is_same_v<T, profiler::SymInt>,
         std::nullptr_t>;
 
     template <class T, enable_if_list_is_ivalue_constructible<T> = nullptr>
-    IValue(quarisma::List<T>&& v);
+    IValue(profiler::List<T>&& v);
     template <class T, enable_if_list_is_ivalue_constructible<T> = nullptr>
-    IValue(const quarisma::List<T>& v);
+    IValue(const profiler::List<T>& v);
     template <class T, enable_if_list_is_ivalue_constructible<T> = nullptr>
     IValue(at::array_ref<T> v);
     template <class T, enable_if_list_is_ivalue_constructible<T> = nullptr>
@@ -895,7 +895,7 @@ public:
     // possible.  To avoid ambiguous overload situations, we template them
     // to prevent implicit conversions
     template <class T>
-    using enable_if_symint = std::enable_if_t<std::is_same_v<T, quarisma::SymInt>, std::nullptr_t>;
+    using enable_if_symint = std::enable_if_t<std::is_same_v<T, profiler::SymInt>, std::nullptr_t>;
 
     template <class T, enable_if_symint<T> = nullptr>
     IValue(at::array_ref<T> v);
@@ -910,58 +910,58 @@ public:
     using enable_if_ilist_is_ivalue_constructible = std::enable_if_t<
         std::is_constructible_v<IValue, T> &&
             std::is_constructible_v<IValue, typename IListRef<T>::boxed_type> &&
-            !std::is_same_v<T, quarisma::SymInt>,
+            !std::is_same_v<T, profiler::SymInt>,
         std::nullptr_t>;
 
     template <class T, enable_if_ilist_is_ivalue_constructible<T> = nullptr>
-    IValue(quarisma::IListRef<T> v);
+    IValue(profiler::IListRef<T> v);
 
     // GenericDict
-    IValue(quarisma::Dict<IValue, IValue> v);
+    IValue(profiler::Dict<IValue, IValue> v);
     bool                         isGenericDict() const { return Tag::GenericDict == tag; }
-    quarisma::Dict<IValue, IValue> toGenericDict() &&;
-    quarisma::Dict<IValue, IValue> toGenericDict() const&;
+    profiler::Dict<IValue, IValue> toGenericDict() &&;
+    profiler::Dict<IValue, IValue> toGenericDict() const&;
 
     template <class Key, class Value>
-    IValue(quarisma::Dict<Key, Value> v);
+    IValue(profiler::Dict<Key, Value> v);
 
     template <class Key, class Value>
     /// \cond
     /// DOXYGEN_CANNOT_HANDLE_CONSTRUCTORS_WITH_MACROS_SO_EXCLUDE_THIS_LINE_FROM_DOXYGEN
     PROFILER_DEPRECATED_MESSAGE(
         "IValues based on std::unordered_map<K, V> are slow and deprecated. Please use "
-        "quarisma::Dict<K, V> instead.")
+        "profiler::Dict<K, V> instead.")
         /// \endcond
         IValue(std::unordered_map<Key, Value> v);
 
     template <class T, enable_if_ivalue_constructible<T> = nullptr>
     IValue(std::optional<T> v);
     template <class T, enable_if_list_is_ivalue_constructible<T> = nullptr>
-    IValue(quarisma::OptionalArrayRef<T> v);
+    IValue(profiler::OptionalArrayRef<T> v);
     IValue(std::nullopt_t /*unused*/);
 
     // ClassType
-    IValue(quarisma::intrusive_ptr<ivalue::Object> v);
+    IValue(profiler::intrusive_ptr<ivalue::Object> v);
     bool                                  isObject() const { return tag == Tag::Object; }
-    quarisma::intrusive_ptr<ivalue::Object> toObject() &&;
-    quarisma::intrusive_ptr<ivalue::Object> toObject() const&;
+    profiler::intrusive_ptr<ivalue::Object> toObject() &&;
+    profiler::intrusive_ptr<ivalue::Object> toObject() const&;
     ivalue::Object&                       toObjectRef() const;
 
-    quarisma::jit::Module toModule() const;
+    profiler::jit::Module toModule() const;
     bool                isModule() const;
 
     // PyObject
-    IValue(quarisma::intrusive_ptr<ivalue::PyObjectHolder> v);
+    IValue(profiler::intrusive_ptr<ivalue::PyObjectHolder> v);
     bool isPyObject() const { return tag == Tag::PyObject; }
-    quarisma::intrusive_ptr<ivalue::PyObjectHolder> toPyObjectHolder() &&;
-    quarisma::intrusive_ptr<ivalue::PyObjectHolder> toPyObjectHolder() const&;
+    profiler::intrusive_ptr<ivalue::PyObjectHolder> toPyObjectHolder() &&;
+    profiler::intrusive_ptr<ivalue::PyObjectHolder> toPyObjectHolder() const&;
     PyObject*                                     toPyObject() const;
 
     // Enum
-    explicit IValue(quarisma::intrusive_ptr<ivalue::EnumHolder> v);
+    explicit IValue(profiler::intrusive_ptr<ivalue::EnumHolder> v);
     bool                                      isEnum() const { return tag == Tag::Enum; }
-    quarisma::intrusive_ptr<ivalue::EnumHolder> toEnumHolder() &&;
-    quarisma::intrusive_ptr<ivalue::EnumHolder> toEnumHolder() const&;
+    profiler::intrusive_ptr<ivalue::EnumHolder> toEnumHolder() &&;
+    profiler::intrusive_ptr<ivalue::EnumHolder> toEnumHolder() const&;
 
     // None
     IValue() = default;
@@ -1058,26 +1058,26 @@ public:
     }
 
     // device_option
-    IValue(quarisma::device_option d) : tag(Tag::device_option)
+    IValue(profiler::device_option d) : tag(Tag::device_option)
     {
         payload.u.as_device.type  = d.type();
         payload.u.as_device.index = d.index();
     }
     bool                  isDevice() const { return Tag::device_option == tag; }
-    quarisma::device_option toDevice() const
+    profiler::device_option toDevice() const
     {
         AT_ASSERT(isDevice());
-        return quarisma::device_option(payload.u.as_device.type, payload.u.as_device.index);
+        return profiler::device_option(payload.u.as_device.type, payload.u.as_device.index);
     }
 
     // Stream
-    IValue(quarisma::Stream s) : tag(Tag::Stream)
+    IValue(profiler::Stream s) : tag(Tag::Stream)
     {
-        auto v                     = quarisma::make_intrusive<ivalue::StreamData3Holder>(s.pack3());
+        auto v                     = profiler::make_intrusive<ivalue::StreamData3Holder>(s.pack3());
         payload.u.as_intrusive_ptr = v.release();
     }
-    quarisma::Stream toStream() &&;
-    quarisma::Stream toStream() const&;
+    profiler::Stream toStream() &&;
+    profiler::Stream toStream() const&;
     bool           isStream() const { return Tag::Stream == tag; }
 
     // ScalarType
@@ -1144,7 +1144,7 @@ public:
     template <typename T>
     T to() &&;
     template <typename T>
-    typename quarisma::detail::ivalue_to_const_ref_overload_return<T>::type to() const&;
+    typename profiler::detail::ivalue_to_const_ref_overload_return<T>::type to() const&;
 
     // ToOptional: convert a IValue to the Optional obj that accepts both T and
     // None
@@ -1201,7 +1201,7 @@ public:
         else
         {
 #endif
-            return payload.u.as_intrusive_ptr != quarisma::UndefinedTensorImpl::singleton()
+            return payload.u.as_intrusive_ptr != profiler::UndefinedTensorImpl::singleton()
                        ? payload.u.as_intrusive_ptr
                        : nullptr;
 #if !PROFILER_XXX_DISABLE_TENSOR
@@ -1209,7 +1209,7 @@ public:
 #endif
     }
 
-    template <typename T = quarisma::PlatformType>
+    template <typename T = profiler::PlatformType>
     TypePtr type() const;
 
     // Detect aliased tensors.
@@ -1298,11 +1298,11 @@ public:
         HashIdentityIValueMap& memo, std::optional<at::device_option> device = std::nullopt) const;
 
 private:
-    static quarisma::intrusive_ptr_target* null_to_undefined_tensor(quarisma::intrusive_ptr_target* p)
+    static profiler::intrusive_ptr_target* null_to_undefined_tensor(profiler::intrusive_ptr_target* p)
     {
         return p ? p
-                 : static_cast<quarisma::intrusive_ptr_target*>(
-                       quarisma::UndefinedTensorImpl::singleton());
+                 : static_cast<profiler::intrusive_ptr_target*>(
+                       profiler::UndefinedTensorImpl::singleton());
     }
 
     static bool ptrEqual(const IValue& lhs, const IValue& rhs);
@@ -1323,10 +1323,10 @@ private:
     static constexpr auto kNumTags = PROFILER_FORALL_TAGS(COUNT_TAG) 0;
 #undef COUNT_TAG
 
-    template <class T, class NullType = quarisma::detail::intrusive_target_default_null_type<T>>
-    quarisma::intrusive_ptr<T, NullType> moveToIntrusivePtr();
-    template <typename T, class NullType = quarisma::detail::intrusive_target_default_null_type<T>>
-    quarisma::intrusive_ptr<T, NullType> toIntrusivePtr() const;
+    template <class T, class NullType = profiler::detail::intrusive_target_default_null_type<T>>
+    profiler::intrusive_ptr<T, NullType> moveToIntrusivePtr();
+    template <typename T, class NullType = profiler::detail::intrusive_target_default_null_type<T>>
+    profiler::intrusive_ptr<T, NullType> toIntrusivePtr() const;
 
     void destroy()
     {
@@ -1337,16 +1337,16 @@ private:
 #if !PROFILER_XXX_DISABLE_TENSOR
         if (isTensor() || isIntrusivePtr())
         {
-            quarisma::intrusive_ptr_target* p =
+            profiler::intrusive_ptr_target* p =
                 isTensor() ? payload.as_tensor.unsafeGetTensorImpl() : payload.u.as_intrusive_ptr;
-            quarisma::intrusive_ptr<intrusive_ptr_target, quarisma::UndefinedTensorImpl>::reclaim(p);
+            profiler::intrusive_ptr<intrusive_ptr_target, profiler::UndefinedTensorImpl>::reclaim(p);
             // No need to make this destructor call!
             // payload.as_tensor.~Tensor();
         }
 #else
         if (isIntrusivePtr())
         {
-            quarisma::intrusive_ptr<intrusive_ptr_target, quarisma::UndefinedTensorImpl>::reclaim(
+            profiler::intrusive_ptr<intrusive_ptr_target, profiler::UndefinedTensorImpl>::reclaim(
                 payload.u.as_intrusive_ptr);
         }
 #endif
@@ -1489,7 +1489,7 @@ public:
     {
         if (tag == Tag::Storage || tag == Tag::Generator)
         {
-            return payload.u.as_intrusive_ptr != quarisma::UndefinedTensorImpl::singleton();
+            return payload.u.as_intrusive_ptr != profiler::UndefinedTensorImpl::singleton();
         }
         else
         {
@@ -1514,12 +1514,12 @@ public:
             double   as_double;
             bool     as_bool;
             // Invariant: never nullptr; null state is represented as
-            // quarisma::UndefinedTensorImpl::singleton() for consistency of
+            // profiler::UndefinedTensorImpl::singleton() for consistency of
             // representation with Tensor.
-            quarisma::intrusive_ptr_target* as_intrusive_ptr;
+            profiler::intrusive_ptr_target* as_intrusive_ptr;
             struct
             {
-                quarisma::device_enum  type;
+                profiler::device_enum  type;
                 device_option::int_t index;
             } as_device;
         } u;
@@ -1570,9 +1570,9 @@ struct PROFILER_VISIBILITY WeakIValue final
         : payload(rhs.payload), tag(rhs.tag), is_intrusive_ptr(rhs.is_intrusive_ptr)
     {
         if (is_intrusive_ptr &&
-            payload.as_intrusive_ptr != quarisma::UndefinedTensorImpl::singleton())
+            payload.as_intrusive_ptr != profiler::UndefinedTensorImpl::singleton())
         {
-            quarisma::raw::weak_intrusive_ptr::incref(payload.as_intrusive_ptr);
+            profiler::raw::weak_intrusive_ptr::incref(payload.as_intrusive_ptr);
         }
     }
     WeakIValue(const IValue& rhs)
@@ -1589,9 +1589,9 @@ struct PROFILER_VISIBILITY WeakIValue final
         }
         if (is_intrusive_ptr)
         {
-            if (payload.as_intrusive_ptr != quarisma::UndefinedTensorImpl::singleton())
+            if (payload.as_intrusive_ptr != profiler::UndefinedTensorImpl::singleton())
             {
-                quarisma::raw::weak_intrusive_ptr::incref(payload.as_intrusive_ptr);
+                profiler::raw::weak_intrusive_ptr::incref(payload.as_intrusive_ptr);
             }
         }
     }
@@ -1599,9 +1599,9 @@ struct PROFILER_VISIBILITY WeakIValue final
     ~WeakIValue()
     {
         if (is_intrusive_ptr &&
-            payload.as_intrusive_ptr != quarisma::UndefinedTensorImpl::singleton())
+            payload.as_intrusive_ptr != profiler::UndefinedTensorImpl::singleton())
         {
-            quarisma::raw::weak_intrusive_ptr::decref(payload.as_intrusive_ptr);
+            profiler::raw::weak_intrusive_ptr::decref(payload.as_intrusive_ptr);
         }
     }
     WeakIValue& operator=(WeakIValue&& rhs) & noexcept
@@ -1638,9 +1638,9 @@ struct PROFILER_VISIBILITY WeakIValue final
         if (IValue::Tag::Tensor == tag)
         {
             auto temp =
-                quarisma::weak_intrusive_ptr<at::TensorImpl, quarisma::UndefinedTensorImpl>::reclaim(
+                profiler::weak_intrusive_ptr<at::TensorImpl, profiler::UndefinedTensorImpl>::reclaim(
                     static_cast<at::TensorImpl*>(payload.as_intrusive_ptr));
-            quarisma::intrusive_ptr<at::TensorImpl, quarisma::UndefinedTensorImpl> ip(temp.lock());
+            profiler::intrusive_ptr<at::TensorImpl, profiler::UndefinedTensorImpl> ip(temp.lock());
             temp.release();
             if (!ip)
             {
@@ -1653,8 +1653,8 @@ struct PROFILER_VISIBILITY WeakIValue final
         }
         else
         {
-            auto temp = quarisma::weak_intrusive_ptr<quarisma::intrusive_ptr_target>::reclaim(
-                payload.as_intrusive_ptr == quarisma::UndefinedTensorImpl::singleton()
+            auto temp = profiler::weak_intrusive_ptr<profiler::intrusive_ptr_target>::reclaim(
+                payload.as_intrusive_ptr == profiler::UndefinedTensorImpl::singleton()
                     ? nullptr
                     : payload.as_intrusive_ptr);
             IValue::Payload pl;
@@ -1678,7 +1678,7 @@ struct PROFILER_VISIBILITY WeakIValue final
             return 1;
         }
         auto temp =
-            quarisma::weak_intrusive_ptr<quarisma::intrusive_ptr_target, quarisma::UndefinedTensorImpl>::
+            profiler::weak_intrusive_ptr<profiler::intrusive_ptr_target, profiler::UndefinedTensorImpl>::
                 reclaim(payload.as_intrusive_ptr);
         size_t result = temp.use_count();
         temp.release();
@@ -1692,7 +1692,7 @@ struct PROFILER_VISIBILITY WeakIValue final
             return 1;
         }
         auto temp =
-            quarisma::weak_intrusive_ptr<quarisma::intrusive_ptr_target, quarisma::UndefinedTensorImpl>::
+            profiler::weak_intrusive_ptr<profiler::intrusive_ptr_target, profiler::UndefinedTensorImpl>::
                 reclaim(payload.as_intrusive_ptr);
         size_t result = temp.weak_use_count();
         temp.release();
@@ -1716,9 +1716,9 @@ private:
 // guaranteed to stay alive as long as we hold this object.
 struct PROFILER_VISIBILITY StrongTypePtr
 {
-    StrongTypePtr(std::shared_ptr<quarisma::jit::CompilationUnit> cu, TypePtr type);
+    StrongTypePtr(std::shared_ptr<profiler::jit::CompilationUnit> cu, TypePtr type);
 
-    std::shared_ptr<quarisma::jit::CompilationUnit> cu_;
+    std::shared_ptr<profiler::jit::CompilationUnit> cu_;
     TypePtr                                       type_;
 };
 
@@ -1729,32 +1729,32 @@ struct PROFILER_VISIBILITY StrongTypePtr
 // Constant Object)
 struct PROFILER_VISIBILITY WeakTypePtr
 {
-    WeakTypePtr(std::weak_ptr<quarisma::jit::CompilationUnit> cu, TypePtr type);
+    WeakTypePtr(std::weak_ptr<profiler::jit::CompilationUnit> cu, TypePtr type);
 
-    std::weak_ptr<quarisma::jit::CompilationUnit> cu_;
+    std::weak_ptr<profiler::jit::CompilationUnit> cu_;
     TypePtr                                     type_;
 };
 
 // internal build errors with std::variant :/
 struct WeakOrStrongCompilationUnit
 {
-    explicit WeakOrStrongCompilationUnit(std::shared_ptr<quarisma::jit::CompilationUnit> shared_cu)
+    explicit WeakOrStrongCompilationUnit(std::shared_ptr<profiler::jit::CompilationUnit> shared_cu)
         : strong_ptr_(std::move(shared_cu)), weak_ptr_(std::nullopt)
     {
     }
 
-    explicit WeakOrStrongCompilationUnit(std::weak_ptr<quarisma::jit::CompilationUnit> weak_cu)
+    explicit WeakOrStrongCompilationUnit(std::weak_ptr<profiler::jit::CompilationUnit> weak_cu)
         : strong_ptr_(std::nullopt), weak_ptr_(std::move(weak_cu))
     {
     }
 
-    std::shared_ptr<quarisma::jit::CompilationUnit> getStrongRefOrThrow() const
+    std::shared_ptr<profiler::jit::CompilationUnit> getStrongRefOrThrow() const
     {
         // PROFILER_CHECK(strong_ptr_.has_value());
         return *strong_ptr_;
     }
 
-    std::weak_ptr<quarisma::jit::CompilationUnit> getWeakRefOrThrow() const
+    std::weak_ptr<profiler::jit::CompilationUnit> getWeakRefOrThrow() const
     {
         // PROFILER_CHECK(weak_ptr_.has_value());
         return *weak_ptr_;
@@ -1764,8 +1764,8 @@ struct WeakOrStrongCompilationUnit
 
     bool holdingEmptyStrongRef() const { return strong_ptr_ == nullptr; }
 
-    std::optional<std::shared_ptr<quarisma::jit::CompilationUnit>> strong_ptr_;
-    std::optional<std::weak_ptr<quarisma::jit::CompilationUnit>>   weak_ptr_;
+    std::optional<std::shared_ptr<profiler::jit::CompilationUnit>> strong_ptr_;
+    std::optional<std::weak_ptr<profiler::jit::CompilationUnit>>   weak_ptr_;
 };
 
 // An Object will hold a non-owning Compilation Unit reference if it is a
@@ -1795,7 +1795,7 @@ struct PROFILER_VISIBILITY WeakOrStrongTypePtr
 };
 #endif  // Disabled type pointer structures
 
-}  // namespace quarisma
+}  // namespace profiler
 
-//#include <Quarisma/core/ivalue_inl.h> // IWYU pragma: keep
+//#include <Profiler/core/ivalue_inl.h> // IWYU pragma: keep
 #endif

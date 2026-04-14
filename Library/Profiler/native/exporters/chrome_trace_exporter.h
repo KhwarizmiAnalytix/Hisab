@@ -17,8 +17,7 @@
  * Website: https://www.quarisma.co.uk
  */
 
-#ifndef PROFILER_PROFILER_EXPORTERS_CHROME_TRACE_EXPORTER_H_
-#define PROFILER_PROFILER_EXPORTERS_CHROME_TRACE_EXPORTER_H_
+#pragma once
 
 #include <string>
 
@@ -26,7 +25,7 @@
 #include "common/profiler_macros.h"
 #include "native/exporters/xplane/xplane.h"
 
-namespace quarisma
+namespace profiler
 {
 namespace profiler_impl
 {
@@ -102,6 +101,5 @@ PROFILER_API bool export_to_chrome_trace_json_file(
     const x_space& space, const std::string& filename, bool pretty_print = false);
 
 }  // namespace profiler_impl
-}  // namespace quarisma
+}  // namespace profiler
 
-#endif  // PROFILER_PROFILER_EXPORTERS_CHROME_TRACE_EXPORTER_H_

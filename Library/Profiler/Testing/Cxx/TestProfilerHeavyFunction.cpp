@@ -7,7 +7,7 @@
  * workloads including matrix operations, sorting algorithms, and data processing.
  * Shows complete instrumentation, multi-format output generation, and performance analysis.
  *
- * @author Quarisma Development Team
+ * @author Profiler Development Team
  * @version 1.0
  * @date 2024
  */
@@ -16,18 +16,18 @@
 // PROFILING USAGE GUIDE
 // ============================================================================
 //
-// This file demonstrates how to use Quarisma's three profiling systems:
-// 1. Quarisma Native Profiler - Hierarchical CPU profiling with Chrome Trace JSON export
-// 2. Kineto Profiler - Quarisma profiling library for GPU-related CPU operations
+// This file demonstrates how to use Profiler's three profiling systems:
+// 1. Profiler Native Profiler - Hierarchical CPU profiling with Chrome Trace JSON export
+// 2. Kineto Profiler - Profiler profiling library for GPU-related CPU operations
 // 3. ITT Profiler - Intel Instrumentation and Tracing Technology for VTune
 //
 // Each profiler can be used individually or combined for comprehensive analysis.
 //
 // ============================================================================
-// 1. QUARISMA NATIVE PROFILER
+// 1. PROFILER NATIVE PROFILER
 // ============================================================================
 //
-// The Quarisma native profiler provides hierarchical CPU profiling with full
+// The Profiler native profiler provides hierarchical CPU profiling with full
 // drill-down capability in Chrome DevTools and Perfetto UI.
 //
 // BASIC USAGE:
@@ -90,9 +90,9 @@
 // 2. KINETO PROFILER
 // ============================================================================
 //
-// Kineto is Quarisma's profiling library. It captures GPU-related CPU operations
+// Kineto is Profiler's profiling library. It captures GPU-related CPU operations
 // (CUDA kernel launches, memory transfers). For hierarchical CPU profiling,
-// combine Kineto with Quarisma's native profiler.
+// combine Kineto with Profiler's native profiler.
 //
 // BASIC USAGE:
 // ------------
@@ -101,10 +101,10 @@
 //
 // void my_function() {
 //     // Initialize Kineto profiler
-//     quarisma::profiler_impl::kineto_init(false, true);
+//     profiler::profiler_impl::kineto_init(false, true);
 //
 //     // Check if Kineto is available
-//     if (!quarisma::profiler_impl::kineto_is_profiler_registered()) {
+//     if (!profiler::profiler_impl::kineto_is_profiler_registered()) {
 //         std::cout << "Kineto profiler not available\n";
 //         return;
 //     }
@@ -112,10 +112,10 @@
 //     // Prepare trace with activity types
 //     std::set<libkineto::ActivityType> activities;
 //     activities.insert(libkineto::ActivityType::CPU_OP);
-//     quarisma::profiler_impl::kineto_prepare_trace(activities);
+//     profiler::profiler_impl::kineto_prepare_trace(activities);
 //
 //     // Start Kineto profiling
-//     quarisma::profiler_impl::kineto_start_trace();
+//     profiler::profiler_impl::kineto_start_trace();
 //
 //     // Your code here (GPU-related operations)
 //     // ...
@@ -123,7 +123,7 @@
 //     // Stop profiling and get trace
 //     std::unique_ptr<libkineto::ActivityTraceInterface> trace(
 //         static_cast<libkineto::ActivityTraceInterface*>(
-//             quarisma::profiler_impl::kineto_stop_trace()));
+//             profiler::profiler_impl::kineto_stop_trace()));
 //
 //     // Save Kineto trace
 //     if (trace) {
@@ -131,16 +131,16 @@
 //     }
 // }
 //
-// COMBINED WITH QUARISMA PROFILER (RECOMMENDED):
+// COMBINED WITH PROFILER PROFILER (RECOMMENDED):
 // ---------------------------------------------
 //
 // void my_function() {
 //     // Initialize Kineto
-//     quarisma::profiler_impl::kineto_init(false, true);
-//     quarisma::profiler_impl::kineto_prepare_trace(activities);
-//     quarisma::profiler_impl::kineto_start_trace();
+//     profiler::profiler_impl::kineto_init(false, true);
+//     profiler::profiler_impl::kineto_prepare_trace(activities);
+//     profiler::profiler_impl::kineto_start_trace();
 //
-//     // Start Quarisma profiler for hierarchical CPU profiling
+//     // Start Profiler profiler for hierarchical CPU profiling
 //     profiler_options opts;
 //     opts.enable_timing_ = true;
 //     opts.output_format_ = profiler_options::output_format_enum::JSON;
@@ -156,10 +156,10 @@
 //
 //     // Stop both profilers
 //     session.stop();
-//     auto kineto_trace = quarisma::profiler_impl::kineto_stop_trace();
+//     auto kineto_trace = profiler::profiler_impl::kineto_stop_trace();
 //
 //     // Export both traces
-//     session.write_chrome_trace("quarisma_trace.json");  // Full hierarchical CPU profiling
+//     session.write_chrome_trace("profiler_trace.json");  // Full hierarchical CPU profiling
 //     if (kineto_trace) {
 //         static_cast<libkineto::ActivityTraceInterface*>(kineto_trace)->save("kineto_trace.json");
 //     }
@@ -167,15 +167,15 @@
 //
 // VIEWING RESULTS:
 // ----------------
-// - Quarisma trace (quarisma_trace.json): Chrome DevTools, Perfetto UI
-// - Kineto trace (kineto_trace.json): Quarisma Profiler, Chrome DevTools
+// - Profiler trace (profiler_trace.json): Chrome DevTools, Perfetto UI
+// - Kineto trace (kineto_trace.json): Profiler Profiler, Chrome DevTools
 //
 // ============================================================================
 // 3. ITT PROFILER (INTEL VTUNE)
 // ============================================================================
 //
 // ITT (Intel Instrumentation and Tracing Technology) provides annotations for
-// Intel VTune Profiler. Use Quarisma's ITT wrapper for automatic domain management
+// Intel VTune Profiler. Use Profiler's ITT wrapper for automatic domain management
 // and graceful degradation when VTune is not available.
 //
 // BASIC USAGE:
@@ -184,11 +184,11 @@
 // #include "itt_wrapper.h"
 //
 // void my_function() {
-//     // Initialize ITT profiler (creates global "Quarisma" domain)
-//     quarisma::profiler_impl::itt_init();
+//     // Initialize ITT profiler (creates global "Profiler" domain)
+//     profiler::profiler_impl::itt_init();
 //
 //     // Check if ITT is available (VTune installed)
-//     bool const itt_available = (quarisma::profiler_impl::itt_get_domain() != nullptr);
+//     bool const itt_available = (profiler::profiler_impl::itt_get_domain() != nullptr);
 //
 //     if (!itt_available) {
 //         std::cout << "ITT not available (VTune not installed)\n";
@@ -196,29 +196,29 @@
 //     }
 //
 //     // Annotate code with ITT ranges
-//     quarisma::profiler_impl::itt_range_push("my_operation");
+//     profiler::profiler_impl::itt_range_push("my_operation");
 //     {
 //         // ... your code ...
 //
-//         quarisma::profiler_impl::itt_range_push("nested_operation");
+//         profiler::profiler_impl::itt_range_push("nested_operation");
 //         // ... nested code ...
-//         quarisma::profiler_impl::itt_range_pop();
+//         profiler::profiler_impl::itt_range_pop();
 //     }
-//     quarisma::profiler_impl::itt_range_pop();
+//     profiler::profiler_impl::itt_range_pop();
 //
 //     // Mark instantaneous events
-//     quarisma::profiler_impl::itt_mark("checkpoint_reached");
+//     profiler::profiler_impl::itt_mark("checkpoint_reached");
 // }
 //
-// COMBINED WITH QUARISMA PROFILER (RECOMMENDED):
+// COMBINED WITH PROFILER PROFILER (RECOMMENDED):
 // ---------------------------------------------
 //
 // void my_function() {
 //     // Initialize ITT
-//     quarisma::profiler_impl::itt_init();
-//     bool const itt_available = (quarisma::profiler_impl::itt_get_domain() != nullptr);
+//     profiler::profiler_impl::itt_init();
+//     bool const itt_available = (profiler::profiler_impl::itt_get_domain() != nullptr);
 //
-//     // Start Quarisma profiler for JSON export
+//     // Start Profiler profiler for JSON export
 //     profiler_options opts;
 //     opts.enable_timing_ = true;
 //     opts.output_format_ = profiler_options::output_format_enum::JSON;
@@ -226,24 +226,24 @@
 //     profiler_session session(opts);
 //     session.start();
 //
-//     // Instrument with both ITT and Quarisma
+//     // Instrument with both ITT and Profiler
 //     {
 //         if (itt_available) {
-//             quarisma::profiler_impl::itt_range_push("my_operation");
+//             profiler::profiler_impl::itt_range_push("my_operation");
 //         }
 //         PROFILER_PROFILE_SCOPE("my_operation");
 //
 //         // ... your code ...
 //
 //         if (itt_available) {
-//             quarisma::profiler_impl::itt_range_pop();
+//             profiler::profiler_impl::itt_range_pop();
 //         }
 //     }
 //
 //     // Stop profiling
 //     session.stop();
 //
-//     // Export Quarisma trace (always available)
+//     // Export Profiler trace (always available)
 //     session.write_chrome_trace("itt_trace.json");
 //
 //     // ITT annotations are captured by VTune when running under VTune
@@ -255,14 +255,14 @@
 //    vtune -collect hotspots -app ./your_app
 //    vtune-gui  # View results with ITT annotations
 //
-// 2. Quarisma trace (itt_trace.json): Chrome DevTools, Perfetto UI
+// 2. Profiler trace (itt_trace.json): Chrome DevTools, Perfetto UI
 //
 // ============================================================================
 // 4. COMBINED PROFILING (ALL THREE SYSTEMS)
 // ============================================================================
 //
 // For comprehensive profiling, combine all three systems:
-// - Quarisma: Hierarchical CPU profiling with JSON export
+// - Profiler: Hierarchical CPU profiling with JSON export
 // - Kineto: GPU-related CPU operations
 // - ITT: VTune annotations
 //
@@ -275,22 +275,22 @@
 //
 // void my_function() {
 //     // Initialize all profilers
-//     quarisma::profiler_impl::kineto_init(false, true);
-//     quarisma::profiler_impl::itt_init();
+//     profiler::profiler_impl::kineto_init(false, true);
+//     profiler::profiler_impl::itt_init();
 //
 //     // Check availability
-//     bool const kineto_available = quarisma::profiler_impl::kineto_is_profiler_registered();
-//     bool const itt_available = (quarisma::profiler_impl::itt_get_domain() != nullptr);
+//     bool const kineto_available = profiler::profiler_impl::kineto_is_profiler_registered();
+//     bool const itt_available = (profiler::profiler_impl::itt_get_domain() != nullptr);
 //
 //     // Prepare Kineto
 //     if (kineto_available) {
 //         std::set<libkineto::ActivityType> activities;
 //         activities.insert(libkineto::ActivityType::CPU_OP);
-//         quarisma::profiler_impl::kineto_prepare_trace(activities);
-//         quarisma::profiler_impl::kineto_start_trace();
+//         profiler::profiler_impl::kineto_prepare_trace(activities);
+//         profiler::profiler_impl::kineto_start_trace();
 //     }
 //
-//     // Start Quarisma profiler
+//     // Start Profiler profiler
 //     profiler_options opts;
 //     opts.enable_timing_ = true;
 //     opts.enable_memory_tracking_ = true;
@@ -302,7 +302,7 @@
 //     // Instrument with all three profilers
 //     {
 //         if (itt_available) {
-//             quarisma::profiler_impl::itt_range_push("my_operation");
+//             profiler::profiler_impl::itt_range_push("my_operation");
 //         }
 //         PROFILER_PROFILE_SCOPE("my_operation");
 //
@@ -310,19 +310,19 @@
 //
 //         {
 //             if (itt_available) {
-//                 quarisma::profiler_impl::itt_range_push("nested_operation");
+//                 profiler::profiler_impl::itt_range_push("nested_operation");
 //             }
 //             PROFILER_PROFILE_SCOPE("nested_operation");
 //
 //             // ... nested code ...
 //
 //             if (itt_available) {
-//                 quarisma::profiler_impl::itt_range_pop();
+//                 profiler::profiler_impl::itt_range_pop();
 //             }
 //         }
 //
 //         if (itt_available) {
-//             quarisma::profiler_impl::itt_range_pop();
+//             profiler::profiler_impl::itt_range_pop();
 //         }
 //     }
 //
@@ -331,11 +331,11 @@
 //
 //     void* kineto_trace = nullptr;
 //     if (kineto_available) {
-//         kineto_trace = quarisma::profiler_impl::kineto_stop_trace();
+//         kineto_trace = profiler::profiler_impl::kineto_stop_trace();
 //     }
 //
 //     // Export all traces
-//     session.write_chrome_trace("combined_trace.json");  // Quarisma trace
+//     session.write_chrome_trace("combined_trace.json");  // Profiler trace
 //
 //     if (kineto_trace) {
 //         static_cast<libkineto::ActivityTraceInterface*>(kineto_trace)->save("kineto_trace.json");
@@ -346,7 +346,7 @@
 //
 // OUTPUT FILES:
 // -------------
-// - combined_trace.json: Full hierarchical CPU profiling (Quarisma)
+// - combined_trace.json: Full hierarchical CPU profiling (Profiler)
 // - kineto_trace.json: GPU-related CPU operations (Kineto)
 // - VTune results: ITT annotations (when running under VTune)
 //
@@ -366,7 +366,7 @@
 //
 // 3. GRACEFUL DEGRADATION:
 //    - Always check profiler availability before use
-//    - Provide fallback to Quarisma profiler when Kineto/ITT unavailable
+//    - Provide fallback to Profiler profiler when Kineto/ITT unavailable
 //    - Use conditional compilation for optional profilers
 //
 // 4. OUTPUT MANAGEMENT:
@@ -389,7 +389,7 @@
 //
 // ISSUE: Kineto trace has no events
 // SOLUTION: Kineto's CPU_OP captures GPU-related operations only
-//           Use Quarisma profiler for general CPU profiling
+//           Use Profiler profiler for general CPU profiling
 //
 // ISSUE: ITT annotations not visible in VTune
 // SOLUTION: Ensure VTune is installed and app is run under VTune
@@ -419,7 +419,7 @@
 #include "native/tracing/traceme.h"
 #include "native/tracing/traceme_recorder.h"
 
-using namespace quarisma;
+using namespace profiler;
 
 namespace
 {
@@ -824,7 +824,7 @@ PROFILERTEST(Profiler, heavy_function_comprehensive_computational_profiling)
 // ============================================================================
 // KINETO PROFILER TEST
 // ============================================================================
-// Test Quarisma Kineto profiler integration with heavy computational functions
+// Test Profiler Kineto profiler integration with heavy computational functions
 //
 // Kineto provides comprehensive profiling capabilities including:
 // - CPU activity tracing
@@ -833,14 +833,14 @@ PROFILERTEST(Profiler, heavy_function_comprehensive_computational_profiling)
 // - Operator-level profiling
 //
 // OUTPUT: Kineto generates JSON trace files compatible with:
-// - Quarisma Profiler Viewer
+// - Profiler Profiler Viewer
 // - TensorBoard
 // - Chrome DevTools (chrome://tracing)
 //
 // HOW TO USE:
 // 1. Run this test to generate kineto_trace.json
-// 2. View with Quarisma Profiler:
-//    python -m quarisma.profiler.viewer kineto_trace.json
+// 2. View with Profiler Profiler:
+//    python -m profiler.profiler.viewer kineto_trace.json
 // 3. Or view in Chrome:
 //    - Open chrome://tracing
 //    - Load the JSON file
@@ -868,18 +868,18 @@ PROFILERTEST(Profiler, heavy_function_comprehensive_computational_profiling)
 
 PROFILERTEST(Profiler, kineto_heavy_function_profiling)
 {
-    std::cout << "\n=== Kineto + Quarisma Profiler Heavy Function Test (with Drill-Down) ===\n";
+    std::cout << "\n=== Kineto + Profiler Profiler Heavy Function Test (with Drill-Down) ===\n";
     std::cout << "Note: Kineto's CPU_OP activity type captures GPU-related CPU operations.\n";
-    std::cout << "For hierarchical CPU profiling with drill-down, we combine Kineto with Quarisma "
+    std::cout << "For hierarchical CPU profiling with drill-down, we combine Kineto with Profiler "
                  "profiler.\n\n";
 
     // Initialize Kineto profiler
-    quarisma::profiler_impl::kineto_init(false, true);
+    profiler::profiler_impl::kineto_init(false, true);
 
-    if (!quarisma::profiler_impl::kineto_is_profiler_registered())
+    if (!profiler::profiler_impl::kineto_is_profiler_registered())
     {
-        std::cout << "Kineto profiler not registered - using Quarisma profiler only\n";
-        // Fall back to Quarisma profiler only
+        std::cout << "Kineto profiler not registered - using Profiler profiler only\n";
+        // Fall back to Profiler profiler only
         profiler_options opts;
         opts.enable_timing_ = true;
         opts.output_format_ = profiler_options::output_format_enum::JSON;
@@ -946,7 +946,7 @@ PROFILERTEST(Profiler, kineto_heavy_function_profiling)
             EXPECT_TRUE(json_content.find("\"traceEvents\"") != std::string::npos)
                 << "JSON file missing traceEvents array";
 
-            std::cout << "✓ Quarisma profiler trace saved to: " << output_file << "\n";
+            std::cout << "✓ Profiler profiler trace saved to: " << output_file << "\n";
             std::cout << "✓ JSON file validated (size: " << json_content.size() << " bytes)\n";
         }
 
@@ -955,9 +955,9 @@ PROFILERTEST(Profiler, kineto_heavy_function_profiling)
     }
 
     // Kineto is available - use combined profiling approach
-    std::cout << "Kineto profiler registered - using combined Kineto + Quarisma profiling\n";
+    std::cout << "Kineto profiler registered - using combined Kineto + Profiler profiling\n";
 
-    // Start Quarisma profiler session for hierarchical CPU profiling
+    // Start Profiler profiler session for hierarchical CPU profiling
     profiler_options opts;
     opts.enable_timing_ = true;
     opts.output_format_ = profiler_options::output_format_enum::JSON;
@@ -968,11 +968,11 @@ PROFILERTEST(Profiler, kineto_heavy_function_profiling)
     // Prepare Kineto trace with CPU activities
     std::set<libkineto::ActivityType> activities;
     activities.insert(libkineto::ActivityType::CPU_OP);
-    quarisma::profiler_impl::kineto_prepare_trace(activities);
+    profiler::profiler_impl::kineto_prepare_trace(activities);
 
     // Start Kineto profiling
-    quarisma::profiler_impl::kineto_start_trace();
-    std::cout << "Combined profiling started (Kineto + Quarisma)\n";
+    profiler::profiler_impl::kineto_start_trace();
+    std::cout << "Combined profiling started (Kineto + Profiler)\n";
 
     // Profile heavy computational workloads with hierarchical scopes
     {
@@ -1017,13 +1017,13 @@ PROFILERTEST(Profiler, kineto_heavy_function_profiling)
     session.stop();
     std::unique_ptr<libkineto::ActivityTraceInterface> trace(
         static_cast<libkineto::ActivityTraceInterface*>(
-            quarisma::profiler_impl::kineto_stop_trace()));
+            profiler::profiler_impl::kineto_stop_trace()));
 
     std::cout << "Combined profiling completed\n";
 
-    // Save Quarisma trace (hierarchical CPU profiling with drill-down)
-    std::string const quarisma_output_file = "kineto_heavy_function_trace.json";
-    session.write_chrome_trace(quarisma_output_file);
+    // Save Profiler trace (hierarchical CPU profiling with drill-down)
+    std::string const profiler_output_file = "kineto_heavy_function_trace.json";
+    session.write_chrome_trace(profiler_output_file);
 
     // Save Kineto trace (GPU-related CPU operations)
     std::string const kineto_output_file = "kineto_heavy_function_kineto_only.json";
@@ -1034,9 +1034,9 @@ PROFILERTEST(Profiler, kineto_heavy_function_profiling)
         std::cout << "✓ Kineto trace saved to: " << kineto_output_file << "\n";
     }
 
-    // Verify Quarisma JSON file (primary output with drill-down capability)
-    std::ifstream json_file(quarisma_output_file);
-    EXPECT_TRUE(json_file.good()) << "Failed to create Quarisma JSON output file";
+    // Verify Profiler JSON file (primary output with drill-down capability)
+    std::ifstream json_file(profiler_output_file);
+    EXPECT_TRUE(json_file.good()) << "Failed to create Profiler JSON output file";
 
     if (json_file.good())
     {
@@ -1063,7 +1063,7 @@ PROFILERTEST(Profiler, kineto_heavy_function_profiling)
         bool has_event_types = json_content.find("\"ph\"") != std::string::npos;
         EXPECT_TRUE(has_event_types) << "JSON missing event phase markers";
 
-        std::cout << "✓ Quarisma trace saved to: " << quarisma_output_file << "\n";
+        std::cout << "✓ Profiler trace saved to: " << profiler_output_file << "\n";
         std::cout << "✓ JSON file validated (size: " << json_content.size() << " bytes)\n";
         std::cout << "✓ Hierarchical scopes verified for drill-down capability\n";
 
@@ -1073,14 +1073,14 @@ PROFILERTEST(Profiler, kineto_heavy_function_profiling)
         std::cout << "1. Chrome DevTools (chrome://tracing):\n";
         std::cout << "   - Open Chrome browser\n";
         std::cout << "   - Navigate to chrome://tracing\n";
-        std::cout << "   - Click 'Load' and select: " << quarisma_output_file << "\n";
+        std::cout << "   - Click 'Load' and select: " << profiler_output_file << "\n";
         std::cout << "   - Use W/S to zoom in/out, A/D to pan\n";
         std::cout << "   - Click on events to see details and nested scopes\n\n";
 
         std::cout << "2. Perfetto UI (https://ui.perfetto.dev):\n";
         std::cout << "   - Visit https://ui.perfetto.dev\n";
         std::cout << "   - Click 'Open trace file'\n";
-        std::cout << "   - Select: " << quarisma_output_file << "\n";
+        std::cout << "   - Select: " << profiler_output_file << "\n";
         std::cout << "   - Explore hierarchical timeline with drill-down\n\n";
 
         std::cout << "3. Expected Drill-Down Structure:\n";
@@ -1092,7 +1092,7 @@ PROFILERTEST(Profiler, kineto_heavy_function_profiling)
 
         std::cout << "Note: Kineto-only trace (" << kineto_output_file
                   << ") contains GPU-related CPU operations.\n";
-        std::cout << "      Quarisma trace (" << quarisma_output_file
+        std::cout << "      Profiler trace (" << profiler_output_file
                   << ") contains full hierarchical CPU profiling.\n";
     }
 }
@@ -1134,29 +1134,29 @@ PROFILERTEST(Profiler, kineto_heavy_function_profiling)
 PROFILERTEST(Profiler, itt_api_heavy_function_profiling)
 {
     std::cout
-        << "\n=== Intel ITT API + Quarisma Profiler Heavy Function Test (with Drill-Down) ===\n";
+        << "\n=== Intel ITT API + Profiler Profiler Heavy Function Test (with Drill-Down) ===\n";
     std::cout << "Note: ITT annotations are captured by Intel VTune when available.\n";
-    std::cout << "For hierarchical CPU profiling with drill-down, we combine ITT with Quarisma "
+    std::cout << "For hierarchical CPU profiling with drill-down, we combine ITT with Profiler "
                  "profiler.\n\n";
 
-    // Initialize ITT profiler (creates global Quarisma domain)
-    quarisma::profiler_impl::itt_init();
+    // Initialize ITT profiler (creates global Profiler domain)
+    profiler::profiler_impl::itt_init();
 
     // Check if ITT is available (domain creation may fail if VTune not installed)
-    bool const itt_available = (quarisma::profiler_impl::itt_get_domain() != nullptr);
+    bool const itt_available = (profiler::profiler_impl::itt_get_domain() != nullptr);
 
     if (!itt_available)
     {
         std::cout << "ITT API domain creation failed (VTune not available)\n";
-        std::cout << "Falling back to Quarisma profiler only for JSON trace generation\n\n";
+        std::cout << "Falling back to Profiler profiler only for JSON trace generation\n\n";
     }
     else
     {
-        std::cout << "ITT API domain created: Quarisma\n";
-        std::cout << "Combined profiling started (ITT + Quarisma)\n\n";
+        std::cout << "ITT API domain created: Profiler\n";
+        std::cout << "Combined profiling started (ITT + Profiler)\n\n";
     }
 
-    // Start Quarisma profiler session to capture hierarchical profiling data
+    // Start Profiler profiler session to capture hierarchical profiling data
     profiler_options opts;
     opts.enable_timing_               = true;
     opts.enable_memory_tracking_      = false;
@@ -1167,11 +1167,11 @@ PROFILERTEST(Profiler, itt_api_heavy_function_profiling)
     profiler_session session(opts);
     session.start();
 
-    // Profile matrix operations with ITT wrapper API and Quarisma profiler
+    // Profile matrix operations with ITT wrapper API and Profiler profiler
     {
         if (itt_available)
         {
-            quarisma::profiler_impl::itt_range_push("matrix_operations");
+            profiler::profiler_impl::itt_range_push("matrix_operations");
         }
         PROFILER_PROFILE_SCOPE("itt_matrix_operations");
 
@@ -1185,7 +1185,7 @@ PROFILERTEST(Profiler, itt_api_heavy_function_profiling)
 
             if (itt_available)
             {
-                quarisma::profiler_impl::itt_range_push(iter_name.c_str());
+                profiler::profiler_impl::itt_range_push(iter_name.c_str());
             }
 
             PROFILER_PROFILE_SCOPE(("itt_matrix_multiply_" + std::to_string(i)).c_str());
@@ -1195,21 +1195,21 @@ PROFILERTEST(Profiler, itt_api_heavy_function_profiling)
 
             if (itt_available)
             {
-                quarisma::profiler_impl::itt_range_pop();
+                profiler::profiler_impl::itt_range_pop();
             }
         }
 
         if (itt_available)
         {
-            quarisma::profiler_impl::itt_range_pop();
+            profiler::profiler_impl::itt_range_pop();
         }
     }
 
-    // Profile sorting operations with ITT wrapper API and Quarisma profiler
+    // Profile sorting operations with ITT wrapper API and Profiler profiler
     {
         if (itt_available)
         {
-            quarisma::profiler_impl::itt_range_push("sorting_operations");
+            profiler::profiler_impl::itt_range_push("sorting_operations");
         }
         PROFILER_PROFILE_SCOPE("itt_sorting_operations");
 
@@ -1228,7 +1228,7 @@ PROFILERTEST(Profiler, itt_api_heavy_function_profiling)
         {
             if (itt_available)
             {
-                quarisma::profiler_impl::itt_range_push("merge_sort");
+                profiler::profiler_impl::itt_range_push("merge_sort");
             }
 
             PROFILER_PROFILE_SCOPE("itt_merge_sort");
@@ -1239,21 +1239,21 @@ PROFILERTEST(Profiler, itt_api_heavy_function_profiling)
 
             if (itt_available)
             {
-                quarisma::profiler_impl::itt_range_pop();
+                profiler::profiler_impl::itt_range_pop();
             }
         }
 
         if (itt_available)
         {
-            quarisma::profiler_impl::itt_range_pop();
+            profiler::profiler_impl::itt_range_pop();
         }
     }
 
-    // Profile Monte Carlo simulation with ITT wrapper API and Quarisma profiler
+    // Profile Monte Carlo simulation with ITT wrapper API and Profiler profiler
     {
         if (itt_available)
         {
-            quarisma::profiler_impl::itt_range_push("monte_carlo_simulation");
+            profiler::profiler_impl::itt_range_push("monte_carlo_simulation");
         }
         PROFILER_PROFILE_SCOPE("itt_monte_carlo_simulation");
 
@@ -1267,7 +1267,7 @@ PROFILERTEST(Profiler, itt_api_heavy_function_profiling)
 
         if (itt_available)
         {
-            quarisma::profiler_impl::itt_range_pop();
+            profiler::profiler_impl::itt_range_pop();
         }
     }
 
@@ -1275,18 +1275,18 @@ PROFILERTEST(Profiler, itt_api_heavy_function_profiling)
 
     if (itt_available)
     {
-        std::cout << "Combined profiling completed (ITT + Quarisma)\n";
+        std::cout << "Combined profiling completed (ITT + Profiler)\n";
     }
     else
     {
-        std::cout << "Quarisma profiling completed\n";
+        std::cout << "Profiler profiling completed\n";
     }
 
-    // Export profiling data to JSON (captures Quarisma profiling scopes with hierarchical drill-down)
+    // Export profiling data to JSON (captures Profiler profiling scopes with hierarchical drill-down)
     std::string const itt_output_file = "itt_heavy_function_trace.json";
     session.write_chrome_trace(itt_output_file);
 
-    std::cout << "✓ Quarisma trace saved to: " << itt_output_file << "\n";
+    std::cout << "✓ Profiler trace saved to: " << itt_output_file << "\n";
 
     // Verify JSON file was created and is valid
     std::ifstream json_file(itt_output_file);
@@ -1340,7 +1340,7 @@ PROFILERTEST(Profiler, itt_api_heavy_function_profiling)
         std::cout << "3. Intel VTune Profiler (for ITT annotations):\n";
         std::cout << "   - Run: vtune -collect hotspots -app ./CoreCxxTests.exe\n";
         std::cout << "   - Open results in VTune GUI\n";
-        std::cout << "   - Look for 'QuarismaHeavyFunctionTest' domain in timeline\n\n";
+        std::cout << "   - Look for 'ProfilerHeavyFunctionTest' domain in timeline\n\n";
     }
 
     std::cout << "4. Expected Drill-Down Structure:\n";
@@ -1354,13 +1354,13 @@ PROFILERTEST(Profiler, itt_api_heavy_function_profiling)
     if (itt_available)
     {
         std::cout << "Note: ITT annotations are also captured in VTune profiler.\n";
-        std::cout << "      Quarisma trace (" << itt_output_file
+        std::cout << "      Profiler trace (" << itt_output_file
                   << ") contains full hierarchical CPU profiling.\n";
     }
     else
     {
         std::cout << "Note: ITT annotations not available (VTune not installed).\n";
-        std::cout << "      Quarisma trace (" << itt_output_file
+        std::cout << "      Profiler trace (" << itt_output_file
                   << ") contains full hierarchical CPU profiling.\n";
     }
 }
@@ -1374,7 +1374,7 @@ PROFILERTEST(Profiler, itt_api_heavy_function_profiling)
 // This demonstrates how to use both profiling technologies together:
 // - Kineto captures CPU/GPU activity and generates JSON traces
 // - ITT provides annotations for Intel VTune profiling
-// - Quarisma profiler session captures hierarchical scope information
+// - Profiler profiler session captures hierarchical scope information
 //
 // OUTPUT: Multiple JSON trace files that can be viewed in different tools
 // ============================================================================
@@ -1402,20 +1402,20 @@ PROFILERTEST(Profiler, combined_kineto_itt_heavy_function_profiling)
     std::cout << "\n=== Combined Kineto + ITT Profiling Test ===\n";
 
     // Initialize Kineto profiler
-    quarisma::profiler_impl::kineto_init(false, true);
+    profiler::profiler_impl::kineto_init(false, true);
 
-    if (!quarisma::profiler_impl::kineto_is_profiler_registered())
+    if (!profiler::profiler_impl::kineto_is_profiler_registered())
     {
         std::cout << "Kineto profiler not registered - skipping combined test\n";
         EXPECT_TRUE(true);
         return;
     }
 
-    // Initialize ITT profiler (creates global Quarisma domain)
-    quarisma::profiler_impl::itt_init();
+    // Initialize ITT profiler (creates global Profiler domain)
+    profiler::profiler_impl::itt_init();
 
     // Check if ITT is available
-    bool const itt_available = (quarisma::profiler_impl::itt_get_domain() != nullptr);
+    bool const itt_available = (profiler::profiler_impl::itt_get_domain() != nullptr);
 
     if (!itt_available)
     {
@@ -1425,17 +1425,17 @@ PROFILERTEST(Profiler, combined_kineto_itt_heavy_function_profiling)
     }
 
     std::cout << "✓ Kineto profiler initialized\n";
-    std::cout << "✓ ITT domain created: Quarisma\n";
+    std::cout << "✓ ITT domain created: Profiler\n";
 
     // Prepare Kineto trace
     std::set<libkineto::ActivityType> activities;
     activities.insert(libkineto::ActivityType::CPU_OP);
-    quarisma::profiler_impl::kineto_prepare_trace(activities);
+    profiler::profiler_impl::kineto_prepare_trace(activities);
 
     // Start Kineto profiling
-    quarisma::profiler_impl::kineto_start_trace();
+    profiler::profiler_impl::kineto_start_trace();
 
-    // Also start Quarisma profiler session
+    // Also start Profiler profiler session
     profiler_options opts;
     opts.enable_timing_               = true;
     opts.enable_memory_tracking_      = true;
@@ -1450,12 +1450,12 @@ PROFILERTEST(Profiler, combined_kineto_itt_heavy_function_profiling)
 
     // Profile combined workload with all three profiling systems
     {
-        quarisma::profiler_impl::itt_range_push("combined_workload");
+        profiler::profiler_impl::itt_range_push("combined_workload");
         PROFILER_PROFILE_SCOPE("combined_profiling_workload");
 
         // Matrix operations
         {
-            quarisma::profiler_impl::itt_range_push("matrix_computation");
+            profiler::profiler_impl::itt_range_push("matrix_computation");
             PROFILER_PROFILE_SCOPE("combined_matrix_operations");
 
             const size_t matrix_size = 50;
@@ -1465,12 +1465,12 @@ PROFILERTEST(Profiler, combined_kineto_itt_heavy_function_profiling)
             auto result = matrix_multiply(matrix_a, matrix_b);
             EXPECT_EQ(result.size(), matrix_size);
 
-            quarisma::profiler_impl::itt_range_pop();
+            profiler::profiler_impl::itt_range_pop();
         }
 
         // Monte Carlo simulation
         {
-            quarisma::profiler_impl::itt_range_push("monte_carlo_computation");
+            profiler::profiler_impl::itt_range_push("monte_carlo_computation");
             PROFILER_PROFILE_SCOPE("combined_monte_carlo");
 
             const size_t num_samples = 500000;
@@ -1481,10 +1481,10 @@ PROFILERTEST(Profiler, combined_kineto_itt_heavy_function_profiling)
 
             std::cout << "Monte Carlo Pi estimate: " << pi_estimate << "\n";
 
-            quarisma::profiler_impl::itt_range_pop();
+            profiler::profiler_impl::itt_range_pop();
         }
 
-        quarisma::profiler_impl::itt_range_pop();
+        profiler::profiler_impl::itt_range_pop();
     }
 
     // Stop all profilers
@@ -1492,7 +1492,7 @@ PROFILERTEST(Profiler, combined_kineto_itt_heavy_function_profiling)
 
     std::unique_ptr<libkineto::ActivityTraceInterface> kineto_trace(
         static_cast<libkineto::ActivityTraceInterface*>(
-            quarisma::profiler_impl::kineto_stop_trace()));
+            profiler::profiler_impl::kineto_stop_trace()));
 
     std::cout << "✓ All profilers stopped\n";
 
@@ -1518,33 +1518,33 @@ PROFILERTEST(Profiler, combined_kineto_itt_heavy_function_profiling)
         }
     }
 
-    // Export Quarisma profiler trace
-    std::string const quarisma_combined_file = "combined_quarisma_trace.json";
-    session.write_chrome_trace(quarisma_combined_file);
-    std::cout << "✓ Quarisma trace saved to: " << quarisma_combined_file << "\n";
+    // Export Profiler profiler trace
+    std::string const profiler_combined_file = "combined_profiler_trace.json";
+    session.write_chrome_trace(profiler_combined_file);
+    std::cout << "✓ Profiler trace saved to: " << profiler_combined_file << "\n";
 
-    // Verify Quarisma JSON
-    std::ifstream quarisma_json(quarisma_combined_file);
-    EXPECT_TRUE(quarisma_json.good()) << "Failed to create Quarisma JSON file";
+    // Verify Profiler JSON
+    std::ifstream profiler_json(profiler_combined_file);
+    EXPECT_TRUE(profiler_json.good()) << "Failed to create Profiler JSON file";
 
-    if (quarisma_json.good())
+    if (profiler_json.good())
     {
         std::stringstream buffer;
-        buffer << quarisma_json.rdbuf();
+        buffer << profiler_json.rdbuf();
         std::string const content = buffer.str();
 
         EXPECT_TRUE(content.find("\"traceEvents\"") != std::string::npos)
-            << "Quarisma JSON missing trace structure";
+            << "Profiler JSON missing trace structure";
         EXPECT_TRUE(content.find("combined_profiling_workload") != std::string::npos)
-            << "Quarisma JSON missing profiling scopes";
+            << "Profiler JSON missing profiling scopes";
 
-        EXPECT_GT(content.size(), 100) << "Quarisma JSON file too small";
-        std::cout << "✓ Quarisma JSON validated (size: " << content.size() << " bytes)\n";
+        EXPECT_GT(content.size(), 100) << "Profiler JSON file too small";
+        std::cout << "✓ Profiler JSON validated (size: " << content.size() << " bytes)\n";
     }
 
     std::cout << "\n=== Combined Profiling Test Summary ===\n";
     std::cout << "✓ Kineto profiling: " << kineto_combined_file << "\n";
-    std::cout << "✓ Quarisma profiling: " << quarisma_combined_file << "\n";
+    std::cout << "✓ Profiler profiling: " << profiler_combined_file << "\n";
     std::cout << "✓ ITT annotations: Available in VTune profiler\n";
     std::cout << "\nViewing options:\n";
     std::cout << "  1. Chrome Tracing (both JSON files):\n";
@@ -1553,11 +1553,11 @@ PROFILERTEST(Profiler, combined_kineto_itt_heavy_function_profiling)
     std::cout << "  2. Perfetto UI (both JSON files):\n";
     std::cout << "     - Visit https://ui.perfetto.dev\n";
     std::cout << "     - Open either JSON file\n";
-    std::cout << "  3. Quarisma Profiler (Kineto trace):\n";
-    std::cout << "     - python -m quarisma.profiler.viewer " << kineto_combined_file << "\n";
+    std::cout << "  3. Profiler Profiler (Kineto trace):\n";
+    std::cout << "     - python -m profiler.profiler.viewer " << kineto_combined_file << "\n";
     std::cout << "  4. Intel VTune (ITT annotations):\n";
     std::cout << "     - vtune -collect hotspots -app ./CoreCxxTests.exe\n";
-    std::cout << "     - Look for 'QuarismaCombinedProfilingTest' domain\n";
+    std::cout << "     - Look for 'ProfilerCombinedProfilingTest' domain\n";
 }
 
 #endif  // PROFILER_HAS_KINETO && PROFILER_HAS_ITT

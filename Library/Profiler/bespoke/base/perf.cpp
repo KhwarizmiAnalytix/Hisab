@@ -5,7 +5,7 @@
 #include "bespoke/base/perf-inl.h"
 #include "common/error.h"
 
-namespace quarisma::profiler_impl::impl::linux_perf
+namespace profiler::profiler_impl::impl::linux_perf
 {
 
 #if defined(__ANDROID__) || defined(__linux__)
@@ -85,7 +85,7 @@ void PerfEvent::Init()
     if (fd_ == -1)
     {
         // PROFILER_CHECK(
-        // false, "perf_event_open() failed, error: ", quarisma::utils::str_error(errno));
+        // false, "perf_event_open() failed, error: ", profiler::utils::str_error(errno));
     }
     Reset();
 }
@@ -99,7 +99,7 @@ uint64_t PerfEvent::ReadCounter() const
     // "Read failed for Perf event fd, event : ",
     // name_,
     // ", error: ",
-    // quarisma::utils::str_error(errno));
+    // profiler::utils::str_error(errno));
     // PROFILER_CHECK(
     // counter.time_enabled == counter.time_running,
     // "Hardware performance counter time multiplexing is not handled yet",
@@ -196,4 +196,4 @@ void PerfProfiler::Disable(perf_counters_t& vals)
         StartCounting();
     }
 }
-}  // namespace quarisma::profiler_impl::impl::linux_perf
+}  // namespace profiler::profiler_impl::impl::linux_perf

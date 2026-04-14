@@ -17,7 +17,7 @@
 #include <loguru.hpp>
 
 #include "ParallelTest.h"
-#include "threaded_callback_queue.h"
+#include "tools/threaded_callback_queue.h"
 
 namespace parallel
 {

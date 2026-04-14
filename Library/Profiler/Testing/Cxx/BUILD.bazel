@@ -2,7 +2,7 @@
 # Profiler C++ tests (moved from Library/Core/Testing/Cxx)
 # =============================================================================
 
-load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
+load("//bazel:profiler.bzl", "profiler_copts", "profiler_defines", "profiler_linkopts")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -84,13 +84,13 @@ cc_test(
         "//bazel:enable_itt": _PROFILER_TEST_FILES_ITT,
         "//conditions:default": _PROFILER_TEST_FILES_KINETO,
     }),
-    copts = quarisma_copts(),
-    defines = quarisma_defines() + [
+    copts = profiler_copts(),
+    defines = profiler_defines() + [
         "PROFILER_GOOGLE_TEST",
         "USE_GTEST",
         "_VARIADIC_MAX=10",
         "PROFILER_HAS_GTEST=1",
-        "QUARISMA_HAS_GTEST=1",
+        "PROFILER_HAS_GTEST=1",
     ] + select({
         "//bazel:enable_cuda": ["PROFILER_HAS_CUDA=1"],
         "//conditions:default": ["PROFILER_HAS_CUDA=0"],
@@ -99,10 +99,10 @@ cc_test(
         "//conditions:default": ["PROFILER_HAS_HIP=0"],
     }),
     includes = ["."],
-    linkopts = quarisma_linkopts(),
+    linkopts = profiler_linkopts(),
     deps = [
         "//Library/Profiler:Profiler",
-        "//Library/Core/Testing:quarismaTest_header",
+        "//Library/Profiler/Testing:profilerTest_header",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],

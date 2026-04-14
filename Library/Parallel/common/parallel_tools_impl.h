@@ -21,14 +21,13 @@
  *   Licensed under BSD-3-Clause
  */
 
-#ifndef PARALLEL_TOOLS_IMPL_H
-#define PARALLEL_TOOLS_IMPL_H
+#pragma once
 
 #include <atomic>
 #include <cstddef>
 
 #include "common/parallel_export.h"
-#include "parallel.h"
+#include "tools/parallel.h"
 
 namespace parallel
 {
@@ -122,4 +121,3 @@ using execute_functor_ptr_type = void (*)(void*, size_t, size_t, size_t);
 }  // namespace detail
 }  // namespace parallel
 
-#endif

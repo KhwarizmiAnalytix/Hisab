@@ -11,10 +11,10 @@ include_guard(GLOBAL)
 # Valgrind Memory Checking Flag Controls whether Valgrind memory checking is enabled for test
 # execution. When enabled, runs all tests under Valgrind with comprehensive memory analysis.
 # Automatically adjusts test timeouts to account for Valgrind overhead.
-option(QUARISMA_ENABLE_VALGRIND "Execute test suite with Valgrind" OFF)
-mark_as_advanced(QUARISMA_ENABLE_VALGRIND)
+option(PROJECT_ENABLE_VALGRIND "Execute test suite with Valgrind" OFF)
+mark_as_advanced(PROJECT_ENABLE_VALGRIND)
 
-if(NOT QUARISMA_ENABLE_VALGRIND)
+if(NOT PROJECT_ENABLE_VALGRIND)
   return()
 endif()
 
@@ -33,9 +33,9 @@ if(APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
   message(WARNING "Valgrind does not support Apple Silicon (ARM64) architecture")
   message(WARNING "Consider using sanitizers instead:")
   message(
-    WARNING "  AddressSanitizer: -DQUARISMA_ENABLE_SANITIZER=ON -DQUARISMA_SANITIZER_TYPE=address"
+    WARNING "  AddressSanitizer: -DPROJECT_ENABLE_SANITIZER=ON -DPROJECT_SANITIZER_TYPE=address"
   )
-  message(WARNING "  LeakSanitizer:    -DQUARISMA_ENABLE_SANITIZER=ON -DQUARISMA_SANITIZER_TYPE=leak")
+  message(WARNING "  LeakSanitizer:    -DPROJECT_ENABLE_SANITIZER=ON -DPROJECT_SANITIZER_TYPE=leak")
   message(
     WARNING "Continuing with Valgrind configuration (will fail if Valgrind is not installed)..."
   )
@@ -49,7 +49,7 @@ find_program(CMAKE_MEMORYCHECK_COMMAND valgrind)
 
 if(NOT CMAKE_MEMORYCHECK_COMMAND)
   message(
-    FATAL_ERROR "Valgrind not found! Please install Valgrind or disable QUARISMA_ENABLE_VALGRIND"
+    FATAL_ERROR "Valgrind not found! Please install Valgrind or disable PROJECT_ENABLE_VALGRIND"
   )
 endif()
 
@@ -70,7 +70,7 @@ message(STATUS "Valgrind version: ${VALGRIND_VERSION_OUTPUT}")
 # =============================================================================
 
 # Default test timeout multiplier for Valgrind (20x slower is a safe estimate)
-set(QUARISMA_VALGRIND_TIMEOUT_MULTIPLIER 20
+set(PROJECT_VALGRIND_TIMEOUT_MULTIPLIER 20
     CACHE STRING "Timeout multiplier for tests running under Valgrind"
 )
 
@@ -79,7 +79,7 @@ set(CTEST_TEST_TIMEOUT 1800 CACHE STRING
                                   "Global timeout in seconds for CTest when running with Valgrind"
 )
 
-message(STATUS "Valgrind timeout multiplier: ${QUARISMA_VALGRIND_TIMEOUT_MULTIPLIER}x")
+message(STATUS "Valgrind timeout multiplier: ${PROJECT_VALGRIND_TIMEOUT_MULTIPLIER}x")
 message(STATUS "Global CTest timeout: ${CTEST_TEST_TIMEOUT} seconds")
 
 # ============================================================================= Valgrind Command
@@ -162,11 +162,11 @@ message(STATUS "Use 'ctest -T memcheck' to run tests with Valgrind")
 # Apply Valgrind Timeouts to Tests
 # =============================================================================
 # This function should be called after all tests are registered. It multiplies existing test
-# timeouts by QUARISMA_VALGRIND_TIMEOUT_MULTIPLIER.
+# timeouts by PROJECT_VALGRIND_TIMEOUT_MULTIPLIER.
 # =============================================================================
 
 function(quarisma_apply_valgrind_timeouts)
-  if(NOT QUARISMA_ENABLE_VALGRIND)
+  if(NOT PROJECT_ENABLE_VALGRIND)
     return()
   endif()
 
@@ -179,7 +179,7 @@ function(quarisma_apply_valgrind_timeouts)
 
     if(current_timeout)
       # Calculate new timeout
-      math(EXPR new_timeout "${current_timeout} * ${QUARISMA_VALGRIND_TIMEOUT_MULTIPLIER}")
+      math(EXPR new_timeout "${current_timeout} * ${PROJECT_VALGRIND_TIMEOUT_MULTIPLIER}")
 
       # Apply new timeout
       set_tests_properties(${test_name} PROPERTIES TIMEOUT ${new_timeout})

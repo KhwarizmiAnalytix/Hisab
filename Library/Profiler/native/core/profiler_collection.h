@@ -37,12 +37,12 @@ limitations under the License.
 #include <vector>  // for vector
 
 #include "native/core/profiler_interface.h"  // for profiler_interface
-namespace quarisma
+namespace profiler
 {
 class x_space;
 }
 
-namespace quarisma
+namespace profiler
 {
 
 // profiler_collection multiplexes profiler_interface calls into a collection of
@@ -62,4 +62,4 @@ private:
     std::vector<std::unique_ptr<profiler_interface>> profilers_;
 };
 
-}  // namespace quarisma
+}  // namespace profiler

@@ -42,7 +42,7 @@ limitations under the License.
 
 //#include "absl/synchronization/mutex.h"
 //#include "absl/base/thread_annotations.h"
-namespace quarisma
+namespace profiler
 {
 
 // per_thread<T> provides a thread-local instance of T accessible to each
@@ -158,7 +158,7 @@ private:
         void operator=(const Registry&) = delete;
 
         std::mutex                                                 mutex_;
-        quarisma::flat_hash_map<std::shared_ptr<T>, bool> threads_ PROFILER_GUARDED_BY(mutex_);
+        profiler::flat_hash_map<std::shared_ptr<T>, bool> threads_ PROFILER_GUARDED_BY(mutex_);
         bool recording_ PROFILER_GUARDED_BY(mutex_) = false;
     };
 
@@ -177,4 +177,4 @@ private:
     };
 };
 
-}  // namespace quarisma
+}  // namespace profiler

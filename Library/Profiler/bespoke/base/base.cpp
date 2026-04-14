@@ -3,9 +3,9 @@
 #include <cstdint>
 #include <functional>
 
-//#include "memory/device.h"
+//#include "common/device.h"
 
-namespace quarisma::profiler_impl::impl
+namespace profiler::profiler_impl::impl
 {
 
 namespace
@@ -72,4 +72,4 @@ REGISTER_DEFAULT(itt, ITT)
 REGISTER_DEFAULT(privateuse1, PrivateUse1)
 #undef REGISTER_DEFAULT
 
-}  // namespace quarisma::profiler_impl::impl
+}  // namespace profiler::profiler_impl::impl

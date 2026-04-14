@@ -6,9 +6,9 @@
 #include "bespoke/base/thread_local_debug_info.h"
 #include "bespoke/common/record_function.h"
 #include "common/profiler_export.h"
-//#include "memory/device.h"
+//#include "common/device.h"
 
-namespace quarisma
+namespace profiler
 {
 enum class device_enum : int16_t
 {
@@ -32,9 +32,9 @@ struct device_option
         return type_ == other.type_ && index_ == other.index_;
     }
 };
-}  // namespace quarisma
+}  // namespace profiler
 
-namespace quarisma::profiler_impl::impl
+namespace profiler::profiler_impl::impl
 {
 
 // ----------------------------------------------------------------------------
@@ -133,7 +133,7 @@ struct PROFILER_VISIBILITY ExperimentalConfig
    * profiler was enabled, similar to on_demand mode */
     bool profile_all_threads;
 
-    /* controls whether overload names are queried from an Quarisma
+    /* controls whether overload names are queried from an Profiler
    * function schema and stored in the profile  */
     bool capture_overload_names;
 
@@ -144,7 +144,7 @@ struct PROFILER_VISIBILITY ExperimentalConfig
     bool record_python_gc_info;
 
     /* controls whether KinetoEvent metadata is exposed to FunctionEvent
-   * in the Quarisma Profiler as a JSON string */
+   * in the Profiler Profiler as a JSON string */
     bool expose_kineto_event_metadata;
 
     /*
@@ -192,8 +192,8 @@ struct PROFILER_VISIBILITY ProfilerConfig
     std::string        trace_id;
 
     // For serialization
-    static PROFILER_API quarisma::IValue toIValue();
-    PROFILER_API static ProfilerConfig   fromIValue(const quarisma::IValue& profilerConfigIValue);
+    static PROFILER_API profiler::IValue toIValue();
+    PROFILER_API static ProfilerConfig   fromIValue(const profiler::IValue& profilerConfigIValue);
 };
 
 struct PROFILER_VISIBILITY MemoryReportingInfoBase : public DebugInfoBase
@@ -211,7 +211,7 @@ struct PROFILER_VISIBILITY MemoryReportingInfoBase : public DebugInfoBase
         int64_t                 alloc_size,
         size_t                  total_allocated,
         size_t                  total_reserved,
-        quarisma::device_option device) = 0;
+        profiler::device_option device) = 0;
 
     virtual void reportOutOfMemory(
         int64_t alloc_size, size_t total_allocated, size_t total_reserved, device_option device) {};
@@ -249,7 +249,7 @@ struct PROFILER_VISIBILITY ProfilerStateBase : public MemoryReportingInfoBase
 
     const ProfilerConfig& config() const { return config_; }
 
-    PROFILER_API void setCallbackHandle(quarisma::CallbackHandle handle);
+    PROFILER_API void setCallbackHandle(profiler::CallbackHandle handle);
     PROFILER_API void removeCallback();
 
     bool memoryProfilingEnabled() const override { return config_.profile_memory; }
@@ -262,7 +262,7 @@ protected:
     // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
     ProfilerConfig config_ = ProfilerConfig(ProfilerState::Disabled);
     // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
-    quarisma::CallbackHandle handle_ = 0;
+    profiler::CallbackHandle handle_ = 0;
 };
 
 // Note: The following are only for the active *thread local* profiler.
@@ -270,4 +270,4 @@ PROFILER_API bool               profilerEnabled();
 PROFILER_API ActiveProfilerType profilerType();
 PROFILER_API ProfilerConfig     getProfilerConfig();
 
-}  // namespace quarisma::profiler_impl::impl
+}  // namespace profiler::profiler_impl::impl

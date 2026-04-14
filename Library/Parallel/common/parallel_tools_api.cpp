@@ -28,7 +28,7 @@
 #include <iostream>   // For std::cerr
 #include <string>     // For std::string
 
-#include "parallel.h"
+#include "tools/parallel.h"
 
 namespace parallel
 {

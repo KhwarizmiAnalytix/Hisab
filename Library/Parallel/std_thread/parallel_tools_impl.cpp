@@ -93,8 +93,8 @@ int parallel_tools_impl<backend_type::std_thread>::estimated_number_of_threads()
 template <>
 int parallel_tools_impl<backend_type::std_thread>::estimated_default_number_of_threads()
 {
-#if defined(__EMSCRIPTEN_PTHREADS__) && (QUARISMA_WEBASSEMBLY_PARALLEL_THREAD_POOL_SIZE > 0)
-    const int max_threads = QUARISMA_WEBASSEMBLY_PARALLEL_THREAD_POOL_SIZE;
+#if defined(__EMSCRIPTEN_PTHREADS__) && (PARALLEL_WEBASSEMBLY_PARALLEL_THREAD_POOL_SIZE > 0)
+    const int max_threads = PARALLEL_WEBASSEMBLY_PARALLEL_THREAD_POOL_SIZE;
 #else
     const int max_threads = std::thread::hardware_concurrency();
 #endif

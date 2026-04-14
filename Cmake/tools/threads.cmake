@@ -3,9 +3,9 @@
 # =============================================================================
 # This module detects the threading library available on the platform and sets
 # appropriate CMake variables and compiler definitions:
-# - QUARISMA_USE_PTHREADS: Set to 1 on Unix-like systems with pthreads support
-# - QUARISMA_USE_WIN32_THREADS: Set to 1 on Windows systems
-# - QUARISMA_MAX_THREADS: Maximum number of threads supported (default: 64)
+# - PARALLEL_USE_PTHREADS: Set to 1 on Unix-like systems with pthreads support
+# - PARALLEL_USE_WIN32_THREADS: Set to 1 on Windows systems
+# - PARALLEL_MAX_THREADS: Maximum number of threads supported (default: 64)
 #
 # The module also ensures the appropriate thread library is linked to targets.
 # =============================================================================
@@ -29,27 +29,27 @@ find_package(Threads REQUIRED)
 # =============================================================================
 
 # Initialize thread flags to 0 (following Quarisma convention of explicit values)
-set(QUARISMA_USE_PTHREADS 0 CACHE INTERNAL "Use POSIX threads (pthreads)")
-set(QUARISMA_USE_WIN32_THREADS 0 CACHE INTERNAL "Use Win32 threads")
+set(PARALLEL_USE_PTHREADS 0 CACHE INTERNAL "Use POSIX threads (pthreads)")
+set(PARALLEL_USE_WIN32_THREADS 0 CACHE INTERNAL "Use Win32 threads")
 
 # Detect threading model based on platform and CMake's thread detection
 if(WIN32)
   # Windows platform uses Win32 threads
-  set(QUARISMA_USE_WIN32_THREADS 1 CACHE INTERNAL "Use Win32 threads" FORCE)
-  set(QUARISMA_USE_PTHREADS 0 CACHE INTERNAL "Use POSIX threads (pthreads)" FORCE)
+  set(PARALLEL_USE_WIN32_THREADS 1 CACHE INTERNAL "Use Win32 threads" FORCE)
+  set(PARALLEL_USE_PTHREADS 0 CACHE INTERNAL "Use POSIX threads (pthreads)" FORCE)
   message(STATUS "Quarisma: Threading model: Win32 threads")
   
 elseif(CMAKE_USE_PTHREADS_INIT OR CMAKE_THREAD_LIBS_INIT MATCHES "pthread")
   # Unix-like systems (Linux, macOS, BSD, etc.) with pthreads
-  set(QUARISMA_USE_PTHREADS 1 CACHE INTERNAL "Use POSIX threads (pthreads)" FORCE)
-  set(QUARISMA_USE_WIN32_THREADS 0 CACHE INTERNAL "Use Win32 threads" FORCE)
+  set(PARALLEL_USE_PTHREADS 1 CACHE INTERNAL "Use POSIX threads (pthreads)" FORCE)
+  set(PARALLEL_USE_WIN32_THREADS 0 CACHE INTERNAL "Use Win32 threads" FORCE)
   message(STATUS "Quarisma: Threading model: POSIX threads (pthreads)")
   
 else()
   # Fallback: no threading support detected
   message(WARNING "Quarisma: No threading library detected. Multi-threading will be disabled.")
-  set(QUARISMA_USE_PTHREADS 0 CACHE INTERNAL "Use POSIX threads (pthreads)" FORCE)
-  set(QUARISMA_USE_WIN32_THREADS 0 CACHE INTERNAL "Use Win32 threads" FORCE)
+  set(PARALLEL_USE_PTHREADS 0 CACHE INTERNAL "Use POSIX threads (pthreads)" FORCE)
+  set(PARALLEL_USE_WIN32_THREADS 0 CACHE INTERNAL "Use Win32 threads" FORCE)
 endif()
 
 # =============================================================================
@@ -57,16 +57,16 @@ endif()
 # =============================================================================
 
 # Set maximum number of threads (can be overridden by user)
-if(NOT DEFINED QUARISMA_MAX_THREADS)
-  set(QUARISMA_MAX_THREADS 64 CACHE STRING "Maximum number of threads supported by Quarisma")
+if(NOT DEFINED PARALLEL_MAX_THREADS)
+  set(PARALLEL_MAX_THREADS 64 CACHE STRING "Maximum number of threads supported by Quarisma")
 endif()
 
-# Validate QUARISMA_MAX_THREADS
-if(QUARISMA_MAX_THREADS LESS 1)
-  message(FATAL_ERROR "Quarisma: QUARISMA_MAX_THREADS must be at least 1 (got ${QUARISMA_MAX_THREADS})")
+# Validate PARALLEL_MAX_THREADS
+if(PARALLEL_MAX_THREADS LESS 1)
+  message(FATAL_ERROR "Quarisma: PARALLEL_MAX_THREADS must be at least 1 (got ${PARALLEL_MAX_THREADS})")
 endif()
 
-message(STATUS "Quarisma: Maximum threads: ${QUARISMA_MAX_THREADS}")
+message(STATUS "Quarisma: Maximum threads: ${PARALLEL_MAX_THREADS}")
 
 # =============================================================================
 # Thread Library Linking
@@ -78,7 +78,7 @@ if(NOT TARGET Quarisma::threads)
   add_library(Quarisma::threads ALIAS Quarisma_threads)
   
   # Link the appropriate thread library
-  if(QUARISMA_USE_PTHREADS)
+  if(PARALLEL_USE_PTHREADS)
     # Link pthreads library on Unix-like systems
     target_link_libraries(Quarisma_threads INTERFACE Threads::Threads)
     
@@ -87,7 +87,7 @@ if(NOT TARGET Quarisma::threads)
       target_compile_options(Quarisma_threads INTERFACE "-pthread")
     endif()
     
-  elseif(QUARISMA_USE_WIN32_THREADS)
+  elseif(PARALLEL_USE_WIN32_THREADS)
     # Win32 threads are part of the Windows API, no additional linking needed
     # But we ensure Threads::Threads is available for consistency
     target_link_libraries(Quarisma_threads INTERFACE Threads::Threads)
@@ -95,19 +95,19 @@ if(NOT TARGET Quarisma::threads)
   
   # Export thread configuration as compile definitions on the interface target
   target_compile_definitions(Quarisma_threads INTERFACE
-    QUARISMA_USE_PTHREADS=${QUARISMA_USE_PTHREADS}
-    QUARISMA_USE_WIN32_THREADS=${QUARISMA_USE_WIN32_THREADS}
-    QUARISMA_MAX_THREADS=${QUARISMA_MAX_THREADS}
+    PARALLEL_USE_PTHREADS=${PARALLEL_USE_PTHREADS}
+    PARALLEL_USE_WIN32_THREADS=${PARALLEL_USE_WIN32_THREADS}
+    PARALLEL_MAX_THREADS=${PARALLEL_MAX_THREADS}
   )
 
   message(STATUS "Quarisma: Created Quarisma::threads interface library")
 
-  # Add to QUARISMA_DEPENDENCY_LIBS for automatic linking to Core and other libraries
+  # Add to PROJECT_DEPENDENCY_LIBS for automatic linking to Core and other libraries
   # This ensures all Quarisma libraries have access to threading support
-  get_property(_temp_libs GLOBAL PROPERTY _QUARISMA_DEPENDENCY_LIBS)
+  get_property(_temp_libs GLOBAL PROPERTY _PROJECT_DEPENDENCY_LIBS)
   list(APPEND _temp_libs Quarisma::threads)
-  set_property(GLOBAL PROPERTY _QUARISMA_DEPENDENCY_LIBS "${_temp_libs}")
-  message(STATUS "Quarisma: Quarisma::threads added to QUARISMA_DEPENDENCY_LIBS")
+  set_property(GLOBAL PROPERTY _PROJECT_DEPENDENCY_LIBS "${_temp_libs}")
+  message(STATUS "Quarisma: Quarisma::threads added to PROJECT_DEPENDENCY_LIBS")
 endif()
 
 # =============================================================================
@@ -115,8 +115,8 @@ endif()
 # =============================================================================
 
 message(STATUS "Quarisma: Thread configuration summary:")
-message(STATUS "  - QUARISMA_USE_PTHREADS: ${QUARISMA_USE_PTHREADS}")
-message(STATUS "  - QUARISMA_USE_WIN32_THREADS: ${QUARISMA_USE_WIN32_THREADS}")
-message(STATUS "  - QUARISMA_MAX_THREADS: ${QUARISMA_MAX_THREADS}")
+message(STATUS "  - PARALLEL_USE_PTHREADS: ${PARALLEL_USE_PTHREADS}")
+message(STATUS "  - PARALLEL_USE_WIN32_THREADS: ${PARALLEL_USE_WIN32_THREADS}")
+message(STATUS "  - PARALLEL_MAX_THREADS: ${PARALLEL_MAX_THREADS}")
 message(STATUS "  - CMAKE_THREAD_LIBS_INIT: ${CMAKE_THREAD_LIBS_INIT}")
 

@@ -17,8 +17,7 @@
  * Website: https://www.quarisma.co.uk
  */
 
-#ifndef PROFILER_PROFILER_UTILS_PROFILER_STRINGS_H_
-#define PROFILER_PROFILER_UTILS_PROFILER_STRINGS_H_
+#pragma once
 
 #include <algorithm>
 #include <cctype>
@@ -71,4 +70,3 @@ inline std::string to_lower(std::string_view input)
 }
 }  // namespace strings
 
-#endif  // PROFILER_PROFILER_UTILS_PROFILER_STRINGS_H_

@@ -1,6 +1,6 @@
 #if PROFILER_HAS_NATIVE_PROFILER
 /*
- * Quarisma: High-Performance Computational Library
+ * Profiler: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -11,7 +11,7 @@
 #include "ProfilerTest.h"
 #include "native/cpu/annotation_stack.h"
 
-using namespace quarisma::profiler_impl;
+using namespace profiler::profiler_impl;
 
 // Test push_annotation single level
 PROFILERTEST(Profiler, annotation_stack_push_single)

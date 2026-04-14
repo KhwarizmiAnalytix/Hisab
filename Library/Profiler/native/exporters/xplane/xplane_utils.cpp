@@ -45,7 +45,7 @@ limitations under the License.
 #include <vector>
 
 #include "common/profiler_macros.h"
-//#include "logging/logger.h"
+//#include "logger.h"
 #include "common/flat_hash.h"
 #include "native/analysis/stats_calculator.h"
 #include "native/core/timespan.h"
@@ -55,7 +55,7 @@ limitations under the License.
 #include "native/exporters/xplane/xplane_schema.h"
 #include "native/exporters/xplane/xplane_visitor.h"
 
-namespace quarisma
+namespace profiler
 {
 namespace
 {
@@ -583,28 +583,28 @@ void AddFlowsToXplane(int32_t host_id, bool is_host_plane, bool connect_traceme,
                                     stat->metadata_id() == producer_type_stats_metadata->id())
                                 {
                                     producer_type =
-                                        xstats_builder<quarisma::xplane>::IntOrUintValue(*stat);
+                                        xstats_builder<profiler::xplane>::IntOrUintValue(*stat);
                                 }
                                 else if (
                                     (consumer_type_stats_metadata != nullptr) &&
                                     stat->metadata_id() == consumer_type_stats_metadata->id())
                                 {
                                     consumer_type =
-                                        xstats_builder<quarisma::xplane>::IntOrUintValue(*stat);
+                                        xstats_builder<profiler::xplane>::IntOrUintValue(*stat);
                                 }
                                 else if (
                                     (producer_id_stats_metadata != nullptr) &&
                                     stat->metadata_id() == producer_id_stats_metadata->id())
                                 {
                                     producer_id =
-                                        xstats_builder<quarisma::xplane>::IntOrUintValue(*stat);
+                                        xstats_builder<profiler::xplane>::IntOrUintValue(*stat);
                                 }
                                 else if (
                                     (consumer_id_stats_metadata != nullptr) &&
                                     stat->metadata_id() == consumer_id_stats_metadata->id())
                                 {
                                     consumer_id =
-                                        xstats_builder<quarisma::xplane>::IntOrUintValue(*stat);
+                                        xstats_builder<profiler::xplane>::IntOrUintValue(*stat);
                                 }
                             }
                         });
@@ -741,7 +741,7 @@ void AggregateXPlane(const xplane& full_trace, xplane& aggregated_trace)
 {
     struct EventStat
     {
-        quarisma::stat<int64_t> stat;
+        profiler::stat<int64_t> stat;
         int64_t                 children_duration;
     };
     using StatByEvent = flat_hash_map<int64_t /*event_id*/, EventStat>;
@@ -886,4 +886,4 @@ bool IsDevicePlane(const xplane& plane)
            StartsWith(plane.name(), kTpuNonCorePlaneNamePrefix) || IsCustomPlane(plane);
 }
 
-}  // namespace quarisma
+}  // namespace profiler

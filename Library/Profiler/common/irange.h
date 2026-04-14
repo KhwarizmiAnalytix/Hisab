@@ -7,7 +7,7 @@
 #include <iterator>
 #include <type_traits>
 
-namespace quarisma
+namespace profiler
 {
 
 namespace detail
@@ -61,7 +61,7 @@ struct integer_iterator
         if constexpr (one_sided)
         {
             // Range-for loops' end test is `begin != end`, not `begin <
-            // end`. To handle `quarisma::irange(n)` where n < 0 (which should be
+            // end`. To handle `profiler::irange(n)` where n < 0 (which should be
             // empty), we just make `begin != end` fail whenever `end` is
             // negative.
             return is_negative(other.value) || value == other.value;
@@ -118,4 +118,4 @@ constexpr integer_range<Integer, true> irange(Integer end)
     return {Integer(), end};
 }
 
-}  // namespace quarisma
+}  // namespace profiler

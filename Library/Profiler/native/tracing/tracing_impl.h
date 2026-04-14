@@ -21,15 +21,15 @@
 
 #include "native/cpu/threadpool_listener_state.h"
 
-namespace quarisma::tracing
+namespace profiler::tracing
 {
 
 inline bool event_collector::is_enabled()
 {
-    return quarisma::profiler_impl::threadpool_listener::IsEnabled();
+    return profiler::profiler_impl::threadpool_listener::IsEnabled();
 }
 
-}  // namespace quarisma::tracing
+}  // namespace profiler::tracing
 
 // Stub tracing macros for portability.
 #define PROFILER_TRACELITERAL(a) \

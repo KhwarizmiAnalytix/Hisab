@@ -43,12 +43,12 @@ limitations under the License.
 #include "common/profiler_export.h"
 #include "common/profiler_macros.h"
 #include "common/profiler_strings.h"
-//#include "logging/logger.h"
+//#include "logger.h"
 //#include "util/string_util.h"
 
 //#include "tsl/profiler/lib/context_types.h"
 
-namespace quarisma
+namespace profiler
 {
 
 inline void HashCombine(std::size_t& seed, std::size_t hash)
@@ -674,4 +674,4 @@ PROFILER_CONST_INIT extern const std::string_view kThreadpoolListenerRecord;
 PROFILER_CONST_INIT extern const std::string_view kThreadpoolListenerStartRegion;
 PROFILER_CONST_INIT extern const std::string_view kThreadpoolListenerStopRegion;
 PROFILER_CONST_INIT extern const std::string_view kThreadpoolListenerRegion;
-}  // namespace quarisma
+}  // namespace profiler

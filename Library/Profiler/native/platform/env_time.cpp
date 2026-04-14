@@ -40,7 +40,7 @@ limitations under the License.
 
 #include <ctime>
 
-namespace quarisma
+namespace profiler
 {
 
 /* static */
@@ -53,5 +53,5 @@ uint64_t env_time::now_nanos()
         static_cast<uint64_t>(ts.tv_nsec));
 }
 
-}  // namespace quarisma
+}  // namespace profiler
 #endif

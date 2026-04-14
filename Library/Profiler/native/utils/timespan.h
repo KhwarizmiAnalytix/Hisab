@@ -32,8 +32,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef PROFILER_PROFILER_UTILS_TIMESPAN_H_
-#define PROFILER_PROFILER_UTILS_TIMESPAN_H_
+#pragma once
 
 #include <algorithm>
 #include <cstdint>
@@ -41,7 +40,7 @@ limitations under the License.
 
 #include "native/utils/math_utils.h"
 
-namespace quarisma
+namespace profiler
 {
 namespace profiler_impl
 {
@@ -237,6 +236,5 @@ inline timespan milli_span(double start_ms, double end_ms)
 }
 
 }  // namespace profiler_impl
-}  // namespace quarisma
+}  // namespace profiler
 
-#endif  // PROFILER_PROFILER_UTILS_TIMESPAN_H_

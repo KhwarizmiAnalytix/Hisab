@@ -1,10 +1,10 @@
 #if PROFILER_HAS_NATIVE_PROFILER
 /*
- * Quarisma: High-Performance Computational Library
+ * Profiler: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of Profiler and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -14,8 +14,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@profiler.co.uk
+ * Website: https://www.profiler.co.uk
  */
 
 #include <chrono>
@@ -31,7 +31,7 @@
 #include "native/tracing/traceme_encode.h"
 #include "native/tracing/traceme_recorder.h"
 
-using namespace quarisma;
+using namespace profiler;
 
 // ============================================================================
 // Consolidated Test 1: Basic Constructors and Move Semantics
@@ -534,7 +534,7 @@ PROFILERTEST(TracemeTest, edge_cases_robustness)
         std::string long_name(500, 'a');  // 500 character name
 
         // Test that we can create and destroy traceme objects with long names
-        // without causing crashes - no try/catch needed per Quarisma coding standards
+        // without causing crashes - no try/catch needed per Profiler coding standards
         {
             traceme trace(long_name.c_str());
             std::this_thread::sleep_for(std::chrono::microseconds(10));

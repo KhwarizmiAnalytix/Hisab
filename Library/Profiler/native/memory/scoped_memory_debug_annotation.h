@@ -40,7 +40,7 @@ limitations under the License.
 
 #include "common/profiler_export.h"
 
-namespace quarisma
+namespace profiler
 {
 
 // Annotations for memory profiling and debugging purpose.
@@ -132,4 +132,4 @@ private:
     scoped_memory_debug_annotation& operator=(const scoped_memory_debug_annotation&) = delete;
 };
 
-}  // namespace quarisma
+}  // namespace profiler

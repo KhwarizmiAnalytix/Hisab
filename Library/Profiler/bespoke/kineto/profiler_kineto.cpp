@@ -50,7 +50,7 @@ extern "C"
 #endif  // _MSC_VER
 #endif  // PROFILER_HAS_KINETO
 
-namespace quarisma
+namespace profiler
 {
 namespace autograd::profiler_impl
 {
@@ -64,26 +64,26 @@ inline int64_t getTimeNs()
     // False positive in fmt library's internal format_string_checker constructor
     return libkineto::timeSinceEpoch(std::chrono::system_clock::now());
 #else
-    return quarisma::getTime();
+    return profiler::getTime();
 #endif  // PROFILER_HAS_KINETO
 }
 
-using quarisma::profiler_impl::impl::ActiveProfilerType;
-using quarisma::profiler_impl::impl::EventType;
-using quarisma::profiler_impl::impl::ExtraFields;
-using quarisma::profiler_impl::impl::get_record_concrete_inputs_enabled;  //NOLINT
-//using quarisma::profiler_impl::impl::ivalueListToStr;
-//using quarisma::profiler_impl::impl::ivalueToStr;
-using quarisma::profiler_impl::impl::op_input_t;
-using quarisma::profiler_impl::impl::ProfilerStateBase;
-//using quarisma::profiler_impl::impl::PyExtraFieldsBase;
-using quarisma::profiler_impl::impl::Result;
-//using quarisma::profiler_impl::impl::shape;
-//using quarisma::profiler_impl::impl::shapesToStr;
-//using quarisma::profiler_impl::impl::stacksToStr;
-//using quarisma::profiler_impl::impl::strListToStr;
-using quarisma::profiler_impl::impl::TensorMetadata;
-//using quarisma::profiler_impl::impl::variantShapesToStr;
+using profiler::profiler_impl::impl::ActiveProfilerType;
+using profiler::profiler_impl::impl::EventType;
+using profiler::profiler_impl::impl::ExtraFields;
+using profiler::profiler_impl::impl::get_record_concrete_inputs_enabled;  //NOLINT
+//using profiler::profiler_impl::impl::ivalueListToStr;
+//using profiler::profiler_impl::impl::ivalueToStr;
+using profiler::profiler_impl::impl::op_input_t;
+using profiler::profiler_impl::impl::ProfilerStateBase;
+//using profiler::profiler_impl::impl::PyExtraFieldsBase;
+using profiler::profiler_impl::impl::Result;
+//using profiler::profiler_impl::impl::shape;
+//using profiler::profiler_impl::impl::shapesToStr;
+//using profiler::profiler_impl::impl::stacksToStr;
+//using profiler::profiler_impl::impl::strListToStr;
+using profiler::profiler_impl::impl::TensorMetadata;
+//using profiler::profiler_impl::impl::variantShapesToStr;
 using shape = std::variant<std::vector<int64_t>, std::vector<std::vector<int64_t>>>;
 
 struct OpArgData
@@ -91,7 +91,7 @@ struct OpArgData
     bool                              hasData;
     std::vector<shape>                shapes;
     std::vector<std::string>          dtypes;
-    std::vector<quarisma::IValue>     concreteInputs;
+    std::vector<profiler::IValue>     concreteInputs;
     std::vector<std::vector<int64_t>> shapesForKinetoEvent;
     std::vector<shape>                strides;
 };
@@ -109,12 +109,12 @@ auto parseArgData(
     std::vector<std::vector<int64_t>> shapesForKinetoEvent(input_shapes.size());
 
     std::vector<std::string>      dtypes(input_shapes.size());
-    std::vector<quarisma::IValue> concrete_inputs_list;
+    std::vector<profiler::IValue> concrete_inputs_list;
 
-    for (const auto& i : quarisma::irange(input_shapes.size()))
+    for (const auto& i : profiler::irange(input_shapes.size()))
     {
         std::visit(
-            quarisma::overloaded(
+            profiler::overloaded(
                 [&](const TensorMetadata& t)
                 {
                     shapes[i]               = t.sizes_;
@@ -137,7 +137,7 @@ auto parseArgData(
                     strides[i] = stride;
                     dtypes[i]  = "TensorList";
                 },
-                [&](const quarisma::IValue&) { dtypes[i] = "Scalar"; },
+                [&](const profiler::IValue&) { dtypes[i] = "Scalar"; },
                 [&](const auto&) {}),
             input_shapes[i]);
     }
@@ -147,16 +147,16 @@ auto parseArgData(
     {
         concrete_inputs_list.resize(input_shapes.size());
 
-        for (const auto& i : quarisma::irange(input_shapes.size()))
+        for (const auto& i : profiler::irange(input_shapes.size()))
         {
             std::visit(
-                quarisma::overloaded(
-                    [&](const quarisma::IValue& val) { concrete_inputs_list[i] = val; },
+                profiler::overloaded(
+                    [&](const profiler::IValue& val) { concrete_inputs_list[i] = val; },
                     [&](const auto&) {}),
                 input_shapes[i]);
             std::visit(
-                quarisma::overloaded(
-                    [&](const quarisma::IValue& val)
+                profiler::overloaded(
+                    [&](const profiler::IValue& val)
                     {
                         concrete_inputs_list[i] = val;
                         dtypes[i]               = "ScalarList";
@@ -178,7 +178,7 @@ struct MetadataBase
         {
             // In order to add metadata we have to downcast from
             // `libkineto::ITraceActivity` to `libkineto::GenericTraceActivity`. We
-            // know that all activities provided by Quarisma are of the correct type,
+            // know that all activities provided by Profiler are of the correct type,
             // however Kineto profilers can (and do) add events that inherit directly
             // from ITraceActivity. As a result, any Result which was constructed from
             // an event that Kineto provided is unsafe to cast.
@@ -194,9 +194,9 @@ struct MetadataBase
     {
         if ((kinetoActivity_ != nullptr) && !value.empty() && value != "\"\"")
         {
-            quarisma::profiler_impl::impl::kineto::addMetadata(
+            profiler::profiler_impl::impl::kineto::addMetadata(
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-                const_cast<quarisma::profiler_impl::impl::kineto::activity_t*>(kinetoActivity_),
+                const_cast<profiler::profiler_impl::impl::kineto::activity_t*>(kinetoActivity_),
                 key,
                 value);
         }
@@ -205,7 +205,7 @@ struct MetadataBase
     [[nodiscard]] bool hasKinetoActivity() const { return kinetoActivity_ != nullptr; }
 
 private:
-    const quarisma::profiler_impl::impl::kineto::activity_t* kinetoActivity_{nullptr};
+    const profiler::profiler_impl::impl::kineto::activity_t* kinetoActivity_{nullptr};
 };
 
 struct AddTensorboardFields : public MetadataBase
@@ -217,10 +217,10 @@ struct AddTensorboardFields : public MetadataBase
         const auto module_hierarchy = kineto_event.moduleHierarchy();
         addMetadata(
             "Module Hierarchy",
-            quarisma::profiler_impl::impl::stacksToStr(module_hierarchy.vec(), "."));
+            profiler::profiler_impl::impl::stacksToStr(module_hierarchy.vec(), "."));
         addMetadata(
             "Call stack",
-            quarisma::profiler_impl::impl::stacksToStr(kineto_event.stack().vec(), ";"));
+            profiler::profiler_impl::impl::stacksToStr(kineto_event.stack().vec(), ";"));
 
         // Note: PyExtraFieldsBase is not currently available in this build
         // Uncomment when Python integration is enabled
@@ -261,7 +261,7 @@ struct AddGenericMetadata : public MetadataBase
 {
     AddGenericMetadata(
         std::shared_ptr<Result>&                             result,
-        const quarisma::profiler_impl::impl::ProfilerConfig* config)
+        const profiler::profiler_impl::impl::ProfilerConfig* config)
         : MetadataBase(result), config_(config)
     {
         result->visit(*this);
@@ -285,23 +285,23 @@ struct AddGenericMetadata : public MetadataBase
             {
                 addMetadata(
                     "Input Dims",
-                    quarisma::profiler_impl::impl::variantShapesToStr(arg_data.shapes));
+                    profiler::profiler_impl::impl::variantShapesToStr(arg_data.shapes));
                 addMetadata(
                     "Input Strides",
-                    quarisma::profiler_impl::impl::variantShapesToStr(arg_data.strides));
+                    profiler::profiler_impl::impl::variantShapesToStr(arg_data.strides));
             }
             else
             {
                 addMetadata(
                     "Input Dims",
-                    quarisma::profiler_impl::impl::shapesToStr(arg_data.shapesForKinetoEvent));
+                    profiler::profiler_impl::impl::shapesToStr(arg_data.shapesForKinetoEvent));
             }
-            addMetadata("Input type", quarisma::profiler_impl::impl::strListToStr(arg_data.dtypes));
+            addMetadata("Input type", profiler::profiler_impl::impl::strListToStr(arg_data.dtypes));
             if (!arg_data.concreteInputs.empty())
             {
                 addMetadata(
                     "Concrete Inputs",
-                    quarisma::profiler_impl::impl::ivalueListToStr(arg_data.concreteInputs));
+                    profiler::profiler_impl::impl::ivalueListToStr(arg_data.concreteInputs));
             }
         }
 
@@ -329,7 +329,7 @@ struct AddGenericMetadata : public MetadataBase
                 isStringList = std::all_of(
                     list.begin(),
                     list.end(),
-                    [](const quarisma::IValue& item) { return item.isString(); });
+                    [](const profiler::IValue& item) { return item.isString(); });
             }
 
             if (!isValidType && !isStringList)
@@ -346,13 +346,13 @@ struct AddGenericMetadata : public MetadataBase
             {
                 // For list of strings, use ivalueListToStr
                 auto                        list = val.toListRef();
-                std::vector<quarisma::IValue> stringList(list.begin(), list.end());
-                addMetadata(key, quarisma::profiler_impl::impl::ivalueListToStr(stringList));
+                std::vector<profiler::IValue> stringList(list.begin(), list.end());
+                addMetadata(key, profiler::profiler_impl::impl::ivalueListToStr(stringList));
             }
             else
             {
                 bool isString = val.isString();
-                addMetadata(key, quarisma::profiler_impl::impl::ivalueToStr(val, isString));
+                addMetadata(key, profiler::profiler_impl::impl::ivalueToStr(val, isString));
             }
         }*/
 
@@ -365,7 +365,7 @@ struct AddGenericMetadata : public MetadataBase
         if (config_ != nullptr && !config_->experimental_config.performance_events.empty())
         {
             const auto& event_names = config_->experimental_config.performance_events;
-            for (const auto i : quarisma::irange(op_event.perf_event_counters_->size()))
+            for (const auto i : profiler::irange(op_event.perf_event_counters_->size()))
             {
                 addMetadata(event_names[i], std::to_string((*op_event.perf_event_counters_)[i]));
             }
@@ -416,14 +416,14 @@ struct AddGenericMetadata : public MetadataBase
 
 private:
     /* To get names of the performance events */
-    const quarisma::profiler_impl::impl::ProfilerConfig* config_;
+    const profiler::profiler_impl::impl::ProfilerConfig* config_;
 };
 
 struct KinetoThreadLocalState : public ProfilerStateBase
 {
     explicit KinetoThreadLocalState(
         const ProfilerConfig&                                 config,
-        std::set<quarisma::profiler_impl::impl::ActivityType> activities)
+        std::set<profiler::profiler_impl::impl::ActivityType> activities)
         : ProfilerStateBase(config),
           startTime(getTimeNs()),
           recordQueue(config, std::move(activities))
@@ -441,11 +441,11 @@ struct KinetoThreadLocalState : public ProfilerStateBase
 
     ActiveProfilerType profilerType() override { return ActiveProfilerType::KINETO; }
 
-    void reportVulkanEventToProfiler(quarisma::profiler_impl::impl::vulkan_id_t id)
+    void reportVulkanEventToProfiler(profiler::profiler_impl::impl::vulkan_id_t id)
     {
         if (!config_.disabled())
         {
-            recordQueue.getSubqueue()->emplace_vulkan_event(quarisma::getApproximateTime(), id);
+            recordQueue.getSubqueue()->emplace_vulkan_event(profiler::getApproximateTime(), id);
         }
     }
 
@@ -454,12 +454,12 @@ struct KinetoThreadLocalState : public ProfilerStateBase
         int64_t                 alloc_size,
         size_t                  total_allocated,
         size_t                  total_reserved,
-        quarisma::device_option device) override
+        profiler::device_option device) override
     {
         if (config_.profile_memory && !config_.disabled())
         {
             recordQueue.getSubqueue()->emplace_allocation_event(
-                quarisma::getApproximateTime(),
+                profiler::getApproximateTime(),
                 ptr,
                 alloc_size,
                 total_allocated,
@@ -473,12 +473,12 @@ struct KinetoThreadLocalState : public ProfilerStateBase
         int64_t                 alloc_size,
         size_t                  total_allocated,
         size_t                  total_reserved,
-        quarisma::device_option device) override
+        profiler::device_option device) override
     {
         if (config_.profile_memory && !config_.disabled())
         {
             recordQueue.getSubqueue()->emplace_ooms_event(
-                quarisma::getApproximateTime(),
+                profiler::getApproximateTime(),
                 alloc_size,
                 total_allocated,
                 total_reserved,
@@ -493,7 +493,7 @@ struct KinetoThreadLocalState : public ProfilerStateBase
 
     void resumePython() { recordQueue.restart(); }
 
-    std::unique_ptr<quarisma::profiler_impl::impl::kineto::ActivityTraceWrapper> finalizeTrace()
+    std::unique_ptr<profiler::profiler_impl::impl::kineto::ActivityTraceWrapper> finalizeTrace()
     {
         auto end_time = getTimeNs();
         recordQueue.stop();
@@ -532,14 +532,14 @@ struct KinetoThreadLocalState : public ProfilerStateBase
     {
         for (auto& e : events)
         {
-            if (e->parent_.expired() && e->deviceType() == quarisma::device_enum::CPU)
+            if (e->parent_.expired() && e->deviceType() == profiler::device_enum::CPU)
             {
                 eventTree.push_back(e);
             }
 
             if (e->finished_)
             {
-                e->visit(quarisma::overloaded(
+                e->visit(profiler::overloaded(
                     [this](ExtraFields<EventType::TorchOp>& i) { invokeCallback(i); },
                     [this](ExtraFields<EventType::Backend>& i) { invokeCallback(i); },
                     [](auto&) {}));
@@ -555,8 +555,8 @@ struct KinetoThreadLocalState : public ProfilerStateBase
     }
 
     uint64_t                                      startTime;
-    quarisma::ApproximateClockToUnixTimeConverter clockConverter;
-    quarisma::profiler_impl::impl::RecordQueue    recordQueue;
+    profiler::ApproximateClockToUnixTimeConverter clockConverter;
+    profiler::profiler_impl::impl::RecordQueue    recordQueue;
     std::vector<KinetoEvent>                      kinetoEvents;
     std::vector<experimental_event_t>             eventTree;
     // Optional, if event post-processing is enabled.
@@ -564,7 +564,7 @@ struct KinetoThreadLocalState : public ProfilerStateBase
 };
 
 template <bool use_global_state_ptr = false>
-std::unique_ptr<quarisma::ObserverContext> onFunctionEnter(const quarisma::RecordFunction& fn)
+std::unique_ptr<profiler::ObserverContext> onFunctionEnter(const profiler::RecordFunction& fn)
 {
     auto* state_ptr = KinetoThreadLocalState::get(use_global_state_ptr);
     if (!state_ptr)
@@ -576,7 +576,7 @@ std::unique_ptr<quarisma::ObserverContext> onFunctionEnter(const quarisma::Recor
 
 // @lint-ignore CLANGTIDY clang-diagnostic-unused-parameter
 template <bool use_global_state_ptr = false>
-void onFunctionExit(const quarisma::RecordFunction& fn, quarisma::ObserverContext* ctx_ptr)
+void onFunctionExit(const profiler::RecordFunction& fn, profiler::ObserverContext* ctx_ptr)
 {
     auto* state_ptr = KinetoThreadLocalState::get(use_global_state_ptr);
     if (!state_ptr)
@@ -585,59 +585,59 @@ void onFunctionExit(const quarisma::RecordFunction& fn, quarisma::ObserverContex
     }
     const auto& config = state_ptr->config();
     auto*       kineto_ctx_ptr =
-        static_cast<quarisma::profiler_impl::impl::KinetoObserverContext*>(ctx_ptr);
+        static_cast<profiler::profiler_impl::impl::KinetoObserverContext*>(ctx_ptr);
     // PROFILER_CHECK(kineto_ctx_ptr != nullptr);
-    kineto_ctx_ptr->event_->end_time_ = quarisma::getApproximateTime();
+    kineto_ctx_ptr->event_->end_time_ = profiler::getApproximateTime();
     if (!config.experimental_config.performance_events.empty())
     {
         state_ptr->recordQueue.getSubqueue()->disable_perf_profiler(
             *kineto_ctx_ptr->event_->counters_);
     }
-    kineto_ctx_ptr->event_->basic_fields_.end_tid_ = quarisma::RecordFunction::currentThreadId();
+    kineto_ctx_ptr->event_->basic_fields_.end_tid_ = profiler::RecordFunction::currentThreadId();
     if (fn.isNcclMeta())
     {
         auto& extra_meta = *(kineto_ctx_ptr->event_->extra_nccl_meta_);
         // Record only the outputs in this exit callback of the record function
-        quarisma::profiler_impl::impl::SaveNcclMetaConfig const ncclMetaConfig{
+        profiler::profiler_impl::impl::SaveNcclMetaConfig const ncclMetaConfig{
             true, false, false, true};
-        auto additonal_nccl_meta = quarisma::profiler_impl::impl::saveNcclMeta(fn, ncclMetaConfig);
+        auto additonal_nccl_meta = profiler::profiler_impl::impl::saveNcclMeta(fn, ncclMetaConfig);
         extra_meta.insert(additonal_nccl_meta.begin(), additonal_nccl_meta.end());
     }
     if (config.state == ProfilerState::KINETO_GPU_FALLBACK)
     {
         auto* fallback = kineto_ctx_ptr->fallback_;
         // PROFILER_CHECK(fallback != nullptr);
-        quarisma::profiler_impl::impl::cudaStubs()->record(
+        profiler::profiler_impl::impl::cudaStubs()->record(
             nullptr, &fallback->device_event_end_, nullptr);
     }
     else if (config.state == ProfilerState::KINETO_PRIVATEUSE1_FALLBACK)
     {
         auto* fallback = kineto_ctx_ptr->fallback_;
         // PROFILER_CHECK(fallback != nullptr);
-        quarisma::profiler_impl::impl::privateuse1Stubs()->record(
+        profiler::profiler_impl::impl::privateuse1Stubs()->record(
             nullptr, &fallback->device_event_end_, nullptr);
     }
 
     if (!config.experimental_config.disable_external_correlation)
     {
-        if (fn.scope() == quarisma::RecordScope::USER_SCOPE)
+        if (fn.scope() == profiler::RecordScope::USER_SCOPE)
         {
-            quarisma::profiler_impl::impl::kineto::popUserCorrelationId();
+            profiler::profiler_impl::impl::kineto::popUserCorrelationId();
         }
         else
         {
-            quarisma::profiler_impl::impl::kineto::popCorrelationId();
+            profiler::profiler_impl::impl::kineto::popCorrelationId();
         }
     }
 }
 
 template <bool use_global_callback = false>
-void pushProfilingCallbacks(const std::unordered_set<quarisma::RecordScope>& scopes)
+void pushProfilingCallbacks(const std::unordered_set<profiler::RecordScope>& scopes)
 {
     auto* registration_state_ptr = KinetoThreadLocalState::get(use_global_callback);
     // PROFILER_CHECK(registration_state_ptr, "Expected profiler state set");
     auto recordFunctionCallback =
-        quarisma::RecordFunctionCallback(
+        profiler::RecordFunctionCallback(
             onFunctionEnter<use_global_callback>, onFunctionExit<use_global_callback>)
             .needsInputs(registration_state_ptr->config().report_input_shapes)
             .scopes(scopes);
@@ -645,19 +645,19 @@ void pushProfilingCallbacks(const std::unordered_set<quarisma::RecordScope>& sco
     if constexpr (use_global_callback)
     {
         registration_state_ptr->setCallbackHandle(
-            quarisma::addGlobalCallback(recordFunctionCallback));
+            profiler::addGlobalCallback(recordFunctionCallback));
     }
     else
     {
         registration_state_ptr->setCallbackHandle(
-            quarisma::addThreadLocalCallback(recordFunctionCallback));
+            profiler::addThreadLocalCallback(recordFunctionCallback));
     }
 }
 
 struct ProfilerStateInfo
 {
     std::shared_ptr<KinetoThreadLocalState>   state_ptr;
-    std::unordered_set<quarisma::RecordScope> scopes;
+    std::unordered_set<profiler::RecordScope> scopes;
 };
 std::shared_ptr<ProfilerStateInfo> profiler_state_info_ptr{nullptr};
 
@@ -667,7 +667,7 @@ void reportBackendEventToActiveKinetoProfiler(
     const int64_t               start_time_us,
     const int64_t               end_time_us,
     const int64_t               debug_handle,
-    const quarisma::RecordScope scope,
+    const profiler::RecordScope scope,
     const std::string&          event_name,
     const std::string&          backend_name)
 {
@@ -693,8 +693,8 @@ void reportBackendEventToActiveKinetoProfiler(
 }
 
 void prepareProfiler(
-    const quarisma::profiler_impl::impl::ProfilerConfig&         config,
-    const std::set<quarisma::profiler_impl::impl::ActivityType>& activities)
+    const profiler::profiler_impl::impl::ProfilerConfig&         config,
+    const std::set<profiler::profiler_impl::impl::ActivityType>& activities)
 {
     if (config.state == ProfilerState::NVTX || config.state == ProfilerState::ITT)
     {
@@ -707,9 +707,9 @@ void prepareProfiler(
     // config.state == ProfilerState::KINETO_PRIVATEUSE1_FALLBACK,
     // "Supported only in Kineto profiler");
 
-    quarisma::profiler_impl::impl::kineto::prepareTrace(
-        /*cpuOnly=*/!(quarisma::hasCUDA()  //|| quarisma::hasXPU() || quarisma::hasMTIA() ||
-                      //quarisma::get_privateuse1_backend() != "privateuseone"
+    profiler::profiler_impl::impl::kineto::prepareTrace(
+        /*cpuOnly=*/!(profiler::hasCUDA()  //|| profiler::hasXPU() || profiler::hasMTIA() ||
+                      //profiler::get_privateuse1_backend() != "privateuseone"
                       ),
         activities,
         config.experimental_config,
@@ -719,7 +719,7 @@ void prepareProfiler(
     {
         /* For now only CPU activity is supported */
         // PROFILER_CHECK(
-        // activities.count(quarisma::autograd::profiler_impl::ActivityType::CPU),
+        // activities.count(profiler::autograd::profiler_impl::ActivityType::CPU),
         // "Cannot run cpu hardware profiler without CPU activities, please only use CPU activity "
         // "type");
         /*
@@ -731,8 +731,8 @@ void prepareProfiler(
         auto is_standard_event = [](const std::string& event) -> bool
         {
             return std::any_of(
-                std::begin(quarisma::profiler_impl::ProfilerPerfEvents),
-                std::end(quarisma::profiler_impl::ProfilerPerfEvents),
+                std::begin(profiler::profiler_impl::ProfilerPerfEvents),
+                std::end(profiler::profiler_impl::ProfilerPerfEvents),
                 [&event](const auto* e) { return std::strcmp(event.c_str(), e) == 0; });
         };
 
@@ -799,20 +799,20 @@ static void toggleCPUCollectionDynamic(bool enable)
 }
 
 void toggleCollectionDynamic(
-    const bool enable, const std::set<quarisma::profiler_impl::impl::ActivityType>& activities)
+    const bool enable, const std::set<profiler::profiler_impl::impl::ActivityType>& activities)
 {
-    /*if (activities.contains(quarisma::autograd::profiler_impl::ActivityType::CPU) &&
-        (!activities.contains(quarisma::autograd::profiler_impl::ActivityType::CUDA) ||
-         !activities.contains(quarisma::autograd::profiler_impl::ActivityType::XPU)))
+    /*if (activities.contains(profiler::autograd::profiler_impl::ActivityType::CPU) &&
+        (!activities.contains(profiler::autograd::profiler_impl::ActivityType::CUDA) ||
+         !activities.contains(profiler::autograd::profiler_impl::ActivityType::XPU)))
     {
         //LOG(WARNING)
         //<< "Toggling CPU activity with GPU activity on may result in traces with GPU events on "
         //  "artibrary tracks";
     }
     else if (
-        (activities.contains(quarisma::autograd::profiler_impl::ActivityType::CUDA) ||
-         activities.contains(quarisma::autograd::profiler_impl::ActivityType::XPU)) &&
-        !activities.contains(quarisma::autograd::profiler_impl::ActivityType::CPU))
+        (activities.contains(profiler::autograd::profiler_impl::ActivityType::CUDA) ||
+         activities.contains(profiler::autograd::profiler_impl::ActivityType::XPU)) &&
+        !activities.contains(profiler::autograd::profiler_impl::ActivityType::CPU))
     {
         //LOG(WARNING)
         //<< "Toggling GPU activity with CPU activity on may result in traces with incorrect "
@@ -820,12 +820,12 @@ void toggleCollectionDynamic(
     }*/
     for (auto act : activities)
     {
-        if (act == quarisma::autograd::profiler_impl::ActivityType::CUDA ||
-            act == quarisma::autograd::profiler_impl::ActivityType::XPU)
+        if (act == profiler::autograd::profiler_impl::ActivityType::CUDA ||
+            act == profiler::autograd::profiler_impl::ActivityType::XPU)
         {
-            quarisma::profiler_impl::impl::kineto::toggleCollectionDynamic(enable);
+            profiler::profiler_impl::impl::kineto::toggleCollectionDynamic(enable);
         }
-        else if (act == quarisma::autograd::profiler_impl::ActivityType::CPU)
+        else if (act == profiler::autograd::profiler_impl::ActivityType::CPU)
         {
             toggleCPUCollectionDynamic(enable);
         }
@@ -840,10 +840,10 @@ void toggleCollectionDynamic(
 }
 
 void enableProfilerWithEventPostProcess(
-    const quarisma::profiler_impl::impl::ProfilerConfig&         config,
-    const std::set<quarisma::profiler_impl::impl::ActivityType>& activities,
+    const profiler::profiler_impl::impl::ProfilerConfig&         config,
+    const std::set<profiler::profiler_impl::impl::ActivityType>& activities,
     post_process_t&&                                             cb,
-    const std::unordered_set<quarisma::RecordScope>&             scopes)
+    const std::unordered_set<profiler::RecordScope>&             scopes)
 {
     // PROFILER_CHECK(
     // config.state != ProfilerState::NVTX, "NVTX does not support post processing callback.");
@@ -859,9 +859,9 @@ void enableProfilerWithEventPostProcess(
 }
 
 void enableProfiler(
-    const quarisma::profiler_impl::impl::ProfilerConfig&         config,
-    const std::set<quarisma::profiler_impl::impl::ActivityType>& activities,
-    const std::unordered_set<quarisma::RecordScope>&             scopes)
+    const profiler::profiler_impl::impl::ProfilerConfig&         config,
+    const std::set<profiler::profiler_impl::impl::ActivityType>& activities,
+    const std::unordered_set<profiler::RecordScope>&             scopes)
 {
     const auto has_cpu = activities.count(ActivityType::CPU);
     // PROFILER_CHECK(
@@ -871,19 +871,19 @@ void enableProfiler(
 
     if (config.state == ProfilerState::NVTX)
     {
-        quarisma::profiler_impl::impl::pushNVTXCallbacks(config, scopes);
+        profiler::profiler_impl::impl::pushNVTXCallbacks(config, scopes);
         return;
     }
     if (config.state == ProfilerState::ITT)
     {
 #if PROFILER_HAS_ITT
-        quarisma::profiler_impl::impl::pushITTCallbacks(config, scopes);
+        profiler::profiler_impl::impl::pushITTCallbacks(config, scopes);
 #endif
         return;
     }
     if (config.state == ProfilerState::PRIVATEUSE1)
     {
-        quarisma::profiler_impl::impl::pushPRIVATEUSE1CallbacksStub(config, scopes);
+        profiler::profiler_impl::impl::pushPRIVATEUSE1CallbacksStub(config, scopes);
         return;
     }
 
@@ -905,7 +905,7 @@ void enableProfiler(
 
     if (!config.global())
     {
-        quarisma::profiler_impl::impl::kineto::startTrace();
+        profiler::profiler_impl::impl::kineto::startTrace();
     }
 
     if (has_cpu != 0u)
@@ -990,7 +990,7 @@ std::unique_ptr<ProfilerResult> disableProfiler()
 
     return result;
 }
-namespace tracer = quarisma::profiler_impl::impl::python_tracer;
+namespace tracer = profiler::profiler_impl::impl::python_tracer;
 static std::unique_ptr<tracer::PythonMemoryTracerBase> memory_tracer;
 void                                                   startMemoryProfile()
 {
@@ -1012,7 +1012,7 @@ void exportMemoryProfile(const std::string& filename)
 }
 
 KinetoEvent::KinetoEvent(
-    const std::shared_ptr<const quarisma::profiler_impl::impl::Result>& result, const bool verbose)
+    const std::shared_ptr<const profiler::profiler_impl::impl::Result>& result, const bool verbose)
     : result_{result}
 {
     // PROFILER_CHECK(result != nullptr);
@@ -1052,7 +1052,7 @@ bool KinetoEvent::hasShapes() const
     return !shapes_.empty();
 }
 
-quarisma::array_ref<std::vector<int64_t>> KinetoEvent::shapes() const
+profiler::array_ref<std::vector<int64_t>> KinetoEvent::shapes() const
 {
     return shapes_;
 }
@@ -1062,7 +1062,7 @@ bool KinetoEvent::hasTypes() const
     return !dtypes_.empty();
 }
 
-quarisma::array_ref<std::string> KinetoEvent::dtypes() const
+profiler::array_ref<std::string> KinetoEvent::dtypes() const
 {
     return dtypes_;
 }
@@ -1072,7 +1072,7 @@ bool KinetoEvent::hasConcreteInputs() const
     return !concrete_inputs_.empty();
 }
 
-quarisma::array_ref<quarisma::IValue> KinetoEvent::concreteInputs() const
+profiler::array_ref<profiler::IValue> KinetoEvent::concreteInputs() const
 {
     return concrete_inputs_;
 }
@@ -1087,12 +1087,12 @@ bool KinetoEvent::isHiddenEvent() const
     return result_ && result_->hidden_;
 }
 
-std::unordered_map<std::string, quarisma::IValue> KinetoEvent::kwinputs() const
+std::unordered_map<std::string, profiler::IValue> KinetoEvent::kwinputs() const
 {
     return kwinputs_;
 }
 
-quarisma::array_ref<std::string> KinetoEvent::stack() const
+profiler::array_ref<std::string> KinetoEvent::stack() const
 {
     auto get = [&](const auto& i) -> auto&
     { return !i.jit_stack_.empty() ? i.jit_stack_ : python_stack_; };
@@ -1109,7 +1109,7 @@ quarisma::array_ref<std::string> KinetoEvent::stack() const
     return python_stack_;
 }
 
-quarisma::array_ref<std::string> KinetoEvent::moduleHierarchy() const
+profiler::array_ref<std::string> KinetoEvent::moduleHierarchy() const
 {
     auto const& extra_fields = result_->extra_fields_;
     if (const auto* p = std::get_if<ExtraFields<EventType::TorchOp>>(&extra_fields))
@@ -1135,7 +1135,7 @@ uint64_t KinetoEvent::durationNs() const
 
 int64_t KinetoEvent::debugHandle() const
 {
-    return result_->visit(quarisma::overloaded(
+    return result_->visit(profiler::overloaded(
         [](const ExtraFields<EventType::TorchOp>& i) { return i.debug_handle_; },
         [](const ExtraFields<EventType::Backend>& i) { return i.debug_handle_; },
         [](const auto&) -> int64_t { return -1; }));
@@ -1143,7 +1143,7 @@ int64_t KinetoEvent::debugHandle() const
 
 int KinetoEvent::deviceIndex() const
 {
-    return result_->visit(quarisma::overloaded(
+    return result_->visit(profiler::overloaded(
         [](const ExtraFields<EventType::Allocation>& i)
         { return static_cast<int>(i.device_index_); },
         [](const ExtraFields<EventType::OutOfMemory>& i)
@@ -1166,7 +1166,7 @@ int64_t KinetoEvent::cudaElapsedUs() const
     }
     try
     {
-        return (int64_t)quarisma::profiler_impl::impl::cudaStubs()->elapsed(
+        return (int64_t)profiler::profiler_impl::impl::cudaStubs()->elapsed(
             &cuda_event_start, &cuda_event_end);
     }
     catch (const std::exception& e)  //NOLINT
@@ -1186,13 +1186,13 @@ int64_t KinetoEvent::privateuse1ElapsedUs() const
     {
         return -1;
     }
-    return static_cast<int64_t>(quarisma::profiler_impl::impl::privateuse1Stubs()->elapsed(
+    return static_cast<int64_t>(profiler::profiler_impl::impl::privateuse1Stubs()->elapsed(
         &privateuse1_event_start, &privateuse1_event_end));
 }
 
 void KinetoEvent::getPerfEventCounters(std::vector<uint64_t>& in) const
 {
-    return result_->visit(quarisma::overloaded(
+    return result_->visit(profiler::overloaded(
         [&in](const ExtraFields<EventType::TorchOp>& e) -> void
         {
             const size_t n = e.perf_event_counters_->size();
@@ -1211,7 +1211,7 @@ void KinetoEvent::getPerfEventCounters(std::vector<uint64_t>& in) const
 
 std::string KinetoEvent::metadataJson() const
 {
-    return result_->visit(quarisma::overloaded(
+    return result_->visit(profiler::overloaded(
         [](const ExtraFields<EventType::TorchOp>& op) -> std::string { return op.metadata_json_; },
         [](const ExtraFields<EventType::Kineto>& op) -> std::string { return op.metadata_json_; },
         [](const auto&) -> std::string { return {""}; }));
@@ -1242,7 +1242,7 @@ FORWARD_FROM_RESULT(deviceResourceId, kineto_info_.resource)
     decltype(std::declval<KinetoEvent>().method_name()) KinetoEvent::method_name() const     \
     {                                                                                        \
         using out_t = decltype(std::declval<KinetoEvent>().method_name());                   \
-        return result_->visit(quarisma::overloaded(                                          \
+        return result_->visit(profiler::overloaded(                                          \
             [](const ExtraFields<EventType::event_type>& e) -> out_t { return expression; }, \
             [](const auto&) -> out_t { return default_value; }));                            \
     }
@@ -1261,7 +1261,7 @@ TYPED_ATTR(TorchOp, fallbackEnd, e.device_fallback_.device_event_end_)
 TYPED_ATTR(
     TorchOp,
     flops,
-    !e.extra_args_.empty() ? quarisma::profiler_impl::impl::computeFlops(e.name_, e.extra_args_)
+    !e.extra_args_.empty() ? profiler::profiler_impl::impl::computeFlops(e.name_, e.extra_args_)
                            : 0)
 TYPED_ATTR(Backend, backend, e.backend_)
 TYPED_ATTR(Allocation, nBytes, e.alloc_size_)
@@ -1279,7 +1279,7 @@ TYPED_ATTR(
 ProfilerResult::ProfilerResult(
     uint64_t                                                                       start_time,
     std::vector<KinetoEvent>                                                       events,
-    std::unique_ptr<quarisma::profiler_impl::impl::kineto::ActivityTraceWrapper>&& trace,
+    std::unique_ptr<profiler::profiler_impl::impl::kineto::ActivityTraceWrapper>&& trace,
     std::vector<experimental_event_t>&&                                            event_tree)
     : trace_start_ns_(start_time),
       events_(std::move(events)),
@@ -1301,7 +1301,7 @@ namespace profiler_impl::impl
 {
 void _reportVulkanEventToProfiler(vulkan_id_t id)
 {
-    auto* state_ptr = ::quarisma::autograd::profiler_impl::KinetoThreadLocalState::get(
+    auto* state_ptr = ::profiler::autograd::profiler_impl::KinetoThreadLocalState::get(
         /*global=*/false);
     if (state_ptr != nullptr)
     {
@@ -1310,4 +1310,4 @@ void _reportVulkanEventToProfiler(vulkan_id_t id)
 }
 }  // namespace profiler_impl::impl
 
-}  // namespace quarisma
+}  // namespace profiler
