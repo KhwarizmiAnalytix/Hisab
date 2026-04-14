@@ -1,13 +1,13 @@
-# ============================================================================= Quarisma Build Type
+#=============================================================================
+# Quarisma Build Type
 # Configuration Module
-# =============================================================================
+
 # This module optimizes build configurations for maximum performance and minimal CMake
 # reconfiguration overhead through aggressive caching.
 #
 # Performance Optimizations: - Cached compiler flag validation to avoid repeated checks - Build
 # type-specific optimization flags for maximum runtime performance - Efficient MSVC runtime library
 # selection - Assertion and debug symbol management per build type
-# =============================================================================
 
 # Guard against multiple inclusions for performance
 if(PROJECT_BUILD_TYPE_CONFIGURED)

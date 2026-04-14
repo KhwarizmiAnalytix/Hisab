@@ -1,11 +1,10 @@
-# ============================================================================= 
+#=============================================================================
 # Quarisma Experimental
 # Features Configuration Module
-# =============================================================================
+
 # This module configures experimental features for the Quarisma project. Experimental features
 # are under development and may not be stable or fully tested. They are disabled by default
 # and should only be enabled for development and testing purposes.
-# =============================================================================
 
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)
@@ -24,10 +23,9 @@ endif()
 
 message(STATUS "Configuring experimental features...")
 
-# ============================================================================= 
+#=============================================================================
 # Experimental
 # Features Configuration
-# =============================================================================
 
 # Set flag to indicate experimental features are available
 set(PROJECT_EXPERIMENTAL_FOUND TRUE CACHE BOOL "Experimental features are enabled" FORCE)

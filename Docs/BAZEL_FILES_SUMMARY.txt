@@ -71,11 +71,11 @@ CMake Option                          →  Bazel Equivalent
 -DCMAKE_BUILD_TYPE=Release           →  --config=release
 -DQUARISMA_VECTORIZATION_TYPE=avx2     →  --config=avx2
 -DQUARISMA_ENABLE_LTO=ON               →  --config=lto
--DQUARISMA_ENABLE_MIMALLOC=ON          →  --config=mimalloc
+-DMEMORY_ENABLE_MIMALLOC=ON          →  --config=mimalloc
 -DQUARISMA_ENABLE_MAGICENUM=ON         →  --config=magic_enum
 -DQUARISMA_ENABLE_KINETO=ON            →  --config=kineto
 -DQUARISMA_ENABLE_TBB=ON               →  --config=tbb
--DQUARISMA_ENABLE_CUDA=ON              →  --config=cuda
+-DMEMOY_ENABLE_CUDA=ON              →  --config=cuda
 -DQUARISMA_ENABLE_GTEST=ON             →  --config=gtest
 -DQUARISMA_LU_PIVOTING=ON              →  --config=lu_pivoting
 -DQUARISMA_SOBOL_1111=ON               →  --config=sobol_1111

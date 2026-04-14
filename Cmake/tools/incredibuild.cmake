@@ -1,6 +1,5 @@
-# =============================================================================
+#=============================================================================
 # Quarisma IncrediBuild Distributed Compilation Configuration Module
-# =============================================================================
 # Enables IncrediBuild distributed compilation for Windows builds.
 # IncrediBuild is a commercial distributed build acceleration tool that
 # distributes compilation tasks across multiple machines.
@@ -12,7 +11,6 @@
 #
 # NOTE: IncrediBuild and Icecream are mutually exclusive. When IncrediBuild
 # is enabled, Icecream will be automatically disabled.
-# =============================================================================
 
 include_guard(GLOBAL)
 
@@ -60,7 +58,7 @@ set(CMAKE_C_COMPILER_LAUNCHER "${INCREDIBUILD_XGE}" CACHE STRING "C compiler lau
 set(CMAKE_CXX_COMPILER_LAUNCHER "${INCREDIBUILD_XGE}" CACHE STRING "CXX compiler launcher")
 
 # Also set CUDA compiler launcher if CUDA is enabled
-if(PROJECT_ENABLE_CUDA)
+if(MEMORY_ENABLE_CUDA)
   set(CMAKE_CUDA_COMPILER_LAUNCHER "${INCREDIBUILD_XGE}" CACHE STRING "CUDA compiler launcher")
   message(STATUS "IncrediBuild enabled for CUDA compilation (experimental)")
 endif()

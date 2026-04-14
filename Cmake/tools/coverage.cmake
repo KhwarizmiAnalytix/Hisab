@@ -1,10 +1,9 @@
-# ============================================================================= 
-#Code Coverage Configuration Module
-# =============================================================================
+#=============================================================================
+# Code Coverage Configuration Module
+
 # This module configures code coverage instrumentation and automated report generation. Supports
 # LLVM (Clang), GCC (gcov), and MSVC (OpenCppCoverage) coverage workflows. Generates coverage
 # reports in text and HTML formats.
-# =============================================================================
 
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)

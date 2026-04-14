@@ -1,6 +1,6 @@
-# =============================================================================
+#=============================================================================
 # SMP Backend Selection Configuration
-# =============================================================================
+
 # This module handles the selection of the PARALLEL (Symmetric Multi-Processing)
 # backend for Quarisma. Users can specify which backend to use via:
 # - Command-line: python setup.py config --parallel.std (or --parallel.openmp, --parallel.tbb)

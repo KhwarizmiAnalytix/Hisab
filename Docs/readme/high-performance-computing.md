@@ -130,30 +130,30 @@ python setup.py config.build.ninja.clang.release.cuda.tbb
 
 #### CUDA Configuration
 
-**CMake Flag**: `QUARISMA_ENABLE_CUDA` (default: OFF)
+**CMake Flag**: `MEMOY_ENABLE_CUDA` (default: OFF)
 
 **GPU Architecture Selection**:
 ```bash
 # Auto-detect GPU architecture (recommended)
-cmake -B build -S . -DQUARISMA_ENABLE_CUDA=ON -DQUARISMA_CUDA_ARCH_OPTIONS=native
+cmake -B build -S . -DMEMOY_ENABLE_CUDA=ON -DQUARISMA_CUDA_ARCH_OPTIONS=native
 
 # Specific architecture
-cmake -B build -S . -DQUARISMA_ENABLE_CUDA=ON -DQUARISMA_CUDA_ARCH_OPTIONS=ampere
+cmake -B build -S . -DMEMOY_ENABLE_CUDA=ON -DQUARISMA_CUDA_ARCH_OPTIONS=ampere
 
 # Multiple architectures
-cmake -B build -S . -DQUARISMA_ENABLE_CUDA=ON -DQUARISMA_CUDA_ARCH_OPTIONS=all
+cmake -B build -S . -DMEMOY_ENABLE_CUDA=ON -DQUARISMA_CUDA_ARCH_OPTIONS=all
 ```
 
 **Memory Allocation Strategy**:
 ```bash
 # Synchronous allocation (default)
-cmake -B build -S . -DQUARISMA_ENABLE_CUDA=ON -DQUARISMA_GPU_ALLOC=SYNC
+cmake -B build -S . -DMEMOY_ENABLE_CUDA=ON -DQUARISMA_GPU_ALLOC=SYNC
 
 # Asynchronous allocation
-cmake -B build -S . -DQUARISMA_ENABLE_CUDA=ON -DQUARISMA_GPU_ALLOC=ASYNC
+cmake -B build -S . -DMEMOY_ENABLE_CUDA=ON -DQUARISMA_GPU_ALLOC=ASYNC
 
 # Pool-based asynchronous allocation
-cmake -B build -S . -DQUARISMA_ENABLE_CUDA=ON -DQUARISMA_GPU_ALLOC=POOL_ASYNC
+cmake -B build -S . -DMEMOY_ENABLE_CUDA=ON -DQUARISMA_GPU_ALLOC=POOL_ASYNC
 ```
 
 #### Performance Metrics

@@ -118,7 +118,7 @@ Open `build_ninja_coverage/coverage_report/html/index.html` in a browser to revi
 
 ### GCC workflow with manual tooling
 ```bash
-cmake -B build_gcc_cov -S . -DCMAKE_BUILD_TYPE=Debug -DQUARISMA_ENABLE_COVERAGE=ON -DQUARISMA_BUILD_TESTING=ON
+cmake -B build_gcc_cov -S . -DCMAKE_BUILD_TYPE=Debug -DQUARISMA_ENABLE_COVERAGE=ON -DBUILD_TESTING=ON
 cmake --build build_gcc_cov --target all
 ctest --test-dir build_gcc_cov --output-on-failure
 python Tools/coverage/run_coverage.py --build=build_gcc_cov --verbose

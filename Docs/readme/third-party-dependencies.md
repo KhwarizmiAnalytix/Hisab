@@ -19,8 +19,8 @@ These libraries are always included in the build:
 
 | Library | Description | Target Alias |
 |---------|-------------|--------------|
-| fmt | Modern C++ formatting | `Quarisma::fmt` |
-| cpuinfo | CPU feature detection | `Quarisma::cpuinfo` |
+| fmt | Modern C++ formatting | `Fmt::fmt` |
+| cpuinfo | CPU feature detection | `Cpuinfo::cpuinfo` |
 
 ### Optional Libraries (Enabled by Default)
 
@@ -28,8 +28,8 @@ These libraries are included by default but can be disabled:
 
 | Library | Option | Description | Target Alias |
 |---------|--------|-------------|--------------|
-| magic_enum | `QUARISMA_ENABLE_MAGICENUM=ON` | Enum reflection | `Quarisma::magic_enum` |
-| loguru | `QUARISMA_ENABLE_LOGURU=ON` | Lightweight logging | `Quarisma::loguru` |
+| magic_enum | `QUARISMA_ENABLE_MAGICENUM=ON` | Enum reflection | `MagicEnum::magic_enum` |
+| loguru | `LOGGING_ENABLE_LOGURU=ON` | Lightweight logging | `Loguru::loguru` |
 
 ### Optional Libraries (Disabled by Default)
 
@@ -37,9 +37,9 @@ These libraries must be explicitly enabled:
 
 | Library | Option | Description | Target Alias |
 |---------|--------|-------------|--------------|
-| mimalloc | `QUARISMA_ENABLE_MIMALLOC=OFF` | High-performance allocator | `Quarisma::mimalloc` |
-| Google Test | `QUARISMA_ENABLE_GTEST=OFF` | Testing framework | `Quarisma::gtest` |
-| Benchmark | `QUARISMA_ENABLE_BENCHMARK=OFF` | Microbenchmarking | `Quarisma::benchmark` |
+| mimalloc | `MEMORY_ENABLE_MIMALLOC=OFF` | High-performance allocator | `Mimalloc::mimalloc` |
+| Google Test | `QUARISMA_ENABLE_GTEST=OFF` | Testing framework | `Gtest::gtest` |
+| Benchmark | `QUARISMA_ENABLE_BENCHMARK=OFF` | Microbenchmarking | `Benchmark::benchmark` |
 
 ## Dependency Management Pattern
 
@@ -47,7 +47,7 @@ These libraries must be explicitly enabled:
 
 For mandatory libraries:
 - Always included in the build
-- Always create `Quarisma::xxx` target aliases
+- Always create namespaced third-party aliases (`Xxx::xxx`)
 - Always add `QUARISMA_HAS_XXX` compile definitions
 - Always linked to Core target
 
@@ -55,7 +55,7 @@ For mandatory libraries:
 
 **When `QUARISMA_ENABLE_XXX=ON`:**
 1. Include the library in the build
-2. Create `Quarisma::xxx` target alias
+2. Create an `Xxx::xxx` target alias
 3. Add `QUARISMA_HAS_XXX` compile definition
 4. Link to Core target
 
@@ -104,7 +104,7 @@ cmake -B build -S . -DQUARISMA_ENABLE_EXTERNAL=ON
 
 ```bash
 # Enable high-performance allocator
-cmake -B build -S . -DQUARISMA_ENABLE_MIMALLOC=ON
+cmake -B build -S . -DMEMORY_ENABLE_MIMALLOC=ON
 
 # Disable magic_enum
 cmake -B build -S . -DQUARISMA_ENABLE_MAGICENUM=OFF
@@ -151,7 +151,7 @@ void example_function() {
 
     #ifdef QUARISMA_HAS_MIMALLOC
         // mimalloc is available as drop-in replacement
-        // No code changes needed - just link with Quarisma::mimalloc
+        // No code changes needed - just link with Mimalloc::mimalloc
     #endif
 }
 ```
@@ -168,12 +168,12 @@ add_executable(my_app main.cpp)
 target_link_libraries(my_app PRIVATE Quarisma::Core)
 
 # Conditionally link with third-party libraries
-if(TARGET Quarisma::fmt)
-    target_link_libraries(my_app PRIVATE Quarisma::fmt)
+if(TARGET Fmt::fmt)
+    target_link_libraries(my_app PRIVATE Fmt::fmt)
 endif()
 
-if(TARGET Quarisma::benchmark)
-    target_link_libraries(my_app PRIVATE Quarisma::benchmark)
+if(TARGET Benchmark::benchmark)
+    target_link_libraries(my_app PRIVATE Benchmark::benchmark)
 endif()
 ```
 

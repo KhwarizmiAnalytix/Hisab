@@ -25,7 +25,7 @@ This guide provides practical examples of different Quarisma build configuration
 cmake -B build_minimal -S . \
     -DCMAKE_BUILD_TYPE=Release \
     -DQUARISMA_ENABLE_MAGICENUM=OFF \
-    -DQUARISMA_ENABLE_LOGURU=OFF \
+    -DLOGGING_ENABLE_LOGURU=OFF \
     -DQUARISMA_VECTORIZATION_TYPE=no
 
 cmake --build build_minimal -j
@@ -49,7 +49,7 @@ cmake -B build_performance -S . \
     -DCMAKE_BUILD_TYPE=Release \
     -DQUARISMA_ENABLE_LTO=ON \
     -DQUARISMA_ENABLE_TBB=ON \
-    -DQUARISMA_ENABLE_MIMALLOC=ON \
+    -DMEMORY_ENABLE_MIMALLOC=ON \
     -DQUARISMA_VECTORIZATION_TYPE=avx2
 
 cmake --build build_performance -j
@@ -78,7 +78,7 @@ cmake --build build_performance -j
 # Enable testing and debugging tools
 cmake -B build_dev -S . \
     -DCMAKE_BUILD_TYPE=Debug \
-    -DQUARISMA_BUILD_TESTING=ON \
+    -DBUILD_TESTING=ON \
     -DQUARISMA_ENABLE_GTEST=ON \
     -DQUARISMA_ENABLE_BENCHMARK=ON \
     -DQUARISMA_ENABLE_SANITIZER=ON \
@@ -141,7 +141,7 @@ sudo dnf install fmt-devel gtest-devel tbb-devel
 # Enable all testing and benchmarking features
 cmake -B build_test -S . \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DQUARISMA_BUILD_TESTING=ON \
+    -DBUILD_TESTING=ON \
     -DQUARISMA_GOOGLE_TEST=ON \
     -DQUARISMA_ENABLE_BENCHMARK=ON \
     -DQUARISMA_ENABLE_COVERAGE=ON
@@ -172,9 +172,9 @@ cmake --build build_test --target coverage-html
 cmake -B build_production -S . \
     -DCMAKE_BUILD_TYPE=Release \
     -DQUARISMA_ENABLE_LTO=ON \
-    -DQUARISMA_ENABLE_MIMALLOC=ON \
+    -DMEMORY_ENABLE_MIMALLOC=ON \
     -DQUARISMA_VECTORIZATION_TYPE=avx2 \
-    -DQUARISMA_LOGGING_BACKEND=GLOG
+    -DLOGGING_BACKEND=GLOG
 
 cmake --build build_production -j
 
@@ -203,7 +203,7 @@ cmake -B build_debug -S . \
     -DQUARISMA_SANITIZER_TYPE=address \
     -DQUARISMA_ENABLE_IWYU=ON \
     -DQUARISMA_ENABLE_CPPCHECK=ON \
-    -DQUARISMA_BUILD_TESTING=ON
+    -DBUILD_TESTING=ON
 
 cmake --build build_debug -j
 
@@ -233,7 +233,7 @@ less build_debug/cppcheckoutput.log
 cmake -B build_ci -S . \
     -DCMAKE_BUILD_TYPE=Release \
     -DQUARISMA_ENABLE_EXTERNAL=ON \
-    -DQUARISMA_BUILD_TESTING=ON \
+    -DBUILD_TESTING=ON \
     -DQUARISMA_ENABLE_GTEST=ON \
     -DQUARISMA_ENABLE_COVERAGE=ON
 
@@ -271,7 +271,7 @@ jobs:
             -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DQUARISMA_ENABLE_EXTERNAL=ON \
-            -DQUARISMA_BUILD_TESTING=ON
+            -DBUILD_TESTING=ON
 
       - name: Build
         run: cmake --build build -j
@@ -380,7 +380,7 @@ cmake -B build_dev -S . -DCMAKE_BUILD_TYPE=Debug
 cmake -B build_release -S . -DCMAKE_BUILD_TYPE=Release
 
 # Testing
-cmake -B build_test -S . -DQUARISMA_BUILD_TESTING=ON
+cmake -B build_test -S . -DBUILD_TESTING=ON
 ```
 
 ### Switching Configurations

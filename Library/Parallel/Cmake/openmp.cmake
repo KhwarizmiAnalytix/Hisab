@@ -1,9 +1,9 @@
-# ============================================================================= Quarisma OpenMP
+#=============================================================================
+# Quarisma OpenMP
 # (Open Multi-Processing) Configuration Module
-# =============================================================================
+
 # This module configures OpenMP for parallel processing support. It detects OpenMP availability
 # and sets up the necessary compiler flags and libraries for cross-platform builds.
-# =============================================================================
 
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)
@@ -11,18 +11,18 @@ include_guard(GLOBAL)
 # OpenMP Support Flag Controls whether OpenMP is enabled for parallel processing.
 # When enabled, provides industry-standard parallel programming support with automatic
 # fallback if OpenMP is not available on the system.
-option(PROJECT_ENABLE_OPENMP "Enable OpenMP parallel processing support" OFF)
-mark_as_advanced(PROJECT_ENABLE_OPENMP)
+option(PARALLEL_ENABLE_OPENMP "Enable OpenMP parallel processing support" OFF)
+mark_as_advanced(PARALLEL_ENABLE_OPENMP)
 # Only proceed if OpenMP is enabled
-if(NOT PROJECT_ENABLE_OPENMP)
-  message("OpenMP support is disabled (PROJECT_ENABLE_OPENMP=OFF)")
+if(NOT PARALLEL_ENABLE_OPENMP)
+  message("OpenMP support is disabled (PARALLEL_ENABLE_OPENMP=OFF)")
   return()
 endif()
 
 message(STATUS "Configuring OpenMP support...")
 
-# ============================================================================= Find OpenMP
-# =============================================================================
+#=============================================================================
+# Find OpenMP
 
 # Try to find OpenMP using CMake's built-in FindOpenMP module
 find_package(OpenMP QUIET)
@@ -49,7 +49,7 @@ else()
   message(STATUS "   The code will fall back to non-OpenMP implementations")
   
   # Disable OpenMP since it's not available
-  set(PROJECT_ENABLE_OPENMP OFF CACHE BOOL "Enable OpenMP parallel processing support" FORCE)
+  set(PARALLEL_ENABLE_OPENMP OFF CACHE BOOL "Enable OpenMP parallel processing support" FORCE)
   set(PROJECT_OPENMP_FOUND FALSE CACHE BOOL "OpenMP was found successfully" FORCE)
   
   # Provide helpful information for users who want OpenMP

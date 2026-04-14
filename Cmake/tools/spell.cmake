@@ -1,10 +1,9 @@
-# ============================================================================= 
+#=============================================================================
 # Quarisma Spell
 # Checking Configuration Module
-# =============================================================================
+
 # This module configures codespell for automated spell checking and correction. WARNING: When
 # enabled, automatically modifies source files to fix spelling errors.
-# =============================================================================
 
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)

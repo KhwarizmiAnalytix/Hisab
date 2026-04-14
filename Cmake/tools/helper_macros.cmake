@@ -1,9 +1,9 @@
-# ============================================================================= Quarisma Helper Macros
+#=============================================================================
+# Quarisma Helper Macros
 # Module
-# =============================================================================
+
 # This module provides utility macros for common CMake operations used throughout the Quarisma build
 # system, including source file filtering and organization.
-# =============================================================================
 
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)

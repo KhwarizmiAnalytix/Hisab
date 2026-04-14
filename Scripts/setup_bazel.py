@@ -358,7 +358,7 @@ class BazelConfiguration:
         for config in self.configs:
             cmd.append(f"--config={config}")
 
-        # Enzyme: CMake applies -fpass-plugin at compile and link for Quarisma::enzyme.
+        # Enzyme: CMake applies -fpass-plugin at compile and link for Enzyme::enzyme.
         # Bazel only toggles QUARISMA_HAS_ENZYME; without the plugin, __enzyme_* calls are
         # unresolved (crash at null). Restrict --per_file_copt to //Library so GCC-built
         # third-party targets never see -fpass-plugin.
@@ -468,11 +468,11 @@ class BazelConfiguration:
         # Feature flags (CMake defaults: mimalloc, magic_enum ON; opt-in via --config listed below)
         print(f"\n{Fore.CYAN}Feature Flags:{Style.RESET_ALL}")
         features = {
-            "mimalloc": ("QUARISMA_ENABLE_MIMALLOC", True),
+            "mimalloc": ("MEMORY_ENABLE_MIMALLOC", True),
             "magic_enum": ("QUARISMA_ENABLE_MAGIC_ENUM", True),
             "tbb": ("QUARISMA_ENABLE_TBB", False),
             "openmp": ("QUARISMA_ENABLE_OPENMP", False),
-            "cuda": ("QUARISMA_ENABLE_CUDA", False),
+            "cuda": ("MEMOY_ENABLE_CUDA", False),
             "hip": ("QUARISMA_ENABLE_HIP", False),
             "lto": ("QUARISMA_ENABLE_LTO", False),
             "enzyme": ("QUARISMA_ENABLE_ENZYME", False),

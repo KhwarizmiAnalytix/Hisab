@@ -1,9 +1,9 @@
-# ============================================================================= Logging Backend
+#=============================================================================
+# Logging Backend
 # Configuration
-# =============================================================================
+
 # Selects the logging backend for runtime diagnostics and debugging. Options are mutually exclusive:
 # NATIVE, LOGURU, or GLOG.
-# =============================================================================
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)
 

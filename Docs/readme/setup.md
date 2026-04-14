@@ -114,7 +114,7 @@ When multiple feature flags are used, they are concatenated:
 
 | Flag | CMake Variable | Description | Default |
 |------|----------------|-------------|---------|
-| `cuda` | `QUARISMA_ENABLE_CUDA` | GPU acceleration with CUDA | OFF |
+| `cuda` | `MEMOY_ENABLE_CUDA` | GPU acceleration with CUDA | OFF |
 | `tbb` | `QUARISMA_ENABLE_TBB` | Intel Threading Building Blocks | OFF |
 | `mkl` | `QUARISMA_ENABLE_MKL` | Intel Math Kernel Library | OFF |
 | `numa` | `QUARISMA_ENABLE_NUMA` | NUMA support | OFF |
@@ -125,7 +125,7 @@ When multiple feature flags are used, they are concatenated:
 
 | Flag | CMake Variable | Description | Default |
 |------|----------------|-------------|---------|
-| `test` | `QUARISMA_BUILD_TESTING` | Enable testing | ON |
+| `test` | `BUILD_TESTING` | Enable testing | ON |
 | `gtest` | `QUARISMA_ENABLE_GTEST` | Google Test framework | ON |
 | `benchmark` | `QUARISMA_ENABLE_BENCHMARK` | Benchmark library | OFF |
 
@@ -148,16 +148,16 @@ When multiple feature flags are used, they are concatenated:
 
 | Flag | CMake Variable | Description | Default |
 |------|----------------|-------------|---------|
-| `loguru` | `QUARISMA_ENABLE_LOGURU` | Loguru logging backend | ON |
-| `logging_backend=glog` | `QUARISMA_LOGGING_BACKEND` | Use GLOG backend | - |
-| `logging_backend=native` | `QUARISMA_LOGGING_BACKEND` | Use native backend | - |
+| `loguru` | `LOGGING_ENABLE_LOGURU` | Loguru logging backend | ON |
+| `logging_backend=glog` | `LOGGING_BACKEND` | Use GLOG backend | - |
+| `logging_backend=native` | `LOGGING_BACKEND` | Use native backend | - |
 
 ### Library Flags
 
 | Flag | CMake Variable | Description | Default |
 |------|----------------|-------------|---------|
 | `magic_enum` | `QUARISMA_ENABLE_MAGICENUM` | Magic enum library | ON |
-| `mimalloc` | `QUARISMA_ENABLE_MIMALLOC` | mimalloc allocator | ON |
+| `mimalloc` | `MEMORY_ENABLE_MIMALLOC` | mimalloc allocator | ON |
 
 ### Caching Flags
 

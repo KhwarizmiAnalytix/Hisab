@@ -663,12 +663,12 @@ Both build systems are fully supported and offer different advantages. This sect
 | **AVX2** | `-DQUARISMA_VECTORIZATION_TYPE=avx2` | `--config=avx2` |
 | **AVX512** | `-DQUARISMA_VECTORIZATION_TYPE=avx512` | `--config=avx512` |
 | **SSE** | `-DQUARISMA_VECTORIZATION_TYPE=sse` | `--config=sse` |
-| **mimalloc** | `-DQUARISMA_ENABLE_MIMALLOC=ON` | `--config=mimalloc` |
+| **mimalloc** | `-DMEMORY_ENABLE_MIMALLOC=ON` | `--config=mimalloc` |
 | **magic_enum** | `-DQUARISMA_ENABLE_MAGICENUM=ON` | `--config=magic_enum` |
 | **Kineto** | `-DQUARISMA_ENABLE_KINETO=ON` | `--config=kineto` |
 | **TBB** | `-DQUARISMA_ENABLE_TBB=ON` | `--config=tbb` |
 | **OpenMP** | `-DQUARISMA_ENABLE_OPENMP=ON` | `--config=openmp` |
-| **CUDA** | `-DQUARISMA_ENABLE_CUDA=ON` | `--config=cuda` |
+| **CUDA** | `-DMEMOY_ENABLE_CUDA=ON` | `--config=cuda` |
 | **HIP** | `-DQUARISMA_ENABLE_HIP=ON` | `--config=hip` |
 | **Google Test** | `-DQUARISMA_ENABLE_GTEST=ON` | `--config=gtest` |
 | **Benchmark** | `-DQUARISMA_ENABLE_BENCHMARK=ON` | `--config=benchmark` |
@@ -679,9 +679,9 @@ Both build systems are fully supported and offer different advantages. This sect
 
 | Backend | CMake Option | Bazel Equivalent |
 |---------|--------------|------------------|
-| **Loguru** | `-DQUARISMA_LOGGING_BACKEND=LOGURU` | `--config=logging_loguru` |
-| **glog** | `-DQUARISMA_LOGGING_BACKEND=GLOG` | `--config=logging_glog` |
-| **Native** | `-DQUARISMA_LOGGING_BACKEND=NATIVE` | `--config=logging_native` |
+| **Loguru** | `-DLOGGING_BACKEND=LOGURU` | `--config=logging_loguru` |
+| **glog** | `-DLOGGING_BACKEND=GLOG` | `--config=logging_glog` |
+| **Native** | `-DLOGGING_BACKEND=NATIVE` | `--config=logging_native` |
 
 ### Profiler Backend Mapping
 
@@ -716,7 +716,7 @@ Both build systems are fully supported and offer different advantages. This sect
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release \
                -DQUARISMA_VECTORIZATION_TYPE=avx2 \
-               -DQUARISMA_ENABLE_MIMALLOC=ON \
+               -DMEMORY_ENABLE_MIMALLOC=ON \
                -DQUARISMA_ENABLE_MAGICENUM=ON
 cmake --build build
 ```
@@ -765,7 +765,7 @@ bazel build --config=debug --config=asan //...
 **CMake:**
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release \
-               -DQUARISMA_ENABLE_CUDA=ON \
+               -DMEMOY_ENABLE_CUDA=ON \
                -DQUARISMA_VECTORIZATION_TYPE=avx2
 cmake --build build
 ```
@@ -878,7 +878,7 @@ def quarisma_copts():
 
 def quarisma_defines():
     return select({
-        "//bazel:enable_cuda": ["QUARISMA_ENABLE_CUDA", "QUARISMA_HAS_CUDA=1"],
+        "//bazel:enable_cuda": ["MEMOY_ENABLE_CUDA", "QUARISMA_HAS_CUDA=1"],
         "//conditions:default": ["QUARISMA_HAS_CUDA=0"],
     })
 ```
@@ -924,7 +924,7 @@ cc_library(
 
 **CMake Equivalent:**
 ```cmake
-if(QUARISMA_ENABLE_CUDA)
+if(MEMOY_ENABLE_CUDA)
     target_sources(Core PRIVATE gpu/*.cpp)
 endif()
 ```

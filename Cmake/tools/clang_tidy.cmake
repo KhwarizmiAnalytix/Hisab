@@ -1,9 +1,9 @@
-# ============================================================================= Quarisma Clang-Tidy
+#=============================================================================
+# Quarisma Clang-Tidy
 # Static Analysis Configuration Module
-# =============================================================================
+
 # This module configures clang-tidy for static code analysis and automated fixes. It enables code
 # quality checks and optional automatic error correction.
-# =============================================================================
 
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)

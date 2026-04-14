@@ -1,9 +1,9 @@
-# ============================================================================= Quarisma Valgrind
+#=============================================================================
+# Quarisma Valgrind
 # Memory Checking Configuration Module
-# =============================================================================
+
 # This module configures Valgrind memory checking for CTest. All Valgrind options and settings are
 # centralized here. Provides comprehensive memory leak detection and error tracking.
-# =============================================================================
 
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)
@@ -20,9 +20,9 @@ endif()
 
 message(STATUS "Configuring Valgrind memory checking...")
 
-# ============================================================================= Platform Detection
+#=============================================================================
+# Platform Detection
 # and Compatibility Checks
-# =============================================================================
 
 # Detect platform architecture
 cmake_host_system_information(RESULT PLATFORM_ARCH QUERY OS_PLATFORM)
@@ -41,9 +41,9 @@ if(APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
   )
 endif()
 
-# ============================================================================= Find Valgrind
+#=============================================================================
+# Find Valgrind
 # Executable
-# =============================================================================
 
 find_program(CMAKE_MEMORYCHECK_COMMAND valgrind)
 
@@ -62,12 +62,12 @@ execute_process(
 )
 message(STATUS "Valgrind version: ${VALGRIND_VERSION_OUTPUT}")
 
-# ============================================================================= Valgrind Timeout
+#=============================================================================
+# Valgrind Timeout
 # Configuration
-# =============================================================================
+
 # Tests run significantly slower under Valgrind (typically 10-50x slower). We need to increase
 # timeouts to prevent false failures.
-# =============================================================================
 
 # Default test timeout multiplier for Valgrind (20x slower is a safe estimate)
 set(PROJECT_VALGRIND_TIMEOUT_MULTIPLIER 20
@@ -82,12 +82,12 @@ set(CTEST_TEST_TIMEOUT 1800 CACHE STRING
 message(STATUS "Valgrind timeout multiplier: ${PROJECT_VALGRIND_TIMEOUT_MULTIPLIER}x")
 message(STATUS "Global CTest timeout: ${CTEST_TEST_TIMEOUT} seconds")
 
-# ============================================================================= Valgrind Command
+#=============================================================================
+# Valgrind Command
 # Options
-# =============================================================================
+
 # All Valgrind configuration options are defined here. These options provide comprehensive memory
 # checking and detailed reporting.
-# =============================================================================
 
 set(CMAKE_MEMORYCHECK_COMMAND_OPTIONS
     # Core memcheck tool
@@ -110,12 +110,12 @@ set(CMAKE_MEMORYCHECK_COMMAND_OPTIONS
     "--xml=yes" "--xml-file=${CMAKE_BINARY_DIR}/Testing/Temporary/valgrind_%p.xml"
 )
 
-# ============================================================================= Suppression File
+#=============================================================================
+# Suppression File
 # Configuration
-# =============================================================================
+
 # Suppression files allow filtering out known false positives from third-party libraries or system
 # libraries.
-# =============================================================================
 
 set(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE
     "${PROJECT_SOURCE_DIR}/Scripts/suppressions/valgrind_suppression.txt"
@@ -131,12 +131,13 @@ else()
   message(WARNING "Consider creating a suppression file to filter known false positives")
 endif()
 
-# ============================================================================= Apply Timeout
+#=============================================================================
+# Apply Timeout
 # Multiplier to Existing Tests
-# =============================================================================
+
 # Automatically increase timeouts for all registered tests when running under Valgrind to prevent
 # false timeout failures.
-# =============================================================================
+#=============================================================================
 
 # Get all tests that have been registered
 get_property(ALL_TESTS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY TESTS)
@@ -144,9 +145,9 @@ get_property(ALL_TESTS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY TESTS)
 # Note: This will be applied after all tests are registered via a separate function call in the main
 # CMakeLists.txt after enable_testing()
 
-# ============================================================================= Summary and
+#=============================================================================
+# Summary and
 # Diagnostic Output
-# =============================================================================
 
 # Build the complete memcheck command for display
 set(memcheck_command "${CMAKE_MEMORYCHECK_COMMAND}")
@@ -158,12 +159,12 @@ message(STATUS "Valgrind command: ${memcheck_command}")
 message(STATUS "Valgrind configuration complete")
 message(STATUS "Use 'ctest -T memcheck' to run tests with Valgrind")
 
-# ============================================================================= Helper Function:
+#=============================================================================
+# Helper Function:
 # Apply Valgrind Timeouts to Tests
-# =============================================================================
+
 # This function should be called after all tests are registered. It multiplies existing test
 # timeouts by PROJECT_VALGRIND_TIMEOUT_MULTIPLIER.
-# =============================================================================
 
 function(quarisma_apply_valgrind_timeouts)
   if(NOT PROJECT_ENABLE_VALGRIND)

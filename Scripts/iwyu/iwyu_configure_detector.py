@@ -9,7 +9,7 @@ It works in conjunction with IWYU to provide enhanced analysis for Quarisma-spec
 patterns and generates detailed logging of the analysis process.
 
 Note: Feature flags use QUARISMA_HAS_* in C++ code (e.g., QUARISMA_HAS_CUDA)
-      while CMake uses QUARISMA_ENABLE_* (e.g., QUARISMA_ENABLE_CUDA)
+      while CMake uses QUARISMA_ENABLE_* (e.g., MEMOY_ENABLE_CUDA)
 """
 
 import argparse

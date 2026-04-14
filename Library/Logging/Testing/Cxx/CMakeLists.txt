@@ -25,7 +25,7 @@ target_include_directories(
 )
 
 target_link_libraries(
-  LoggingCxxTests PRIVATE Logging::gtest Logging::gtest_main Logging::Logging Logging::build
+  LoggingCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Logging::Logging Logging::build
 )
 
 set_target_properties(

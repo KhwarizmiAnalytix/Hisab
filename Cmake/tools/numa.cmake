@@ -1,9 +1,9 @@
-# ============================================================================= Quarisma NUMA
+#=============================================================================
+# Quarisma NUMA
 # (Non-Uniform Memory Access) Configuration Module
-# =============================================================================
+
 # This module configures NUMA support for multi-socket systems. It enables memory-aware thread
 # scheduling and allocation on NUMA architectures.
-# =============================================================================
 
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)
@@ -11,10 +11,10 @@ include_guard(GLOBAL)
 # NUMA Support Flag Controls whether NUMA (Non-Uniform Memory Access) support is enabled. When
 # enabled on Unix systems, provides memory-aware scheduling for multi-socket systems. Automatically
 # disabled on non-Unix platforms (Windows, macOS).
-option(PROJECT_ENABLE_NUMA "Enable numa node" OFF)
-mark_as_advanced(PROJECT_ENABLE_NUMA)
+option(MEMORY_ENABLE_NUMA "Enable numa node" OFF)
+mark_as_advanced(MEMORY_ENABLE_NUMA)
 
-if(NOT PROJECT_ENABLE_NUMA)
+if(NOT MEMORY_ENABLE_NUMA)
   return()
 endif()
 

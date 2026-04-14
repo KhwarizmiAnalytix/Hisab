@@ -1,12 +1,11 @@
-# ============================================================================= 
+#=============================================================================
 # Quarisma Build Speed Optimization Configuration Module
-# =============================================================================
+
 # Enables configurable compiler caching (ccache, sccache, buildcache) and faster linkers for
 # improved build performance. Supports GCC, Clang, and MSVC on Linux, macOS, and Windows.
 #
 # NOTE: This module applies faster linker configuration ONLY to the quarismabuild interface target,
 # ensuring that third-party dependencies are not affected by linker choices.
-# =============================================================================
 
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)
@@ -55,9 +54,8 @@ message(STATUS "Configuring build speed optimizations with cache type: ${PROJECT
 # linking phase. In such cases, it's better to use the default linker. This is a known limitation of
 # LTO with certain linkers.
 
-# ============================================================================ 
-#Compiler Cache Configuration
-# ============================================================================
+#=============================================================================
+# Compiler Cache Configuration
 #
 # NOTE: Compiler caches are configured globally as compiler launchers because they need to intercept
 # all compilation commands, including those for third-party dependencies. This is safe because
@@ -70,7 +68,7 @@ if(PROJECT_CACHE_BACKEND STREQUAL "ccache")
     message(STATUS "Found ccache: ${CCACHE_PROGRAM}")
     set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "C compiler launcher")
     set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "CXX compiler launcher")
-    if(PROJECT_ENABLE_CUDA)
+    if(MEMORY_ENABLE_CUDA)
       set(CMAKE_CUDA_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "CUDA compiler launcher")
     endif()
     message(STATUS "ccache enabled for C/C++ compilation")
@@ -85,7 +83,7 @@ elseif(PROJECT_CACHE_BACKEND STREQUAL "sccache")
     message(STATUS "Found sccache: ${SCCACHE_PROGRAM}")
     set(CMAKE_C_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}" CACHE STRING "C compiler launcher")
     set(CMAKE_CXX_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}" CACHE STRING "CXX compiler launcher")
-    if(PROJECT_ENABLE_CUDA)
+    if(MEMORY_ENABLE_CUDA)
       set(CMAKE_CUDA_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}" CACHE STRING "CUDA compiler launcher")
     endif()
     message(STATUS "sccache enabled for C/C++ compilation")
@@ -100,7 +98,7 @@ elseif(PROJECT_CACHE_BACKEND STREQUAL "buildcache")
     message(STATUS "Found buildcache: ${BUILDCACHE_PROGRAM}")
     set(CMAKE_C_COMPILER_LAUNCHER "${BUILDCACHE_PROGRAM}" CACHE STRING "C compiler launcher")
     set(CMAKE_CXX_COMPILER_LAUNCHER "${BUILDCACHE_PROGRAM}" CACHE STRING "CXX compiler launcher")
-    if(PROJECT_ENABLE_CUDA)
+    if(MEMORY_ENABLE_CUDA)
       set(CMAKE_CUDA_COMPILER_LAUNCHER "${BUILDCACHE_PROGRAM}" CACHE STRING
                                                                      "CUDA compiler launcher"
       )

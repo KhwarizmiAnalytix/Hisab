@@ -1,10 +1,57 @@
 # Parallel module CMakeLists.txt
 cmake_minimum_required(VERSION 3.16)
 
-# Note: Threading configuration is handled centrally by Cmake/tools/threads.cmake.
-# The variables PARALLEL_USE_PTHREADS, PARALLEL_USE_WIN32_THREADS, and
-# PARALLEL_MAX_THREADS are set by threads.cmake and available here.
-# Backend selection (PARALLEL_PARALLEL_BACKEND) is set by parallel_backend.cmake.
+# =============================================================================
+# Parallel-owned CMake configuration
+# All threading, backend-selection, and parallel feature modules live in
+# Library/Parallel/Cmake/ and are included exclusively here.
+# =============================================================================
+include(threads)           # Detects pthreads / Win32 threads; sets PARALLEL_USE_PTHREADS etc.
+include(parallel_backend)  # Validates PARALLEL_BACKEND and sets PARALLEL_ENABLE_TBB / OPENMP
+include(openmp)            # Finds/configures OpenMP when PARALLEL_ENABLE_OPENMP=ON
+include(tbb_multithreading)# Finds/builds Intel TBB when PARALLEL_ENABLE_TBB=ON
+
+# Link runtime libraries directly: ThirdParty/CMakeLists.txt can no longer do this
+# because these modules now run after ThirdParty.
+if(PARALLEL_ENABLE_TBB AND TARGET Tbb::tbb)
+  list(APPEND PARALLEL_DEPENDENCY_LIBS Tbb::tbb)
+endif()
+if(PARALLEL_ENABLE_OPENMP AND TARGET OpenMP::OpenMP_CXX)
+  list(APPEND PARALLEL_DEPENDENCY_LIBS OpenMP::OpenMP_CXX)
+endif()
+if(TARGET Threads::threads)
+  list(APPEND PARALLEL_DEPENDENCY_LIBS Threads::threads)
+endif()
+
+# Map feature flags to compile definitions scoped to this module.
+# (These were previously emitted by Cmake/flags/compile_definitions.cmake)
+if(PARALLEL_ENABLE_TBB)
+  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_TBB=1)
+else()
+  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_TBB=0)
+endif()
+
+if(PARALLEL_ENABLE_OPENMP)
+  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_OPENMP=1)
+else()
+  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_OPENMP=0)
+endif()
+
+if(PARALLEL_USE_PTHREADS)
+  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_PTHREADS=1)
+else()
+  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_PTHREADS=0)
+endif()
+
+if(PARALLEL_USE_WIN32_THREADS)
+  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_WIN32_THREADS=1)
+else()
+  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_WIN32_THREADS=0)
+endif()
+
+# Merge into the module's dependency compile-definitions list so that the
+# target_compile_definitions() call later in this file picks them up.
+list(APPEND PARALLEL_DEPENDENCY_COMPILE_DEFINITIONS ${PARALLEL_COMPILE_DEFINITIONS})
 
 set(parallel_headers)
 set(parallel_sources)

@@ -419,11 +419,11 @@ Build Configuration:
   Vectorization:     None
 
 Feature Flags:
-  QUARISMA_ENABLE_MIMALLOC         OFF
+  MEMORY_ENABLE_MIMALLOC         OFF
   QUARISMA_ENABLE_MAGIC_ENUM       OFF
   QUARISMA_ENABLE_TBB              ON
   QUARISMA_ENABLE_OPENMP           OFF
-  QUARISMA_ENABLE_CUDA             OFF
+  MEMOY_ENABLE_CUDA             OFF
   QUARISMA_ENABLE_HIP              OFF
   QUARISMA_ENABLE_LTO              OFF
 
@@ -745,12 +745,12 @@ Quarisma uses carefully selected third-party libraries to provide robust functio
 |---------|---------|-----------|---------|
 | **Google Test** | Unit testing framework | `QUARISMA_ENABLE_GTEST` | ON |
 | **Benchmark** | Performance benchmarking | `QUARISMA_ENABLE_BENCHMARK` | OFF |
-| **Loguru** | Advanced logging backend | `QUARISMA_ENABLE_LOGURU` | ON |
+| **Loguru** | Advanced logging backend | `LOGGING_ENABLE_LOGURU` | ON |
 | **magic_enum** | Enum reflection utilities | `QUARISMA_ENABLE_MAGICENUM` | ON |
-| **mimalloc** | High-performance memory allocator | `QUARISMA_ENABLE_MIMALLOC` | ON |
+| **mimalloc** | High-performance memory allocator | `MEMORY_ENABLE_MIMALLOC` | ON |
 | **TBB** | Intel Threading Building Blocks | `QUARISMA_ENABLE_TBB` | OFF |
 | **MKL** | Intel Math Kernel Library | `QUARISMA_ENABLE_MKL` | OFF |
-| **CUDA** | GPU acceleration | `QUARISMA_ENABLE_CUDA` | OFF |
+| **CUDA** | GPU acceleration | `MEMOY_ENABLE_CUDA` | OFF |
 
 ### Enabling/Disabling Dependencies
 

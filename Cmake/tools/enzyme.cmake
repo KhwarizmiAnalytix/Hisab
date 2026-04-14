@@ -1,6 +1,5 @@
-# =============================================================================
+#=============================================================================
 # Quarisma Enzyme Automatic Differentiation Integration Module
-# =============================================================================
 # This module integrates Enzyme AD (https://enzyme.mit.edu/) for automatic
 # differentiation. Enzyme works by loading as an LLVM plugin and requires
 # special compiler flags to enable differentiation capabilities.
@@ -20,7 +19,6 @@
 # Requirements:
 # - Clang/LLVM compiler (GCC not supported)
 # - Enzyme plugin library (ClangEnzyme-*.so or LLVMEnzyme-*.so)
-# =============================================================================
 
 cmake_minimum_required(VERSION 3.16)
 
@@ -167,12 +165,12 @@ set(ENZYME_COMPILE_OPTIONS ${ENZYME_COMPILER_FLAGS} CACHE STRING "Enzyme compile
 
 message(STATUS "Enzyme compiler flags: ${ENZYME_COMPILE_OPTIONS}")
 
-if(NOT TARGET Quarisma::enzyme)
-  add_library(Quarisma::enzyme INTERFACE IMPORTED GLOBAL)
-  target_compile_options(Quarisma::enzyme INTERFACE ${ENZYME_COMPILE_OPTIONS})
-  target_link_options(Quarisma::enzyme INTERFACE ${ENZYME_COMPILE_OPTIONS})
-  target_compile_definitions(Quarisma::enzyme INTERFACE PROJECT_HAS_ENZYME=1)
-  message(STATUS "Created Quarisma::enzyme interface target")
+if(NOT TARGET Enzyme::enzyme)
+  add_library(Enzyme::enzyme INTERFACE IMPORTED GLOBAL)
+  target_compile_options(Enzyme::enzyme INTERFACE ${ENZYME_COMPILE_OPTIONS})
+  target_link_options(Enzyme::enzyme INTERFACE ${ENZYME_COMPILE_OPTIONS})
+  target_compile_definitions(Enzyme::enzyme INTERFACE PROJECT_HAS_ENZYME=1)
+  message(STATUS "Created Enzyme::enzyme interface target")
 endif()
 
 set(ENZYME_FOUND TRUE CACHE BOOL "Enzyme was found successfully" FORCE)

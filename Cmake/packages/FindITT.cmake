@@ -4,17 +4,17 @@
 # found. ITT_INCLUDE_DIR    : path to ITT include dir. ITT_LIBRARIES      : list of libraries for
 # ITT
 
-function(Quarisma_create_itt_interface_targets)
-  if(TARGET ittnotify AND NOT TARGET "itt::itt")
-    add_library(Quarisma::itt INTERFACE IMPORTED)
-    target_include_directories(Quarisma::itt INTERFACE ${ITT_INCLUDE_DIR})
-    target_link_libraries(Quarisma::itt INTERFACE ittnotify)
+function(_create_itt_interface_targets)
+  if(TARGET ittnotify AND NOT TARGET "Itt::itt")
+    add_library(Itt::itt INTERFACE IMPORTED)
+    target_include_directories(Itt::itt INTERFACE ${ITT_INCLUDE_DIR})
+    target_link_libraries(Itt::itt INTERFACE ittnotify)
   endif()
 
-  if(TARGET jitprofiling AND NOT TARGET Quarisma::jitprofiling)
-    add_library(Quarisma::jitprofiling INTERFACE IMPORTED)
-    target_include_directories(Quarisma::jitprofiling INTERFACE ${ITT_INCLUDE_DIR})
-    target_link_libraries(Quarisma::jitprofiling INTERFACE jitprofiling)
+  if(TARGET jitprofiling AND NOT TARGET Itt::jitprofiling)
+    add_library(Itt::jitprofiling INTERFACE IMPORTED)
+    target_include_directories(Itt::jitprofiling INTERFACE ${ITT_INCLUDE_DIR})
+    target_link_libraries(Itt::jitprofiling INTERFACE jitprofiling)
   endif()
 endfunction()
 
@@ -45,6 +45,6 @@ if(NOT ITT_FOUND)
       set_target_properties(advisor PROPERTIES FOLDER "ThirdParty/ittapi")
     endif()
 
-    Quarisma_create_itt_interface_targets()
+    _create_itt_interface_targets()
   endif(ITT_INCLUDE_DIR)
 endif(NOT ITT_FOUND)

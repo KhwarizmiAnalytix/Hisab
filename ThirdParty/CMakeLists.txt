@@ -267,9 +267,9 @@ function(_create_third_party_aliases name aliases)
 endfunction()
 
 # -----------------------------------------------------------------------------
-# _create_third_party_interface_targets: Create Quarisma:: namespace aliases
+# _create_third_party_interface_targets: Create namespaced aliases
 # -----------------------------------------------------------------------------
-# Creates Quarisma:: namespace aliases for third-party library targets.
+# Creates namespaced aliases for third-party library targets.
 # This provides a consistent interface for linking against third-party libraries
 # throughout the Quarisma project.
 #
@@ -279,14 +279,14 @@ endfunction()
 # 3. Multiple possible target names - tries each in order
 #
 # Parameters:
-#   quarisma_targets - List of Quarisma target specifications in format:
-#                    "Quarisma::name=target1|target2|..."
+#   quarisma_targets - List of namespaced target specifications in format:
+#                    "Xxx::name=target1|target2|..."
 #                    where target1, target2, etc. are tried in order
 #
 # Example:
 #   _create_third_party_interface_targets(
-#       "Quarisma::fmt=fmt::fmt|fmt"
-#       "Quarisma::gtest=GTest::gtest|gtest;Quarisma::gtest_main=GTest::gtest_main|gtest_main"
+#       "Fmt::fmt=fmt::fmt|fmt"
+#       "Gtest::gtest=GTest::gtest|gtest;Gtest::gtest_main=GTest::gtest_main|gtest_main"
 #   )
 #
 function(_create_third_party_interface_targets)
@@ -297,21 +297,21 @@ function(_create_third_party_interface_targets)
     endif()
 
     foreach(target_spec ${quarisma_targets})
-        # Parse the specification: "Quarisma::name=target1|target2|..."
+        # Parse the specification: "Xxx::name=target1|target2|..."
         string(REPLACE "=" ";" spec_parts "${target_spec}")
         list(LENGTH spec_parts spec_parts_len)
 
         if(NOT spec_parts_len EQUAL 2)
-            message(WARNING "Invalid Quarisma target specification: ${target_spec}")
+            message(WARNING "Invalid namespaced target specification: ${target_spec}")
             continue()
         endif()
 
         list(GET spec_parts 0 quarisma_name)
         list(GET spec_parts 1 source_targets)
 
-        # Check if Quarisma target already exists
+        # Check if namespaced target already exists
         if(TARGET ${quarisma_name})
-            message(STATUS "Quarisma target ${quarisma_name} already exists, skipping")
+            message(STATUS "Target ${quarisma_name} already exists, skipping")
             continue()
         endif()
 
@@ -335,7 +335,7 @@ function(_create_third_party_interface_targets)
                     get_target_property(aliased_target ${source_target} ALIASED_TARGET)
 
                     if(aliased_target)
-                        # Source is an alias, create Quarisma alias to the actual target
+                        # Source is an alias, create alias to the actual target
                         add_library(${quarisma_name} ALIAS ${aliased_target})
                         message(STATUS "Created ${quarisma_name} -> ${source_target} (resolved to ${aliased_target})")
                     else()
@@ -351,7 +351,7 @@ function(_create_third_party_interface_targets)
         endforeach()
 
         if(NOT target_created)
-            message(WARNING "Could not create ${quarisma_name}: none of the source targets exist (${source_targets})")
+            message(WARNING "Could not create alias ${quarisma_name}: none of the source targets exist (${source_targets})")
         endif()
     endforeach()
 endfunction()
@@ -390,22 +390,22 @@ endfunction()
 #   ALIASES <aliases...>        - List of alias names to create for the library
 #                                 Example: "fmt::fmt-header-only" for fmt library
 #                                 Supported for all library types including HEADER_ONLY
-#   QUARISMA_TARGETS <specs...>   - List of Quarisma:: namespace target specifications
-#                                 Format: "Quarisma::name=target1|target2|..."
-#                                 Example: "Quarisma::fmt=fmt::fmt-header-only|fmt"
+#   QUARISMA_TARGETS <specs...>   - List of namespaced target specifications
+#                                 Format: "Xxx::name=target1|target2|..."
+#                                 Example: "Fmt::fmt=fmt::fmt-header-only|fmt"
 #                                 Supported for all library types including HEADER_ONLY
 #   INCLUDE_DIR <path>          - Include directory path to add to QUARISMA_DEPENDENCY_INCLUDE_DIRS
 #                                 Path is relative to CMAKE_CURRENT_SOURCE_DIR (ThirdParty/)
 #                                 Example: "fmt/include" for fmt library
 #   AUTO_ADD_TO_DEPENDENCIES    - Boolean flag to automatically add to QUARISMA_DEPENDENCY_LIBS
-#                                 Default: ON (automatically adds Quarisma::name target)
+#                                 Default: ON (automatically adds Xxx::name target)
 #
 # Example Usage:
 #   add_third_party_library(fmt
 #       LIBRARY_TYPE STATIC
 #       FILTER_FLAGS "-fno-exceptions" "-Werror"
 #       ALIASES "fmt::fmt"
-#       QUARISMA_TARGETS "Quarisma::fmt=fmt::fmt|fmt"
+#       QUARISMA_TARGETS "Fmt::fmt=fmt::fmt|fmt"
 #   )
 #
 #   add_third_party_library(kineto
@@ -495,17 +495,17 @@ function(add_third_party_library name)
         )
         message(STATUS "Added include directory to ${name}: ${TPL_INCLUDE_DIR}")
 
-        # Create Quarisma:: namespace alias for the INTERFACE library
-        if(NOT TARGET Quarisma::${name})
-            add_library(Quarisma::${name} ALIAS ${name})
-            message(STATUS "Created alias: Quarisma::${name} -> ${name}")
+        # Create default namespaced alias for the INTERFACE library
+        if(NOT TARGET ${name}::${name})
+            add_library(${name}::${name} ALIAS ${name})
+            message(STATUS "Created alias: ${name}::${name} -> ${name}")
         endif()
 
         # Add to QUARISMA_DEPENDENCY_LIBS so it can be linked against
         get_property(_temp_libs GLOBAL PROPERTY _QUARISMA_DEPENDENCY_LIBS)
-        list(APPEND _temp_libs Quarisma::${name})
+        list(APPEND _temp_libs ${name}::${name})
         set_property(GLOBAL PROPERTY _QUARISMA_DEPENDENCY_LIBS "${_temp_libs}")
-        message(STATUS "Dependency: Quarisma::${name} added to QUARISMA_DEPENDENCY_LIBS (header-only)")
+        message(STATUS "Dependency: ${name}::${name} added to QUARISMA_DEPENDENCY_LIBS (header-only)")
 
         # Add include directory to global include paths for project-wide access
         get_property(_temp_includes GLOBAL PROPERTY _QUARISMA_DEPENDENCY_INCLUDE_DIRS)
@@ -563,22 +563,22 @@ function(add_third_party_library name)
 
             message(STATUS "================================================================")
 
-            # Create Quarisma:: namespace target using QUARISMA_TARGETS if provided, otherwise use default pattern
+            # Create namespaced target using QUARISMA_TARGETS if provided, otherwise use default pattern
             if(TPL_QUARISMA_TARGETS)
                 _create_third_party_interface_targets("${TPL_QUARISMA_TARGETS}")
             else()
                 _create_third_party_interface_targets(
-                    "Quarisma::${name}=${name}::${name}-header-only||${name}::${name}|${name}|${name}-static"
+                    "${name}::${name}=${name}::${name}-header-only||${name}::${name}|${name}|${name}-static"
                 )
             endif()
 
             # Automatically populate dependency lists if requested (default: ON)
-            if(TARGET Quarisma::${name})
+            if(TARGET ${name}::${name})
                 # Add to QUARISMA_DEPENDENCY_LIBS using global property
                 get_property(_temp_libs GLOBAL PROPERTY _QUARISMA_DEPENDENCY_LIBS)
-                list(APPEND _temp_libs Quarisma::${name})
+                list(APPEND _temp_libs ${name}::${name})
                 set_property(GLOBAL PROPERTY _QUARISMA_DEPENDENCY_LIBS "${_temp_libs}")
-                message(STATUS "Dependency: Quarisma::${name} added to QUARISMA_DEPENDENCY_LIBS (external)")
+                message(STATUS "Dependency: ${name}::${name} added to QUARISMA_DEPENDENCY_LIBS (external)")
             endif()
 
             # Add include directory if specified
@@ -749,7 +749,7 @@ function(add_third_party_library name)
             endif()
 
             # -------------------------------------------------------------------------
-            # Step 11: Create Quarisma:: namespace interface targets if requested
+            # Step 11: Create namespaced interface targets if requested
             # -------------------------------------------------------------------------
             if(TPL_QUARISMA_TARGETS)
                 _create_third_party_interface_targets("${TPL_QUARISMA_TARGETS}")
@@ -762,15 +762,15 @@ function(add_third_party_library name)
             # QUARISMA_DEPENDENCY_INCLUDE_DIRS if requested (default: ON)
 
             if(TPL_AUTO_ADD_TO_DEPENDENCIES)
-                # Check if the Quarisma:: namespace target was created
-                if(TARGET Quarisma::${name})
+                # Check if the namespaced target was created
+                if(TARGET ${name}::${name})
                     # Add to QUARISMA_DEPENDENCY_LIBS using global property
                     # We use global properties because PARENT_SCOPE doesn't update the variable
                     # in the current scope, so subsequent function calls wouldn't see the changes
                     get_property(_temp_libs GLOBAL PROPERTY _QUARISMA_DEPENDENCY_LIBS)
-                    list(APPEND _temp_libs Quarisma::${name})
+                    list(APPEND _temp_libs ${name}::${name})
                     set_property(GLOBAL PROPERTY _QUARISMA_DEPENDENCY_LIBS "${_temp_libs}")
-                    message(STATUS "Dependency: Quarisma::${name} added to QUARISMA_DEPENDENCY_LIBS")
+                    message(STATUS "Dependency: ${name}::${name} added to QUARISMA_DEPENDENCY_LIBS")
                 endif()
 
                 # Add include directory if specified
@@ -806,12 +806,12 @@ endfunction()
 
 # fmt - Modern formatting library (header-only mode)
 # Using header-only version to avoid shared library issues and ensure compatibility with Kineto
-# Creates INTERFACE library target with Quarisma::fmt alias and fmt::fmt-header-only alias
+# Creates INTERFACE library target with Fmt::fmt alias and fmt::fmt-header-only alias
 # for Kineto compatibility (Kineto checks for this target to determine if fmt is available)
 add_third_party_library(fmt
     LIBRARY_TYPE STATIC
     ALIASES "fmt::fmt-header-only"
-    QUARISMA_TARGETS "Quarisma::fmt=fmt::fmt-header-only|fmt::fmt|fmt"
+    QUARISMA_TARGETS "Fmt::fmt=fmt::fmt-header-only|fmt::fmt|fmt"
     INCLUDE_DIR "fmt/include"
 )
 
@@ -819,46 +819,50 @@ add_third_party_library(fmt
 add_third_party_library(cpuinfo
     LIBRARY_TYPE STATIC
     FILTER_FLAGS "-flto=thin" "-flto=full"
-    QUARISMA_TARGETS "Quarisma::cpuinfo=cpuinfo::cpuinfo|cpuinfo"
+    QUARISMA_TARGETS "Cpuinfo::cpuinfo=cpuinfo::cpuinfo|cpuinfo"
     INCLUDE_DIR "cpuinfo/include"
 )
 
 # magic_enum - Static reflection for enums in C++
-# Header-only library with INTERFACE target and Quarisma::magic_enum alias
+# Header-only library with INTERFACE target and namespaced magic_enum alias
 # Note: FILTER_FLAGS, DISABLE_WARNINGS, EXTRA_FLAGS, and LIBRARY_TYPE_VAR are not applicable
 #       (no compilation occurs for header-only libraries)
 add_third_party_library(magic_enum
     CONDITION QUARISMA_ENABLE_MAGICENUM
     LIBRARY_TYPE HEADER_ONLY
+    QUARISMA_TARGETS "MagicEnum::magic_enum=magic_enum"
     INCLUDE_DIR "magic_enum/include"
 )
 
 # loguru - Lightweight C++ logging library (forced to static)
 add_third_party_library(loguru
-    CONDITION QUARISMA_ENABLE_LOGURU
+    CONDITION LOGGING_ENABLE_LOGURU
     LIBRARY_TYPE STATIC
     FILTER_FLAGS "-flto=thin" "-flto=full"
-    QUARISMA_TARGETS "Quarisma::loguru=loguru::loguru|loguru"
+    QUARISMA_TARGETS "Loguru::loguru=loguru::loguru|loguru"
     INCLUDE_DIR "loguru"
+    AUTO_ADD_TO_DEPENDENCIES OFF  # loguru is Logging-only; wired in CMakeLists.txt
 )
 
 # glog - Google logging library
 add_third_party_library(glog
-    CONDITION QUARISMA_ENABLE_GLOG
+    CONDITION LOGGING_ENABLE_GLOG
     FILTER_FLAGS "-flto=thin" "-flto=full"
-    QUARISMA_TARGETS "Quarisma::glog=glog::glog|glog"
+    QUARISMA_TARGETS "Glog::glog=glog::glog|glog"
     INCLUDE_DIR "glog/src"
+    AUTO_ADD_TO_DEPENDENCIES OFF  # glog is Logging-only; wired in CMakeLists.txt
 )
 
 # mimalloc - Microsoft's high-performance memory allocator (conditional)
 # By default builds as static library, controlled by LIBRARY_TYPE parameter
 add_third_party_library(mimalloc
-    CONDITION QUARISMA_ENABLE_MIMALLOC
+    CONDITION MEMORY_ENABLE_MIMALLOC
     LIBRARY_TYPE STATIC
     LIBRARY_TYPE_VAR MI_BUILD_STATIC
     FILTER_FLAGS "-Wno-strict-prototypes" "-flto=thin" "-flto=full"
-    QUARISMA_TARGETS "Quarisma::mimalloc=mimalloc|mimalloc-static"
+    QUARISMA_TARGETS "Mimalloc::mimalloc=mimalloc|mimalloc-static"
     INCLUDE_DIR "mimalloc/include"
+    AUTO_ADD_TO_DEPENDENCIES OFF  # mimalloc is Memory-only; wired in CMakeLists.txt
 )
 
 # mimalloc adds Windows system libraries as bare names (e.g. "psapi") via
@@ -922,7 +926,7 @@ endif()
 
 # Configure GPU backend support based on enabled platforms
 set(LIBKINETO_NOAIUPTI ON CACHE STRING "" FORCE)
-if(NOT QUARISMA_ENABLE_CUDA)
+if(NOT MEMOY_ENABLE_CUDA)
     set(LIBKINETO_NOCUPTI ON CACHE STRING "" FORCE)
 else()
     set(LIBKINETO_NOCUPTI OFF CACHE STRING "" FORCE)
@@ -961,13 +965,13 @@ add_third_party_library(kineto
     SOURCE_DIR kineto/libkineto
     DISABLE_WARNINGS
     FILTER_FLAGS "-flto=thin" "-flto=full"
-    QUARISMA_TARGETS "Quarisma::kineto=kineto"
+    QUARISMA_TARGETS "Kineto::kineto=kineto"
     INCLUDE_DIR "kineto/libkineto/include"
     AUTO_ADD_TO_DEPENDENCIES OFF  # Kineto has special handling in manual section
 )
 
 # Disable Kineto if the library was not found
-if(PROFILER_ENABLE_KINETO AND NOT TARGET Quarisma::kineto)
+if(PROFILER_ENABLE_KINETO AND NOT TARGET Kineto::kineto)
     message(STATUS "Kineto library not found - disabling PROFILER_ENABLE_KINETO")
     set(PROFILER_ENABLE_KINETO OFF CACHE BOOL "Enable Quarisma Kineto profiling library." FORCE)
 endif()
@@ -991,8 +995,8 @@ if(QUARISMA_ENABLE_GTEST)
                 message(STATUS "Found external Google Test")
                 # Create Quarisma:: namespace aliases for googletest
                 _create_third_party_interface_targets(
-                    "Quarisma::gtest=GTest::gtest|gtest"
-                    "Quarisma::gtest_main=GTest::gtest_main|gtest_main"
+                    "Gtest::gtest=GTest::gtest|gtest"
+                    "Gtest::gtest_main=GTest::gtest_main|gtest_main"
                 )
                 set(gtest_external_found TRUE)
             endif()
@@ -1026,8 +1030,8 @@ if(QUARISMA_ENABLE_GTEST)
 
     # Create Quarisma:: namespace aliases for googletest
     _create_third_party_interface_targets(
-        "Quarisma::gtest=GTest::gtest|gtest"
-        "Quarisma::gtest_main=GTest::gtest_main|gtest_main"
+        "Gtest::gtest=GTest::gtest|gtest"
+        "Gtest::gtest_main=GTest::gtest_main|gtest_main"
     )
 endif()
 
@@ -1043,8 +1047,8 @@ if(QUARISMA_ENABLE_BENCHMARK)
                 message("Found external Google Benchmark")
                 # Create Quarisma:: namespace alias for benchmark
                 _create_third_party_interface_targets(
-                    "Quarisma::benchmark=benchmark::benchmark|benchmark"
-                    "Quarisma::benchmark_main=benchmark::benchmark_main|benchmark_main"
+                    "Benchmark::benchmark=benchmark::benchmark|benchmark"
+                    "Benchmark::benchmark_main=benchmark::benchmark_main|benchmark_main"
                 )
                 set(benchmark_external_found TRUE)
             endif()
@@ -1072,8 +1076,8 @@ if(QUARISMA_ENABLE_BENCHMARK)
 
     # Create Quarisma:: namespace alias for benchmark
     _create_third_party_interface_targets(
-        "Quarisma::benchmark=benchmark::benchmark|benchmark"
-        "Quarisma::benchmark_main=benchmark::benchmark_main|benchmark_main"
+        "Benchmark::benchmark=benchmark::benchmark|benchmark"
+        "Benchmark::benchmark_main=benchmark::benchmark_main|benchmark_main"
     )
 endif()
 
@@ -1085,9 +1089,15 @@ endif()
 if(PROFILER_ENABLE_ITT)
   find_package(ITT)
   if(ITT_FOUND)
-    list(APPEND QUARISMA_DEPENDENCY_LIBS ${ITT_LIBRARIES})
-    list(APPEND QUARISMA_DEPENDENCY_INCLUDE_DIRS ${ITT_INCLUDE_DIR})
-    message(STATUS "Dependency: ITT libraries added to QUARISMA_DEPENDENCY_LIBS")
+    if(TARGET Itt::itt)
+      get_property(_temp_profiler_libs GLOBAL PROPERTY _QUARISMA_PROFILER_DEPENDENCY_LIBS)
+      list(APPEND _temp_profiler_libs Itt::itt)
+      if(TARGET Itt::jitprofiling)
+        list(APPEND _temp_profiler_libs Itt::jitprofiling)
+      endif()
+      set_property(GLOBAL PROPERTY _QUARISMA_PROFILER_DEPENDENCY_LIBS "${_temp_profiler_libs}")
+      message(STATUS "Dependency: Itt::itt added to QUARISMA_PROFILER_DEPENDENCY_LIBS (profiler-only)")
+    endif()
   else()
     message(STATUS "ITT API not found - disabling PROFILER_ENABLE_ITT")
     set(PROFILER_ENABLE_ITT OFF CACHE BOOL "Enable Intel ITT API for VTune profiling." FORCE)
@@ -1095,34 +1105,24 @@ if(PROFILER_ENABLE_ITT)
 endif()
 
 # -----------------------------------------------------------------------------
-# TBB - Threading Building Blocks (Handled by tbb.cmake)
+# TBB - Threading Building Blocks
 # -----------------------------------------------------------------------------
-# TBB is configured by tbb.cmake (included before ThirdParty subdirectory)
-# which creates TBB::tbb and TBB::tbbmalloc targets. We add them to the
-# dependency list here.
-if(QUARISMA_ENABLE_TBB)
-  if(TARGET Quarisma::tbb)
-    list(APPEND QUARISMA_DEPENDENCY_LIBS Quarisma::tbb)
-    message(STATUS "Dependency: TBB::tbb added to QUARISMA_DEPENDENCY_LIBS")
-  endif()
-
-  if(TARGET Quarisma::tbbmalloc)
-    list(APPEND QUARISMA_DEPENDENCY_LIBS Quarisma::tbbmalloc)
-    message(STATUS "Dependency: TBB::tbbmalloc added to QUARISMA_DEPENDENCY_LIBS")
-  endif()
-endif()
+# TBB targets (Tbb::tbb, Tbb::tbbmalloc) are created by tbb_multithreading.cmake
+# and tbb_memory.cmake, which now run inside Library/Parallel and Library/Memory
+# respectively — after this subdirectory. Each module links TBB directly in its
+# own CMakeLists.txt.
 
 # -----------------------------------------------------------------------------
 # Enzyme - Automatic Differentiation (Handled by enzyme.cmake)
 # -----------------------------------------------------------------------------
 # Enzyme is configured by enzyme.cmake (included before ThirdParty subdirectory)
-# which creates Quarisma::enzyme interface target.
+# which creates Enzyme::enzyme interface target.
 # NOTE: Enzyme is NOT added to QUARISMA_DEPENDENCY_LIBS because it should only be applied
 # to specific source files that use it (via set_source_files_properties), not globally.
 # The Enzyme plugin can cause compilation crashes on files that don't use it.
 if(QUARISMA_ENABLE_ENZYME)
-  if(TARGET Quarisma::enzyme)
-    message(STATUS "Enzyme: Quarisma::enzyme target available (apply selectively to source files)")
+  if(TARGET Enzyme::enzyme)
+    message(STATUS "Enzyme: Enzyme::enzyme target available (apply selectively to source files)")
   endif()
 endif()
 
@@ -1135,6 +1135,7 @@ endif()
 # Read from global properties and merge with any manually added dependencies
 get_property(_global_libs GLOBAL PROPERTY _QUARISMA_DEPENDENCY_LIBS)
 get_property(_global_includes GLOBAL PROPERTY _QUARISMA_DEPENDENCY_INCLUDE_DIRS)
+get_property(_global_profiler_libs GLOBAL PROPERTY _QUARISMA_PROFILER_DEPENDENCY_LIBS)
 
 if(_global_libs)
     list(APPEND QUARISMA_DEPENDENCY_LIBS ${_global_libs})
@@ -1142,10 +1143,15 @@ endif()
 if(_global_includes)
     list(APPEND QUARISMA_DEPENDENCY_INCLUDE_DIRS ${_global_includes})
 endif()
+if(_global_profiler_libs)
+    list(APPEND QUARISMA_PROFILER_DEPENDENCY_LIBS ${_global_profiler_libs})
+endif()
 
 # Propagate to parent scope
 set(QUARISMA_DEPENDENCY_LIBS "${QUARISMA_DEPENDENCY_LIBS}" PARENT_SCOPE)
 set(QUARISMA_DEPENDENCY_INCLUDE_DIRS "${QUARISMA_DEPENDENCY_INCLUDE_DIRS}" PARENT_SCOPE)
+set(QUARISMA_PROFILER_DEPENDENCY_LIBS "${QUARISMA_PROFILER_DEPENDENCY_LIBS}" PARENT_SCOPE)
 
 message(STATUS "ThirdParty: QUARISMA_DEPENDENCY_LIBS populated with: ${QUARISMA_DEPENDENCY_LIBS}")
 message(STATUS "ThirdParty: QUARISMA_DEPENDENCY_INCLUDE_DIRS populated with: ${QUARISMA_DEPENDENCY_INCLUDE_DIRS}")
+message(STATUS "ThirdParty: QUARISMA_PROFILER_DEPENDENCY_LIBS populated with: ${QUARISMA_PROFILER_DEPENDENCY_LIBS}")

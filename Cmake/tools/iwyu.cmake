@@ -1,9 +1,9 @@
-# ============================================================================= Quarisma
+#=============================================================================
+# Quarisma
 # Include-What-You-Use (IWYU) Configuration Module
-# =============================================================================
+
 # This module configures include-what-you-use for analyzing include dependencies. It detects
 # unnecessary includes and suggests improvements to include structure.
-# =============================================================================
 
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)

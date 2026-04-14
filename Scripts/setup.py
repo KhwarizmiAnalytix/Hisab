@@ -667,25 +667,25 @@ class QuarismaFlags:
         debug_print("Build cmake flag")
         self.__name = {
             # Valid CMake options that exist in CMakeLists.txt
-            "cuda": "PROJECT_ENABLE_CUDA",
-            "tbb": "PARALLEL_ENABLE_TBB",
+            "cuda": "MEMORY_ENABLE_CUDA",
+            "tbb": "MEMORY_ENABLE_TBB",
             "openmp": "PARALLEL_ENABLE_OPENMP",
             "mkl": "PROJECT_ENABLE_MKL",
-            "numa": "PROJECT_ENABLE_NUMA",
-            "memkind": "PROJECT_ENABLE_MEMKIND",
+            "numa": "MEMORY_ENABLE_NUMA",
+            "memkind": "MEMORY_ENABLE_MEMKIND",
             "vectorisation": "PROJECT_VECTORIZATION_TYPE",
             "static": "BUILD_SHARED_LIBS",
             "clangtidy": "PROJECT_ENABLE_CLANGTIDY",
             "iwyu": "PROJECT_ENABLE_IWYU",
             "sanitizer": "PROJECT_ENABLE_SANITIZER",
             "sanitizer_enum": "PROJECT_SANITIZER_TYPE",
-            "benchmark": "PROJECT_ENABLE_BENCHMARK",
+            "benchmark": "CORE_ENABLE_BENCHMARK",
             "gtest": "PROJECT_ENABLE_GTEST",
             "valgrind": "PROJECT_ENABLE_VALGRIND",
-            "coverage": "PROJECT_ENABLE_COVERAGE",
-            "test": "PROJECT_BUILD_TESTING",
+            "coverage": "PARALLEL_ENABLE_COVERAGE",
+            "test": "BUILD_TESTING",
             "logging_backend": "LOGGING_BACKEND",
-            "lto": "PROJECT_ENABLE_LTO",
+            "lto": "MEMORY_ENABLE_LTO",
             "magic_enum": "PROJECT_ENABLE_MAGICENUM",
             "mimalloc": "MEMORY_ENABLE_MIMALLOC",
             "external": "PROJECT_ENABLE_EXTERNAL",
@@ -742,7 +742,7 @@ class QuarismaFlags:
             {
                 "vectorisation": "",  # Special case: string value
                 "static": self.ON,  # BUILD_SHARED_LIBS default is OFF, so static=ON
-                "test": self.ON,  # PROJECT_BUILD_TESTING default is ON
+                "test": self.ON,  # BUILD_TESTING default is ON
                 "javasourceversion": 1.8,  # Special case: numeric value
                 "javatargetversion": 1.8,  # Special case: numeric value
                 "cxxstd": "",  # Special case: let CMake decide
@@ -750,24 +750,24 @@ class QuarismaFlags:
                 "cache_type": "none",  # Default cache type is none
                 "parallel_backend": "std",  # Default SMP backend is std_thread for maximum compatibility
                 # CMake options with default OFF - keep OFF in setup.py
-                "lto": self.OFF,  # PROJECT_ENABLE_LTO default is OFF
+                "lto": self.OFF,  # *_ENABLE_LTO defaults are OFF
                 "gtest": self.ON,  # PROJECT_ENABLE_GTEST default is ON
                 "magic_enum": self.ON,  # PROJECT_ENABLE_MAGIC_ENUM default is ON
                 "mimalloc": self.ON,  # MEMORY_ENABLE_MIMALLOC default is ON
                 "profiler_type": "KINETO",
                 # CMake options with default OFF - keep OFF in setup.py
                 # (already set by dict.fromkeys above)
-                # "benchmark": self.OFF,  # PROJECT_ENABLE_BENCHMARK default is OFF (changed from ON)
-                # "cuda": self.OFF,  # PROJECT_ENABLE_CUDA default is OFF
+                # "benchmark": self.OFF,  # *_ENABLE_BENCHMARK defaults are OFF
+                # "cuda": self.OFF,  # MEMORY_ENABLE_CUDA default is OFF
                 # "mkl": self.OFF,  # PROJECT_ENABLE_MKL default is OFF
-                # "numa": self.OFF,  # PROJECT_ENABLE_NUMA default is OFF
-                # "memkind": self.OFF,  # PROJECT_ENABLE_MEMKIND default is OFF
-                # "tbb": self.OFF,  # PARALLEL_ENABLE_TBB default is OFF
+                # "numa": self.OFF,  # MEMORY_ENABLE_NUMA default is OFF
+                # "memkind": self.OFF,  # MEMORY_ENABLE_MEMKIND default is OFF
+                # "tbb": self.OFF,  # MEMORY_ENABLE_TBB default is OFF
                 # "iwyu": self.OFF,  # PROJECT_ENABLE_IWYU default is OFF
                 # "clangtidy": self.OFF,  # PROJECT_ENABLE_CLANGTIDY default is OFF
                 # "cppcheck": self.OFF,  # PROJECT_ENABLE_CPPCHECK default is OFF
                 # "valgrind": self.OFF,  # PROJECT_ENABLE_VALGRIND default is OFF
-                # "coverage": self.OFF,  # PROJECT_ENABLE_COVERAGE default is OFF
+                # "coverage": self.OFF,  # *_ENABLE_COVERAGE defaults are OFF
                 # "sanitizer": self.OFF,  # PROJECT_ENABLE_SANITIZER default is OFF
             }
         )
@@ -997,7 +997,45 @@ class QuarismaFlags:
                 ["-DCMAKE_CXX_STANDARD_REQUIRED=ON", "-DCMAKE_CXX_EXTENSIONS=OFF"]
             )
 
-        # Add CMAKE_INTERPROCEDURAL_OPTIMIZATION flag when LTO is enabled
+        # Keep module-scoped behavior for umbrella setup flags.
+        if self.__value.get("benchmark") in [self.ON, self.OFF]:
+            benchmark_value = self.__value.get("benchmark")
+            cmake_cmd_flags.extend(
+                [
+                    f"-DMEMORY_ENABLE_BENCHMARK={benchmark_value}",
+                    f"-DPARALLEL_ENABLE_BENCHMARK={benchmark_value}",
+                    f"-DCORE_ENABLE_BENCHMARK={benchmark_value}",
+                ]
+            )
+
+        if self.__value.get("coverage") in [self.ON, self.OFF]:
+            coverage_value = self.__value.get("coverage")
+            cmake_cmd_flags.extend(
+                [
+                    f"-DPARALLEL_ENABLE_COVERAGE={coverage_value}",
+                    f"-DPROFILER_ENABLE_COVERAGE={coverage_value}",
+                ]
+            )
+
+        if self.__value.get("lto") in [self.ON, self.OFF]:
+            lto_value = self.__value.get("lto")
+            cmake_cmd_flags.extend(
+                [
+                    f"-DLOGGING_ENABLE_LTO={lto_value}",
+                    f"-DMEMORY_ENABLE_LTO={lto_value}",
+                    f"-DPARALLEL_ENABLE_LTO={lto_value}",
+                    f"-DPROFILER_ENABLE_LTO={lto_value}",
+                    f"-DCORE_ENABLE_LTO={lto_value}",
+                ]
+            )
+
+        # When the TBB parallel backend is selected, the Memory TBB allocator must
+        # also be enabled: both PARALLEL_ENABLE_TBB and MEMORY_ENABLE_TBB must be ON.
+        if self.__value.get("parallel_backend") == "tbb":
+            cmake_cmd_flags.append("-DPARALLEL_ENABLE_TBB=ON")
+            cmake_cmd_flags.append("-DMEMORY_ENABLE_TBB=ON")
+
+        # Add CMAKE_INTERPROCEDURAL_OPTIMIZATION flag when LTO is enabled.
         if self.__value.get("lto") == self.ON:
             cmake_cmd_flags.append("-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON")
 

@@ -50,7 +50,7 @@ add_third_party_library(fmt
 ### Complete Example
 ```cmake
 add_third_party_library(mimalloc
-    CONDITION QUARISMA_ENABLE_MIMALLOC
+    CONDITION MEMORY_ENABLE_MIMALLOC
     LIBRARY_TYPE STATIC
     LIBRARY_TYPE_VAR MI_BUILD_STATIC
     FILTER_FLAGS "-fno-exceptions" "-Werror"

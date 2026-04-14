@@ -1,10 +1,10 @@
-# ============================================================================= Quarisma Sanitizer
+#=============================================================================
+# Quarisma Sanitizer
 # Configuration Module
-# =============================================================================
+
 # This module configures compiler sanitizers for runtime error detection. Supports AddressSanitizer,
 # UndefinedBehaviorSanitizer, ThreadSanitizer, MemorySanitizer, and LeakSanitizer (Clang/GCC only).
 # Adapted from smtk (https://gitlab.kitware.com/cmb/smtk)
-# =============================================================================
 
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)

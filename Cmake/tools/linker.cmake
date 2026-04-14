@@ -1,13 +1,13 @@
-# ============================================================================= Quarisma Faster Linker
+#=============================================================================
+# Quarisma Faster Linker
 # Configuration Module
-# =============================================================================
+
 # Configures faster linker selection for improved build performance. Supports mold, lld, gold, and
 # lld-link linkers across different platforms.
 #
 # NOTE: Linker flags are applied ONLY to the quarismabuild interface target. This ensures that
 # third-party dependencies use their default linker settings and are not affected by Quarisma's linker
 # choices.
-# =============================================================================
 
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)
@@ -145,9 +145,7 @@ quarisma_find_linker()
 # set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=gold")
 # set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fuse-ld=gold") endif() endif()
 # endif()
-# ============================================================================
 # Summary
-# ============================================================================
 
 message("  - Faster linker: Automatically detected and applied to quarismabuild target")
 message("  - Third-party dependencies: Not affected by linker configuration")

@@ -1,6 +1,5 @@
-# =============================================================================
+#=============================================================================
 # Xcode Toolchain Configuration Module
-# =============================================================================
 # When building with the Xcode generator, this module configures CMake to use
 # the same LLVM as both (1) Xcode's TOOLCHAINS setting and (2) CMAKE_*_COMPILER.
 # Compilers are the clang/clang++ inside the registered *.xctoolchain (e.g.
@@ -13,7 +12,6 @@
 #   brew install llvm
 #   ln -sf /opt/homebrew/opt/llvm/Toolchains/LLVM<ver>.xctoolchain \
 #           ~/Library/Developer/Toolchains/LLVM<ver>.xctoolchain
-# =============================================================================
 
 include_guard(GLOBAL)
 

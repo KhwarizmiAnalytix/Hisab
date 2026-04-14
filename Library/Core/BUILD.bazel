@@ -71,14 +71,6 @@ cc_library(
     ] + select({
         "//bazel:disable_magic_enum": [],
         "//conditions:default": ["@magic_enum//:magic_enum"],
-    }) + select({
-        "//bazel:disable_mimalloc": [],
-        "@platforms//os:windows": [],
-        "//conditions:default": ["@mimalloc//:mimalloc"],
-    }) + select({
-        "//bazel:enable_native_profiler": [],
-        "//bazel:enable_itt": [],
-        "//conditions:default": ["@kineto//:kineto"],
     }),
     alwayslink = False,
     visibility = [

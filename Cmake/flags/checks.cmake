@@ -1,13 +1,13 @@
-# ============================================================================= Quarisma System
+#=============================================================================
+# Quarisma System
 # Validation and Checks Module
-# =============================================================================
+
 # This module performs efficient system validation with aggressive caching to minimize CMake
 # reconfiguration overhead while ensuring all required dependencies and capabilities are available.
 #
 # Performance Optimizations: - Cached validation results to avoid redundant checks - Fast platform
 # detection with cached results - Efficient compiler capability validation - Streamlined dependency
 # checking
-# =============================================================================
 
 # Guard against multiple inclusions for performance
 if(PROJECT_CHECKS_CONFIGURED)
@@ -29,9 +29,9 @@ endif()
 
 message(STATUS "Quarisma: Performing system validation...")
 
-# ============================================================================= Platform Detection
+#=============================================================================
+# Platform Detection
 # with Caching
-# =============================================================================
 
 # Fast platform detection with cached results
 if(NOT DEFINED PROJECT_PLATFORM_DETECTED)
@@ -52,9 +52,9 @@ if(NOT DEFINED PROJECT_PLATFORM_DETECTED)
   message(STATUS "Quarisma: Platform detected: ${PROJECT_PLATFORM}")
 endif()
 
-# ============================================================================= Compiler Version
+#=============================================================================
+# Compiler Version
 # Validation (Updated for Modern Requirements)
-# =============================================================================
 
 # Updated minimum compiler versions for C++17 support and modern optimizations
 set(PROJECT_MIN_GCC_VERSION "7.0")
@@ -130,9 +130,9 @@ else()
   message(WARNING "Quarisma: Unknown compiler '${CMAKE_CXX_COMPILER_ID}'. Build may fail.")
 endif()
 
-# ============================================================================= C++ Standard
+#=============================================================================
+# C++ Standard
 # Validation
-# =============================================================================
 
 # Ensure C++17 is properly configured (updated from C++11)
 if(NOT PROJECT_IGNORE_CMAKE_CXX_STANDARD_CHECKS)
@@ -151,9 +151,9 @@ if(NOT PROJECT_IGNORE_CMAKE_CXX_STANDARD_CHECKS)
   message(STATUS "Quarisma: C++${PROJECT_CXX_STANDARD} standard validated and configured")
 endif()
 
-# ============================================================================= Essential System
+#=============================================================================
+# Essential System
 # Dependencies Validation
-# =============================================================================
 
 include(CheckIncludeFile)
 include(CheckIncludeFileCXX)
@@ -183,9 +183,9 @@ if(NOT DEFINED PROJECT_MATH_LIB_VALIDATED)
   message(STATUS "Quarisma: Math library support validated")
 endif()
 
-# ============================================================================= Compiler Capability
+#=============================================================================
+# Compiler Capability
 # Validation (Cached)
-# =============================================================================
 
 include(CheckCXXSourceCompiles)
 
@@ -270,9 +270,9 @@ if(NOT DEFINED PROJECT_EXCEPTION_HANDLING_VALIDATED)
   message(STATUS "Quarisma: Exception handling validated")
 endif()
 
-# ============================================================================= Platform-Specific
+#=============================================================================
+# Platform-Specific
 # Validations
-# =============================================================================
 
 # Windows-specific checks
 if(PROJECT_PLATFORM_WINDOWS)
@@ -299,9 +299,9 @@ if(PROJECT_PLATFORM_LINUX OR PROJECT_PLATFORM_MACOS)
   endif()
 endif()
 
-# ============================================================================= Validation
+#=============================================================================
+# Validation
 # Completion and Caching
-# =============================================================================
 
 # Mark validation as completed for this configuration
 set(PROJECT_VALIDATION_COMPLETED "${PROJECT_VALIDATION_CACHE_KEY}"
@@ -317,5 +317,5 @@ set(PROJECT_VALIDATION_SUMMARY
 message(STATUS "Quarisma: System validation completed successfully")
 message(STATUS "Quarisma: ${PROJECT_VALIDATION_SUMMARY}")
 
-# ============================================================================= End of checks.cmake
-# =============================================================================
+#=============================================================================
+# End of checks.cmake

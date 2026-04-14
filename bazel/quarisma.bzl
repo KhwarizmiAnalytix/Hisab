@@ -43,7 +43,7 @@ def quarisma_defines():
 
     # CUDA / HIP (opt-in)
     base_defines += select({
-        "//bazel:enable_cuda": ["QUARISMA_ENABLE_CUDA", "QUARISMA_HAS_CUDA=1"],
+        "//bazel:enable_cuda": ["MEMOY_ENABLE_CUDA", "QUARISMA_HAS_CUDA=1"],
         "//conditions:default": ["QUARISMA_HAS_CUDA=0"],
     })
     base_defines += select({
@@ -117,7 +117,7 @@ def quarisma_defines():
         "//conditions:default": ["QUARISMA_HAS_ENZYME=0"],
     })
 
-    # Logging — default LOGURU (QUARISMA_LOGGING_BACKEND default in Cmake/tools/logging.cmake)
+    # Logging — default LOGURU (LOGGING_BACKEND default in Cmake/tools/logging.cmake)
     base_defines += select({
         "//bazel:logging_glog": ["QUARISMA_USE_GLOG"],
         "//bazel:logging_loguru": ["QUARISMA_USE_LOGURU"],
@@ -151,7 +151,7 @@ def quarisma_linkopts():
 
 def quarisma_enzyme_copts():
     """Returns Enzyme AD compile options.
-    Mirrors CMake: target_compile_options(Quarisma::enzyme INTERFACE -fpass-plugin=<path>)
+    Mirrors CMake: target_compile_options(Enzyme::enzyme INTERFACE -fpass-plugin=<path>)
 
     The -fpass-plugin=<path> flag is Clang-only and cannot be auto-discovered in Bazel.
     Provide it via --per_file_copt in .bazelrc.user, restricted to Library/* to avoid
@@ -160,7 +160,7 @@ def quarisma_enzyme_copts():
 
     DO NOT use global --copt: third-party targets (benchmark, googletest, etc.) may be
     compiled with GCC which does not recognise -fpass-plugin.
-    This mirrors CMake's: target_link_libraries(Core PRIVATE Quarisma::enzyme)
+    This mirrors CMake's: target_link_libraries(Core PRIVATE Enzyme::enzyme)
     """
     return select({
         "//bazel:enable_enzyme": [],  # Plugin path supplied via .bazelrc.user --per_file_copt
@@ -169,7 +169,7 @@ def quarisma_enzyme_copts():
 
 def quarisma_enzyme_linkopts():
     """Returns Enzyme AD link options.
-    Mirrors CMake: target_link_options(Quarisma::enzyme INTERFACE -fpass-plugin=<path>)
+    Mirrors CMake: target_link_options(Enzyme::enzyme INTERFACE -fpass-plugin=<path>)
 
     For non-LTO builds, Enzyme resolves __enzyme_* symbols at compile time (the pass
     transforms the IR in-place); no -fpass-plugin is needed at link time.

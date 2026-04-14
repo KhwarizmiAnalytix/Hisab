@@ -118,7 +118,7 @@ if(CORE_DEPENDENCY_LIBS)
 endif()
 
 if(CORE_ENABLE_ENZYME)
-  target_link_libraries(Core PRIVATE Core::enzyme)
+  target_link_libraries(Core PRIVATE Enzyme::enzyme)
 endif()
 
 if(CORE_DEPENDENCY_COMPILE_DEFINITIONS)

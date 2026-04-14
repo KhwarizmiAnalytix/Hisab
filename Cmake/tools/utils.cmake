@@ -73,7 +73,7 @@ endif()
 cmake_pop_check_state()
 
 # ---[ Check for NUMA support
-if(PROJECT_ENABLE_NUMA)
+if(MEMORY_ENABLE_NUMA)
   cmake_push_check_state(RESET)
   set(CMAKE_REQUIRED_FLAGS "-std=c++17")
   check_cxx_source_compiles(
@@ -88,12 +88,12 @@ if(PROJECT_ENABLE_NUMA)
     message("--NUMA is available")
   else()
     message("--NUMA is not available")
-    set(PROJECT_ENABLE_NUMA OFF)
+    set(MEMORY_ENABLE_NUMA OFF)
   endif()
   cmake_pop_check_state()
 else()
   message("--NUMA is disabled")
-  set(PROJECT_ENABLE_NUMA OFF)
+  set(MEMORY_ENABLE_NUMA OFF)
 endif()
 
 # ---[ Check if we want to turn off deprecated warning due to glog. Note(jiayq): on ubuntu 14.04,

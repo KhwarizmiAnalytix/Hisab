@@ -382,11 +382,11 @@ jobs:
           -DCMAKE_C_COMPILER=$CC_COMPILER \
           -DCMAKE_CXX_COMPILER=$CXX_COMPILER \
           -DCMAKE_CXX_STANDARD=${{ matrix.cxx_std }} \
-          -DQUARISMA_LOGGING_BACKEND=${{ matrix.logging_backend }} \
-          -DQUARISMA_BUILD_TESTING=ON \
+          -DLOGGING_BACKEND=${{ matrix.logging_backend }} \
+          -DBUILD_TESTING=ON \
           -DQUARISMA_ENABLE_GTEST=ON \
           -DQUARISMA_ENABLE_TBB=${{ matrix.tbb_enabled }} \
-          -DQUARISMA_ENABLE_CUDA=${{ matrix.cuda_enabled }} \
+          -DMEMOY_ENABLE_CUDA=${{ matrix.cuda_enabled }} \
           -DQUARISMA_ENABLE_LTO=OFF
 
         # Build
@@ -416,11 +416,11 @@ jobs:
           -DCMAKE_C_COMPILER=clang `
           -DCMAKE_CXX_COMPILER=clang++ `
           -DCMAKE_CXX_STANDARD=${{ matrix.cxx_std }} `
-          -DQUARISMA_LOGGING_BACKEND=${{ matrix.logging_backend }} `
-          -DQUARISMA_BUILD_TESTING=ON `
+          -DLOGGING_BACKEND=${{ matrix.logging_backend }} `
+          -DBUILD_TESTING=ON `
           -DQUARISMA_ENABLE_GTEST=ON `
           -DQUARISMA_ENABLE_TBB=${{ matrix.tbb_enabled }} `
-          -DQUARISMA_ENABLE_CUDA=${{ matrix.cuda_enabled }} `
+          -DMEMOY_ENABLE_CUDA=${{ matrix.cuda_enabled }} `
           -DQUARISMA_ENABLE_LTO=OFF
 
         # Build
@@ -594,12 +594,12 @@ jobs:
           -DCMAKE_C_COMPILER=clang \
           -DCMAKE_CXX_COMPILER=clang++ \
           -DCMAKE_CXX_STANDARD=17 \
-          -DQUARISMA_LOGGING_BACKEND=LOGURU \
-          -DQUARISMA_BUILD_TESTING=ON \
+          -DLOGGING_BACKEND=LOGURU \
+          -DBUILD_TESTING=ON \
           -DQUARISMA_ENABLE_GTEST=ON \
           -DQUARISMA_ENABLE_BENCHMARK=OFF \
           -DQUARISMA_ENABLE_TBB=ON \
-          -DQUARISMA_ENABLE_CUDA=OFF \
+          -DMEMOY_ENABLE_CUDA=OFF \
           -DQUARISMA_ENABLE_LTO=OFF
 
     # ===== Build and Test TBB Functionality =====
@@ -750,14 +750,14 @@ jobs:
           -DCMAKE_C_COMPILER=clang \
           -DCMAKE_CXX_COMPILER=clang++ \
           -DCMAKE_CXX_STANDARD=17 \
-          -DQUARISMA_LOGGING_BACKEND=NATIVE \
+          -DLOGGING_BACKEND=NATIVE \
           -DQUARISMA_ENABLE_SANITIZER=ON \
           -DQUARISMA_SANITIZER_TYPE=${{ matrix.sanitizer }} \
-          -DQUARISMA_BUILD_TESTING=ON \
+          -DBUILD_TESTING=ON \
           -DQUARISMA_ENABLE_GTEST=ON \
           -DQUARISMA_ENABLE_LTO=OFF \
           -DQUARISMA_ENABLE_TBB=ON \
-          -DQUARISMA_ENABLE_CUDA=OFF
+          -DMEMOY_ENABLE_CUDA=OFF
 
     - name: Build
       run: cmake --build build -j 2
@@ -861,8 +861,8 @@ jobs:
           -DCMAKE_CXX_COMPILER=clang++ \
           -DCMAKE_C_FLAGS="${{ matrix.opt_level }}" \
           -DCMAKE_CXX_FLAGS="${{ matrix.opt_level }}" \
-          -DQUARISMA_LOGGING_BACKEND=LOGURU \
-          -DQUARISMA_BUILD_TESTING=ON \
+          -DLOGGING_BACKEND=LOGURU \
+          -DBUILD_TESTING=ON \
           -DQUARISMA_ENABLE_GTEST=ON \
           -DQUARISMA_ENABLE_LTO=OFF \
           -DQUARISMA_ENABLE_TBB=OFF
@@ -925,8 +925,8 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_C_COMPILER=clang \
           -DCMAKE_CXX_COMPILER=clang++ \
-          -DQUARISMA_LOGGING_BACKEND=LOGURU \
-          -DQUARISMA_BUILD_TESTING=ON \
+          -DLOGGING_BACKEND=LOGURU \
+          -DBUILD_TESTING=ON \
           -DQUARISMA_ENABLE_GTEST=ON \
           -DQUARISMA_ENABLE_LTO=${{ matrix.lto_enabled }} \
           -DQUARISMA_ENABLE_TBB=ON
@@ -986,8 +986,8 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_C_COMPILER=clang \
           -DCMAKE_CXX_COMPILER=clang++ \
-          -DQUARISMA_LOGGING_BACKEND=LOGURU \
-          -DQUARISMA_BUILD_TESTING=ON \
+          -DLOGGING_BACKEND=LOGURU \
+          -DBUILD_TESTING=ON \
           -DQUARISMA_ENABLE_BENCHMARK=OFF \
           -DQUARISMA_ENABLE_LTO=ON \
           -DQUARISMA_ENABLE_TBB=ON
@@ -1091,11 +1091,11 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_C_COMPILER=clang \
           -DCMAKE_CXX_COMPILER=clang++ \
-          -DQUARISMA_LOGGING_BACKEND=LOGURU \
-          -DQUARISMA_BUILD_TESTING=ON \
+          -DLOGGING_BACKEND=LOGURU \
+          -DBUILD_TESTING=ON \
           -DQUARISMA_ENABLE_BENCHMARK=OFF \
           -DQUARISMA_ENABLE_LTO=OFF \
-          -DQUARISMA_BUILD_TESTING=ON \
+          -DBUILD_TESTING=ON \
           -DQUARISMA_ENABLE_GTEST=ON \
           -DQUARISMA_ENABLE_TBB=OFF
 
@@ -1254,7 +1254,7 @@ jobs:
           -DCMAKE_CXX_COMPILER=clang++ \
           -DQUARISMA_ENABLE_BENCHMARK=OFF \
           -DQUARISMA_ENABLE_LTO=OFF \
-          -DQUARISMA_BUILD_TESTING=ON \
+          -DBUILD_TESTING=ON \
           -DQUARISMA_ENABLE_GTEST=ON \
           -DQUARISMA_ENABLE_TBB=OFF
 
@@ -1271,13 +1271,13 @@ jobs:
           -DCMAKE_CXX_COMPILER=${{ matrix.compiler_cxx }} `
           -DCMAKE_CXX_COMPILER_LAUNCHER=sccache `
           -DCMAKE_CXX_STANDARD=${{ matrix.cxx_std }} `
-          -DQUARISMA_LOGGING_BACKEND=${{ matrix.logging_backend }} `
-          -DQUARISMA_BUILD_TESTING=ON `
+          -DLOGGING_BACKEND=${{ matrix.logging_backend }} `
+          -DBUILD_TESTING=ON `
           -DQUARISMA_ENABLE_GTEST=ON `
           -DQUARISMA_ENABLE_BENCHMARK=OFF `
           -DQUARISMA_ENABLE_LTO=OFF `
           -DQUARISMA_ENABLE_TBB=OFF `
-          -DQUARISMA_ENABLE_CUDA=${{ matrix.cuda_enabled }}
+          -DMEMOY_ENABLE_CUDA=${{ matrix.cuda_enabled }}
 
     # ===== Build and Test (With Sccache) =====
     - name: Record build start time (Sccache)
@@ -1373,12 +1373,12 @@ jobs:
           -DCMAKE_C_COMPILER=clang \
           -DCMAKE_CXX_COMPILER=clang++ \
           -DCMAKE_CXX_STANDARD=17 \
-          -DQUARISMA_LOGGING_BACKEND=NATIVE \
-          -DQUARISMA_BUILD_TESTING=ON \
+          -DLOGGING_BACKEND=NATIVE \
+          -DBUILD_TESTING=ON \
           -DQUARISMA_ENABLE_GTEST=ON \
           -DQUARISMA_ENABLE_COVERAGE=ON \
           -DQUARISMA_ENABLE_TBB=OFF \
-          -DQUARISMA_ENABLE_CUDA=OFF \
+          -DMEMOY_ENABLE_CUDA=OFF \
           -DQUARISMA_ENABLE_LTO=OFF
 
         # Build

@@ -152,7 +152,7 @@ Enable testing with Google Test:
 
 ```bash
 cmake -B build -S . \
-    -DQUARISMA_BUILD_TESTING=ON \
+    -DBUILD_TESTING=ON \
     -DQUARISMA_ENABLE_GTEST=ON
 
 # Build and run tests
@@ -187,7 +187,7 @@ Quarisma includes optimized CMake modules that improve configuration speed and r
 # Development build with testing
 cmake -B build -S . \
     -DCMAKE_BUILD_TYPE=Debug \
-    -DQUARISMA_BUILD_TESTING=ON \
+    -DBUILD_TESTING=ON \
     -DQUARISMA_ENABLE_GTEST=ON
 ```
 
@@ -206,7 +206,7 @@ cmake -B build -S . \
 # Fast CI build with external libraries
 cmake -B build -S . \
     -DQUARISMA_ENABLE_EXTERNAL=ON \
-    -DQUARISMA_BUILD_TESTING=ON
+    -DBUILD_TESTING=ON
 ```
 
 ## Related Documentation

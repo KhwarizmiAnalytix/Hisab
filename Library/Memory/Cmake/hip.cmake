@@ -1,22 +1,22 @@
-# ============================================================================= Quarisma HIP
+#=============================================================================
+# Quarisma HIP
 # (Heterogeneous-compute Interface for Portability) Configuration Module
-# =============================================================================
+
 # This module configures HIP for AMD GPU acceleration and ROCm support. It manages HIP toolkit
 # detection, architecture configuration, and GPU compilation.
-# =============================================================================
 
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)
 
 # HIP GPU Support Flag Controls whether HIP GPU acceleration is enabled for AMD GPUs. When enabled,
-# requires CMake 3.21+ and ROCm/HIP toolkit. Mutually exclusive with PROJECT_ENABLE_CUDA.
+# requires CMake 3.21+ and ROCm/HIP toolkit. Mutually exclusive with MEMORY_ENABLE_CUDA.
 cmake_dependent_option(
-  PROJECT_ENABLE_HIP "Support HIP backend accelerator" OFF
-  "CMAKE_VERSION VERSION_GREATER_EQUAL 3.21;NOT PROJECT_ENABLE_CUDA" OFF
+  MEMORY_ENABLE_HIPA "Support HIP backend accelerator" OFF
+  "CMAKE_VERSION VERSION_GREATER_EQUAL 3.21;NOT MEMORY_ENABLE_CUDA" OFF
 )
-mark_as_advanced(PROJECT_ENABLE_HIP)
+mark_as_advanced(MEMORY_ENABLE_HIPA)
 
-if(NOT PROJECT_ENABLE_HIP)
+if(NOT MEMORY_ENABLE_HIPA)
   return()
 endif()
 
@@ -26,7 +26,7 @@ if(CMAKE_VERSION VERSION_LESS "3.21")
 endif()
 
 # Ensure CUDA is not enabled when HIP is enabled
-if(PROJECT_ENABLE_CUDA)
+if(MEMORY_ENABLE_CUDA)
   message(FATAL_ERROR "Cannot enable both CUDA and HIP simultaneously. Please choose one.")
 endif()
 
@@ -136,8 +136,8 @@ endif()
 
 # For backward compatibility, set legacy variables (if needed elsewhere)
 set(PROJECT_HIP_FOUND TRUE)
-set(PROJECT_ENABLE_HIP ON)
+set(MEMORY_ENABLE_HIPA ON)
 
 # Enable GPU compilation for HIP
-add_compile_definitions(PROJECT_ENABLE_GPU)
-add_compile_definitions(PROJECT_ENABLE_HIP)
+add_compile_definitions(MEMORY_ENABLE_GPU)
+add_compile_definitions(MEMORY_ENABLE_HIPA)

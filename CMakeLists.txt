@@ -19,6 +19,8 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Cmake/tools")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Cmake/flags")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Cmake/packages")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Library/Parallel/Cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Library/Memory/Cmake")
 include(xcode_toolchain)
 
 # Set project name and version
@@ -109,16 +111,16 @@ mark_as_advanced(CORE_ENABLE_ENZYME)
 
 # GPU Allocation Strategy Configuration This flag controls which GPU allocation functions are used
 # by allocator_gpu (CUDA/HIP)
-set(PROJECT_GPU_ALLOC "POOL_ASYNC"
+set(MEMORY_GPU_ALLOC "POOL_ASYNC"
     CACHE STRING "GPU allocation strategy to use. Options are SYNC, ASYNC, POOL_ASYNC"
 )
-set_property(CACHE PROJECT_GPU_ALLOC PROPERTY STRINGS SYNC ASYNC POOL_ASYNC)
+set_property(CACHE MEMORY_GPU_ALLOC PROPERTY STRINGS SYNC ASYNC POOL_ASYNC)
 
 # Validate CUDA allocation strategy
-if(NOT PROJECT_GPU_ALLOC MATCHES "^(SYNC|ASYNC|POOL_ASYNC)$")
+if(NOT MEMORY_GPU_ALLOC MATCHES "^(SYNC|ASYNC|POOL_ASYNC)$")
   message(
     FATAL_ERROR
-      "Invalid PROJECT_GPU_ALLOC: ${PROJECT_GPU_ALLOC}. Valid options are: SYNC, ASYNC, POOL_ASYNC"
+      "Invalid MEMEORY_GPU_ALLOC: ${MEMEORY_GPU_ALLOC}. Valid options are: SYNC, ASYNC, POOL_ASYNC"
   )
 endif()
 
@@ -146,8 +148,8 @@ option(PROJECT_LU_PIVOTING "Enable LU PIVOTING" OFF)
 
 # Build Testing Configuration Controls whether test directories are built: ON (always), OFF (never),
 # or WANT (optional).
-set(PROJECT_BUILD_TESTING "ON" CACHE STRING "Build module testing directories")
-set_property(CACHE PROJECT_BUILD_TESTING PROPERTY STRINGS "ON;OFF;WANT")
+set(BUILD_TESTING "ON" CACHE STRING "Build module testing directories")
+set_property(CACHE BUILD_TESTING PROPERTY STRINGS "ON;OFF;WANT")
 
 # Build Examples Configuration Controls whether example programs are built. When enabled, builds
 # comprehensive examples demonstrating parallel APIs and other features.
@@ -203,24 +205,11 @@ option(MEMORY_ENABLE_MIMALLOC
 )
 mark_as_advanced(MEMORY_ENABLE_MIMALLOC)
 
-# ROCm Support Flag Controls whether ROCm (Radeon Open Compute) support is enabled for AMD GPUs.
-# When enabled, allows integration with ROCm ecosystem and AMD GPU acceleration.
-option(PROJECT_ENABLE_ROCM "Enable ROCm support for AMD GPUs" OFF)
-mark_as_advanced(PROJECT_ENABLE_ROCM)
-
 # Module-local accelerator and coverage flags.
 option(MEMORY_ENABLE_CUDA "Enable CUDA compilation for Memory" OFF)
 option(MEMORY_ENABLE_HIP "Enable HIP compilation for Memory" OFF)
 option(PARALLEL_ENABLE_COVERAGE "Enable coverage instrumentation for Parallel tests" OFF)
 option(PROFILER_ENABLE_COVERAGE "Enable coverage instrumentation for Profiler tests" OFF)
-
-# Legacy bridge flags used by centralized CMake tooling.
-set(PROJECT_ENABLE_CUDA ${MEMORY_ENABLE_CUDA})
-set(PROJECT_ENABLE_HIP ${MEMORY_ENABLE_HIP})
-set(PROJECT_ENABLE_COVERAGE OFF)
-if(PARALLEL_ENABLE_COVERAGE OR PROFILER_ENABLE_COVERAGE)
-  set(PROJECT_ENABLE_COVERAGE ON)
-endif()
 
 # Profiler backend selection — the single control point for the profiler backend.
 # PROFILER_ENABLE_KINETO, PROFILER_ENABLE_ITT, and PROFILER_ENABLE_NATIVE_PROFILER
@@ -260,12 +249,12 @@ endif()
 
 # NUMA is only available on Unix systems
 if(NOT UNIX)
-  set(PROJECT_ENABLE_NUMA OFF)
+  set(MEMORY_ENABLE_NUMA OFF)
 endif()
 
 # Memkind is only available on Unix systems (not macOS or Windows)
 if(NOT UNIX OR APPLE)
-  set(PROJECT_ENABLE_MEMKIND OFF)
+  set(MEMORY_ENABLE_MEMKIND OFF)
 endif()
 
 # =============================================================================
@@ -304,12 +293,7 @@ include(build_type)
 include(checks)
 include(utils)
 include(platform)
-include(logging)
 include(compression)
-include(threads)
-
-# Configure SMP backend selection (must be before openmp and tbb includes)
-include(parallel_backend)
 
 # Create build interface target for common settings FIRST
 # This target is needed by sanitize.cmake and other modules
@@ -342,13 +326,15 @@ add_library(Core::build ALIAS corebuild)
 include(sanitize)
 
 # Configure optional features
-include(openmp)
-include(cuda)
-include(hip)
 include(mkl)
 include(numa)
-include(tbb)
 include(enzyme)
+# Disable CORE_ENABLE_ENZYME if the Enzyme plugin was not found (enzyme.cmake sets
+# PROJECT_ENABLE_ENZYME=OFF on failure but does not touch CORE_ENABLE_ENZYME).
+if(CORE_ENABLE_ENZYME AND NOT TARGET Enzyme::enzyme)
+  message(STATUS "Enzyme plugin not found - disabling CORE_ENABLE_ENZYME")
+  set(CORE_ENABLE_ENZYME OFF CACHE BOOL "Enable Enzyme" FORCE)
+endif()
 include(clang_tidy)
 include(spell)
 include(iwyu)
@@ -405,6 +391,73 @@ set(PARALLEL_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINIT
 set(PROFILER_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS})
 set(CORE_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS})
 
+# =============================================================================
+# Third-Party Libraries
+# =============================================================================
+# Map project-level option names to the QUARISMA_ENABLE_* names used inside ThirdParty/.
+set(QUARISMA_ENABLE_GTEST      ${PROJECT_ENABLE_GTEST})
+set(QUARISMA_ENABLE_BENCHMARK  ${PROJECT_ENABLE_BENCHMARK})
+set(QUARISMA_ENABLE_MAGICENUM  ${PROJECT_ENABLE_MAGICENUM})
+set(MEMORY_ENABLE_MIMALLOC   ${MEMORY_ENABLE_MIMALLOC})
+set(LOGGING_ENABLE_LOGURU     ${LOGGING_ENABLE_LOGURU})
+set(LOGGING_ENABLE_GLOG       ${LOGGING_ENABLE_GLOG})
+set(QUARISMA_ENABLE_ENZYME     ${CORE_ENABLE_ENZYME})
+
+add_subdirectory(ThirdParty)
+
+# Distribute the ThirdParty dependency list to each module.
+# QUARISMA_DEPENDENCY_LIBS is populated by add_third_party_library() for libraries
+# that have AUTO_ADD_TO_DEPENDENCIES enabled (fmt, cpuinfo, magic_enum, …).
+# loguru, glog, mimalloc, kineto, and ITT use AUTO_ADD_TO_DEPENDENCIES OFF and are wired below.
+set(LOGGING_DEPENDENCY_LIBS  ${QUARISMA_DEPENDENCY_LIBS})
+set(MEMORY_DEPENDENCY_LIBS   ${QUARISMA_DEPENDENCY_LIBS})
+set(PARALLEL_DEPENDENCY_LIBS ${QUARISMA_DEPENDENCY_LIBS})
+set(PROFILER_DEPENDENCY_LIBS ${QUARISMA_DEPENDENCY_LIBS})
+set(CORE_DEPENDENCY_LIBS     ${QUARISMA_DEPENDENCY_LIBS})
+
+# loguru and glog are exclusively for the Logging module.
+if(LOGGING_ENABLE_LOGURU AND TARGET Loguru::loguru)
+  list(APPEND LOGGING_DEPENDENCY_LIBS Loguru::loguru)
+endif()
+if(LOGGING_ENABLE_GLOG AND TARGET Glog::glog)
+  list(APPEND LOGGING_DEPENDENCY_LIBS Glog::glog)
+endif()
+
+# mimalloc is exclusively for the Memory module.
+if(MEMORY_ENABLE_MIMALLOC AND TARGET Mimalloc::mimalloc)
+  list(APPEND MEMORY_DEPENDENCY_LIBS Mimalloc::mimalloc)
+endif()
+
+# Kineto and ITT are exclusively for the Profiler module.
+# Kineto uses AUTO_ADD_TO_DEPENDENCIES OFF and must be appended here explicitly.
+# ITT is collected into QUARISMA_PROFILER_DEPENDENCY_LIBS by ThirdParty/CMakeLists.txt.
+if(PROFILER_ENABLE_KINETO AND TARGET Kineto::kineto)
+  list(APPEND PROFILER_DEPENDENCY_LIBS Kineto::kineto)
+endif()
+if(QUARISMA_PROFILER_DEPENDENCY_LIBS)
+  list(APPEND PROFILER_DEPENDENCY_LIBS ${QUARISMA_PROFILER_DEPENDENCY_LIBS})
+endif()
+set(LOGGING_DEPENDENCY_INCLUDE_DIRS  ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})
+set(MEMORY_DEPENDENCY_INCLUDE_DIRS   ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})
+set(PARALLEL_DEPENDENCY_INCLUDE_DIRS ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})
+set(PROFILER_DEPENDENCY_INCLUDE_DIRS ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})
+set(CORE_DEPENDENCY_INCLUDE_DIRS     ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})
+
+# Per-module gtest aliases so each testing CMakeLists can use Module::gtest.
+# (LoggingCxxTests uses Gtest::gtest directly; the others use Module::gtest.)
+if(TARGET Gtest::gtest)
+  foreach(_mod Memory Core Parallel Profiler)
+    if(NOT TARGET ${_mod}::gtest)
+      add_library(${_mod}::gtest INTERFACE IMPORTED)
+      target_link_libraries(${_mod}::gtest INTERFACE Gtest::gtest)
+    endif()
+    if(NOT TARGET ${_mod}::gtest_main)
+      add_library(${_mod}::gtest_main INTERFACE IMPORTED)
+      target_link_libraries(${_mod}::gtest_main INTERFACE Gtest::gtest_main)
+    endif()
+  endforeach()
+endif()
+
 # Include optimization modules AFTER quarismabuild target is created These modules apply flags to the
 # quarismabuild target to affect only Quarisma targets, not third-party dependencies
 include(linker)
@@ -421,178 +474,17 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
 
-# Configure testing using CMake's native BUILD_TESTING flag.
-# Keep legacy PROJECT_BUILD_TESTING compatibility:
-#   - ON   -> force BUILD_TESTING=ON
-#   - OFF  -> force BUILD_TESTING=OFF
-#   - WANT -> defer to native/default BUILD_TESTING behavior
-include(CTest)
-if(PROJECT_BUILD_TESTING STREQUAL "OFF")
-  set(BUILD_TESTING OFF CACHE BOOL "Enable testing" FORCE)
-else()
-  # Treat ON/WANT (and any non-OFF value) as enabled for native CMake test wiring.
-  set(BUILD_TESTING ON CACHE BOOL "Enable testing" FORCE)
-endif()
-
-# ThirdParty compatibility flags (legacy Quarisma-prefixed controls).
-set(QUARISMA_ENABLE_MAGICENUM ${PROJECT_ENABLE_MAGICENUM})
-set(QUARISMA_ENABLE_MIMALLOC ${MEMORY_ENABLE_MIMALLOC})
-set(QUARISMA_ENABLE_CUDA ${MEMORY_ENABLE_CUDA})
-set(QUARISMA_ENABLE_ROCM ${PROJECT_ENABLE_ROCM})
-set(QUARISMA_ENABLE_GTEST ${PROJECT_ENABLE_GTEST})
-set(QUARISMA_ENABLE_BENCHMARK ${CORE_ENABLE_BENCHMARK})
-set(QUARISMA_ENABLE_TBB ${PROJECT_ENABLE_TBB})
-set(QUARISMA_ENABLE_ENZYME ${PROJECT_ENABLE_ENZYME})
-set(QUARISMA_ENABLE_LOGURU ${LOGGING_ENABLE_LOGURU})
-set(QUARISMA_ENABLE_GLOG ${LOGGING_ENABLE_GLOG})
-set(QUARISMA_ENABLE_EXTERNAL OFF)
-
-# Add third-party dependencies
-set(_XSIGMA_BUILD_TESTING_SAVED ${BUILD_TESTING})
-add_subdirectory(ThirdParty)
-set(BUILD_TESTING ${_XSIGMA_BUILD_TESTING_SAVED} CACHE BOOL "Enable testing" FORCE)
-unset(_XSIGMA_BUILD_TESTING_SAVED)
-
-# Create module-scoped aliases for third-party targets.
-function(_xsigma_make_module_alias module_alias base_target)
-  if(TARGET ${base_target} AND NOT TARGET ${module_alias})
-    string(REPLACE "::" "_" alias_target "${module_alias}")
-    string(TOLOWER "${alias_target}" alias_target)
-    add_library(${alias_target} INTERFACE)
-    target_link_libraries(${alias_target} INTERFACE ${base_target})
-    add_library(${module_alias} ALIAS ${alias_target})
-  endif()
-endfunction()
-
-# Ensure legacy Quarisma::gtest aliases exist even if ThirdParty
-# used non-legacy target names.
-if(NOT TARGET Quarisma::gtest)
-  if(TARGET GTest::gtest)
-    add_library(quarisma_gtest INTERFACE)
-    target_link_libraries(quarisma_gtest INTERFACE GTest::gtest)
-    add_library(Quarisma::gtest ALIAS quarisma_gtest)
-  elseif(TARGET gtest)
-    add_library(quarisma_gtest INTERFACE)
-    target_link_libraries(quarisma_gtest INTERFACE gtest)
-    add_library(Quarisma::gtest ALIAS quarisma_gtest)
-  endif()
-endif()
-if(NOT TARGET Quarisma::gtest_main)
-  if(TARGET GTest::gtest_main)
-    add_library(quarisma_gtest_main INTERFACE)
-    target_link_libraries(quarisma_gtest_main INTERFACE GTest::gtest_main)
-    add_library(Quarisma::gtest_main ALIAS quarisma_gtest_main)
-  elseif(TARGET gtest_main)
-    add_library(quarisma_gtest_main INTERFACE)
-    target_link_libraries(quarisma_gtest_main INTERFACE gtest_main)
-    add_library(Quarisma::gtest_main ALIAS quarisma_gtest_main)
-  endif()
-endif()
-
-_xsigma_make_module_alias(Logging::gtest Quarisma::gtest)
-_xsigma_make_module_alias(Logging::gtest_main Quarisma::gtest_main)
-_xsigma_make_module_alias(Memory::gtest Quarisma::gtest)
-_xsigma_make_module_alias(Memory::gtest_main Quarisma::gtest_main)
-_xsigma_make_module_alias(Core::gtest Quarisma::gtest)
-_xsigma_make_module_alias(Core::gtest_main Quarisma::gtest_main)
-
-_xsigma_make_module_alias(Memory::benchmark Quarisma::benchmark)
-_xsigma_make_module_alias(Memory::benchmark_main Quarisma::benchmark_main)
-_xsigma_make_module_alias(Parallel::benchmark Quarisma::benchmark)
-_xsigma_make_module_alias(Parallel::benchmark_main Quarisma::benchmark_main)
-_xsigma_make_module_alias(Core::benchmark Quarisma::benchmark)
-_xsigma_make_module_alias(Core::benchmark_main Quarisma::benchmark_main)
-
-_xsigma_make_module_alias(Logging::fmt Quarisma::fmt)
-_xsigma_make_module_alias(Logging::loguru Quarisma::loguru)
-_xsigma_make_module_alias(Logging::glog Quarisma::glog)
-_xsigma_make_module_alias(Memory::cpuinfo Quarisma::cpuinfo)
-_xsigma_make_module_alias(Memory::mimalloc Quarisma::mimalloc)
-_xsigma_make_module_alias(Memory::tbb Quarisma::tbb)
-_xsigma_make_module_alias(Parallel::tbb Quarisma::tbb)
-_xsigma_make_module_alias(Profiler::kineto Quarisma::kineto)
-_xsigma_make_module_alias(Profiler::itt Quarisma::itt)
-_xsigma_make_module_alias(Profiler::fmt Quarisma::fmt)
-_xsigma_make_module_alias(Core::enzyme Quarisma::enzyme)
-
-if(TARGET Logging::fmt)
-  list(APPEND LOGGING_DEPENDENCY_LIBS Logging::fmt)
-endif()
-if(LOGGING_ENABLE_LOGURU AND TARGET Logging::loguru)
-  list(APPEND LOGGING_DEPENDENCY_LIBS Logging::loguru)
-endif()
-if(LOGGING_ENABLE_GLOG AND TARGET Logging::glog)
-  list(APPEND LOGGING_DEPENDENCY_LIBS Logging::glog)
-endif()
-if(EXISTS "${CMAKE_SOURCE_DIR}/ThirdParty/loguru")
-  list(APPEND LOGGING_DEPENDENCY_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/ThirdParty/loguru")
-endif()
-if(TARGET Memory::cpuinfo)
-  list(APPEND MEMORY_DEPENDENCY_LIBS Memory::cpuinfo)
-endif()
-if(MEMORY_ENABLE_MIMALLOC AND TARGET Memory::mimalloc)
-  list(APPEND MEMORY_DEPENDENCY_LIBS Memory::mimalloc)
-endif()
-if(PROJECT_ENABLE_TBB AND TARGET Memory::tbb)
-  list(APPEND MEMORY_DEPENDENCY_LIBS Memory::tbb)
-endif()
-if(PROJECT_ENABLE_TBB AND TARGET Parallel::tbb)
-  list(APPEND PARALLEL_DEPENDENCY_LIBS Parallel::tbb)
-endif()
-if(PROFILER_ENABLE_KINETO AND TARGET Profiler::kineto)
-  list(APPEND PROFILER_DEPENDENCY_LIBS Profiler::kineto)
-endif()
-if(PROFILER_ENABLE_ITT AND TARGET Profiler::itt)
-  list(APPEND PROFILER_DEPENDENCY_LIBS Profiler::itt)
-endif()
-if(TARGET Profiler::fmt)
-  list(APPEND PROFILER_DEPENDENCY_LIBS Profiler::fmt)
-endif()
-
-if(TARGET Quarisma::gtest AND NOT TARGET parallel_gtest)
-  add_library(parallel_gtest INTERFACE)
-  target_link_libraries(parallel_gtest INTERFACE Quarisma::gtest)
-  add_library(Parallel::gtest ALIAS parallel_gtest)
-endif()
-if(TARGET Quarisma::gtest_main AND NOT TARGET parallel_gtest_main)
-  add_library(parallel_gtest_main INTERFACE)
-  target_link_libraries(parallel_gtest_main INTERFACE Quarisma::gtest_main)
-  add_library(Parallel::gtest_main ALIAS parallel_gtest_main)
-endif()
-
-if(TARGET Quarisma::gtest AND NOT TARGET profiler_gtest)
-  add_library(profiler_gtest INTERFACE)
-  target_link_libraries(profiler_gtest INTERFACE Quarisma::gtest)
-  add_library(Profiler::gtest ALIAS profiler_gtest)
-endif()
-if(TARGET Quarisma::gtest_main AND NOT TARGET profiler_gtest_main)
-  add_library(profiler_gtest_main INTERFACE)
-  target_link_libraries(profiler_gtest_main INTERFACE Quarisma::gtest_main)
-  add_library(Profiler::gtest_main ALIAS profiler_gtest_main)
-endif()
-
 add_subdirectory(Library/Logging)
+
+# Memory depends on Logging; expose it under the Memory:: namespace so
+# Library/Memory/CMakeLists.txt can link to Memory::Logging without hard-coding
+# a cross-module namespace dependency.
+add_library(Memory::Logging ALIAS Logging)
+
 add_subdirectory(Library/Memory)
 add_subdirectory(Library/Core)
-
-if(TARGET Core AND NOT TARGET Profiler::Core)
-  add_library(Profiler::Core ALIAS Core)
-endif()
-
 add_subdirectory(Library/Parallel)
 add_subdirectory(Library/Profiler)
-
-if(TARGET Logging)
-  add_library(Memory::Logging ALIAS Logging)
-endif()
-
-if(NOT TARGET Memory::mimalloc)
-  if(TARGET mimalloc)
-    add_library(Memory::mimalloc ALIAS mimalloc)
-  elseif(TARGET mimalloc-static)
-    add_library(Memory::mimalloc ALIAS mimalloc-static)
-  endif()
-endif()
 
 # Add examples if enabled
 if(PROJECT_ENABLE_EXAMPLES)
@@ -602,7 +494,7 @@ endif()
 
 # Apply Valgrind timeout multiplier to all tests (if Valgrind is enabled) This must be called after
 # all tests are registered
-if(PROJECT_ENABLE_VALGRIND AND PROJECT_BUILD_TESTING)
+if(PROJECT_ENABLE_VALGRIND AND BUILD_TESTING)
   quarisma_apply_valgrind_timeouts()
 endif()
 
