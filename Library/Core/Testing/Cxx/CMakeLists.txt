@@ -89,7 +89,7 @@ endif()
 
 # Link libraries Core library is linked which transitively brings in Core-local dependencies
 # via CORE_DEPENDENCY_LIBS
-target_link_libraries(CoreCxxTests PRIVATE Core::gtest Core::gtest_main Core::Core)
+target_link_libraries(CoreCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Core::Core)
 
 if(PROFILER_HAS_NATIVE OR PROFILER_ENABLE_NATIVE_PROFILER)
   target_include_directories(CoreCxxTests PRIVATE "${CMAKE_SOURCE_DIR}/Library/Profiler")

@@ -3,32 +3,9 @@ cmake_minimum_required(VERSION 3.16)
 
 option(LOGGING_ENABLE_LTO "Enable Link Time Optimization for Logging" OFF)
 
-#=============================================================================
-# Logging Backend Configuration
-#
-# Selects the logging backend for runtime diagnostics and debugging.
-# Options are mutually exclusive: NATIVE, LOGURU, or GLOG.
-
-set(LOGGING_BACKEND "LOGURU"
-    CACHE STRING "Logging backend to use. Options are NATIVE, LOGURU, or GLOG"
-)
-set_property(CACHE LOGGING_BACKEND PROPERTY STRINGS NATIVE LOGURU GLOG)
-mark_as_advanced(LOGGING_BACKEND)
-
-if(NOT LOGGING_BACKEND MATCHES "^(NATIVE|LOGURU|GLOG)$")
-  message(FATAL_ERROR "LOGGING_BACKEND must be NATIVE, LOGURU, or GLOG (got: ${LOGGING_BACKEND})")
-endif()
-
-if(LOGGING_BACKEND STREQUAL "NATIVE")
-  message(STATUS "Using NATIVE logging backend")
-  set(LOGGING_ENABLE_NATIVE ON)
-elseif(LOGGING_BACKEND STREQUAL "LOGURU")
-  message(STATUS "Using LOGURU logging backend")
-  set(LOGGING_ENABLE_LOGURU ON)
-elseif(LOGGING_BACKEND STREQUAL "GLOG")
-  message(STATUS "Using GLOG logging backend")
-  set(LOGGING_ENABLE_GLOG ON)
-endif()
+# LOGGING_BACKEND, LOGGING_ENABLE_LOGURU/GLOG/NATIVE are declared in
+# Library/Logging/Cmake/logging_backend.cmake (included by the root
+# CMakeLists.txt before ThirdParty so loguru/glog targets are gated correctly).
 
 # Map LOGGING_BACKEND to LOGGING_HAS_* compile definitions
 if(LOGGING_BACKEND STREQUAL "LOGURU")
@@ -64,7 +41,7 @@ file(
 list(FILTER logging_sources EXCLUDE REGEX ".*/Testing/.*")
 list(FILTER logging_headers EXCLUDE REGEX ".*/Testing/.*")
 
-if(LOGGING_USE_NATIVE)
+if(LOGGING_ENABLE_NATIVE)
   list(REMOVE_ITEM logging_sources "${CMAKE_CURRENT_SOURCE_DIR}/logger/logger.cpp")
   list(REMOVE_ITEM logging_headers "${CMAKE_CURRENT_SOURCE_DIR}/logger/logger.h")
   message(
@@ -108,6 +85,12 @@ else()
   target_compile_options(Logging PRIVATE -include cstdlib)
 endif()
 
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/Testing/LoggingTest.h.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/Testing/LoggingTest.h"
+  @ONLY
+)
+
 # Include roots: Library/Logging → "util/exception.h", "common/logging_export.h"
 #                Library/Logging/logger → "logger.h", "back_trace.h", "logger_verbosity_enum.h"
 target_include_directories(
@@ -115,6 +98,8 @@ target_include_directories(
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/logger>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Testing>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/Testing>
          $<INSTALL_INTERFACE:include>
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 )

@@ -19,6 +19,7 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Cmake/tools")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Cmake/flags")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Cmake/packages")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Library/Logging/Cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Library/Parallel/Cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Library/Memory/Cmake")
 include(xcode_toolchain)
@@ -292,6 +293,10 @@ set(QUARISMA_ENABLE_BENCHMARK  ${PROJECT_ENABLE_BENCHMARK})
 set(QUARISMA_ENABLE_MAGICENUM  ${PROJECT_ENABLE_MAGICENUM})
 set(QUARISMA_ENABLE_ENZYME     ${CORE_ENABLE_ENZYME})
 
+# Logging backend — gate loguru/glog in ThirdParty; logic lives in
+# Library/Logging/Cmake/logging_backend.cmake (included via CMAKE_MODULE_PATH).
+include(logging_backend)
+
 # Profiler backend — declared here (before ThirdParty) so ThirdParty can gate
 # Kineto on it. Library/Profiler/CMakeLists.txt re-declares the same CACHE var
 # (no-op once cached) and derives the PROFILER_ENABLE_* booleans from it.
@@ -305,7 +310,12 @@ else()
   set(PROFILER_ENABLE_KINETO OFF)
 endif()
 
+# ThirdParty force-sets BUILD_TESTING=OFF to suppress third-party test targets.
+# Save and restore the project value so Library modules see the user's intent.
+set(_PROJECT_BUILD_TESTING ${BUILD_TESTING})
 add_subdirectory(ThirdParty)
+set(BUILD_TESTING ${_PROJECT_BUILD_TESTING} CACHE STRING "Build module testing directories" FORCE)
+unset(_PROJECT_BUILD_TESTING)
 
 # Distribute the ThirdParty dependency list to each module.
 # QUARISMA_DEPENDENCY_LIBS is populated by add_third_party_library() for libraries
@@ -323,21 +333,6 @@ set(PARALLEL_DEPENDENCY_INCLUDE_DIRS ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})
 set(PROFILER_DEPENDENCY_INCLUDE_DIRS ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})
 set(CORE_DEPENDENCY_INCLUDE_DIRS     ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})
 
-# Per-module gtest aliases so each testing CMakeLists can use Module::gtest.
-# (LoggingCxxTests uses Gtest::gtest directly; the others use Module::gtest.)
-if(TARGET Gtest::gtest)
-  foreach(_mod Memory Core Parallel Profiler)
-    if(NOT TARGET ${_mod}::gtest)
-      add_library(${_mod}::gtest INTERFACE IMPORTED)
-      target_link_libraries(${_mod}::gtest INTERFACE Gtest::gtest)
-    endif()
-    if(NOT TARGET ${_mod}::gtest_main)
-      add_library(${_mod}::gtest_main INTERFACE IMPORTED)
-      target_link_libraries(${_mod}::gtest_main INTERFACE Gtest::gtest_main)
-    endif()
-  endforeach()
-endif()
-
 # Include optimization modules AFTER quarismabuild target is created These modules apply flags to the
 # quarismabuild target to affect only Quarisma targets, not third-party dependencies
 include(linker)
@@ -354,13 +349,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
 
+if(BUILD_TESTING)
+  enable_testing()
+endif()
+
 add_subdirectory(Library/Logging)
-
-# Memory depends on Logging; expose it under the Memory:: namespace so
-# Library/Memory/CMakeLists.txt can link to Memory::Logging without hard-coding
-# a cross-module namespace dependency.
-add_library(Memory::Logging ALIAS Logging)
-
 add_subdirectory(Library/Memory)
 add_subdirectory(Library/Core)
 add_subdirectory(Library/Parallel)

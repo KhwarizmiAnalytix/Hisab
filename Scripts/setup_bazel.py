@@ -371,7 +371,7 @@ class BazelConfiguration:
             else:
                 plugin = find_enzyme_pass_plugin()
                 if plugin:
-                    cmd.append(f"--per_file_copt=//Library/.*\\.cpp$@-fpass-plugin={plugin}")
+                    cmd.append(f"--per_file_copt=//Library/Core/.*\\.cpp$@-fpass-plugin={plugin}")
                     cmd.append(f"--linkopt=-fpass-plugin={plugin}")
                     print_status(f"Enzyme LLVM pass plugin: {plugin}", "INFO")
                 else:

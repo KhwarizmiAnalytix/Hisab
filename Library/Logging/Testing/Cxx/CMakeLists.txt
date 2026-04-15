@@ -20,9 +20,6 @@ target_compile_definitions(
                           LOGGING_GOOGLE_TEST USE_GTEST _VARIADIC_MAX=10
 )
 
-target_include_directories(
-  LoggingCxxTests PRIVATE "${CMAKE_SOURCE_DIR}/Library/Core/Testing" "${CMAKE_SOURCE_DIR}/Library/Core"
-)
 
 target_link_libraries(
   LoggingCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Logging::Logging Logging::build

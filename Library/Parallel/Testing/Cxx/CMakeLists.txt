@@ -47,7 +47,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   )
 endif()
 
-target_link_libraries(ParallelCxxTests PRIVATE Parallel::gtest Parallel::gtest_main Parallel::Parallel)
+target_link_libraries(ParallelCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Parallel::Parallel)
 if(EXISTS "${CMAKE_SOURCE_DIR}/ThirdParty/loguru")
   target_include_directories(ParallelCxxTests PRIVATE "${CMAKE_SOURCE_DIR}/ThirdParty/loguru")
 endif()
