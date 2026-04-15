@@ -475,7 +475,7 @@ class BazelConfiguration:
             "cuda": ("MEMOY_ENABLE_CUDA", False),
             "hip": ("QUARISMA_ENABLE_HIP", False),
             "lto": ("QUARISMA_ENABLE_LTO", False),
-            "enzyme": ("QUARISMA_ENABLE_ENZYME", False),
+            "enzyme": ("CORE_ENABLE_ENZYME", False),
         }
 
         for feature, (flag, cmake_default_on) in features.items():

@@ -162,7 +162,7 @@ config_setting(
 )
 
 # =============================================================================
-# Enzyme AD (matches CMake QUARISMA_ENABLE_ENZYME / QUARISMA_HAS_ENZYME)
+# Enzyme AD (matches CMake CORE_ENABLE_ENZYME / QUARISMA_HAS_ENZYME)
 # =============================================================================
 
 config_setting(

@@ -238,7 +238,7 @@ include(sanitize)
 include(mkl)
 include(enzyme)
 # Disable CORE_ENABLE_ENZYME if the Enzyme plugin was not found (enzyme.cmake sets
-# PROJECT_ENABLE_ENZYME=OFF on failure but does not touch CORE_ENABLE_ENZYME).
+# CORE_ENABLE_ENZYME=OFF on failure but does not touch CORE_ENABLE_ENZYME).
 if(CORE_ENABLE_ENZYME AND NOT TARGET Enzyme::enzyme)
   message(STATUS "Enzyme plugin not found - disabling CORE_ENABLE_ENZYME")
   set(CORE_ENABLE_ENZYME OFF CACHE BOOL "Enable Enzyme" FORCE)
@@ -291,7 +291,7 @@ set(CORE_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS
 set(QUARISMA_ENABLE_GTEST      ${PROJECT_ENABLE_GTEST})
 set(QUARISMA_ENABLE_BENCHMARK  ${PROJECT_ENABLE_BENCHMARK})
 set(QUARISMA_ENABLE_MAGICENUM  ${PROJECT_ENABLE_MAGICENUM})
-set(QUARISMA_ENABLE_ENZYME     ${CORE_ENABLE_ENZYME})
+set(CORE_ENABLE_ENZYME     ${CORE_ENABLE_ENZYME})
 
 # Logging backend — gate loguru/glog in ThirdParty; logic lives in
 # Library/Logging/Cmake/logging_backend.cmake (included via CMAKE_MODULE_PATH).

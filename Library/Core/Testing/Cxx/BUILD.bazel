@@ -14,7 +14,7 @@ _CORE_TEST_SRCS = glob(
     ["Test*.cpp"],
     exclude = [
         "TestLoggerDisableSignalHandler.cpp",
-        # TestEnzymeAD.cpp added back via select when Enzyme is enabled (matches CMake QUARISMA_ENABLE_ENZYME)
+        # TestEnzymeAD.cpp added back via select when Enzyme is enabled (matches CMake CORE_ENABLE_ENZYME)
         "TestEnzymeAD.cpp",
         "TestGpu*.cpp",
         "TestGPU*.cpp",

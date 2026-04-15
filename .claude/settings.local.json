@@ -104,7 +104,10 @@
       "Bash(\"C:/msys64/mingw64/bin/clang.exe\" --version)",
       "Read(//c/msys64/mingw64/lib/**)",
       "Read(//c/msys64/mingw64/**)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(nvcc --version)",
+      "Read(//usr/local/cuda-12.6/**)",
+      "Read(//usr/**)"
     ],
     "deny": [],
     "ask": []

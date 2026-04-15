@@ -24,13 +24,13 @@ cmake_minimum_required(VERSION 3.16)
 
 include_guard(GLOBAL)
 
-if(NOT DEFINED PROJECT_ENABLE_ENZYME)
-  option(PROJECT_ENABLE_ENZYME "Enable Enzyme automatic differentiation support" OFF)
-  mark_as_advanced(PROJECT_ENABLE_ENZYME)
+if(NOT DEFINED CORE_ENABLE_ENZYME)
+  option(CORE_ENABLE_ENZYME "Enable Enzyme automatic differentiation support" OFF)
+  mark_as_advanced(CORE_ENABLE_ENZYME)
 endif()
 
-if(NOT PROJECT_ENABLE_ENZYME)
-  message(STATUS "Enzyme automatic differentiation support is disabled (PROJECT_ENABLE_ENZYME=OFF)")
+if(NOT CORE_ENABLE_ENZYME)
+  message(STATUS "Enzyme automatic differentiation support is disabled (CORE_ENABLE_ENZYME=OFF)")
   return()
 endif()
 
@@ -57,7 +57,7 @@ if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     "Disabling Enzyme support.\n"
     "================================================================================\n"
   )
-  set(PROJECT_ENABLE_ENZYME OFF CACHE BOOL "Enable Enzyme automatic differentiation support" FORCE)
+  set(CORE_ENABLE_ENZYME OFF CACHE BOOL "Enable Enzyme automatic differentiation support" FORCE)
   return()
 endif()
 
@@ -133,7 +133,7 @@ if(NOT Enzyme_FOUND)
       "================================================================================\n"
     )
   endif()
-  set(PROJECT_ENABLE_ENZYME OFF CACHE BOOL "Enable Enzyme automatic differentiation support" FORCE)
+  set(CORE_ENABLE_ENZYME OFF CACHE BOOL "Enable Enzyme automatic differentiation support" FORCE)
   return()
 endif()
 

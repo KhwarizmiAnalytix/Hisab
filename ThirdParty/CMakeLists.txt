@@ -1120,7 +1120,7 @@ endif()
 # NOTE: Enzyme is NOT added to QUARISMA_DEPENDENCY_LIBS because it should only be applied
 # to specific source files that use it (via set_source_files_properties), not globally.
 # The Enzyme plugin can cause compilation crashes on files that don't use it.
-if(QUARISMA_ENABLE_ENZYME)
+if(CORE_ENABLE_ENZYME)
   if(TARGET Enzyme::enzyme)
     message(STATUS "Enzyme: Enzyme::enzyme target available (apply selectively to source files)")
   endif()

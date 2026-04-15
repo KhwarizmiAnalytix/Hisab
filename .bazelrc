@@ -230,7 +230,7 @@ build:lu_pivoting --define=quarisma_lu_pivoting=true
 # Enable Sobol 1111 dimensions
 build:sobol_1111 --define=quarisma_sobol_1111=true
 
-# Enzyme AD — mirrors CMake QUARISMA_ENABLE_ENZYME + Enzyme::enzyme interface target.
+# Enzyme AD — mirrors CMake CORE_ENABLE_ENZYME + Enzyme::enzyme interface target.
 # Enables QUARISMA_HAS_ENZYME=1 define and includes TestEnzymeAD.cpp in tests.
 #
 # The Enzyme LLVM plugin path cannot be auto-discovered in Bazel (CMake does this at
