@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-#include "CoreTest.h"
+#include "baseTest.h"
 #include "util/flat_hash.h"
 
 using namespace quarisma;
@@ -679,7 +679,7 @@ QUARISMATEST(FlatHash, custom_hash_and_equality)
 QUARISMATEST(FlatHash, prime_number_hash_policy_comprehensive)
 {
     // ===== INDEX FOR HASH =====
-    quarisma::prime_number_hash_policy policy1;
+    logging::prime_number_hash_policy policy1;
 
     uint64_t index1 = policy1.index_for_hash(12345, 0);
     EXPECT_GE(index1, 0);
@@ -688,7 +688,7 @@ QUARISMATEST(FlatHash, prime_number_hash_policy_comprehensive)
     EXPECT_GE(index2, 0);
 
     // ===== NEXT SIZE OVER =====
-    quarisma::prime_number_hash_policy policy2;
+    logging::prime_number_hash_policy policy2;
 
     uint64_t size          = 10;
     uint64_t original_size = size;
@@ -696,24 +696,24 @@ QUARISMATEST(FlatHash, prime_number_hash_policy_comprehensive)
     EXPECT_GT(size, original_size);
 
     // ===== NEXT SIZE OVER SMALL =====
-    quarisma::prime_number_hash_policy policy3;
-    uint64_t                           small_size = 1;
-    auto                               f          = policy3.next_size_over(small_size);
+    logging::prime_number_hash_policy policy3;
+    uint64_t                          small_size = 1;
+    auto                              f          = policy3.next_size_over(small_size);
     EXPECT_GT(small_size, 1ULL);
     EXPECT_EQ(f(small_size), 0ULL);  // n % n == 0
 
     // ===== NEXT SIZE OVER BETWEEN PRIMES =====
-    quarisma::prime_number_hash_policy policy4;
-    uint64_t                           between_size = 6;
-    auto                               f2           = policy4.next_size_over(between_size);
+    logging::prime_number_hash_policy policy4;
+    uint64_t                          between_size = 6;
+    auto                              f2           = policy4.next_size_over(between_size);
     EXPECT_GE(between_size, 6ULL);
     EXPECT_EQ(f2(between_size), 0ULL);
     EXPECT_EQ(f2(between_size + 1), 1ULL);
 
     // ===== COMMIT AND INDEX FOR HASH =====
-    quarisma::prime_number_hash_policy policy5;
-    uint64_t                           commit_size = 1000;
-    auto                               f3          = policy5.next_size_over(commit_size);
+    logging::prime_number_hash_policy policy5;
+    uint64_t                          commit_size = 1000;
+    auto                              f3          = policy5.next_size_over(commit_size);
     policy5.commit(f3);
 
     uint64_t h = 1234567890123456789ULL;
@@ -725,9 +725,9 @@ QUARISMATEST(FlatHash, prime_number_hash_policy_comprehensive)
     EXPECT_EQ(policy5.keep_in_range(big, commit_size - 1), f3(big));
 
     // ===== RESET RESTORES MOD0 =====
-    quarisma::prime_number_hash_policy policy6;
-    uint64_t                           reset_size = 50;
-    auto                               f4         = policy6.next_size_over(reset_size);
+    logging::prime_number_hash_policy policy6;
+    uint64_t                          reset_size = 50;
+    auto                              f4         = policy6.next_size_over(reset_size);
     policy6.commit(f4);
     uint64_t h2 = 987654321ULL;
     EXPECT_EQ(policy6.index_for_hash(h2, 0), f4(h2));
@@ -737,10 +737,10 @@ QUARISMATEST(FlatHash, prime_number_hash_policy_comprehensive)
     EXPECT_EQ(policy6.keep_in_range(h2, 0ULL), 0ULL);
 
     // ===== NEXT SIZE OVER LARGE =====
-    quarisma::prime_number_hash_policy policy7;
-    uint64_t                           requested  = std::numeric_limits<uint64_t>::max() - 12345ULL;
-    uint64_t                           large_size = requested;
-    auto                               f5         = policy7.next_size_over(large_size);
+    logging::prime_number_hash_policy policy7;
+    uint64_t                          requested  = std::numeric_limits<uint64_t>::max() - 12345ULL;
+    uint64_t                          large_size = requested;
+    auto                              f5         = policy7.next_size_over(large_size);
     EXPECT_GE(large_size, requested);
     EXPECT_EQ(f5(large_size), 0ULL);
 
@@ -749,13 +749,13 @@ QUARISMATEST(FlatHash, prime_number_hash_policy_comprehensive)
     EXPECT_EQ(policy7.index_for_hash(h3, 0), f5(h3));
 
     // ===== KEEP IN RANGE =====
-    quarisma::prime_number_hash_policy policy8;
-    uint64_t                           range_index = policy8.keep_in_range(12345, 100);
+    logging::prime_number_hash_policy policy8;
+    uint64_t                          range_index = policy8.keep_in_range(12345, 100);
     EXPECT_LE(range_index, 100);
 
     // ===== SEQUENTIAL NEXT SIZE OVER =====
-    quarisma::prime_number_hash_policy policy9;
-    uint64_t                           seq_size1 = 5;
+    logging::prime_number_hash_policy policy9;
+    uint64_t                          seq_size1 = 5;
     policy9.next_size_over(seq_size1);
     uint64_t first_prime = seq_size1;
 
@@ -765,9 +765,9 @@ QUARISMATEST(FlatHash, prime_number_hash_policy_comprehensive)
     EXPECT_GT(second_prime, first_prime);
 
     // ===== INDEX FOR HASH AFTER COMMIT =====
-    quarisma::prime_number_hash_policy policy10;
-    uint64_t                           iah_size = 20;
-    auto                               mod_func = policy10.next_size_over(iah_size);
+    logging::prime_number_hash_policy policy10;
+    uint64_t                          iah_size = 20;
+    auto                              mod_func = policy10.next_size_over(iah_size);
     policy10.commit(mod_func);
 
     uint64_t iah_index1 = policy10.index_for_hash(12345, 0);
@@ -776,9 +776,9 @@ QUARISMATEST(FlatHash, prime_number_hash_policy_comprehensive)
     EXPECT_GE(iah_index2, 0);
 
     // ===== KEEP IN RANGE AFTER COMMIT =====
-    quarisma::prime_number_hash_policy policy11;
-    uint64_t                           kir_size     = 30;
-    auto                               kir_mod_func = policy11.next_size_over(kir_size);
+    logging::prime_number_hash_policy policy11;
+    uint64_t                          kir_size     = 30;
+    auto                              kir_mod_func = policy11.next_size_over(kir_size);
     policy11.commit(kir_mod_func);
 
     uint64_t kir_index1 = policy11.keep_in_range(100, 50);
@@ -788,7 +788,7 @@ QUARISMATEST(FlatHash, prime_number_hash_policy_comprehensive)
     EXPECT_LE(kir_index2, 50);
 
     // ===== EDGE CASES =====
-    quarisma::prime_number_hash_policy policy_edge;
+    logging::prime_number_hash_policy policy_edge;
 
     // Size zero
     uint64_t zero_size = 0;
@@ -811,9 +811,9 @@ QUARISMATEST(FlatHash, prime_number_hash_policy_comprehensive)
     EXPECT_GT(huge_size, 0);
 
     // ===== RESET AFTER OPERATIONS =====
-    quarisma::prime_number_hash_policy policy12;
-    uint64_t                           rao_size     = 50;
-    auto                               rao_mod_func = policy12.next_size_over(rao_size);
+    logging::prime_number_hash_policy policy12;
+    uint64_t                          rao_size     = 50;
+    auto                              rao_mod_func = policy12.next_size_over(rao_size);
     policy12.commit(rao_mod_func);
 
     policy12.reset();
@@ -831,7 +831,7 @@ QUARISMATEST(FlatHash, prime_number_hash_policy_comprehensive)
 QUARISMATEST(FlatHash, fibonacci_hash_policy_comprehensive)
 {
     // ===== INDEX FOR HASH =====
-    quarisma::fibonacci_hash_policy policy1;
+    logging::fibonacci_hash_policy policy1;
 
     uint64_t index1 = policy1.index_for_hash(12345, 0);
     EXPECT_GE(index1, 0);
@@ -840,7 +840,7 @@ QUARISMATEST(FlatHash, fibonacci_hash_policy_comprehensive)
     EXPECT_GE(index2, 0);
 
     // ===== NEXT SIZE OVER =====
-    quarisma::fibonacci_hash_policy policy2;
+    logging::fibonacci_hash_policy policy2;
 
     uint64_t size  = 10;
     int8_t   shift = policy2.next_size_over(size);
@@ -848,14 +848,14 @@ QUARISMATEST(FlatHash, fibonacci_hash_policy_comprehensive)
     EXPECT_LE(shift, 63);
 
     // ===== NEXT SIZE OVER MINIMUM =====
-    quarisma::fibonacci_hash_policy policy3;
+    logging::fibonacci_hash_policy policy3;
 
     uint64_t min_size = 1;
     policy3.next_size_over(min_size);
     EXPECT_GE(min_size, 2);
 
     // ===== RESET =====
-    quarisma::fibonacci_hash_policy policy4;
+    logging::fibonacci_hash_policy policy4;
 
     uint64_t reset_size = 100;
     policy4.next_size_over(reset_size);
@@ -867,14 +867,14 @@ QUARISMATEST(FlatHash, fibonacci_hash_policy_comprehensive)
     EXPECT_GE(reset_size2, 2);
 
     // ===== KEEP IN RANGE =====
-    quarisma::fibonacci_hash_policy policy5;
+    logging::fibonacci_hash_policy policy5;
 
     uint64_t num_slots_minus_one = 127;  // 2^7 - 1
     uint64_t range_index         = policy5.keep_in_range(12345, num_slots_minus_one);
     EXPECT_LE(range_index, num_slots_minus_one);
 
     // ===== COMMIT =====
-    quarisma::fibonacci_hash_policy policy6;
+    logging::fibonacci_hash_policy policy6;
 
     uint64_t commit_size  = 16;
     int8_t   commit_shift = policy6.next_size_over(commit_size);
@@ -895,7 +895,7 @@ QUARISMATEST(FlatHash, fibonacci_hash_policy_comprehensive)
 QUARISMATEST(FlatHash, power_of_two_hash_policy_comprehensive)
 {
     // ===== INDEX FOR HASH =====
-    quarisma::power_of_two_hash_policy policy1;
+    logging::power_of_two_hash_policy policy1;
 
     uint64_t index1 = policy1.index_for_hash(12345, 15);  // 15 = 0xF (4 bits)
     EXPECT_LE(index1, 15);
@@ -907,7 +907,7 @@ QUARISMATEST(FlatHash, power_of_two_hash_policy_comprehensive)
     EXPECT_LE(index3, 255);
 
     // ===== INDEX FOR HASH BITWISE AND =====
-    quarisma::power_of_two_hash_policy policy2;
+    logging::power_of_two_hash_policy policy2;
 
     uint64_t hash                = 0x12345678;
     uint64_t num_slots_minus_one = 0xFF;  // 255
@@ -917,7 +917,7 @@ QUARISMATEST(FlatHash, power_of_two_hash_policy_comprehensive)
     EXPECT_EQ(index, expected);
 
     // ===== KEEP IN RANGE =====
-    quarisma::power_of_two_hash_policy policy3;
+    logging::power_of_two_hash_policy policy3;
 
     uint64_t nsmone = 127;  // 2^7 - 1
 
@@ -934,7 +934,7 @@ QUARISMATEST(FlatHash, power_of_two_hash_policy_comprehensive)
     EXPECT_LE(kir_index3, nsmone);
 
     // ===== NEXT SIZE OVER SMALL =====
-    quarisma::power_of_two_hash_policy policy4;
+    logging::power_of_two_hash_policy policy4;
 
     uint64_t small_size  = 1;
     int8_t   small_shift = policy4.next_size_over(small_size);
@@ -943,7 +943,7 @@ QUARISMATEST(FlatHash, power_of_two_hash_policy_comprehensive)
     EXPECT_EQ(small_shift, 0);
 
     // ===== NEXT SIZE OVER MEDIUM =====
-    quarisma::power_of_two_hash_policy policy5;
+    logging::power_of_two_hash_policy policy5;
 
     uint64_t medium_size     = 10;
     uint64_t original_medium = medium_size;
@@ -953,7 +953,7 @@ QUARISMATEST(FlatHash, power_of_two_hash_policy_comprehensive)
     EXPECT_EQ(medium_shift, 0);
 
     // ===== NEXT SIZE OVER LARGE =====
-    quarisma::power_of_two_hash_policy policy6;
+    logging::power_of_two_hash_policy policy6;
 
     uint64_t large_size     = 1000000;
     uint64_t original_large = large_size;
@@ -963,7 +963,7 @@ QUARISMATEST(FlatHash, power_of_two_hash_policy_comprehensive)
     EXPECT_EQ(large_shift, 0);
 
     // ===== NEXT SIZE OVER ALREADY POWER OF TWO =====
-    quarisma::power_of_two_hash_policy policy7;
+    logging::power_of_two_hash_policy policy7;
 
     uint64_t pow2_size  = 64;  // Already a power of two
     int8_t   pow2_shift = policy7.next_size_over(pow2_size);
@@ -972,7 +972,7 @@ QUARISMATEST(FlatHash, power_of_two_hash_policy_comprehensive)
     EXPECT_EQ(pow2_shift, 0);
 
     // ===== COMMIT IS NOOP =====
-    quarisma::power_of_two_hash_policy policy8;
+    logging::power_of_two_hash_policy policy8;
 
     uint64_t commit_index1 = policy8.index_for_hash(12345, 255);
     policy8.commit(5);  // Should have no effect
@@ -980,7 +980,7 @@ QUARISMATEST(FlatHash, power_of_two_hash_policy_comprehensive)
     EXPECT_EQ(commit_index1, commit_index2);
 
     // ===== RESET IS NOOP =====
-    quarisma::power_of_two_hash_policy policy9;
+    logging::power_of_two_hash_policy policy9;
 
     uint64_t reset_index1 = policy9.index_for_hash(12345, 255);
     policy9.reset();  // Should have no effect
@@ -988,7 +988,7 @@ QUARISMATEST(FlatHash, power_of_two_hash_policy_comprehensive)
     EXPECT_EQ(reset_index1, reset_index2);
 
     // ===== SEQUENTIAL OPERATIONS =====
-    quarisma::power_of_two_hash_policy policy10;
+    logging::power_of_two_hash_policy policy10;
 
     uint64_t seq_size1 = 5;
     policy10.next_size_over(seq_size1);

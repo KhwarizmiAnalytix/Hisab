@@ -3,8 +3,8 @@
 #include <string>  // for string
 
 #include "common/logging_export.h"  // for LOGGING_API, LOGGING_VISIBILITY
-#include "common/logging_macros.h"                  // for LOGGING_DELETE_COPY_AND_MOVE
-#include "fmt/format.h"                     // for FMT_STRING
+#include "common/logging_macros.h"  // for LOGGING_DELETE_COPY_AND_MOVE
+#include "fmt/format.h"             // for FMT_STRING
 #include "logger_verbosity_enum.h"  // for logger_verbosity_enum
 
 // this is copied from `loguru.hpp`
@@ -208,16 +208,16 @@ public:
     LOGGING_API static void EndScope(const char* id);
 #if !defined(__WRAP__)
     LOGGING_API static void LogF(
-        logger_verbosity_enum       verbosity,
-        const char*                 fname,
-        unsigned int                lineno,
+        logger_verbosity_enum      verbosity,
+        const char*                fname,
+        unsigned int               lineno,
         LOGGING_FORMAT_STRING_TYPE format,
         ...) LOGGING_PRINTF_LIKE(4, 5);
     LOGGING_API static void StartScopeF(
-        logger_verbosity_enum       verbosity,
-        const char*                 id,
-        const char*                 fname,
-        unsigned int                lineno,
+        logger_verbosity_enum      verbosity,
+        const char*                id,
+        const char*                fname,
+        unsigned int               lineno,
         LOGGING_FORMAT_STRING_TYPE format,
         ...) LOGGING_PRINTF_LIKE(5, 6);
 
@@ -226,9 +226,9 @@ public:
     public:
         LOGGING_API LogScopeRAII();
         LOGGING_API LogScopeRAII(
-            logger_verbosity_enum       verbosity,
-            const char*                 fname,
-            unsigned int                lineno,
+            logger_verbosity_enum      verbosity,
+            const char*                fname,
+            unsigned int               lineno,
             LOGGING_FORMAT_STRING_TYPE format,
             ...) LOGGING_PRINTF_LIKE(5, 6);
         LOGGING_API ~LogScopeRAII();
@@ -297,14 +297,14 @@ private:
  * @param format_string Format string with {} placeholders
  * @param ... Optional arguments to format
  */
-#define LOGGING_LOG(verbosity_name, format_string, ...)                        \
+#define LOGGING_LOG(verbosity_name, format_string, ...)                         \
     do                                                                          \
     {                                                                           \
-        if (logging::logger_verbosity_enum::VERBOSITY_##verbosity_name <=      \
-            logging::logger::GetCurrentVerbosityCutoff())                      \
+        if (logging::logger_verbosity_enum::VERBOSITY_##verbosity_name <=       \
+            logging::logger::GetCurrentVerbosityCutoff())                       \
         {                                                                       \
-            logging::logger::Log(                                              \
-                logging::logger_verbosity_enum::VERBOSITY_##verbosity_name,    \
+            logging::logger::Log(                                               \
+                logging::logger_verbosity_enum::VERBOSITY_##verbosity_name,     \
                 __FILE__,                                                       \
                 __LINE__,                                                       \
                 fmt::format(FMT_STRING(format_string), ##__VA_ARGS__).c_str()); \
@@ -341,14 +341,14 @@ private:
  * @param format_string Format string with {} placeholders
  * @param ... Optional arguments to format
  */
-#define LOGGING_VLOG_IF(level, cond, format_string, ...)                       \
+#define LOGGING_VLOG_IF(level, cond, format_string, ...)                        \
     do                                                                          \
     {                                                                           \
-        if ((cond) && static_cast<logging::logger_verbosity_enum>(level) <=    \
-                          logging::logger::GetCurrentVerbosityCutoff())        \
+        if ((cond) && static_cast<logging::logger_verbosity_enum>(level) <=     \
+                          logging::logger::GetCurrentVerbosityCutoff())         \
         {                                                                       \
-            logging::logger::Log(                                              \
-                static_cast<logging::logger_verbosity_enum>(level),            \
+            logging::logger::Log(                                               \
+                static_cast<logging::logger_verbosity_enum>(level),             \
                 __FILE__,                                                       \
                 __LINE__,                                                       \
                 fmt::format(FMT_STRING(format_string), ##__VA_ARGS__).c_str()); \
@@ -363,17 +363,17 @@ private:
  * @param ... Optional arguments to format
  */
 #define LOGGING_LOG_IF(verbosity_name, cond, format_string, ...)                    \
-    do                                                                               \
-    {                                                                                \
+    do                                                                              \
+    {                                                                               \
         if ((cond) && logging::logger_verbosity_enum::VERBOSITY_##verbosity_name <= \
                           logging::logger::GetCurrentVerbosityCutoff())             \
-        {                                                                            \
+        {                                                                           \
             logging::logger::Log(                                                   \
                 logging::logger_verbosity_enum::VERBOSITY_##verbosity_name,         \
-                __FILE__,                                                            \
-                __LINE__,                                                            \
-                fmt::format(FMT_STRING(format_string), ##__VA_ARGS__).c_str());      \
-        }                                                                            \
+                __FILE__,                                                           \
+                __LINE__,                                                           \
+                fmt::format(FMT_STRING(format_string), ##__VA_ARGS__).c_str());     \
+        }                                                                           \
     } while (0)
 ///@}
 
@@ -413,9 +413,9 @@ private:
             ? logging::logger::LogScopeRAII()                                 \
             : logging::logger::LogScopeRAII(                                  \
                   logging::logger_verbosity_enum::VERBOSITY_##verbosity_name, \
-                  __FILE__,                                                    \
-                  __LINE__,                                                    \
-                  "%s",                                                        \
+                  __FILE__,                                                   \
+                  __LINE__,                                                   \
+                  "%s",                                                       \
                   __func__)
 
 /**
@@ -429,9 +429,9 @@ private:
             ? logging::logger::LogScopeRAII()                         \
             : logging::logger::LogScopeRAII(                          \
                   static_cast<logging::logger_verbosity_enum>(level), \
-                  __FILE__,                                            \
-                  __LINE__,                                            \
-                  "%s",                                                \
+                  __FILE__,                                           \
+                  __LINE__,                                           \
+                  "%s",                                               \
                   __func__)
 
 /**
@@ -465,7 +465,7 @@ private:
  * These macros provide shortcuts for the most commonly used severity levels.
  *
  * Examples:
- *     LOGGING_LOG_INFO("Application started");
+ *     MEMORY_LOG_INFO("Application started");
  *     LOGGING_LOG_WARNING("Low memory: {} MB remaining", free_mb);
  *     LOGGING_LOG_ERROR("Failed to open file: {}", filename);
  *     LOGGING_LOG_FATAL("Critical error: {}", error_msg);
@@ -476,7 +476,7 @@ private:
  * @param format_string Format string with {} placeholders
  * @param ... Optional arguments to format
  */
-#define LOGGING_LOG_INFO(format_string, ...) LOGGING_LOG(INFO, format_string, ##__VA_ARGS__)
+#define MEMORY_LOG_INFO(format_string, ...) LOGGING_LOG(INFO, format_string, ##__VA_ARGS__)
 
 /**
  * @brief Log an informational message (debug builds only).
@@ -484,7 +484,7 @@ private:
  * @param ... Optional arguments to format
  */
 #ifndef NDEBUG
-#define LOGGING_LOG_INFO_DEBUG(format_string, ...) LOGGING_LOG_INFO(format_string, ##__VA_ARGS__)
+#define LOGGING_LOG_INFO_DEBUG(format_string, ...) MEMORY_LOG_INFO(format_string, ##__VA_ARGS__)
 #else
 #define LOGGING_LOG_INFO_DEBUG(format_string, ...)
 #endif  // !NDEBUG
@@ -512,60 +512,23 @@ private:
 #define LOGGING_LOG_FATAL(format_string, ...) LOGGING_LOG(FATAL, format_string, ##__VA_ARGS__)
 ///@}
 
-#ifndef QUARISMA_LOG_INFO
-#define QUARISMA_LOG_INFO(format_string, ...) LOGGING_LOG_INFO(format_string, ##__VA_ARGS__)
-#endif
-
-#ifndef QUARISMA_LOG_WARNING
-#define QUARISMA_LOG_WARNING(format_string, ...) LOGGING_LOG_WARNING(format_string, ##__VA_ARGS__)
-#endif
-
-#ifndef QUARISMA_LOG_ERROR
-#define QUARISMA_LOG_ERROR(format_string, ...) LOGGING_LOG_ERROR(format_string, ##__VA_ARGS__)
-#endif
-
-#ifndef QUARISMA_LOG_FATAL
-#define QUARISMA_LOG_FATAL(format_string, ...) LOGGING_LOG_FATAL(format_string, ##__VA_ARGS__)
-#endif
-
-#ifndef QUARISMA_LOG
-#define QUARISMA_LOG(level, format_string, ...) LOGGING_LOG(level, format_string, ##__VA_ARGS__)
-#endif
-
-#ifndef QUARISMA_LOG_IF
-#define QUARISMA_LOG_IF(level, cond, format_string, ...) \
-    LOGGING_LOG_IF(level, cond, format_string, ##__VA_ARGS__)
-#endif
-
-#ifndef QUARISMA_LOG_SCOPE_FUNCTION
-#define QUARISMA_LOG_SCOPE_FUNCTION(level) LOGGING_LOG_SCOPE_FUNCTION(level)
-#endif
-
-#ifndef QUARISMA_LOG_START_SCOPE
-#define QUARISMA_LOG_START_SCOPE(level, id) LOGGING_LOG_START_SCOPE(level, id)
-#endif
-
-#ifndef QUARISMA_LOG_END_SCOPE
-#define QUARISMA_LOG_END_SCOPE(id) LOGGING_LOG_END_SCOPE(id)
-#endif
-
 /**
  * Convenience macros to start and end logging to a file. provide a file name
  * with the full path and extension.
  */
-#define START_LOG_TO_FILE(file_name)                                                            \
-    if (!file_name.empty())                                                                     \
-    {                                                                                           \
+#define START_LOG_TO_FILE(file_name)                                                          \
+    if (!file_name.empty())                                                                   \
+    {                                                                                         \
         logging::logger::SetStderrVerbosity(logging::logger_verbosity_enum::VERBOSITY_TRACE); \
-        logging::logger::LogToFile(                                                            \
-            file_name.c_str(),                                                                  \
-            logging::logger::FileMode::TRUNCATE,                                               \
-            logging::logger_verbosity_enum::VERBOSITY_TRACE);                                  \
+        logging::logger::LogToFile(                                                           \
+            file_name.c_str(),                                                                \
+            logging::logger::FileMode::TRUNCATE,                                              \
+            logging::logger_verbosity_enum::VERBOSITY_TRACE);                                 \
     }
 
-#define END_LOG_TO_FILE(file_name)                         \
-    if (!file_name.empty())                                \
-    {                                                      \
+#define END_LOG_TO_FILE(file_name)                        \
+    if (!file_name.empty())                               \
+    {                                                     \
         logging::logger::EndLogToFile(file_name.c_str()); \
     }
 
@@ -576,9 +539,3 @@ private:
 #define LOG_TO_FILE_NAME(file_name) std::string(std::string(#file_name) + ".log")
 #define START_LOG_TO_FILE_NAME(file_name) START_LOG_TO_FILE(LOG_TO_FILE_NAME(file_name))
 #define END_LOG_TO_FILE_NAME(file_name) END_LOG_TO_FILE(LOG_TO_FILE_NAME(file_name))
-
-namespace quarisma
-{
-using logger = logging::logger;
-using logger_verbosity_enum = logging::logger_verbosity_enum;
-}

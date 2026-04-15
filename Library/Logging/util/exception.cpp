@@ -9,7 +9,7 @@
 #include <utility>
 
 #include "back_trace.h"
-#include "logger.h"
+#include "logger/logger.h"
 #include "util/string_util.h"
 
 namespace logging
@@ -81,12 +81,12 @@ void init_exception_mode_from_env() noexcept
         if (mode_str == "LOG_FATAL" || mode_str == "log_fatal")
         {
             g_exception_mode_.store(exception_mode::LOG_FATAL, std::memory_order_relaxed);
-            LOGGING_LOG_INFO("Exception mode set to LOG_FATAL from environment");
+            MEMORY_LOG_INFO("Exception mode set to LOG_FATAL from environment");
         }
         else if (mode_str == "THROW" || mode_str == "throw")
         {
             g_exception_mode_.store(exception_mode::THROW, std::memory_order_relaxed);
-            LOGGING_LOG_INFO("Exception mode set to THROW from environment");
+            MEMORY_LOG_INFO("Exception mode set to THROW from environment");
         }
         else
         {

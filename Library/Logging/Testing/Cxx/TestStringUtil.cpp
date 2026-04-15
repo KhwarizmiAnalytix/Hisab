@@ -38,11 +38,11 @@
 #include <string_view>  // for string_view
 #include <vector>       // for vector, _Vector_const_iterato
 
-#include "CoreTest.h"       // for END_TEST, QUARISMATEST
-#include "common/macros.h"  // for QUARISMA_UNUSED
+#include "LoggingTest.h"            // for END_TEST, LOGGINGTEST
+#include "common/logging_macros.h"  // for LOGGING_UNUSED
 #include "util/string_util.h"  // for is_float, is_integer, exclude_file_extension, file_extension, strip_basename
 
-namespace quarisma
+namespace logging
 {
 using namespace logging;
 void testStringManipulation()
@@ -139,7 +139,7 @@ void testCompatibilityFunctions()
 
 void testSourceLocation()
 {
-    quarisma::source_location loc;
+    logging::source_location loc;
     loc.file     = "test.cpp";
     loc.function = "testFunction";
     loc.line     = 42;
@@ -158,29 +158,29 @@ void testSourceLocation()
 void testStringConcatenation()
 {
     // Test str_cat with multiple arguments
-    std::string result1 = quarisma::strings::str_cat("Hello", " ", "World");
+    std::string result1 = logging::strings::str_cat("Hello", " ", "World");
     EXPECT_EQ(result1, "Hello World");
 
     // Test str_cat with numeric types
-    std::string result2 = quarisma::strings::str_cat("Value: ", 42);
+    std::string result2 = logging::strings::str_cat("Value: ", 42);
     EXPECT_EQ(result2, "Value: 42");
 
     // Test str_cat with floating point
-    std::string result3 = quarisma::strings::str_cat("Pi: ", 3.14);
+    std::string result3 = logging::strings::str_cat("Pi: ", 3.14);
     EXPECT_TRUE(result3.find("Pi:") != std::string::npos);
     EXPECT_TRUE(result3.find("3.14") != std::string::npos);
 
     // Test str_cat with empty strings
-    std::string result4 = quarisma::strings::str_cat("", "test", "");
+    std::string result4 = logging::strings::str_cat("", "test", "");
     EXPECT_EQ(result4, "test");
 
     // Test str_cat with single argument
-    std::string result5 = quarisma::strings::str_cat("single");
+    std::string result5 = logging::strings::str_cat("single");
     EXPECT_EQ(result5, "single");
 
     // Test str_cat with string_view
     std::string_view sv      = "view";
-    std::string      result6 = quarisma::strings::str_cat("string_", sv);
+    std::string      result6 = logging::strings::str_cat("string_", sv);
     EXPECT_EQ(result6, "string_view");
 }
 
@@ -188,109 +188,109 @@ void testStringAppend()
 {
     // Test str_append with multiple arguments
     std::string s = "Start";
-    quarisma::strings::str_append(&s, " ", "Middle", " ", 123);
+    logging::strings::str_append(&s, " ", "Middle", " ", 123);
     EXPECT_EQ(s, "Start Middle 123");
 
     // Test str_append with single argument
     std::string s2 = "Hello";
-    quarisma::strings::str_append(&s2, " World");
+    logging::strings::str_append(&s2, " World");
     EXPECT_EQ(s2, "Hello World");
 
     // Test str_append with null pointer (should not crash)
-    quarisma::strings::str_append(nullptr, "test");  // Should be safe
+    logging::strings::str_append(nullptr, "test");  // Should be safe
 
     // Test str_append with empty string
     std::string s3 = "";
-    quarisma::strings::str_append(&s3, "content");
+    logging::strings::str_append(&s3, "content");
     EXPECT_EQ(s3, "content");
 
     // Test str_append with numeric types
     std::string s4 = "Numbers: ";
-    quarisma::strings::str_append(&s4, 1, ", ", 2, ", ", 3);
+    logging::strings::str_append(&s4, 1, ", ", 2, ", ", 3);
     EXPECT_EQ(s4, "Numbers: 1, 2, 3");
 }
 
 void testStringContains()
 {
     // Test str_contains with character found
-    EXPECT_TRUE(quarisma::strings::str_contains("hello:world", ':'));
+    EXPECT_TRUE(logging::strings::str_contains("hello:world", ':'));
 
     // Test str_contains with character not found
-    EXPECT_FALSE(quarisma::strings::str_contains("hello", 'x'));
+    EXPECT_FALSE(logging::strings::str_contains("hello", 'x'));
 
     // Test str_contains with empty string
-    EXPECT_FALSE(quarisma::strings::str_contains("", 'a'));
+    EXPECT_FALSE(logging::strings::str_contains("", 'a'));
 
     // Test str_contains with single character string
-    EXPECT_TRUE(quarisma::strings::str_contains("a", 'a'));
+    EXPECT_TRUE(logging::strings::str_contains("a", 'a'));
 
     // Test str_contains with multiple occurrences
-    EXPECT_TRUE(quarisma::strings::str_contains("aaa", 'a'));
+    EXPECT_TRUE(logging::strings::str_contains("aaa", 'a'));
 }
 
 void testFormatHex()
 {
     // Test format_hex with no padding
-    std::string hex1 = quarisma::strings::format_hex(255);
+    std::string hex1 = logging::strings::format_hex(255);
     EXPECT_EQ(hex1, "ff");
 
     // Test format_hex with padding
-    std::string hex2 = quarisma::strings::format_hex(255, quarisma::strings::hex_pad::pad4);
+    std::string hex2 = logging::strings::format_hex(255, logging::strings::hex_pad::pad4);
     EXPECT_EQ(hex2, "00ff");
 
     // Test format_hex with larger value
-    std::string hex3 = quarisma::strings::format_hex(0x1234, quarisma::strings::hex_pad::pad8);
+    std::string hex3 = logging::strings::format_hex(0x1234, logging::strings::hex_pad::pad8);
     EXPECT_EQ(hex3, "00001234");
 
     // Test format_hex with zero
-    std::string hex4 = quarisma::strings::format_hex(0);
+    std::string hex4 = logging::strings::format_hex(0);
     EXPECT_EQ(hex4, "0");
 
     // Test format_hex with pad2
-    std::string hex5 = quarisma::strings::format_hex(15, quarisma::strings::hex_pad::pad2);
+    std::string hex5 = logging::strings::format_hex(15, logging::strings::hex_pad::pad2);
     EXPECT_EQ(hex5, "0f");
 }
 
 void testToLower()
 {
     // Test to_lower with uppercase
-    std::string lower1 = quarisma::strings::to_lower("HELLO");
+    std::string lower1 = logging::strings::to_lower("HELLO");
     EXPECT_EQ(lower1, "hello");
 
     // Test to_lower with mixed case
-    std::string lower2 = quarisma::strings::to_lower("HeLLo WoRLd");
+    std::string lower2 = logging::strings::to_lower("HeLLo WoRLd");
     EXPECT_EQ(lower2, "hello world");
 
     // Test to_lower with already lowercase
-    std::string lower3 = quarisma::strings::to_lower("hello");
+    std::string lower3 = logging::strings::to_lower("hello");
     EXPECT_EQ(lower3, "hello");
 
     // Test to_lower with numbers and special chars
-    std::string lower4 = quarisma::strings::to_lower("Test123!@#");
+    std::string lower4 = logging::strings::to_lower("Test123!@#");
     EXPECT_EQ(lower4, "test123!@#");
 
     // Test to_lower with empty string
-    std::string lower5 = quarisma::strings::to_lower("");
+    std::string lower5 = logging::strings::to_lower("");
     EXPECT_EQ(lower5, "");
 }
 
 void testDemangleFunction()
 {
     // Test demangle with null pointer
-    std::string demangled_null = quarisma::demangle(nullptr);
+    std::string demangled_null = logging::demangle(nullptr);
     EXPECT_EQ(demangled_null, "<unknown>");
 
     // Test demangle with empty string
-    std::string demangled_empty = quarisma::demangle("");
+    std::string demangled_empty = logging::demangle("");
     EXPECT_EQ(demangled_empty, "<unknown>");
 
     // Test demangle with simple name (not mangled)
-    std::string demangled_simple = quarisma::demangle("main");
+    std::string demangled_simple = logging::demangle("main");
     EXPECT_FALSE(demangled_simple.empty());
 
     // Test demangle with actual mangled name (if available)
     // This is platform-dependent, so we just verify it doesn't crash
-    std::string demangled_complex = quarisma::demangle("_Z1gv");
+    std::string demangled_complex = logging::demangle("_Z1gv");
     EXPECT_FALSE(demangled_complex.empty());
 }
 
@@ -298,25 +298,25 @@ void testReplaceAllEdgeCases()
 {
     // Test replace_all with overlapping patterns
     std::string s1     = "aaa";
-    size_t      count1 = quarisma::replace_all(s1, "aa", "b");
+    size_t      count1 = logging::replace_all(s1, "aa", "b");
     EXPECT_EQ(s1, "ba");
     EXPECT_EQ(count1, 1u);
 
     // Test replace_all with replacement longer than original
     std::string s2     = "a";
-    size_t      count2 = quarisma::replace_all(s2, "a", "hello");
+    size_t      count2 = logging::replace_all(s2, "a", "hello");
     EXPECT_EQ(s2, "hello");
     EXPECT_EQ(count2, 1u);
 
     // Test replace_all with empty replacement
     std::string s3     = "hello";
-    size_t      count3 = quarisma::replace_all(s3, "l", "");
+    size_t      count3 = logging::replace_all(s3, "l", "");
     EXPECT_EQ(s3, "heo");
     EXPECT_EQ(count3, 2u);
 
     // Test replace_all with single character
     std::string s4     = "aaa";
-    size_t      count4 = quarisma::replace_all(s4, "a", "b");
+    size_t      count4 = logging::replace_all(s4, "a", "b");
     EXPECT_EQ(s4, "bbb");
     EXPECT_EQ(count4, 3u);
 }
@@ -325,59 +325,59 @@ void testEraseAllSubstringEdgeCases()
 {
     // Test erase_all_sub_string with single character
     std::string s1 = "aaa";
-    quarisma::erase_all_sub_string(s1, "a");
+    logging::erase_all_sub_string(s1, "a");
     EXPECT_EQ(s1, "");
 
     // Test erase_all_sub_string with multi-character substring
     std::string s2 = "abcabcabc";
-    quarisma::erase_all_sub_string(s2, "abc");
+    logging::erase_all_sub_string(s2, "abc");
     EXPECT_EQ(s2, "");
 
     // Test erase_all_sub_string with partial match
     std::string s3 = "abcdefabc";
-    quarisma::erase_all_sub_string(s3, "abc");
+    logging::erase_all_sub_string(s3, "abc");
     EXPECT_EQ(s3, "def");
 
     // Test erase_all_sub_string with no match
     std::string s4 = "hello";
-    quarisma::erase_all_sub_string(s4, "xyz");
+    logging::erase_all_sub_string(s4, "xyz");
     EXPECT_EQ(s4, "hello");
 }
 
 void testStartsWithEdgeCases()
 {
     // Test starts_with with equal strings
-    EXPECT_TRUE(quarisma::starts_with("hello", "hello"));
+    EXPECT_TRUE(logging::starts_with("hello", "hello"));
 
     // Test starts_with with longer prefix than string
-    EXPECT_FALSE(quarisma::starts_with("hi", "hello"));
+    EXPECT_FALSE(logging::starts_with("hi", "hello"));
 
     // Test starts_with with single character
-    EXPECT_TRUE(quarisma::starts_with("hello", "h"));
+    EXPECT_TRUE(logging::starts_with("hello", "h"));
 
     // Test starts_with with empty prefix
-    EXPECT_TRUE(quarisma::starts_with("hello", ""));
+    EXPECT_TRUE(logging::starts_with("hello", ""));
 
     // Test starts_with with empty string and non-empty prefix
-    EXPECT_FALSE(quarisma::starts_with("", "a"));
+    EXPECT_FALSE(logging::starts_with("", "a"));
 }
 
 void testEndsWithEdgeCases()
 {
     // Test ends_with with equal strings
-    EXPECT_TRUE(quarisma::ends_with("hello", "hello"));
+    EXPECT_TRUE(logging::ends_with("hello", "hello"));
 
     // Test ends_with with longer suffix than string
-    EXPECT_FALSE(quarisma::ends_with("hi", "hello"));
+    EXPECT_FALSE(logging::ends_with("hi", "hello"));
 
     // Test ends_with with single character
-    EXPECT_TRUE(quarisma::ends_with("hello", "o"));
+    EXPECT_TRUE(logging::ends_with("hello", "o"));
 
     // Test ends_with with empty suffix
-    EXPECT_TRUE(quarisma::ends_with("hello", ""));
+    EXPECT_TRUE(logging::ends_with("hello", ""));
 
     // Test ends_with with empty string and non-empty suffix
-    EXPECT_FALSE(quarisma::ends_with("", "a"));
+    EXPECT_FALSE(logging::ends_with("", "a"));
 }
 
 void testAllFunctions()
@@ -397,10 +397,10 @@ void testAllFunctions()
     testEndsWithEdgeCases();
 }
 
-}  // namespace quarisma
+}  // namespace logging
 
-QUARISMATEST(StringUtil, test)
+LOGGINGTEST(StringUtil, test)
 {
-    quarisma::testAllFunctions();
+    logging::testAllFunctions();
     END_TEST();
 }

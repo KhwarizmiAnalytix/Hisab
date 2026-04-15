@@ -1,4 +1,4 @@
-#include "logger.h"
+#include "logger/logger.h"
 
 #include <array>    // for array
 #include <cstdarg>  // for va_end, va_list, va_start
@@ -14,7 +14,24 @@
 
 #include "common/logging_macros.h"
 #include "logger_verbosity_enum.h"
+
+#if 0
 #include "util/flat_hash.h"
+
+template <typename T>
+using logging_set = flat_hash_set<T>;
+template <typename K, typename V, typename H = std::hash<K>>
+using logging_map = flat_hash_map<K, V, H>;
+#else
+#include <unordered_map>
+#include <unordered_set>
+
+template <typename T>
+using logging_set = std::unordered_set<T>;
+template <typename K, typename V>
+using logging_map = std::unordered_map<K, V>;
+
+#endif
 
 // Include appropriate logging backend headers
 #if LOGGING_HAS_LOGURU

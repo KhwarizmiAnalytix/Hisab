@@ -26,7 +26,7 @@
 #include <string>
 
 #include "common/macros.h"
-#include "logger.h"
+//#include "logger/logger.h"
 
 // Include Google Test if available
 #if PROJECT_HAS_GTEST
@@ -224,7 +224,7 @@
 #define QUARISMATEST_CALL(module, testname) test_##module##testname(argc, argv);
 
 // No fixture support without Google Test; make it explicit.
-#define QUARISMATEST_F(fixture, name)                                                        \
+#define QUARISMATEST_F(fixture, name) \
     static_assert(false, "QUARISMATEST_F requires Google Test (PROJECT_HAS_GTEST=1)")
 
 #endif

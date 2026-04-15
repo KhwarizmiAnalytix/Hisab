@@ -76,11 +76,11 @@ E string_to_enum(std::string_view str)
 }
 }  // namespace logging
 
-namespace quarisma
+namespace logging
 {
 using namespace logging;
 namespace strings = logging::strings;
-}
+}  // namespace logging
 #else
 namespace logging
 {
@@ -419,16 +419,3 @@ LOGGING_FORCE_INLINE std::string to_lower(std::string_view input)
 }
 }  // namespace strings
 }  // namespace logging
-
-namespace quarisma
-{
-inline bool starts_with(std::string_view str, std::string_view prefix)
-{
-    return logging::starts_with(str, prefix);
-}
-
-inline bool ends_with(std::string_view str, std::string_view suffix)
-{
-    return logging::ends_with(str, suffix);
-}
-}  // namespace quarisma

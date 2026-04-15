@@ -24,8 +24,8 @@
 #include <string>
 #include <thread>
 
-#include "CoreTest.h"
-#include "logger.h"
+#include "LoggingTest.h"
+#include "logger/logger.h"
 
 // Control the order of operations between the threads
 std::atomic_bool wait1;
@@ -36,36 +36,36 @@ void Thread1()
     const std::string threaName = "T1";
     while (!wait1.load()) {}
 
-    quarisma::logger::SetThreadName(threaName);
+    logging::logger::SetThreadName(threaName);
 
     wait2.store(true);
 
-    if (quarisma::logger::GetThreadName() != threaName)
+    if (logging::logger::GetThreadName() != threaName)
     {
-        QUARISMA_LOG(ERROR, "Name mismatch !");
+        LOGGING_LOG(ERROR, "Name mismatch !");
     }
 }
 
 void Thread2()
 {
     const std::string threaName = "T2";
-    quarisma::logger::SetThreadName(threaName);
+    logging::logger::SetThreadName(threaName);
 
     wait1.store(true);
     while (!wait2.load()) {}
 
-    quarisma::logger::Init();
+    logging::logger::Init();
 
-    if (quarisma::logger::GetThreadName() != threaName)
+    if (logging::logger::GetThreadName() != threaName)
     {
-        QUARISMA_LOG(ERROR, "Name mismatch !");
+        LOGGING_LOG(ERROR, "Name mismatch !");
     }
 }
 
-QUARISMATEST(Logger, thread_name)
+LOGGINGTEST(Logger, thread_name)
 {
-    QUARISMA_UNUSED int    arg     = 0;
-    QUARISMA_UNUSED char** arg_str = nullptr;
+    LOGGING_UNUSED int    arg     = 0;
+    LOGGING_UNUSED char** arg_str = nullptr;
 
     wait1.store(false);
     wait2.store(false);

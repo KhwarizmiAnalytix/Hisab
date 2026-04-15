@@ -16,8 +16,8 @@ endforeach()
 add_executable(LoggingCxxTests ${TestFiles})
 
 target_compile_definitions(
-  LoggingCxxTests PRIVATE LOGGING_HAS_GTEST=1 LOGGING_GOOGLE_TEST QUARISMA_HAS_GTEST=1
-                          QUARISMA_GOOGLE_TEST USE_GTEST _VARIADIC_MAX=10
+  LoggingCxxTests PRIVATE LOGGING_HAS_GTEST=1 LOGGING_GOOGLE_TEST LOGGING_HAS_GTEST=1
+                          LOGGING_GOOGLE_TEST USE_GTEST _VARIADIC_MAX=10
 )
 
 target_include_directories(

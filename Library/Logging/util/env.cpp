@@ -10,7 +10,7 @@
 #include <mutex>
 #include <shared_mutex>
 
-#include "logger.h"
+#include "logger/logger.h"
 #include "util/exception.h"
 
 namespace logging::utils

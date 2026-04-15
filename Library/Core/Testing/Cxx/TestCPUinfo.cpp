@@ -21,17 +21,14 @@
 
 #include <vector>
 
-#include "CoreTest.h"        // for END_TEST, QUARISMATEST
-#include "logger.h"  // for END_LOG_TO_FILE_NAME, START_LOG_TO_FILE_NAME
-#include "util/cpu_info.h"   // for cpu_info
+#include "CoreTest.h"  // for END_TEST, QUARISMATEST
+//#include "logger/logger.h"  // for END_LOG_TO_FILE_NAME, START_LOG_TO_FILE_NAME
+#include "util/cpu_info.h"  // for cpu_info
 
 QUARISMATEST(CPUinfo, CPUinfo)
 {
-    START_LOG_TO_FILE_NAME(CPUinfo);
     quarisma::cpu_info::initialize();
     quarisma::cpu_info::info();
-
-    END_LOG_TO_FILE_NAME(CPUinfo);
     END_TEST();
 }
 

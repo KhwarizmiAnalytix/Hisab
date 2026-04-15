@@ -21,16 +21,16 @@
 #include <string>
 #include <vector>
 
-#include "CoreTest.h"
+#include "LoggingTest.h"
 #include "util/lazy.h"
 
-using namespace quarisma;
+using namespace logging;
 
 // ============================================================================
 // Basic optimistic_lazy Tests
 // ============================================================================
 
-QUARISMATEST(Lazy, Test)
+LOGGINGTEST(Lazy, Test)
 {
     {
         optimistic_lazy<int> lazy_int;

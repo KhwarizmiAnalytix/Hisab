@@ -132,18 +132,3 @@ private:
 };
 
 }  // namespace logging
-
-namespace quarisma
-{
-template <class T>
-using lazy_value = logging::lazy_value<T>;
-
-template <class T>
-using optimistic_lazy = logging::optimistic_lazy<T>;
-
-template <class T>
-using optimistic_lazy_value = logging::optimistic_lazy_value<T>;
-
-template <class T>
-using precomputed_lazy_value = logging::precomputed_lazy_value<T>;
-}

@@ -21,12 +21,12 @@
 #include <string>
 #include <utility>
 
-#include "CoreTest.h"
-#include "logger.h"
+#include "LoggingTest.h"
+#include "logger/logger.h"
 
 namespace
 {
-QUARISMA_UNUSED void log_handler(void* user_data, const quarisma::logger::Message& message)
+LOGGING_UNUSED void log_handler(void* user_data, const logging::logger::Message& message)
 {
     auto* lines = reinterpret_cast<std::string*>(user_data);
     (*lines) += "\n";
@@ -34,53 +34,53 @@ QUARISMA_UNUSED void log_handler(void* user_data, const quarisma::logger::Messag
 }
 }  // namespace
 
-QUARISMATEST(Logger, test)
+LOGGINGTEST(Logger, test)
 {
     int    arg     = 0;
     char** arg_str = nullptr;
 
-    quarisma::logger::Init(arg, arg_str);
-    quarisma::logger::Init();
+    logging::logger::Init(arg, arg_str);
+    logging::logger::Init();
 
-    quarisma::logger::ConvertToVerbosity(-100);
-    quarisma::logger::ConvertToVerbosity(+100);
-    quarisma::logger::ConvertToVerbosity("OFF");
-    quarisma::logger::ConvertToVerbosity("ERROR");
-    quarisma::logger::ConvertToVerbosity("WARNING");
-    quarisma::logger::ConvertToVerbosity("INFO");
-    quarisma::logger::ConvertToVerbosity("MAX");
-    quarisma::logger::ConvertToVerbosity("NAN");
+    logging::logger::ConvertToVerbosity(-100);
+    logging::logger::ConvertToVerbosity(+100);
+    logging::logger::ConvertToVerbosity("OFF");
+    logging::logger::ConvertToVerbosity("ERROR");
+    logging::logger::ConvertToVerbosity("WARNING");
+    logging::logger::ConvertToVerbosity("INFO");
+    logging::logger::ConvertToVerbosity("MAX");
+    logging::logger::ConvertToVerbosity("NAN");
 
-    QUARISMA_UNUSED auto v1 = quarisma::logger::ConvertToVerbosity(1);
-    QUARISMA_UNUSED auto v2 = quarisma::logger::ConvertToVerbosity("TRACE");
+    LOGGING_UNUSED auto v1 = logging::logger::ConvertToVerbosity(1);
+    LOGGING_UNUSED auto v2 = logging::logger::ConvertToVerbosity("TRACE");
 
     std::string lines;
-    QUARISMA_LOG(
+    LOGGING_LOG(
         INFO,
         "changing verbosity to {}",
-        static_cast<int>(quarisma::logger_verbosity_enum::VERBOSITY_TRACE));
+        static_cast<int>(logging::logger_verbosity_enum::VERBOSITY_TRACE));
 
-    quarisma::logger::AddCallback(
-        "sonnet-grabber", log_handler, &lines, quarisma::logger_verbosity_enum::VERBOSITY_INFO);
+    logging::logger::AddCallback(
+        "sonnet-grabber", log_handler, &lines, logging::logger_verbosity_enum::VERBOSITY_INFO);
 
-    quarisma::logger::SetStderrVerbosity(quarisma::logger_verbosity_enum::VERBOSITY_TRACE);
+    logging::logger::SetStderrVerbosity(logging::logger_verbosity_enum::VERBOSITY_TRACE);
 
-    QUARISMA_LOG_SCOPE_FUNCTION(INFO);
+    LOGGING_LOG_SCOPE_FUNCTION(INFO);
     {
         // Note: Formatted scope logging is not supported in fmt-style API
         // Using simple scope start/end instead
-        QUARISMA_LOG_START_SCOPE(INFO, "Sonnet 18");
+        LOGGING_LOG_START_SCOPE(INFO, "Sonnet 18");
         const auto* whom = "thee";
-        QUARISMA_LOG(INFO, "Shall I compare {} to a summer's day?", whom);
+        LOGGING_LOG(INFO, "Shall I compare {} to a summer's day?", whom);
 
         const auto* what0 = "lovely";
         const auto* what1 = "temperate";
-        QUARISMA_LOG(INFO, "Thou art more {} and more {}:", what0, what1);
+        LOGGING_LOG(INFO, "Thou art more {} and more {}:", what0, what1);
 
         const auto* month = "May";
-        QUARISMA_LOG_IF(INFO, true, "Rough winds do shake the darling buds of {},", month);
-        QUARISMA_LOG_IF(INFO, true, "And {}'s lease hath all too short a date;", "summers");
-        QUARISMA_LOG_END_SCOPE("Sonnet 18");
+        LOGGING_LOG_IF(INFO, true, "Rough winds do shake the darling buds of {},", month);
+        LOGGING_LOG_IF(INFO, true, "And {}'s lease hath all too short a date;", "summers");
+        LOGGING_LOG_END_SCOPE("Sonnet 18");
     }
 
     std::cerr << "--------------------------------------------" << std::endl
@@ -88,30 +88,30 @@ QUARISMATEST(Logger, test)
               << std::endl
               << "--------------------------------------------" << std::endl;
 
-    QUARISMA_LOG_WARNING("testing generic warning -- should only show up in the log");
+    LOGGING_LOG_WARNING("testing generic warning -- should only show up in the log");
 
     // remove callback since the user-data becomes invalid out of this function.
-    quarisma::logger::RemoveCallback("sonnet-grabber");
+    logging::logger::RemoveCallback("sonnet-grabber");
 
     // test out explicit scope start and end markers.
     {
-        QUARISMA_LOG_START_SCOPE(INFO, "scope-0");
+        LOGGING_LOG_START_SCOPE(INFO, "scope-0");
     }
-    QUARISMA_LOG_START_SCOPE(INFO, "scope-1");
-    QUARISMA_LOG_INFO("some text");
-    QUARISMA_LOG_END_SCOPE("scope-1");
+    LOGGING_LOG_START_SCOPE(INFO, "scope-1");
+    MEMORY_LOG_INFO("some text");
+    LOGGING_LOG_END_SCOPE("scope-1");
     {
-        QUARISMA_LOG_END_SCOPE("scope-0");
+        LOGGING_LOG_END_SCOPE("scope-0");
     }
 
-    quarisma::logger::SetInternalVerbosityLevel(v2);
+    logging::logger::SetInternalVerbosityLevel(v2);
 
-    quarisma::logger::SetThreadName("ttq::worker");
-    QUARISMA_UNUSED auto th = quarisma::logger::GetThreadName();
+    logging::logger::SetThreadName("ttq::worker");
+    LOGGING_UNUSED auto th = logging::logger::GetThreadName();
 
-    quarisma::logger::LogScopeRAII obj;
+    logging::logger::LogScopeRAII obj;
 
-    quarisma::logger::LogScopeRAII obj1 = std::move(obj);
+    logging::logger::LogScopeRAII obj1 = std::move(obj);
 
     END_TEST();
 }

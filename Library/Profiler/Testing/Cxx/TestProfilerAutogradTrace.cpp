@@ -7,7 +7,7 @@
 #include <string>
 
 #include "ProfilerTest.h"
-//#include "logger.h"
+////#include "logger/logger.h"
 
 #if PROFILER_HAS_KINETO
 #include "bespoke/common/api.h"

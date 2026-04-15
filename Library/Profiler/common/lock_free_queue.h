@@ -42,7 +42,7 @@ limitations under the License.
 #include <utility>
 
 #include "common/profiler_macros.h"
-//#include "logger.h"
+////#include "logger/logger.h"
 //#include "util/exception.h"
 #include "common/no_init.h"
 
@@ -311,7 +311,7 @@ public:
     private:
         friend class BlockedQueue;
         Iterator(BlockedQueue* queue, BlockedQueue::Block* block, size_t index)
-            : queue_(queue), block_(block), index_(index) {};
+            : queue_(queue), block_(block), index_(index){};
         BlockedQueue*        queue_ = nullptr;
         BlockedQueue::Block* block_ = nullptr;
         size_t               index_ = 0;

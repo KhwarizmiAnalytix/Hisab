@@ -25,8 +25,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "CoreTest.h"
-#include "logger.h"
+#include "baseTest.h"
 #include "util/flat_hash.h"
 #include "util/hash_util.h"
 
@@ -292,7 +291,7 @@ QUARISMATEST(HashUtil, hash_util_distribution)
     // We expect at least 99% unique hashes for sequential integers
     EXPECT_GT(hashes.size(), static_cast<size_t>(count * 0.99));
 
-    QUARISMA_LOG_INFO("Hash distribution test: {}/{} unique hashes", hashes.size(), count);
+    MEMORY_LOG_INFO("Hash distribution test: {}/{} unique hashes", hashes.size(), count);
 
     END_TEST();
 }
@@ -400,7 +399,7 @@ QUARISMATEST(HashUtil, hash_util_performance)
     std::size_t hash = hash_range(large_vec.begin(), large_vec.end());
     EXPECT_NE(hash, 0);
 
-    QUARISMA_LOG_INFO("Performance test: hashed {} values successfully", iterations);
+    MEMORY_LOG_INFO("Performance test: hashed {} values successfully", iterations);
 
     END_TEST();
 }
@@ -521,7 +520,7 @@ QUARISMATEST(HashUtil, hash_util_consistency)
         EXPECT_EQ(hash, range_hash_ref);
     }
 
-    QUARISMA_LOG_INFO("Consistency test: {} runs completed successfully", test_runs);
+    MEMORY_LOG_INFO("Consistency test: {} runs completed successfully", test_runs);
 
     END_TEST();
 }

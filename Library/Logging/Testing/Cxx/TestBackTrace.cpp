@@ -1,10 +1,11 @@
 #include <string>
 #include <vector>
 
-#include "CoreTest.h"
+#include "LoggingTest.h"
 #include "back_trace.h"
+#include "logger/logger.h"
 
-namespace quarisma
+namespace logging
 {
 namespace
 {
@@ -27,20 +28,20 @@ void level_1()
 }
 
 }  // namespace
-}  // namespace quarisma
-using namespace quarisma;
+}  // namespace logging
+using namespace logging;
 // ============================================================================
 // Basic Functionality Tests
 // ============================================================================
 
-QUARISMATEST(BackTrace, basic_print)
+LOGGINGTEST(BackTrace, basic_print)
 {
     auto trace = logging::back_trace::print();
     EXPECT_FALSE(trace.empty());
     END_TEST();
 }
 
-QUARISMATEST(BackTrace, print_with_skip_frames)
+LOGGINGTEST(BackTrace, print_with_skip_frames)
 {
     auto trace_no_skip = logging::back_trace::print(0, 5, false);
     auto trace_skip_2  = logging::back_trace::print(2, 5, false);
@@ -50,7 +51,7 @@ QUARISMATEST(BackTrace, print_with_skip_frames)
     END_TEST();
 }
 
-QUARISMATEST(BackTrace, print_with_max_frames)
+LOGGINGTEST(BackTrace, print_with_max_frames)
 {
     auto trace_5  = logging::back_trace::print(0, 5, false);
     auto trace_10 = logging::back_trace::print(0, 10, false);
@@ -64,7 +65,7 @@ QUARISMATEST(BackTrace, print_with_max_frames)
 // Enhanced API Tests
 // ============================================================================
 
-QUARISMATEST(BackTrace, capture_and_format)
+LOGGINGTEST(BackTrace, capture_and_format)
 {
     // Capture raw frames
     logging::backtrace_options options;
@@ -88,7 +89,7 @@ QUARISMATEST(BackTrace, capture_and_format)
     END_TEST();
 }
 
-QUARISMATEST(BackTrace, compact_format)
+LOGGINGTEST(BackTrace, compact_format)
 {
     logging::backtrace_options options;
     options.frames_to_skip           = 0;
@@ -105,7 +106,7 @@ QUARISMATEST(BackTrace, compact_format)
     END_TEST();
 }
 
-QUARISMATEST(BackTrace, compact_helper)
+LOGGINGTEST(BackTrace, compact_helper)
 {
     auto trace = logging::back_trace::compact(5);
     EXPECT_FALSE(trace.empty());
@@ -115,7 +116,7 @@ QUARISMATEST(BackTrace, compact_helper)
     END_TEST();
 }
 
-QUARISMATEST(BackTrace, detailed_format_with_options)
+LOGGINGTEST(BackTrace, detailed_format_with_options)
 {
     logging::backtrace_options options;
     options.frames_to_skip           = 0;
@@ -132,7 +133,7 @@ QUARISMATEST(BackTrace, detailed_format_with_options)
     END_TEST();
 }
 
-QUARISMATEST(BackTrace, detailed_format_without_addresses)
+LOGGINGTEST(BackTrace, detailed_format_without_addresses)
 {
     logging::backtrace_options options;
     options.frames_to_skip           = 0;
@@ -149,7 +150,7 @@ QUARISMATEST(BackTrace, detailed_format_without_addresses)
 // Call Stack Depth Tests
 // ============================================================================
 
-QUARISMATEST(BackTrace, deep_call_stack)
+LOGGINGTEST(BackTrace, deep_call_stack)
 {
     level_1();
     END_TEST();
@@ -159,7 +160,7 @@ QUARISMATEST(BackTrace, deep_call_stack)
 // Platform Support Tests
 // ============================================================================
 
-QUARISMATEST(BackTrace, is_supported)
+LOGGINGTEST(BackTrace, is_supported)
 {
     bool supported = logging::back_trace::is_supported();
 
@@ -174,17 +175,17 @@ QUARISMATEST(BackTrace, is_supported)
 // Edge Cases
 // ============================================================================
 
-QUARISMATEST(BackTrace, empty_frames_format)
+LOGGINGTEST(BackTrace, empty_frames_format)
 {
     std::vector<logging::stack_frame> empty_frames;
-    auto                     formatted = logging::back_trace::format(empty_frames);
+    auto                              formatted = logging::back_trace::format(empty_frames);
 
     EXPECT_FALSE(formatted.empty());
     EXPECT_NE(formatted.find("No stack trace available"), std::string::npos);
     END_TEST();
 }
 
-QUARISMATEST(BackTrace, zero_max_frames)
+LOGGINGTEST(BackTrace, zero_max_frames)
 {
     logging::backtrace_options options;
     options.maximum_number_of_frames = 0;
@@ -198,7 +199,7 @@ QUARISMATEST(BackTrace, zero_max_frames)
 // Configuration Tests
 // ============================================================================
 
-QUARISMATEST(BackTrace, set_stack_trace_on_error)
+LOGGINGTEST(BackTrace, set_stack_trace_on_error)
 {
     // Test the configuration method (currently a no-op placeholder)
     logging::back_trace::set_stack_trace_on_error(1);
@@ -211,15 +212,15 @@ QUARISMATEST(BackTrace, set_stack_trace_on_error)
 // Integration Tests
 // ============================================================================
 
-QUARISMATEST(BackTrace, usage_in_logging)
+LOGGINGTEST(BackTrace, usage_in_logging)
 {
-    QUARISMA_LOG_INFO("Error occurred at:\n{}", logging::back_trace::print(0, 5));
+    MEMORY_LOG_INFO("Error occurred at:\n{}", logging::back_trace::print(0, 5));
     END_TEST();
 }
 
-QUARISMATEST(BackTrace, usage_in_compact_logging)
+LOGGINGTEST(BackTrace, usage_in_compact_logging)
 {
     // Test that compact backtrace can be used in logging
-    QUARISMA_LOG_INFO("Call chain: {}", logging::back_trace::compact(5));
+    MEMORY_LOG_INFO("Call chain: {}", logging::back_trace::compact(5));
     END_TEST();
 }

@@ -23,10 +23,10 @@
 #include <thread>
 #include <vector>
 
-#include "CoreTest.h"
-#include "../../../Core/util/exception.h"
+#include "LoggingTest.h"
+#include "util/exception.h"
 
-using namespace quarisma;
+using namespace logging;
 
 // Helper class to manage environment variable for testing
 class env_var_guard
@@ -94,37 +94,37 @@ private:
 //        edge cases (empty message, special characters)
 // ============================================================================
 
-QUARISMATEST(Exception, basic_functionality)
+LOGGINGTEST(Exception, basic_functionality)
 {
-    quarisma::set_exception_mode(quarisma::exception_mode::THROW);
+    logging::set_exception_mode(logging::exception_mode::THROW);
 
     // Test basic macros
 #ifndef NDEBUG
-    ASSERT_ANY_THROW({ QUARISMA_CHECK_DEBUG(false, "QUARISMA_CHECK_DEBUG: Should throw"); });
+    ASSERT_ANY_THROW({ LOGGING_CHECK_DEBUG(false, "LOGGING_CHECK_DEBUG: Should throw"); });
 #endif
 
-    ASSERT_ANY_THROW({ QUARISMA_CHECK(false, "QUARISMA_CHECK: Should throw"); });
-    ASSERT_ANY_THROW({ QUARISMA_THROW("QUARISMA_THROW: should throw"); });
+    ASSERT_ANY_THROW({ LOGGING_CHECK(false, "LOGGING_CHECK: Should throw"); });
+    ASSERT_ANY_THROW({ LOGGING_THROW("LOGGING_THROW: should throw"); });
 
     // Test NOT_IMPLEMENTED category using macro
     try
     {
-        QUARISMA_NOT_IMPLEMENTED("Feature not yet implemented");
+        LOGGING_NOT_IMPLEMENTED("Feature not yet implemented");
         FAIL() << "Should have thrown exception";
     }
-    catch (const quarisma::exception& e)
+    catch (const logging::exception& e)
     {
-        ASSERT_EQ(e.category(), quarisma::exception_category::NOT_IMPLEMENTED);
+        ASSERT_EQ(e.category(), logging::exception_category::NOT_IMPLEMENTED);
         ASSERT_TRUE(std::string(e.msg()).find("Feature not yet implemented") != std::string::npos);
     }
 
     // Test cross-platform behavior
     try
     {
-        QUARISMA_THROW("Platform test: {}", "cross-platform");
+        LOGGING_THROW("Platform test: {}", "cross-platform");
         FAIL() << "Should have thrown";
     }
-    catch (const quarisma::exception& e)
+    catch (const logging::exception& e)
     {
         // Should work on Windows, Linux, and macOS
         ASSERT_TRUE(e.what() != nullptr);
@@ -134,10 +134,10 @@ QUARISMATEST(Exception, basic_functionality)
     // Test edge case: empty message
     try
     {
-        quarisma::source_location loc{__func__, __FILE__, __LINE__};
-        throw quarisma::exception(loc, "", quarisma::exception_category::GENERIC);
+        logging::source_location loc{__func__, __FILE__, __LINE__};
+        throw logging::exception(loc, "", logging::exception_category::GENERIC);
     }
-    catch (const quarisma::exception& e)
+    catch (const logging::exception& e)
     {
         // Should not crash with empty message
         ASSERT_TRUE(e.what() != nullptr);
@@ -146,9 +146,9 @@ QUARISMATEST(Exception, basic_functionality)
     // Test edge case: message with special characters
     try
     {
-        QUARISMA_THROW("Special chars: \n\t\r\\\"\'");
+        LOGGING_THROW("Special chars: \n\t\r\\\"\'");
     }
-    catch (const quarisma::exception& e)
+    catch (const logging::exception& e)
     {
         std::string msg(e.what());
         ASSERT_TRUE(msg.find("Special chars") != std::string::npos);
@@ -162,29 +162,29 @@ QUARISMATEST(Exception, basic_functionality)
 // Tests: mode switching, get/set exception mode, LOG_FATAL mode behavior
 // ============================================================================
 
-QUARISMATEST(Exception, mode_configuration)
+LOGGINGTEST(Exception, mode_configuration)
 {
     // Test default mode
-    QUARISMA_UNUSED auto default_mode = quarisma::get_exception_mode();
+    LOGGING_UNUSED auto default_mode = logging::get_exception_mode();
 
     // Test mode switching to THROW
-    quarisma::set_exception_mode(quarisma::exception_mode::THROW);
-    ASSERT_EQ(quarisma::get_exception_mode(), quarisma::exception_mode::THROW);
+    logging::set_exception_mode(logging::exception_mode::THROW);
+    ASSERT_EQ(logging::get_exception_mode(), logging::exception_mode::THROW);
 
     // Test mode switching to LOG_FATAL
-    quarisma::set_exception_mode(quarisma::exception_mode::LOG_FATAL);
-    ASSERT_EQ(quarisma::get_exception_mode(), quarisma::exception_mode::LOG_FATAL);
+    logging::set_exception_mode(logging::exception_mode::LOG_FATAL);
+    ASSERT_EQ(logging::get_exception_mode(), logging::exception_mode::LOG_FATAL);
 
     // Test that get_exception_mode() returns LOG_FATAL consistently
-    auto mode = quarisma::get_exception_mode();
-    ASSERT_EQ(mode, quarisma::exception_mode::LOG_FATAL);
-    ASSERT_NE(mode, quarisma::exception_mode::THROW);
+    auto mode = logging::get_exception_mode();
+    ASSERT_EQ(mode, logging::exception_mode::LOG_FATAL);
+    ASSERT_NE(mode, logging::exception_mode::THROW);
 
     // Restore default mode for other tests
-    quarisma::set_exception_mode(quarisma::exception_mode::THROW);
+    logging::set_exception_mode(logging::exception_mode::THROW);
 
     // Verify restoration
-    ASSERT_EQ(quarisma::get_exception_mode(), quarisma::exception_mode::THROW);
+    ASSERT_EQ(logging::get_exception_mode(), logging::exception_mode::THROW);
 
     END_TEST();
 }
@@ -195,31 +195,31 @@ QUARISMATEST(Exception, mode_configuration)
 //        source location tracking
 // ============================================================================
 
-QUARISMATEST(Exception, categories_and_stack_traces)
+LOGGINGTEST(Exception, categories_and_stack_traces)
 {
-    quarisma::set_exception_mode(quarisma::exception_mode::THROW);
+    logging::set_exception_mode(logging::exception_mode::THROW);
 
     // Test all exception categories
-    const std::vector<quarisma::exception_category> all_categories = {
-        quarisma::exception_category::GENERIC,
-        quarisma::exception_category::VALUE_ERROR,
-        quarisma::exception_category::TYPE_ERROR,
-        quarisma::exception_category::INDEX_ERROR,
-        quarisma::exception_category::NOT_IMPLEMENTED,
-        quarisma::exception_category::ENFORCE_FINITE,
-        quarisma::exception_category::RUNTIME_ERROR,
-        quarisma::exception_category::LOGIC_ERROR,
-        quarisma::exception_category::SYSTEM_ERROR,
-        quarisma::exception_category::MEMORY_ERROR};
+    const std::vector<logging::exception_category> all_categories = {
+        logging::exception_category::GENERIC,
+        logging::exception_category::VALUE_ERROR,
+        logging::exception_category::TYPE_ERROR,
+        logging::exception_category::INDEX_ERROR,
+        logging::exception_category::NOT_IMPLEMENTED,
+        logging::exception_category::ENFORCE_FINITE,
+        logging::exception_category::RUNTIME_ERROR,
+        logging::exception_category::LOGIC_ERROR,
+        logging::exception_category::SYSTEM_ERROR,
+        logging::exception_category::MEMORY_ERROR};
 
     for (const auto& cat : all_categories)
     {
         try
         {
-            quarisma::source_location loc{__func__, __FILE__, __LINE__};
-            throw quarisma::exception(loc, "Test", cat);
+            logging::source_location loc{__func__, __FILE__, __LINE__};
+            throw logging::exception(loc, "Test", cat);
         }
-        catch (const quarisma::exception& e)
+        catch (const logging::exception& e)
         {
             ASSERT_EQ(e.category(), cat);
             ASSERT_FALSE(std::string(e.what()).empty());
@@ -229,11 +229,10 @@ QUARISMATEST(Exception, categories_and_stack_traces)
     // Test exception with VALUE_ERROR category (additional coverage)
     try
     {
-        quarisma::source_location loc{__func__, __FILE__, __LINE__};
-        throw quarisma::exception(
-            loc, "Value error test", quarisma::exception_category::VALUE_ERROR);
+        logging::source_location loc{__func__, __FILE__, __LINE__};
+        throw logging::exception(loc, "Value error test", logging::exception_category::VALUE_ERROR);
     }
-    catch (const quarisma::exception& e)
+    catch (const logging::exception& e)
     {
         std::string msg(e.what());
         ASSERT_TRUE(msg.find("Value error test") != std::string::npos);
@@ -242,10 +241,10 @@ QUARISMATEST(Exception, categories_and_stack_traces)
     // Test stack trace capture
     try
     {
-        QUARISMA_THROW("Test exception with stack trace");
+        LOGGING_THROW("Test exception with stack trace");
         FAIL() << "Should have thrown";
     }
-    catch (const quarisma::exception& e)
+    catch (const logging::exception& e)
     {
         // Check that backtrace is captured
         const std::string& backtrace = e.backtrace();
@@ -258,9 +257,9 @@ QUARISMATEST(Exception, categories_and_stack_traces)
     // Test source location tracking
     try
     {
-        QUARISMA_THROW("Test source location");
+        LOGGING_THROW("Test source location");
     }
-    catch (const quarisma::exception& e)
+    catch (const logging::exception& e)
     {
         // Check that backtrace contains file and line information
         const std::string& backtrace = e.backtrace();
@@ -276,21 +275,21 @@ QUARISMATEST(Exception, categories_and_stack_traces)
 // Tests: exception chaining, context accumulation, nested exception access
 // ============================================================================
 
-QUARISMATEST(Exception, chaining_and_context)
+LOGGINGTEST(Exception, chaining_and_context)
 {
-    quarisma::set_exception_mode(quarisma::exception_mode::THROW);
+    logging::set_exception_mode(logging::exception_mode::THROW);
 
     // Test exception chaining
     // Create a nested exception using new/shared_ptr to avoid MSVC ICE
-    quarisma::source_location            inner_loc{__func__, __FILE__, __LINE__};
-    std::shared_ptr<quarisma::exception> inner(new quarisma::exception(
+    logging::source_location            inner_loc{__func__, __FILE__, __LINE__};
+    std::shared_ptr<logging::exception> inner(new logging::exception(
         inner_loc,
         "Inner error: database connection failed",
-        quarisma::exception_category::RUNTIME_ERROR));
+        logging::exception_category::RUNTIME_ERROR));
 
     // Create outer exception with nested
-    quarisma::source_location outer_loc{__func__, __FILE__, __LINE__};
-    quarisma::exception       outer(outer_loc, "Outer error: failed to process request", inner);
+    logging::source_location outer_loc{__func__, __FILE__, __LINE__};
+    logging::exception       outer(outer_loc, "Outer error: failed to process request", inner);
 
     // Check nested exception is accessible
     ASSERT_TRUE(outer.nested() != nullptr);
@@ -305,10 +304,10 @@ QUARISMATEST(Exception, chaining_and_context)
     // Test context accumulation
     try
     {
-        auto e = quarisma::exception(
-            quarisma::source_location{__func__, __FILE__, __LINE__},
+        auto e = logging::exception(
+            logging::source_location{__func__, __FILE__, __LINE__},
             "Base error",
-            quarisma::exception_category::GENERIC);
+            logging::exception_category::GENERIC);
 
         e.add_context("Context 1: processing file");
         e.add_context("Context 2: parsing line 42");
@@ -341,36 +340,36 @@ QUARISMATEST(Exception, chaining_and_context)
 //        memory safety (shared_ptr, copy constructor)
 // ============================================================================
 
-QUARISMATEST(Exception, constructors_and_accessors)
+LOGGINGTEST(Exception, constructors_and_accessors)
 {
-    quarisma::set_exception_mode(quarisma::exception_mode::THROW);
+    logging::set_exception_mode(logging::exception_mode::THROW);
 
     // Test base constructor with all parameters
-    quarisma::exception ex1(
-        "Test message", "Test backtrace", nullptr, quarisma::exception_category::VALUE_ERROR);
+    logging::exception ex1(
+        "Test message", "Test backtrace", nullptr, logging::exception_category::VALUE_ERROR);
 
     ASSERT_EQ(std::string(ex1.msg()), "Test message");
     ASSERT_EQ(std::string(ex1.backtrace()), "Test backtrace");
     ASSERT_EQ(ex1.caller(), nullptr);
-    ASSERT_EQ(ex1.category(), quarisma::exception_category::VALUE_ERROR);
+    ASSERT_EQ(ex1.category(), logging::exception_category::VALUE_ERROR);
 
     // Test base constructor with caller pointer
-    int                 dummy_obj = 42;
-    quarisma::exception ex2(
-        "Test message", "Test backtrace", &dummy_obj, quarisma::exception_category::RUNTIME_ERROR);
+    int                dummy_obj = 42;
+    logging::exception ex2(
+        "Test message", "Test backtrace", &dummy_obj, logging::exception_category::RUNTIME_ERROR);
 
     ASSERT_EQ(ex2.caller(), &dummy_obj);
-    ASSERT_EQ(ex2.category(), quarisma::exception_category::RUNTIME_ERROR);
+    ASSERT_EQ(ex2.category(), logging::exception_category::RUNTIME_ERROR);
 
     // Test all accessor methods
-    quarisma::source_location loc{__func__, __FILE__, __LINE__};
-    quarisma::exception       ex3(loc, "Test message", quarisma::exception_category::LOGIC_ERROR);
+    logging::source_location loc{__func__, __FILE__, __LINE__};
+    logging::exception       ex3(loc, "Test message", logging::exception_category::LOGIC_ERROR);
 
     // Test msg() accessor
     ASSERT_EQ(std::string(ex3.msg()), "Test message");
 
     // Test category() accessor
-    ASSERT_EQ(ex3.category(), quarisma::exception_category::LOGIC_ERROR);
+    ASSERT_EQ(ex3.category(), logging::exception_category::LOGIC_ERROR);
 
     // Test backtrace() accessor
     ASSERT_FALSE(ex3.backtrace().empty());
@@ -387,12 +386,12 @@ QUARISMATEST(Exception, constructors_and_accessors)
 
     // Test memory safety: exception with shared_ptr (no memory leaks)
     {
-        std::shared_ptr<quarisma::exception> ex_ptr;
+        std::shared_ptr<logging::exception> ex_ptr;
         try
         {
-            quarisma::source_location loc_mem{__func__, __FILE__, __LINE__};
-            ex_ptr = std::make_shared<quarisma::exception>(
-                loc_mem, "Shared ptr exception", quarisma::exception_category::GENERIC);
+            logging::source_location loc_mem{__func__, __FILE__, __LINE__};
+            ex_ptr = std::make_shared<logging::exception>(
+                loc_mem, "Shared ptr exception", logging::exception_category::GENERIC);
         }
         catch (...)
         {
@@ -405,12 +404,12 @@ QUARISMATEST(Exception, constructors_and_accessors)
 
     // Test memory safety: exception copy
     {
-        quarisma::source_location loc_copy{__func__, __FILE__, __LINE__};
-        quarisma::exception       original(
-            loc_copy, "Original exception", quarisma::exception_category::GENERIC);
+        logging::source_location loc_copy{__func__, __FILE__, __LINE__};
+        logging::exception       original(
+            loc_copy, "Original exception", logging::exception_category::GENERIC);
 
         // Copy constructor
-        quarisma::exception copy(original);
+        logging::exception copy(original);
         ASSERT_EQ(std::string(copy.msg()), std::string(original.msg()));
         ASSERT_EQ(copy.category(), original.category());
     }
@@ -424,13 +423,13 @@ QUARISMATEST(Exception, constructors_and_accessors)
 //        what_without_backtrace with empty message
 // ============================================================================
 
-QUARISMATEST(Exception, what_methods)
+LOGGINGTEST(Exception, what_methods)
 {
-    quarisma::set_exception_mode(quarisma::exception_mode::THROW);
+    logging::set_exception_mode(logging::exception_mode::THROW);
 
     // Test compute_what with context
-    quarisma::source_location loc1{__func__, __FILE__, __LINE__};
-    quarisma::exception       ex1(loc1, "Base message", quarisma::exception_category::GENERIC);
+    logging::source_location loc1{__func__, __FILE__, __LINE__};
+    logging::exception       ex1(loc1, "Base message", logging::exception_category::GENERIC);
 
     ex1.add_context("Context line 1");
     ex1.add_context("Context line 2");
@@ -441,8 +440,8 @@ QUARISMATEST(Exception, what_methods)
     ASSERT_TRUE(what_str.find("Context line 2") != std::string::npos);
 
     // Test what_without_backtrace
-    quarisma::source_location loc2{__func__, __FILE__, __LINE__};
-    quarisma::exception ex2(loc2, "Test error message", quarisma::exception_category::GENERIC);
+    logging::source_location loc2{__func__, __FILE__, __LINE__};
+    logging::exception       ex2(loc2, "Test error message", logging::exception_category::GENERIC);
 
     // Get what_without_backtrace
     const char* msg_without_backtrace = ex2.what_without_backtrace();
@@ -459,8 +458,8 @@ QUARISMATEST(Exception, what_methods)
     // The backtrace is currently included in what_without_backtrace_
 
     // Test what_without_backtrace with context
-    quarisma::source_location loc3{__func__, __FILE__, __LINE__};
-    quarisma::exception       ex3(loc3, "Base error", quarisma::exception_category::GENERIC);
+    logging::source_location loc3{__func__, __FILE__, __LINE__};
+    logging::exception       ex3(loc3, "Base error", logging::exception_category::GENERIC);
 
     ex3.add_context("Additional context 1");
     ex3.add_context("Additional context 2");
@@ -479,8 +478,8 @@ QUARISMATEST(Exception, what_methods)
     ASSERT_TRUE(msg_ctx_str.find("Additional context 2") != std::string::npos);
 
     // Test what_without_backtrace with empty message
-    quarisma::source_location loc4{__func__, __FILE__, __LINE__};
-    quarisma::exception       ex4(loc4, "", quarisma::exception_category::GENERIC);
+    logging::source_location loc4{__func__, __FILE__, __LINE__};
+    logging::exception       ex4(loc4, "", logging::exception_category::GENERIC);
 
     // Should not crash with empty message
     const char* msg_empty = ex4.what_without_backtrace();
@@ -495,31 +494,31 @@ QUARISMATEST(Exception, what_methods)
 //        multiple args, special characters
 // ============================================================================
 
-QUARISMATEST(Exception, format_check_msg)
+LOGGINGTEST(Exception, format_check_msg)
 {
     // Test format_check_msg with no arguments
-    std::string result1 = quarisma::details::format_check_msg("x > 0");
+    std::string result1 = logging::details::format_check_msg("x > 0");
     ASSERT_EQ(result1, "Check failed: x > 0");
 
     // Test format_check_msg with format arguments
-    std::string result2 = quarisma::details::format_check_msg("x > 0", "Value was {}", 42);
+    std::string result2 = logging::details::format_check_msg("x > 0", "Value was {}", 42);
     ASSERT_TRUE(result2.find("Check failed: x > 0") != std::string::npos);
     ASSERT_TRUE(result2.find("Value was 42") != std::string::npos);
 
     // Test format_check_msg when user message is empty
-    std::string result3 = quarisma::details::format_check_msg("condition", "");
+    std::string result3 = logging::details::format_check_msg("condition", "");
     // When user message is empty, should only show condition
     ASSERT_EQ(result3, "Check failed: condition");
 
     // Test format_check_msg with multiple format arguments
     std::string result4 =
-        quarisma::details::format_check_msg("value in range", "Expected {} <= {} <= {}", 0, 5, 10);
+        logging::details::format_check_msg("value in range", "Expected {} <= {} <= {}", 0, 5, 10);
     ASSERT_TRUE(result4.find("Check failed: value in range") != std::string::npos);
     ASSERT_TRUE(result4.find("Expected 0 <= 5 <= 10") != std::string::npos);
 
     // Test format_check_msg with special characters in condition
     std::string result5 =
-        quarisma::details::format_check_msg("ptr != nullptr", "Pointer was null at index {}", 3);
+        logging::details::format_check_msg("ptr != nullptr", "Pointer was null at index {}", 3);
     ASSERT_TRUE(result5.find("Check failed: ptr != nullptr") != std::string::npos);
     ASSERT_TRUE(result5.find("Pointer was null at index 3") != std::string::npos);
 
@@ -531,7 +530,7 @@ QUARISMATEST(Exception, format_check_msg)
 // Tests: string comparison logic, idempotency, thread safety
 // ============================================================================
 
-QUARISMATEST(Exception, init_exception_mode_from_env)
+LOGGINGTEST(Exception, init_exception_mode_from_env)
 {
     // Test string comparison logic for environment variable values
     // We can't actually test the initialization with different values in the same process,
@@ -561,14 +560,14 @@ QUARISMATEST(Exception, init_exception_mode_from_env)
 
     // Test idempotency: initialization only happens once
     // Call init multiple times
-    quarisma::init_exception_mode_from_env();
-    auto mode1 = quarisma::get_exception_mode();
+    logging::init_exception_mode_from_env();
+    auto mode1 = logging::get_exception_mode();
 
-    quarisma::init_exception_mode_from_env();
-    auto mode2 = quarisma::get_exception_mode();
+    logging::init_exception_mode_from_env();
+    auto mode2 = logging::get_exception_mode();
 
-    quarisma::init_exception_mode_from_env();
-    auto mode3 = quarisma::get_exception_mode();
+    logging::init_exception_mode_from_env();
+    auto mode3 = logging::get_exception_mode();
 
     // All should return the same mode
     ASSERT_EQ(mode1, mode2);
@@ -586,7 +585,7 @@ QUARISMATEST(Exception, init_exception_mode_from_env)
             {
                 try
                 {
-                    quarisma::init_exception_mode_from_env();
+                    logging::init_exception_mode_from_env();
                     success_count++;
                 }
                 catch (...)
@@ -606,10 +605,10 @@ QUARISMATEST(Exception, init_exception_mode_from_env)
     ASSERT_EQ(success_count.load(), 10);
 
     // Mode should be consistent
-    auto final_mode = quarisma::get_exception_mode();
+    auto final_mode = logging::get_exception_mode();
     ASSERT_TRUE(
-        final_mode == quarisma::exception_mode::THROW ||
-        final_mode == quarisma::exception_mode::LOG_FATAL);
+        final_mode == logging::exception_mode::THROW ||
+        final_mode == logging::exception_mode::LOG_FATAL);
 
     END_TEST();
 }
@@ -620,17 +619,17 @@ QUARISMATEST(Exception, init_exception_mode_from_env)
 //        empty message, special characters
 // ============================================================================
 
-QUARISMATEST(Exception, check_fail_basic)
+LOGGINGTEST(Exception, check_fail_basic)
 {
-    quarisma::set_exception_mode(quarisma::exception_mode::THROW);
+    logging::set_exception_mode(logging::exception_mode::THROW);
 
     // Test that check_fail throws an exception
     try
     {
-        quarisma::details::check_fail("test_function", "test_file.cpp", 42, "Test error message");
+        logging::details::check_fail("test_function", "test_file.cpp", 42, "Test error message");
         FAIL() << "check_fail should have thrown an exception";
     }
-    catch (const quarisma::exception& e)
+    catch (const logging::exception& e)
     {
         // Verify the exception was thrown
         std::string msg(e.msg());
@@ -640,10 +639,10 @@ QUARISMATEST(Exception, check_fail_basic)
     // Test that check_fail includes correct source location
     try
     {
-        quarisma::details::check_fail("my_function", "my_file.cpp", 123, "Location test");
+        logging::details::check_fail("my_function", "my_file.cpp", 123, "Location test");
         FAIL() << "check_fail should have thrown an exception";
     }
-    catch (const quarisma::exception& e)
+    catch (const logging::exception& e)
     {
         // Verify source location is in the backtrace
         std::string backtrace(e.backtrace());
@@ -655,13 +654,13 @@ QUARISMATEST(Exception, check_fail_basic)
     // Test that exception category is set to GENERIC
     try
     {
-        quarisma::details::check_fail("func", "file.cpp", 1, "Category test");
+        logging::details::check_fail("func", "file.cpp", 1, "Category test");
         FAIL() << "check_fail should have thrown an exception";
     }
-    catch (const quarisma::exception& e)
+    catch (const logging::exception& e)
     {
         // Verify category is GENERIC
-        ASSERT_EQ(e.category(), quarisma::exception_category::GENERIC);
+        ASSERT_EQ(e.category(), logging::exception_category::GENERIC);
     }
 
     // Test that check_fail never returns (marked as [[noreturn]])
@@ -669,10 +668,10 @@ QUARISMATEST(Exception, check_fail_basic)
 
     try
     {
-        quarisma::details::check_fail("func", "file.cpp", 1, "No return test");
+        logging::details::check_fail("func", "file.cpp", 1, "No return test");
         reached_after_call = true;  // Should never reach here
     }
-    catch (const quarisma::exception&)
+    catch (const logging::exception&)
     {
         // Exception was thrown, which is expected
     }
@@ -683,10 +682,10 @@ QUARISMATEST(Exception, check_fail_basic)
     // Test with empty message
     try
     {
-        quarisma::details::check_fail("func", "file.cpp", 1, "");
+        logging::details::check_fail("func", "file.cpp", 1, "");
         FAIL() << "check_fail should have thrown an exception";
     }
-    catch (const quarisma::exception& e)
+    catch (const logging::exception& e)
     {
         // Should not crash with empty message
         ASSERT_TRUE(e.what() != nullptr);
@@ -695,10 +694,10 @@ QUARISMATEST(Exception, check_fail_basic)
     // Test with special characters in message
     try
     {
-        quarisma::details::check_fail("func", "file.cpp", 1, "Special chars: \n\t\r\\\"\'{}[]");
+        logging::details::check_fail("func", "file.cpp", 1, "Special chars: \n\t\r\\\"\'{}[]");
         FAIL() << "check_fail should have thrown an exception";
     }
-    catch (const quarisma::exception& e)
+    catch (const logging::exception& e)
     {
         // Verify special characters are preserved
         std::string msg(e.msg());
@@ -714,19 +713,19 @@ QUARISMATEST(Exception, check_fail_basic)
 //        multiline messages, various line numbers
 // ============================================================================
 
-QUARISMATEST(Exception, check_fail_advanced)
+LOGGINGTEST(Exception, check_fail_advanced)
 {
-    quarisma::set_exception_mode(quarisma::exception_mode::THROW);
+    logging::set_exception_mode(logging::exception_mode::THROW);
 
     // Test with very long message
     std::string long_msg(1000, 'x');
 
     try
     {
-        quarisma::details::check_fail("func", "file.cpp", 1, long_msg);
+        logging::details::check_fail("func", "file.cpp", 1, long_msg);
         FAIL() << "check_fail should have thrown an exception";
     }
-    catch (const quarisma::exception& e)
+    catch (const logging::exception& e)
     {
         // Verify long message is handled correctly
         std::string msg(e.msg());
@@ -737,10 +736,10 @@ QUARISMATEST(Exception, check_fail_advanced)
     // Test with unicode characters in message
     try
     {
-        quarisma::details::check_fail("func", "file.cpp", 1, "Unicode: αβγδ 中文 🚀");
+        logging::details::check_fail("func", "file.cpp", 1, "Unicode: αβγδ 中文 🚀");
         FAIL() << "check_fail should have thrown an exception";
     }
-    catch (const quarisma::exception& e)
+    catch (const logging::exception& e)
     {
         // Verify unicode is preserved
         std::string msg(e.msg());
@@ -750,10 +749,10 @@ QUARISMATEST(Exception, check_fail_advanced)
     // Test with formatted message
     try
     {
-        quarisma::details::check_fail("func", "file.cpp", 1, "Error: value = 42");
+        logging::details::check_fail("func", "file.cpp", 1, "Error: value = 42");
         FAIL() << "check_fail should have thrown an exception";
     }
-    catch (const quarisma::exception& e)
+    catch (const logging::exception& e)
     {
         // Verify message is preserved
         std::string msg(e.msg());
@@ -763,10 +762,10 @@ QUARISMATEST(Exception, check_fail_advanced)
     // Test with multiline message
     try
     {
-        quarisma::details::check_fail("func", "file.cpp", 1, "Line 1\nLine 2\nLine 3");
+        logging::details::check_fail("func", "file.cpp", 1, "Line 1\nLine 2\nLine 3");
         FAIL() << "check_fail should have thrown an exception";
     }
-    catch (const quarisma::exception& e)
+    catch (const logging::exception& e)
     {
         // Verify multiline message is preserved
         std::string msg(e.msg());
@@ -782,10 +781,10 @@ QUARISMATEST(Exception, check_fail_advanced)
     {
         try
         {
-            quarisma::details::check_fail("func", "file.cpp", line, "Line number test");
+            logging::details::check_fail("func", "file.cpp", line, "Line number test");
             FAIL() << "check_fail should have thrown an exception";
         }
-        catch (const quarisma::exception& e)
+        catch (const logging::exception& e)
         {
             // Verify exception was thrown
             ASSERT_TRUE(e.what() != nullptr);

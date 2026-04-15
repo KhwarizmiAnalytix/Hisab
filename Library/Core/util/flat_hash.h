@@ -27,7 +27,7 @@
 #include <unordered_set>
 #include <utility>
 
-#include "common/logging_macros.h"
+#include "common/macros.h"
 #include "util/exception.h"
 
 #if defined(_MSC_VER) && !defined(__clang__)
@@ -41,7 +41,7 @@
 #define SKA_NOINLINE(...) __VA_ARGS__ __attribute__((noinline))
 #endif
 
-namespace logging
+namespace quarisma
 {
 struct prime_number_hash_policy;
 struct power_of_two_hash_policy;
@@ -1738,61 +1738,8 @@ public:
 template <typename T>
 struct power_of_two_std_hash : std::hash<T>
 {
-    typedef logging::power_of_two_hash_policy hash_policy;
+    typedef quarisma::power_of_two_hash_policy hash_policy;
 };
-
-#if 1
-template <typename T>
-using logging_set = flat_hash_set<T>;
-template <typename K, typename V, typename H = std::hash<K>>
-using logging_map = flat_hash_map<K, V, H>;
-#else
-template <typename T>
-using logging_set = std::unordered_set<T>;
-template <typename K, typename V>
-using logging_map = std::unordered_map<K, V>;
-#endif
-
-using double_map_t    = logging_map<size_t, double>;
-using container_map_t = logging_map<size_t, double_map_t>;
-template <typename T>
-using pair_dates_map_template_t = logging_map<size_t, flat_hash_set<std::pair<T, T>>>;
-
-using forecast_map_t = container_map_t;
-
-}  // namespace logging
-
-namespace quarisma
-{
-namespace detailv3 = logging::detailv3;
-
-using fibonacci_hash_policy = logging::fibonacci_hash_policy;
-using power_of_two_hash_policy = logging::power_of_two_hash_policy;
-using prime_number_hash_policy = logging::prime_number_hash_policy;
-
-template <typename T>
-using power_of_two_std_hash = logging::power_of_two_std_hash<T>;
-
-template <
-    typename K,
-    typename V,
-    typename H = std::hash<K>,
-    typename E = std::equal_to<K>,
-    typename A = std::allocator<std::pair<K, V>>>
-using flat_hash_map = logging::flat_hash_map<K, V, H, E, A>;
-
-template <
-    typename T,
-    typename H = std::hash<T>,
-    typename E = std::equal_to<T>,
-    typename A = std::allocator<T>>
-using flat_hash_set = logging::flat_hash_set<T, H, E, A>;
-
-template <typename T>
-using quarisma_set = logging::logging_set<T>;
-
-template <typename K, typename V, typename H = std::hash<K>>
-using quarisma_map = logging::logging_map<K, V, H>;
 }  // namespace quarisma
 
 #if defined(_MSC_VER) && !defined(__clang__)

@@ -45,7 +45,7 @@ limitations under the License.
 #include <vector>
 
 #include "common/profiler_macros.h"
-//#include "logger.h"
+////#include "logger/logger.h"
 #include "common/flat_hash.h"
 #include "native/analysis/stats_calculator.h"
 #include "native/core/timespan.h"
@@ -764,8 +764,7 @@ void AggregateXPlane(const xplane& full_trace, xplane& aggregated_trace)
                 xline_builder aggregated_line = aggregated_plane.get_or_create_line(line.id());
                 aggregated_line.SetName(kStepLineName);
                 line.for_each_event(
-                    [&](const xevent_visitor& event)
-                    {
+                    [&](const xevent_visitor& event) {
                         CopyEvent(event, plane, full_trace, 0LL, aggregated_plane, aggregated_line);
                     });
             }

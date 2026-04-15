@@ -17,10 +17,8 @@
  * Website: https://www.quarisma.co.uk
  */
 
-// Standalone Logging module: use this header (logging_*.h) instead of Core common/macros.h.
 #pragma once
 
-// Shared with memory_macros.h and Core common/macros.h — one portable body per translation unit.
 #ifndef LOGGING_PORTABLE_MACROS_INCLUDED_
 #define LOGGING_PORTABLE_MACROS_INCLUDED_
 
@@ -464,7 +462,7 @@ inline constexpr int LOGGING_COMPILE_TIME_MAX_GPUS = 16;
 // ============================================================================
 #define MACRO_CORE_TYPE_ID_NAME(x) typeid(x).name()
 
-#define LOGGING_DELETE_CLASS(type)          \
+#define LOGGING_DELETE_CLASS(type)           \
     type()                         = delete; \
     type(const type&)              = delete; \
     type& operator=(const type& a) = delete; \
@@ -472,7 +470,7 @@ inline constexpr int LOGGING_COMPILE_TIME_MAX_GPUS = 16;
     type& operator=(type&&)        = delete; \
     ~type()                        = delete;
 
-#define LOGGING_DELETE_COPY_AND_MOVE(type)  \
+#define LOGGING_DELETE_COPY_AND_MOVE(type)   \
 private:                                     \
     type(const type&)              = delete; \
     type& operator=(const type& a) = delete; \
@@ -481,7 +479,7 @@ private:                                     \
                                              \
 public:
 
-#define LOGGING_DELETE_COPY(type)           \
+#define LOGGING_DELETE_COPY(type)            \
     type(const type&)              = delete; \
     type& operator=(const type& a) = delete;
 
@@ -809,8 +807,7 @@ using void_t = std::void_t<>;
 #endif
 
 #if LOGGING_HAVE_ATTRIBUTE(exclusive_locks_required)
-#define LOGGING_EXCLUSIVE_LOCKS_REQUIRED(...) \
-    __attribute__((exclusive_locks_required(__VA_ARGS__)))
+#define LOGGING_EXCLUSIVE_LOCKS_REQUIRED(...) __attribute__((exclusive_locks_required(__VA_ARGS__)))
 #else
 #define LOGGING_EXCLUSIVE_LOCKS_REQUIRED(...)
 #endif

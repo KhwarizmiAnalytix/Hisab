@@ -103,7 +103,8 @@
       "Bash(tasklist /FI \"IMAGENAME eq CoreCxxTests.exe\")",
       "Bash(\"C:/msys64/mingw64/bin/clang.exe\" --version)",
       "Read(//c/msys64/mingw64/lib/**)",
-      "Read(//c/msys64/mingw64/**)"
+      "Read(//c/msys64/mingw64/**)",
+      "Bash(git stash *)"
     ],
     "deny": [],
     "ask": []

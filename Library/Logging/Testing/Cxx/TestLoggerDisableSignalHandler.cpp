@@ -21,14 +21,14 @@
 
 #include <cstdlib>  // for abort, EXIT_SUCCESS
 
-#include "logger.h"  // for logger, logger::EnableUnsafeSignalHandler
+#include "logger/logger.h"  // for logger, logger::EnableUnsafeSignalHandler
 
 int main(int /*unused*/, char* /*unused*/[])
 {
     // When set to false, no stack trace should be emitted when quarismaLogger
     // catches the SIGABRT signal below.
-    quarisma::logger::EnableUnsafeSignalHandler = false;
-    quarisma::logger::Init();
+    logging::logger::EnableUnsafeSignalHandler = false;
+    logging::logger::Init();
 
     abort();
 
