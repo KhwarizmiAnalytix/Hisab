@@ -310,7 +310,7 @@ PROFILER_ENABLE_ITT
 PROFILER_ENABLE_KINETO
 PROFILER_ENABLE_NATIVE_PROFILER
 PROFILER_HAS_KINETO
-PROFILER_HAS_NATIVE_PROFILER
+PROFILER_HAS_NATIVE
 QUARISMA_AVX
 QUARISMA_AVX2
 QUARISMA_AVX512
@@ -327,7 +327,7 @@ LOGGING_ENABLE_LOGURU
 QUARISMA_ENABLE_MAGICENUM
 MEMORY_ENABLE_MIMALLOC
 QUARISMA_ENABLE_MKL
-QUARISMA_ENABLE_NATIVE_LOGGING
+QUARISMA_ENABLE_NATIVE
 QUARISMA_ENABLE_NUMA
 QUARISMA_ENABLE_OPENMP
 QUARISMA_ENABLE_ROCM
@@ -348,7 +348,7 @@ QUARISMA_HAS_LOGURU
 QUARISMA_HAS_MAGICENUM
 QUARISMA_HAS_MIMALLOC
 QUARISMA_HAS_MKL
-QUARISMA_HAS_NATIVE_LOGGING
+QUARISMA_HAS_NATIVE
 QUARISMA_HAS_NATIVE_PROFILER
 QUARISMA_HAS_NUMA
 QUARISMA_HAS_OPENMP
@@ -373,13 +373,13 @@ These macros appear in `#if` / `#ifdef` / `#ifndef` directives to enable or disa
 
 Set by CMake based on available libraries at configure time.
 
-> **Mutual exclusivity:** `PROFILER_HAS_KINETO`, `PROFILER_HAS_ITT`, and `PROFILER_HAS_NATIVE_PROFILER` are mutually exclusive — at most one may equal `1` in any given build. Enabling more than one is a CMake configure-time error (`compile_definitions.cmake`) and also a compile-time `#error` in `common/profiler_export.h`.
+> **Mutual exclusivity:** `PROFILER_HAS_KINETO`, `PROFILER_HAS_ITT`, and `PROFILER_HAS_NATIVE` are mutually exclusive — at most one may equal `1` in any given build. Enabling more than one is a CMake configure-time error (`compile_definitions.cmake`) and also a compile-time `#error` in `common/profiler_export.h`.
 
 | Macro | Key Files | Purpose |
 |---|---|---|
 | `PROFILER_HAS_KINETO` | `bespoke/kineto/kineto_shim.*`, `bespoke/common/collection.cpp`, `bespoke/kineto/profiler_kineto.cpp` | Enables the entire Kineto GPU activity tracing backend. All shim functions compile as no-ops when off. Used in ~30 `#if` guards across the shim layer. |
 | `PROFILER_HAS_ITT` | `bespoke/itt/itt_wrapper.*`, `bespoke/kineto/profiler_kineto.cpp`, test files | Enables Intel VTune ITT range annotations. When off, all `ITTWrapper` calls compile away. |
-| `PROFILER_HAS_NATIVE_PROFILER` | All native test translation units | Gates the full native profiler subsystem (XPlane, stats, exporters, traceme). Every test file under `Testing/Cxx/` opens with `#if PROFILER_HAS_NATIVE_PROFILER`. |
+| `PROFILER_HAS_NATIVE` | All native test translation units | Gates the full native profiler subsystem (XPlane, stats, exporters, traceme). Every test file under `Testing/Cxx/` opens with `#if PROFILER_HAS_NATIVE`. |
 | `PROFILER_HAS_PROFILER` | `Testing/Cxx/TestXSigmaProfiler.cpp` | Top-level availability flag — the profiler exists at all in this build. |
 | `QUARISMA_HAS_CUDA` | `bespoke/kineto/profiler_kineto.h` | Activates CUDA-specific event types and NVML memory queries inside the Kineto profiler wrapper. |
 | `KINETO_HAS_HCCL_PROFILER` | `bespoke/kineto/kineto_shim.cpp` | Enables AMD HCCL (collective communications) profiling hooks inside Kineto. Only meaningful on ROCm builds with HCCL. |

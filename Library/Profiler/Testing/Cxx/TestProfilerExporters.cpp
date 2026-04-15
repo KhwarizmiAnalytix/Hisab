@@ -1,4 +1,4 @@
-#if PROFILER_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE
 /*
  * Profiler: High-Performance Computational Library
  *
@@ -390,9 +390,8 @@ PROFILERTEST(Profiler, chrome_trace_export_handles_all_stat_types)
 
     auto* stat_string = event->add_stats();
     stat_string->set_metadata_id(4);
-    stat_string->set_value(
-        std::string(
-            "quote\" slash/ backslash\\ newline\n tab\t backspace\b formfeed\f carriage\r"));
+    stat_string->set_value(std::string(
+        "quote\" slash/ backslash\\ newline\n tab\t backspace\b formfeed\f carriage\r"));
 
     auto* stat_ref = event->add_stats();
     stat_ref->set_metadata_id(5);
@@ -476,4 +475,4 @@ PROFILERTEST(Profiler, chrome_trace_export_file_success_path)
     file.close();
     std::filesystem::remove(file_path, ec);
 }
-#endif  // PROFILER_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE

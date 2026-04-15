@@ -1,4 +1,4 @@
-#if PROFILER_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE
 /*
  * Profiler: High-Performance Computational Library
  *
@@ -265,4 +265,4 @@ PROFILERTEST(Profiler, all_features_disabled)
 
     EXPECT_TRUE(session->stop());
 }
-#endif  // PROFILER_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE

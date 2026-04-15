@@ -1,4 +1,4 @@
-#if PROFILER_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE
 /*
  * Profiler: High-Performance Computational Library
  *
@@ -355,4 +355,4 @@ PROFILERTEST(Profiler, env_var_read_strings_with_trimming_and_default)
 
     unset_env(var_name);
 }
-#endif  // PROFILER_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE

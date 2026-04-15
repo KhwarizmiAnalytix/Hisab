@@ -1,4 +1,4 @@
-#if PROFILER_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE
 /*
  * Profiler: High-Performance Computational Library
  *
@@ -349,4 +349,4 @@ PROFILERTEST(Profiler, annotation_stack_push_whitespace)
     const std::string& result = annotation_stack::get();
     EXPECT_TRUE(result.find("test name") != std::string::npos);
 }
-#endif  // PROFILER_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE

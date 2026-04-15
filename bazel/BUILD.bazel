@@ -171,7 +171,7 @@ config_setting(
 )
 
 # =============================================================================
-# Compression Configuration
+# Compression Configuration (CORE_HAS_COMPRESSION / CORE_COMPRESSION_TYPE_SNAPPY)
 # =============================================================================
 
 config_setting(
@@ -179,13 +179,55 @@ config_setting(
     define_values = {"quarisma_enable_compression": "true"},
 )
 
-# Matches CMake: QUARISMA_ENABLE_COMPRESSION=ON + QUARISMA_COMPRESSION_TYPE=SNAPPY
+# Matches CMake: CORE_ENABLE_COMPRESSION=ON + CORE_COMPRESSION_TYPE=SNAPPY
 config_setting(
     name = "compression_snappy",
     define_values = {
         "quarisma_enable_compression": "true",
         "quarisma_compression_type": "snappy",
     },
+)
+
+# Alias used by core.bzl (enable_compression_snappy mirrors compression_snappy)
+config_setting(
+    name = "enable_compression_snappy",
+    define_values = {
+        "quarisma_enable_compression": "true",
+        "quarisma_compression_type": "snappy",
+    },
+)
+
+# =============================================================================
+# NUMA Configuration (MEMORY_HAS_NUMA — Unix only)
+# =============================================================================
+
+config_setting(
+    name = "enable_numa",
+    define_values = {"quarisma_enable_numa": "true"},
+)
+
+# =============================================================================
+# Optional Project Feature Configuration
+# =============================================================================
+
+config_setting(
+    name = "enable_svml",
+    define_values = {"quarisma_enable_svml": "true"},
+)
+
+config_setting(
+    name = "enable_rocm",
+    define_values = {"quarisma_enable_rocm": "true"},
+)
+
+config_setting(
+    name = "enable_experimental",
+    define_values = {"quarisma_enable_experimental": "true"},
+)
+
+config_setting(
+    name = "enable_allocation_stats",
+    define_values = {"quarisma_enable_allocation_stats": "true"},
 )
 
 # =============================================================================

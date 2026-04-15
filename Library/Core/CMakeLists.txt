@@ -2,6 +2,11 @@
 # //Library/Logging (CMake + Bazel), same pattern as Parallel.
 cmake_minimum_required(VERSION 3.16)
 
+option(CORE_ENABLE_LTO "Enable Link Time Optimization for Core" OFF)
+option(CORE_ENABLE_ENZYME "Enable Enzyme" OFF)
+mark_as_advanced(CORE_ENABLE_ENZYME)
+option(CORE_ENABLE_BENCHMARK "Enable google benchmark for Core" OFF)
+
 set(quarisma_headers)
 set(quarisma_sources)
 set(quarisma_templates)
@@ -120,6 +125,26 @@ endif()
 if(CORE_ENABLE_ENZYME)
   target_link_libraries(Core PRIVATE Enzyme::enzyme)
 endif()
+
+# Map CORE_ENABLE_* to CORE_HAS_* compile definitions
+if(CORE_ENABLE_ENZYME)
+  list(APPEND CORE_COMPILE_DEFINITIONS CORE_HAS_ENZYME=1)
+else()
+  list(APPEND CORE_COMPILE_DEFINITIONS CORE_HAS_ENZYME=0)
+endif()
+
+if(CORE_ENABLE_COMPRESSION)
+  list(APPEND CORE_COMPILE_DEFINITIONS CORE_HAS_COMPRESSION=1)
+  if(CORE_COMPRESSION_TYPE_SNAPPY)
+    list(APPEND CORE_COMPILE_DEFINITIONS CORE_COMPRESSION_TYPE_SNAPPY=1)
+  else()
+    list(APPEND CORE_COMPILE_DEFINITIONS CORE_COMPRESSION_TYPE_SNAPPY=0)
+  endif()
+else()
+  list(APPEND CORE_COMPILE_DEFINITIONS CORE_HAS_COMPRESSION=0 CORE_COMPRESSION_TYPE_SNAPPY=0)
+endif()
+
+list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS ${CORE_COMPILE_DEFINITIONS})
 
 if(CORE_DEPENDENCY_COMPILE_DEFINITIONS)
   target_compile_definitions(Core PUBLIC ${CORE_DEPENDENCY_COMPILE_DEFINITIONS})

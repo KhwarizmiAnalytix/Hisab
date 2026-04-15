@@ -1,4 +1,4 @@
-#if PROFILER_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE
 /*
  * Profiler: High-Performance Computational Library
  *
@@ -321,4 +321,4 @@ PROFILERTEST(XPlaneUtils, xevents_comparator_nested_events)
     EXPECT_TRUE(comparator(event1, event2));
     EXPECT_FALSE(comparator(event2, event1));
 }
-#endif  // PROFILER_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE

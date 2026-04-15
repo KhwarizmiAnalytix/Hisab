@@ -30,24 +30,11 @@ compile_definition(PROJECT_COMPILE_DEFINITIONS PROJECT_ENABLE_MKL)
 # PARALLEL_HAS_TBB  → set in Library/Parallel/CMakeLists.txt
 # MEMORY_HAS_TBB    → set in Library/Memory/CMakeLists.txt
 
-# Loguru support
-compile_definition(LOGGING_COMPILE_DEFINITIONS LOGGING_ENABLE_LOGURU)
+# Logging backend flags (LOGGING_HAS_LOGURU / LOGGING_HAS_GLOG / LOGGING_HAS_NATIVE)
+# → set in Library/Logging/CMakeLists.txt
 
-# GLOG support
-compile_definition(LOGGING_COMPILE_DEFINITIONS LOGGING_ENABLE_GLOG)
-
-# Native logging support
-compile_definition(LOGGING_COMPILE_DEFINITIONS LOGGING_ENABLE_NATIVE_LOGGING)
-
-# Mimalloc support
-compile_definition(MEMORY_COMPILE_DEFINITIONS MEMORY_ENABLE_MIMALLOC)
-
-# NUMA (CMake option is MEMORY_ENABLE_NUMA; sources use MEMORY_HAS_NUMA)
-if(MEMORY_ENABLE_NUMA)
-  list(APPEND MEMORY_COMPILE_DEFINITIONS MEMORY_HAS_NUMA=1)
-else()
-  list(APPEND MEMORY_COMPILE_DEFINITIONS MEMORY_HAS_NUMA=0)
-endif()
+# Mimalloc support (MEMORY_HAS_MIMALLOC) → set in Library/Memory/CMakeLists.txt
+# NUMA support     (MEMORY_HAS_NUMA)     → set in Library/Memory/CMakeLists.txt
 
 # SVML support
 compile_definition(PROJECT_COMPILE_DEFINITIONS PROJECT_ENABLE_SVML)
@@ -60,31 +47,8 @@ compile_definition(PROJECT_COMPILE_DEFINITIONS PROJECT_ENABLE_ROCM)
 # Google Test support
 compile_definition(PROJECT_COMPILE_DEFINITIONS PROJECT_ENABLE_GTEST)
 
-# Profiler backend flags — all three are derived from PROFILER_TYPE (set in
-# CMakeLists.txt) and are mutually exclusive. compile_definition() maps each
-# PROFILER_ENABLE_* variable to the corresponding PROFILER_HAS_* compile definition.
-compile_definition(PROFILER_COMPILE_DEFINITIONS PROFILER_ENABLE_KINETO)
-compile_definition(PROFILER_COMPILE_DEFINITIONS PROFILER_ENABLE_ITT)
-compile_definition(PROFILER_COMPILE_DEFINITIONS PROFILER_ENABLE_NATIVE_PROFILER)
-
-# Defensive mutual-exclusivity check (PROFILER_TYPE already enforces this,
-# but guard against any direct variable manipulation downstream).
-set(_profiler_backends_enabled 0)
-if(PROFILER_ENABLE_KINETO)
-  math(EXPR _profiler_backends_enabled "${_profiler_backends_enabled} + 1")
-endif()
-if(PROFILER_ENABLE_ITT)
-  math(EXPR _profiler_backends_enabled "${_profiler_backends_enabled} + 1")
-endif()
-if(PROFILER_ENABLE_NATIVE_PROFILER)
-  math(EXPR _profiler_backends_enabled "${_profiler_backends_enabled} + 1")
-endif()
-if(_profiler_backends_enabled GREATER 1)
-  message(FATAL_ERROR
-    "PROFILER_ENABLE_KINETO, PROFILER_ENABLE_ITT, and PROFILER_ENABLE_NATIVE_PROFILER "
-    "are mutually exclusive. Only one may be set to ON at a time.")
-endif()
-unset(_profiler_backends_enabled)
+# Profiler backend flags (PROFILER_HAS_KINETO / PROFILER_HAS_ITT / PROFILER_HAS_NATIVE)
+# → set in Library/Profiler/CMakeLists.txt
 
 # OpenMP support (Parallel-specific: PARALLEL_HAS_OPENMP is set in Library/Parallel/CMakeLists.txt)
 
@@ -94,8 +58,7 @@ compile_definition(PROJECT_COMPILE_DEFINITIONS PROJECT_ENABLE_EXPERIMENTAL)
 # Magic Enum support
 compile_definition(PROJECT_COMPILE_DEFINITIONS PROJECT_ENABLE_MAGICENUM)
 
-# Enzyme Automatic Differentiation support
-compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_ENZYME)
+# Enzyme support (CORE_HAS_ENZYME) → set in Library/Core/CMakeLists.txt
 
 # Exception pointer support (detected by compiler checks in utils.cmake)
 if(PROJECT_HAS_EXCEPTION_PTR)
@@ -138,17 +101,8 @@ if(PROJECT_LU_PIVOTING)
   list(APPEND PROJECT_COMPILE_DEFINITIONS PROJECT_LU_PIVOTING=1)
 endif()
 
-# Compression support
-compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_COMPRESSION)
-if(CORE_ENABLE_COMPRESSION)
-  if(CORE_COMPRESSION_TYPE_SNAPPY)
-    list(APPEND CORE_COMPILE_DEFINITIONS CORE_COMPRESSION_TYPE_SNAPPY=1)
-  else()
-    list(APPEND CORE_COMPILE_DEFINITIONS CORE_COMPRESSION_TYPE_SNAPPY=0)
-  endif()
-else()
-  list(APPEND CORE_COMPILE_DEFINITIONS CORE_COMPRESSION_TYPE_SNAPPY=0)
-endif()
+# Compression support (CORE_HAS_COMPRESSION / CORE_COMPRESSION_TYPE_SNAPPY)
+# → set in Library/Core/CMakeLists.txt
 
 # Allocation statistics support (optional feature flag)
 compile_definition(PROJECT_COMPILE_DEFINITIONS PROJECT_ENABLE_ALLOCATION_STATS)
@@ -156,10 +110,7 @@ compile_definition(PROJECT_COMPILE_DEFINITIONS PROJECT_ENABLE_ALLOCATION_STATS)
 # Threading support (Parallel-specific: PARALLEL_HAS_PTHREADS / PARALLEL_HAS_WIN32_THREADS
 # are set in Library/Parallel/CMakeLists.txt after threads.cmake runs there)
 
+# Project-wide definitions only. Module-specific HAS flags are appended from within
+# each module's own CMakeLists.txt (Library/Logging, Memory, Core, Parallel, Profiler).
 set(PROJECT_DEPENDENCY_COMPILE_DEFINITIONS
-  ${PROJECT_COMPILE_DEFINITIONS}
-  ${LOGGING_COMPILE_DEFINITIONS}
-  ${MEMORY_COMPILE_DEFINITIONS}
-  ${PARALLEL_COMPILE_DEFINITIONS}
-  ${PROFILER_COMPILE_DEFINITIONS}
-  ${CORE_COMPILE_DEFINITIONS})
+  ${PROJECT_COMPILE_DEFINITIONS})

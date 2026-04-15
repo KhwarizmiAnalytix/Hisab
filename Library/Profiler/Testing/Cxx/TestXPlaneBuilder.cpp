@@ -1,4 +1,4 @@
-#if PROFILER_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE
 /*
  * Profiler: High-Performance Computational Library
  *
@@ -408,4 +408,4 @@ PROFILERTEST(XPlaneBuilder, xevent_builder_stats_and_occurrences)
     EXPECT_TRUE(true);
 }
 
-#endif  // PROFILER_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE

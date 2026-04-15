@@ -1,4 +1,4 @@
-#if PROFILER_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE
 /*
  * Profiler: High-Performance Computational Library
  *
@@ -1146,7 +1146,7 @@ bool test_high_concurrency()
 
         // Cap thread count: very high fan-out can stress allocator + profiler and
         // trigger heap corruption on some Windows/MinGW builds.
-        const int hw = static_cast<int>(std::thread::hardware_concurrency());
+        const int hw                    = static_cast<int>(std::thread::hardware_concurrency());
         const int num_threads           = (std::min)(32, (std::max)(2, hw * 2));
         const int operations_per_thread = 5;
 
@@ -1259,4 +1259,4 @@ PROFILERTEST(Profiler, enhanced_profiler_comprehensive_test)
 
     END_TEST();
 }
-#endif  // PROFILER_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE

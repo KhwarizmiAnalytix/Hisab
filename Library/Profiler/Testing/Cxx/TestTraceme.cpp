@@ -1,4 +1,4 @@
-#if PROFILER_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE
 /*
  * Profiler: High-Performance Computational Library
  *
@@ -328,8 +328,7 @@ PROFILERTEST(TracemeTest, threading_and_concurrency)
                     for (int i = 0; i < traces_per_thread; ++i)
                     {
                         traceme trace(
-                            [t, i]()
-                            {
+                            [t, i]() {
                                 return std::string("thread_") + std::to_string(t) + "_trace_" +
                                        std::to_string(i);
                             });
@@ -648,4 +647,4 @@ PROFILERTEST(TracemeTest, zero_duration_traces)
     // PROFILER_CHECK(true, "Zero duration traces should be handled gracefully");
     END_TEST();
 }
-#endif  // PROFILER_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE

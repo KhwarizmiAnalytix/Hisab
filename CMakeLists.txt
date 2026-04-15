@@ -52,13 +52,7 @@ endif()
 # Enable colored output for diagnostics
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
-# Build optimization settings (module-local canonical flags)
-option(LOGGING_ENABLE_LTO "Enable Link Time Optimization for Logging" OFF)
-option(MEMORY_ENABLE_LTO "Enable Link Time Optimization for Memory" OFF)
-option(PARALLEL_ENABLE_LTO "Enable Link Time Optimization for Parallel" OFF)
-option(PROFILER_ENABLE_LTO "Enable Link Time Optimization for Profiler" OFF)
-option(CORE_ENABLE_LTO "Enable Link Time Optimization for Core" OFF)
-
+# Aggregate LTO flag: ON if any module enables LTO (options declared in each module's CMakeLists.txt).
 # Legacy aggregate project flag for shared tooling.
 set(PROJECT_ENABLE_LTO OFF)
 if(LOGGING_ENABLE_LTO
@@ -101,28 +95,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Configuration Flags
 # =============================================================================
 # These flags control general project settings that are not specific to individual feature modules.
-# Feature-specific flags are declared in their respective module files (Cmake/tools/*.cmake).
+# Module-specific flags (LTO, enzyme, GPU, mimalloc, profiler backend, etc.) are declared in each
+# module's own CMakeLists.txt (Library/<Module>/CMakeLists.txt).
 # =============================================================================
-
-# Enzyme Automatic Differentiation Support Flag Controls whether Enzyme automatic differentiation is
-# enabled. Enzyme provides high-performance automatic differentiation capabilities.
-option(CORE_ENABLE_ENZYME "Enable Enzyme" OFF)
-mark_as_advanced(CORE_ENABLE_ENZYME)
-
-# GPU Allocation Strategy Configuration This flag controls which GPU allocation functions are used
-# by allocator_gpu (CUDA/HIP)
-set(MEMORY_GPU_ALLOC "POOL_ASYNC"
-    CACHE STRING "GPU allocation strategy to use. Options are SYNC, ASYNC, POOL_ASYNC"
-)
-set_property(CACHE MEMORY_GPU_ALLOC PROPERTY STRINGS SYNC ASYNC POOL_ASYNC)
-
-# Validate CUDA allocation strategy
-if(NOT MEMORY_GPU_ALLOC MATCHES "^(SYNC|ASYNC|POOL_ASYNC)$")
-  message(
-    FATAL_ERROR
-      "Invalid MEMEORY_GPU_ALLOC: ${MEMEORY_GPU_ALLOC}. Valid options are: SYNC, ASYNC, POOL_ASYNC"
-  )
-endif()
 
 # =============================================================================
 # Algorithm and
@@ -155,21 +130,14 @@ set_property(CACHE BUILD_TESTING PROPERTY STRINGS "ON;OFF;WANT")
 # comprehensive examples demonstrating parallel APIs and other features.
 option(PROJECT_ENABLE_EXAMPLES "Build example programs" OFF)
 
-# Google Benchmark Support Flag Controls whether Google Benchmark is enabled for performance
-# benchmarking. Configure this at module scope.
-option(MEMORY_ENABLE_BENCHMARK "Enable google benchmark for Memory" OFF)
-option(PARALLEL_ENABLE_BENCHMARK "Enable google benchmark for Parallel" OFF)
-option(CORE_ENABLE_BENCHMARK "Enable google benchmark for Core" OFF)
-
-# Legacy aggregate project flag for shared tooling.
-set(PROJECT_ENABLE_BENCHMARK OFF)
-if(MEMORY_ENABLE_BENCHMARK OR PARALLEL_ENABLE_BENCHMARK OR CORE_ENABLE_BENCHMARK)
-  set(PROJECT_ENABLE_BENCHMARK ON)
-endif()
-
 # Google Test Support Flag Controls whether Google Test framework is enabled for unit testing. When
 # enabled, provides comprehensive testing infrastructure.
 option(PROJECT_ENABLE_GTEST "Enable google test" ON)
+
+# Aggregate benchmark flag for ThirdParty (controls whether the benchmark library is built).
+# Per-module benchmark options (MEMORY/PARALLEL/CORE_ENABLE_BENCHMARK) are declared in each
+# module's CMakeLists.txt and only gate whether that module's benchmarks are built.
+option(PROJECT_ENABLE_BENCHMARK "Enable google benchmark library" OFF)
 
 # =============================================================================
 # Performance and
@@ -196,66 +164,6 @@ set_property(CACHE PROJECT_VECTORIZATION_TYPE PROPERTY STRINGS no sse avx avx2 a
 # reflection. When enabled, provides powerful enum introspection capabilities.
 option(PROJECT_ENABLE_MAGICENUM "Enable magic_enum static reflection for enums." ON)
 mark_as_advanced(PROJECT_ENABLE_MAGICENUM)
-
-# Microsoft Mimalloc Memory Allocator Flag Controls whether Microsoft's mimalloc high-performance
-# allocator is enabled. When enabled, provides faster memory allocation with better performance
-# characteristics.
-option(MEMORY_ENABLE_MIMALLOC
-       "Enable Microsoft mimalloc high-performance memory allocator support." ON
-)
-mark_as_advanced(MEMORY_ENABLE_MIMALLOC)
-
-# Module-local accelerator and coverage flags.
-option(MEMORY_ENABLE_CUDA "Enable CUDA compilation for Memory" OFF)
-option(MEMORY_ENABLE_HIP "Enable HIP compilation for Memory" OFF)
-option(PARALLEL_ENABLE_COVERAGE "Enable coverage instrumentation for Parallel tests" OFF)
-option(PROFILER_ENABLE_COVERAGE "Enable coverage instrumentation for Profiler tests" OFF)
-
-# Profiler backend selection — the single control point for the profiler backend.
-# PROFILER_ENABLE_KINETO, PROFILER_ENABLE_ITT, and PROFILER_ENABLE_NATIVE_PROFILER
-# are derived from this value and are mutually exclusive. Do not set them directly.
-# Defaults to KINETO for downstream compatibility.
-set(PROFILER_TYPE "KINETO"
-    CACHE STRING "Profiler backend type. Options are KINETO, NATIVE, or ITT")
-set_property(CACHE PROFILER_TYPE PROPERTY STRINGS KINETO NATIVE ITT)
-
-if(NOT PROFILER_TYPE MATCHES "^(KINETO|NATIVE|ITT)$")
-  message(
-    FATAL_ERROR
-      "Invalid PROFILER_TYPE: ${PROFILER_TYPE}. Valid options are KINETO, NATIVE, or ITT")
-endif()
-
-if(PROFILER_TYPE STREQUAL "KINETO")
-  set(PROFILER_ENABLE_KINETO          ON)
-  set(PROFILER_ENABLE_ITT             OFF)
-  set(PROFILER_ENABLE_NATIVE_PROFILER OFF)
-elseif(PROFILER_TYPE STREQUAL "ITT")
-  set(PROFILER_ENABLE_KINETO          OFF)
-  set(PROFILER_ENABLE_ITT             ON)
-  set(PROFILER_ENABLE_NATIVE_PROFILER OFF)
-elseif(PROFILER_TYPE STREQUAL "NATIVE")
-  set(PROFILER_ENABLE_KINETO          OFF)
-  set(PROFILER_ENABLE_ITT             OFF)
-  set(PROFILER_ENABLE_NATIVE_PROFILER ON)
-endif()
-
-# =============================================================================
-# Platform-Specific
-# Configuration and Feature Validation
-# =============================================================================
-# Adjusts feature availability based on platform constraints. Some features are only available on
-# specific operating systems.
-# =============================================================================
-
-# NUMA is only available on Unix systems
-if(NOT UNIX)
-  set(MEMORY_ENABLE_NUMA OFF)
-endif()
-
-# Memkind is only available on Unix systems (not macOS or Windows)
-if(NOT UNIX OR APPLE)
-  set(MEMORY_ENABLE_MEMKIND OFF)
-endif()
 
 # =============================================================================
 # Global Project
@@ -327,7 +235,6 @@ include(sanitize)
 
 # Configure optional features
 include(mkl)
-include(numa)
 include(enzyme)
 # Disable CORE_ENABLE_ENZYME if the Enzyme plugin was not found (enzyme.cmake sets
 # PROJECT_ENABLE_ENZYME=OFF on failure but does not touch CORE_ENABLE_ENZYME).
@@ -343,21 +250,6 @@ include(valgrind)
 include(helper_macros)
 include(compile_definitions)
 
-# Project-local CMake configuration.
-# Module values are canonical; project-level values are fallback defaults only.
-if(NOT DEFINED LOGGING_CXX_STANDARD OR LOGGING_CXX_STANDARD STREQUAL "")
-  set(LOGGING_CXX_STANDARD ${PROJECT_CXX_STANDARD})
-endif()
-if(NOT DEFINED MEMORY_CXX_STANDARD OR MEMORY_CXX_STANDARD STREQUAL "")
-  set(MEMORY_CXX_STANDARD ${PROJECT_CXX_STANDARD})
-endif()
-if(NOT DEFINED PARALLEL_CXX_STANDARD OR PARALLEL_CXX_STANDARD STREQUAL "")
-  set(PARALLEL_CXX_STANDARD ${PROJECT_CXX_STANDARD})
-endif()
-if(NOT DEFINED PROFILER_CXX_STANDARD OR PROFILER_CXX_STANDARD STREQUAL "")
-  set(PROFILER_CXX_STANDARD ${PROJECT_CXX_STANDARD})
-endif()
-set(PROFILER_ENABLE_ENZYME ${CORE_ENABLE_ENZYME})
 if(NOT DEFINED PARALLEL_LLVM_PROFILE_FILE OR PARALLEL_LLVM_PROFILE_FILE STREQUAL "")
   set(PARALLEL_LLVM_PROFILE_FILE ${PROJECT_LLVM_PROFILE_FILE})
 endif()
@@ -398,45 +290,33 @@ set(CORE_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS
 set(QUARISMA_ENABLE_GTEST      ${PROJECT_ENABLE_GTEST})
 set(QUARISMA_ENABLE_BENCHMARK  ${PROJECT_ENABLE_BENCHMARK})
 set(QUARISMA_ENABLE_MAGICENUM  ${PROJECT_ENABLE_MAGICENUM})
-set(MEMORY_ENABLE_MIMALLOC   ${MEMORY_ENABLE_MIMALLOC})
-set(LOGGING_ENABLE_LOGURU     ${LOGGING_ENABLE_LOGURU})
-set(LOGGING_ENABLE_GLOG       ${LOGGING_ENABLE_GLOG})
 set(QUARISMA_ENABLE_ENZYME     ${CORE_ENABLE_ENZYME})
+
+# Profiler backend — declared here (before ThirdParty) so ThirdParty can gate
+# Kineto on it. Library/Profiler/CMakeLists.txt re-declares the same CACHE var
+# (no-op once cached) and derives the PROFILER_ENABLE_* booleans from it.
+set(PROFILER_BACKEND "KINETO"
+    CACHE STRING "Profiler backend type. Options are KINETO, NATIVE, or ITT")
+set_property(CACHE PROFILER_BACKEND PROPERTY STRINGS KINETO NATIVE ITT)
+
+if(PROFILER_BACKEND STREQUAL "KINETO")
+  set(PROFILER_ENABLE_KINETO ON)
+else()
+  set(PROFILER_ENABLE_KINETO OFF)
+endif()
 
 add_subdirectory(ThirdParty)
 
 # Distribute the ThirdParty dependency list to each module.
 # QUARISMA_DEPENDENCY_LIBS is populated by add_third_party_library() for libraries
 # that have AUTO_ADD_TO_DEPENDENCIES enabled (fmt, cpuinfo, magic_enum, …).
-# loguru, glog, mimalloc, kineto, and ITT use AUTO_ADD_TO_DEPENDENCIES OFF and are wired below.
+# loguru, glog, mimalloc, kineto, and ITT use AUTO_ADD_TO_DEPENDENCIES OFF and are
+# appended by each module's own CMakeLists.txt after ThirdParty is processed.
 set(LOGGING_DEPENDENCY_LIBS  ${QUARISMA_DEPENDENCY_LIBS})
 set(MEMORY_DEPENDENCY_LIBS   ${QUARISMA_DEPENDENCY_LIBS})
 set(PARALLEL_DEPENDENCY_LIBS ${QUARISMA_DEPENDENCY_LIBS})
 set(PROFILER_DEPENDENCY_LIBS ${QUARISMA_DEPENDENCY_LIBS})
 set(CORE_DEPENDENCY_LIBS     ${QUARISMA_DEPENDENCY_LIBS})
-
-# loguru and glog are exclusively for the Logging module.
-if(LOGGING_ENABLE_LOGURU AND TARGET Loguru::loguru)
-  list(APPEND LOGGING_DEPENDENCY_LIBS Loguru::loguru)
-endif()
-if(LOGGING_ENABLE_GLOG AND TARGET Glog::glog)
-  list(APPEND LOGGING_DEPENDENCY_LIBS Glog::glog)
-endif()
-
-# mimalloc is exclusively for the Memory module.
-if(MEMORY_ENABLE_MIMALLOC AND TARGET Mimalloc::mimalloc)
-  list(APPEND MEMORY_DEPENDENCY_LIBS Mimalloc::mimalloc)
-endif()
-
-# Kineto and ITT are exclusively for the Profiler module.
-# Kineto uses AUTO_ADD_TO_DEPENDENCIES OFF and must be appended here explicitly.
-# ITT is collected into QUARISMA_PROFILER_DEPENDENCY_LIBS by ThirdParty/CMakeLists.txt.
-if(PROFILER_ENABLE_KINETO AND TARGET Kineto::kineto)
-  list(APPEND PROFILER_DEPENDENCY_LIBS Kineto::kineto)
-endif()
-if(QUARISMA_PROFILER_DEPENDENCY_LIBS)
-  list(APPEND PROFILER_DEPENDENCY_LIBS ${QUARISMA_PROFILER_DEPENDENCY_LIBS})
-endif()
 set(LOGGING_DEPENDENCY_INCLUDE_DIRS  ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})
 set(MEMORY_DEPENDENCY_INCLUDE_DIRS   ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})
 set(PARALLEL_DEPENDENCY_INCLUDE_DIRS ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})

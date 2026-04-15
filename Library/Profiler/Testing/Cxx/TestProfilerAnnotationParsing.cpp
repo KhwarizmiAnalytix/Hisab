@@ -1,4 +1,4 @@
-#if PROFILER_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE
 /*
  * Profiler: High-Performance Computational Library
  *
@@ -113,4 +113,4 @@ PROFILERTEST(Profiler, has_metadata_detects_trailing_marker)
     EXPECT_FALSE(has_metadata("kernel"));
     EXPECT_FALSE(has_metadata(""));
 }
-#endif  // PROFILER_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE

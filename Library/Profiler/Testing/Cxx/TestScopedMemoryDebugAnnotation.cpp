@@ -1,4 +1,4 @@
-#if PROFILER_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE
 /*
  * Profiler: High-Performance Computational Library
  *
@@ -317,4 +317,4 @@ PROFILERTEST(ScopedMemoryDebugAnnotation, zero_data_type)
         EXPECT_EQ(current.pending_data_type, 0);
     }
 }
-#endif  // PROFILER_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE

@@ -1,6 +1,10 @@
 # Parallel module CMakeLists.txt
 cmake_minimum_required(VERSION 3.16)
 
+option(PARALLEL_ENABLE_LTO "Enable Link Time Optimization for Parallel" OFF)
+option(PARALLEL_ENABLE_BENCHMARK "Enable google benchmark for Parallel" OFF)
+option(PARALLEL_ENABLE_COVERAGE "Enable coverage instrumentation for Parallel tests" OFF)
+
 # =============================================================================
 # Parallel-owned CMake configuration
 # All threading, backend-selection, and parallel feature modules live in

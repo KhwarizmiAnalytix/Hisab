@@ -1,4 +1,4 @@
-#if PROFILER_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE
 /*
  * Profiler: High-Performance Computational Library
  *
@@ -185,4 +185,4 @@ PROFILERTEST(Profiler, get_current_time_nanos_high_resolution)
     int64_t diff = time2 - time1;
     EXPECT_LT(diff, 1000000000);  // Less than 1 second
 }
-#endif  // PROFILER_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE

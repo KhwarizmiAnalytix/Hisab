@@ -47,7 +47,7 @@ The Quarisma Profiler System is a comprehensive, modular performance analysis fr
 
 ## Profiler backends and build configuration
 
-Quarisma selects **one** profiler backend at configure time. The preprocessor flags `PROFILER_HAS_NATIVE_PROFILER`, `PROFILER_HAS_KINETO`, and `PROFILER_HAS_ITT` are mutually exclusive.
+Quarisma selects **one** profiler backend at configure time. The preprocessor flags `PROFILER_HAS_NATIVE`, `PROFILER_HAS_KINETO`, and `PROFILER_HAS_ITT` are mutually exclusive.
 
 ### Native backend (standalone)
 

@@ -689,7 +689,7 @@ class QuarismaFlags:
             "magic_enum": "PROJECT_ENABLE_MAGICENUM",
             "mimalloc": "MEMORY_ENABLE_MIMALLOC",
             "external": "PROJECT_ENABLE_EXTERNAL",
-            "profiler_type": "PROFILER_TYPE",
+            "profiler_type": "PROFILER_BACKEND",
             "cxxstd": "PROJECT_CXX_STANDARD",
             "cppcheck": "PROJECT_ENABLE_CPPCHECK",
             "spell": "PROJECT_ENABLE_SPELL",

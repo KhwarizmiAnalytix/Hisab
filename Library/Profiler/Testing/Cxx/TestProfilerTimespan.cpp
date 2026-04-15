@@ -1,4 +1,4 @@
-#if PROFILER_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE
 /*
  * Profiler: High-Performance Computational Library
  *
@@ -293,4 +293,4 @@ PROFILERTEST(Profiler, timespan_zero_duration)
     EXPECT_TRUE(ts.instant());
     EXPECT_EQ(ts.begin_ps(), ts.end_ps());
 }
-#endif  // PROFILER_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE

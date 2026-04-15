@@ -1,6 +1,8 @@
 # Logging module (standalone; same layout pattern as Library/Parallel).
 cmake_minimum_required(VERSION 3.16)
 
+option(LOGGING_ENABLE_LTO "Enable Link Time Optimization for Logging" OFF)
+
 #=============================================================================
 # Logging Backend Configuration
 #
@@ -19,7 +21,7 @@ endif()
 
 if(LOGGING_BACKEND STREQUAL "NATIVE")
   message(STATUS "Using NATIVE logging backend")
-  set(LOGGING_ENABLE_NATIVE_LOGGING ON)
+  set(LOGGING_ENABLE_NATIVE ON)
 elseif(LOGGING_BACKEND STREQUAL "LOGURU")
   message(STATUS "Using LOGURU logging backend")
   set(LOGGING_ENABLE_LOGURU ON)
@@ -27,6 +29,16 @@ elseif(LOGGING_BACKEND STREQUAL "GLOG")
   message(STATUS "Using GLOG logging backend")
   set(LOGGING_ENABLE_GLOG ON)
 endif()
+
+# Map LOGGING_BACKEND to LOGGING_HAS_* compile definitions
+if(LOGGING_BACKEND STREQUAL "LOGURU")
+  list(APPEND LOGGING_COMPILE_DEFINITIONS LOGGING_HAS_LOGURU=1 LOGGING_HAS_GLOG=0 LOGGING_HAS_NATIVE=0)
+elseif(LOGGING_BACKEND STREQUAL "GLOG")
+  list(APPEND LOGGING_COMPILE_DEFINITIONS LOGGING_HAS_LOGURU=0 LOGGING_HAS_GLOG=1 LOGGING_HAS_NATIVE=0)
+elseif(LOGGING_BACKEND STREQUAL "NATIVE")
+  list(APPEND LOGGING_COMPILE_DEFINITIONS LOGGING_HAS_LOGURU=0 LOGGING_HAS_GLOG=0 LOGGING_HAS_NATIVE=1)
+endif()
+list(APPEND LOGGING_DEPENDENCY_COMPILE_DEFINITIONS ${LOGGING_COMPILE_DEFINITIONS})
 
 set(logging_headers)
 set(logging_sources)
@@ -52,7 +64,7 @@ file(
 list(FILTER logging_sources EXCLUDE REGEX ".*/Testing/.*")
 list(FILTER logging_headers EXCLUDE REGEX ".*/Testing/.*")
 
-if(LOGGING_USE_NATIVE_LOGGING)
+if(LOGGING_USE_NATIVE)
   list(REMOVE_ITEM logging_sources "${CMAKE_CURRENT_SOURCE_DIR}/logger/logger.cpp")
   list(REMOVE_ITEM logging_headers "${CMAKE_CURRENT_SOURCE_DIR}/logger/logger.h")
   message(
@@ -112,6 +124,13 @@ if(LOGGING_DEPENDENCY_INCLUDE_DIRS)
 endif()
 
 target_link_libraries(Logging PUBLIC Logging::build)
+
+if(LOGGING_ENABLE_LOGURU AND TARGET Loguru::loguru)
+  list(APPEND LOGGING_DEPENDENCY_LIBS Loguru::loguru)
+endif()
+if(LOGGING_ENABLE_GLOG AND TARGET Glog::glog)
+  list(APPEND LOGGING_DEPENDENCY_LIBS Glog::glog)
+endif()
 
 if(COMMAND logging_target_clang_tidy)
   logging_target_clang_tidy(Logging)

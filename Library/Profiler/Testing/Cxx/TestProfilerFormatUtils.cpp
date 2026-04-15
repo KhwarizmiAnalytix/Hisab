@@ -1,4 +1,4 @@
-#if PROFILER_HAS_NATIVE_PROFILER
+#if PROFILER_HAS_NATIVE
 /*
  * Profiler: High-Performance Computational Library
  *
@@ -56,4 +56,4 @@ PROFILERTEST(Profiler, format_handles_zero)
     EXPECT_EQ(three_digits(0.0), "0.000");
     EXPECT_EQ(max_precision(0.0), "0");
 }
-#endif  // PROFILER_HAS_NATIVE_PROFILER
+#endif  // PROFILER_HAS_NATIVE

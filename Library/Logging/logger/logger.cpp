@@ -21,7 +21,7 @@
 #include <loguru.hpp>  // for LogScopeRAII, Message, Options, Verbosity, SignalOptions, g_stderr_verbosity, remov...
 #elif LOGGING_HAS_GLOG
 #include <glog/logging.h>
-#elif LOGGING_HAS_NATIVE_LOGGING
+#elif LOGGING_HAS_NATIVE
 #include <fmt/color.h>
 #include <fmt/format.h>
 
@@ -32,7 +32,7 @@
 //=============================================================================
 // NATIVE LOGGING BACKEND - Simplified fmt-based Implementation
 //=============================================================================
-#if LOGGING_HAS_NATIVE_LOGGING
+#if LOGGING_HAS_NATIVE
 
 namespace logging
 {
@@ -127,7 +127,7 @@ std::string native_check_failed(
 }  // namespace internal
 }  // namespace logging
 
-#endif  // LOGGING_HAS_NATIVE_LOGGING
+#endif  // LOGGING_HAS_NATIVE
 
 //=============================================================================
 namespace logging
@@ -141,7 +141,7 @@ public:
     // glog doesn't have a direct scope RAII equivalent
     // We'll track scope manually for consistency
     std::string scope_message_;
-#elif LOGGING_HAS_NATIVE_LOGGING
+#elif LOGGING_HAS_NATIVE
     // Native logging doesn't have scope support yet
     // Placeholder for future implementation
 #endif
@@ -178,7 +178,7 @@ logger::LogScopeRAII::LogScopeRAII(
     this->Internals->scope_message_ = buffer;
     // glog doesn't have built-in scope support, so we just log the scope entry
     VLOG(static_cast<int>(verbosity)) << "[SCOPE] " << buffer;
-#elif LOGGING_HAS_NATIVE_LOGGING
+#elif LOGGING_HAS_NATIVE
     // Native logging doesn't have scope support yet
     (void)verbosity;
     (void)fname;
@@ -239,7 +239,7 @@ static void pop_scope(const char* id)
     }
 }
 static thread_local char ThreadName[128] = {};
-#elif LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE_LOGGING
+#elif LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE
 // For glog and native logging, we maintain a simple thread name storage
 static thread_local char ThreadName[128] = {};
 #endif
@@ -327,7 +327,7 @@ void logger::Init(int& argc, char* argv[], const char* verbosity_flag /*= "-v"*/
 
     // Configure glog based on signal handler settings
     google::InstallFailureSignalHandler();
-#elif LOGGING_HAS_NATIVE_LOGGING
+#elif LOGGING_HAS_NATIVE
     // Native logging initialization (minimal setup)
     // Parse verbosity flag if needed
     (void)argc;
@@ -369,7 +369,7 @@ void logger::SetStderrVerbosity(logger_verbosity_enum level)
     {
         FLAGS_stderrthreshold = google::GLOG_INFO;
     }
-#elif LOGGING_HAS_NATIVE_LOGGING
+#elif LOGGING_HAS_NATIVE
     // Native logging doesn't have separate stderr verbosity control yet
     (void)level;
 #else
@@ -386,7 +386,7 @@ void logger::SetInternalVerbosityLevel(logger_verbosity_enum level)
 #elif LOGGING_HAS_GLOG
     FLAGS_v                        = static_cast<int>(level);
     logger::InternalVerbosityLevel = level;
-#elif LOGGING_HAS_NATIVE_LOGGING
+#elif LOGGING_HAS_NATIVE
     logger::InternalVerbosityLevel = level;
 #else
     (void)level;
@@ -406,7 +406,7 @@ void logger::LogToFile(const char* path, logger::FileMode filemode, logger_verbo
         FLAGS_log_dir = "";  // Clear log directory to use custom path
     }
     google::SetLogDestination(google::GLOG_INFO, path);
-#elif LOGGING_HAS_NATIVE_LOGGING
+#elif LOGGING_HAS_NATIVE
     // Native logging file support not implemented yet
     (void)path;
     (void)filemode;
@@ -427,7 +427,7 @@ void logger::EndLogToFile(const char* path)
     // glog doesn't have a direct way to remove a specific log file
     // We can flush and close all log files
     google::FlushLogFiles(google::GLOG_INFO);
-#elif LOGGING_HAS_NATIVE_LOGGING
+#elif LOGGING_HAS_NATIVE
     (void)path;
 #else
     (void)path;
@@ -442,7 +442,7 @@ void logger::SetThreadName(const std::string& name)
     // Save threadname so if this is called before `Init`, we can pass the thread
     // name to loguru::init().
     strncpy(detail::ThreadName, name.c_str(), sizeof(detail::ThreadName) - 1);
-#elif LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE_LOGGING
+#elif LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE
     // Store thread name for potential future use
     strncpy(detail::ThreadName, name.c_str(), sizeof(detail::ThreadName) - 1);
     detail::ThreadName[sizeof(detail::ThreadName) - 1] = '\0';
@@ -458,7 +458,7 @@ std::string logger::GetThreadName()
     char buffer[128];
     loguru::get_thread_name(buffer, 128, false);
     return {buffer};
-#elif LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE_LOGGING
+#elif LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE
     if (strlen(detail::ThreadName) > 0)
     {
         return {detail::ThreadName};
@@ -540,7 +540,7 @@ void logger::AddCallback(
         static_cast<loguru::Verbosity>(verbosity),
         loguru_callback_bridge_close,
         loguru_callback_bridge_flush);
-#elif LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE_LOGGING
+#elif LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE
     // glog and native logging don't support custom callbacks in the same way
     // FIXME: Should we call the `close` callback with `user_data` to free any
     // resources expected to be passed in here?
@@ -565,7 +565,7 @@ bool logger::RemoveCallback(const char* id)
 {
 #if LOGGING_HAS_LOGURU
     return loguru::remove_callback(id);
-#elif LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE_LOGGING
+#elif LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE
     (void)id;
     return false;
 #else
@@ -577,7 +577,7 @@ bool logger::RemoveCallback(const char* id)
 //------------------------------------------------------------------------------
 bool logger::IsEnabled()
 {
-#if LOGGING_HAS_LOGURU || LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE_LOGGING
+#if LOGGING_HAS_LOGURU || LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE
     return true;
 #else
     return false;
@@ -591,7 +591,7 @@ logger_verbosity_enum logger::GetCurrentVerbosityCutoff()
     return static_cast<logger_verbosity_enum>(loguru::current_verbosity_cutoff());
 #elif LOGGING_HAS_GLOG
     return static_cast<logger_verbosity_enum>(FLAGS_v);
-#elif LOGGING_HAS_NATIVE_LOGGING
+#elif LOGGING_HAS_NATIVE
     return logger::InternalVerbosityLevel;
 #else
     return logger_verbosity_enum::
@@ -612,7 +612,7 @@ void logger::Log(
     // Map verbosity to glog severity
     int glog_level = static_cast<int>(verbosity);
     VLOG(glog_level) << txt;
-#elif LOGGING_HAS_NATIVE_LOGGING
+#elif LOGGING_HAS_NATIVE
     // Use native logging - call the implementation function directly
     internal::native_log_output(fname, lineno, verbosity, txt);
 #else
@@ -632,7 +632,7 @@ void logger::LogF(
     const char*           format,
     ...)
 {
-#if LOGGING_HAS_LOGURU || LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE_LOGGING
+#if LOGGING_HAS_LOGURU || LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE
     va_list vlist;
     va_start(vlist, format);
     char buffer[1024];
@@ -658,7 +658,7 @@ void logger::StartScope(
             ? std::make_shared<loguru::LogScopeRAII>()
             : std::make_shared<loguru::LogScopeRAII>(
                   static_cast<loguru::Verbosity>(verbosity), fname, lineno, "%s", id));
-#elif LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE_LOGGING
+#elif LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE
     // glog and native logging don't have built-in scope support
     // Just log the scope entry
     logger::Log(verbosity, fname, lineno, id);
@@ -675,7 +675,7 @@ void logger::EndScope(const char* id)
 {
 #if LOGGING_HAS_LOGURU
     detail::pop_scope(id);
-#elif LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE_LOGGING
+#elif LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE
     // No-op for glog and native logging
     (void)id;
 #else
@@ -711,7 +711,7 @@ void logger::StartScopeF(
             std::make_shared<loguru::LogScopeRAII>(
                 static_cast<loguru::Verbosity>(verbosity), fname, lineno, "%s", buffer));
     }
-#elif LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE_LOGGING
+#elif LOGGING_HAS_GLOG || LOGGING_HAS_NATIVE
     va_list vlist;
     va_start(vlist, format);
     char buffer[1024];

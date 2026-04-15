@@ -1,9 +1,13 @@
 # =============================================================================
-# Quarisma Bazel Helper Functions and Macros
+# Quarisma Bazel Helper Functions and Macros — Project-level
 # =============================================================================
-# Common functions for compiler flags, defines, and link options.
-# Defaults match root CMakeLists.txt + Cmake/tools (QUARISMA_* / PROFILER_*).
-# Opt out with --define=quarisma_enable_*=false where disable_* config_settings exist.
+# Provides shared compiler flags, linker options, and PROJECT_HAS_* compile
+# definitions that apply across all modules.
+#
+# Module-specific defines (MEMORY_HAS_*, PARALLEL_HAS_*, LOGGING_HAS_*,
+# PROFILER_HAS_*, CORE_HAS_*) live in the corresponding module bzl files:
+#   bazel/memory.bzl, bazel/parallel.bzl, bazel/logging.bzl,
+#   bazel/profiler.bzl, bazel/core.bzl
 # =============================================================================
 
 def quarisma_copts():
@@ -23,114 +27,76 @@ def quarisma_copts():
     })
 
 def quarisma_defines():
-    """Returns common preprocessor defines for Quarisma targets (CMake-equivalent defaults)."""
-    base_defines = [
-        # Threading configuration (matches Cmake/tools/threads.cmake)
-        "QUARISMA_MAX_THREADS=64",
-    ]
+    """Returns project-wide preprocessor defines (PROJECT_HAS_* flags).
 
-    # Platform-specific threading defines
+    Module-specific HAS flags are NOT included here — they are emitted by
+    the corresponding module bzl file (memory.bzl, parallel.bzl, etc.) so
+    that each module only sets the defines it owns.
+    """
+    base_defines = []
+
+    # -------------------------------------------------------------------------
+    # MKL — PROJECT_HAS_MKL (compile_definitions.cmake, opt-in)
+    # -------------------------------------------------------------------------
     base_defines += select({
-        "@platforms//os:windows": [
-            "QUARISMA_USE_WIN32_THREADS=1",
-            "QUARISMA_USE_PTHREADS=0",
-        ],
-        "//conditions:default": [
-            "QUARISMA_USE_PTHREADS=1",
-            "QUARISMA_USE_WIN32_THREADS=0",
-        ],
+        "//bazel:enable_mkl": ["PROJECT_HAS_MKL=1"],
+        "//conditions:default": ["PROJECT_HAS_MKL=0"],
     })
 
-    # CUDA / HIP (opt-in)
+    # -------------------------------------------------------------------------
+    # magic_enum — PROJECT_HAS_MAGICENUM (compile_definitions.cmake, default ON)
+    # -------------------------------------------------------------------------
     base_defines += select({
-        "//bazel:enable_cuda": ["MEMOY_ENABLE_CUDA", "QUARISMA_HAS_CUDA=1"],
-        "//conditions:default": ["QUARISMA_HAS_CUDA=0"],
-    })
-    base_defines += select({
-        "//bazel:enable_hip": ["QUARISMA_ENABLE_HIP", "QUARISMA_HAS_HIP=1"],
-        "//conditions:default": ["QUARISMA_HAS_HIP=0"],
+        "//bazel:disable_magic_enum": ["PROJECT_HAS_MAGICENUM=0"],
+        "//conditions:default": ["PROJECT_HAS_MAGICENUM=1"],
     })
 
-    # TBB / MKL / OpenMP (opt-in)
+    # -------------------------------------------------------------------------
+    # SVML — PROJECT_HAS_SVML (compile_definitions.cmake, opt-in)
+    # -------------------------------------------------------------------------
     base_defines += select({
-        "//bazel:enable_tbb": ["QUARISMA_HAS_TBB"],
-        "//conditions:default": [],
-    })
-    base_defines += select({
-        "//bazel:enable_mkl": ["QUARISMA_ENABLE_MKL"],
-        "//conditions:default": [],
-    })
-    base_defines += select({
-        "//bazel:enable_openmp": ["QUARISMA_ENABLE_OPENMP"],
-        "//conditions:default": [],
+        "//bazel:enable_svml": ["PROJECT_HAS_SVML=1"],
+        "//conditions:default": ["PROJECT_HAS_SVML=0"],
     })
 
-    # mimalloc — CMake default ON; code uses QUARISMA_HAS_MIMALLOC (compile_definitions.cmake).
-    # Bazel //Library/Core defaults to static linking on Windows; mimalloc's MSVC override
-    # requires a DLL build — match by disabling mimalloc there (use shared_libs or disable_mimalloc).
+    # -------------------------------------------------------------------------
+    # ROCm — PROJECT_HAS_ROCM (compile_definitions.cmake, opt-in)
+    # -------------------------------------------------------------------------
     base_defines += select({
-        "//bazel:disable_mimalloc": ["QUARISMA_HAS_MIMALLOC=0"],
-        "@platforms//os:windows": ["QUARISMA_HAS_MIMALLOC=0"],
-        "//conditions:default": ["QUARISMA_HAS_MIMALLOC=1"],
+        "//bazel:enable_rocm": ["PROJECT_HAS_ROCM=1"],
+        "//conditions:default": ["PROJECT_HAS_ROCM=0"],
     })
 
-    # magic_enum — CMake default ON (QUARISMA_HAS_MAGICENUM in compile_definitions.cmake)
+    # -------------------------------------------------------------------------
+    # Experimental features — PROJECT_HAS_EXPERIMENTAL (compile_definitions.cmake)
+    # -------------------------------------------------------------------------
     base_defines += select({
-        "//bazel:disable_magic_enum": ["QUARISMA_HAS_MAGICENUM=0"],
-        "//conditions:default": ["QUARISMA_HAS_MAGICENUM=1"],
+        "//bazel:enable_experimental": ["PROJECT_HAS_EXPERIMENTAL=1"],
+        "//conditions:default": ["PROJECT_HAS_EXPERIMENTAL=0"],
     })
 
-    # Profiler backends — mutually exclusive; default KINETO (QUARISMA_PROFILER_TYPE default)
+    # -------------------------------------------------------------------------
+    # Allocation statistics — PROJECT_HAS_ALLOCATION_STATS (compile_definitions.cmake)
+    # -------------------------------------------------------------------------
     base_defines += select({
-        "//bazel:enable_native_profiler": [
-            "PROFILER_HAS_NATIVE_PROFILER=1",
-            "PROFILER_HAS_KINETO=0",
-            "PROFILER_HAS_ITT=0",
-        ],
-        "//bazel:enable_itt": [
-            "PROFILER_HAS_ITT=1",
-            "PROFILER_HAS_KINETO=0",
-            "PROFILER_HAS_NATIVE_PROFILER=0",
-        ],
-        "//conditions:default": [
-            "PROFILER_HAS_KINETO=1",
-            "PROFILER_HAS_ITT=0",
-            "PROFILER_HAS_NATIVE_PROFILER=0",
-        ],
+        "//bazel:enable_allocation_stats": ["PROJECT_HAS_ALLOCATION_STATS=1"],
+        "//conditions:default": ["PROJECT_HAS_ALLOCATION_STATS=0"],
     })
 
-    # LU pivoting: default OFF — only when //bazel:lu_pivoting
+    # -------------------------------------------------------------------------
+    # LU pivoting — PROJECT_LU_PIVOTING (CMakeLists.txt, default OFF)
+    # -------------------------------------------------------------------------
     base_defines += select({
-        "//bazel:lu_pivoting": ["QUARISMA_LU_PIVOTING"],
+        "//bazel:lu_pivoting": ["PROJECT_LU_PIVOTING=1"],
         "//conditions:default": [],
     })
 
-    # Sobol 1111: default ON (QUARISMA_SOBOL_1111=ON in CMake)
+    # -------------------------------------------------------------------------
+    # Sobol 1111-dim — PROJECT_SOBOL_1111 (CMakeLists.txt, default ON)
+    # -------------------------------------------------------------------------
     base_defines += select({
         "//bazel:disable_sobol_1111": [],
-        "//conditions:default": ["QUARISMA_SOBOL_1111=1"],
-    })
-
-    # Enzyme (opt-in)
-    base_defines += select({
-        "//bazel:enable_enzyme": ["QUARISMA_HAS_ENZYME=1"],
-        "//conditions:default": ["QUARISMA_HAS_ENZYME=0"],
-    })
-
-    # Logging — default LOGURU (LOGGING_BACKEND default in Cmake/tools/logging.cmake)
-    base_defines += select({
-        "//bazel:logging_glog": ["QUARISMA_USE_GLOG"],
-        "//bazel:logging_loguru": ["QUARISMA_USE_LOGURU"],
-        "//bazel:logging_native": ["QUARISMA_USE_NATIVE_LOGGING"],
-        "//conditions:default": ["QUARISMA_USE_LOGURU"],
-    })
-
-    # GPU allocation — default POOL_ASYNC
-    base_defines += select({
-        "//bazel:gpu_alloc_sync": ["QUARISMA_GPU_ALLOC_SYNC"],
-        "//bazel:gpu_alloc_async": ["QUARISMA_GPU_ALLOC_ASYNC"],
-        "//bazel:gpu_alloc_pool_async": ["QUARISMA_GPU_ALLOC_POOL_ASYNC"],
-        "//conditions:default": ["QUARISMA_GPU_ALLOC_POOL_ASYNC"],
+        "//conditions:default": ["PROJECT_SOBOL_1111=1"],
     })
 
     return base_defines
