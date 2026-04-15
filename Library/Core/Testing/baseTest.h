@@ -20,6 +20,7 @@
 #ifndef QUARISMA_TEST_H
 #define QUARISMA_TEST_H
 
+#include <cstdint>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>

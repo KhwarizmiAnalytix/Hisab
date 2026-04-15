@@ -15,6 +15,11 @@
 #include "util/exception.h"
 #include "util/flat_hash.h"
 
+template <typename T>
+using quarisma_set = flat_hash_set<T>;
+template <typename K, typename V, typename H = std::hash<K>>
+using quarisma_map = flat_hash_map<K, V, H>;
+
 namespace quarisma
 {
 template <class KeyType, typename Function>

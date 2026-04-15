@@ -31,6 +31,11 @@
 
 using namespace quarisma;
 
+template <typename T>
+using quarisma_set = flat_hash_set<T>;
+template <typename K, typename V, typename H = std::hash<K>>
+using quarisma_map = flat_hash_map<K, V, H>;
+
 // ============================================================================
 // Basic hash_combine Tests
 // ============================================================================
@@ -291,8 +296,6 @@ QUARISMATEST(HashUtil, hash_util_distribution)
     // We expect at least 99% unique hashes for sequential integers
     EXPECT_GT(hashes.size(), static_cast<size_t>(count * 0.99));
 
-    MEMORY_LOG_INFO("Hash distribution test: {}/{} unique hashes", hashes.size(), count);
-
     END_TEST();
 }
 
@@ -398,8 +401,6 @@ QUARISMATEST(HashUtil, hash_util_performance)
 
     std::size_t hash = hash_range(large_vec.begin(), large_vec.end());
     EXPECT_NE(hash, 0);
-
-    MEMORY_LOG_INFO("Performance test: hashed {} values successfully", iterations);
 
     END_TEST();
 }
@@ -519,8 +520,6 @@ QUARISMATEST(HashUtil, hash_util_consistency)
         std::size_t hash = hash_range(vec.begin(), vec.end());
         EXPECT_EQ(hash, range_hash_ref);
     }
-
-    MEMORY_LOG_INFO("Consistency test: {} runs completed successfully", test_runs);
 
     END_TEST();
 }
