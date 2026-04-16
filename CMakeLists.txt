@@ -78,18 +78,8 @@ endif()
 # Include necessary CMake modules early
 include(CMakeDependentOption)
 
-# Set C++ standard configuration
-set(PROJECT_CXX_STANDARD "17" CACHE STRING "C++ standard to use. Options are 11, 14, 17, 20, or 23")
-mark_as_advanced(PROJECT_CXX_STANDARD)
 
-# Validate C++ standard
-if(NOT PROJECT_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
-  message(FATAL_ERROR "PROJECT_CXX_STANDARD must be 11,14, 17, 20, or 23")
-endif()
 
-set(CMAKE_CXX_STANDARD ${PROJECT_CXX_STANDARD})
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 
 
 # =============================================================================
@@ -287,8 +277,8 @@ set(CORE_DEPENDENCY_INCLUDE_DIRS     ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})
 # quarismabuild target to affect only Quarisma targets, not third-party dependencies
 include(linker)
 
-# Set compile features
-target_compile_features(quarismabuild INTERFACE cxx_std_${PROJECT_CXX_STANDARD})
+# C++ standard is owned per-module (LOGGING_CXX_STANDARD, MEMORY_CXX_STANDARD, etc.)
+# and applied via set_target_properties in each Library/*/CMakeLists.txt.
 
 # Apply common linker flags
 if(DEFINED PROJECT_LINKER_FLAGS_COMMON)

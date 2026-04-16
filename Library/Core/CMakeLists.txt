@@ -7,6 +7,15 @@ option(CORE_ENABLE_ENZYME "Enable Enzyme" OFF)
 mark_as_advanced(CORE_ENABLE_ENZYME)
 option(CORE_ENABLE_BENCHMARK "Enable google benchmark for Core" OFF)
 
+set(CORE_CXX_STANDARD "20" CACHE STRING "C++ standard for Core. Options: 11 14 17 20 23")
+set_property(CACHE CORE_CXX_STANDARD PROPERTY STRINGS 11 14 17 20 23)
+if(NOT CORE_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
+  message(FATAL_ERROR "CORE_CXX_STANDARD must be 11, 14, 17, 20, or 23")
+endif()
+set(CMAKE_CXX_STANDARD ${CORE_CXX_STANDARD})
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 set(quarisma_headers)
 set(quarisma_sources)
 set(quarisma_templates)
@@ -71,10 +80,10 @@ endif()
 quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 
 message(STATUS "Compiler: ${CMAKE_CXX_COMPILER}")
-message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}, std++=${PROJECT_CXX_STANDARD}")
+message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}, std++=${CORE_CXX_STANDARD}")
 
 set_target_properties(
-  Core PROPERTIES CXX_STANDARD ${PROJECT_CXX_STANDARD} CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF
+  Core PROPERTIES CXX_STANDARD ${CORE_CXX_STANDARD} CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF
 )
 
 if(MSVC)

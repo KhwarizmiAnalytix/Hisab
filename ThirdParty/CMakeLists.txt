@@ -535,7 +535,7 @@ function(add_third_party_library name)
     # Step 4: Try to find external library first if requested
     # -------------------------------------------------------------------------
     if(QUARISMA_ENABLE_EXTERNAL)
-        find_package(${TPL_EXTERNAL_NAME} QUIET)
+        find_package(${TPL_EXTERNAL_NAME} QUIET GLOBAL)
         if(${TPL_EXTERNAL_NAME}_FOUND OR ${name}_FOUND)
             message(STATUS "================================================================")
             message(STATUS "Found external ${TPL_EXTERNAL_NAME}")

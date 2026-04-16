@@ -690,7 +690,7 @@ class QuarismaFlags:
             "mimalloc": "MEMORY_ENABLE_MIMALLOC",
             "external": "PROJECT_ENABLE_EXTERNAL",
             "profiler_type": "PROFILER_BACKEND",
-            "cxxstd": "PROJECT_CXX_STANDARD",
+            # cxxstd is fanned out per-module in create_cmake_flags
             "cppcheck": "PROJECT_ENABLE_CPPCHECK",
             "spell": "PROJECT_ENABLE_SPELL",
             "fix": "PROJECT_ENABLE_FIX",
@@ -991,10 +991,17 @@ class QuarismaFlags:
                 if flag_value and flag_value != "":
                     cmake_cmd_flags.append(f"-D{flag_name}={flag_value}")
 
-        # Add C++ standard related flags if specified
+        # Fan C++ standard out to every module
         if self.__value.get("cxxstd"):
+            std_value = self.__value["cxxstd"]
             cmake_cmd_flags.extend(
-                ["-DCMAKE_CXX_STANDARD_REQUIRED=ON", "-DCMAKE_CXX_EXTENSIONS=OFF"]
+                [
+                    f"-DLOGGING_CXX_STANDARD={std_value}",
+                    f"-DMEMORY_CXX_STANDARD={std_value}",
+                    f"-DPARALLEL_CXX_STANDARD={std_value}",
+                    f"-DPROFILER_CXX_STANDARD={std_value}",
+                    f"-DCORE_CXX_STANDARD={std_value}",
+                ]
             )
 
         # Keep module-scoped behavior for umbrella setup flags.

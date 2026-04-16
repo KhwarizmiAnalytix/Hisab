@@ -51,9 +51,15 @@ list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS ${PROFILER_COMPILE_DEFINITIO
 set(profiler_headers)
 set(profiler_sources)
 
-if(NOT DEFINED PROFILER_CXX_STANDARD OR PROFILER_CXX_STANDARD STREQUAL "")
-  set(PROFILER_CXX_STANDARD ${CMAKE_CXX_STANDARD})
+set(PROFILER_CXX_STANDARD "20" CACHE STRING "C++ standard for Profiler. Options: 11 14 17 20 23")
+set_property(CACHE PROFILER_CXX_STANDARD PROPERTY STRINGS 11 14 17 20 23)
+if(NOT PROFILER_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
+  message(FATAL_ERROR "PROFILER_CXX_STANDARD must be 11, 14, 17, 20, or 23")
 endif()
+
+set(CMAKE_CXX_STANDARD ${PROFILER_CXX_STANDARD})
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # =============================================================================
 # Common utilities (always compiled: approximate_clock, small_vector, etc.)
