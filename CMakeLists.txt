@@ -91,29 +91,6 @@ set(CMAKE_CXX_STANDARD ${PROJECT_CXX_STANDARD})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# =============================================================================
-# General Project-Wide
-# Configuration Flags
-# =============================================================================
-# These flags control general project settings that are not specific to individual feature modules.
-# Module-specific flags (LTO, enzyme, GPU, mimalloc, profiler backend, etc.) are declared in each
-# module's own CMakeLists.txt (Library/<Module>/CMakeLists.txt).
-# =============================================================================
-
-# =============================================================================
-# Algorithm and
-# Feature Configuration Flags
-# =============================================================================
-# These flags control specific algorithm implementations and optional features.
-# =============================================================================
-
-# Sobol Sequence 1111-Dimension Support Flag Controls whether Sobol quasi-random sequence generation
-# supports 1111 dimensions. When enabled, provides extended Sobol sequence capabilities.
-option(PROJECT_SOBOL_1111 "Build support sobol with 1111 dimension" ON)
-
-# LU Decomposition Pivoting Flag Controls whether LU decomposition uses pivoting for numerical
-# stability. When enabled, improves numerical stability at the cost of additional computation.
-option(PROJECT_LU_PIVOTING "Enable LU PIVOTING" OFF)
 
 # =============================================================================
 # Testing and Quality
@@ -122,49 +99,22 @@ option(PROJECT_LU_PIVOTING "Enable LU PIVOTING" OFF)
 # These flags control testing infrastructure, benchmarking, and code quality tools.
 # =============================================================================
 
-# Build Testing Configuration Controls whether test directories are built: ON (always), OFF (never),
-# or WANT (optional).
 set(BUILD_TESTING "ON" CACHE STRING "Build module testing directories")
 set_property(CACHE BUILD_TESTING PROPERTY STRINGS "ON;OFF;WANT")
 
-# Build Examples Configuration Controls whether example programs are built. When enabled, builds
-# comprehensive examples demonstrating parallel APIs and other features.
 option(PROJECT_ENABLE_EXAMPLES "Build example programs" OFF)
 
-# Google Test Support Flag Controls whether Google Test framework is enabled for unit testing. When
-# enabled, provides comprehensive testing infrastructure.
 option(PROJECT_ENABLE_GTEST "Enable google test" ON)
 
-# Aggregate benchmark flag for ThirdParty (controls whether the benchmark library is built).
-# Per-module benchmark options (MEMORY/PARALLEL/CORE_ENABLE_BENCHMARK) are declared in each
-# module's CMakeLists.txt and only gate whether that module's benchmarks are built.
 option(PROJECT_ENABLE_BENCHMARK "Enable google benchmark library" OFF)
 
-# =============================================================================
-# Performance and
-# Optimization Configuration Flags
-# =============================================================================
-# These flags control performance-related settings and optimization strategies.
-# =============================================================================
-
-# Vectorization Strategy Configuration Specifies which SIMD vectorization to use: no, sse, avx,
-# avx2, or avx512. Enables platform-specific optimizations for numerical computations.
 set(PROJECT_VECTORIZATION_TYPE "avx2"
     CACHE STRING "vectorization implementation to use. Options are no, sse, avx, avx2, or avx512"
 )
 set_property(CACHE PROJECT_VECTORIZATION_TYPE PROPERTY STRINGS no sse avx avx2 avx512)
 
-# =============================================================================
-# Third-Party Library
-# and Dependency Configuration Flags
-# =============================================================================
-# These flags control the use of external libraries and optional dependencies. Mandatory core
-# dependencies: fmt (formatting), cpuinfo (CPU detection)
-# =============================================================================
-# Magic Enum Static Reflection Flag Controls whether magic_enum is enabled for compile-time enum
-# reflection. When enabled, provides powerful enum introspection capabilities.
-option(PROJECT_ENABLE_MAGICENUM "Enable magic_enum static reflection for enums." ON)
-mark_as_advanced(PROJECT_ENABLE_MAGICENUM)
+option(CORE_ENABLE_MAGICENUM "Enable magic_enum static reflection for enums." ON)
+mark_as_advanced(CORE_ENABLE_MAGICENUM)
 
 # =============================================================================
 # Global Project
@@ -290,7 +240,7 @@ set(CORE_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS
 # Map project-level option names to the QUARISMA_ENABLE_* names used inside ThirdParty/.
 set(QUARISMA_ENABLE_GTEST      ${PROJECT_ENABLE_GTEST})
 set(QUARISMA_ENABLE_BENCHMARK  ${PROJECT_ENABLE_BENCHMARK})
-set(QUARISMA_ENABLE_MAGICENUM  ${PROJECT_ENABLE_MAGICENUM})
+set(CORE_ENABLE_MAGICENUM  ${CORE_ENABLE_MAGICENUM})
 set(CORE_ENABLE_ENZYME     ${CORE_ENABLE_ENZYME})
 
 # Logging backend — gate loguru/glog in ThirdParty; logic lives in

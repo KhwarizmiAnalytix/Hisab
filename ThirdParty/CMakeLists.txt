@@ -828,7 +828,7 @@ add_third_party_library(cpuinfo
 # Note: FILTER_FLAGS, DISABLE_WARNINGS, EXTRA_FLAGS, and LIBRARY_TYPE_VAR are not applicable
 #       (no compilation occurs for header-only libraries)
 add_third_party_library(magic_enum
-    CONDITION QUARISMA_ENABLE_MAGICENUM
+    CONDITION CORE_ENABLE_MAGICENUM
     LIBRARY_TYPE HEADER_ONLY
     QUARISMA_TARGETS "MagicEnum::magic_enum=magic_enum"
     INCLUDE_DIR "magic_enum/include"

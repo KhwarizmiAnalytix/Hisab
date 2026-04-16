@@ -28,7 +28,7 @@ These libraries are included by default but can be disabled:
 
 | Library | Option | Description | Target Alias |
 |---------|--------|-------------|--------------|
-| magic_enum | `QUARISMA_ENABLE_MAGICENUM=ON` | Enum reflection | `MagicEnum::magic_enum` |
+| magic_enum | `CORE_ENABLE_MAGICENUM=ON` | Enum reflection | `MagicEnum::magic_enum` |
 | loguru | `LOGGING_ENABLE_LOGURU=ON` | Lightweight logging | `Loguru::loguru` |
 
 ### Optional Libraries (Disabled by Default)

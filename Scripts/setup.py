@@ -686,7 +686,7 @@ class QuarismaFlags:
             "test": "BUILD_TESTING",
             "logging_backend": "LOGGING_BACKEND",
             "lto": "MEMORY_ENABLE_LTO",
-            "magic_enum": "PROJECT_ENABLE_MAGICENUM",
+            "magic_enum": "CORE_ENABLE_MAGICENUM",
             "mimalloc": "MEMORY_ENABLE_MIMALLOC",
             "external": "PROJECT_ENABLE_EXTERNAL",
             "profiler_type": "PROFILER_BACKEND",

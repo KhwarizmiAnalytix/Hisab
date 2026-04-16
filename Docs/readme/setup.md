@@ -156,7 +156,7 @@ When multiple feature flags are used, they are concatenated:
 
 | Flag | CMake Variable | Description | Default |
 |------|----------------|-------------|---------|
-| `magic_enum` | `QUARISMA_ENABLE_MAGICENUM` | Magic enum library | ON |
+| `magic_enum` | `CORE_ENABLE_MAGICENUM` | Magic enum library | ON |
 | `mimalloc` | `MEMORY_ENABLE_MIMALLOC` | mimalloc allocator | ON |
 
 ### Caching Flags
