@@ -1,18 +1,17 @@
-set(PROJECT_REQUIRED_C_FLAGS)
-set(PROJECT_REQUIRED_CXX_FLAGS)
+include_guard(GLOBAL)
 
-if(NOT PROJECT_ENABLE_COVERAGE AND NOT PROJECT_ENABLE_SANITIZER)
-  message("--avx compiler flags: ${VECTORIZATION_COMPILER_FLAGS}")
-  set(PROJECT_REQUIRED_C_FLAGS ${VECTORIZATION_COMPILER_FLAGS})
-  set(PROJECT_REQUIRED_CXX_FLAGS ${VECTORIZATION_COMPILER_FLAGS})
-endif()
+#if(NOT PROJECT_ENABLE_COVERAGE AND NOT PROJECT_ENABLE_SANITIZER)
+#  message("--avx compiler flags: ${VECTORIZATION_COMPILER_FLAGS}")
+#  set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
+#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
+#endif()
 
 if(PROJECT_ENABLE_SANITIZER)
-  set(PROJECT_REQUIRED_CXX_FLAGS
-      "${PROJECT_REQUIRED_CXX_FLAGS} -O1 -g -fno-omit-frame-pointer -fno-optimize-sibling-calls"
+  set(CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -O1 -g -fno-omit-frame-pointer -fno-optimize-sibling-calls"
   )
-  set(PROJECT_REQUIRED_C_FLAGS
-      "${PROJECT_REQUIRED_C_FLAGS} -O1 -g -fno-omit-frame-pointer -fno-optimize-sibling-calls"
+  set(CMAKE_C_FLAGS
+      "${CMAKE_C_FLAGS} -O1 -g -fno-omit-frame-pointer -fno-optimize-sibling-calls"
   )
 endif()
 
@@ -35,16 +34,16 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   # Enable exceptions because QUARISMA and third party code rely on C++ exceptions. Allow C++ to catch
   # exceptions. Emscripten disables it by default due to high overhead. Generate helper functions to
   # get stack traces for uncaught exceptions
-  set(PROJECT_REQUIRED_CXX_FLAGS "${PROJECT_REQUIRED_CXX_FLAGS} -fwasm-exceptions")
-  set(PROJECT_REQUIRED_C_FLAGS "${PROJECT_REQUIRED_C_FLAGS} -fwasm-exceptions")
-  set(PROJECT_REQUIRED_EXE_LINKER_FLAGS
-      "${PROJECT_REQUIRED_EXE_LINKER_FLAGS} -fwasm-exceptions -sEXCEPTION_STACK_TRACES=1"
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwasm-exceptions")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fwasm-exceptions")
+  set(CMAKE_EXE_LINKER_FLAGS
+      "${CMAKE_EXE_LINKER_FLAGS} -fwasm-exceptions -sEXCEPTION_STACK_TRACES=1"
   )
-  set(PROJECT_REQUIRED_SHARED_LINKER_FLAGS
-      "${PROJECT_REQUIRED_SHARED_LINKER_FLAGS} -fwasm-exceptions -sEXCEPTION_STACK_TRACES=1"
+  set(CMAKE_SHARED_LINKER_FLAGS
+      "${CMAKE_SHARED_LINKER_FLAGS} -fwasm-exceptions -sEXCEPTION_STACK_TRACES=1"
   )
-  set(PROJECT_REQUIRED_MODULE_LINKER_FLAGS
-      "${PROJECT_REQUIRED_MODULE_LINKER_FLAGS} -fwasm-exceptions -sEXCEPTION_STACK_TRACES=1"
+  set(CMAKE_MODULE_LINKER_FLAGS
+      "${CMAKE_MODULE_LINKER_FLAGS} -fwasm-exceptions -sEXCEPTION_STACK_TRACES=1"
   )
   # Consumers linking to QUARISMA also need to add the exception flag.
   if(TARGET QUARISMAplatform)
@@ -54,11 +53,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     # Remove after https://github.com/WebAssembly/design/issues/1271 is closed Set Wno flag globally
     # because even though the flag is added in QUARISMACompilerWarningFlags.cmake, wrapping tools do
     # not link with `QUARISMAplatform`
-    set(PROJECT_REQUIRED_CXX_FLAGS "${PROJECT_REQUIRED_CXX_FLAGS} -pthread -Wno-pthreads-mem-growth")
-    set(PROJECT_REQUIRED_C_FLAGS "${PROJECT_REQUIRED_C_FLAGS} -pthread -Wno-pthreads-mem-growth")
-    set(PROJECT_REQUIRED_EXE_LINKER_FLAGS "${PROJECT_REQUIRED_EXE_LINKER_FLAGS} -pthread")
-    set(PROJECT_REQUIRED_SHARED_LINKER_FLAGS "${PROJECT_REQUIRED_SHARED_LINKER_FLAGS} -pthread")
-    set(PROJECT_REQUIRED_MODULE_LINKER_FLAGS "${PROJECT_REQUIRED_MODULE_LINKER_FLAGS} -pthread")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -Wno-pthreads-mem-growth")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread -Wno-pthreads-mem-growth")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pthread")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -pthread")
     # Consumers linking to QUARISMA also need to add the pthread flag.
     if(TARGET QUARISMAplatform)
       target_compile_options(QUARISMAplatform INTERFACE "-pthread" "-Wno-pthreads-mem-growth")
@@ -66,11 +65,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     endif()
   endif()
   if(PROJECT_WEBASSEMBLY_64_BIT)
-    set(PROJECT_REQUIRED_CXX_FLAGS "${PROJECT_REQUIRED_CXX_FLAGS} -sMEMORY64=1")
-    set(PROJECT_REQUIRED_C_FLAGS "${PROJECT_REQUIRED_C_FLAGS} -sMEMORY64=1")
-    set(PROJECT_REQUIRED_EXE_LINKER_FLAGS "${PROJECT_REQUIRED_EXE_LINKER_FLAGS} -sMEMORY64=1")
-    set(PROJECT_REQUIRED_SHARED_LINKER_FLAGS "${PROJECT_REQUIRED_SHARED_LINKER_FLAGS} -sMEMORY64=1")
-    set(PROJECT_REQUIRED_MODULE_LINKER_FLAGS "${PROJECT_REQUIRED_MODULE_LINKER_FLAGS} -sMEMORY64=1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sMEMORY64=1")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -sMEMORY64=1")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -sMEMORY64=1")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -sMEMORY64=1")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -sMEMORY64=1")
     # Consumers linking to QUARISMA also need to add the memory64 flag.
     if(TARGET QUARISMAplatform)
       target_compile_options(QUARISMAplatform INTERFACE "-sMEMORY64=1")
@@ -86,44 +85,44 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   endif()
   if(WIN32)
     # The platform is gcc on cygwin.
-    set(PROJECT_REQUIRED_CXX_FLAGS "${PROJECT_REQUIRED_CXX_FLAGS} -mwin32")
-    set(PROJECT_REQUIRED_C_FLAGS "${PROJECT_REQUIRED_C_FLAGS} -mwin32")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwin32")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mwin32")
     link_libraries(-lgdi32)
   endif()
   if(MINGW)
-    set(PROJECT_REQUIRED_CXX_FLAGS "${PROJECT_REQUIRED_CXX_FLAGS} -mthreads")
-    set(PROJECT_REQUIRED_C_FLAGS "${PROJECT_REQUIRED_C_FLAGS} -mthreads")
-    set(PROJECT_REQUIRED_EXE_LINKER_FLAGS "${PROJECT_REQUIRED_EXE_LINKER_FLAGS} -mthreads")
-    set(PROJECT_REQUIRED_SHARED_LINKER_FLAGS "${PROJECT_REQUIRED_SHARED_LINKER_FLAGS} -mthreads")
-    set(PROJECT_REQUIRED_MODULE_LINKER_FLAGS "${PROJECT_REQUIRED_MODULE_LINKER_FLAGS} -mthreads")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mthreads")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mthreads")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mthreads")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -mthreads")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -mthreads")
   endif()
   if(CMAKE_SYSTEM MATCHES "SunOS.*")
     # Disable warnings that occur in X11 headers.
     if(DART_ROOT AND BUILD_TESTING)
-      set(PROJECT_REQUIRED_CXX_FLAGS "${PROJECT_REQUIRED_CXX_FLAGS} -Wno-unknown-pragmas")
-      set(PROJECT_REQUIRED_C_FLAGS "${PROJECT_REQUIRED_C_FLAGS} -Wno-unknown-pragmas")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unknown-pragmas")
     endif()
   endif()
 else()
   if(CMAKE_ANSI_CFLAGS)
-    set(PROJECT_REQUIRED_C_FLAGS "${PROJECT_REQUIRED_C_FLAGS} ${CMAKE_ANSI_CFLAGS}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_ANSI_CFLAGS}")
   endif()
   if(CMAKE_SYSTEM MATCHES "OSF1-V.*")
-    set(PROJECT_REQUIRED_CXX_FLAGS
-        "${PROJECT_REQUIRED_CXX_FLAGS} -timplicit_local -no_implicit_include"
+    set(CMAKE_CXX_FLAGS
+        "${CMAKE_CXX_FLAGS} -timplicit_local -no_implicit_include"
     )
   endif()
   if(CMAKE_SYSTEM MATCHES "AIX.*")
     # allow t-ypeid and d-ynamic_cast usage (normally off by default on xlC)
-    set(PROJECT_REQUIRED_CXX_FLAGS "${PROJECT_REQUIRED_CXX_FLAGS} -qrtti=all")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qrtti=all")
     # silence duplicate symbol warnings on AIX
-    set(PROJECT_REQUIRED_EXE_LINKER_FLAGS "${PROJECT_REQUIRED_EXE_LINKER_FLAGS} -bhalt:5")
-    set(PROJECT_REQUIRED_SHARED_LINKER_FLAGS "${PROJECT_REQUIRED_SHARED_LINKER_FLAGS} -bhalt:5")
-    set(PROJECT_REQUIRED_MODULE_LINKER_FLAGS "${PROJECT_REQUIRED_MODULE_LINKER_FLAGS} -bhalt:5")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -bhalt:5")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -bhalt:5")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -bhalt:5")
   endif()
   if(CMAKE_SYSTEM MATCHES "HP-UX.*")
-    set(PROJECT_REQUIRED_C_FLAGS "${PROJECT_REQUIRED_C_FLAGS} +W2111 +W2236 +W4276")
-    set(PROJECT_REQUIRED_CXX_FLAGS "${PROJECT_REQUIRED_CXX_FLAGS} +W2111 +W2236 +W4276")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} +W2111 +W2236 +W4276")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} +W2111 +W2236 +W4276")
   endif()
 endif()
 
@@ -146,9 +145,9 @@ if(_MAY_BE_INTEL_COMPILER)
   include(${CMAKE_CURRENT_LIST_DIR}/TestNO_ICC_IDYNAMIC_NEEDED.cmake)
   testno_icc_idynamic_needed(NO_ICC_IDYNAMIC_NEEDED ${CMAKE_CURRENT_LIST_DIR})
   if(NO_ICC_IDYNAMIC_NEEDED)
-    set(PROJECT_REQUIRED_CXX_FLAGS "${PROJECT_REQUIRED_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   else()
-    set(PROJECT_REQUIRED_CXX_FLAGS "${PROJECT_REQUIRED_CXX_FLAGS} -i_dynamic")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -i_dynamic")
   endif()
 endif()
 
@@ -159,7 +158,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "PGI")
 
   # --diag_suppress=381 is for redundant semi-colons used in macros This needs to propagate to
   # anything that includes QUARISMA headers
-  set(PROJECT_REQUIRED_CXX_FLAGS "${PROJECT_REQUIRED_CXX_FLAGS} --diag_suppress=381")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --diag_suppress=381")
 endif()
 
 if(MSVC)
@@ -240,12 +239,3 @@ if(APPLE)
     endif()
   endforeach()
 endif()
-
-# ----------------------------------------------------------------------------- Add compiler flags
-# QUARISMA needs to work on this platform.  This must be done after the call to
-# CMAKE_EXPORT_BUILD_SETTINGS, but before any try-compiles are done.
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${PROJECT_REQUIRED_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${PROJECT_REQUIRED_CXX_FLAGS}")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${PROJECT_REQUIRED_EXE_LINKER_FLAGS}")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${PROJECT_REQUIRED_SHARED_LINKER_FLAGS}")
-set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${PROJECT_REQUIRED_MODULE_LINKER_FLAGS}")

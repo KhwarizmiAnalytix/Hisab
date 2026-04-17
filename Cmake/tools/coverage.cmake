@@ -8,15 +8,6 @@
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)
 
-# Code Coverage Flag Controls whether code coverage instrumentation is enabled during compilation.
-# When enabled, generates coverage data for LLVM (Clang), GCC (gcov), or MSVC (OpenCppCoverage)
-# analysis. Supports automated report generation in text and HTML formats.
-option(PROJECT_ENABLE_COVERAGE "Build QUARISMA with coverage" OFF)
-mark_as_advanced(PROJECT_ENABLE_COVERAGE)
-
-if(PROJECT_ENABLE_COVERAGE)
-  set(PROJECT_ENABLE_LTO OFF)
-
   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     string(APPEND CMAKE_C_FLAGS " --coverage -g -O0  -fprofile-arcs -ftest-coverage")
     string(APPEND CMAKE_CXX_FLAGS " --coverage -g -O0  -fprofile-arcs -ftest-coverage")
@@ -49,4 +40,3 @@ if(PROJECT_ENABLE_COVERAGE)
       WARNING " Code coverage for compiler ${CMAKE_CXX_COMPILER_ID} is unsupported natively. "
     )
   endif()
-endif()

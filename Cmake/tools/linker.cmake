@@ -11,10 +11,7 @@
 
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)
-
-if(PROJECT_ENABLE_COVERAGE)
-  return()
-endif()
+# For coverage disable
 # Determine which linker to use based on platform and compiler
 set(PROJECT_LINKER_CHOICE "default" CACHE STRING "Linker to use: default, lld, mold, gold, lld-link")
 mark_as_advanced(PROJECT_LINKER_CHOICE)
@@ -135,7 +132,7 @@ endfunction()
 # Call the linker detection function
 quarisma_find_linker()
 
-# if(PROJECT_ENABLE_GOLD_LINKER) if(USE_DISTRIBUTED AND USE_MPI) # Same issue as here with default
+# if(XXX_ENABLE_GOLD_LINKER) if(USE_DISTRIBUTED AND USE_MPI) # Same issue as here with default
 # MPI on Ubuntu # https://bugs.launchpad.net/ubuntu/+source/deal.ii/+bug/1841577 message(WARNING
 # "Refusing to use gold when USE_MPI=1") else() execute_process( COMMAND "${CMAKE_C_COMPILER}"
 # -fuse-ld=gold -Wl,--version ERROR_QUIET OUTPUT_VARIABLE LD_VERSION) if(NOT "${LD_VERSION}" MATCHES

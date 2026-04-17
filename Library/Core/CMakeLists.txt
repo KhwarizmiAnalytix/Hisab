@@ -1,147 +1,208 @@
-# Core module: utilities, shared ownership, compression — Memory and Logging are //Library/Memory and
-# //Library/Logging (CMake + Bazel), same pattern as Parallel.
+# =============================================================================
+# Library/Core — CMakeLists.txt
+#
+# Provides the Core library: shared utilities, smart ownership primitives,
+# compile-time type traits, numeric algorithms, compression wrappers, and
+# optional Enzyme automatic-differentiation support.
+#
+# Public compile definitions emitted by this file:
+#   CORE_HAS_EXCEPTION_PTR=1/0   — std::exception_ptr supported by the toolchain
+#   CORE_SSE=1/0                 — SSE2 SIMD instructions available
+#   CORE_AVX=1/0                 — AVX SIMD instructions available
+#   CORE_AVX2=1/0                — AVX2 SIMD instructions available
+#   CORE_AVX512=1/0              — AVX-512 SIMD instructions available
+#   CORE_HAS_MKL=1/0             — Intel MKL math library linked
+#   CORE_HAS_SVML=1/0            — Intel SVML short-vector math library linked
+#   CORE_HAS_ROCM=1/0            — AMD ROCm GPU support compiled in
+#   HAS_GTEST=1/0                — Google Test available to tests
+#   CORE_HAS_EXPERIMENTAL=1/0   — Experimental features enabled (use with caution)
+#   CORE_HAS_MAGICENUM=1/0       — magic_enum static enum-reflection active
+#   CORE_HAS_ENZYME=1/0          — Enzyme automatic-differentiation plugin loaded
+#   CORE_HAS_COMPRESSION=1/0     — Compression wrappers compiled in
+# =============================================================================
 cmake_minimum_required(VERSION 3.16)
 
-option(CORE_ENABLE_LTO "Enable Link Time Optimization for Core" OFF)
-option(CORE_ENABLE_ENZYME "Enable Enzyme" OFF)
-mark_as_advanced(CORE_ENABLE_ENZYME)
-option(CORE_ENABLE_BENCHMARK "Enable google benchmark for Core" OFF)
+# =============================================================================
+# SECTION 1 — Feature flags (CORE_ENABLE_*) and backend selectors
+#
+# These cache variables are the public configuration API for this module.
+# Pass them on the CMake command line: -DCORE_ENABLE_ENZYME=ON
+#
+# Detection-based tokens (SSE/AVX/EXCEPTION_PTR) are set by utils.cmake /
+# platform.cmake which the root CMakeLists.txt runs before add_subdirectory,
+# so they are already in scope here; see Section 2 for their HAS_ mapping.
+# =============================================================================
 
-set(CORE_CXX_STANDARD "20" CACHE STRING "C++ standard for Core. Options: 11 14 17 20 23")
+# Link-Time Optimization — automatically disabled when CORE_ENABLE_COVERAGE=ON
+# because LTO and LLVM profiling instrumentation are mutually incompatible.
+option(CORE_ENABLE_LTO
+  "Enable Link Time Optimization for Core" OFF)
+
+# Coverage instrumentation — forces CORE_ENABLE_LTO=OFF and activates
+# -fprofile-instr-generate / --coverage compiler flags for this module only.
+option(CORE_ENABLE_COVERAGE
+  "Enable coverage instrumentation for Core" OFF)
+
+# Enzyme — LLVM-based automatic differentiation plugin.
+# NOTE: CORE_ENABLE_ENZYME is declared (with a NOT DEFINED guard) inside
+#       Cmake/tools/enzyme.cmake, which the root CMakeLists.txt includes at line
+#       ~103 before add_subdirectory(Library/Core).  The option() below would be
+#       a no-op, so it is intentionally omitted here.  See enzyme.cmake for the
+#       canonical declaration, defaults, and Clang-requirement warning.
+# Incompatibility note: coverage instrumentation inserts integer profile-counter
+# stores that Enzyme's LLVM pass cannot differentiate — never enable both together.
+
+# Google Benchmark integration for Core micro-benchmarks.
+option(CORE_ENABLE_BENCHMARK
+  "Enable Google Benchmark for Core" OFF)
+
+# Intel MKL — high-performance math kernel library (BLAS, FFT, LAPACK, …).
+option(CORE_ENABLE_MKL
+  "Enable Intel MKL math library" OFF)
+
+# Intel SVML — short vector math library for fast sin/cos/exp/log on SIMD lanes.
+option(CORE_ENABLE_SVML
+  "Enable Intel SVML short vector math library" OFF)
+mark_as_advanced(CORE_ENABLE_SVML)
+
+# AMD ROCm — GPU support for AMD Radeon Instinct / CDNA devices.
+option(CORE_ENABLE_ROCM
+  "Enable AMD ROCm GPU support" OFF)
+
+# Experimental — gates features that are not yet production-ready.
+# Enabling this may change API / ABI without notice.
+option(CORE_ENABLE_EXPERIMENTAL
+  "Enable experimental Core features (use with caution)" OFF)
+mark_as_advanced(CORE_ENABLE_EXPERIMENTAL)
+
+# magic_enum — zero-overhead compile-time enum ↔ string / iteration.
+# NOTE: CORE_ENABLE_MAGICENUM is declared in the root CMakeLists.txt (before
+#       add_subdirectory) because ThirdParty/CMakeLists.txt needs it to
+#       conditionally build the magic_enum target.  Declaring it again here
+#       would be a no-op; see root CMakeLists.txt for the canonical declaration.
+
+# Google Test — pulled in when building tests.
+# NOTE: ENABLE_GTEST is declared in the root CMakeLists.txt (before
+#       add_subdirectory) because ThirdParty/CMakeLists.txt uses
+#       QUARISMA_ENABLE_GTEST = ${ENABLE_GTEST} to gate GoogleTest.
+#       Declaring it again here would be a no-op.
+
+# Icecream distributed compilation launcher (rarely needed; hidden by default).
+option(CORE_ENABLE_ICECC
+  "Use Icecream (icecc) distributed compiler for Core" OFF)
+mark_as_advanced(CORE_ENABLE_ICECC)
+
+# Per-target compiler cache — wraps every compile command with ccache / sccache
+# etc. to speed up incremental and CI rebuilds. ON by default.
+option(CORE_ENABLE_CACHE
+  "Enable compiler caching for the Core target" ON)
+mark_as_advanced(CORE_ENABLE_CACHE)
+set(CORE_CACHE_BACKEND "none"
+    CACHE STRING
+    "Compiler cache backend for Core. Options: none, ccache, sccache, buildcache")
+set_property(CACHE CORE_CACHE_BACKEND PROPERTY STRINGS none ccache sccache buildcache)
+mark_as_advanced(CORE_CACHE_BACKEND)
+
+# C++ standard — applied to every TU in this module via CMAKE_CXX_STANDARD.
+set(CORE_CXX_STANDARD "20"
+    CACHE STRING "C++ standard for Core. Options: 11 14 17 20 23")
 set_property(CACHE CORE_CXX_STANDARD PROPERTY STRINGS 11 14 17 20 23)
 if(NOT CORE_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
-  message(FATAL_ERROR "CORE_CXX_STANDARD must be 11, 14, 17, 20, or 23")
-endif()
-set(CMAKE_CXX_STANDARD ${CORE_CXX_STANDARD})
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-set(quarisma_headers)
-set(quarisma_sources)
-set(quarisma_templates)
-
-file(
-  GLOB_RECURSE headers
-  LIST_DIRECTORIES false
-  "${CMAKE_CURRENT_SOURCE_DIR}/util/*.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/common/*.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/c17/*.h"
-  ${quarisma_headers}
-)
-
-file(
-  GLOB_RECURSE sources
-  LIST_DIRECTORIES false
-  "${CMAKE_CURRENT_SOURCE_DIR}/common/*.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/util/*.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/c17/*.h"
-  ${quarisma_sources}
-)
-
-file(
-  GLOB_RECURSE templates
-  LIST_DIRECTORIES false
-  "${CMAKE_CURRENT_SOURCE_DIR}/util/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/common/*.hxx"
-  ${quarisma_templates}
-)
-
-if(CORE_ENABLE_COMPRESSION)
-  if(CORE_COMPRESSION_TYPE STREQUAL "SNAPPY")
-    list(APPEND headers "${CMAKE_CURRENT_SOURCE_DIR}/compression/snappy.h")
-    list(APPEND sources "${CMAKE_CURRENT_SOURCE_DIR}/compression/snappy.cpp")
-  endif()
+  message(FATAL_ERROR "CORE_CXX_STANDARD must be one of: 11 14 17 20 23")
 endif()
 
-add_library(Core ${sources} ${headers} ${templates})
+# =============================================================================
+# SECTION 2 — CORE_ENABLE_* → CORE_HAS_* compile definitions
+#
+# Two categories are handled here:
+#
+#   a) Detection-based tokens — values set by the root-level utils.cmake /
+#      platform.cmake runs before add_subdirectory(Library/Core), so they are
+#      already in scope.  Examples: PROJECT_SSE, PROJECT_HAS_EXCEPTION_PTR.
+#
+#   b) User-option tokens — derived directly from CORE_ENABLE_* flags declared
+#      in Section 1.  The compile_definition() macro (defined in
+#      Cmake/flags/compile_definitions.cmake) maps CORE_ENABLE_X → CORE_HAS_X.
+# =============================================================================
 
-if(BUILD_SHARED_LIBS)
-  target_compile_definitions(Core PUBLIC QUARISMA_SHARED_DEFINE PRIVATE QUARISMA_BUILDING_DLL)
-  if(COMMAND quarisma_set_target_output_directories)
-    quarisma_set_target_output_directories(Core)
-  endif()
+# --------------------------------------------------------------------------
+# a) Detection-based HAS tokens (PROJECT_* set by root CMakeLists.txt includes)
+# --------------------------------------------------------------------------
+
+# std::exception_ptr — missing on some embedded or older MSVC toolchains.
+if(PROJECT_HAS_EXCEPTION_PTR)
+  list(APPEND CORE_COMPILE_DEFINITIONS CORE_HAS_EXCEPTION_PTR=1)
 else()
-  target_compile_definitions(Core PUBLIC QUARISMA_STATIC_DEFINE)
+  list(APPEND CORE_COMPILE_DEFINITIONS CORE_HAS_EXCEPTION_PTR=0)
 endif()
 
-add_library(Quarisma::Core ALIAS Core)
-add_library(Core::Core ALIAS Core)
-
-if(CORE_ENABLE_LTO)
-  set_target_properties(Core PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-  message(STATUS "Core library: Link Time Optimization (LTO) enabled")
+# SIMD instruction-set tokens — detected at configure time by platform.cmake.
+if(PROJECT_SSE)
+  list(APPEND CORE_COMPILE_DEFINITIONS CORE_SSE=1)
 else()
-  message(STATUS "Core library: Link Time Optimization (LTO) disabled")
+  list(APPEND CORE_COMPILE_DEFINITIONS CORE_SSE=0)
 endif()
 
-if(COMMAND quarisma_apply_iwyu)
-  quarisma_apply_iwyu(Core)
-endif()
-
-quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
-
-message(STATUS "Compiler: ${CMAKE_CXX_COMPILER}")
-message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}, std++=${CORE_CXX_STANDARD}")
-
-set_target_properties(
-  Core PROPERTIES CXX_STANDARD ${CORE_CXX_STANDARD} CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF
-)
-
-if(MSVC)
-  target_compile_options(Core PRIVATE /WX)
+if(PROJECT_AVX)
+  list(APPEND CORE_COMPILE_DEFINITIONS CORE_AVX=1)
 else()
-  target_compile_options(Core PRIVATE -include cstdlib)
+  list(APPEND CORE_COMPILE_DEFINITIONS CORE_AVX=0)
 endif()
 
-target_include_directories(
-  Core
-  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Testing>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/Testing>
-         $<INSTALL_INTERFACE:include>
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/Testing/CoreTest.h.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/Testing/CoreTest.h"
-  @ONLY
-)
-
-if(CORE_DEPENDENCY_INCLUDE_DIRS)
-  target_include_directories(Core PUBLIC ${CORE_DEPENDENCY_INCLUDE_DIRS})
-  message(STATUS "Core library include directories: ${CORE_DEPENDENCY_INCLUDE_DIRS}")
+if(PROJECT_AVX2)
+  list(APPEND CORE_COMPILE_DEFINITIONS CORE_AVX2=1)
+else()
+  list(APPEND CORE_COMPILE_DEFINITIONS CORE_AVX2=0)
 endif()
 
-target_link_libraries(
-  Core
-  PUBLIC Core::build
-         Logging::Logging
-         Memory::Memory
-)
-
-if(COMMAND quarisma_target_clang_tidy)
-  quarisma_target_clang_tidy(Core)
-  set_source_files_properties(PROPERTIES SKIP_LINTING ON)
+if(PROJECT_AVX512)
+  list(APPEND CORE_COMPILE_DEFINITIONS CORE_AVX512=1)
+else()
+  list(APPEND CORE_COMPILE_DEFINITIONS CORE_AVX512=0)
 endif()
 
-# Core-local dependency list (e.g. fmt/cpuinfo for util).
-if(CORE_DEPENDENCY_LIBS)
-  target_link_libraries(Core PUBLIC ${CORE_DEPENDENCY_LIBS})
-  message(STATUS "Core library linked with dependencies: ${CORE_DEPENDENCY_LIBS}")
+# Optional numeric / algorithmic algorithm tokens (set externally or by root).
+# CORE_SOBOL_1111 — alternative Sobol direction-number initialisation scheme.
+if(CORE_SOBOL_1111)
+  list(APPEND CORE_COMPILE_DEFINITIONS CORE_SOBOL_1111=1)
 endif()
 
-if(CORE_ENABLE_ENZYME)
-  target_link_libraries(Core PRIVATE Enzyme::enzyme)
+# CORE_LU_PIVOTING — enable partial-pivoting in the dense LU factorisation.
+if(CORE_LU_PIVOTING)
+  list(APPEND CORE_COMPILE_DEFINITIONS CORE_LU_PIVOTING=1)
 endif()
 
-# Map CORE_ENABLE_* to CORE_HAS_* compile definitions
+# --------------------------------------------------------------------------
+# b) User-option HAS tokens — compile_definition() converts ENABLE_X → HAS_X.
+# --------------------------------------------------------------------------
+
+# Intel MKL — high-performance BLAS/FFT/LAPACK.
+compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_MKL)
+
+# Intel SVML — fast vectorised transcendentals.
+compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_SVML)
+
+# AMD ROCm — heterogeneous GPU computing.
+compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_ROCM)
+
+# Google Test availability (framework-level flag, prefix-less by convention).
+compile_definition(CORE_COMPILE_DEFINITIONS ENABLE_GTEST)
+
+# Experimental API gate.
+compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_EXPERIMENTAL)
+
+# magic_enum static reflection.
+compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_MAGICENUM)
+
+# Enzyme automatic differentiation.
 if(CORE_ENABLE_ENZYME)
   list(APPEND CORE_COMPILE_DEFINITIONS CORE_HAS_ENZYME=1)
 else()
   list(APPEND CORE_COMPILE_DEFINITIONS CORE_HAS_ENZYME=0)
 endif()
 
+# Compression wrappers — CORE_ENABLE_COMPRESSION is set by include(compression).
+# Evaluated here for logical grouping; compression.cmake runs in Section 3.
 if(CORE_ENABLE_COMPRESSION)
   list(APPEND CORE_COMPILE_DEFINITIONS CORE_HAS_COMPRESSION=1)
   if(CORE_COMPRESSION_TYPE_SNAPPY)
@@ -153,36 +214,238 @@ else()
   list(APPEND CORE_COMPILE_DEFINITIONS CORE_HAS_COMPRESSION=0 CORE_COMPRESSION_TYPE_SNAPPY=0)
 endif()
 
+# Accumulate all compile definitions into the dependency list consumed below.
+set(CORE_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS})
 list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS ${CORE_COMPILE_DEFINITIONS})
+
+# =============================================================================
+# SECTION 3 — CMake module includes
+#
+# Inclusion order:
+#   a) Standard CMake introspection helpers
+#   b) Shared toolchain helpers  (Cmake/tools/, Cmake/flags/)
+#   c) Core-owned feature finders — compression, MKL, Enzyme
+#   d) Coverage gate — must follow toolchain includes so CORE_ENABLE_LTO is
+#      in scope; also must NOT overlap with Enzyme (see note below)
+#
+# Coverage + Enzyme conflict:
+#   -fprofile-instr-generate inserts integer profile-counter stores into each
+#   function.  Enzyme's LLVM pass cannot differentiate integer arithmetic and
+#   aborts with "cannot handle unknown binary operator".  Therefore
+#   CORE_ENABLE_COVERAGE and CORE_ENABLE_ENZYME must never both be ON at the
+#   same time.  The coverage gate is placed after include(enzyme) so that a
+#   developer enabling both gets a clear diagnostic from the build system.
+# =============================================================================
+
+# a) Standard CMake introspection
+include(CheckCXXSourceCompiles)
+include(CheckCXXSourceRuns)
+include(CheckSymbolExists)
+
+# b) Shared toolchain helpers
+include(compiler_checks)    # Detects compiler capabilities; sets PROJECT_* flags
+include(cache)              # Configures per-target compiler cache launcher
+include(build_type)         # Validates / normalises CMAKE_BUILD_TYPE
+include(checks)             # Additional feature-check macros
+include(utils)              # Utility macros shared across all modules
+include(platform)           # Platform flags (macOS rpath, Windows /utf-8, …)
+include(CMakeDependentOption)
+
+# c) Core-owned feature finders
+# NOTE: compression, mkl, and enzyme are also included by the root CMakeLists.txt
+#       (before add_subdirectory) so that ThirdParty targets can be gated on
+#       their results.  All three carry include_guard(GLOBAL), so the calls below
+#       are no-ops in a normal full-project build.  They are kept here so that
+#       Library/Core can be used as a standalone sub-project (cmake -S Library/Core).
+include(compression)        # Finds compression libs (Snappy, …); sets CORE_ENABLE_COMPRESSION
+include(mkl)                # Finds Intel MKL when CORE_ENABLE_MKL=ON
+include(enzyme)             # Finds/configures Enzyme plugin when CORE_ENABLE_ENZYME=ON
+
+# Enzyme validation: if the plugin was not found, disable gracefully.
+# NOTE: enzyme.cmake itself already sets CORE_ENABLE_ENZYME=OFF when the plugin
+#       is absent, and the root CMakeLists.txt runs the same check at ~line 105.
+#       This guard is a standalone-build safety net — it is a no-op in a full
+#       project configure because enzyme.cmake's include_guard already ran.
+if(CORE_ENABLE_ENZYME AND NOT TARGET Enzyme::enzyme)
+  message(STATUS "Enzyme plugin not found — disabling CORE_ENABLE_ENZYME")
+  set(CORE_ENABLE_ENZYME OFF CACHE BOOL "Enable Enzyme automatic differentiation" FORCE)
+endif()
+
+# d) Coverage gate
+#    When enabled, appends -fprofile-instr-generate / --coverage to global
+#    CMAKE_CXX_FLAGS for this module.  LTO is forced OFF because LTO can move
+#    or eliminate profile-counter stores, corrupting the .profraw data.
+#    WARNING: enabling coverage while CORE_ENABLE_ENZYME=ON will cause Enzyme
+#    to fail — the two features are mutually exclusive.
+if(CORE_ENABLE_COVERAGE)
+  set(CORE_ENABLE_LTO OFF)
+  include(coverage)
+endif()
+
+# =============================================================================
+# Source discovery
+# =============================================================================
+set(quarisma_headers "")
+set(quarisma_sources "")
+set(quarisma_templates "")
+
+# Per-module override — propagates to all targets in this directory scope,
+# including test targets in Testing/Cxx.  CMAKE_CXX_STANDARD_REQUIRED and
+# CMAKE_CXX_EXTENSIONS are set globally in the root CMakeLists.txt.
+set(CMAKE_CXX_STANDARD ${CORE_CXX_STANDARD})
+
+file(GLOB_RECURSE headers LIST_DIRECTORIES false
+  "${CMAKE_CURRENT_SOURCE_DIR}/util/*.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/common/*.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/c17/*.h"
+  ${quarisma_headers}
+)
+
+file(GLOB_RECURSE sources LIST_DIRECTORIES false
+  "${CMAKE_CURRENT_SOURCE_DIR}/common/*.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/util/*.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/c17/*.h"
+  ${quarisma_sources}
+)
+
+file(GLOB_RECURSE templates LIST_DIRECTORIES false
+  "${CMAKE_CURRENT_SOURCE_DIR}/util/*.hxx"
+  "${CMAKE_CURRENT_SOURCE_DIR}/common/*.hxx"
+  ${quarisma_templates}
+)
+
+# Compression sources are included only when the compression finder activated them.
+if(CORE_ENABLE_COMPRESSION)
+  if(CORE_COMPRESSION_TYPE STREQUAL "SNAPPY")
+    list(APPEND headers "${CMAKE_CURRENT_SOURCE_DIR}/compression/snappy.h")
+    list(APPEND sources "${CMAKE_CURRENT_SOURCE_DIR}/compression/snappy.cpp")
+  endif()
+endif()
+
+# =============================================================================
+# Target definition
+# =============================================================================
+add_library(Core ${sources} ${headers} ${templates})
+quarisma_target_apply_cache(Core CORE_ENABLE_CACHE CORE_CACHE_BACKEND)
+quarisma_target_optional_icecc(Core CORE_ENABLE_ICECC)
+
+if(BUILD_SHARED_LIBS)
+  target_compile_definitions(Core
+    PUBLIC  QUARISMA_SHARED_DEFINE
+    PRIVATE QUARISMA_BUILDING_DLL)
+  if(COMMAND quarisma_set_target_output_directories)
+    quarisma_set_target_output_directories(Core)
+  endif()
+else()
+  target_compile_definitions(Core PUBLIC QUARISMA_STATIC_DEFINE)
+endif()
+
+add_library(Quarisma::Core ALIAS Core)
+add_library(Core::Core     ALIAS Core)
+
+if(CORE_ENABLE_LTO)
+  set_target_properties(Core PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+  message(STATUS "Core: LTO enabled")
+else()
+  message(STATUS "Core: LTO disabled")
+endif()
+
+if(COMMAND quarisma_apply_iwyu)
+  quarisma_apply_iwyu(Core)
+endif()
+
+quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
+
+message(STATUS "Compiler: ${CMAKE_CXX_COMPILER}")
+message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}, std++=${CORE_CXX_STANDARD}")
+
+set_target_properties(Core PROPERTIES
+  CXX_STANDARD          ${CORE_CXX_STANDARD}
+  CXX_STANDARD_REQUIRED ON
+  CXX_EXTENSIONS        OFF
+)
+
+if(MSVC)
+  target_compile_options(Core PRIVATE /WX)
+else()
+  target_compile_options(Core PRIVATE -include cstdlib)
+endif()
+
+# Include roots: Library/Core → "util/…", "common/…", "c17/…"
+target_include_directories(Core
+  PUBLIC  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Testing>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/Testing>
+          $<INSTALL_INTERFACE:include>
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/Testing/CoreTest.h.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/Testing/CoreTest.h"
+  @ONLY
+)
+
+if(CORE_DEPENDENCY_INCLUDE_DIRS)
+  target_include_directories(Core PUBLIC ${CORE_DEPENDENCY_INCLUDE_DIRS})
+  message(STATUS "Core: extra include dirs: ${CORE_DEPENDENCY_INCLUDE_DIRS}")
+endif()
+
+target_link_libraries(Core
+  PUBLIC Core::build
+         Logging::Logging
+         Memory::Memory
+)
+
+if(COMMAND quarisma_target_clang_tidy)
+  quarisma_target_clang_tidy(Core)
+  set_source_files_properties(PROPERTIES SKIP_LINTING ON)
+endif()
+
+if(CORE_DEPENDENCY_LIBS)
+  target_link_libraries(Core PUBLIC ${CORE_DEPENDENCY_LIBS})
+  message(STATUS "Core: linked dependencies: ${CORE_DEPENDENCY_LIBS}")
+endif()
+
+if(CORE_ENABLE_ENZYME)
+  target_link_libraries(Core PRIVATE Enzyme::enzyme)
+endif()
 
 if(CORE_DEPENDENCY_COMPILE_DEFINITIONS)
   target_compile_definitions(Core PUBLIC ${CORE_DEPENDENCY_COMPILE_DEFINITIONS})
-  message(STATUS "Core library compile definitions: ${CORE_DEPENDENCY_COMPILE_DEFINITIONS}")
+  message(STATUS "Core: compile definitions: ${CORE_DEPENDENCY_COMPILE_DEFINITIONS}")
 endif()
 
 if(MEMORY_ENABLE_MIMALLOC AND TARGET Memory::mimalloc)
   add_dependencies(Core Memory::mimalloc)
 endif()
 
+# =============================================================================
+# Installation
+# =============================================================================
 install(
   TARGETS Core
-  EXPORT QuarismaTargets
+  EXPORT  QuarismaTargets
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
-  INCLUDES
-  DESTINATION include
+  INCLUDES DESTINATION include
+)
+install(FILES ${headers}
+  DESTINATION include/Quarisma/Core
+  COMPONENT Development)
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/quarisma_version_macros.h"
+    "${CMAKE_CURRENT_BINARY_DIR}/quarisma_threads.h"
+    "${CMAKE_CURRENT_BINARY_DIR}/Testing/CoreTest.h"
+  DESTINATION include/Quarisma/Core
+  COMPONENT Development
 )
 
-install(FILES ${headers} DESTINATION include/Quarisma/Core COMPONENT Development)
-
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/quarisma_version_macros.h"
-              "${CMAKE_CURRENT_BINARY_DIR}/quarisma_threads.h"
-              "${CMAKE_CURRENT_BINARY_DIR}/Testing/CoreTest.h"
-        DESTINATION include/Quarisma/Core
-        COMPONENT Development
-)
-
+# =============================================================================
+# Testing
+# =============================================================================
 if(BUILD_TESTING)
   add_subdirectory(Testing/Cxx)
 endif()

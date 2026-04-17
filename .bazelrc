@@ -307,6 +307,10 @@ build:windows --shell_executable=cmd.exe
 # Feature defaults (mimalloc, magic_enum, KINETO profiler, LOGURU, Sobol 1111, POOL_ASYNC GPU
 # alloc) are applied in //bazel:quarisma.bzl — plain `bazel build //...` matches root CMakeLists.txt
 # without extra --define. Opt out with --define=quarisma_enable_*=false / disable_sobol_1111, etc.
+#
+# Compiler-wrapper caching (ccache/sccache/buildcache) is configured in CMake per library target via
+# LOGGING_ENABLE_CACHE + LOGGING_CACHE_BACKEND (and MEMORY_*, CORE_*, PARALLEL_*, PROFILER_*). There
+# are no legacy PROJECT_* cache defines in Bazel; use remote/cache or a host toolchain wrapper if needed.
 
 # =============================================================================
 # Default Configuration

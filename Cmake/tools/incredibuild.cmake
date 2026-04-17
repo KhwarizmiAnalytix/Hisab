@@ -43,13 +43,18 @@ endif()
 
 message(STATUS "IncrediBuild XGE found: ${INCREDIBUILD_XGE}")
 
-# Disable Icecream if it was enabled (conflict detection)
-if(PROJECT_ENABLE_ICECC)
-  message(STATUS "Disabling Icecream (conflicts with IncrediBuild)")
-  set(PROJECT_ENABLE_ICECC OFF CACHE BOOL "Use Icecream distributed compilation" FORCE)
-  # Clear any Icecream compiler launcher that may have been set
-  unset(CMAKE_C_COMPILER_LAUNCHER)
-  unset(CMAKE_CXX_COMPILER_LAUNCHER)
+# Disable per-library Icecream flags (conflicts with IncrediBuild global launchers)
+if(LOGGING_ENABLE_ICECC
+   OR MEMORY_ENABLE_ICECC
+   OR CORE_ENABLE_ICECC
+   OR PARALLEL_ENABLE_ICECC
+   OR PROFILER_ENABLE_ICECC)
+  message(STATUS "Disabling Icecream module flags (conflicts with IncrediBuild)")
+  set(LOGGING_ENABLE_ICECC OFF CACHE BOOL "Use Icecream (icecc) when compiling the Logging target" FORCE)
+  set(MEMORY_ENABLE_ICECC OFF CACHE BOOL "Use Icecream (icecc) when compiling the Memory target" FORCE)
+  set(CORE_ENABLE_ICECC OFF CACHE BOOL "Use Icecream (icecc) when compiling the Core target" FORCE)
+  set(PARALLEL_ENABLE_ICECC OFF CACHE BOOL "Use Icecream (icecc) when compiling the Parallel target" FORCE)
+  set(PROFILER_ENABLE_ICECC OFF CACHE BOOL "Use Icecream (icecc) when compiling the Profiler target" FORCE)
 endif()
 
 # Configure compiler launchers to use IncrediBuild XGE

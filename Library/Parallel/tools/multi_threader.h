@@ -21,11 +21,11 @@
 
 typedef void (*thread_function_type)(void*);
 
-#if PARALLEL_USE_PTHREADS
+#if PARALLEL_HAS_PTHREADS
 #include <pthread.h>
 typedef pthread_t thread_process_id_type;
 typedef pthread_t multi_threader_id_type;
-#elif PARALLEL_USE_WIN32_THREADS
+#elif PARALLEL_HAS_WIN32_THREADS
 #include <windows.h>
 typedef HANDLE thread_process_id_type;
 typedef DWORD  multi_threader_id_type;

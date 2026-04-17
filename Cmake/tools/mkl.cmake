@@ -11,10 +11,10 @@ cmake_minimum_required(VERSION 3.16)
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)
 
-option(PROJECT_ENABLE_STATIC_MKL "Prefer to link with MKL statically (Unix only)" OFF)
-mark_as_advanced(PROJECT_ENABLE_STATIC_MKL)
+option(CORE_ENABLE_STATIC_MKL "Prefer to link with MKL statically (Unix only)" OFF)
+mark_as_advanced(CORE_ENABLE_STATIC_MKL)
 
-if(NOT PROJECT_ENABLE_MKL)
+if(NOT CORE_ENABLE_MKL)
   return()
 endif()
 
@@ -48,7 +48,7 @@ set_property(
   ${MKL_ROOT}/lib ${MKL_ROOT}/lib/intel64 ${MKL_ROOT}/lib/intel64_win ${MKL_ROOT}/lib/win-x64)
 
 if(UNIX)
-  if(PROJECT_ENABLE_STATIC_MKL)
+  if(CORE_ENABLE_STATIC_MKL)
     foreach(MKL_LIB_PATH IN LISTS MKL_LIBRARIES)
       if(NOT EXISTS "${MKL_LIB_PATH}")
         continue()

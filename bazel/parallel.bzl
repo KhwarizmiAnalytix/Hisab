@@ -12,6 +12,8 @@ def parallel_defines():
     defines = quarisma_defines()
 
     # Threading — PARALLEL_HAS_PTHREADS / PARALLEL_HAS_WIN32_THREADS
+    # These mirror the values set by Library/Parallel/Cmake/threads.cmake and are
+    # the sole guards used by multi_threader.h / multi_threader.cpp.
     defines += select({
         "@platforms//os:windows": [
             "PARALLEL_HAS_WIN32_THREADS=1",

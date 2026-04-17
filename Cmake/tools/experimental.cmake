@@ -12,12 +12,12 @@ include_guard(GLOBAL)
 # Experimental Features Support Flag Controls whether experimental features are enabled.
 # When enabled, provides access to features that are under active development and may
 # change or be removed in future releases. Use with caution in production environments.
-option(PROJECT_ENABLE_EXPERIMENTAL "Enable experimental features (use with caution)" OFF)
-mark_as_advanced(PROJECT_ENABLE_EXPERIMENTAL)
+option(CORE_ENABLE_EXPERIMENTAL "Enable experimental features (use with caution)" OFF)
+mark_as_advanced(CORE_ENABLE_EXPERIMENTAL)
 
 # Only proceed if experimental features are enabled
-if(NOT PROJECT_ENABLE_EXPERIMENTAL)
-  message(WARNING "Experimental features are disabled (PROJECT_ENABLE_EXPERIMENTAL=OFF)")
+if(NOT CORE_ENABLE_EXPERIMENTAL)
+  message(WARNING "Experimental features are disabled (CORE_ENABLE_EXPERIMENTAL=OFF)")
   return()
 endif()
 

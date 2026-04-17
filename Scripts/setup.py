@@ -625,6 +625,7 @@ class QuarismaFlags:
             "cppcheck",
             "spell",
             "fix",
+            "cache",
             "cache_type",
             "enzyme",
             "parallel_backend",
@@ -657,8 +658,8 @@ class QuarismaFlags:
             "enable cppcheck static analysis",
             "enable spell checking with automatic corrections",
             "enable clang-tidy fix-errors and fix options",
-            "compiler cache type: none, ccache, sccache, or buildcache",
-            "profiler.<kineto|native|itt>: select profiler backend",
+            "enable per-target compiler cache launchers (default ON; pass flag to disable)",
+            "compiler cache backend for all library targets: none, ccache, sccache, or buildcache",
             "enable Enzyme automatic differentiation support",
             "SMP backend: std, openmp, or tbb",
         ]
@@ -670,17 +671,17 @@ class QuarismaFlags:
             "cuda": "MEMORY_ENABLE_CUDA",
             "tbb": "MEMORY_ENABLE_TBB",
             "openmp": "PARALLEL_ENABLE_OPENMP",
-            "mkl": "PROJECT_ENABLE_MKL",
+            "mkl": "CORE_ENABLE_MKL",
             "numa": "MEMORY_ENABLE_NUMA",
             "memkind": "MEMORY_ENABLE_MEMKIND",
-            "vectorisation": "PROJECT_VECTORIZATION_TYPE",
+            "vectorisation": "VECTORIZATION_TYPE",
             "static": "BUILD_SHARED_LIBS",
             "clangtidy": "PROJECT_ENABLE_CLANGTIDY",
             "iwyu": "PROJECT_ENABLE_IWYU",
             "sanitizer": "PROJECT_ENABLE_SANITIZER",
             "sanitizer_enum": "PROJECT_SANITIZER_TYPE",
             "benchmark": "CORE_ENABLE_BENCHMARK",
-            "gtest": "PROJECT_ENABLE_GTEST",
+            "gtest": "ENABLE_GTEST",
             "valgrind": "PROJECT_ENABLE_VALGRIND",
             "coverage": "PARALLEL_ENABLE_COVERAGE",
             "test": "BUILD_TESTING",
@@ -694,7 +695,6 @@ class QuarismaFlags:
             "cppcheck": "PROJECT_ENABLE_CPPCHECK",
             "spell": "PROJECT_ENABLE_SPELL",
             "fix": "PROJECT_ENABLE_FIX",
-            "cache_type": "PROJECT_CACHE_BACKEND",
             "enzyme": "CORE_ENABLE_ENZYME",
             "parallel_backend": "PARALLEL_BACKEND",
             # Non-CMake flags (for internal use, not passed to CMake)
@@ -728,6 +728,8 @@ class QuarismaFlags:
                 "valgrind": self.OFF,  # Can conflict with sanitizer
                 "coverage": self.OFF,  # Coverage analysis is optional
                 "profiler_type": "KINETO",
+                "cache": self.ON,
+                "cache_type": "ccache",
             }
         )
 
@@ -747,11 +749,12 @@ class QuarismaFlags:
                 "javatargetversion": 1.8,  # Special case: numeric value
                 "cxxstd": "",  # Special case: let CMake decide
                 "logging_backend": "LOGURU",  # Default logging backend
-                "cache_type": "none",  # Default cache type is none
+                "cache": self.ON,  # Per-module compiler cache (CMake defaults ON)
+                "cache_type": "none",  # Default cache backend is none
                 "parallel_backend": "std",  # Default SMP backend is std_thread for maximum compatibility
                 # CMake options with default OFF - keep OFF in setup.py
                 "lto": self.OFF,  # *_ENABLE_LTO defaults are OFF
-                "gtest": self.ON,  # PROJECT_ENABLE_GTEST default is ON
+                "gtest": self.ON,  # ENABLE_GTEST default is ON
                 "magic_enum": self.ON,  # PROJECT_ENABLE_MAGIC_ENUM default is ON
                 "mimalloc": self.ON,  # MEMORY_ENABLE_MIMALLOC default is ON
                 "profiler_type": "KINETO",
@@ -759,7 +762,7 @@ class QuarismaFlags:
                 # (already set by dict.fromkeys above)
                 # "benchmark": self.OFF,  # *_ENABLE_BENCHMARK defaults are OFF
                 # "cuda": self.OFF,  # MEMORY_ENABLE_CUDA default is OFF
-                # "mkl": self.OFF,  # PROJECT_ENABLE_MKL default is OFF
+                # "mkl": self.OFF,  # CORE_ENABLE_MKL default is OFF
                 # "numa": self.OFF,  # MEMORY_ENABLE_NUMA default is OFF
                 # "memkind": self.OFF,  # MEMORY_ENABLE_MEMKIND default is OFF
                 # "tbb": self.OFF,  # MEMORY_ENABLE_TBB default is OFF
@@ -868,7 +871,7 @@ class QuarismaFlags:
                 self.builder_suffix += f"_java{arg}"
             elif arg in self.__key:
                 # Implement inverse logic based on CMake defaults
-                if arg in ["gtest", "magic_enum", "mimalloc"]:
+                if arg in ["gtest", "magic_enum", "mimalloc", "cache"]:
                     # These have CMake default ON, so providing the arg turns them OFF
                     self.__value[arg] = self.OFF
                 else:
@@ -1036,6 +1039,30 @@ class QuarismaFlags:
                 ]
             )
 
+        if self.__value.get("cache_type") and self.__value["cache_type"] != "":
+            cache_backend = self.__value["cache_type"]
+            cmake_cmd_flags.extend(
+                [
+                    f"-DLOGGING_CACHE_BACKEND={cache_backend}",
+                    f"-DMEMORY_CACHE_BACKEND={cache_backend}",
+                    f"-DCORE_CACHE_BACKEND={cache_backend}",
+                    f"-DPARALLEL_CACHE_BACKEND={cache_backend}",
+                    f"-DPROFILER_CACHE_BACKEND={cache_backend}",
+                ]
+            )
+
+        if self.__value.get("cache") in [self.ON, self.OFF]:
+            cv = self.__value.get("cache")
+            cmake_cmd_flags.extend(
+                [
+                    f"-DLOGGING_ENABLE_CACHE={cv}",
+                    f"-DMEMORY_ENABLE_CACHE={cv}",
+                    f"-DCORE_ENABLE_CACHE={cv}",
+                    f"-DPARALLEL_ENABLE_CACHE={cv}",
+                    f"-DPROFILER_ENABLE_CACHE={cv}",
+                ]
+            )
+
         # When the TBB parallel backend is selected, the Memory TBB allocator must
         # also be enabled: both PARALLEL_ENABLE_TBB and MEMORY_ENABLE_TBB must be ON.
         if self.__value.get("parallel_backend") == "tbb":
@@ -1063,6 +1090,8 @@ class QuarismaFlags:
                 key = "cxx11, cxx14, cxx17, cxx20, cxx23"
             elif key == "logging_backend":
                 key = "NATIVE, LOGURU, or GLOG"
+            elif key == "cache_type":
+                key = "none, ccache, sccache, or buildcache"
             elif key == "sanitizer":
                 key = "sanitizer (or --sanitizer.TYPE)"
             elif key == "sanitizer_enum":

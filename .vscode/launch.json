@@ -9,18 +9,61 @@
             "MIMode": "lldb"
         },
         {
-            "name": "Debug (WSL)",
+            // Runs all EnzymeAD tests:
+            //   EnzymeAD.*          — CPU reverse/forward mode, tutorials, accuracy  (18 tests)
+            //   CudaEnzymeADTest.*  — CUDA forward/grad kernel tests                 (14 tests)
+            "name": "EnzymeAD — All tests",
             "type": "lldb",
             "request": "launch",
             "program": "${workspaceFolder}/build_ninja/bin/CoreCxxTests",
-            "args": ["--gtest_filter=ParallelTools.parallel_for_basic"],
+            "args": ["--gtest_filter=EnzymeAD.*:CudaEnzymeADTest.*"],
             "cwd": "${workspaceFolder}",
             "stopOnEntry": false,
             "console": "integratedTerminal",
             "sourceLanguages": ["cpp"]
         },
         {
-            "name": "Debug (WSL)",
+            // CPU-only subset:
+            //   ReverseMode_Square, ReverseMode_Cubic, ReverseMode_Exponential,
+            //   ReverseMode_Multivariate, ReverseMode_Rosenbrock,
+            //   ForwardMode_Square, ForwardMode_Cubic,
+            //   NumericalAccuracy,
+            //   Tutorial2_VectorNormalization, Tutorial3_DotProduct_AllActive,
+            //   Tutorial3_DotProduct_ConstA, Tutorial4_InvMag_CustomGradient,
+            //   Tutorial5_FunctionAliasing, Tutorial6_SquareCopy_Aliased,
+            //   Tutorial6_SquareCopy_Restrict, Tutorial7_ForwardMode_Loops,
+            //   EnzymeNotEnabled, CompileDefinition
+            "name": "EnzymeAD — CPU tests",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build_ninja/bin/CoreCxxTests",
+            "args": ["--gtest_filter=EnzymeAD.*"],
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false,
+            "console": "integratedTerminal",
+            "sourceLanguages": ["cpp"]
+        },
+        {
+            // CUDA subset:
+            //   ForwardCanonicalValue, ForwardZero, ForwardNegativeInput,
+            //   ForwardUnityInput, ForwardInputUnchanged,
+            //   GradCanonicalValue, GradScaledSeed, GradAtZero,
+            //   GradNegativeInput, GradAccumulatesIntoExistingDx,
+            //   GradZeroSeedProducesZeroDx, GradInputXUnchanged,
+            //   GradConsistencyWithFiniteDifference,
+            //   ForwardKernelNoLaunchError, GradKernelNoLaunchError
+            "name": "EnzymeAD — CUDA tests",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build_ninja/bin/CoreCxxTests",
+            "args": ["--gtest_filter=CudaEnzymeADTest.*"],
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false,
+            "console": "integratedTerminal",
+            "sourceLanguages": ["cpp"]
+        },
+        {
+            "name": "Profiler — autograd chrome trace export",
             "type": "lldb",
             "request": "launch",
             "program": "${workspaceFolder}/build_ninja/bin/CoreCxxTests",

@@ -1,3 +1,5 @@
+include_guard(GLOBAL)
+
 #=============================================================================
 # Quarisma Build Type
 # Configuration Module

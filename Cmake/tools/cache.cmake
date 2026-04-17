@@ -1,116 +1,60 @@
 #=============================================================================
-# Quarisma Build Speed Optimization Configuration Module
-
-# Enables configurable compiler caching (ccache, sccache, buildcache) and faster linkers for
-# improved build performance. Supports GCC, Clang, and MSVC on Linux, macOS, and Windows.
+# Quarisma Compiler-Cache Configuration Module
 #
-# NOTE: This module applies faster linker configuration ONLY to the quarismabuild interface target,
-# ensuring that third-party dependencies are not affected by linker choices.
+# Provides quarisma_target_apply_cache() — a per-target compiler-cache setter.
+# Each Library module declares its own XXX_ENABLE_CACHE / XXX_CACHE_BACKEND and
+# calls this function after add_library() so that compiler caches are scoped to
+# individual targets rather than globally overriding CMAKE_*_COMPILER_LAUNCHER.
+#
+# Supported backends: none | ccache | sccache | buildcache
+#
+# Note: compiler caches are safe to apply per-target because they only intercept
+# compilation; they never alter flags or output semantics.
+#=============================================================================
 
-# Include guard to prevent multiple inclusions
 include_guard(GLOBAL)
 
-# Distributed compilation with Icecream
-option(PROJECT_ENABLE_ICECC "Use Icecream distributed compilation" OFF)
-mark_as_advanced(PROJECT_ENABLE_ICECC)
-
-if(PROJECT_ENABLE_ICECC)
-  find_program(ICECC_EXECUTABLE icecc)
-  if(ICECC_EXECUTABLE)
-    set(CMAKE_C_COMPILER_LAUNCHER ${ICECC_EXECUTABLE})
-    set(CMAKE_CXX_COMPILER_LAUNCHER ${ICECC_EXECUTABLE})
-    message(STATUS "Using Icecream: ${ICECC_EXECUTABLE}")
+# quarisma_target_apply_cache(<target> <enable_var> <backend_var>)
+#   enable_var  – boolean CACHE variable controlling whether caching is active
+#                 (e.g. LOGGING_ENABLE_CACHE)
+#   backend_var – string  CACHE variable selecting the cache program
+#                 (e.g. LOGGING_CACHE_BACKEND: none|ccache|sccache|buildcache)
+function(quarisma_target_apply_cache target_name enable_var backend_var)
+  if(NOT ${enable_var})
+    message(STATUS "  -cache: ${target_name}: DISABLED")
+    return()
   endif()
-endif()
 
-# Build Speed Optimization Flag Controls whether caching and faster linker optimizations are
-# enabled. When enabled, uses the selected cache type and selects faster linkers when available.
-option(PROJECT_ENABLE_CACHE "Enable compiler caching and faster linker for faster builds" ON)
-mark_as_advanced(PROJECT_ENABLE_CACHE)
+  set(_backend "${${backend_var}}")
 
-# Cache Type Configuration Selects which compiler cache to use: none, ccache, sccache, or buildcache
-set(PROJECT_CACHE_BACKEND "none"
-    CACHE STRING "Compiler cache type to use. Options: none, ccache, sccache, buildcache"
-)
-set_property(CACHE PROJECT_CACHE_BACKEND PROPERTY STRINGS none ccache sccache buildcache)
-mark_as_advanced(PROJECT_CACHE_BACKEND)
+  if(NOT _backend MATCHES "^(none|ccache|sccache|buildcache)$")
+    message(
+      FATAL_ERROR
+        "Invalid ${backend_var}: '${_backend}'. "
+        "Valid options are: none, ccache, sccache, buildcache"
+    )
+  endif()
 
-# Validate cache type
-if(NOT PROJECT_CACHE_BACKEND MATCHES "^(none|ccache|sccache|buildcache)$")
-  message(
-    FATAL_ERROR
-      "Invalid PROJECT_CACHE_BACKEND: ${PROJECT_CACHE_BACKEND}. Valid options are: none, ccache, sccache, buildcache"
-  )
-endif()
+  if(_backend STREQUAL "none")
+    message(STATUS "  -cache: ${target_name}: ENABLED. program: none")
+    return()
+  endif()
 
-if(NOT PROJECT_ENABLE_CACHE)
-  message(WARNING "Build speed cache optimization configuration complete")
-  return()
-endif()
+  string(TOUPPER "${_backend}" _backend_upper)
+  set(_cache_var "QUARISMA_${_backend_upper}_PROGRAM")
 
-message(STATUS "Configuring build speed optimizations with cache type: ${PROJECT_CACHE_BACKEND}")
+  if(NOT DEFINED ${_cache_var} OR ${_cache_var} STREQUAL "")
+    find_program(${_cache_var} NAMES ${_backend})
+  endif()
 
-# Note: When LTO is enabled, faster linkers (especially gold) may run out of memory during the
-# linking phase. In such cases, it's better to use the default linker. This is a known limitation of
-# LTO with certain linkers.
-
-#=============================================================================
-# Compiler Cache Configuration
-#
-# NOTE: Compiler caches are configured globally as compiler launchers because they need to intercept
-# all compilation commands, including those for third-party dependencies. This is safe because
-# caches only cache compilation results and don't affect the actual compilation flags or behavior.
-set(PROJECT_CACHE_PROGRAM "none")
-if(PROJECT_CACHE_BACKEND STREQUAL "ccache")
-  find_program(CCACHE_PROGRAM ccache)
-  set(PROJECT_CACHE_PROGRAM ${CCACHE_PROGRAM})
-  if(CCACHE_PROGRAM)
-    message(STATUS "Found ccache: ${CCACHE_PROGRAM}")
-    set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "C compiler launcher")
-    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "CXX compiler launcher")
-    if(MEMORY_ENABLE_CUDA)
-      set(CMAKE_CUDA_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "CUDA compiler launcher")
+  if(DEFINED ${_cache_var} AND NOT ${_cache_var} STREQUAL "")
+    message(STATUS "  -cache: ${target_name}: ENABLED. program: ${${_cache_var}}")
+    set_property(TARGET "${target_name}" PROPERTY CXX_COMPILER_LAUNCHER "${${_cache_var}}")
+    set_property(TARGET "${target_name}" PROPERTY C_COMPILER_LAUNCHER   "${${_cache_var}}")
+    if(MEMORY_ENABLE_CUDA AND "${target_name}" STREQUAL "Memory")
+      set_property(TARGET "${target_name}" PROPERTY CUDA_COMPILER_LAUNCHER "${${_cache_var}}")
     endif()
-    message(STATUS "ccache enabled for C/C++ compilation")
   else()
-    message(WARNING "ccache not found - compiler caching disabled")
+    message(STATUS "  -cache: ${target_name}: ENABLED. program: ${_backend} NOT FOUND in PATH")
   endif()
-
-elseif(PROJECT_CACHE_BACKEND STREQUAL "sccache")
-  find_program(SCCACHE_PROGRAM sccache)
-  set(PROJECT_CACHE_PROGRAM ${SCCACHE_PROGRAM})
-  if(SCCACHE_PROGRAM)
-    message(STATUS "Found sccache: ${SCCACHE_PROGRAM}")
-    set(CMAKE_C_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}" CACHE STRING "C compiler launcher")
-    set(CMAKE_CXX_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}" CACHE STRING "CXX compiler launcher")
-    if(MEMORY_ENABLE_CUDA)
-      set(CMAKE_CUDA_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}" CACHE STRING "CUDA compiler launcher")
-    endif()
-    message(STATUS "sccache enabled for C/C++ compilation")
-  else()
-    message(WARNING "sccache not found - compiler caching disabled")
-  endif()
-
-elseif(PROJECT_CACHE_BACKEND STREQUAL "buildcache")
-  find_program(BUILDCACHE_PROGRAM buildcache)
-  set(PROJECT_CACHE_PROGRAM ${BUILDCACHE_PROGRAM})
-  if(BUILDCACHE_PROGRAM)
-    message(STATUS "Found buildcache: ${BUILDCACHE_PROGRAM}")
-    set(CMAKE_C_COMPILER_LAUNCHER "${BUILDCACHE_PROGRAM}" CACHE STRING "C compiler launcher")
-    set(CMAKE_CXX_COMPILER_LAUNCHER "${BUILDCACHE_PROGRAM}" CACHE STRING "CXX compiler launcher")
-    if(MEMORY_ENABLE_CUDA)
-      set(CMAKE_CUDA_COMPILER_LAUNCHER "${BUILDCACHE_PROGRAM}" CACHE STRING
-                                                                     "CUDA compiler launcher"
-      )
-    endif()
-    message(STATUS "buildcache enabled for C/C++ compilation")
-  else()
-    message(WARNING "buildcache not found - compiler caching disabled")
-  endif()
-
-elseif(PROJECT_CACHE_BACKEND STREQUAL "none")
-  message(STATUS "No compiler cache selected")
-endif()
-
-message("  -cache: ENABLED. program: ${PROJECT_CACHE_PROGRAM}")
-mark_as_advanced(PROJECT_CACHE_PROGRAM)
+endfunction()

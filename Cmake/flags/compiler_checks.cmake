@@ -1,3 +1,5 @@
+include_guard(GLOBAL)
+
 # Minimum compiler version check: GCC >= 8.0
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)
   message(FATAL_ERROR "GCC 8.0 or later is required.")
@@ -21,11 +23,4 @@ endif()
 # Minimum compiler version check: Intel C++ (ICC) >= 19
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.0)
   message(FATAL_ERROR "Intel C++ (ICC) 19.0 or later is required.")
-endif()
-
-# Make sure we have C++17 enabled.
-if(NOT PROJECT_IGNORE_CMAKE_CXX17_CHECKS)
-  set(CMAKE_CXX_STANDARD 17)
-  set(CMAKE_CXX_STANDARD_REQUIRED True)
-  set(CMAKE_CXX_EXTENSIONS False)
 endif()

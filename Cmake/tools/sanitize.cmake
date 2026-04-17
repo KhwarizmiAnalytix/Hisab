@@ -68,7 +68,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
 endif()
 
 if(PROJECT_ENABLE_SANITIZER)
-  set(PROJECT_ENABLE_MIMALLOC OFF)
+  set(MEMORY_ENABLE_MIMALLOC OFF)
   # Disable LTO for sanitizer builds to avoid linker crashes with Clang
   set(PROJECT_ENABLE_LTO OFF)
 endif()

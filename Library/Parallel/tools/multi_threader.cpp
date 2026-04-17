@@ -43,7 +43,7 @@
 // platforms about passing function pointer to an argument expecting an
 // extern "C" function.  Placing the typedef of the function pointer type
 // inside an extern "C" block solves this problem.
-#if PARALLEL_USE_PTHREADS
+#if PARALLEL_HAS_PTHREADS
 #include <pthread.h>
 extern "C"
 {
@@ -98,7 +98,7 @@ int multi_threader::get_global_default_number_of_threads()
     {
         int num = 1;  // default is 1
 
-#if PARALLEL_USE_PTHREADS
+#if PARALLEL_HAS_PTHREADS
         // Default the number of threads to be the number of available
         // processors if we are using pthreads()
 #ifdef _SC_NPROCESSORS_ONLN
@@ -128,8 +128,8 @@ int multi_threader::get_global_default_number_of_threads()
         }
 #endif
 
-#if !PARALLEL_USE_WIN32_THREADS
-#if !PARALLEL_USE_PTHREADS
+#if !PARALLEL_HAS_WIN32_THREADS
+#if !PARALLEL_HAS_PTHREADS
         // If we are not multithreading, the number of threads should
         // always be 1
         // cppcheck-suppress redundantAssignment
@@ -235,12 +235,12 @@ void multi_threader::single_method_execute()
 {
     int thread_loop = 0;
 
-#if PARALLEL_USE_WIN32_THREADS
+#if PARALLEL_HAS_WIN32_THREADS
     DWORD  threadId;
     HANDLE process_id[PARALLEL_MAX_THREADS] = {};  // NOLINT(misc-const-correctness)
 #endif
 
-#if PARALLEL_USE_PTHREADS
+#if PARALLEL_HAS_PTHREADS
     pthread_t process_id[PARALLEL_MAX_THREADS] = {};  // NOLINT(misc-const-correctness)
 #endif
 
@@ -257,7 +257,7 @@ void multi_threader::single_method_execute()
         number_of_threads_ = g_multi_threader_global_maximum_number_of_threads;
     }
 
-#if PARALLEL_USE_WIN32_THREADS
+#if PARALLEL_HAS_WIN32_THREADS
     // Using CreateThread on Windows
     //
     // We want to use CreateThread to start number_of_threads_ - 1
@@ -304,7 +304,7 @@ void multi_threader::single_method_execute()
     }
 #endif
 
-#if PARALLEL_USE_PTHREADS
+#if PARALLEL_HAS_PTHREADS
     // Using POSIX threads
     //
     // We want to use pthread_create to start number_of_threads_-1 additional
@@ -351,8 +351,8 @@ void multi_threader::single_method_execute()
     }
 #endif
 
-#if !PARALLEL_USE_WIN32_THREADS
-#if !PARALLEL_USE_PTHREADS
+#if !PARALLEL_HAS_WIN32_THREADS
+#if !PARALLEL_HAS_PTHREADS
     (void)thread_loop;
     // There is no multi threading, so there is only one thread.
     thread_info_array_[0].user_data         = single_data_;
@@ -366,12 +366,12 @@ void multi_threader::multiple_method_execute()
 {
     int thread_loop;
 
-#if PARALLEL_USE_WIN32_THREADS
+#if PARALLEL_HAS_WIN32_THREADS
     DWORD  threadId;
     HANDLE process_id[PARALLEL_MAX_THREADS] = {};  // NOLINT(misc-const-correctness)
 #endif
 
-#if PARALLEL_USE_PTHREADS
+#if PARALLEL_HAS_PTHREADS
     pthread_t process_id[PARALLEL_MAX_THREADS] = {};  // NOLINT(misc-const-correctness)
 #endif
 
@@ -391,7 +391,7 @@ void multi_threader::multiple_method_execute()
         }
     }
 
-#if PARALLEL_USE_WIN32_THREADS
+#if PARALLEL_HAS_WIN32_THREADS
     // Using CreateThread on Windows
     for (thread_loop = 1; thread_loop < number_of_threads_; thread_loop++)
     {
@@ -431,7 +431,7 @@ void multi_threader::multiple_method_execute()
     }
 #endif
 
-#if PARALLEL_USE_PTHREADS
+#if PARALLEL_HAS_PTHREADS
     // Using POSIX threads
     pthread_attr_t attr;
 
@@ -464,8 +464,8 @@ void multi_threader::multiple_method_execute()
     }
 #endif
 
-#if !PARALLEL_USE_WIN32_THREADS
-#if !PARALLEL_USE_PTHREADS
+#if !PARALLEL_HAS_WIN32_THREADS
+#if !PARALLEL_HAS_PTHREADS
     // There is no multi threading, so there is only one thread.
     thread_info_array_[0].user_data         = multiple_data_[0];
     thread_info_array_[0].number_of_threads = number_of_threads_;
@@ -504,7 +504,7 @@ int multi_threader::spawn_thread(thread_function_type f, void* userdata)
     spawned_thread_info_array_[id].active_flag       = &spawned_thread_active_flag_[id];
     spawned_thread_info_array_[id].active_flag_lock  = spawned_thread_active_flag_lock_[id].get();
 
-#if PARALLEL_USE_WIN32_THREADS
+#if PARALLEL_HAS_WIN32_THREADS
     // Using CreateThread on Windows
     //
     DWORD threadId;                   // NOLINT
@@ -523,7 +523,7 @@ int multi_threader::spawn_thread(thread_function_type f, void* userdata)
     }
 #endif
 
-#if PARALLEL_USE_PTHREADS
+#if PARALLEL_HAS_PTHREADS
     // Using POSIX threads
     //
     pthread_attr_t attr;
@@ -540,8 +540,8 @@ int multi_threader::spawn_thread(thread_function_type f, void* userdata)
 
 #endif
 
-#if !PARALLEL_USE_WIN32_THREADS
-#if !PARALLEL_USE_PTHREADS
+#if !PARALLEL_HAS_WIN32_THREADS
+#if !PARALLEL_HAS_PTHREADS
     (void)f;
     // There is no multi threading, so there is only one thread.
     // This won't work - so give an error message.
@@ -588,17 +588,17 @@ void multi_threader::terminate_thread(int thread_id)
         spawned_thread_active_flag_[thread_id] = 0;
     }
 
-#if PARALLEL_USE_WIN32_THREADS
+#if PARALLEL_HAS_WIN32_THREADS
     WaitForSingleObject(spawned_thread_process_id_[thread_id], INFINITE);  // NOLINT
     CloseHandle(spawned_thread_process_id_[thread_id]);                    // NOLINT
 #endif
 
-#if PARALLEL_USE_PTHREADS
+#if PARALLEL_HAS_PTHREADS
     pthread_join(spawned_thread_process_id_[thread_id], nullptr);
 #endif
 
-#if !PARALLEL_USE_WIN32_THREADS
-#if !PARALLEL_USE_PTHREADS
+#if !PARALLEL_HAS_WIN32_THREADS
+#if !PARALLEL_HAS_PTHREADS
     // There is no multi threading, so there is only one thread.
     // This won't work - so give an error message.
 #endif
@@ -610,9 +610,9 @@ void multi_threader::terminate_thread(int thread_id)
 //------------------------------------------------------------------------------
 multi_threader_id_type multi_threader::get_current_thread_id()
 {
-#if PARALLEL_USE_PTHREADS
+#if PARALLEL_HAS_PTHREADS
     return pthread_self();
-#elif defined(PARALLEL_USE_WIN32_THREADS)
+#elif PARALLEL_HAS_WIN32_THREADS
     return GetCurrentThreadId();  // NOLINT
 #else
     // No threading implementation.  Assume all callers are in the same
@@ -650,9 +650,9 @@ bool multi_threader::is_thread_active(int thread_id)
 //------------------------------------------------------------------------------
 bool multi_threader::threads_equal(multi_threader_id_type t1, multi_threader_id_type t2)
 {
-#if PARALLEL_USE_PTHREADS
+#if PARALLEL_HAS_PTHREADS
     return pthread_equal(t1, t2) != 0;
-#elif defined(PARALLEL_USE_WIN32_THREADS)
+#elif PARALLEL_HAS_WIN32_THREADS
     return t1 == t2;
 #else
     (void)t1;
