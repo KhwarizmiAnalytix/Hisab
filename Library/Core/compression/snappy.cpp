@@ -34,7 +34,7 @@
 #include "common/macros.h"
 
 #if CORE_HAS_COMPRESSION
-#if defined(QUARISMA_COMPRESSION_TYPE_SNAPPY)
+#if CORE_COMPRESSION_TYPE_SNAPPY
 #include "snappy.h"
 #endif
 #endif
@@ -49,7 +49,7 @@ namespace snappy
 bool compress(const char* input, size_t length, std::string* output)
 {
 #if CORE_HAS_COMPRESSION
-#if defined(QUARISMA_COMPRESSION_TYPE_SNAPPY)
+#if CORE_COMPRESSION_TYPE_SNAPPY
     output->resize(::snappy::MaxCompressedLength(length));
     size_t outlen;
     ::snappy::RawCompress(input, length, &(*output)[0], &outlen);
@@ -74,7 +74,7 @@ bool compress(const char* input, size_t length, std::string* output)
 bool compress_from_io_vec(const struct iovec* iov, size_t uncompressed_length, std::string* output)
 {
 #if CORE_HAS_COMPRESSION
-#if defined(QUARISMA_COMPRESSION_TYPE_SNAPPY)
+#if CORE_COMPRESSION_TYPE_SNAPPY
     output->resize(::snappy::MaxCompressedLength(uncompressed_length));
     size_t outlen;
 
@@ -109,7 +109,7 @@ bool compress_from_io_vec(const struct iovec* iov, size_t uncompressed_length, s
 bool get_uncompressed_length(const char* input, size_t length, size_t* result)
 {
 #if CORE_HAS_COMPRESSION
-#if defined(QUARISMA_COMPRESSION_TYPE_SNAPPY)
+#if CORE_COMPRESSION_TYPE_SNAPPY
     return ::snappy::GetUncompressedLength(input, length, result);
 #else
     // Compression enabled but Snappy not selected
@@ -130,7 +130,7 @@ bool get_uncompressed_length(const char* input, size_t length, size_t* result)
 bool uncompress(const char* input, size_t length, char* output)
 {
 #if CORE_HAS_COMPRESSION
-#if defined(QUARISMA_COMPRESSION_TYPE_SNAPPY)
+#if CORE_COMPRESSION_TYPE_SNAPPY
     return ::snappy::RawUncompress(input, length, output);
 #else
     // Compression enabled but Snappy not selected
@@ -152,7 +152,7 @@ bool uncompress_to_io_vec(
     const char* compressed, size_t compressed_length, const struct iovec* iov, size_t iov_cnt)
 {
 #if CORE_HAS_COMPRESSION
-#if defined(QUARISMA_COMPRESSION_TYPE_SNAPPY)
+#if CORE_COMPRESSION_TYPE_SNAPPY
     // Platform-specific handling of iovec structure
 #ifdef _WIN32
     // Windows requires casting to snappy::iovec

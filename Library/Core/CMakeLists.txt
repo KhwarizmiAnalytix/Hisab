@@ -201,20 +201,11 @@ else()
   list(APPEND CORE_COMPILE_DEFINITIONS CORE_HAS_ENZYME=0)
 endif()
 
-# Compression wrappers — CORE_ENABLE_COMPRESSION is set by include(compression).
-# Evaluated here for logical grouping; compression.cmake runs in Section 3.
-if(CORE_ENABLE_COMPRESSION)
-  list(APPEND CORE_COMPILE_DEFINITIONS CORE_HAS_COMPRESSION=1)
-  if(CORE_COMPRESSION_TYPE_SNAPPY)
-    list(APPEND CORE_COMPILE_DEFINITIONS CORE_COMPRESSION_TYPE_SNAPPY=1)
-  else()
-    list(APPEND CORE_COMPILE_DEFINITIONS CORE_COMPRESSION_TYPE_SNAPPY=0)
-  endif()
-else()
-  list(APPEND CORE_COMPILE_DEFINITIONS CORE_HAS_COMPRESSION=0 CORE_COMPRESSION_TYPE_SNAPPY=0)
-endif()
+# Compression wrappers — CORE_HAS_COMPRESSION / CORE_COMPRESSION_TYPE_SNAPPY are
+# appended after include(compression) in Section 3 so standalone
+# cmake -S Library/Core configures correctly (root may not have run first).
 
-# Accumulate all compile definitions into the dependency list consumed below.
+# Accumulate compile definitions that do not depend on Section 3 finders.
 set(CORE_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS})
 list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS ${CORE_COMPILE_DEFINITIONS})
 
@@ -260,6 +251,20 @@ include(CMakeDependentOption)
 include(compression)        # Finds compression libs (Snappy, …); sets CORE_ENABLE_COMPRESSION
 include(mkl)                # Finds Intel MKL when CORE_ENABLE_MKL=ON
 include(enzyme)             # Finds/configures Enzyme plugin when CORE_ENABLE_ENZYME=ON
+
+# Compression compile defs — must follow include(compression); sets CORE_COMPRESSION_TYPE_SNAPPY.
+if(CORE_ENABLE_COMPRESSION)
+  list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS CORE_HAS_COMPRESSION=1)
+  if(CORE_COMPRESSION_TYPE_SNAPPY)
+    list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS CORE_COMPRESSION_TYPE_SNAPPY=1)
+  else()
+    list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS CORE_COMPRESSION_TYPE_SNAPPY=0)
+  endif()
+else()
+  list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS
+    CORE_HAS_COMPRESSION=0
+    CORE_COMPRESSION_TYPE_SNAPPY=0)
+endif()
 
 # Enzyme validation: if the plugin was not found, disable gracefully.
 # NOTE: enzyme.cmake itself already sets CORE_ENABLE_ENZYME=OFF when the plugin
@@ -314,9 +319,10 @@ file(GLOB_RECURSE templates LIST_DIRECTORIES false
   ${quarisma_templates}
 )
 
-# Compression sources are included only when the compression finder activated them.
+# Compression sources are included only when Snappy is selected (case-insensitive).
 if(CORE_ENABLE_COMPRESSION)
-  if(CORE_COMPRESSION_TYPE STREQUAL "SNAPPY")
+  string(TOUPPER "${CORE_COMPRESSION_TYPE}" _core_ctype_uc)
+  if(_core_ctype_uc STREQUAL "SNAPPY")
     list(APPEND headers "${CMAKE_CURRENT_SOURCE_DIR}/compression/snappy.h")
     list(APPEND sources "${CMAKE_CURRENT_SOURCE_DIR}/compression/snappy.cpp")
   endif()

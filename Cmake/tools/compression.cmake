@@ -12,17 +12,21 @@ set_property(CACHE CORE_COMPRESSION_TYPE PROPERTY STRINGS none snappy)
 mark_as_advanced(CORE_ENABLE_COMPRESSION CORE_COMPRESSION_TYPE)
 
 # Compression configuration validation and setup
+# CORE_COMPRESSION_TYPE cache STRINGS are lowercase (none, snappy); compare case-insensitively.
+set(CORE_COMPRESSION_TYPE_SNAPPY OFF)
 if(CORE_ENABLE_COMPRESSION)
-  if(CORE_COMPRESSION_TYPE STREQUAL "SNAPPY")
+  string(TOUPPER "${CORE_COMPRESSION_TYPE}" _core_compression_type_uc)
+  if(_core_compression_type_uc STREQUAL "SNAPPY")
     set(PROJECT_COMPRESSION_TYPE_SNAPPY ON)
+    set(CORE_COMPRESSION_TYPE_SNAPPY ON)
     message(STATUS "Compression enabled: Snappy")
-  elseif(CORE_COMPRESSION_TYPE STREQUAL "NONE")
+  elseif(_core_compression_type_uc STREQUAL "NONE")
     set(CORE_ENABLE_COMPRESSION OFF)
     message(STATUS "Compression type set to NONE - disabling compression")
   else()
     message(
       FATAL_ERROR
-        "Invalid CORE_COMPRESSION_TYPE: ${CORE_COMPRESSION_TYPE}. Valid options are: NONE, SNAPPY"
+        "Invalid CORE_COMPRESSION_TYPE: ${CORE_COMPRESSION_TYPE}. Valid options are: none, snappy (case-insensitive)"
     )
   endif()
 else()

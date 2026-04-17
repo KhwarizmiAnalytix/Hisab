@@ -65,42 +65,14 @@ endif()
 # =============================================================================
 # SECTION 2 — PARALLEL_ENABLE_* → PARALLEL_HAS_* compile definitions
 #
-# Maps each feature flag to a PARALLEL_HAS_* token consumed by source via #if.
-# Note: backend flags (TBB, OpenMP, Pthreads, Win32) are resolved by the
-#       module-owned finders in Section 3, so this block is physically
-#       evaluated after those includes but is kept here for structural clarity.
+# IMPORTANT: PARALLEL_ENABLE_PTHREADS, PARALLEL_ENABLE_WIN32_THREADS,
+# PARALLEL_ENABLE_TBB, and PARALLEL_ENABLE_OPENMP are all set by the
+# module-owned finders inside Section 3 (include(threads), include(openmp),
+# include(tbb_multithreading)).  Those flags DO NOT exist yet at this point in
+# the file.  Their HAS_ mappings are therefore placed AFTER Section 3, in the
+# "Section 2 — detection-based HAS" block below the includes.
 # =============================================================================
 set(PARALLEL_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS})
-
-# Intel TBB — high-performance work-stealing task scheduler.
-if(PARALLEL_ENABLE_TBB)
-  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_TBB=1)
-else()
-  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_TBB=0)
-endif()
-
-# OpenMP — compiler-directive-based shared-memory parallelism.
-if(PARALLEL_ENABLE_OPENMP)
-  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_OPENMP=1)
-else()
-  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_OPENMP=0)
-endif()
-
-# POSIX threads — available on Linux and macOS.
-if(PARALLEL_ENABLE_PTHREADS)
-  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_PTHREADS=1)
-else()
-  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_PTHREADS=0)
-endif()
-
-# Win32 threads — Windows-native threading API.
-if(PARALLEL_ENABLE_WIN32_THREADS)
-  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_WIN32_THREADS=1)
-else()
-  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_WIN32_THREADS=0)
-endif()
-
-list(APPEND PARALLEL_DEPENDENCY_COMPILE_DEFINITIONS ${PARALLEL_COMPILE_DEFINITIONS})
 
 # =============================================================================
 # SECTION 3 — CMake module includes
@@ -142,6 +114,45 @@ if(PARALLEL_ENABLE_COVERAGE)
   set(PARALLEL_ENABLE_LTO OFF)
   include(coverage)
 endif()
+
+# =============================================================================
+# SECTION 2 (continued) — detection-based PARALLEL_HAS_* compile definitions
+#
+# These flags are set by the Section 3 module-owned finders above, so this
+# block MUST come after those includes.  Evaluating them in the logical
+# Section 2 position (before includes) would read unset variables and always
+# produce HAS_*=0, breaking the threading model at compile time.
+# =============================================================================
+
+# Intel TBB — set by include(tbb_multithreading).
+if(PARALLEL_ENABLE_TBB)
+  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_TBB=1)
+else()
+  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_TBB=0)
+endif()
+
+# OpenMP — set by include(openmp).
+if(PARALLEL_ENABLE_OPENMP)
+  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_OPENMP=1)
+else()
+  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_OPENMP=0)
+endif()
+
+# POSIX threads — set by include(threads) based on platform detection.
+if(PARALLEL_ENABLE_PTHREADS)
+  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_PTHREADS=1)
+else()
+  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_PTHREADS=0)
+endif()
+
+# Win32 threads — set by include(threads) on Windows.
+if(PARALLEL_ENABLE_WIN32_THREADS)
+  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_WIN32_THREADS=1)
+else()
+  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_WIN32_THREADS=0)
+endif()
+
+list(APPEND PARALLEL_DEPENDENCY_COMPILE_DEFINITIONS ${PARALLEL_COMPILE_DEFINITIONS})
 
 # =============================================================================
 # Runtime library wiring
