@@ -200,10 +200,6 @@ endif()
 
 add_library(Logging::Logging ALIAS Logging)
 
-if(DEFINED LOGGING_LINKER_FLAGS_COMMON)
-  target_link_options(Logging PRIVATE ${LOGGING_LINKER_FLAGS_COMMON})
-endif()
-
 
 if(COMMAND logging_apply_iwyu)
   logging_apply_iwyu(Logging)

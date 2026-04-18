@@ -257,10 +257,6 @@ endif()
 
 add_library(Parallel::Parallel ALIAS Parallel)
 
-if(DEFINED PARALLEL_LINKER_FLAGS_COMMON)
-  target_link_options(Parallel PRIVATE ${PARALLEL_LINKER_FLAGS_COMMON})
-endif()
-
 
 if(COMMAND parallel_apply_iwyu)
   parallel_apply_iwyu(Parallel)

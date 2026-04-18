@@ -296,10 +296,6 @@ endif()
 
 add_library(Profiler::Profiler ALIAS Profiler)
 
-if(DEFINED PROFILER_LINKER_FLAGS_COMMON)
-  target_link_options(Profiler PRIVATE ${PROFILER_LINKER_FLAGS_COMMON})
-endif()
-
 
 if(COMMAND profiler_apply_iwyu)
   profiler_apply_iwyu(Profiler)

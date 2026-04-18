@@ -379,10 +379,6 @@ endif()
 add_library(Quarisma::Core ALIAS Core)
 add_library(Core::Core     ALIAS Core)
 
-if(DEFINED CORE_LINKER_FLAGS_COMMON)
-  target_link_options(Core PRIVATE ${CORE_LINKER_FLAGS_COMMON})
-endif()
-
 
 if(COMMAND quarisma_apply_iwyu)
   quarisma_apply_iwyu(Core)
