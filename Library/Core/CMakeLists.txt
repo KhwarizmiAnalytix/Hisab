@@ -1,120 +1,122 @@
-# =============================================================================
-# Library/Core — CMakeLists.txt
+# ============================================================================= Library/Core —
+# CMakeLists.txt
 #
-# Provides the Core library: shared utilities, smart ownership primitives,
-# compile-time type traits, numeric algorithms, compression wrappers, and
-# optional Enzyme automatic-differentiation support.
+# Provides the Core library: shared utilities, smart ownership primitives, compile-time type traits,
+# numeric algorithms, compression wrappers, and optional Enzyme automatic-differentiation support.
 #
-# Public compile definitions emitted by this file:
-#   CORE_HAS_EXCEPTION_PTR=1/0   — std::exception_ptr supported by the toolchain
-#   CORE_SSE=1/0                 — SSE2 SIMD instructions available
-#   CORE_AVX=1/0                 — AVX SIMD instructions available
-#   CORE_AVX2=1/0                — AVX2 SIMD instructions available
-#   CORE_AVX512=1/0              — AVX-512 SIMD instructions available
-#   CORE_HAS_MKL=1/0             — Intel MKL math library linked
-#   CORE_HAS_SVML=1/0            — Intel SVML short-vector math library linked
-#   CORE_HAS_ROCM=1/0            — AMD ROCm GPU support compiled in
-#   CORE_HAS_GTEST=1/0           — Google Test available to Core tests
-#   CORE_HAS_EXPERIMENTAL=1/0   — Experimental features enabled (use with caution)
-#   CORE_HAS_MAGICENUM=1/0       — magic_enum static enum-reflection active
-#   CORE_HAS_ENZYME=1/0          — Enzyme automatic-differentiation plugin loaded
-#   CORE_HAS_COMPRESSION=1/0     — Compression wrappers compiled in
+# Public compile definitions emitted by this file: CORE_HAS_EXCEPTION_PTR=1/0   — std::exception_ptr
+# supported by the toolchain CORE_SSE=1/0                 — SSE2 SIMD instructions available
+# CORE_AVX=1/0                 — AVX SIMD instructions available CORE_AVX2=1/0                — AVX2
+# SIMD instructions available CORE_AVX512=1/0              — AVX-512 SIMD instructions available
+# CORE_HAS_MKL=1/0             — Intel MKL math library linked CORE_HAS_SVML=1/0            — Intel
+# SVML short-vector math library linked CORE_HAS_ROCM=1/0            — AMD ROCm GPU support compiled
+# in CORE_HAS_GTEST=1/0           — Google Test available to Core tests CORE_HAS_EXPERIMENTAL=1/0 —
+# Experimental features enabled (use with caution) CORE_HAS_MAGICENUM=1/0       — magic_enum static
+# enum-reflection active CORE_HAS_ENZYME=1/0          — Enzyme automatic-differentiation plugin
+# loaded CORE_HAS_COMPRESSION=1/0     — Compression wrappers compiled in
 # =============================================================================
 cmake_minimum_required(VERSION 3.16)
 
-# =============================================================================
-# SECTION 1 — Feature flags (CORE_ENABLE_*) and backend selectors
+# ============================================================================= SECTION 1 — Feature
+# flags (CORE_ENABLE_*) and backend selectors
 #
-# These cache variables are the public configuration API for this module.
-# Pass them on the CMake command line: -DCORE_ENABLE_ENZYME=ON
+# These cache variables are the public configuration API for this module. Pass them on the CMake
+# command line: -DCORE_ENABLE_ENZYME=ON
 #
-# Detection-based tokens (SSE/AVX/EXCEPTION_PTR) are set by utils.cmake /
-# platform.cmake which the root CMakeLists.txt runs before add_subdirectory,
-# so they are already in scope here; see Section 2 for their HAS_ mapping.
+# Detection-based tokens (SSE/AVX/EXCEPTION_PTR) are set by Library/Core/Cmake/utils.cmake /
+# platform.cmake which runs before add_subdirectory, so they are already in scope here; see Section
+# 2 for their HAS_ mapping.
 # =============================================================================
 
-# Link-Time Optimization — automatically disabled when CORE_ENABLE_COVERAGE=ON
-# because LTO and LLVM profiling instrumentation are mutually incompatible.
-option(CORE_ENABLE_LTO
-  "Enable Link Time Optimization for Core" OFF)
+# Link-Time Optimization — disabled when CORE_ENABLE_COVERAGE or CORE_ENABLE_SANITIZER is ON (LTO
+# conflicts with profiling instrumentation and typical sanitizer workflows).
+option(CORE_ENABLE_LTO "Enable Link Time Optimization for Core" OFF)
 
-# Coverage instrumentation — forces CORE_ENABLE_LTO=OFF and activates
-# -fprofile-instr-generate / --coverage compiler flags for this module only.
-option(CORE_ENABLE_COVERAGE
-  "Enable coverage instrumentation for Core" OFF)
+# Coverage instrumentation — forces CORE_ENABLE_LTO=OFF and activates -fprofile-instr-generate /
+# --coverage compiler flags for this module only.
+option(CORE_ENABLE_COVERAGE "Enable coverage instrumentation for Core" OFF)
 
 # Testing — gates add_subdirectory(Testing/Cxx).
-option(CORE_ENABLE_TESTING
-  "Build Core test suite" ON)
+option(CORE_ENABLE_TESTING "Build Core test suite" ON)
 
 # Examples — gates add_subdirectory(Examples) when Core examples exist.
-option(CORE_ENABLE_EXAMPLES
-  "Build Core example programs" OFF)
+option(CORE_ENABLE_EXAMPLES "Build Core example programs" OFF)
 
 # Google Test integration for Core tests.
-option(CORE_ENABLE_GTEST
-  "Enable GoogleTest for Core" ON)
+option(CORE_ENABLE_GTEST "Enable GoogleTest for Core" ON)
 
-# Enzyme — LLVM-based automatic differentiation plugin.
-# NOTE: CORE_ENABLE_ENZYME is declared (with a NOT DEFINED guard) inside
-#       Cmake/tools/enzyme.cmake, which the root CMakeLists.txt includes at line
-#       ~103 before add_subdirectory(Library/Core).  The option() below would be
-#       a no-op, so it is intentionally omitted here.  See enzyme.cmake for the
-#       canonical declaration, defaults, and Clang-requirement warning.
-# Incompatibility note: coverage instrumentation inserts integer profile-counter
-# stores that Enzyme's LLVM pass cannot differentiate — never enable both together.
+# Enzyme — LLVM-based automatic differentiation plugin. NOTE: CORE_ENABLE_ENZYME is declared (with a
+# NOT DEFINED guard) inside Cmake/tools/enzyme.cmake, which the root CMakeLists.txt includes at line
+# ~103 before add_subdirectory(Library/Core).  The option() below would be a no-op, so it is
+# intentionally omitted here.  See enzyme.cmake for the canonical declaration, defaults, and
+# Clang-requirement warning. Incompatibility note: coverage instrumentation inserts integer
+# profile-counter stores that Enzyme's LLVM pass cannot differentiate — never enable both together.
 
 # Google Benchmark integration for Core micro-benchmarks.
-option(CORE_ENABLE_BENCHMARK
-  "Enable Google Benchmark for Core" OFF)
+option(CORE_ENABLE_BENCHMARK "Enable Google Benchmark for Core" OFF)
 
 # Intel MKL — high-performance math kernel library (BLAS, FFT, LAPACK, …).
-option(CORE_ENABLE_MKL
-  "Enable Intel MKL math library" OFF)
+option(CORE_ENABLE_MKL "Enable Intel MKL math library" OFF)
 
 # Intel SVML — short vector math library for fast sin/cos/exp/log on SIMD lanes.
-option(CORE_ENABLE_SVML
-  "Enable Intel SVML short vector math library" OFF)
+option(CORE_ENABLE_SVML "Enable Intel SVML short vector math library" OFF)
 mark_as_advanced(CORE_ENABLE_SVML)
 
 # AMD ROCm — GPU support for AMD Radeon Instinct / CDNA devices.
-option(CORE_ENABLE_ROCM
-  "Enable AMD ROCm GPU support" OFF)
+option(CORE_ENABLE_ROCM "Enable AMD ROCm GPU support" OFF)
 
-# Experimental — gates features that are not yet production-ready.
-# Enabling this may change API / ABI without notice.
-option(CORE_ENABLE_EXPERIMENTAL
-  "Enable experimental Core features (use with caution)" OFF)
+# Experimental — gates features that are not yet production-ready. Enabling this may change API /
+# ABI without notice.
+option(CORE_ENABLE_EXPERIMENTAL "Enable experimental Core features (use with caution)" OFF)
 mark_as_advanced(CORE_ENABLE_EXPERIMENTAL)
 
-# magic_enum — zero-overhead compile-time enum ↔ string / iteration.
-# NOTE: CORE_ENABLE_MAGICENUM is declared in the root CMakeLists.txt (before
-#       add_subdirectory) because ThirdParty/CMakeLists.txt needs it to
-#       conditionally build the magic_enum target.  Declaring it again here
-#       would be a no-op; see root CMakeLists.txt for the canonical declaration.
+# magic_enum — zero-overhead compile-time enum ↔ string / iteration. NOTE: CORE_ENABLE_MAGICENUM is
+# declared in the root CMakeLists.txt (before add_subdirectory) because ThirdParty/CMakeLists.txt
+# needs it to conditionally build the magic_enum target.  Declaring it again here would be a no-op;
+# see root CMakeLists.txt for the canonical declaration.
 
 option(CORE_ENABLE_MAGICENUM "Enable magic_enum static reflection for enums." ON)
 mark_as_advanced(CORE_ENABLE_MAGICENUM)
 
 # Icecream distributed compilation launcher (rarely needed; hidden by default).
-option(CORE_ENABLE_ICECC
-  "Use Icecream (icecc) distributed compiler for Core" OFF)
+option(CORE_ENABLE_ICECC "Use Icecream (icecc) distributed compiler for Core" OFF)
 mark_as_advanced(CORE_ENABLE_ICECC)
 
-# Per-target compiler cache — wraps every compile command with ccache / sccache
-# etc. to speed up incremental and CI rebuilds. ON by default.
-option(CORE_ENABLE_CACHE
-  "Enable compiler caching for the Core target" ON)
+# Per-target compiler cache — wraps every compile command with ccache / sccache etc. to speed up
+# incremental and CI rebuilds. ON by default.
+option(CORE_ENABLE_CACHE "Enable compiler caching for the Core target" ON)
 mark_as_advanced(CORE_ENABLE_CACHE)
+
+option(CORE_ENABLE_CLANGTIDY "Enable clang-tidy static analysis for Core" OFF)
+mark_as_advanced(CORE_ENABLE_CLANGTIDY)
+option(CORE_ENABLE_FIX "Enable clang-tidy fix-errors and fix options for Core" OFF)
+mark_as_advanced(CORE_ENABLE_FIX)
+option(CORE_ENABLE_IWYU "Enable include-what-you-use analysis for Core" OFF)
+mark_as_advanced(CORE_ENABLE_IWYU)
+option(CORE_ENABLE_SANITIZER "Build Core with sanitizer support (Clang/GCC only)" OFF)
+set(CORE_SANITIZER_TYPE "address"
+    CACHE STRING "Sanitizer type for Core. Options: address, undefined, thread, memory, leak"
+)
+set_property(CACHE CORE_SANITIZER_TYPE PROPERTY STRINGS address undefined thread memory leak)
+mark_as_advanced(CORE_ENABLE_SANITIZER CORE_SANITIZER_TYPE)
+option(CORE_ENABLE_SPELL
+       "Enable spell checking with automatic corrections for Core (WARNING: modifies source files)"
+       OFF
+)
+mark_as_advanced(CORE_ENABLE_SPELL)
+option(CORE_ENABLE_VALGRIND "Execute Core test suite with Valgrind" OFF)
+mark_as_advanced(CORE_ENABLE_VALGRIND)
+set(CORE_LINKER_CHOICE "default" CACHE STRING "Linker for Core: default, lld, mold, gold, lld-link")
+set_property(CACHE CORE_LINKER_CHOICE PROPERTY STRINGS default lld mold gold lld-link)
+mark_as_advanced(CORE_LINKER_CHOICE)
 set(CORE_CACHE_BACKEND "none"
-    CACHE STRING
-    "Compiler cache backend for Core. Options: none, ccache, sccache, buildcache")
+    CACHE STRING "Compiler cache backend for Core. Options: none, ccache, sccache, buildcache"
+)
 set_property(CACHE CORE_CACHE_BACKEND PROPERTY STRINGS none ccache sccache buildcache)
 mark_as_advanced(CORE_CACHE_BACKEND)
 
 # C++ standard — applied to every TU in this module via CMAKE_CXX_STANDARD.
-set(CORE_CXX_STANDARD "20"
-    CACHE STRING "C++ standard for Core. Options: 11 14 17 20 23")
+set(CORE_CXX_STANDARD "20" CACHE STRING "C++ standard for Core. Options: 11 14 17 20 23")
 set_property(CACHE CORE_CXX_STANDARD PROPERTY STRINGS 11 14 17 20 23)
 if(NOT CORE_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
   message(FATAL_ERROR "CORE_CXX_STANDARD must be one of: 11 14 17 20 23")
@@ -124,22 +126,21 @@ set(VECTORIZATION_TYPE "avx2"
 )
 set_property(CACHE VECTORIZATION_TYPE PROPERTY STRINGS no sse avx avx2 avx512)
 
-# =============================================================================
-# SECTION 2 — CORE_ENABLE_* → CORE_HAS_* compile definitions
+# ============================================================================= SECTION 2 —
+# CORE_ENABLE_* → CORE_HAS_* compile definitions
 #
 # Two categories are handled here:
 #
-#   a) Detection-based tokens — values set by the root-level utils.cmake /
-#      platform.cmake runs before add_subdirectory(Library/Core), so they are
-#      already in scope.  Examples: PROJECT_SSE, PROJECT_HAS_EXCEPTION_PTR.
+# a) Detection-based tokens — values set by Library/Core/Cmake/utils.cmake / platform.cmake,
+# included via include(utils) in Section 3. Examples: HAS_SSE, HAS_EXCEPTION_PTR.
 #
-#   b) User-option tokens — derived directly from CORE_ENABLE_* flags declared
-#      in Section 1.  The compile_definition() macro (defined in
-#      Cmake/flags/compile_definitions.cmake) maps CORE_ENABLE_X → CORE_HAS_X.
+# b) User-option tokens — derived directly from CORE_ENABLE_* flags declared in Section 1.  The
+# compile_definition() macro (defined in Cmake/flags/compile_definitions.cmake) maps CORE_ENABLE_X →
+# CORE_HAS_X.
 # =============================================================================
 
-# --------------------------------------------------------------------------
-# a) Detection-based HAS tokens (PROJECT_* set by root CMakeLists.txt includes)
+# -------------------------------------------------------------------------- a) Detection-based HAS
+# tokens (PROJECT_* set by root CMakeLists.txt includes)
 # --------------------------------------------------------------------------
 
 # std::exception_ptr — missing on some embedded or older MSVC toolchains.
@@ -174,8 +175,8 @@ else()
   list(APPEND CORE_COMPILE_DEFINITIONS CORE_AVX512=0)
 endif()
 
-# Optional numeric / algorithmic algorithm tokens (set externally or by root).
-# CORE_SOBOL_1111 — alternative Sobol direction-number initialisation scheme.
+# Optional numeric / algorithmic algorithm tokens (set externally or by root). CORE_SOBOL_1111 —
+# alternative Sobol direction-number initialisation scheme.
 if(CORE_SOBOL_1111)
   list(APPEND CORE_COMPILE_DEFINITIONS CORE_SOBOL_1111=1)
 endif()
@@ -185,8 +186,132 @@ if(CORE_LU_PIVOTING)
   list(APPEND CORE_COMPILE_DEFINITIONS CORE_LU_PIVOTING=1)
 endif()
 
-# --------------------------------------------------------------------------
-# b) User-option HAS tokens — compile_definition() converts ENABLE_X → HAS_X.
+# Enzyme automatic differentiation.
+if(CORE_ENABLE_ENZYME)
+  list(APPEND CORE_COMPILE_DEFINITIONS CORE_HAS_ENZYME=1)
+else()
+  list(APPEND CORE_COMPILE_DEFINITIONS CORE_HAS_ENZYME=0)
+endif()
+
+# Compression wrappers — CORE_HAS_COMPRESSION / CORE_COMPRESSION_TYPE_SNAPPY are appended after
+# include(compression) in Section 3 so standalone cmake -S Library/Core configures correctly (root
+# may not have run first).
+
+# Accumulate compile definitions that do not depend on Section 3 finders.
+set(CORE_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS})
+list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS ${CORE_COMPILE_DEFINITIONS})
+
+# ============================================================================= SECTION 3 — CMake
+# module includes
+#
+# Inclusion order: a) Standard CMake introspection helpers b) Shared toolchain helpers
+# (Cmake/tools/, Cmake/flags/) b2) Sanitizer (LTO already cleared before first include() when
+# enabled) c) Core-owned feature finders — compression, MKL, Enzyme d) Coverage gate — must follow
+# Enzyme (see note below); must run before LTO/linker e) LTO + linker — IPO must reflect
+# coverage/sanitizer before quarisma_find_linker()
+#
+# Coverage + Enzyme conflict: -fprofile-instr-generate inserts integer profile-counter stores into
+# each function.  Enzyme's LLVM pass cannot differentiate integer arithmetic and aborts with "cannot
+# handle unknown binary operator".  Therefore CORE_ENABLE_COVERAGE and CORE_ENABLE_ENZYME must never
+# both be ON at the same time.  The coverage gate is placed after include(enzyme) so that a
+# developer enabling both gets a clear diagnostic from the build system.
+# =============================================================================
+
+# LTO is incompatible with coverage/sanitizer — clear before any include().
+if(CORE_ENABLE_COVERAGE OR CORE_ENABLE_SANITIZER)
+  set(CORE_ENABLE_LTO OFF)
+endif()
+
+# a) Standard CMake introspection
+include(CheckCXXSourceCompiles)
+include(CheckCXXSourceRuns)
+include(CheckSymbolExists)
+
+# b) Shared toolchain helpers
+include(compiler_checks) # Detects compiler capabilities; sets PROJECT_* flags
+include(cache) # Configures per-target compiler cache launcher
+include(build_type) # Validates / normalises CMAKE_BUILD_TYPE
+include(checks) # Additional feature-check macros
+include(utils) # Utility macros shared across all modules
+include(platform) # Platform flags (macOS rpath, Windows /utf-8, …)
+include(CMakeDependentOption)
+if(CORE_ENABLE_SANITIZER)
+  include(sanitize)
+  quarisma_configure_sanitizer(CORE)
+endif()
+if(CORE_ENABLE_SPELL)
+  include(spell)
+endif()
+if(CORE_ENABLE_VALGRIND)
+  include(valgrind)
+endif()
+include(helper_macros)
+
+# c) Core-owned feature finders NOTE: compression, mkl, and enzyme are also included by the root
+# CMakeLists.txt (before add_subdirectory) so that ThirdParty targets can be gated on their results.
+# All three carry include_guard(GLOBAL), so the calls below are no-ops in a normal full-project
+# build.  They are kept here so that Library/Core can be used as a standalone sub-project (cmake -S
+# Library/Core).
+include(compression) # Finds compression libs (Snappy, …); sets CORE_ENABLE_COMPRESSION
+include(mkl) # Finds Intel MKL when CORE_ENABLE_MKL=ON
+include(enzyme) # Finds/configures Enzyme plugin when CORE_ENABLE_ENZYME=ON
+
+# Compression compile defs — must follow include(compression); sets CORE_COMPRESSION_TYPE_SNAPPY.
+if(CORE_ENABLE_COMPRESSION)
+  list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS CORE_HAS_COMPRESSION=1)
+  if(CORE_COMPRESSION_TYPE_SNAPPY)
+    list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS CORE_COMPRESSION_TYPE_SNAPPY=1)
+  else()
+    list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS CORE_COMPRESSION_TYPE_SNAPPY=0)
+  endif()
+else()
+  list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS CORE_HAS_COMPRESSION=0
+       CORE_COMPRESSION_TYPE_SNAPPY=0
+  )
+endif()
+
+# Enzyme validation: if the plugin was not found, disable gracefully. NOTE: enzyme.cmake itself
+# already sets CORE_ENABLE_ENZYME=OFF when the plugin is absent, and the root CMakeLists.txt runs
+# the same check at ~line 105. This guard is a standalone-build safety net — it is a no-op in a full
+# project configure because enzyme.cmake's include_guard already ran.
+if(CORE_ENABLE_ENZYME AND NOT TARGET Enzyme::enzyme)
+  message(STATUS "Enzyme plugin not found — disabling CORE_ENABLE_ENZYME")
+  set(CORE_ENABLE_ENZYME OFF CACHE BOOL "Enable Enzyme automatic differentiation" FORCE)
+endif()
+
+# d) Coverage gate When enabled, appends -fprofile-instr-generate / --coverage to global
+# CMAKE_CXX_FLAGS for this module.  LTO is cleared before Section 3 includes when coverage or
+# sanitizer is ON; LTO can otherwise corrupt .profraw data. WARNING: enabling coverage while
+# CORE_ENABLE_ENZYME=ON will cause Enzyme to fail — the two features are mutually exclusive.
+if(CORE_ENABLE_COVERAGE)
+  include(coverage)
+elseif(MSVC)
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " /DEBUG:FASTLINK")
+  string(APPEND CMAKE_SHARED_LINKER_FLAGS " /DEBUG:FASTLINK")
+endif()
+
+# e) LTO — must run after coverage/sanitizer flags are known so CMAKE_IPO matches reality
+if(CORE_ENABLE_LTO AND NOT CORE_ENABLE_COVERAGE AND NOT CORE_ENABLE_SANITIZER)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+  message(STATUS "Link Time Optimization (LTO) enabled via CMAKE_INTERPROCEDURAL_OPTIMIZATION")
+else()
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE OFF)
+  if(CORE_ENABLE_LTO AND (CORE_ENABLE_COVERAGE OR CORE_ENABLE_SANITIZER))
+    message(
+      STATUS "Link Time Optimization (LTO) disabled (incompatible with coverage and/or sanitizer)"
+    )
+  else()
+    message(STATUS "Link Time Optimization (LTO) disabled")
+  endif()
+endif()
+
+include(linker)
+quarisma_find_linker(${CORE_LINKER_CHOICE})
+
+# -------------------------------------------------------------------------- b) User-option HAS
+# tokens — compile_definition() converts ENABLE_X → HAS_X.
 # --------------------------------------------------------------------------
 
 # Intel MKL — high-performance BLAS/FFT/LAPACK.
@@ -207,136 +332,30 @@ compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_EXPERIMENTAL)
 # magic_enum static reflection.
 compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_MAGICENUM)
 
-# Enzyme automatic differentiation.
-if(CORE_ENABLE_ENZYME)
-  list(APPEND CORE_COMPILE_DEFINITIONS CORE_HAS_ENZYME=1)
-else()
-  list(APPEND CORE_COMPILE_DEFINITIONS CORE_HAS_ENZYME=0)
-endif()
-
-# Compression wrappers — CORE_HAS_COMPRESSION / CORE_COMPRESSION_TYPE_SNAPPY are
-# appended after include(compression) in Section 3 so standalone
-# cmake -S Library/Core configures correctly (root may not have run first).
-
-# Accumulate compile definitions that do not depend on Section 3 finders.
-set(CORE_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS})
-list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS ${CORE_COMPILE_DEFINITIONS})
-
-# =============================================================================
-# SECTION 3 — CMake module includes
-#
-# Inclusion order:
-#   a) Standard CMake introspection helpers
-#   b) Shared toolchain helpers  (Cmake/tools/, Cmake/flags/)
-#   c) Core-owned feature finders — compression, MKL, Enzyme
-#   d) Coverage gate — must follow toolchain includes so CORE_ENABLE_LTO is
-#      in scope; also must NOT overlap with Enzyme (see note below)
-#
-# Coverage + Enzyme conflict:
-#   -fprofile-instr-generate inserts integer profile-counter stores into each
-#   function.  Enzyme's LLVM pass cannot differentiate integer arithmetic and
-#   aborts with "cannot handle unknown binary operator".  Therefore
-#   CORE_ENABLE_COVERAGE and CORE_ENABLE_ENZYME must never both be ON at the
-#   same time.  The coverage gate is placed after include(enzyme) so that a
-#   developer enabling both gets a clear diagnostic from the build system.
-# =============================================================================
-
-# a) Standard CMake introspection
-include(CheckCXXSourceCompiles)
-include(CheckCXXSourceRuns)
-include(CheckSymbolExists)
-
-# b) Shared toolchain helpers
-include(compiler_checks)    # Detects compiler capabilities; sets PROJECT_* flags
-include(cache)              # Configures per-target compiler cache launcher
-include(build_type)         # Validates / normalises CMAKE_BUILD_TYPE
-include(checks)             # Additional feature-check macros
-include(utils)              # Utility macros shared across all modules
-include(platform)           # Platform flags (macOS rpath, Windows /utf-8, …)
-include(CMakeDependentOption)
-include(sanitize)
-include(clang_tidy)
-include(spell)
-include(iwyu)
-include(valgrind)
-include(helper_macros)
-include(linker)
-
-# c) Core-owned feature finders
-# NOTE: compression, mkl, and enzyme are also included by the root CMakeLists.txt
-#       (before add_subdirectory) so that ThirdParty targets can be gated on
-#       their results.  All three carry include_guard(GLOBAL), so the calls below
-#       are no-ops in a normal full-project build.  They are kept here so that
-#       Library/Core can be used as a standalone sub-project (cmake -S Library/Core).
-include(compression)        # Finds compression libs (Snappy, …); sets CORE_ENABLE_COMPRESSION
-include(mkl)                # Finds Intel MKL when CORE_ENABLE_MKL=ON
-include(enzyme)             # Finds/configures Enzyme plugin when CORE_ENABLE_ENZYME=ON
-
-# Compression compile defs — must follow include(compression); sets CORE_COMPRESSION_TYPE_SNAPPY.
-if(CORE_ENABLE_COMPRESSION)
-  list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS CORE_HAS_COMPRESSION=1)
-  if(CORE_COMPRESSION_TYPE_SNAPPY)
-    list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS CORE_COMPRESSION_TYPE_SNAPPY=1)
-  else()
-    list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS CORE_COMPRESSION_TYPE_SNAPPY=0)
-  endif()
-else()
-  list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS
-    CORE_HAS_COMPRESSION=0
-    CORE_COMPRESSION_TYPE_SNAPPY=0)
-endif()
-
-# Enzyme validation: if the plugin was not found, disable gracefully.
-# NOTE: enzyme.cmake itself already sets CORE_ENABLE_ENZYME=OFF when the plugin
-#       is absent, and the root CMakeLists.txt runs the same check at ~line 105.
-#       This guard is a standalone-build safety net — it is a no-op in a full
-#       project configure because enzyme.cmake's include_guard already ran.
-if(CORE_ENABLE_ENZYME AND NOT TARGET Enzyme::enzyme)
-  message(STATUS "Enzyme plugin not found — disabling CORE_ENABLE_ENZYME")
-  set(CORE_ENABLE_ENZYME OFF CACHE BOOL "Enable Enzyme automatic differentiation" FORCE)
-endif()
-
-# d) Coverage gate
-#    When enabled, appends -fprofile-instr-generate / --coverage to global
-#    CMAKE_CXX_FLAGS for this module.  LTO is forced OFF because LTO can move
-#    or eliminate profile-counter stores, corrupting the .profraw data.
-#    WARNING: enabling coverage while CORE_ENABLE_ENZYME=ON will cause Enzyme
-#    to fail — the two features are mutually exclusive.
-if(CORE_ENABLE_COVERAGE)
-  set(CORE_ENABLE_LTO OFF)
-  include(coverage)
-endif()
-
-# =============================================================================
-# Source discovery
+# ============================================================================= Source discovery
 # =============================================================================
 set(quarisma_headers "")
 set(quarisma_sources "")
 set(quarisma_templates "")
 
-# Per-module override — propagates to all targets in this directory scope,
-# including test targets in Testing/Cxx.  CMAKE_CXX_STANDARD_REQUIRED and
-# CMAKE_CXX_EXTENSIONS are set globally in the root CMakeLists.txt.
+# Per-module override — propagates to all targets in this directory scope, including test targets in
+# Testing/Cxx.  CMAKE_CXX_STANDARD_REQUIRED and CMAKE_CXX_EXTENSIONS are set globally in the root
+# CMakeLists.txt.
 set(CMAKE_CXX_STANDARD ${CORE_CXX_STANDARD})
 
 file(GLOB_RECURSE headers LIST_DIRECTORIES false
-  "${CMAKE_CURRENT_SOURCE_DIR}/util/*.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/common/*.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/c17/*.h"
-  ${quarisma_headers}
+     "${CMAKE_CURRENT_SOURCE_DIR}/util/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/common/*.h"
+     "${CMAKE_CURRENT_SOURCE_DIR}/c17/*.h" ${quarisma_headers}
 )
 
 file(GLOB_RECURSE sources LIST_DIRECTORIES false
-  "${CMAKE_CURRENT_SOURCE_DIR}/common/*.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/util/*.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/c17/*.h"
-  ${quarisma_sources}
+     "${CMAKE_CURRENT_SOURCE_DIR}/common/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/util/*.cpp"
+     "${CMAKE_CURRENT_SOURCE_DIR}/c17/*.h" ${quarisma_sources}
 )
 
 file(GLOB_RECURSE templates LIST_DIRECTORIES false
-  "${CMAKE_CURRENT_SOURCE_DIR}/util/*.hxx"
-  "${CMAKE_CURRENT_SOURCE_DIR}/common/*.hxx"
-  ${quarisma_templates}
+     "${CMAKE_CURRENT_SOURCE_DIR}/util/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/common/*.hxx"
+     ${quarisma_templates}
 )
 
 # Compression sources are included only when Snappy is selected (case-insensitive).
@@ -348,27 +367,14 @@ if(CORE_ENABLE_COMPRESSION)
   endif()
 endif()
 
+# ============================================================================= Target definition
 # =============================================================================
-# Target definition
-# =============================================================================
-if(CORE_ENABLE_LTO)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
-  message(STATUS "Link Time Optimization (LTO) enabled via CMAKE_INTERPROCEDURAL_OPTIMIZATION")
-else()
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE OFF)
-  message(STATUS "Link Time Optimization (LTO) disabled")
-endif()
-
 add_library(Core ${sources} ${headers} ${templates})
 quarisma_target_apply_cache(Core CORE_ENABLE_CACHE CORE_CACHE_BACKEND)
 quarisma_target_optional_icecc(Core CORE_ENABLE_ICECC)
 
 if(BUILD_SHARED_LIBS)
-  target_compile_definitions(Core
-    PUBLIC  QUARISMA_SHARED_DEFINE
-    PRIVATE QUARISMA_BUILDING_DLL)
+  target_compile_definitions(Core PUBLIC QUARISMA_SHARED_DEFINE PRIVATE QUARISMA_BUILDING_DLL)
   if(COMMAND quarisma_set_target_output_directories)
     quarisma_set_target_output_directories(Core)
   endif()
@@ -377,10 +383,10 @@ else()
 endif()
 
 add_library(Quarisma::Core ALIAS Core)
-add_library(Core::Core     ALIAS Core)
+add_library(Core::Core ALIAS Core)
 
-
-if(COMMAND quarisma_apply_iwyu)
+if(CORE_ENABLE_IWYU)
+  include(iwyu)
   quarisma_apply_iwyu(Core)
 endif()
 
@@ -389,10 +395,8 @@ quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "Compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}, std++=${CORE_CXX_STANDARD}")
 
-set_target_properties(Core PROPERTIES
-  CXX_STANDARD          ${CORE_CXX_STANDARD}
-  CXX_STANDARD_REQUIRED ON
-  CXX_EXTENSIONS        OFF
+set_target_properties(
+  Core PROPERTIES CXX_STANDARD ${CORE_CXX_STANDARD} CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF
 )
 
 if(MSVC)
@@ -402,19 +406,19 @@ else()
 endif()
 
 # Include roots: Library/Core → "util/…", "common/…", "c17/…"
-target_include_directories(Core
-  PUBLIC  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Testing>
-          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/Testing>
-          $<INSTALL_INTERFACE:include>
+target_include_directories(
+  Core
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Testing>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/Testing>
+         $<INSTALL_INTERFACE:include>
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/Testing/CoreTest.h.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/Testing/CoreTest.h"
-  @ONLY
+  "${CMAKE_CURRENT_BINARY_DIR}/Testing/CoreTest.h" @ONLY
 )
 
 if(CORE_DEPENDENCY_INCLUDE_DIRS)
@@ -422,14 +426,11 @@ if(CORE_DEPENDENCY_INCLUDE_DIRS)
   message(STATUS "Core: extra include dirs: ${CORE_DEPENDENCY_INCLUDE_DIRS}")
 endif()
 
-target_link_libraries(Core
-  PUBLIC Core::build
-         Logging::Logging
-         Memory::Memory
-)
+target_link_libraries(Core PUBLIC Core::build Logging::Logging Memory::Memory)
 
-if(COMMAND quarisma_target_clang_tidy)
-  quarisma_target_clang_tidy(Core)
+if(CORE_ENABLE_CLANGTIDY)
+  include(clang_tidy)
+  quarisma_target_clang_tidy(Core ${CORE_ENABLE_FIX})
   set_source_files_properties(PROPERTIES SKIP_LINTING ON)
 endif()
 
@@ -451,35 +452,32 @@ if(MEMORY_ENABLE_MIMALLOC AND TARGET Memory::mimalloc)
   add_dependencies(Core Memory::mimalloc)
 endif()
 
-# =============================================================================
-# Installation
+# ============================================================================= Installation
 # =============================================================================
 install(
   TARGETS Core
-  EXPORT  QuarismaTargets
+  EXPORT QuarismaTargets
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
+  INCLUDES
+  DESTINATION include
 )
-install(FILES ${headers}
-  DESTINATION include/Quarisma/Core
-  COMPONENT Development)
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/quarisma_version_macros.h"
-    "${CMAKE_CURRENT_BINARY_DIR}/quarisma_threads.h"
-    "${CMAKE_CURRENT_BINARY_DIR}/Testing/CoreTest.h"
+install(FILES ${headers} DESTINATION include/Quarisma/Core COMPONENT Development)
+install(
+  FILES "${CMAKE_CURRENT_BINARY_DIR}/quarisma_version_macros.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/quarisma_threads.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/Testing/CoreTest.h"
   DESTINATION include/Quarisma/Core
   COMPONENT Development
 )
 
-# =============================================================================
-# Testing
+# ============================================================================= Testing
 # =============================================================================
 if(CORE_ENABLE_TESTING)
   add_subdirectory(Testing/Cxx)
 endif()
 
-if(PROJECT_ENABLE_VALGRIND AND CORE_ENABLE_TESTING)
+if(CORE_ENABLE_VALGRIND AND CORE_ENABLE_TESTING)
   quarisma_apply_valgrind_timeouts()
 endif()

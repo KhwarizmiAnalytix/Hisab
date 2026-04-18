@@ -2,22 +2,18 @@
 # ----------------
 # Locate the Enzyme AD LLVM/clang plugin (LLDEnzyme / ClangEnzyme / LLVMEnzyme).
 #
-# Use with module mode (default for this name):
-#   find_package(Enzyme [REQUIRED] [QUIET])
+# Use with module mode (default for this name): find_package(Enzyme [REQUIRED] [QUIET])
 #
-# CMAKE_MODULE_PATH must include the directory containing this file (e.g. Cmake/packages).
-# CONFIG mode: use EnzymeConfig.cmake in the same directory, e.g.
-#   find_package(Enzyme CONFIG REQUIRED PATHS "${CMAKE_SOURCE_DIR}/Cmake/packages")
+# CMAKE_MODULE_PATH must include the directory containing this file (e.g. Cmake/packages). CONFIG
+# mode: use EnzymeConfig.cmake in the same directory, e.g. find_package(Enzyme CONFIG REQUIRED PATHS
+# "${CMAKE_SOURCE_DIR}/Cmake/packages")
 #
-# Input cache variable (Quarisma defines it in enzyme.cmake before find_package):
-#   ENZYME_PLUGIN_PATH - Optional explicit path to the plugin (.so/.dylib/.dll)
+# Input cache variable (Quarisma defines it in enzyme.cmake before find_package): ENZYME_PLUGIN_PATH
+# - Optional explicit path to the plugin (.so/.dylib/.dll)
 #
-# Result variables:
-#   Enzyme_FOUND
-#   Enzyme_PLUGIN_LIBRARY - Path to the Enzyme plugin shared library
+# Result variables: Enzyme_FOUND Enzyme_PLUGIN_LIBRARY - Path to the Enzyme plugin shared library
 #
-# Legacy compatibility (set when Enzyme_FOUND):
-#   ENZYME_PLUGIN_LIBRARY
+# Legacy compatibility (set when Enzyme_FOUND): ENZYME_PLUGIN_LIBRARY
 
 include(FindPackageHandleStandardArgs)
 
@@ -31,25 +27,21 @@ if(ENZYME_PLUGIN_PATH AND EXISTS "${ENZYME_PLUGIN_PATH}")
 else()
   if(WIN32)
     set(_enzyme_search_paths
-      "$ENV{LLVM_DIR}/bin"
-      "$ENV{LLVM_DIR}/lib"
-      "C:/Program Files/Enzyme/bin"
-      "C:/Program Files/Enzyme/lib"
-      "C:/Program Files (x86)/Enzyme/bin"
-      "C:/Program Files (x86)/Enzyme/lib"
-      "C:/Program Files/LLVM/bin"
-      "C:/Program Files/LLVM/lib"
-      "C:/Program Files (x86)/LLVM/bin"
-      "C:/Program Files (x86)/LLVM/lib"
+        "$ENV{LLVM_DIR}/bin"
+        "$ENV{LLVM_DIR}/lib"
+        "C:/Program Files/Enzyme/bin"
+        "C:/Program Files/Enzyme/lib"
+        "C:/Program Files (x86)/Enzyme/bin"
+        "C:/Program Files (x86)/Enzyme/lib"
+        "C:/Program Files/LLVM/bin"
+        "C:/Program Files/LLVM/lib"
+        "C:/Program Files (x86)/LLVM/bin"
+        "C:/Program Files (x86)/LLVM/lib"
     )
   else()
     set(_enzyme_search_paths
-      "/usr/lib"
-      "/usr/local/lib"
-      "/opt/homebrew/lib"
-      "/opt/homebrew/opt/llvm/lib"
-      "$ENV{LLVM_DIR}/lib"
-      "${CMAKE_CXX_COMPILER_EXTERNAL_TOOLCHAIN}/lib"
+        "/usr/lib" "/usr/local/lib" "/opt/homebrew/lib" "/opt/homebrew/opt/llvm/lib"
+        "$ENV{LLVM_DIR}/lib" "${CMAKE_CXX_COMPILER_EXTERNAL_TOOLCHAIN}/lib"
     )
   endif()
 
@@ -73,7 +65,9 @@ else()
   set(_found_enzyme_files)
   foreach(_search_path ${_enzyme_search_paths})
     if(WIN32)
-      file(GLOB _enzyme_candidates
+      file(
+        GLOB
+        _enzyme_candidates
         "${_search_path}/LLDEnzyme-${CMAKE_CXX_COMPILER_VERSION}.dll"
         "${_search_path}/LLDEnzyme-${_llvm_major_version}.dll"
         "${_search_path}/LLDEnzyme.dll"
@@ -88,7 +82,9 @@ else()
         "${_search_path}/LLVMEnzyme-*.dll"
       )
     elseif(APPLE)
-      file(GLOB _enzyme_candidates
+      file(
+        GLOB
+        _enzyme_candidates
         "${_search_path}/LLDEnzyme-${CMAKE_CXX_COMPILER_VERSION}.dylib"
         "${_search_path}/LLDEnzyme-${_llvm_major_version}.dylib"
         "${_search_path}/LLDEnzyme.dylib"
@@ -103,7 +99,9 @@ else()
         "${_search_path}/LLVMEnzyme-*.dylib"
       )
     else()
-      file(GLOB _enzyme_candidates
+      file(
+        GLOB
+        _enzyme_candidates
         "${_search_path}/LLDEnzyme-${CMAKE_CXX_COMPILER_VERSION}.so"
         "${_search_path}/LLDEnzyme-${_llvm_major_version}.so"
         "${_search_path}/LLDEnzyme.so"
@@ -135,32 +133,25 @@ else()
   endif()
 endif()
 
-find_package_handle_standard_args(Enzyme
-  FOUND_VAR Enzyme_FOUND
-  REQUIRED_VARS Enzyme_PLUGIN_LIBRARY
-)
+find_package_handle_standard_args(Enzyme FOUND_VAR Enzyme_FOUND REQUIRED_VARS Enzyme_PLUGIN_LIBRARY)
 
 if(Enzyme_FOUND)
-  set(ENZYME_PLUGIN_LIBRARY "${Enzyme_PLUGIN_LIBRARY}" CACHE FILEPATH
-    "Enzyme plugin library path" FORCE)
+  set(ENZYME_PLUGIN_LIBRARY "${Enzyme_PLUGIN_LIBRARY}" CACHE FILEPATH "Enzyme plugin library path"
+                                                             FORCE
+  )
   mark_as_advanced(ENZYME_PLUGIN_LIBRARY)
 endif()
 
-# After discovery, validate that the found DLL is ABI-compatible with the
-# active compiler.  Two conditions must both hold:
-#   1. DLL LLVM major version == compiler LLVM major version
-#   2. On MSVC frontend (clang-cl): DLL must NOT be a MinGW build
-#      (MinGW Enzyme depends on libstdc++ and libLLVM-N.dll from MSYS2 — those
-#       DLLs are absent in the native Windows environment, causing 0x7E at build
-#       time regardless of whether LLVM_ENABLE_PLUGINS is set).
+# After discovery, validate that the found DLL is ABI-compatible with the active compiler.  Two
+# conditions must both hold: 1. DLL LLVM major version == compiler LLVM major version 2. On MSVC
+# frontend (clang-cl): DLL must NOT be a MinGW build (MinGW Enzyme depends on libstdc++ and
+# libLLVM-N.dll from MSYS2 — those DLLs are absent in the native Windows environment, causing 0x7E
+# at build time regardless of whether LLVM_ENABLE_PLUGINS is set).
 #
-# The DLL filename encodes the LLVM version it was compiled against, e.g.:
-#   ClangEnzyme-21.dll  -> LLVM 21
-#   LLVMEnzyme-22.dll   -> LLVM 22
-# The MinGW vs MSVC ABI distinction is detected by checking whether the DLL
-# was installed into the MSYS2 prefix (path contains "msys" or "mingw") or
-# by verifying a LLVMConfig.cmake with LLVM_ENABLE_PLUGINS=ON is reachable
-# from the compiler.
+# The DLL filename encodes the LLVM version it was compiled against, e.g.: ClangEnzyme-21.dll  ->
+# LLVM 21 LLVMEnzyme-22.dll   -> LLVM 22 The MinGW vs MSVC ABI distinction is detected by checking
+# whether the DLL was installed into the MSYS2 prefix (path contains "msys" or "mingw") or by
+# verifying a LLVMConfig.cmake with LLVM_ENABLE_PLUGINS=ON is reachable from the compiler.
 if(Enzyme_FOUND AND WIN32)
   string(REGEX MATCH "Enzyme-([0-9]+)\\." _enzyme_ver_match "${Enzyme_PLUGIN_LIBRARY}")
   set(_enzyme_dll_major "${CMAKE_MATCH_1}")
@@ -175,22 +166,21 @@ if(Enzyme_FOUND AND WIN32)
     endif()
   endif()
 
-  # Check 2: MinGW-built DLL used with a native Windows compiler.
-  # Applies to both clang-cl (MSVC frontend) and native clang++ targeting
-  # x86_64-pc-windows-msvc (GNU frontend, MSVC ABI).  In both cases:
-  #   - libLLVM-N.dll and libstdc++-6.dll are MSYS2-only DLLs absent from
-  #     the native PATH → DLL fails to load with error 0x7E.
-  #   - The LLVM shipped with VS or from llvm.org has LLVM_ENABLE_PLUGINS=OFF
-  #     so the host cannot load any plugin regardless of DLL provenance.
+  # Check 2: MinGW-built DLL used with a native Windows compiler. Applies to both clang-cl (MSVC
+  # frontend) and native clang++ targeting x86_64-pc-windows-msvc (GNU frontend, MSVC ABI).  In both
+  # cases: - libLLVM-N.dll and libstdc++-6.dll are MSYS2-only DLLs absent from the native PATH → DLL
+  # fails to load with error 0x7E. - The LLVM shipped with VS or from llvm.org has
+  # LLVM_ENABLE_PLUGINS=OFF so the host cannot load any plugin regardless of DLL provenance.
   set(_enzyme_abi_ok TRUE)
   set(_enzyme_is_native_win_compiler FALSE)
   if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
     set(_enzyme_is_native_win_compiler TRUE)
   elseif(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # clang++ targeting windows-msvc (native ABI) also cannot load MinGW DLLs
-    if(CMAKE_CXX_COMPILER_TARGET MATCHES "windows-msvc"
-       OR CMAKE_CXX_COMPILER_VERSION MATCHES "^[0-9]"
-       AND NOT CMAKE_CXX_COMPILER MATCHES "[Mm]sys|[Mm]ingw|ucrt|clang64")
+    if(CMAKE_CXX_COMPILER_TARGET MATCHES "windows-msvc" OR CMAKE_CXX_COMPILER_VERSION MATCHES
+                                                           "^[0-9]"
+       AND NOT CMAKE_CXX_COMPILER MATCHES "[Mm]sys|[Mm]ingw|ucrt|clang64"
+    )
       set(_enzyme_is_native_win_compiler TRUE)
     endif()
   endif()
@@ -221,48 +211,48 @@ if(Enzyme_FOUND AND WIN32)
   if(NOT _enzyme_version_ok OR NOT _enzyme_abi_ok)
     if(NOT _enzyme_version_ok)
       set(_enzyme_mismatch_reason
-        "DLL version mismatch: ClangEnzyme-${_enzyme_dll_major}.dll was built\n"
-        "against LLVM ${_enzyme_dll_major}, but the active compiler is\n"
-        "${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} (LLVM ${_enzyme_compiler_major}).\n"
+          "DLL version mismatch: ClangEnzyme-${_enzyme_dll_major}.dll was built\n"
+          "against LLVM ${_enzyme_dll_major}, but the active compiler is\n"
+          "${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} (LLVM ${_enzyme_compiler_major}).\n"
       )
     else()
       set(_enzyme_mismatch_reason
-        "ABI mismatch: the found DLL appears to be a MinGW/MSYS2 build\n"
-        "(${Enzyme_PLUGIN_LIBRARY})\n"
-        "but the active compiler uses the MSVC C++ ABI (clang-cl).\n"
-        "MinGW Enzyme DLLs depend on libstdc++ and libLLVM-N.dll from MSYS2\n"
-        "which are not available in the native Windows build environment.\n"
+          "ABI mismatch: the found DLL appears to be a MinGW/MSYS2 build\n"
+          "(${Enzyme_PLUGIN_LIBRARY})\n"
+          "but the active compiler uses the MSVC C++ ABI (clang-cl).\n"
+          "MinGW Enzyme DLLs depend on libstdc++ and libLLVM-N.dll from MSYS2\n"
+          "which are not available in the native Windows build environment.\n"
       )
     endif()
-    message(WARNING
-      "\n"
-      "================================================================================\n"
-      "WARNING: Enzyme plugin is incompatible with the active compiler\n"
-      "================================================================================\n"
-      "\n"
-      ${_enzyme_mismatch_reason}
-      "\n"
-      "TO FIX:\n"
-      "\n"
-      "Option A — Use the MSYS2/MinGW64 Ninja build (already works):\n"
-      "   python setup.py config.build.test.ninja.enzyme\n"
-      "   The installed ClangEnzyme-${_enzyme_dll_major}.dll is compatible with\n"
-      "   MSYS2 MinGW64 clang (LLVM ${_enzyme_dll_major}, LLVM_ENABLE_PLUGINS=ON).\n"
-      "\n"
-      "Option B — Rebuild Enzyme for the VS/clang-cl toolchain:\n"
-      "   Requires an LLVM build with LLVM_ENABLE_PLUGINS=ON and MSVC ABI.\n"
-      "   Official LLVM Windows releases and VS-bundled clang ship with\n"
-      "   LLVM_ENABLE_PLUGINS=OFF and cannot host Enzyme plugins.\n"
-      "   You must build LLVM from source:\n"
-      "     cmake -G Ninja ../llvm-project/llvm\n"
-      "       -DLLVM_ENABLE_PLUGINS=ON\n"
-      "       -DLLVM_BUILD_LLVM_DYLIB=ON\n"
-      "       -DLLVM_LINK_LLVM_DYLIB=ON\n"
-      "       -DCMAKE_BUILD_TYPE=Release\n"
-      "   Then build Enzyme against that LLVM and reinstall.\n"
-      "\n"
-      "Disabling Enzyme support for this build.\n"
-      "================================================================================\n"
+    message(
+      WARNING "\n"
+              "================================================================================\n"
+              "WARNING: Enzyme plugin is incompatible with the active compiler\n"
+              "================================================================================\n"
+              "\n"
+              ${_enzyme_mismatch_reason}
+              "\n"
+              "TO FIX:\n"
+              "\n"
+              "Option A — Use the MSYS2/MinGW64 Ninja build (already works):\n"
+              "   python setup.py config.build.test.ninja.enzyme\n"
+              "   The installed ClangEnzyme-${_enzyme_dll_major}.dll is compatible with\n"
+              "   MSYS2 MinGW64 clang (LLVM ${_enzyme_dll_major}, LLVM_ENABLE_PLUGINS=ON).\n"
+              "\n"
+              "Option B — Rebuild Enzyme for the VS/clang-cl toolchain:\n"
+              "   Requires an LLVM build with LLVM_ENABLE_PLUGINS=ON and MSVC ABI.\n"
+              "   Official LLVM Windows releases and VS-bundled clang ship with\n"
+              "   LLVM_ENABLE_PLUGINS=OFF and cannot host Enzyme plugins.\n"
+              "   You must build LLVM from source:\n"
+              "     cmake -G Ninja ../llvm-project/llvm\n"
+              "       -DLLVM_ENABLE_PLUGINS=ON\n"
+              "       -DLLVM_BUILD_LLVM_DYLIB=ON\n"
+              "       -DLLVM_LINK_LLVM_DYLIB=ON\n"
+              "       -DCMAKE_BUILD_TYPE=Release\n"
+              "   Then build Enzyme against that LLVM and reinstall.\n"
+              "\n"
+              "Disabling Enzyme support for this build.\n"
+              "================================================================================\n"
     )
     unset(_enzyme_ver_match)
     unset(_enzyme_dll_major)

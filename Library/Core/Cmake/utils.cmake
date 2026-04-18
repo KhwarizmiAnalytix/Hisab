@@ -1,7 +1,6 @@
 include_guard(GLOBAL)
 
 if(UNIX)
-  # prevent Unknown CMake command "check_function_exists".
   include(CheckFunctionExists)
 endif()
 
@@ -34,16 +33,6 @@ if(EXISTS "/etc/os-release")
   endif()
 endif()
 
-# if(NOT INTERN_BUILD_MOBILE) # ---[ Check that our programs run.  This is different from the native
-# CMake # compiler check, which just tests if the program compiles and links.  This is # important
-# because with ASAN you might need to help the compiled library find # some dynamic libraries.
-# cmake_push_check_state(RESET) check_c_source_runs( " int main() { return 0; } " COMPILER_WORKS)
-# if(NOT COMPILER_WORKS) # Force cmake to retest next time around unset(COMPILER_WORKS CACHE)
-# message( FATAL_ERROR "Could not run a simple program built with your compiler. " "If you are
-# trying to use -fsanitize=address, make sure " "libasan is properly installed on your system (you
-# can confirm " "if the problem is this by attempting to build and run a " "small program.)")
-# endif() cmake_pop_check_state() endif()
-
 # ---[ Apply platform-specific optimization flags after compiler validation
 if(COMMAND quarisma_apply_platform_flags)
   quarisma_apply_platform_flags()
@@ -63,50 +52,18 @@ check_cxx_source_compiles(
           eptr = std::current_exception();
       }
     }"
-  PROJECT_EXCEPTION_PTR_SUPPORTED
+  TMP_EXCEPTION_PTR_SUPPORTED
 )
 
-if(PROJECT_EXCEPTION_PTR_SUPPORTED)
+if(TMP_EXCEPTION_PTR_SUPPORTED)
   message("--std::exception_ptr is supported.")
-  set(PROJECT_HAS_EXCEPTION_PTR 1)
+  set(HAS_EXCEPTION_PTR 1)
 else()
   message("--std::exception_ptr is NOT supported.")
 endif()
 cmake_pop_check_state()
 
-# ---[ Check for NUMA support
-if(MEMORY_ENABLE_NUMA)
-  cmake_push_check_state(RESET)
-  set(CMAKE_REQUIRED_FLAGS "-std=c++17")
-  check_cxx_source_compiles(
-    "#include <numa.h>
-    #include <numaif.h>
-
-    int main(int argc, char** argv) {
-    }"
-    PROJECT_IS_NUMA_AVAILABLE
-  )
-  if(PROJECT_IS_NUMA_AVAILABLE)
-    message("--NUMA is available")
-  else()
-    message("--NUMA is not available")
-    set(MEMORY_ENABLE_NUMA OFF)
-  endif()
-  cmake_pop_check_state()
-else()
-  message("--NUMA is disabled")
-  set(MEMORY_ENABLE_NUMA OFF)
-endif()
-
-# ---[ Check if we want to turn off deprecated warning due to glog. Note(jiayq): on ubuntu 14.04,
-# the default glog install uses ext/hash_set that is being deprecated. As a result, we will test if
-# this is the environment we are building under. If yes, we will turn off deprecation warning for a
-# cleaner build output. cmake_push_check_state(RESET) set(CMAKE_REQUIRED_FLAGS "-std=c++17")
-# check_cxx_source_compiles( "#include <glog/stl_logging.h> int main(int argc, char** argv) { return
-# 0; }" PROJECT_NEED_TO_TURN_OFF_DEPRECATION_WARNING FAIL_REGEX
-# ".*-Wno-deprecated.*")
-
-if(NOT PROJECT_NEED_TO_TURN_OFF_DEPRECATION_WARNING AND NOT MSVC)
+if(NOT TMP_NEED_TO_TURN_OFF_DEPRECATION_WARNING AND NOT MSVC)
   message("--Turning off deprecation warning.")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated")
 endif()
@@ -127,12 +84,12 @@ if(NOT INTERN_BUILD_MOBILE)
         _mm_add_ps(a, a);
         return 0;
       }"
-    PROJECT_COMPILER_SUPPORTS_SSE_EXTENSIONS
+    TMP_COMPILER_SUPPORTS_SSE_EXTENSIONS
   )
-  if(PROJECT_COMPILER_SUPPORTS_SSE_EXTENSIONS)
+  if(TMP_COMPILER_SUPPORTS_SSE_EXTENSIONS)
     message("--Current compiler supports sse extension.")
     if(VECTORIZATION_TYPE STREQUAL "sse")
-      set(PROJECT_SSE 1)
+      set(HAS_SSE 1)
       set(VECTORIZATION ON)
       set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
     endif()
@@ -155,12 +112,12 @@ if(NOT INTERN_BUILD_MOBILE)
         _mm256_add_ps (a,a);
         return 0;
       }"
-    PROJECT_COMPILER_SUPPORTS_AVX_EXTENSIONS
+    TMP_COMPILER_SUPPORTS_AVX_EXTENSIONS
   )
-  if(PROJECT_COMPILER_SUPPORTS_AVX_EXTENSIONS)
+  if(TMP_COMPILER_SUPPORTS_AVX_EXTENSIONS)
     message("--Current compiler supports avx extension.")
     if(VECTORIZATION_TYPE STREQUAL "avx")
-      set(PROJECT_AVX 1)
+      set(HAS_AVX 1)
       set(VECTORIZATION ON)
       set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
     endif()
@@ -185,12 +142,12 @@ if(NOT INTERN_BUILD_MOBILE)
         _mm256_extract_epi64(x, 0); // we rely on this in our AVX2 code
         return 0;
       }"
-    PROJECT_COMPILER_SUPPORTS_AVX2_EXTENSIONS
+    TMP_COMPILER_SUPPORTS_AVX2_EXTENSIONS
   )
-  if(PROJECT_COMPILER_SUPPORTS_AVX2_EXTENSIONS)
+  if(TMP_COMPILER_SUPPORTS_AVX2_EXTENSIONS)
     message("--Current compiler supports avx2 extension.")
     if(VECTORIZATION_TYPE STREQUAL "avx2")
-      set(PROJECT_AVX2 1)
+      set(HAS_AVX2 1)
       set(VECTORIZATION ON)
       set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
     endif()
@@ -225,12 +182,12 @@ if(NOT INTERN_BUILD_MOBILE)
        __mmask16 m = _mm512_cmp_epi32_mask(a, a, _MM_CMPINT_EQ);
        __m512i r = _mm512_andnot_si512(a, a);
      }"
-    PROJECT_COMPILER_SUPPORTS_AVX512_EXTENSIONS
+    TMP_COMPILER_SUPPORTS_AVX512_EXTENSIONS
   )
-  if(PROJECT_COMPILER_SUPPORTS_AVX512_EXTENSIONS)
+  if(TMP_COMPILER_SUPPORTS_AVX512_EXTENSIONS)
     message("--Current compiler supports avx512f extension.")
     if(VECTORIZATION_TYPE STREQUAL "avx512")
-      set(PROJECT_AVX512 1)
+      set(HAS_AVX512 1)
       set(VECTORIZATION ON)
       set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
     endif()
@@ -259,9 +216,9 @@ if(NOT INTERN_BUILD_MOBILE)
         a = _mm_fmadd_ps(a,b,b);
         return 0;
       }"
-    PROJECT_COMPILER_SUPPORTS_FMA_EXTENSIONS
+    TMP_COMPILER_SUPPORTS_FMA_EXTENSIONS
   )
-  if(PROJECT_COMPILER_SUPPORTS_FMA_EXTENSIONS)
+  if(TMP_COMPILER_SUPPORTS_FMA_EXTENSIONS)
     message("--Current compiler supports fma extension.")
     set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
   endif()
@@ -285,10 +242,10 @@ if(NOT INTERN_BUILD_MOBILE)
         b = _mm256_tanh_ps(a);
         return 0;
       }"
-    PROJECT_COMPILER_SUPPORTS_SVML_EXTENSIONS
+    TMP_COMPILER_SUPPORTS_SVML_EXTENSIONS
   )
 
-  if(NOT PROJECT_COMPILER_SUPPORTS_SVML_EXTENSIONS AND VECTORIZATION)
+  if(NOT TMP_COMPILER_SUPPORTS_SVML_EXTENSIONS AND VECTORIZATION)
     message("--Current compiler does not supports SVML functoins. Turn ON CORE_ENABLE_SVML")
     set(CORE_ENABLE_SVML 1)
   else()

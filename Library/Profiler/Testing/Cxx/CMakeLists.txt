@@ -63,8 +63,7 @@ target_compile_definitions(
 )
 
 # Profiler links Core privately; executables may need Core explicitly when linking static archives.
-target_link_libraries(
-  ProfilerCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Profiler::Profiler)
+target_link_libraries(ProfilerCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Profiler::Profiler)
 
 set_target_properties(
   ProfilerCxxTests PROPERTIES FOLDER "Tests" VS_DEBUGGER_WORKING_DIRECTORY

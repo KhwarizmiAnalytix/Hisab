@@ -1,6 +1,5 @@
-#=============================================================================
-# Quarisma Helper Macros
-# Module
+# ============================================================================= Quarisma Helper
+# Macros Module
 
 # This module provides utility macros for common CMake operations used throughout the Quarisma build
 # system, including source file filtering and organization.
@@ -48,8 +47,12 @@ function(quarisma_target_optional_icecc target_name enable_var)
     find_program(QUARISMA_ICECC_EXECUTABLE NAMES icecc)
   endif()
   if(QUARISMA_ICECC_EXECUTABLE)
-    set_property(TARGET "${target_name}" PROPERTY CXX_COMPILER_LAUNCHER "${QUARISMA_ICECC_EXECUTABLE}")
-    set_property(TARGET "${target_name}" PROPERTY C_COMPILER_LAUNCHER "${QUARISMA_ICECC_EXECUTABLE}")
+    set_property(
+      TARGET "${target_name}" PROPERTY CXX_COMPILER_LAUNCHER "${QUARISMA_ICECC_EXECUTABLE}"
+    )
+    set_property(
+      TARGET "${target_name}" PROPERTY C_COMPILER_LAUNCHER "${QUARISMA_ICECC_EXECUTABLE}"
+    )
     message(STATUS "Icecream compiler launcher for ${target_name}: ${QUARISMA_ICECC_EXECUTABLE}")
   else()
     message(STATUS "Icecream enabled for ${target_name} but icecc was not found in PATH")

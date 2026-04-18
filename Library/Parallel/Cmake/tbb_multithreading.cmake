@@ -1,22 +1,20 @@
-#=============================================================================
-# Quarisma Intel TBB - Multithreading Backend
-# (Threading Building Blocks) Parallel Task Scheduling
+# ============================================================================= Quarisma Intel TBB -
+# Multithreading Backend (Threading Building Blocks) Parallel Task Scheduling
 
-# This module configures Intel TBB as the parallel task scheduling backend.
-# It is activated when PARALLEL_ENABLE_TBB=ON, which is set by parallel_backend.cmake
-# when PARALLEL_BACKEND=tbb is selected.
+# This module configures Intel TBB as the parallel task scheduling backend. It is activated when
+# PARALLEL_ENABLE_TBB=ON, which is set by parallel_backend.cmake when PARALLEL_BACKEND=tbb is
+# selected.
 #
-# Provides automatic fallback support:
-# 1. First attempts to find system-installed TBB (vcpkg, apt, homebrew, Intel oneAPI)
-# 2. If not found, automatically downloads and builds TBB from source
-# 3. Creates the Tbb::tbb interface target for linking
+# Provides automatic fallback support: 1. First attempts to find system-installed TBB (vcpkg, apt,
+# homebrew, Intel oneAPI) 2. If not found, automatically downloads and builds TBB from source 3.
+# Creates the Tbb::tbb interface target for linking
 
 cmake_minimum_required(VERSION 3.16)
 
 include_guard(GLOBAL)
 
-# Gate: only proceed if TBB parallel backend is requested
-# PARALLEL_ENABLE_TBB is set by parallel_backend.cmake when PARALLEL_BACKEND=tbb
+# Gate: only proceed if TBB parallel backend is requested PARALLEL_ENABLE_TBB is set by
+# parallel_backend.cmake when PARALLEL_BACKEND=tbb
 if(NOT PARALLEL_ENABLE_TBB)
   message(STATUS "Intel TBB parallel backend is disabled (PARALLEL_ENABLE_TBB=OFF)")
   return()
@@ -24,8 +22,8 @@ endif()
 
 message(STATUS "Configuring Intel TBB multithreading support...")
 
-#=============================================================================
-# Configuration Options
+# ============================================================================= Configuration
+# Options
 
 # Option to force building TBB from source (useful for testing)
 option(PROJECT_TBB_FORCE_BUILD_FROM_SOURCE
@@ -39,12 +37,12 @@ mark_as_advanced(PROJECT_TBB_VERSION)
 
 # TBB repository URL
 set(PROJECT_TBB_REPOSITORY "https://github.com/oneapi-src/oneTBB.git" CACHE STRING
-                                                                           "TBB repository URL"
+                                                                            "TBB repository URL"
 )
 mark_as_advanced(PROJECT_TBB_REPOSITORY)
 
-#=============================================================================
-# Step 1: Try to find system-installed TBB
+# ============================================================================= Step 1: Try to find
+# system-installed TBB
 
 set(TBB_FOUND FALSE)
 set(TBB_FROM_SOURCE FALSE)
@@ -74,14 +72,13 @@ if(NOT PROJECT_TBB_FORCE_BUILD_FROM_SOURCE)
   else()
     message(STATUS "❌ System-installed Intel TBB not found")
 
-    #=============================================================================
-    # Windows + Clang: Require system-installed TBB
+    # ============================================================================= Windows + Clang:
+    # Require system-installed TBB
     #
-    # Building TBB from source on Windows with Clang has compatibility issues:
-    # - Clang targeting MSVC ABI doesn't support TBB's -fPIC flags
-    # - DLL export/import symbol visibility issues
-    # - Linux-specific linker flags incompatible with lld-link
-    # Solution: Require users to install TBB via package manager
+    # Building TBB from source on Windows with Clang has compatibility issues: - Clang targeting
+    # MSVC ABI doesn't support TBB's -fPIC flags - DLL export/import symbol visibility issues -
+    # Linux-specific linker flags incompatible with lld-link Solution: Require users to install TBB
+    # via package manager
 
     if(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
       message(
@@ -121,8 +118,8 @@ if(NOT PROJECT_TBB_FORCE_BUILD_FROM_SOURCE)
   endif()
 endif()
 
-#=============================================================================
-# Step 2: Build TBB from source using FetchContent
+# ============================================================================= Step 2: Build TBB
+# from source using FetchContent
 
 message(STATUS "Building Intel TBB from source...")
 message(STATUS "   Repository: ${PROJECT_TBB_REPOSITORY}")
@@ -183,8 +180,8 @@ message(STATUS "✅ Successfully downloaded Intel TBB source")
 message(STATUS "   Source directory: ${onetbb_SOURCE_DIR}")
 message(STATUS "   Binary directory: ${onetbb_BINARY_DIR}")
 
-#=============================================================================
-# Step 3: Verify TBB::tbb target was created
+# ============================================================================= Step 3: Verify
+# TBB::tbb target was created
 
 if(NOT TARGET TBB::tbb)
   message(FATAL_ERROR "TBB::tbb target was not created after building from source")
@@ -196,16 +193,16 @@ set(TBB_FOUND TRUE)
 message(STATUS "✅ Successfully built Intel TBB from source")
 message(STATUS "   TBB::tbb target available")
 
-#=============================================================================
-# Step 4: Create Tbb::tbb interface target
+# ============================================================================= Step 4: Create
+# Tbb::tbb interface target
 
 if(NOT TARGET Tbb::tbb)
   add_library(Tbb::tbb INTERFACE IMPORTED)
   target_link_libraries(Tbb::tbb INTERFACE TBB::tbb)
 endif()
 
-#=============================================================================
-# Step 5: Configure output directories for the tbb target
+# ============================================================================= Step 5: Configure
+# output directories for the tbb target
 
 if(TBB_FROM_SOURCE AND TARGET tbb)
   foreach(config Debug Release RelWithDebInfo MinSizeRel)
@@ -231,8 +228,8 @@ if(TBB_FROM_SOURCE AND TARGET tbb)
   message(STATUS "Configured output directories for TBB target 'tbb'")
 endif()
 
-#=============================================================================
-# Step 6: Export TBB information for other modules (e.g. tbb_memory.cmake)
+# ============================================================================= Step 6: Export TBB
+# information for other modules (e.g. tbb_memory.cmake)
 
 set(TBB_FOUND TRUE CACHE BOOL "TBB was found or built successfully" FORCE)
 set(TBB_FROM_SOURCE ${TBB_FROM_SOURCE} CACHE BOOL "TBB was built from source" FORCE)

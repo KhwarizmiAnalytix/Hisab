@@ -1,5 +1,5 @@
-# =============================================================================
-# Logging Library C++ Tests
+# ============================================================================= Logging Library C++
+# Tests
 # =============================================================================
 
 file(GLOB_RECURSE test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cpp")
@@ -19,7 +19,6 @@ target_compile_definitions(
   LoggingCxxTests PRIVATE LOGGING_HAS_GTEST=1 LOGGING_GOOGLE_TEST LOGGING_HAS_GTEST=1
                           LOGGING_GOOGLE_TEST USE_GTEST _VARIADIC_MAX=10
 )
-
 
 target_link_libraries(
   LoggingCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Logging::Logging Logging::build

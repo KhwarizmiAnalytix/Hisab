@@ -1,5 +1,4 @@
-#=============================================================================
-# Quarisma Intel MKL
+# ============================================================================= Quarisma Intel MKL
 # (Math Kernel Library) Integration Module
 
 # This module provides robust MKL integration with automatic fallback support: 1. First attempts to
@@ -41,11 +40,12 @@ foreach(MKL_LIB IN LISTS MKL_LIBRARIES)
   endif()
 endforeach()
 
-# TODO: This is a hack, it will not pick up architecture dependent
-# MKL libraries correctly; see https://github.com/pytorch/pytorch/issues/73008
+# TODO: This is a hack, it will not pick up architecture dependent MKL libraries correctly; see
+# https://github.com/pytorch/pytorch/issues/73008
 set_property(
-  TARGET Mkl::mkl PROPERTY INTERFACE_LINK_DIRECTORIES
-  ${MKL_ROOT}/lib ${MKL_ROOT}/lib/intel64 ${MKL_ROOT}/lib/intel64_win ${MKL_ROOT}/lib/win-x64)
+  TARGET Mkl::mkl PROPERTY INTERFACE_LINK_DIRECTORIES ${MKL_ROOT}/lib ${MKL_ROOT}/lib/intel64
+                           ${MKL_ROOT}/lib/intel64_win ${MKL_ROOT}/lib/win-x64
+)
 
 if(UNIX)
   if(CORE_ENABLE_STATIC_MKL)
@@ -63,5 +63,3 @@ if(UNIX)
     endforeach()
   endif()
 endif()
-
-

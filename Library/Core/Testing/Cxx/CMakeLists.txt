@@ -6,8 +6,7 @@
 # ============================================================================= Test Source Files
 # Discovery
 # =============================================================================
-file(GLOB_RECURSE test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cpp"
-)
+file(GLOB_RECURSE test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cpp")
 
 # Exclude special test files that need separate handling
 set(TestFiles)
@@ -81,14 +80,11 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   set_source_files_properties(
     "${CMAKE_CURRENT_SOURCE_DIR}/TestPointer.cpp" PROPERTIES COMPILE_FLAGS "-O1"
   )
-  message(
-    STATUS
-      "Applied Clang ICE workaround: TestPointer.cpp compiled with -O1"
-  )
+  message(STATUS "Applied Clang ICE workaround: TestPointer.cpp compiled with -O1")
 endif()
 
-# Link libraries Core library is linked which transitively brings in Core-local dependencies
-# via CORE_DEPENDENCY_LIBS
+# Link libraries Core library is linked which transitively brings in Core-local dependencies via
+# CORE_DEPENDENCY_LIBS
 target_link_libraries(CoreCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Core::Core)
 
 if(PROFILER_HAS_NATIVE OR PROFILER_ENABLE_NATIVE_PROFILER)
@@ -110,8 +106,8 @@ add_test(NAME CoreCxxTests COMMAND CoreCxxTests
          WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
 )
 
-# Set test properties
-# Unit tests finish in seconds when healthy; keep timeout modest for faster feedback.
+# Set test properties Unit tests finish in seconds when healthy; keep timeout modest for faster
+# feedback.
 set_tests_properties(CoreCxxTests PROPERTIES TIMEOUT 120 LABELS "Core;Unit")
 
 # Set coverage environment variable if enabled
@@ -129,11 +125,11 @@ if(MEMORY_ENABLE_CUDA)
   target_link_libraries(CoreCxxTests PRIVATE ${PROJECT_CUDA_LIBRARIES})
 endif()
 
-# CudaEnzymeADTest.cu provides the fixture implementation used by TestEnzymeAD.cpp.
-# It must be compiled as a CUDA TU (contains __device__ code and <<<>>> launches).
+# CudaEnzymeADTest.cu provides the fixture implementation used by TestEnzymeAD.cpp. It must be
+# compiled as a CUDA TU (contains __device__ code and <<<>>> launches).
 #
-# On Windows with the MinGW toolchain, compiling CUDA (.cu) with clang++ regularly fails due to
-# host header / CUDA wrapper incompatibilities (e.g. math_functions.hpp redefinitions and missing
+# On Windows with the MinGW toolchain, compiling CUDA (.cu) with clang++ regularly fails due to host
+# header / CUDA wrapper incompatibilities (e.g. math_functions.hpp redefinitions and missing
 # texture_fetch_functions.h). Keep the rest of the suite buildable by skipping this CUDA TU.
 if(MEMORY_ENABLE_CUDA AND CORE_ENABLE_ENZYME)
   if(WIN32 AND (MINGW OR CMAKE_CXX_COMPILER MATCHES "msys64"))
@@ -144,12 +140,9 @@ if(MEMORY_ENABLE_CUDA AND CORE_ENABLE_ENZYME)
         "The rest of CoreCxxTests will still build."
     )
   else()
-    target_sources(CoreCxxTests PRIVATE
-      "${CMAKE_CURRENT_SOURCE_DIR}/CudaEnzymeADTest.cu"
-    )
+    target_sources(CoreCxxTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/CudaEnzymeADTest.cu")
     set_source_files_properties(
-      "${CMAKE_CURRENT_SOURCE_DIR}/CudaEnzymeADTest.cu"
-      PROPERTIES LANGUAGE CUDA
+      "${CMAKE_CURRENT_SOURCE_DIR}/CudaEnzymeADTest.cu" PROPERTIES LANGUAGE CUDA
     )
   endif()
 endif()
@@ -209,11 +202,9 @@ if(CORE_ENABLE_BENCHMARK)
     # Create the executable
     add_executable(${target_name} "${_bench_source}")
 
-    # Link libraries - Core::benchmark: Google Benchmark library - Core::benchmark_main:
-    # Provides main() function - Core::Core: Core library with all dependencies
-    target_link_libraries(
-      ${target_name} PRIVATE Core::benchmark Core::benchmark_main Core::Core
-    )
+    # Link libraries - Core::benchmark: Google Benchmark library - Core::benchmark_main: Provides
+    # main() function - Core::Core: Core library with all dependencies
+    target_link_libraries(${target_name} PRIVATE Core::benchmark Core::benchmark_main Core::Core)
 
     # Set target properties
     set_target_properties(

@@ -1,13 +1,11 @@
 include_guard(GLOBAL)
 
-#if(NOT PROJECT_ENABLE_COVERAGE AND NOT LOGGING_ENABLE_SANITIZER AND NOT MEMORY_ENABLE_SANITIZER
-#   AND NOT CORE_ENABLE_SANITIZER AND NOT PARALLEL_ENABLE_SANITIZER AND NOT PROFILER_ENABLE_SANITIZER)
-#  message("--avx compiler flags: ${VECTORIZATION_COMPILER_FLAGS}")
-#  set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
-#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
-#endif()
-# make sure Crun is linked in with the native compiler, it is not used by default for shared
-# libraries and is required for things like java to work.
+# if(NOT PROJECT_ENABLE_COVERAGE AND NOT LOGGING_ENABLE_SANITIZER AND NOT MEMORY_ENABLE_SANITIZER
+# AND NOT CORE_ENABLE_SANITIZER AND NOT PARALLEL_ENABLE_SANITIZER AND NOT PROFILER_ENABLE_SANITIZER)
+# message("--avx compiler flags: ${VECTORIZATION_COMPILER_FLAGS}") set(CMAKE_C_FLAGS
+# "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}") set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}
+# ${VECTORIZATION_COMPILER_FLAGS}") endif() make sure Crun is linked in with the native compiler, it
+# is not used by default for shared libraries and is required for things like java to work.
 if(CMAKE_SYSTEM MATCHES "SunOS.*")
   if(NOT CMAKE_COMPILER_IS_GNUCXX)
     find_library(PROJECT_SUNCC_CRUN_LIBRARY Crun /opt/SUNWspro/lib)
@@ -22,9 +20,9 @@ if(CMAKE_SYSTEM MATCHES "SunOS.*")
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-  # Enable exceptions because QUARISMA and third party code rely on C++ exceptions. Allow C++ to catch
-  # exceptions. Emscripten disables it by default due to high overhead. Generate helper functions to
-  # get stack traces for uncaught exceptions
+  # Enable exceptions because QUARISMA and third party code rely on C++ exceptions. Allow C++ to
+  # catch exceptions. Emscripten disables it by default due to high overhead. Generate helper
+  # functions to get stack traces for uncaught exceptions
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwasm-exceptions")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fwasm-exceptions")
   set(CMAKE_EXE_LINKER_FLAGS
@@ -99,9 +97,7 @@ else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_ANSI_CFLAGS}")
   endif()
   if(CMAKE_SYSTEM MATCHES "OSF1-V.*")
-    set(CMAKE_CXX_FLAGS
-        "${CMAKE_CXX_FLAGS} -timplicit_local -no_implicit_include"
-    )
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -timplicit_local -no_implicit_include")
   endif()
   if(CMAKE_SYSTEM MATCHES "AIX.*")
     # allow t-ypeid and d-ynamic_cast usage (normally off by default on xlC)
@@ -186,15 +182,6 @@ if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zi")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Zi")
 
-  # /DEBUG and /INCREMENTAL are linker flags — must NOT go into compiler flags
-  # (clang-cl parses /DEBUG as -D EBUG:... making it a preprocessor define)
-  if(PROJECT_ENABLE_COVERAGE)
-    string(APPEND CMAKE_EXE_LINKER_FLAGS    " /DEBUG:FULL /INCREMENTAL:NO")
-    string(APPEND CMAKE_SHARED_LINKER_FLAGS " /DEBUG:FULL /INCREMENTAL:NO")
-  else()
-    string(APPEND CMAKE_EXE_LINKER_FLAGS    " /DEBUG:FASTLINK")
-    string(APPEND CMAKE_SHARED_LINKER_FLAGS " /DEBUG:FASTLINK")
-  endif()
   # Use /utf-8 so that MSVC uses utf-8 in source files and object files
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")

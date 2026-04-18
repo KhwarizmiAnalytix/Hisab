@@ -31,8 +31,8 @@ if(NOT ITT_FOUND)
     set(ITT_LIBRARIES ittnotify)
     set(ITT_FOUND ON)
 
-    # Set FOLDER property for all ITT API targets
-    # The ITT API library creates multiple targets: ittnotify, jitprofiling, and optionally advisor
+    # Set FOLDER property for all ITT API targets The ITT API library creates multiple targets:
+    # ittnotify, jitprofiling, and optionally advisor
     if(TARGET ittnotify)
       set_target_properties(ittnotify PROPERTIES FOLDER "ThirdParty/ittapi")
     endif()

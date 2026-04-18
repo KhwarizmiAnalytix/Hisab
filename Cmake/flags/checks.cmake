@@ -1,5 +1,5 @@
-#=============================================================================
-# Quarisma System
+include_guard(GLOBAL)
+# ============================================================================= Quarisma System
 # Validation and Checks Module
 
 # This module performs efficient system validation with aggressive caching to minimize CMake
@@ -29,8 +29,7 @@ endif()
 
 message(STATUS "Quarisma: Performing system validation...")
 
-#=============================================================================
-# Platform Detection
+# ============================================================================= Platform Detection
 # with Caching
 
 # Fast platform detection with cached results
@@ -52,8 +51,7 @@ if(NOT DEFINED TEMP_PLATFORM_DETECTED)
   message(STATUS "Quarisma: Platform detected: ${TEMP_PLATFORM}")
 endif()
 
-#=============================================================================
-# Compiler Version
+# ============================================================================= Compiler Version
 # Validation (Updated for Modern Requirements)
 
 # Updated minimum compiler versions for C++17 support and modern optimizations
@@ -130,11 +128,10 @@ else()
   message(WARNING "Quarisma: Unknown compiler '${CMAKE_CXX_COMPILER_ID}'. Build may fail.")
 endif()
 
-# C++ standard is owned per-module (LOGGING_CXX_STANDARD, MEMORY_CXX_STANDARD, etc.)
-# Validation and set_target_properties happen inside each Library/*/CMakeLists.txt.
+# C++ standard is owned per-module (LOGGING_CXX_STANDARD, MEMORY_CXX_STANDARD, etc.) Validation and
+# set_target_properties happen inside each Library/*/CMakeLists.txt.
 
-#=============================================================================
-# Essential System
+# ============================================================================= Essential System
 # Dependencies Validation
 
 include(CheckIncludeFile)
@@ -165,8 +162,7 @@ if(NOT DEFINED TEMP_MATH_LIB_VALIDATED)
   message(STATUS "Quarisma: Math library support validated")
 endif()
 
-#=============================================================================
-# Compiler Capability
+# ============================================================================= Compiler Capability
 # Validation (Cached)
 
 include(CheckCXXSourceCompiles)
@@ -215,9 +211,7 @@ if(NOT DEFINED TEMP_CXX17_FEATURES_VALIDATED)
     TEMP_HAS_STD_OPTIONAL
   )
 
-  if(NOT TEMP_HAS_STRUCTURED_BINDINGS OR NOT TEMP_HAS_IF_CONSTEXPR OR NOT
-                                                                          TEMP_HAS_STD_OPTIONAL
-  )
+  if(NOT TEMP_HAS_STRUCTURED_BINDINGS OR NOT TEMP_HAS_IF_CONSTEXPR OR NOT TEMP_HAS_STD_OPTIONAL)
     message(WARNING "Quarisma: Compiler does not support required C++17 features")
   endif()
 
@@ -247,13 +241,12 @@ if(NOT DEFINED TEMP_EXCEPTION_HANDLING_VALIDATED)
   endif()
 
   set(TEMP_EXCEPTION_HANDLING_VALIDATED TRUE CACHE INTERNAL
-                                                     "Exception handling validation completed"
+                                                   "Exception handling validation completed"
   )
   message(STATUS "Quarisma: Exception handling validated")
 endif()
 
-#=============================================================================
-# Platform-Specific
+# ============================================================================= Platform-Specific
 # Validations
 
 # Windows-specific checks
@@ -281,8 +274,7 @@ if(TEMP_PLATFORM_LINUX OR TEMP_PLATFORM_MACOS)
   endif()
 endif()
 
-#=============================================================================
-# Validation
+# ============================================================================= Validation
 # Completion and Caching
 
 # Mark validation as completed for this configuration
@@ -299,5 +291,4 @@ set(TEMP_VALIDATION_SUMMARY
 message(STATUS "Checks: System validation completed successfully")
 message(STATUS "Checks: ${TEMP_VALIDATION_SUMMARY}")
 
-#=============================================================================
-# End of checks.cmake
+# ============================================================================= End of checks.cmake

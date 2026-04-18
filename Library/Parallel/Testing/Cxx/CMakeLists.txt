@@ -1,9 +1,9 @@
-# =============================================================================
-# Parallel Library C++ Tests
+# ============================================================================= Parallel Library C++
+# Tests
 # =============================================================================
 
-# =============================================================================
-# Test Source Files Discovery
+# ============================================================================= Test Source Files
+# Discovery
 # =============================================================================
 file(GLOB_RECURSE test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cpp")
 
@@ -30,12 +30,13 @@ foreach(_test_source IN ITEMS ${test_sources})
   list(APPEND TestFiles "${_test_source}")
 endforeach()
 
-# =============================================================================
-# ParallelCxxTests Executable
+# ============================================================================= ParallelCxxTests
+# Executable
 # =============================================================================
 add_executable(ParallelCxxTests ${TestFiles})
 
-# PARALLEL_HAS_GTEST must be set so ParallelTest.h includes gtest (streaming EXPECT_EQ, SUCCEED, etc.).
+# PARALLEL_HAS_GTEST must be set so ParallelTest.h includes gtest (streaming EXPECT_EQ, SUCCEED,
+# etc.).
 target_compile_definitions(
   ParallelCxxTests PRIVATE PARALLEL_HAS_GTEST=1 PARALLEL_GOOGLE_TEST USE_GTEST _VARIADIC_MAX=10
 )
@@ -57,7 +58,7 @@ endif()
 
 set_target_properties(
   ParallelCxxTests PROPERTIES FOLDER "Tests" VS_DEBUGGER_WORKING_DIRECTORY
-                                              "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+                                             "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
 )
 
 add_test(NAME ParallelCxxTests COMMAND ParallelCxxTests
@@ -79,8 +80,8 @@ endif()
 message(STATUS "✓ ParallelCxxTests registered with CTest")
 message(STATUS "  - Working directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
-# =============================================================================
-# Individual Benchmark Executables
+# ============================================================================= Individual Benchmark
+# Executables
 # =============================================================================
 if(PARALLEL_ENABLE_BENCHMARK)
 

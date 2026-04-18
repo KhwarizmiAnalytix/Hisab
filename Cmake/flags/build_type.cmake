@@ -1,7 +1,6 @@
 include_guard(GLOBAL)
 
-#=============================================================================
-# Quarisma Build Type
+# ============================================================================= Quarisma Build Type
 # Configuration Module
 
 # This module optimizes build configurations for maximum performance and minimal CMake
@@ -11,8 +10,8 @@ include_guard(GLOBAL)
 # type-specific optimization flags for maximum runtime performance - Efficient MSVC runtime library
 # selection - Assertion and debug symbol management per build type
 
-# Guard against multiple inclusions for performance
-# Set default build type with caching for performance
+# Guard against multiple inclusions for performance Set default build type with caching for
+# performance
 if(NOT CMAKE_BUILD_TYPE)
   message("CMAKE_BUILD_TYPE not set - defaulting to Release")
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build." FORCE)

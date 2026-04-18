@@ -1,6 +1,5 @@
-#=============================================================================
-# Quarisma Configuration
-# Summary Module
+# ============================================================================= Quarisma
+# Configuration Summary Module
 
 # This module provides a function to print a comprehensive summary of the Quarisma build
 # configuration, including compiler settings, enabled features, and optional dependencies.
@@ -75,12 +74,14 @@ function(print_configuration_summary)
   message("    Multithreading      : ${_parallel_backend}")
   message("    Logging backend     : ${LOGGING_BACKEND}")
   message("    Profiling backend   : ${PROFILER_BACKEND}")
-  message("    Compiler cache      : Logging=${LOGGING_ENABLE_CACHE}/${LOGGING_CACHE_BACKEND} Memory=${MEMORY_ENABLE_CACHE}/${MEMORY_CACHE_BACKEND} Core=${CORE_ENABLE_CACHE}/${CORE_CACHE_BACKEND} Parallel=${PARALLEL_ENABLE_CACHE}/${PARALLEL_CACHE_BACKEND} Profiler=${PROFILER_ENABLE_CACHE}/${PROFILER_CACHE_BACKEND}")
+  message(
+    "    Compiler cache      : Logging=${LOGGING_ENABLE_CACHE}/${LOGGING_CACHE_BACKEND} Memory=${MEMORY_ENABLE_CACHE}/${MEMORY_CACHE_BACKEND} Core=${CORE_ENABLE_CACHE}/${CORE_CACHE_BACKEND} Parallel=${PARALLEL_ENABLE_CACHE}/${PARALLEL_CACHE_BACKEND} Profiler=${PROFILER_ENABLE_CACHE}/${PROFILER_CACHE_BACKEND}"
+  )
   message("    MKL                 : ${CORE_ENABLE_MKL}")
   message("    Memkind             : ${MEMORY_ENABLE_MEMKIND}")
   message("    NUMA                : ${MEMORY_ENABLE_NUMA}")
-  #message("    Sobol 1111          : ${PROJECT_SOBOL_1111}")
-  #message("    LU Pivoting         : ${PROJECT_LU_PIVOTING}")
+  # message("    Sobol 1111          : ${PROJECT_SOBOL_1111}") message("    LU Pivoting         :
+  # ${PROJECT_LU_PIVOTING}")
   message("    LTO                 : ${PROJECT_ENABLE_LTO}")
   message("    Magic Enum          : ${CORE_ENABLE_MAGICENUM}")
   message("    Mimalloc            : ${MEMORY_ENABLE_MIMALLOC}")
