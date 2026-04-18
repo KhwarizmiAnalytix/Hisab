@@ -48,28 +48,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS        OFF)
 
 
-
-# =============================================================================
-# Testing and Quality Assurance Configuration Flags
-# =============================================================================
-
-set(BUILD_TESTING "ON" CACHE STRING "Build module testing directories")
-set_property(CACHE BUILD_TESTING PROPERTY STRINGS "ON;OFF;WANT")
-
-option(PROJECT_ENABLE_EXAMPLES "Build example programs" OFF)
-
-option(ENABLE_GTEST "Enable google test" ON)
-
-option(ENABLE_BENCHMARK "Enable google benchmark library" OFF)
-
-set(VECTORIZATION_TYPE "avx2"
-    CACHE STRING "vectorization implementation to use. Options are no, sse, avx, avx2, or avx512"
-)
-set_property(CACHE VECTORIZATION_TYPE PROPERTY STRINGS no sse avx avx2 avx512)
-
-option(CORE_ENABLE_MAGICENUM "Enable magic_enum static reflection for enums." ON)
-mark_as_advanced(CORE_ENABLE_MAGICENUM)
-
 # =============================================================================
 # Global Project Variables
 # =============================================================================
@@ -110,26 +88,6 @@ add_library(corebuild INTERFACE)
 target_link_libraries(corebuild INTERFACE quarismabuild)
 add_library(Core::build ALIAS corebuild)
 
-include(sanitize)
-
-include(mkl)
-include(enzyme)
-if(CORE_ENABLE_ENZYME AND NOT TARGET Enzyme::enzyme)
-  message(STATUS "Enzyme plugin not found - disabling CORE_ENABLE_ENZYME")
-  set(CORE_ENABLE_ENZYME OFF CACHE BOOL "Enable Enzyme" FORCE)
-endif()
-include(clang_tidy)
-include(spell)
-include(iwyu)
-include(valgrind)
-include(helper_macros)
-
-if(NOT DEFINED PARALLEL_LLVM_PROFILE_FILE OR PARALLEL_LLVM_PROFILE_FILE STREQUAL "")
-  set(PARALLEL_LLVM_PROFILE_FILE ${PROJECT_LLVM_PROFILE_FILE})
-endif()
-if(NOT DEFINED PROFILER_LLVM_PROFILE_FILE OR PROFILER_LLVM_PROFILE_FILE STREQUAL "")
-  set(PROFILER_LLVM_PROFILE_FILE ${PROJECT_LLVM_PROFILE_FILE})
-endif()
 
 set(LOGGING_DEPENDENCY_LIBS)
 set(MEMORY_DEPENDENCY_LIBS)
@@ -146,71 +104,30 @@ set(CORE_DEPENDENCY_INCLUDE_DIRS)
 # =============================================================================
 # Third-Party Libraries
 # =============================================================================
-set(QUARISMA_ENABLE_GTEST      ${ENABLE_GTEST})
-set(QUARISMA_ENABLE_BENCHMARK  ${ENABLE_BENCHMARK})
-set(CORE_ENABLE_MAGICENUM  ${CORE_ENABLE_MAGICENUM})
-set(CORE_ENABLE_ENZYME     ${CORE_ENABLE_ENZYME})
 
-include(logging_backend)
-
-set(_PROJECT_BUILD_TESTING ${BUILD_TESTING})
-add_subdirectory(ThirdParty)
-set(BUILD_TESTING ${_PROJECT_BUILD_TESTING} CACHE STRING "Build module testing directories" FORCE)
-unset(_PROJECT_BUILD_TESTING)
-
-set(LOGGING_DEPENDENCY_LIBS  ${QUARISMA_DEPENDENCY_LIBS})
-set(MEMORY_DEPENDENCY_LIBS   ${QUARISMA_DEPENDENCY_LIBS})
-set(PARALLEL_DEPENDENCY_LIBS ${QUARISMA_DEPENDENCY_LIBS})
-set(PROFILER_DEPENDENCY_LIBS ${QUARISMA_DEPENDENCY_LIBS})
-set(CORE_DEPENDENCY_LIBS     ${QUARISMA_DEPENDENCY_LIBS})
-set(LOGGING_DEPENDENCY_INCLUDE_DIRS  ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})
-set(MEMORY_DEPENDENCY_INCLUDE_DIRS   ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})
-set(PARALLEL_DEPENDENCY_INCLUDE_DIRS ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})
-set(PROFILER_DEPENDENCY_INCLUDE_DIRS ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})
-set(CORE_DEPENDENCY_INCLUDE_DIRS     ${QUARISMA_DEPENDENCY_INCLUDE_DIRS})
-
-include(linker)
-
-if(DEFINED PROJECT_LINKER_FLAGS_COMMON)
-  target_link_options(quarismabuild INTERFACE ${PROJECT_LINKER_FLAGS_COMMON})
+# Aggregate per-module gtest/benchmark flags: ThirdParty builds GoogleTest /
+# Benchmark only when at least one module requests them.
+set(QUARISMA_ENABLE_GTEST OFF)
+if(LOGGING_ENABLE_GTEST OR MEMORY_ENABLE_GTEST OR CORE_ENABLE_GTEST
+   OR PARALLEL_ENABLE_GTEST OR PROFILER_ENABLE_GTEST)
+  set(QUARISMA_ENABLE_GTEST ON)
 endif()
+
+set(QUARISMA_ENABLE_BENCHMARK OFF)
+if(LOGGING_ENABLE_BENCHMARK OR MEMORY_ENABLE_BENCHMARK OR CORE_ENABLE_BENCHMARK
+   OR PARALLEL_ENABLE_BENCHMARK OR PROFILER_ENABLE_BENCHMARK)
+  set(QUARISMA_ENABLE_BENCHMARK ON)
+endif()
+
+
+
+add_subdirectory(ThirdParty)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
 
-if(BUILD_TESTING)
-  enable_testing()
-endif()
 
-# Forward-declare module LTO options so the PROJECT_ENABLE_LTO aggregate can be
-# computed before add_subdirectory().  Each module's CMakeLists.txt re-declares
-# the same option(); because CMake cache variables are set on first write, those
-# subsequent option() calls are intentional no-ops — not redundancies.
-option(LOGGING_ENABLE_LTO "Enable Link Time Optimization for Logging" OFF)
-option(MEMORY_ENABLE_LTO "Enable Link Time Optimization for Memory" OFF)
-option(PARALLEL_ENABLE_LTO "Enable Link Time Optimization for Parallel" OFF)
-option(PROFILER_ENABLE_LTO "Enable Link Time Optimization for Profiler" OFF)
-option(CORE_ENABLE_LTO "Enable Link Time Optimization for Core" OFF)
-
-set(PROJECT_ENABLE_LTO OFF)
-if(LOGGING_ENABLE_LTO
-   OR MEMORY_ENABLE_LTO
-   OR PARALLEL_ENABLE_LTO
-   OR PROFILER_ENABLE_LTO
-   OR CORE_ENABLE_LTO)
-  set(PROJECT_ENABLE_LTO ON)
-endif()
-
-if(PROJECT_ENABLE_LTO)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
-  message(STATUS "Link Time Optimization (LTO) enabled via CMAKE_INTERPROCEDURAL_OPTIMIZATION")
-else()
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE OFF)
-  message(STATUS "Link Time Optimization (LTO) disabled")
-endif()
 
 add_subdirectory(Library/Logging)
 add_subdirectory(Library/Memory)
@@ -218,14 +135,6 @@ add_subdirectory(Library/Core)
 add_subdirectory(Library/Parallel)
 add_subdirectory(Library/Profiler)
 
-if(PROJECT_ENABLE_EXAMPLES)
-  add_subdirectory("${CMAKE_SOURCE_DIR}/Examples/Profiling" "${CMAKE_BINARY_DIR}/Examples/Profiling")
-  message(STATUS "✓ Profiling Examples enabled")
-endif()
-
-if(PROJECT_ENABLE_VALGRIND AND BUILD_TESTING)
-  quarisma_apply_valgrind_timeouts()
-endif()
 
 include(summary)
 print_configuration_summary()

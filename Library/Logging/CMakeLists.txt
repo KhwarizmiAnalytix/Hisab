@@ -33,6 +33,23 @@ option(LOGGING_ENABLE_LTO
 option(LOGGING_ENABLE_COVERAGE
   "Enable coverage instrumentation for Logging" OFF)
 
+# Testing — gates add_subdirectory(Testing/Cxx).
+option(LOGGING_ENABLE_TESTING
+  "Build Logging test suite" ON)
+
+# Examples — gates add_subdirectory(Examples) when Logging examples exist.
+option(LOGGING_ENABLE_EXAMPLES
+  "Build Logging example programs" OFF)
+
+# Google Test integration for Logging tests.
+option(LOGGING_ENABLE_GTEST
+  "Enable GoogleTest for Logging" ON)
+
+# Google Benchmark integration for Logging micro-benchmarks.
+option(LOGGING_ENABLE_BENCHMARK
+  "Enable Google Benchmark for Logging" OFF)
+  
+option(LOGGING_ENABLE_LTO "Enable Link Time Optimization for Logging" OFF)
 # Icecream distributed compilation launcher (rarely needed; hidden by default).
 option(LOGGING_ENABLE_ICECC
   "Use Icecream (icecc) distributed compiler for Logging" OFF)
@@ -104,6 +121,13 @@ include(checks)             # Additional feature-check macros
 include(utils)              # Utility macros shared across all modules
 include(platform)           # Platform flags (macOS rpath, Windows /utf-8, …)
 include(CMakeDependentOption)
+include(sanitize)
+include(clang_tidy)
+include(spell)
+include(iwyu)
+include(valgrind)
+include(helper_macros)
+include(linker)
 
 # c) Coverage gate
 #    When enabled, appends -fprofile-instr-generate / --coverage to global
@@ -149,6 +173,16 @@ endif()
 # CMAKE_CXX_EXTENSIONS are set globally in the root CMakeLists.txt.
 set(CMAKE_CXX_STANDARD ${LOGGING_CXX_STANDARD})
 
+if(LOGGING_ENABLE_LTO)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+  message(STATUS "Link Time Optimization (LTO) enabled via CMAKE_INTERPROCEDURAL_OPTIMIZATION")
+else()
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE OFF)
+  message(STATUS "Link Time Optimization (LTO) disabled")
+endif()
+
 add_library(Logging ${logging_sources} ${logging_headers})
 quarisma_target_apply_cache(Logging LOGGING_ENABLE_CACHE LOGGING_CACHE_BACKEND)
 quarisma_target_optional_icecc(Logging LOGGING_ENABLE_ICECC)
@@ -166,12 +200,10 @@ endif()
 
 add_library(Logging::Logging ALIAS Logging)
 
-if(LOGGING_ENABLE_LTO)
-  set_target_properties(Logging PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-  message(STATUS "Logging: LTO enabled")
-else()
-  message(STATUS "Logging: LTO disabled")
+if(DEFINED LOGGING_LINKER_FLAGS_COMMON)
+  target_link_options(Logging PRIVATE ${LOGGING_LINKER_FLAGS_COMMON})
 endif()
+
 
 if(COMMAND logging_apply_iwyu)
   logging_apply_iwyu(Logging)
@@ -259,6 +291,10 @@ install(FILES ${logging_headers}
 # =============================================================================
 # Testing
 # =============================================================================
-if(BUILD_TESTING)
+if(LOGGING_ENABLE_TESTING)
   add_subdirectory(Testing/Cxx)
+endif()
+
+if(PROJECT_ENABLE_VALGRIND AND LOGGING_ENABLE_TESTING)
+  quarisma_apply_valgrind_timeouts()
 endif()

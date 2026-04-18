@@ -1,20 +1,11 @@
 include_guard(GLOBAL)
 
-#if(NOT PROJECT_ENABLE_COVERAGE AND NOT PROJECT_ENABLE_SANITIZER)
+#if(NOT PROJECT_ENABLE_COVERAGE AND NOT LOGGING_ENABLE_SANITIZER AND NOT MEMORY_ENABLE_SANITIZER
+#   AND NOT CORE_ENABLE_SANITIZER AND NOT PARALLEL_ENABLE_SANITIZER AND NOT PROFILER_ENABLE_SANITIZER)
 #  message("--avx compiler flags: ${VECTORIZATION_COMPILER_FLAGS}")
 #  set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
 #  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
 #endif()
-
-if(PROJECT_ENABLE_SANITIZER)
-  set(CMAKE_CXX_FLAGS
-      "${CMAKE_CXX_FLAGS} -O1 -g -fno-omit-frame-pointer -fno-optimize-sibling-calls"
-  )
-  set(CMAKE_C_FLAGS
-      "${CMAKE_C_FLAGS} -O1 -g -fno-omit-frame-pointer -fno-optimize-sibling-calls"
-  )
-endif()
-
 # make sure Crun is linked in with the native compiler, it is not used by default for shared
 # libraries and is required for things like java to work.
 if(CMAKE_SYSTEM MATCHES "SunOS.*")

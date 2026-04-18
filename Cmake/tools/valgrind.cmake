@@ -33,9 +33,9 @@ if(APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
   message(WARNING "Valgrind does not support Apple Silicon (ARM64) architecture")
   message(WARNING "Consider using sanitizers instead:")
   message(
-    WARNING "  AddressSanitizer: -DPROJECT_ENABLE_SANITIZER=ON -DPROJECT_SANITIZER_TYPE=address"
+    WARNING "  AddressSanitizer: -DLOGGING_ENABLE_SANITIZER=ON (or MEMORY_/CORE_/PARALLEL_/PROFILER_)"
   )
-  message(WARNING "  LeakSanitizer:    -DPROJECT_ENABLE_SANITIZER=ON -DPROJECT_SANITIZER_TYPE=leak")
+  message(WARNING "  LeakSanitizer:    -DLOGGING_SANITIZER_TYPE=leak (set XXX_SANITIZER_TYPE per module)")
   message(
     WARNING "Continuing with Valgrind configuration (will fail if Valgrind is not installed)..."
   )
@@ -171,8 +171,8 @@ function(quarisma_apply_valgrind_timeouts)
     return()
   endif()
 
-  # Get all tests in the current directory and subdirectories
-  get_property(all_tests DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY TESTS)
+  # Get all tests registered in the calling module's directory tree
+  get_property(all_tests DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY TESTS)
 
   foreach(test_name ${all_tests})
     # Get current timeout

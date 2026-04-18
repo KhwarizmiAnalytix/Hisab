@@ -34,6 +34,18 @@ option(PARALLEL_ENABLE_LTO
 option(PARALLEL_ENABLE_COVERAGE
   "Enable coverage instrumentation for Parallel tests" OFF)
 
+# Testing — gates add_subdirectory(Testing/Cxx).
+option(PARALLEL_ENABLE_TESTING
+  "Build Parallel test suite" ON)
+
+# Examples — gates add_subdirectory(Examples) when Parallel examples exist.
+option(PARALLEL_ENABLE_EXAMPLES
+  "Build Parallel example programs" OFF)
+
+# Google Test integration for Parallel tests.
+option(PARALLEL_ENABLE_GTEST
+  "Enable GoogleTest for Parallel" ON)
+
 # Google Benchmark integration for SMP micro-benchmarks.
 option(PARALLEL_ENABLE_BENCHMARK
   "Enable Google Benchmark for Parallel" OFF)
@@ -105,7 +117,13 @@ include(threads)            # Detects pthreads / Win32 threads; sets PARALLEL_EN
 include(parallel_backend)   # Validates PARALLEL_BACKEND; derives PARALLEL_ENABLE_TBB/OPENMP
 include(openmp)             # Finds/configures OpenMP when PARALLEL_ENABLE_OPENMP=ON
 include(tbb_multithreading) # Finds/builds Intel TBB when PARALLEL_ENABLE_TBB=ON
-
+include(sanitize)
+include(clang_tidy)
+include(spell)
+include(iwyu)
+include(valgrind)
+include(helper_macros)
+include(linker)
 # d) Coverage gate
 #    When enabled, appends -fprofile-instr-generate / --coverage to global
 #    CMAKE_CXX_FLAGS for this module.  LTO is forced OFF here because LTO
@@ -212,6 +230,16 @@ endif()
 # =============================================================================
 # Target definition
 # =============================================================================
+if(PARALLEL_ENABLE_LTO)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+  message(STATUS "Link Time Optimization (LTO) enabled via CMAKE_INTERPROCEDURAL_OPTIMIZATION")
+else()
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE OFF)
+  message(STATUS "Link Time Optimization (LTO) disabled")
+endif()
+
 add_library(Parallel ${parallel_sources} ${parallel_headers})
 quarisma_target_apply_cache(Parallel PARALLEL_ENABLE_CACHE PARALLEL_CACHE_BACKEND)
 quarisma_target_optional_icecc(Parallel PARALLEL_ENABLE_ICECC)
@@ -229,12 +257,10 @@ endif()
 
 add_library(Parallel::Parallel ALIAS Parallel)
 
-if(PARALLEL_ENABLE_LTO)
-  set_target_properties(Parallel PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-  message(STATUS "Parallel: LTO enabled")
-else()
-  message(STATUS "Parallel: LTO disabled")
+if(DEFINED PARALLEL_LINKER_FLAGS_COMMON)
+  target_link_options(Parallel PRIVATE ${PARALLEL_LINKER_FLAGS_COMMON})
 endif()
+
 
 if(COMMAND parallel_apply_iwyu)
   parallel_apply_iwyu(Parallel)
@@ -312,6 +338,10 @@ install(FILES ${parallel_headers}
 # =============================================================================
 # Testing
 # =============================================================================
-if(BUILD_TESTING)
+if(PARALLEL_ENABLE_TESTING)
   add_subdirectory(Testing/Cxx)
+endif()
+
+if(PROJECT_ENABLE_VALGRIND AND PARALLEL_ENABLE_TESTING)
+  quarisma_apply_valgrind_timeouts()
 endif()

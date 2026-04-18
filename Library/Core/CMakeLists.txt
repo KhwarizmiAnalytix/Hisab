@@ -14,7 +14,7 @@
 #   CORE_HAS_MKL=1/0             — Intel MKL math library linked
 #   CORE_HAS_SVML=1/0            — Intel SVML short-vector math library linked
 #   CORE_HAS_ROCM=1/0            — AMD ROCm GPU support compiled in
-#   HAS_GTEST=1/0                — Google Test available to tests
+#   CORE_HAS_GTEST=1/0           — Google Test available to Core tests
 #   CORE_HAS_EXPERIMENTAL=1/0   — Experimental features enabled (use with caution)
 #   CORE_HAS_MAGICENUM=1/0       — magic_enum static enum-reflection active
 #   CORE_HAS_ENZYME=1/0          — Enzyme automatic-differentiation plugin loaded
@@ -42,6 +42,18 @@ option(CORE_ENABLE_LTO
 # -fprofile-instr-generate / --coverage compiler flags for this module only.
 option(CORE_ENABLE_COVERAGE
   "Enable coverage instrumentation for Core" OFF)
+
+# Testing — gates add_subdirectory(Testing/Cxx).
+option(CORE_ENABLE_TESTING
+  "Build Core test suite" ON)
+
+# Examples — gates add_subdirectory(Examples) when Core examples exist.
+option(CORE_ENABLE_EXAMPLES
+  "Build Core example programs" OFF)
+
+# Google Test integration for Core tests.
+option(CORE_ENABLE_GTEST
+  "Enable GoogleTest for Core" ON)
 
 # Enzyme — LLVM-based automatic differentiation plugin.
 # NOTE: CORE_ENABLE_ENZYME is declared (with a NOT DEFINED guard) inside
@@ -81,11 +93,8 @@ mark_as_advanced(CORE_ENABLE_EXPERIMENTAL)
 #       conditionally build the magic_enum target.  Declaring it again here
 #       would be a no-op; see root CMakeLists.txt for the canonical declaration.
 
-# Google Test — pulled in when building tests.
-# NOTE: ENABLE_GTEST is declared in the root CMakeLists.txt (before
-#       add_subdirectory) because ThirdParty/CMakeLists.txt uses
-#       QUARISMA_ENABLE_GTEST = ${ENABLE_GTEST} to gate GoogleTest.
-#       Declaring it again here would be a no-op.
+option(CORE_ENABLE_MAGICENUM "Enable magic_enum static reflection for enums." ON)
+mark_as_advanced(CORE_ENABLE_MAGICENUM)
 
 # Icecream distributed compilation launcher (rarely needed; hidden by default).
 option(CORE_ENABLE_ICECC
@@ -110,6 +119,10 @@ set_property(CACHE CORE_CXX_STANDARD PROPERTY STRINGS 11 14 17 20 23)
 if(NOT CORE_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
   message(FATAL_ERROR "CORE_CXX_STANDARD must be one of: 11 14 17 20 23")
 endif()
+set(VECTORIZATION_TYPE "avx2"
+    CACHE STRING "vectorization implementation to use. Options are no, sse, avx, avx2, or avx512"
+)
+set_property(CACHE VECTORIZATION_TYPE PROPERTY STRINGS no sse avx avx2 avx512)
 
 # =============================================================================
 # SECTION 2 — CORE_ENABLE_* → CORE_HAS_* compile definitions
@@ -185,8 +198,8 @@ compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_SVML)
 # AMD ROCm — heterogeneous GPU computing.
 compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_ROCM)
 
-# Google Test availability (framework-level flag, prefix-less by convention).
-compile_definition(CORE_COMPILE_DEFINITIONS ENABLE_GTEST)
+# Google Test availability.
+compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_GTEST)
 
 # Experimental API gate.
 compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_EXPERIMENTAL)
@@ -241,6 +254,13 @@ include(checks)             # Additional feature-check macros
 include(utils)              # Utility macros shared across all modules
 include(platform)           # Platform flags (macOS rpath, Windows /utf-8, …)
 include(CMakeDependentOption)
+include(sanitize)
+include(clang_tidy)
+include(spell)
+include(iwyu)
+include(valgrind)
+include(helper_macros)
+include(linker)
 
 # c) Core-owned feature finders
 # NOTE: compression, mkl, and enzyme are also included by the root CMakeLists.txt
@@ -331,6 +351,16 @@ endif()
 # =============================================================================
 # Target definition
 # =============================================================================
+if(CORE_ENABLE_LTO)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+  message(STATUS "Link Time Optimization (LTO) enabled via CMAKE_INTERPROCEDURAL_OPTIMIZATION")
+else()
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE OFF)
+  message(STATUS "Link Time Optimization (LTO) disabled")
+endif()
+
 add_library(Core ${sources} ${headers} ${templates})
 quarisma_target_apply_cache(Core CORE_ENABLE_CACHE CORE_CACHE_BACKEND)
 quarisma_target_optional_icecc(Core CORE_ENABLE_ICECC)
@@ -349,12 +379,10 @@ endif()
 add_library(Quarisma::Core ALIAS Core)
 add_library(Core::Core     ALIAS Core)
 
-if(CORE_ENABLE_LTO)
-  set_target_properties(Core PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-  message(STATUS "Core: LTO enabled")
-else()
-  message(STATUS "Core: LTO disabled")
+if(DEFINED CORE_LINKER_FLAGS_COMMON)
+  target_link_options(Core PRIVATE ${CORE_LINKER_FLAGS_COMMON})
 endif()
+
 
 if(COMMAND quarisma_apply_iwyu)
   quarisma_apply_iwyu(Core)
@@ -452,6 +480,10 @@ install(FILES
 # =============================================================================
 # Testing
 # =============================================================================
-if(BUILD_TESTING)
+if(CORE_ENABLE_TESTING)
   add_subdirectory(Testing/Cxx)
+endif()
+
+if(PROJECT_ENABLE_VALGRIND AND CORE_ENABLE_TESTING)
+  quarisma_apply_valgrind_timeouts()
 endif()

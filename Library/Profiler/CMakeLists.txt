@@ -54,6 +54,22 @@ option(PROFILER_ENABLE_LTO
 option(PROFILER_ENABLE_COVERAGE
   "Enable coverage instrumentation for Profiler tests" OFF)
 
+# Testing — gates add_subdirectory(Testing/Cxx).
+option(PROFILER_ENABLE_TESTING
+  "Build Profiler test suite" ON)
+
+# Examples — gates the Profiling examples under Examples/Profiling.
+option(PROFILER_ENABLE_EXAMPLES
+  "Build Profiler example programs" OFF)
+
+# Google Test integration for Profiler tests.
+option(PROFILER_ENABLE_GTEST
+  "Enable GoogleTest for Profiler" ON)
+
+# Google Benchmark integration for Profiler micro-benchmarks.
+option(PROFILER_ENABLE_BENCHMARK
+  "Enable Google Benchmark for Profiler" OFF)
+
 # Icecream distributed compilation launcher (rarely needed; hidden by default).
 option(PROFILER_ENABLE_ICECC
   "Use Icecream (icecc) distributed compiler for Profiler" OFF)
@@ -153,7 +169,13 @@ include(checks)             # Additional feature-check macros
 include(utils)              # Utility macros shared across all modules
 include(platform)           # Platform flags (macOS rpath, Windows /utf-8, …)
 include(CMakeDependentOption)
-
+include(sanitize)
+include(clang_tidy)
+include(spell)
+include(iwyu)
+include(valgrind)
+include(helper_macros)
+include(linker)
 # c) Coverage gate
 #    When enabled, appends -fprofile-instr-generate / --coverage to global
 #    CMAKE_CXX_FLAGS for this module.  LTO is forced OFF here because LTO
@@ -247,6 +269,16 @@ endif()
 # =============================================================================
 # Target definition
 # =============================================================================
+if(PROFILER_ENABLE_LTO)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+  message(STATUS "Link Time Optimization (LTO) enabled via CMAKE_INTERPROCEDURAL_OPTIMIZATION")
+else()
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE OFF)
+  message(STATUS "Link Time Optimization (LTO) disabled")
+endif()
+
 add_library(Profiler ${profiler_sources} ${profiler_headers})
 quarisma_target_apply_cache(Profiler PROFILER_ENABLE_CACHE PROFILER_CACHE_BACKEND)
 quarisma_target_optional_icecc(Profiler PROFILER_ENABLE_ICECC)
@@ -264,12 +296,10 @@ endif()
 
 add_library(Profiler::Profiler ALIAS Profiler)
 
-if(PROFILER_ENABLE_LTO)
-  set_target_properties(Profiler PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-  message(STATUS "Profiler: LTO enabled")
-else()
-  message(STATUS "Profiler: LTO disabled")
+if(DEFINED PROFILER_LINKER_FLAGS_COMMON)
+  target_link_options(Profiler PRIVATE ${PROFILER_LINKER_FLAGS_COMMON})
 endif()
+
 
 if(COMMAND profiler_apply_iwyu)
   profiler_apply_iwyu(Profiler)
@@ -325,8 +355,20 @@ if(PROFILER_DEPENDENCY_COMPILE_DEFINITIONS)
 endif()
 
 # =============================================================================
+# Examples
+# =============================================================================
+if(PROFILER_ENABLE_EXAMPLES)
+  add_subdirectory("${CMAKE_SOURCE_DIR}/Examples/Profiling" "${CMAKE_BINARY_DIR}/Examples/Profiling")
+  message(STATUS "✓ Profiling Examples enabled")
+endif()
+
+# =============================================================================
 # Testing
 # =============================================================================
-if(BUILD_TESTING)
+if(PROFILER_ENABLE_TESTING)
   add_subdirectory(Testing/Cxx)
+endif()
+
+if(PROJECT_ENABLE_VALGRIND AND PROFILER_ENABLE_TESTING)
+  quarisma_apply_valgrind_timeouts()
 endif()
