@@ -48,10 +48,10 @@ message(STATUS "Logging backend: ${LOGGING_BACKEND}")
 
 # Profiler: PROFILER_BACKEND / PROFILER_ENABLE_KINETO must exist before ThirdParty (Kineto gate).
 # Library/Profiler/CMakeLists.txt handles this via an early include pass (see
-# QUARISMA_INCLUDE_PROFILER_GATE_ONLY).
-set(QUARISMA_INCLUDE_PROFILER_GATE_ONLY ON)
+# PROFILER_INCLUDE_GATE_ONLY).
+set(PROFILER_INCLUDE_GATE_ONLY ON)
 include("${CMAKE_SOURCE_DIR}/Library/Profiler/CMakeLists.txt")
-unset(QUARISMA_INCLUDE_PROFILER_GATE_ONLY)
+unset(PROFILER_INCLUDE_GATE_ONLY)
 
 # compile_definitions.cmake sets PROJECT_DEPENDENCY_COMPILE_DEFINITIONS in the root scope so every
 # Library/* subdirectory inherits the same baseline flags.
