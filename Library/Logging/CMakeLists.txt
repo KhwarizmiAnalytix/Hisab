@@ -1,26 +1,18 @@
-# ============================================================================= Library/Logging —
-# CMakeLists.txt
+# =============================================================================
+# Library/Logging — CMakeLists.txt
 #
-# Provides the Logging library: structured log levels, back-trace capture, runtime format strings,
-# and pluggable backend support (Loguru, GLog, Native).
+# Structured log levels, back-trace capture, and pluggable backend support
+# (Loguru, GLog, Native).
 #
-# Public compile definitions emitted by this file: LOGGING_HAS_LOGURU=1/0  — Loguru backend active
-# LOGGING_HAS_GLOG=1/0    — GLog backend active LOGGING_HAS_NATIVE=1/0  — Native (fmt-based) backend
-# active
+# Public compile definitions:
+#   LOGGING_HAS_LOGURU=1/0  — Loguru backend active
+#   LOGGING_HAS_GLOG=1/0    — GLog backend active
+#   LOGGING_HAS_NATIVE=1/0  — Native (fmt-based) backend active
 # =============================================================================
 cmake_minimum_required(VERSION 3.16)
 
-# ============================================================================= SECTION 1 — Feature
-# flags (LOGGING_ENABLE_*) and backend selector
-#
-# These cache variables are the public configuration API for this module. Pass them on the CMake
-# command line: -DLOGGING_ENABLE_LTO=ON
-#
-# Note: LOGGING_BACKEND and the derived LOGGING_ENABLE_LOGURU/GLOG/NATIVE are declared in
-# Library/Logging/Cmake/logging_backend.cmake, which the root CMakeLists.txt includes before
-# add_subdirectory(ThirdParty) so that the correct backend third-party target (Loguru, GLog) is
-# built first.
-# =============================================================================
+# --- Section 1: Feature flags (LOGGING_ENABLE_*) and backend selector ---
+# LOGGING_BACKEND is declared in logging_backend.cmake (included by root before ThirdParty).
 
 # Link-Time Optimization — disabled when LOGGING_ENABLE_COVERAGE or LOGGING_ENABLE_SANITIZER is ON
 # (LTO conflicts with instrumentation / sanitizers).
@@ -89,12 +81,8 @@ if(NOT LOGGING_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
   message(FATAL_ERROR "LOGGING_CXX_STANDARD must be one of: 11 14 17 20 23")
 endif()
 
-# ============================================================================= SECTION 2 —
-# LOGGING_ENABLE_* → LOGGING_HAS_* compile definitions
-#
-# Maps the LOGGING_BACKEND selector (set by logging_backend.cmake) to the LOGGING_HAS_* boolean
-# tokens consumed by source code via #if. Exactly one HAS_* will be 1; the others will be 0.
-# =============================================================================
+# --- Section 2: LOGGING_ENABLE_* → LOGGING_HAS_* compile definitions ---
+# Exactly one HAS_* will be 1; the others 0.
 set(LOGGING_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS})
 
 if(LOGGING_BACKEND STREQUAL "LOGURU")
@@ -115,13 +103,8 @@ elseif(LOGGING_BACKEND STREQUAL "NATIVE")
 endif()
 list(APPEND LOGGING_DEPENDENCY_COMPILE_DEFINITIONS ${LOGGING_COMPILE_DEFINITIONS})
 
-# ============================================================================= SECTION 3 — CMake
-# module includes
-#
-# Inclusion order: (preflight) LTO cleared when coverage or sanitizer — before any include() a)
-# Standard CMake introspection helpers b) Shared toolchain helpers  (Cmake/tools/, Cmake/flags/) c)
-# Coverage / sanitizer / … then LTO + linker so IPO matches before quarisma_find_linker()
-# =============================================================================
+# --- Section 3: CMake module includes ---
+# Order: introspection → toolchain helpers → coverage/sanitizer → LTO/linker.
 
 # LTO is incompatible with coverage/sanitizer — clear before any include().
 if(LOGGING_ENABLE_COVERAGE OR LOGGING_ENABLE_SANITIZER)
@@ -152,9 +135,7 @@ endif()
 if(LOGGING_ENABLE_VALGRIND)
   include(valgrind)
 endif()
-# c) Coverage gate When enabled, appends -fprofile-instr-generate / --coverage to global
-# CMAKE_CXX_FLAGS for this module.  LTO is cleared before Section 3 includes when coverage or
-# sanitizer is ON.
+# c) Coverage gate — appends -fprofile-instr-generate / --coverage; LTO already cleared above.
 if(LOGGING_ENABLE_COVERAGE)
   include(coverage)
 elseif(MSVC)
@@ -181,8 +162,7 @@ endif()
 include(linker)
 quarisma_find_linker(${LOGGING_LINKER_CHOICE})
 
-# ============================================================================= Source discovery
-# =============================================================================
+# --- Source discovery ---
 set(logging_headers "")
 set(logging_sources "")
 
@@ -203,11 +183,7 @@ if(LOGGING_ENABLE_NATIVE)
   message(STATUS "NATIVE logging backend: excluding logger.cpp / logger.h (Loguru implementation)")
 endif()
 
-# ============================================================================= Target definition
-# =============================================================================
-# Per-module override — propagates to all targets in this directory scope, including test targets in
-# Testing/Cxx.  CMAKE_CXX_STANDARD_REQUIRED and CMAKE_CXX_EXTENSIONS are set globally in the root
-# CMakeLists.txt.
+# --- Target definition ---
 set(CMAKE_CXX_STANDARD ${LOGGING_CXX_STANDARD})
 
 add_library(Logging ${logging_sources} ${logging_headers})
@@ -216,8 +192,8 @@ quarisma_target_optional_icecc(Logging LOGGING_ENABLE_ICECC)
 
 if(BUILD_SHARED_LIBS)
   target_compile_definitions(Logging PUBLIC LOGGING_SHARED_DEFINE PRIVATE LOGGING_BUILDING_DLL)
-  if(COMMAND logging_set_target_output_directories)
-    logging_set_target_output_directories(Logging)
+  if(COMMAND quarisma_set_target_output_directories)
+    quarisma_set_target_output_directories(Logging)
   endif()
 else()
   target_compile_definitions(Logging PUBLIC LOGGING_STATIC_DEFINE)
@@ -225,13 +201,7 @@ endif()
 
 add_library(Logging::Logging ALIAS Logging)
 
-if(COMMAND logging_apply_iwyu)
-  logging_apply_iwyu(Logging)
-endif()
-
-if(COMMAND logging_module_create_filters)
-  logging_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
-endif()
+quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 
 set_target_properties(
   Logging PROPERTIES CXX_STANDARD ${LOGGING_CXX_STANDARD} CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS
@@ -297,8 +267,7 @@ if(WIN32 AND NOT MSVC)
   target_link_libraries(Logging PRIVATE -ldbghelp)
 endif()
 
-# ============================================================================= Installation
-# =============================================================================
+# --- Installation ---
 install(
   TARGETS Logging
   EXPORT LoggingTargets
@@ -310,8 +279,7 @@ install(
 )
 install(FILES ${logging_headers} DESTINATION include/Logging/Logging COMPONENT Development)
 
-# ============================================================================= Testing
-# =============================================================================
+# --- Testing ---
 if(LOGGING_ENABLE_TESTING)
   add_subdirectory(Testing/Cxx)
 endif()

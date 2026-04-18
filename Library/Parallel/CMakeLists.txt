@@ -1,27 +1,19 @@
-# ============================================================================= Library/Parallel —
-# CMakeLists.txt
+# =============================================================================
+# Library/Parallel — CMakeLists.txt
 #
-# Provides the Parallel library: thread-pool, task-queue, multi-threader facade, and pluggable SMP
-# backends (std::thread, OpenMP, Intel TBB).
+# Thread-pool, task-queue, multi-threader facade, and pluggable SMP backends
+# (std::thread, OpenMP, Intel TBB).
 #
-# Public compile definitions emitted by this file: PARALLEL_HAS_TBB=1/0           — Intel TBB
-# work-stealing backend active PARALLEL_HAS_OPENMP=1/0        — OpenMP directive-based backend
-# active PARALLEL_HAS_PTHREADS=1/0      — POSIX threads available PARALLEL_HAS_WIN32_THREADS=1/0 —
-# Win32 native threading API used
+# Public compile definitions:
+#   PARALLEL_HAS_TBB=1/0           — Intel TBB work-stealing backend active
+#   PARALLEL_HAS_OPENMP=1/0        — OpenMP directive-based backend active
+#   PARALLEL_HAS_PTHREADS=1/0      — POSIX threads available
+#   PARALLEL_HAS_WIN32_THREADS=1/0 — Win32 native threading API used
 # =============================================================================
 cmake_minimum_required(VERSION 3.16)
 
-# ============================================================================= SECTION 1 — Feature
-# flags (PARALLEL_ENABLE_*) and backend selectors
-#
-# These cache variables are the public configuration API for this module. Pass them on the CMake
-# command line: -DPARALLEL_ENABLE_OPENMP=ON
-#
-# Note: PARALLEL_ENABLE_TBB, PARALLEL_ENABLE_OPENMP, PARALLEL_ENABLE_PTHREADS, and
-# PARALLEL_ENABLE_WIN32_THREADS are set / validated by the module-owned finders in
-# Library/Parallel/Cmake/ (Section 3). Those includes may override user choices based on platform
-# availability.
-# =============================================================================
+# --- Section 1: Feature flags (PARALLEL_ENABLE_*) ---
+# TBB/OpenMP/thread flags are set by module-owned finders in Section 3.
 
 # Link-Time Optimization — disabled when PARALLEL_ENABLE_COVERAGE or PARALLEL_ENABLE_SANITIZER is ON
 # (LTO conflicts with instrumentation / sanitizers).
@@ -90,25 +82,12 @@ if(NOT PARALLEL_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
   message(FATAL_ERROR "PARALLEL_CXX_STANDARD must be one of: 11 14 17 20 23")
 endif()
 
-# ============================================================================= SECTION 2 —
-# PARALLEL_ENABLE_* → PARALLEL_HAS_* compile definitions
-#
-# IMPORTANT: PARALLEL_ENABLE_PTHREADS, PARALLEL_ENABLE_WIN32_THREADS, PARALLEL_ENABLE_TBB, and
-# PARALLEL_ENABLE_OPENMP are all set by the module-owned finders inside Section 3 (include(threads),
-# include(openmp), include(tbb_multithreading)).  Those flags DO NOT exist yet at this point in the
-# file.  Their HAS_ mappings are therefore placed AFTER Section 3, in the "Section 2 —
-# detection-based HAS" block below the includes.
-# =============================================================================
+# --- Section 2: PARALLEL_ENABLE_* → PARALLEL_HAS_* compile definitions ---
+# All ENABLE flags come from Section 3 finders; this block is completed after those includes.
 set(PARALLEL_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS})
 
-# ============================================================================= SECTION 3 — CMake
-# module includes
-#
-# Inclusion order: a) Standard CMake introspection helpers b) Shared toolchain helpers
-# (Cmake/tools/, Cmake/flags/) c) Parallel-owned feature finders (Library/Parallel/Cmake/) — sole
-# owners of their threading/backend flags d) Coverage gate — must follow all feature finders;
-# LTO/linker follow so IPO matches coverage/sanitizer before quarisma_find_linker()
-# =============================================================================
+# --- Section 3: CMake module includes ---
+# Order: introspection → toolchain helpers → Parallel-owned finders → coverage/sanitizer → LTO/linker.
 
 # LTO is incompatible with coverage/sanitizer — clear before any include().
 if(PARALLEL_ENABLE_COVERAGE OR PARALLEL_ENABLE_SANITIZER)
@@ -146,9 +125,7 @@ if(PARALLEL_ENABLE_VALGRIND)
 endif()
 include(helper_macros)
 
-# d) Coverage gate When enabled, appends -fprofile-instr-generate / --coverage to global
-# CMAKE_CXX_FLAGS for this module.  LTO is cleared before Section 3 includes when coverage or
-# sanitizer is ON.
+# d) Coverage gate — appends -fprofile-instr-generate / --coverage; LTO already cleared above.
 if(PARALLEL_ENABLE_COVERAGE)
   include(coverage)
 elseif(MSVC)
@@ -175,13 +152,7 @@ endif()
 include(linker)
 quarisma_find_linker(${PARALLEL_LINKER_CHOICE})
 
-# ============================================================================= SECTION 2
-# (continued) — detection-based PARALLEL_HAS_* compile definitions
-#
-# These flags are set by the Section 3 module-owned finders above, so this block MUST come after
-# those includes.  Evaluating them in the logical Section 2 position (before includes) would read
-# unset variables and always produce HAS_*=0, breaking the threading model at compile time.
-# =============================================================================
+# --- Section 2 (continued): detection-based PARALLEL_HAS_* compile definitions ---
 
 # Intel TBB — set by include(tbb_multithreading).
 if(PARALLEL_ENABLE_TBB)
@@ -213,10 +184,7 @@ endif()
 
 list(APPEND PARALLEL_DEPENDENCY_COMPILE_DEFINITIONS ${PARALLEL_COMPILE_DEFINITIONS})
 
-# ============================================================================= Runtime library
-# wiring Collect third-party targets found by the Section 3 finders into PARALLEL_DEPENDENCY_LIBS
-# for the single target_link_libraries() call below.
-# =============================================================================
+# --- Runtime library wiring ---
 if(PARALLEL_ENABLE_TBB AND TARGET Tbb::tbb)
   list(APPEND PARALLEL_DEPENDENCY_LIBS Tbb::tbb)
 endif()
@@ -227,14 +195,9 @@ if(TARGET Threads::Threads)
   list(APPEND PARALLEL_DEPENDENCY_LIBS Threads::Threads)
 endif()
 
-# ============================================================================= Source discovery
-# =============================================================================
+# --- Source discovery ---
 set(parallel_headers "")
 set(parallel_sources "")
-
-# Per-module override — propagates to all targets in this directory scope, including test targets in
-# Testing/Cxx.  CMAKE_CXX_STANDARD_REQUIRED and CMAKE_CXX_EXTENSIONS are set globally in the root
-# CMakeLists.txt.
 set(CMAKE_CXX_STANDARD ${PARALLEL_CXX_STANDARD})
 
 file(GLOB_RECURSE parallel_headers LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
@@ -262,16 +225,15 @@ if(NOT PARALLEL_ENABLE_OPENMP)
   message(STATUS "OpenMP disabled: excluding OpenMP parallel source files from build")
 endif()
 
-# ============================================================================= Target definition
-# =============================================================================
+# --- Target definition ---
 add_library(Parallel ${parallel_sources} ${parallel_headers})
 quarisma_target_apply_cache(Parallel PARALLEL_ENABLE_CACHE PARALLEL_CACHE_BACKEND)
 quarisma_target_optional_icecc(Parallel PARALLEL_ENABLE_ICECC)
 
 if(BUILD_SHARED_LIBS)
   target_compile_definitions(Parallel PUBLIC PARALLEL_SHARED_DEFINE PRIVATE PARALLEL_BUILDING_DLL)
-  if(COMMAND parallel_set_target_output_directories)
-    parallel_set_target_output_directories(Parallel)
+  if(COMMAND quarisma_set_target_output_directories)
+    quarisma_set_target_output_directories(Parallel)
   endif()
 else()
   target_compile_definitions(Parallel PUBLIC PARALLEL_STATIC_DEFINE)
@@ -279,13 +241,7 @@ endif()
 
 add_library(Parallel::Parallel ALIAS Parallel)
 
-if(COMMAND parallel_apply_iwyu)
-  parallel_apply_iwyu(Parallel)
-endif()
-
-if(COMMAND parallel_module_create_filters)
-  parallel_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
-endif()
+quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 
 set_target_properties(
   Parallel PROPERTIES CXX_STANDARD ${PARALLEL_CXX_STANDARD} CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS
@@ -341,8 +297,7 @@ if(PARALLEL_DEPENDENCY_COMPILE_DEFINITIONS)
   message(STATUS "Parallel: compile definitions: ${PARALLEL_DEPENDENCY_COMPILE_DEFINITIONS}")
 endif()
 
-# ============================================================================= Installation
-# =============================================================================
+# --- Installation ---
 install(
   TARGETS Parallel
   EXPORT ParallelTargets
@@ -354,8 +309,7 @@ install(
 )
 install(FILES ${parallel_headers} DESTINATION include/Parallel/Parallel COMPONENT Development)
 
-# ============================================================================= Testing
-# =============================================================================
+# --- Testing ---
 if(PARALLEL_ENABLE_TESTING)
   add_subdirectory(Testing/Cxx)
 endif()

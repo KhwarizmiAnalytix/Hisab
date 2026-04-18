@@ -1,22 +1,19 @@
-# ============================================================================= Library/Profiler —
-# CMakeLists.txt
+# =============================================================================
+# Library/Profiler — CMakeLists.txt
 #
-# Provides the Profiler library: activity tracing, timing primitives, and pluggable profiler-backend
-# support (Kineto, Intel ITT/VTune, Native).
+# Activity tracing, timing primitives, and pluggable profiler-backend support
+# (Kineto, Intel ITT/VTune, Native).
 #
-# Public compile definitions emitted by this file: PROFILER_HAS_KINETO=1/0  — Kineto
-# (PyTorch-compatible) backend active PROFILER_HAS_ITT=1/0     — Intel ITT/VTune backend active
-# PROFILER_HAS_NATIVE=1/0  — Lightweight standalone native backend active
+# Public compile definitions:
+#   PROFILER_HAS_KINETO=1/0  — Kineto (PyTorch-compatible) backend active
+#   PROFILER_HAS_ITT=1/0     — Intel ITT/VTune backend active
+#   PROFILER_HAS_NATIVE=1/0  — Lightweight standalone native backend active
 # =============================================================================
 cmake_minimum_required(VERSION 3.16)
 
-# ============================================================================= Early-exit gate
-#
-# logging_backend.cmake includes this file with QUARISMA_INCLUDE_PROFILER_GATE_ONLY=ON before
-# add_subdirectory(ThirdParty) so that PROFILER_ENABLE_KINETO is set in time for the Kineto
-# third-party target to be conditionally built. The return() prevents the remainder of this file
-# from executing during that early pass.
-# =============================================================================
+# --- Early-exit gate ---
+# When QUARISMA_INCLUDE_PROFILER_GATE_ONLY=ON, only set PROFILER_ENABLE_KINETO and return early
+# so the root can gate ThirdParty/Kineto before add_subdirectory runs.
 if(QUARISMA_INCLUDE_PROFILER_GATE_ONLY)
   set(PROFILER_BACKEND "KINETO" CACHE STRING "Profiler backend. Options: KINETO, NATIVE, ITT")
   set_property(CACHE PROFILER_BACKEND PROPERTY STRINGS KINETO NATIVE ITT)
@@ -28,16 +25,8 @@ if(QUARISMA_INCLUDE_PROFILER_GATE_ONLY)
   return()
 endif()
 
-# ============================================================================= SECTION 1 — Feature
-# flags (PROFILER_ENABLE_*) and backend selector
-#
-# These cache variables are the public configuration API for this module. Pass them on the CMake
-# command line: -DPROFILER_BACKEND=NATIVE
-#
-# PROFILER_BACKEND is the single control point for backend selection. The derived booleans
-# PROFILER_ENABLE_KINETO / PROFILER_ENABLE_ITT / PROFILER_ENABLE_NATIVE_PROFILER are mutually
-# exclusive — do not set them directly; change PROFILER_BACKEND instead.
-# =============================================================================
+# --- Section 1: Feature flags (PROFILER_ENABLE_*) and backend selector ---
+# PROFILER_BACKEND is the single control point; derived booleans are mutually exclusive.
 
 # Link-Time Optimization — disabled when PROFILER_ENABLE_COVERAGE or PROFILER_ENABLE_SANITIZER is ON
 # (LTO conflicts with instrumentation / sanitizers).
@@ -133,12 +122,8 @@ if(NOT PROFILER_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
   message(FATAL_ERROR "PROFILER_CXX_STANDARD must be one of: 11 14 17 20 23")
 endif()
 
-# ============================================================================= SECTION 2 —
-# PROFILER_ENABLE_* → PROFILER_HAS_* compile definitions
-#
-# Maps each feature flag to a PROFILER_HAS_* token consumed by source via #if. Exactly one HAS_*
-# will be 1; the others will be 0.
-# =============================================================================
+# --- Section 2: PROFILER_ENABLE_* → PROFILER_HAS_* compile definitions ---
+# Exactly one HAS_* will be 1; the others 0.
 set(PROFILER_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS})
 
 if(PROFILER_ENABLE_KINETO)
@@ -160,13 +145,8 @@ endif()
 
 list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS ${PROFILER_COMPILE_DEFINITIONS})
 
-# ============================================================================= SECTION 3 — CMake
-# module includes
-#
-# Inclusion order: a) Standard CMake introspection helpers b) Shared toolchain helpers
-# (Cmake/tools/, Cmake/flags/) c) Coverage gate — must follow toolchain includes; LTO/linker follow
-# so IPO matches coverage/sanitizer before quarisma_find_linker()
-# =============================================================================
+# --- Section 3: CMake module includes ---
+# Order: introspection → toolchain helpers → coverage/sanitizer → LTO/linker.
 
 # LTO is incompatible with coverage/sanitizer — clear before any include().
 if(PROFILER_ENABLE_COVERAGE OR PROFILER_ENABLE_SANITIZER)
@@ -198,9 +178,7 @@ if(PROFILER_ENABLE_VALGRIND)
 endif()
 include(helper_macros)
 
-# c) Coverage gate When enabled, appends -fprofile-instr-generate / --coverage to global
-# CMAKE_CXX_FLAGS for this module.  LTO is cleared before Section 3 includes when coverage or
-# sanitizer is ON.
+# c) Coverage gate — appends -fprofile-instr-generate / --coverage; LTO already cleared above.
 if(PROFILER_ENABLE_COVERAGE)
   include(coverage)
 elseif(MSVC)
@@ -227,9 +205,7 @@ endif()
 include(linker)
 quarisma_find_linker(${PROFILER_LINKER_CHOICE})
 
-# ============================================================================= Runtime library
-# wiring Kineto uses AUTO_ADD_TO_DEPENDENCIES=OFF so it must be appended explicitly.
-# =============================================================================
+# --- Runtime library wiring ---
 if(PROFILER_ENABLE_KINETO AND TARGET Kineto::kineto)
   list(APPEND PROFILER_DEPENDENCY_LIBS Kineto::kineto)
 endif()
@@ -237,15 +213,9 @@ if(QUARISMA_PROFILER_DEPENDENCY_LIBS)
   list(APPEND PROFILER_DEPENDENCY_LIBS ${QUARISMA_PROFILER_DEPENDENCY_LIBS})
 endif()
 
-# ============================================================================= Source discovery —
-# only sources for the active backend are compiled.
-# =============================================================================
+# --- Source discovery: only sources for the active backend are compiled ---
 set(profiler_headers "")
 set(profiler_sources "")
-
-# Per-module override — propagates to all targets in this directory scope, including test targets in
-# Testing/Cxx.  CMAKE_CXX_STANDARD_REQUIRED and CMAKE_CXX_EXTENSIONS are set globally in the root
-# CMakeLists.txt.
 set(CMAKE_CXX_STANDARD ${PROFILER_CXX_STANDARD})
 
 # Common utilities — always compiled (approximate_clock, small_vector, etc.)
@@ -312,16 +282,15 @@ if(PROFILER_ENABLE_ITT)
   message(STATUS "ITT profiler enabled: including base and ITT sources")
 endif()
 
-# ============================================================================= Target definition
-# =============================================================================
+# --- Target definition ---
 add_library(Profiler ${profiler_sources} ${profiler_headers})
 quarisma_target_apply_cache(Profiler PROFILER_ENABLE_CACHE PROFILER_CACHE_BACKEND)
 quarisma_target_optional_icecc(Profiler PROFILER_ENABLE_ICECC)
 
 if(BUILD_SHARED_LIBS)
   target_compile_definitions(Profiler PUBLIC PROFILER_SHARED_DEFINE PRIVATE PROFILER_BUILDING_DLL)
-  if(COMMAND profiler_set_target_output_directories)
-    profiler_set_target_output_directories(Profiler)
+  if(COMMAND quarisma_set_target_output_directories)
+    quarisma_set_target_output_directories(Profiler)
   endif()
 else()
   target_compile_definitions(Profiler PUBLIC PROFILER_STATIC_DEFINE)
@@ -329,13 +298,7 @@ endif()
 
 add_library(Profiler::Profiler ALIAS Profiler)
 
-if(COMMAND profiler_apply_iwyu)
-  profiler_apply_iwyu(Profiler)
-endif()
-
-if(COMMAND profiler_module_create_filters)
-  profiler_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
-endif()
+quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 
 set_target_properties(
   Profiler PROPERTIES CXX_STANDARD ${PROFILER_CXX_STANDARD} CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS
@@ -390,17 +353,15 @@ if(PROFILER_DEPENDENCY_COMPILE_DEFINITIONS)
   message(STATUS "Profiler: compile definitions: ${PROFILER_DEPENDENCY_COMPILE_DEFINITIONS}")
 endif()
 
-# ============================================================================= Examples
-# =============================================================================
+# --- Examples ---
 if(PROFILER_ENABLE_EXAMPLES)
   add_subdirectory(
     "${CMAKE_SOURCE_DIR}/Examples/Profiling" "${CMAKE_BINARY_DIR}/Examples/Profiling"
   )
-  message(STATUS "✓ Profiling Examples enabled")
+  message(STATUS "Profiling Examples enabled")
 endif()
 
-# ============================================================================= Testing
-# =============================================================================
+# --- Testing ---
 if(PROFILER_ENABLE_TESTING)
   add_subdirectory(Testing/Cxx)
 endif()

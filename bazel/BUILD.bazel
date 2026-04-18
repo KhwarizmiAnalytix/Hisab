@@ -123,9 +123,8 @@ config_setting(
     define_values = {"quarisma_logging_backend": "native"},
 )
 
-# Compiler-wrapper caching (ccache/sccache/buildcache) is CMake-only: each library uses
-# LOGGING_ENABLE_CACHE + LOGGING_CACHE_BACKEND (and MEMORY_*, CORE_*, PARALLEL_*, PROFILER_*).
-# Bazel has no PROJECT_* cache defines; configure caching via remote execution or toolchains.
+# Compiler-wrapper caching (ccache/sccache/buildcache) is CMake-only.
+# Configure Bazel caching via remote execution or toolchains instead.
 
 # =============================================================================
 # GPU Allocation Strategy
@@ -208,6 +207,15 @@ config_setting(
 config_setting(
     name = "enable_numa",
     define_values = {"quarisma_enable_numa": "true"},
+)
+
+# =============================================================================
+# memkind Configuration (MEMORY_HAS_MEMKIND — Linux only)
+# =============================================================================
+
+config_setting(
+    name = "enable_memkind",
+    define_values = {"quarisma_enable_memkind": "true"},
 )
 
 # =============================================================================
