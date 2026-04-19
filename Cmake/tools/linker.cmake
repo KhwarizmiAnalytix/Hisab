@@ -4,20 +4,17 @@
 # Configures faster linker selection for improved build performance. Supports mold, lld, gold, and
 # lld-link linkers across different platforms.
 #
-# NOTE: Linker flags are applied ONLY to the quarismabuild interface target. This ensures that
-# third-party dependencies use their default linker settings and are not affected by Quarisma's
-# linker choices.
+# NOTE: Linker flags are applied directly to the named project target via target_link_options,
+# keeping third-party dependencies unaffected by Quarisma's linker choices.
 
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)
 
-# quarisma_find_linker([linker_choice]) linker_choice: "default" (auto-detect) | "lld" | "mold" |
-# "gold" | "lld-link" Pass the caller's XXX_LINKER_CHOICE variable as the argument.
-function(quarisma_find_linker)
-  set(LINKER_CHOICE "default")
-  if(ARGC GREATER 0)
-    set(LINKER_CHOICE "${ARGV0}")
-  endif()
+# quarisma_find_linker(<linker_choice> <target_name>)
+#   linker_choice: "default" (auto-detect) | "lld" | "mold" | "gold" | "lld-link"
+#   target_name:   CMake target to receive the -fuse-ld= link option (e.g. Logging, Core, …)
+function(quarisma_find_linker linker_choice target_name)
+  set(LINKER_CHOICE "${linker_choice}")
 
   set(LINKER_FOUND FALSE)
   set(LINKER_NAME "")
@@ -110,7 +107,7 @@ function(quarisma_find_linker)
     endif()
   endif()
 
-  # Apply linker flags to quarismabuild target if found
+  # Apply linker flags to the named project target
   if(LINKER_FOUND)
     if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
       set(CMAKE_LINKER "${LINKER_NAME}" CACHE FILEPATH "Linker executable")
@@ -120,11 +117,11 @@ function(quarisma_find_linker)
       string(REPLACE "ld." "" LINKER_SHORTNAME "${LINKER_BASENAME}")
       set(LINKER_FLAGS "-fuse-ld=${LINKER_SHORTNAME}")
 
-      if(TARGET quarismabuild)
-        target_link_options(quarismabuild INTERFACE ${LINKER_FLAGS})
-        message("Applied linker flag to quarismabuild: ${LINKER_FLAGS}")
+      if(TARGET "${target_name}")
+        target_link_options("${target_name}" PUBLIC ${LINKER_FLAGS})
+        message("Applied linker flag to ${target_name}: ${LINKER_FLAGS}")
       else()
-        message(WARNING "quarismabuild target not found - linker flag will not be applied")
+        message(WARNING "Target '${target_name}' not found - linker flag will not be applied")
       endif()
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND LINKER_NAME MATCHES "lld-link")
       set(CMAKE_LINKER "${LINKER_NAME}" CACHE FILEPATH "Linker executable")

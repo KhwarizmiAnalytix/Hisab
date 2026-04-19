@@ -203,7 +203,6 @@ else()
 endif()
 
 include(linker)
-quarisma_find_linker(${PROFILER_LINKER_CHOICE})
 
 # --- Third-party dependencies owned by Profiler ---
 set(_tpdir "${CMAKE_SOURCE_DIR}/ThirdParty")
@@ -242,6 +241,18 @@ add_third_party_library(kineto
     INCLUDE_DIR "${_tpdir}/kineto/libkineto/include"
     AUTO_ADD_TO_DEPENDENCIES OFF
 )
+foreach(_kineto_target kineto kineto_base kineto_api)
+    if(TARGET ${_kineto_target})
+        set_property(TARGET ${_kineto_target} PROPERTY POSITION_INDEPENDENT_CODE ON)
+    endif()
+endforeach()
+# Clang 20 crashes with -fPIC -O3 on CuptiActivityProfiler.cpp (ReachingDefAnalysis bug).
+if(TARGET kineto_base)
+    target_compile_options(kineto_base PRIVATE -O2)
+endif()
+if(TARGET kineto AND DEFINED CUDA_nvperf_host_LIBRARY)
+    target_link_libraries(kineto PUBLIC "${CUDA_nvperf_host_LIBRARY}")
+endif()
 
 if(PROFILER_ENABLE_KINETO AND NOT TARGET Kineto::kineto)
   message(STATUS "Kineto not found — disabling PROFILER_ENABLE_KINETO")
@@ -349,6 +360,7 @@ endif()
 
 # --- Target definition ---
 add_library(Profiler ${profiler_sources} ${profiler_headers})
+quarisma_find_linker(${PROFILER_LINKER_CHOICE} Profiler)
 quarisma_target_apply_cache(Profiler PROFILER_ENABLE_CACHE PROFILER_CACHE_BACKEND)
 quarisma_target_optional_icecc(Profiler PROFILER_ENABLE_ICECC)
 
@@ -395,8 +407,6 @@ if(PROFILER_DEPENDENCY_INCLUDE_DIRS)
   target_include_directories(Profiler PUBLIC ${PROFILER_DEPENDENCY_INCLUDE_DIRS})
   message(STATUS "Profiler: extra include dirs: ${PROFILER_DEPENDENCY_INCLUDE_DIRS}")
 endif()
-
-target_link_libraries(Profiler PUBLIC Profiler::build)
 
 if(PROFILER_DEPENDENCY_LIBS)
   target_link_libraries(Profiler PUBLIC ${PROFILER_DEPENDENCY_LIBS})

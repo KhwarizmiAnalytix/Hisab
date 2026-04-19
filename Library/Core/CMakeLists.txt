@@ -308,7 +308,6 @@ else()
 endif()
 
 include(linker)
-quarisma_find_linker(${CORE_LINKER_CHOICE})
 
 # -------------------------------------------------------------------------- b) User-option HAS
 # tokens — compile_definition() converts ENABLE_X → HAS_X.
@@ -356,8 +355,19 @@ add_third_party_library(cpuinfo
     INCLUDE_DIR "${_tpdir}/cpuinfo/include"
     AUTO_ADD_TO_DEPENDENCIES OFF
 )
+foreach(_cpuinfo_target cpuinfo cpuinfo_internals)
+    if(TARGET ${_cpuinfo_target})
+        set_property(TARGET ${_cpuinfo_target} PROPERTY POSITION_INDEPENDENT_CODE ON)
+    endif()
+endforeach()
 
+
+
+list(APPEND CORE_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/fmt/include")
+list(APPEND CORE_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/cpuinfo/include")
 # magic_enum — zero-overhead compile-time enum reflection (header-only).
+if(CORE_ENABLE_MAGICENUM)
+
 add_third_party_library(magic_enum
     CONDITION CORE_ENABLE_MAGICENUM
     LIBRARY_TYPE HEADER_ONLY
@@ -366,10 +376,6 @@ add_third_party_library(magic_enum
     INCLUDE_DIR "${_tpdir}/magic_enum/include"
     AUTO_ADD_TO_DEPENDENCIES OFF
 )
-
-list(APPEND CORE_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/fmt/include")
-list(APPEND CORE_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/cpuinfo/include")
-if(CORE_ENABLE_MAGICENUM)
   list(APPEND CORE_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/magic_enum/include")
 endif()
 
@@ -408,9 +414,11 @@ if(CORE_ENABLE_COMPRESSION)
   endif()
 endif()
 
-# ============================================================================= Target definition
+# ============================================================================= 
+# Target definition
 # =============================================================================
 add_library(Core ${sources} ${headers} ${templates})
+quarisma_find_linker(${CORE_LINKER_CHOICE} Core)
 quarisma_target_apply_cache(Core CORE_ENABLE_CACHE CORE_CACHE_BACKEND)
 quarisma_target_optional_icecc(Core CORE_ENABLE_ICECC)
 
@@ -467,7 +475,7 @@ if(CORE_DEPENDENCY_INCLUDE_DIRS)
   message(STATUS "Core: extra include dirs: ${CORE_DEPENDENCY_INCLUDE_DIRS}")
 endif()
 
-target_link_libraries(Core PUBLIC Core::build Logging::Logging Memory::Memory)
+target_link_libraries(Core PUBLIC Logging::Logging Memory::Memory)
 if(TARGET Fmt::fmt)
   target_link_libraries(Core PUBLIC Fmt::fmt)
 endif()

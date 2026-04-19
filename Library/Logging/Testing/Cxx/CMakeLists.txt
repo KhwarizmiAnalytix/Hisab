@@ -53,7 +53,7 @@ target_compile_definitions(
 )
 
 target_link_libraries(
-  LoggingCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Logging::Logging Logging::build
+  LoggingCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Logging::Logging
 )
 
 set_target_properties(

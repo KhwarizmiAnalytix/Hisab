@@ -125,6 +125,7 @@ include(utils) # Utility macros shared across all modules
 include(platform) # Platform flags (macOS rpath, Windows /utf-8, …)
 include(CMakeDependentOption)
 include(helper_macros)
+include(logging_backend)
 if(LOGGING_ENABLE_SANITIZER)
   include(sanitize)
   quarisma_configure_sanitizer(LOGGING)
@@ -160,7 +161,6 @@ else()
 endif()
 
 include(linker)
-quarisma_find_linker(${LOGGING_LINKER_CHOICE})
 
 # --- Third-party dependencies owned by Logging ---
 set(_tpdir "${CMAKE_SOURCE_DIR}/ThirdParty")
@@ -185,6 +185,9 @@ add_third_party_library(loguru
     INCLUDE_DIR "${_tpdir}/loguru"
     AUTO_ADD_TO_DEPENDENCIES OFF
 )
+if(TARGET loguru)
+    set_property(TARGET loguru PROPERTY POSITION_INDEPENDENT_CODE ON)
+endif()
 
 add_third_party_library(glog
     CONDITION LOGGING_ENABLE_GLOG
@@ -230,6 +233,7 @@ endif()
 set(CMAKE_CXX_STANDARD ${LOGGING_CXX_STANDARD})
 
 add_library(Logging ${logging_sources} ${logging_headers})
+quarisma_find_linker(${LOGGING_LINKER_CHOICE} Logging)
 quarisma_target_apply_cache(Logging LOGGING_ENABLE_CACHE LOGGING_CACHE_BACKEND)
 quarisma_target_optional_icecc(Logging LOGGING_ENABLE_ICECC)
 
@@ -278,8 +282,6 @@ target_include_directories(
 if(LOGGING_DEPENDENCY_INCLUDE_DIRS)
   target_include_directories(Logging PUBLIC ${LOGGING_DEPENDENCY_INCLUDE_DIRS})
 endif()
-
-target_link_libraries(Logging PUBLIC Logging::build)
 
 if(TARGET Fmt::fmt)
   list(APPEND LOGGING_DEPENDENCY_LIBS Fmt::fmt)

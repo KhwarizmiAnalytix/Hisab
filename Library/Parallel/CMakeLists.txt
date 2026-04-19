@@ -150,7 +150,6 @@ else()
 endif()
 
 include(linker)
-quarisma_find_linker(${PARALLEL_LINKER_CHOICE})
 
 # --- Section 2 (continued): detection-based PARALLEL_HAS_* compile definitions ---
 
@@ -227,6 +226,7 @@ endif()
 
 # --- Target definition ---
 add_library(Parallel ${parallel_sources} ${parallel_headers})
+quarisma_find_linker(${PARALLEL_LINKER_CHOICE} Parallel)
 quarisma_target_apply_cache(Parallel PARALLEL_ENABLE_CACHE PARALLEL_CACHE_BACKEND)
 quarisma_target_optional_icecc(Parallel PARALLEL_ENABLE_ICECC)
 
@@ -274,8 +274,6 @@ if(PARALLEL_DEPENDENCY_INCLUDE_DIRS)
   target_include_directories(Parallel PUBLIC ${PARALLEL_DEPENDENCY_INCLUDE_DIRS})
   message(STATUS "Parallel: extra include dirs: ${PARALLEL_DEPENDENCY_INCLUDE_DIRS}")
 endif()
-
-target_link_libraries(Parallel PUBLIC Parallel::build)
 
 if(PARALLEL_ENABLE_CLANGTIDY)
   include(clang_tidy)
