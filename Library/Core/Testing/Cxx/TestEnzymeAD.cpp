@@ -19,14 +19,14 @@
  * - Integration with Quarisma test framework
  */
 
-#include "CoreTest.h"
-
 #include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <vector>
+
+#include "CoreTest.h"
 
 // Enzyme requires these declarations for AD
 // The __enzyme_autodiff and __enzyme_fwddiff functions are provided by the Enzyme plugin
@@ -952,10 +952,10 @@ QUARISMATEST(EnzymeAD, Tutorial6_SquareCopy_Aliased)
     std::cout << "  Tutorial 6: squareCopy gradient (aliased)\n";
     std::cout << "========================================\n";
 
-    int const           n    = 5;
-    std::vector<double> in   = {1.0, 2.0, 3.0, 4.0, 5.0};
-    double              out  = 0.0;
-    double              dout = 1.0;
+    int const           n     = 5;
+    std::vector<double> in    = {1.0, 2.0, 3.0, 4.0, 5.0};
+    double              out   = 0.0;
+    double              doubt = 1.0;
     std::vector<double> grad_in(n, 0.0);
 
     std::cout << "Function: *out = sum(in[i]^2)  [no __restrict__]\n";
@@ -969,7 +969,7 @@ QUARISMATEST(EnzymeAD, Tutorial6_SquareCopy_Aliased)
         grad_in.data(),
         enzyme_dup,
         &out,
-        &dout,
+        &doubt,
         enzyme_const,
         n);
 
@@ -996,10 +996,10 @@ QUARISMATEST(EnzymeAD, Tutorial6_SquareCopy_Restrict)
     std::cout << "  Tutorial 6: squareCopy gradient (__restrict__)\n";
     std::cout << "========================================\n";
 
-    int const           n    = 5;
-    std::vector<double> in   = {1.0, 2.0, 3.0, 4.0, 5.0};
-    double              out  = 0.0;
-    double              dout = 1.0;
+    int const           n     = 5;
+    std::vector<double> in    = {1.0, 2.0, 3.0, 4.0, 5.0};
+    double              out   = 0.0;
+    double              doubt = 1.0;
     std::vector<double> grad_in(n, 0.0);
 
     std::cout << "Function: *out = sum(in[i]^2)  [with __restrict__]\n";
@@ -1013,7 +1013,7 @@ QUARISMATEST(EnzymeAD, Tutorial6_SquareCopy_Restrict)
         grad_in.data(),
         enzyme_dup,
         &out,
-        &dout,
+        &doubt,
         enzyme_const,
         n);
 
@@ -1178,32 +1178,32 @@ TEST_F(CudaEnzymeADTest, ForwardInputUnchanged)
 TEST_F(CudaEnzymeADTest, GradCanonicalValue)
 {
     // x=1.4, seed=1  →  dx = 2*1.4 = 2.8
-    double ox, odx, oy, ody;
-    RunGrad(1.4, 0.0, 0.0, 1.0, ox, odx, oy, ody);
+    double ox, odx, oy, body;
+    RunGrad(1.4, 0.0, 0.0, 1.0, ox, odx, oy, body);
     EXPECT_NEAR(odx, 2.8, 1e-9);
 }
 
 TEST_F(CudaEnzymeADTest, GradScaledSeed)
 {
     // Seed d_y = 3.0  →  dx = 2*1.4*3.0 = 8.4
-    double ox, odx, oy, ody;
-    RunGrad(1.4, 0.0, 0.0, 3.0, ox, odx, oy, ody);
+    double ox, odx, oy, body;
+    RunGrad(1.4, 0.0, 0.0, 3.0, ox, odx, oy, body);
     EXPECT_NEAR(odx, 8.4, 1e-9);
 }
 
 TEST_F(CudaEnzymeADTest, GradAtZero)
 {
     // x=0, seed=1  →  dx = 0
-    double ox, odx, oy, ody;
-    RunGrad(0.0, 0.0, 0.0, 1.0, ox, odx, oy, ody);
+    double ox, odx, oy, body;
+    RunGrad(0.0, 0.0, 0.0, 1.0, ox, odx, oy, body);
     EXPECT_NEAR(odx, 0.0, 1e-12);
 }
 
 TEST_F(CudaEnzymeADTest, GradNegativeInput)
 {
     // x=-2, seed=1  →  dx = 2*(-2) = -4
-    double ox, odx, oy, ody;
-    RunGrad(-2.0, 0.0, 0.0, 1.0, ox, odx, oy, ody);
+    double ox, odx, oy, body;
+    RunGrad(-2.0, 0.0, 0.0, 1.0, ox, odx, oy, body);
     EXPECT_NEAR(odx, -4.0, 1e-9);
 }
 
@@ -1211,24 +1211,24 @@ TEST_F(CudaEnzymeADTest, GradAccumulatesIntoExistingDx)
 {
     // If d_x is pre-seeded with 1.0, reverse-mode Enzyme *adds* to it.
     // At x=2, dx contribution = 2*2*1 = 4.  Total = 1 + 4 = 5.
-    double ox, odx, oy, ody;
-    RunGrad(2.0, 1.0, 0.0, 1.0, ox, odx, oy, ody);
+    double ox, odx, oy, body;
+    RunGrad(2.0, 1.0, 0.0, 1.0, ox, odx, oy, body);
     EXPECT_NEAR(odx, 5.0, 1e-9);
 }
 
 TEST_F(CudaEnzymeADTest, GradZeroSeedProducesZeroDx)
 {
     // d_y = 0  →  dx = 2x * 0 = 0, regardless of x
-    double ox, odx, oy, ody;
-    RunGrad(1.4, 0.0, 0.0, 0.0, ox, odx, oy, ody);
+    double ox, odx, oy, body;
+    RunGrad(1.4, 0.0, 0.0, 0.0, ox, odx, oy, body);
     EXPECT_NEAR(odx, 0.0, 1e-12);
 }
 
 TEST_F(CudaEnzymeADTest, GradInputXUnchanged)
 {
     // The reverse sweep must not corrupt the primal input x
-    double ox, odx, oy, ody;
-    RunGrad(1.4, 0.0, 0.0, 1.0, ox, odx, oy, ody);
+    double ox, odx, oy, body;
+    RunGrad(1.4, 0.0, 0.0, 1.0, ox, odx, oy, body);
     EXPECT_DOUBLE_EQ(ox, 1.4);
 }
 
@@ -1239,8 +1239,8 @@ TEST_F(CudaEnzymeADTest, GradConsistencyWithFiniteDifference)
     const double eps = 1e-5;
     const double fd  = ((hx + eps) * (hx + eps) - (hx - eps) * (hx - eps)) / (2.0 * eps);
 
-    double ox, odx, oy, ody;
-    RunGrad(hx, 0.0, 0.0, 1.0, ox, odx, oy, ody);
+    double ox, odx, oy, body;
+    RunGrad(hx, 0.0, 0.0, 1.0, ox, odx, oy, body);
     EXPECT_NEAR(odx, fd, 1e-6);
 }
 
@@ -1258,8 +1258,8 @@ TEST_F(CudaEnzymeADTest, ForwardKernelNoLaunchError)
 TEST_F(CudaEnzymeADTest, GradKernelNoLaunchError)
 {
     // RunGrad uses CUDA_CHECK internally; any kernel-launch error is fatal.
-    double ox, odx, oy, ody;
-    RunGrad(1.0, 0.0, 0.0, 1.0, ox, odx, oy, ody);
+    double ox, odx, oy, body;
+    RunGrad(1.0, 0.0, 0.0, 1.0, ox, odx, oy, body);
 }
 
-#endif  // CORE_HAS_ENZYME 
+#endif  // CORE_HAS_ENZYME

@@ -560,7 +560,9 @@ def validate_build_structure(build_dir: Path, config: dict,
 
 
 def _detect_from_cmake_cache(cmake_cache: Path) -> Optional[str]:
-    """Extract compiler from QUARISMA_COMPILER_ID in CMakeCache.txt.
+    """Extract compiler from CMakeCache.txt.
+
+    Tries QUARISMA_COMPILER_ID first, then falls back to CMAKE_CXX_COMPILER.
 
     Args:
         cmake_cache: Path to CMakeCache.txt.
@@ -569,17 +571,36 @@ def _detect_from_cmake_cache(cmake_cache: Path) -> Optional[str]:
         Compiler name, or None if not found / unrecognised.
     """
     try:
+        quarisma_id: Optional[str] = None
+        cxx_compiler: Optional[str] = None
         with open(cmake_cache, encoding='utf-8', errors='ignore') as f:
             for line in f:
-                if 'QUARISMA_COMPILER_ID' not in line:
-                    continue
                 if '=' not in line:
                     continue
-                compiler_id = line.split('=', 1)[-1].strip().lower()
-                print(f"QUARISMA_COMPILER_ID found: {compiler_id}")
-                if compiler_id in ("gcc", "clang", "msvc", "intel"):
-                    return compiler_id
-                logger.warning("Unknown QUARISMA_COMPILER_ID: %s", compiler_id)
+                if 'QUARISMA_COMPILER_ID' in line:
+                    compiler_id = line.split('=', 1)[-1].strip().lower()
+                    logger.info("QUARISMA_COMPILER_ID found: %s", compiler_id)
+                    if compiler_id in ("gcc", "clang", "msvc", "intel"):
+                        quarisma_id = compiler_id
+                    else:
+                        logger.warning("Unknown QUARISMA_COMPILER_ID: %s", compiler_id)
+                elif 'CMAKE_CXX_COMPILER:' in line and cxx_compiler is None:
+                    cxx_compiler = line.split('=', 1)[-1].strip().lower()
+
+        if quarisma_id:
+            return quarisma_id
+
+        # Fall back to inferring from CMAKE_CXX_COMPILER path
+        if cxx_compiler:
+            logger.info("Inferring compiler from CMAKE_CXX_COMPILER: %s", cxx_compiler)
+            if 'clang' in cxx_compiler:
+                return 'clang'
+            if 'g++' in cxx_compiler or 'gcc' in cxx_compiler:
+                return 'gcc'
+            if 'cl.exe' in cxx_compiler or 'cl' == os.path.basename(cxx_compiler):
+                return 'msvc'
+            if 'icpx' in cxx_compiler or 'icpc' in cxx_compiler:
+                return 'intel'
     except Exception as e:
         logger.warning("Could not read CMakeCache.txt: %s", e)
     return None

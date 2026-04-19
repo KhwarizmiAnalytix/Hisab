@@ -65,7 +65,7 @@ public:
 
 //--------------------------------------------------------------------------------
 // This instance will show up in any translation unit that uses parallel_tools_impl.
-// It will make sure parallel_tools_impl statics are initialized before there are used
+// It will make sure parallel_tools_impl statistics are initialized before there are used
 // and finalized when they are done being used.
 static parallel_tools_impl_tbb_initialize parallel_tools_impl_tbb_initializer;
 
@@ -183,4 +183,3 @@ PARALLEL_API bool parallel_tools_impl<backend_type::TBB>::single_thread();
 }  // namespace parallel_impl
 }  // namespace detail
 }  // namespace parallel
-

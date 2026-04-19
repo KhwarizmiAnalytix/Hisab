@@ -1275,7 +1275,7 @@ protected:
     }
 
 public:
-    // Whether a tensor is sparse COO or not.
+    // Whether a tensor is sparse COUP or not.
     bool is_sparse() const
     {
         // NB: This method is not virtual and avoid dispatches for performance

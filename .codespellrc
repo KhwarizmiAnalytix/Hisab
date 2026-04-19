@@ -1,4 +1,4 @@
 [codespell]
 skip = .git, .augment, .github, .vscode, build, Build, Cmake, ThirdParty
-ignore-words-list = ThirdParty
+ignore-words-list = ThirdParty,OT
 check-hidden = no

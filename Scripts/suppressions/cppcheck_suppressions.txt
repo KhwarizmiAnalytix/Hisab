@@ -1,9 +1,9 @@
 # cppcheck .   --platform=unspecified   --enable=style   -q   --library=qt --library=posix --library=gnu --library=bsd --library=windows   --check-level=exhaustive   --template='{id},{file}:{line},{severity},{message}' --suppressions-list=Scripts/suppressions/cppcheck_suppressions.txt -j8   -I Library
-#
+
 # Run via Scripts/helpers/cppcheck.py (or pass -DQUARISMA_CPPCHECK=1) so PROFILER_LIKELY /
 # PROFILER_UNLIKELY expand to plain (expr); do not rewrite `if PROFILER_UNLIKELY (` to
 # `if (PROFILER_UNLIKELY(...))` in source.
-#
+
 # If cppcheck is run without QUARISMA_CPPCHECK, it mis-parses the branch-hint macros and
 # reports syntaxError — suppress those false positives for affected translation units:
 syntaxError:Library/Profiler/bespoke/common/record_function.cpp
@@ -36,16 +36,16 @@ missingInclude:*
 # Intentional design patterns
 
 # Conversion constructors - explicit keyword not wanted for implicit conversions
-noExplicitConstructor:Library/Core/parallel/parallel_tools.h
-noExplicitConstructor:Library/Core/parallel/std_thread/parallel_thread_pool.cpp
-noExplicitConstructor:Library/Core/parallel/threaded_callback_queue.h
+noExplicitConstructor:Library/Parallel/tools/parallel_tools.h
+noExplicitConstructor:Library/Parallel/std_thread/parallel_thread_pool.cpp
+noExplicitConstructor:Library/Parallel/tools/threaded_callback_queue.h
 noExplicitConstructor:Library/Profiler/kineto/profiler_kineto.cpp
 
 # Destructor deletes members - making loop variable const would be misleading
-constVariableReference:Library/Core/parallel/multi_threader.cpp:145
+constVariableReference:Library/Parallel/tools/multi_threader.cpp:145
 
 # False positive - num is used after reassignment in std::min
-redundantAssignment:Library/Core/parallel/multi_threader.cpp:107
+redundantAssignment:Library/Parallel/tools/multi_threader.cpp:107
 
 # Padding/alignment structs - members intentionally unused
 unusedStructMember:Library/Core/util/small_vector.cpp
@@ -55,19 +55,19 @@ unusedStructMember:Library/Profiler/common/standalone/execution_trace_observer.c
 unusedStructMember:Library/Profiler/common/standalone/execution_trace_observer.cpp:178
 
 # Intentional state machine condition
-knownConditionTrueFalse:Library/Core/parallel/threaded_callback_queue.h:108
+knownConditionTrueFalse:Library/Parallel/tools/threaded_callback_queue.h:108
 knownConditionTrueFalse:Library/Profiler/common/standalone/execution_trace_observer.cpp:851
 
 # Functor may need to modify state - cannot be const
-constVariableReference:Library/Core/parallel/threaded_callback_queue.h:584
+constVariableReference:Library/Parallel/tools/threaded_callback_queue.h:584
 
 # Template returns non-const reference - parameter cannot be const
-constParameterReference:Library/Core/parallel/threaded_callback_queue.h:513
+constParameterReference:Library/Parallel/tools/threaded_callback_queue.h:513
 
 # Style suggestions - raw loops preferred for clarity in these cases
-useStlAlgorithm:Library/Core/parallel/std_thread/parallel_thread_pool.cpp:457
-useStlAlgorithm:Library/Core/parallel/std_thread/parallel_thread_pool.cpp:615
-useStlAlgorithm:Library/Core/parallel/threaded_callback_queue.h:671
+useStlAlgorithm:Library/Parallel/std_thread/parallel_thread_pool.cpp:457
+useStlAlgorithm:Library/Parallel/std_thread/parallel_thread_pool.cpp:615
+useStlAlgorithm:Library/Parallel/tools/threaded_callback_queue.h:671
 
 # Profiler code - const correctness suggestions for imported/adapted code
 constVariableReference:Library/Profiler/common/collection.cpp
@@ -82,3 +82,18 @@ localtimeCalled:Library/Profiler/common/standalone/execution_trace_observer.cpp
 
 # Examples and test code - unused results are acceptable
 unreadVariable:Examples/*
+
+# Memory adapter pattern - intentional delegation to wrapped allocator
+uselessOverride:Library/Memory/helper/process_state.h
+
+# use_allocator_bfc is intentionally disabled (fixme: env-var read commented out)
+knownConditionTrueFalse:Library/Memory/helper/process_state.cpp:113
+
+# Struct member reserved for future use / platform-specific debug info
+unusedStructMember:Library/Logging/logger/back_trace.cpp:53
+
+# Profiler xplane exporter - raw accumulate loop is clearer here
+useStlAlgorithm:Library/Profiler/native/exporters/xplane/xplane_utils.cpp:664
+
+# Library API functions - called from user code outside the scanned Library tree
+unusedFunction:Library/*

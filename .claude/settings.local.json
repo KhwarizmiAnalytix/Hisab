@@ -107,7 +107,10 @@
       "Bash(git stash *)",
       "Bash(nvcc --version)",
       "Read(//usr/local/cuda-12.6/**)",
-      "Read(//usr/**)"
+      "Read(//usr/**)",
+      "Bash(cppcheck -DQUARISMA_CPPCHECK=1 Library --platform=unspecified --enable=all --inline-suppr -q --check-level=normal '--template={id},{file}:{line},{severity},{message}' --suppress=missingInclude --suppress=missingIncludeSystem --suppress=toomanyconfigs --suppress=unmatchedSuppression --suppress=checkersReport -I Library -ibuild '-ibuild_*' -i./build '-i./build_*' -iThirdParty -i./ThirdParty)",
+      "Read(//tmp/**)",
+      "Bash(cppcheck -DQUARISMA_CPPCHECK=1 Library --platform=unspecified --enable=all --inline-suppr -q --check-level=normal '--template={id},{file}:{line},{severity},{message}' --suppress=missingInclude --suppress=missingIncludeSystem --suppress=toomanyconfigs --suppress=unmatchedSuppression --suppress=checkersReport -I Library --suppressions-list=Scripts/suppressions/cppcheck_suppressions.txt -ibuild '-ibuild_*' -i./build '-i./build_*' -iThirdParty -i./ThirdParty)"
     ],
     "deny": [],
     "ask": []

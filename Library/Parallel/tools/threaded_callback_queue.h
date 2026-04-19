@@ -337,7 +337,9 @@ struct threaded_callback_queue::return_value_wrapper<ReturnT, true /* IsLValueRe
     {
     }
 
-    ReturnT&       get() { return value_->get(); }
+    // cppcheck-suppress returnTempReference
+    ReturnT& get() { return value_->get(); }
+    // cppcheck-suppress returnTempReference
     const ReturnT& get() const { return value_->get(); }
 
     std::unique_ptr<return_value_impl> value_;
@@ -703,8 +705,7 @@ bool threaded_callback_queue::must_wait(SharedFutureContainerT&& prior_shared_fu
     return std::any_of(
         prior_shared_futures.begin(),
         prior_shared_futures.end(),
-        [](const auto& future_item)
-        {
+        [](const auto& future_item) {
             return detail::get_raw_ptr(future_item)->status_.load(std::memory_order_acquire) !=
                    READY;
         });
@@ -808,8 +809,8 @@ void threaded_callback_queue::push_control(FT&& f, ArgsT&&... args)
 
     worker w;
     using invoker_pointer_type = invoker_pointer<worker, threaded_callback_queue*, FT, ArgsT...>;
-    auto invoker_ptr           = invoker_pointer_type(
-        invoker<worker, threaded_callback_queue*, FT, ArgsT...>::create(
+    auto invoker_ptr =
+        invoker_pointer_type(invoker<worker, threaded_callback_queue*, FT, ArgsT...>::create(
             w, this, std::forward<FT>(f), std::forward<ArgsT>(args)...));
     w.future_ = invoker_ptr;
 
@@ -866,4 +867,3 @@ threaded_callback_queue::push(FT&& f, ArgsT&&... args)
     condition_variable_.notify_one();
     return invoker_ptr;
 }
-

@@ -453,11 +453,18 @@ def prepare_llvm_coverage(build_dir: Path, module_name: str, binaries_list: str,
     env['LLVM_PROFILE_FILE'] = str(profraw_file)
     try:
         subprocess.run([str(test_executable)], env=env, check=False, cwd=str(test_dir), capture_output=True, text=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Warning: Test execution failed for {module_name}: {e}")
-        return False
-    except FileNotFoundError as e:
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
         print(f"Warning: Could not execute {module_name}CxxTests: {e}")
+        return False
+
+    # Verify the profraw file was actually created — it won't be if the binary
+    # was built without coverage instrumentation (-fprofile-instr-generate).
+    if not profraw_file.exists():
+        print(
+            f"Warning: No profraw generated for {module_name} — "
+            "binary may not have been built with coverage instrumentation "
+            "(rebuild with ENABLE_COVERAGE=ON and reconfigure cmake)"
+        )
         return False
 
     # Only write to files after all validations and successful test execution

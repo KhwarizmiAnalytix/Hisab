@@ -59,7 +59,7 @@ else()
   else()
     # Default configuration if no .codespellrc exists
     list(APPEND _spell_args "--skip=.git,.augment,.github,.vscode,build,Build,Cmake,ThirdParty"
-         "--ignore-words-list=ThirdParty" "--check-hidden=no"
+         "--ignore-words-list=ThirdParty,OT"
     )
   endif()
 

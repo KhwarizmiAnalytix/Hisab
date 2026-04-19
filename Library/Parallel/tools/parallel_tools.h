@@ -126,6 +126,7 @@ struct parallel_tools_functor_internal<Functor, true>
     mutable tbb::enumerable_thread_specific<unsigned char> initialized_;
 #endif
 
+    // cppcheck-suppress uninitMemberVar
     parallel_tools_functor_internal(Functor& f)
         : f_(f)
 #if PARALLEL_HAS_TBB
@@ -231,7 +232,8 @@ public:
     template <typename Functor>
     static void parallel_for(size_t first, size_t last, size_t grain, const Functor& f)
     {
-        typename parallel::detail::parallel_impl::parallel_tools_lookup_for<Functor const>::type fi(f);
+        typename parallel::detail::parallel_impl::parallel_tools_lookup_for<Functor const>::type fi(
+            f);
         fi.parallel_for(first, last, grain);
     }
 
@@ -316,4 +318,3 @@ public:
         SMPToolsAPI.local_scope<parallel_tools::config>(cfg, lambda);
     }
 };
-

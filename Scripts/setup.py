@@ -625,6 +625,9 @@ class QuarismaFlags:
             "cppcheck",
             "spell",
             "fix",
+            "icecc",
+            "examples",
+            "linker",
             "cache",
             "cache_type",
             "enzyme",
@@ -658,6 +661,9 @@ class QuarismaFlags:
             "enable cppcheck static analysis",
             "enable spell checking with automatic corrections",
             "enable clang-tidy fix-errors and fix options",
+            "enable Icecream distributed compilation (icecc)",
+            "build example programs for all modules",
+            "linker selection for all modules: --linker.mold, --linker.lld, --linker.gold, --linker.lld-link",
             "enable per-target compiler cache launchers (default ON; pass flag to disable)",
             "compiler cache backend for all library targets: none, ccache, sccache, or buildcache",
             "enable Enzyme automatic differentiation support",
@@ -676,30 +682,21 @@ class QuarismaFlags:
             "memkind": "MEMORY_ENABLE_MEMKIND",
             "vectorisation": "VECTORIZATION_TYPE",
             "static": "BUILD_SHARED_LIBS",
-            "clangtidy": "PROJECT_ENABLE_CLANGTIDY",
-            "iwyu": "PROJECT_ENABLE_IWYU",
-            "sanitizer": "PROJECT_ENABLE_SANITIZER",
-            "sanitizer_enum": "PROJECT_SANITIZER_TYPE",
-            "benchmark": "CORE_ENABLE_BENCHMARK",
-            "gtest": "ENABLE_GTEST",
-            "valgrind": "PROJECT_ENABLE_VALGRIND",
-            "coverage": "PARALLEL_ENABLE_COVERAGE",
             "test": "BUILD_TESTING",
             "logging_backend": "LOGGING_BACKEND",
-            "lto": "MEMORY_ENABLE_LTO",
             "magic_enum": "CORE_ENABLE_MAGICENUM",
             "mimalloc": "MEMORY_ENABLE_MIMALLOC",
-            "external": "PROJECT_ENABLE_EXTERNAL",
+            "external": "QUARISMA_ENABLE_EXTERNAL",
             "profiler_type": "PROFILER_BACKEND",
-            # cxxstd is fanned out per-module in create_cmake_flags
-            "cppcheck": "PROJECT_ENABLE_CPPCHECK",
-            "spell": "PROJECT_ENABLE_SPELL",
-            "fix": "PROJECT_ENABLE_FIX",
+
             "enzyme": "CORE_ENABLE_ENZYME",
             "parallel_backend": "PARALLEL_BACKEND",
             # Non-CMake flags (for internal use, not passed to CMake)
             "mkl_threading": "MKL_THREADING",
             "mkl_link": "MKL_LINK",
+            # All other flags (clangtidy, iwyu, sanitizer, sanitizer_enum, valgrind,
+            # gtest, coverage, benchmark, spell, fix, icecc, examples, lto, cache,
+            # cache_type, linker, cppcheck) are fanned out per-module in create_cmake_flags.
         }
 
     def __fill_option_flags(self, arg_list):
@@ -717,16 +714,19 @@ class QuarismaFlags:
         self.__value = dict.fromkeys(self.__key, self.ON)
         self.__value.update(
             {
-                "vectorisation": "avx2",  # Special case: string value
-                "parallel_backend": "std",  # Special case: string value
-                "javasourceversion": 1.8,  # Special case: numeric value
-                "javatargetversion": 1.8,  # Special case: numeric value
-                "cxxstd": "cxx20",  # Special case: let CMake decide
+                "vectorisation": "avx2",
+                "parallel_backend": "std",
+                "javasourceversion": 1.8,
+                "javatargetversion": 1.8,
+                "cxxstd": "cxx20",
                 # Keep some flags OFF even in "all" mode for safety/compatibility
-                "cuda": self.OFF,  # CUDA requires special hardware
+                "cuda": self.OFF,       # CUDA requires special hardware
                 "sanitizer": self.OFF,  # Can conflict with other tools
-                "valgrind": self.OFF,  # Can conflict with sanitizer
-                "coverage": self.OFF,  # Coverage analysis is optional
+                "valgrind": self.OFF,   # Can conflict with sanitizer
+                "coverage": self.OFF,   # Coverage analysis is optional
+                "icecc": self.OFF,      # Distributed compilation is site-specific
+                "examples": self.ON,
+                "linker": "default",    # Keep auto-detect in "all" mode
                 "profiler_type": "KINETO",
                 "cache": self.ON,
                 "cache_type": "ccache",
@@ -751,27 +751,15 @@ class QuarismaFlags:
                 "logging_backend": "LOGURU",  # Default logging backend
                 "cache": self.ON,  # Per-module compiler cache (CMake defaults ON)
                 "cache_type": "none",  # Default cache backend is none
-                "parallel_backend": "std",  # Default SMP backend is std_thread for maximum compatibility
-                # CMake options with default OFF - keep OFF in setup.py
-                "lto": self.OFF,  # *_ENABLE_LTO defaults are OFF
-                "gtest": self.ON,  # ENABLE_GTEST default is ON
-                "magic_enum": self.ON,  # PROJECT_ENABLE_MAGIC_ENUM default is ON
-                "mimalloc": self.ON,  # MEMORY_ENABLE_MIMALLOC default is ON
+                "parallel_backend": "std",  # Default SMP backend
+                "lto": self.OFF,
+                "gtest": self.ON,   # *_ENABLE_GTEST CMake defaults are ON
+                "magic_enum": self.ON,
+                "mimalloc": self.ON,
                 "profiler_type": "KINETO",
-                # CMake options with default OFF - keep OFF in setup.py
-                # (already set by dict.fromkeys above)
-                # "benchmark": self.OFF,  # *_ENABLE_BENCHMARK defaults are OFF
-                # "cuda": self.OFF,  # MEMORY_ENABLE_CUDA default is OFF
-                # "mkl": self.OFF,  # CORE_ENABLE_MKL default is OFF
-                # "numa": self.OFF,  # MEMORY_ENABLE_NUMA default is OFF
-                # "memkind": self.OFF,  # MEMORY_ENABLE_MEMKIND default is OFF
-                # "tbb": self.OFF,  # MEMORY_ENABLE_TBB default is OFF
-                # "iwyu": self.OFF,  # PROJECT_ENABLE_IWYU default is OFF
-                # "clangtidy": self.OFF,  # PROJECT_ENABLE_CLANGTIDY default is OFF
-                # "cppcheck": self.OFF,  # PROJECT_ENABLE_CPPCHECK default is OFF
-                # "valgrind": self.OFF,  # PROJECT_ENABLE_VALGRIND default is OFF
-                # "coverage": self.OFF,  # *_ENABLE_COVERAGE defaults are OFF
-                # "sanitizer": self.OFF,  # PROJECT_ENABLE_SANITIZER default is OFF
+                "icecc": self.OFF,
+                "examples": self.OFF,
+                "linker": "default",  # *_LINKER_CHOICE default is "default" (auto-detect)
             }
         )
 
@@ -783,6 +771,7 @@ class QuarismaFlags:
         profiler_choices = {"kineto": "KINETO", "native": "NATIVE", "itt": "ITT"}
         cache_type_list = ["none", "ccache", "sccache", "buildcache"]
         parallel_backend_list = ["std", "openmp", "tbb"]
+        linker_list = ["default", "mold", "lld", "gold", "lld-link"]
 
         # Set default values for special flags
         self.__value["mkl_link"] = "static"
@@ -800,6 +789,18 @@ class QuarismaFlags:
                 self.__value["sanitizer"] = self.ON
                 self.__value["sanitizer_enum"] = arg
                 self.builder_suffix += f"_{arg}"
+            elif arg.startswith("linker."):
+                linker_value = arg.split(".", 1)[1].lower()
+                if linker_value in linker_list and linker_value != "default":
+                    self.__value["linker"] = linker_value
+                    self.builder_suffix += f"_linker_{linker_value}"
+                    print_status(f"Setting linker to {linker_value}", "INFO")
+                else:
+                    print_status(
+                        f"Unknown linker '{linker_value}'. Valid options: {', '.join(l for l in linker_list if l != 'default')}",
+                        "ERROR",
+                    )
+                    sys.exit(1)
             elif arg == "pythondebug":
                 self.__value["python"] = self.ON
                 self.__value["pythondebug"] = self.ON
@@ -1007,61 +1008,44 @@ class QuarismaFlags:
                 ]
             )
 
-        # Keep module-scoped behavior for umbrella setup flags.
-        if self.__value.get("benchmark") in [self.ON, self.OFF]:
-            benchmark_value = self.__value.get("benchmark")
-            cmake_cmd_flags.extend(
-                [
-                    f"-DMEMORY_ENABLE_BENCHMARK={benchmark_value}",
-                    f"-DPARALLEL_ENABLE_BENCHMARK={benchmark_value}",
-                    f"-DCORE_ENABLE_BENCHMARK={benchmark_value}",
-                ]
-            )
+        # ------------------------------------------------------------------ per-module fan-outs
+        # Every flag in this section is propagated to all five library modules so that a
+        # single setup.py argument controls the entire project uniformly.
+        ALL_MODULES = ["CORE", "LOGGING", "MEMORY", "PARALLEL", "PROFILER"]
 
-        if self.__value.get("coverage") in [self.ON, self.OFF]:
-            coverage_value = self.__value.get("coverage")
-            cmake_cmd_flags.extend(
-                [
-                    f"-DPARALLEL_ENABLE_COVERAGE={coverage_value}",
-                    f"-DPROFILER_ENABLE_COVERAGE={coverage_value}",
-                ]
-            )
+        def _fan_bool(key, cmake_suffix):
+            val = self.__value.get(key)
+            if val in [self.ON, self.OFF]:
+                for mod in ALL_MODULES:
+                    cmake_cmd_flags.append(f"-D{mod}_{cmake_suffix}={val}")
 
-        if self.__value.get("lto") in [self.ON, self.OFF]:
-            lto_value = self.__value.get("lto")
-            cmake_cmd_flags.extend(
-                [
-                    f"-DLOGGING_ENABLE_LTO={lto_value}",
-                    f"-DMEMORY_ENABLE_LTO={lto_value}",
-                    f"-DPARALLEL_ENABLE_LTO={lto_value}",
-                    f"-DPROFILER_ENABLE_LTO={lto_value}",
-                    f"-DCORE_ENABLE_LTO={lto_value}",
-                ]
-            )
+        def _fan_str(key, cmake_suffix):
+            val = self.__value.get(key)
+            if val and val != "" and val != self.OFF:
+                for mod in ALL_MODULES:
+                    cmake_cmd_flags.append(f"-D{mod}_{cmake_suffix}={val}")
 
-        if self.__value.get("cache_type") and self.__value["cache_type"] != "":
-            cache_backend = self.__value["cache_type"]
-            cmake_cmd_flags.extend(
-                [
-                    f"-DLOGGING_CACHE_BACKEND={cache_backend}",
-                    f"-DMEMORY_CACHE_BACKEND={cache_backend}",
-                    f"-DCORE_CACHE_BACKEND={cache_backend}",
-                    f"-DPARALLEL_CACHE_BACKEND={cache_backend}",
-                    f"-DPROFILER_CACHE_BACKEND={cache_backend}",
-                ]
-            )
+        _fan_bool("benchmark",     "ENABLE_BENCHMARK")
+        _fan_bool("coverage",      "ENABLE_COVERAGE")
+        _fan_bool("lto",           "ENABLE_LTO")
+        _fan_bool("gtest",         "ENABLE_GTEST")
+        _fan_bool("clangtidy",     "ENABLE_CLANGTIDY")
+        _fan_bool("iwyu",          "ENABLE_IWYU")
+        _fan_bool("sanitizer",     "ENABLE_SANITIZER")
+        _fan_bool("valgrind",      "ENABLE_VALGRIND")
+        _fan_bool("spell",         "ENABLE_SPELL")
+        _fan_bool("fix",           "ENABLE_FIX")
+        _fan_bool("icecc",         "ENABLE_ICECC")
+        _fan_bool("examples",      "ENABLE_EXAMPLES")
+        _fan_bool("cppcheck",      "ENABLE_CPPCHECK")
+        _fan_str("sanitizer_enum", "SANITIZER_TYPE")
+        _fan_str("cache_type",     "CACHE_BACKEND")
+        _fan_str("linker",         "LINKER_CHOICE")
 
         if self.__value.get("cache") in [self.ON, self.OFF]:
             cv = self.__value.get("cache")
-            cmake_cmd_flags.extend(
-                [
-                    f"-DLOGGING_ENABLE_CACHE={cv}",
-                    f"-DMEMORY_ENABLE_CACHE={cv}",
-                    f"-DCORE_ENABLE_CACHE={cv}",
-                    f"-DPARALLEL_ENABLE_CACHE={cv}",
-                    f"-DPROFILER_ENABLE_CACHE={cv}",
-                ]
-            )
+            for mod in ALL_MODULES:
+                cmake_cmd_flags.append(f"-D{mod}_ENABLE_CACHE={cv}")
 
         # When the TBB parallel backend is selected, the Memory TBB allocator must
         # also be enabled: both PARALLEL_ENABLE_TBB and MEMORY_ENABLE_TBB must be ON.
@@ -1096,6 +1080,8 @@ class QuarismaFlags:
                 key = "sanitizer (or --sanitizer.TYPE)"
             elif key == "sanitizer_enum":
                 key = "address, undefined, thread, memory, leak"
+            elif key == "linker":
+                key = "linker.mold | linker.lld | linker.gold | linker.lld-link"
             print(f"{key:<30}{description}")
 
     def enable_gtest(self):

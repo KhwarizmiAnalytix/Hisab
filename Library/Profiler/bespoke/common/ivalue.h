@@ -1220,14 +1220,14 @@ public:
         {
             if (ten.is_sparse())
             {
-                // COO sparse tensors have a "values" tensor and an "indices" tensor
+                // COUP sparse tensors have a "values" tensor and an "indices" tensor
                 // so this will detect overlap of sparse tensors that share a values
                 // tensor, but not sparse tensors that share an indices tensor.
                 return hashTensor(ten._values());
             }
             else if (ten.is_sparse_csr())
             {
-                // COO sparse tensors have a "values" tensor and an "indices" tensor
+                // COUP sparse tensors have a "values" tensor and an "indices" tensor
                 // so this will detect overlap of sparse tensors that share a values
                 // tensor, but not sparse tensors that share an indices tensor.
                 return hashTensor(ten.values());

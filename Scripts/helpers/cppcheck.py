@@ -119,7 +119,8 @@ def build_cppcheck_command(
         "--suppress=toomanyconfigs",  # Suppress informational noise
         "--suppress=unmatchedSuppression",  # Suppress unmatched suppression warnings
         "--suppress=checkersReport",  # Suppress checkers report information
-        f"-j{parallel_jobs}",
+        # Note: -j (parallel) is intentionally omitted — cppcheck does not support
+        # --output-file when -j > 1 (output goes to stdout only in parallel mode).
         "-I",
         "Library",
         f"--output-file={output_file}",

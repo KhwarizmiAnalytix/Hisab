@@ -1,4 +1,5 @@
 {
+    "claudeCode.initialPermissionMode": "acceptEdits",
     "files.associations": {
         "expected": "cpp",
         "chrono": "cpp",
