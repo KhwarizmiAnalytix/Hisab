@@ -23,17 +23,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   # Enable exceptions because QUARISMA and third party code rely on C++ exceptions. Allow C++ to
   # catch exceptions. Emscripten disables it by default due to high overhead. Generate helper
   # functions to get stack traces for uncaught exceptions
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwasm-exceptions")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fwasm-exceptions")
-  set(CMAKE_EXE_LINKER_FLAGS
-      "${CMAKE_EXE_LINKER_FLAGS} -fwasm-exceptions -sEXCEPTION_STACK_TRACES=1"
-  )
-  set(CMAKE_SHARED_LINKER_FLAGS
-      "${CMAKE_SHARED_LINKER_FLAGS} -fwasm-exceptions -sEXCEPTION_STACK_TRACES=1"
-  )
-  set(CMAKE_MODULE_LINKER_FLAGS
-      "${CMAKE_MODULE_LINKER_FLAGS} -fwasm-exceptions -sEXCEPTION_STACK_TRACES=1"
-  )
+  string(APPEND CMAKE_CXX_FLAGS " -fwasm-exceptions")
+  string(APPEND CMAKE_C_FLAGS " -fwasm-exceptions")
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " -fwasm-exceptions -sEXCEPTION_STACK_TRACES=1")
+  string(APPEND CMAKE_SHARED_LINKER_FLAGS " -fwasm-exceptions -sEXCEPTION_STACK_TRACES=1")
+  string(APPEND CMAKE_MODULE_LINKER_FLAGS " -fwasm-exceptions -sEXCEPTION_STACK_TRACES=1")
   # Consumers linking to QUARISMA also need to add the exception flag.
   if(TARGET QUARISMAplatform)
     target_link_options(QUARISMAplatform INTERFACE "-fwasm-exceptions" "-sEXCEPTION_STACK_TRACES=1")
@@ -42,11 +36,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     # Remove after https://github.com/WebAssembly/design/issues/1271 is closed Set Wno flag globally
     # because even though the flag is added in QUARISMACompilerWarningFlags.cmake, wrapping tools do
     # not link with `QUARISMAplatform`
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -Wno-pthreads-mem-growth")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread -Wno-pthreads-mem-growth")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pthread")
-    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -pthread")
+    string(APPEND CMAKE_CXX_FLAGS " -pthread -Wno-pthreads-mem-growth")
+    string(APPEND CMAKE_C_FLAGS " -pthread -Wno-pthreads-mem-growth")
+    string(APPEND CMAKE_EXE_LINKER_FLAGS " -pthread")
+    string(APPEND CMAKE_SHARED_LINKER_FLAGS " -pthread")
+    string(APPEND CMAKE_MODULE_LINKER_FLAGS " -pthread")
     # Consumers linking to QUARISMA also need to add the pthread flag.
     if(TARGET QUARISMAplatform)
       target_compile_options(QUARISMAplatform INTERFACE "-pthread" "-Wno-pthreads-mem-growth")
@@ -54,11 +48,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     endif()
   endif()
   if(PROJECT_WEBASSEMBLY_64_BIT)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sMEMORY64=1")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -sMEMORY64=1")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -sMEMORY64=1")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -sMEMORY64=1")
-    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -sMEMORY64=1")
+    string(APPEND CMAKE_CXX_FLAGS " -sMEMORY64=1")
+    string(APPEND CMAKE_C_FLAGS " -sMEMORY64=1")
+    string(APPEND CMAKE_EXE_LINKER_FLAGS " -sMEMORY64=1")
+    string(APPEND CMAKE_SHARED_LINKER_FLAGS " -sMEMORY64=1")
+    string(APPEND CMAKE_MODULE_LINKER_FLAGS " -sMEMORY64=1")
     # Consumers linking to QUARISMA also need to add the memory64 flag.
     if(TARGET QUARISMAplatform)
       target_compile_options(QUARISMAplatform INTERFACE "-sMEMORY64=1")
@@ -74,42 +68,42 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   endif()
   if(WIN32)
     # The platform is gcc on cygwin.
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwin32")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mwin32")
+    string(APPEND CMAKE_CXX_FLAGS " -mwin32")
+    string(APPEND CMAKE_C_FLAGS " -mwin32")
     link_libraries(-lgdi32)
   endif()
   if(MINGW)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mthreads")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mthreads")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mthreads")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -mthreads")
-    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -mthreads")
+    string(APPEND CMAKE_CXX_FLAGS " -mthreads")
+    string(APPEND CMAKE_C_FLAGS " -mthreads")
+    string(APPEND CMAKE_EXE_LINKER_FLAGS " -mthreads")
+    string(APPEND CMAKE_SHARED_LINKER_FLAGS " -mthreads")
+    string(APPEND CMAKE_MODULE_LINKER_FLAGS " -mthreads")
   endif()
   if(CMAKE_SYSTEM MATCHES "SunOS.*")
     # Disable warnings that occur in X11 headers.
     if(DART_ROOT AND BUILD_TESTING)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unknown-pragmas")
+      string(APPEND CMAKE_CXX_FLAGS " -Wno-unknown-pragmas")
+      string(APPEND CMAKE_C_FLAGS " -Wno-unknown-pragmas")
     endif()
   endif()
 else()
   if(CMAKE_ANSI_CFLAGS)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_ANSI_CFLAGS}")
+    string(APPEND CMAKE_C_FLAGS " ${CMAKE_ANSI_CFLAGS}")
   endif()
   if(CMAKE_SYSTEM MATCHES "OSF1-V.*")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -timplicit_local -no_implicit_include")
+    string(APPEND CMAKE_CXX_FLAGS " -timplicit_local -no_implicit_include")
   endif()
   if(CMAKE_SYSTEM MATCHES "AIX.*")
     # allow t-ypeid and d-ynamic_cast usage (normally off by default on xlC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qrtti=all")
+    string(APPEND CMAKE_CXX_FLAGS " -qrtti=all")
     # silence duplicate symbol warnings on AIX
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -bhalt:5")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -bhalt:5")
-    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -bhalt:5")
+    string(APPEND CMAKE_EXE_LINKER_FLAGS " -bhalt:5")
+    string(APPEND CMAKE_SHARED_LINKER_FLAGS " -bhalt:5")
+    string(APPEND CMAKE_MODULE_LINKER_FLAGS " -bhalt:5")
   endif()
   if(CMAKE_SYSTEM MATCHES "HP-UX.*")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} +W2111 +W2236 +W4276")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} +W2111 +W2236 +W4276")
+    string(APPEND CMAKE_C_FLAGS " +W2111 +W2236 +W4276")
+    string(APPEND CMAKE_CXX_FLAGS " +W2111 +W2236 +W4276")
   endif()
 endif()
 
@@ -132,20 +126,20 @@ if(_MAY_BE_INTEL_COMPILER)
   include(${CMAKE_CURRENT_LIST_DIR}/TestNO_ICC_IDYNAMIC_NEEDED.cmake)
   testno_icc_idynamic_needed(NO_ICC_IDYNAMIC_NEEDED ${CMAKE_CURRENT_LIST_DIR})
   if(NO_ICC_IDYNAMIC_NEEDED)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    # no flag needed
   else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -i_dynamic")
+    string(APPEND CMAKE_CXX_FLAGS " -i_dynamic")
   endif()
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "PGI")
   # --diag_suppress=236 is for constant value asserts used for error handling This can be restricted
   # to the implementation and doesn't need to propagate
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --diag_suppress=236")
+  string(APPEND CMAKE_CXX_FLAGS " --diag_suppress=236")
 
   # --diag_suppress=381 is for redundant semi-colons used in macros This needs to propagate to
   # anything that includes QUARISMA headers
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --diag_suppress=381")
+  string(APPEND CMAKE_CXX_FLAGS " --diag_suppress=381")
 endif()
 
 if(MSVC)
@@ -153,11 +147,11 @@ if(MSVC)
   # if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]") string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS
   # "${CMAKE_CXX_FLAGS}") else() set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4") endif() Enable C++20
   # support: /Zc:__cplusplus
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus")
+  string(APPEND CMAKE_CXX_FLAGS " /Zc:__cplusplus")
   # Treat warnings as errors set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX") Disable C4244: conversion
   # warnings
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4244 /wd4267 /wd4715 /wd4018")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4244 /wd4267 /wd4715 /wd4018")
+  string(APPEND CMAKE_CXX_FLAGS " /wd4244 /wd4267 /wd4715 /wd4018")
+  string(APPEND CMAKE_C_FLAGS " /wd4244 /wd4267 /wd4715 /wd4018")
 
   # Disable deprecation warnings for standard C and STL functions in VS2015+ and later
   add_definitions(-D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -D_CRT_SECURE_NO_WARNINGS)
@@ -170,25 +164,25 @@ if(MSVC)
       CACHE STRING "The maximum number of processes for the /MP flag"
   )
   if(CMAKE_CXX_MP_FLAG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP${CMAKE_CXX_MP_NUM_PROCESSORS}")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP${CMAKE_CXX_MP_NUM_PROCESSORS}")
+    string(APPEND CMAKE_CXX_FLAGS " /MP${CMAKE_CXX_MP_NUM_PROCESSORS}")
+    string(APPEND CMAKE_C_FLAGS " /MP${CMAKE_CXX_MP_NUM_PROCESSORS}")
   endif()
 
   # Enable /bigobj for MSVC to allow larger symbol tables
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /bigobj")
+  string(APPEND CMAKE_CXX_FLAGS " /bigobj")
+  string(APPEND CMAKE_C_FLAGS " /bigobj")
 
   # Enable faster PDB generation
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zi")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Zi")
+  string(APPEND CMAKE_CXX_FLAGS " /Zi")
+  string(APPEND CMAKE_C_FLAGS " /Zi")
 
   # Use /utf-8 so that MSVC uses utf-8 in source files and object files
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
+  string(APPEND CMAKE_CXX_FLAGS " /utf-8")
+  string(APPEND CMAKE_C_FLAGS " /utf-8")
 
   # use /EHsc for exception handling
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /EHsc")
+  string(APPEND CMAKE_CXX_FLAGS " /EHsc")
+  string(APPEND CMAKE_C_FLAGS " /EHsc")
 endif()
 
 if(APPLE)
