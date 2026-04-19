@@ -38,6 +38,12 @@ set(PROJECT_VERSION_FULL
 
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
+enable_testing()
+
+# Always use bundled googletest — external shared gtest (e.g. from conda) causes rpath failures
+# at runtime because its dylib install path is not in our test executables' rpath.
+set(CMAKE_DISABLE_FIND_PACKAGE_GTest TRUE)
+
 # ============================================================================= Global C++ standard
 # All five library modules default to C++20.  Each module declares its own XXX_CXX_STANDARD cache
 # variable so that a single module can be overridden independently; those per-module
@@ -95,6 +101,13 @@ set(MEMORY_DEPENDENCY_INCLUDE_DIRS)
 set(PARALLEL_DEPENDENCY_INCLUDE_DIRS)
 set(PROFILER_DEPENDENCY_INCLUDE_DIRS)
 set(CORE_DEPENDENCY_INCLUDE_DIRS)
+
+# ============================================================================= Logging/Profiler
+# early configuration — must run before ThirdParty so that LOGGING_ENABLE_LOGURU /
+# LOGGING_ENABLE_GLOG and PROFILER_ENABLE_KINETO are defined when ThirdParty gates on them.
+# =============================================================================
+
+include(logging_backend)
 
 # ============================================================================= Third-Party
 # Libraries

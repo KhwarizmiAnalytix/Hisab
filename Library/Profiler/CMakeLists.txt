@@ -248,6 +248,11 @@ if(PROFILER_ENABLE_KINETO AND NOT TARGET Kineto::kineto)
   set(PROFILER_ENABLE_KINETO OFF CACHE BOOL "Enable Quarisma Kineto profiling library." FORCE)
 endif()
 
+list(APPEND PROFILER_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/fmt/include")
+if(PROFILER_ENABLE_KINETO)
+  list(APPEND PROFILER_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/kineto/libkineto/include")
+endif()
+
 # ITT — Intel VTune API (external system dependency, not bundled).
 if(PROFILER_ENABLE_ITT)
   find_package(ITT)
@@ -266,6 +271,9 @@ if(PROFILER_ENABLE_ITT)
 endif()
 
 # --- Runtime library wiring ---
+if(TARGET Fmt::fmt)
+  list(APPEND PROFILER_DEPENDENCY_LIBS Fmt::fmt)
+endif()
 if(PROFILER_ENABLE_KINETO AND TARGET Kineto::kineto)
   list(APPEND PROFILER_DEPENDENCY_LIBS Kineto::kineto)
 endif()

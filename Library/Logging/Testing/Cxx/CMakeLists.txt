@@ -18,11 +18,15 @@ if(NOT TARGET gtest)
     if(MSVC)
       set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     endif()
+    # Build gtest as static regardless of BUILD_SHARED_LIBS — avoids rpath issues at test runtime.
+    set(_saved_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
+    set(BUILD_SHARED_LIBS OFF)
     add_subdirectory(
       "${QUARISMA_THIRDPARTY_DIR}/googletest"
       "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build"
       EXCLUDE_FROM_ALL
     )
+    set(BUILD_SHARED_LIBS ${_saved_BUILD_SHARED_LIBS})
     _set_third_party_folder_properties("googletest"
                                        "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build")
   endif()
