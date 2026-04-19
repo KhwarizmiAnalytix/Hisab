@@ -165,6 +165,17 @@ quarisma_find_linker(${LOGGING_LINKER_CHOICE})
 # --- Third-party dependencies owned by Logging ---
 set(_tpdir "${CMAKE_SOURCE_DIR}/ThirdParty")
 
+# fmt — Logging uses fmt directly and is processed before Core, so we initialise
+# fmt here. Core's identical add_third_party_library(fmt...) call is a no-op (processed flag).
+add_third_party_library(fmt
+    LIBRARY_TYPE STATIC
+    SOURCE_DIR "${_tpdir}/fmt"
+    ALIASES "fmt::fmt-header-only"
+    QUARISMA_TARGETS "Fmt::fmt=fmt::fmt-header-only|fmt::fmt|fmt"
+    INCLUDE_DIR "${_tpdir}/fmt/include"
+    AUTO_ADD_TO_DEPENDENCIES OFF
+)
+
 add_third_party_library(loguru
     CONDITION LOGGING_ENABLE_LOGURU
     LIBRARY_TYPE STATIC
@@ -183,6 +194,16 @@ add_third_party_library(glog
     INCLUDE_DIR "${_tpdir}/glog/src"
     AUTO_ADD_TO_DEPENDENCIES OFF
 )
+
+# fmt is used by Logging source files directly; Fmt::fmt is not available here
+# (it is created by Core, which is processed after Logging).
+list(APPEND LOGGING_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/fmt/include")
+if(LOGGING_ENABLE_LOGURU OR LOGGING_BACKEND STREQUAL "LOGURU")
+  list(APPEND LOGGING_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/loguru")
+endif()
+if(LOGGING_ENABLE_GLOG OR LOGGING_BACKEND STREQUAL "GLOG")
+  list(APPEND LOGGING_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/glog/src")
+endif()
 
 # --- Source discovery ---
 set(logging_headers "")
@@ -260,6 +281,9 @@ endif()
 
 target_link_libraries(Logging PUBLIC Logging::build)
 
+if(TARGET Fmt::fmt)
+  list(APPEND LOGGING_DEPENDENCY_LIBS Fmt::fmt)
+endif()
 if(LOGGING_ENABLE_LOGURU AND TARGET Loguru::loguru)
   list(APPEND LOGGING_DEPENDENCY_LIBS Loguru::loguru)
 endif()

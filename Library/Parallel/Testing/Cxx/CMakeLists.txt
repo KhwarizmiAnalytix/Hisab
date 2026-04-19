@@ -80,8 +80,11 @@ target_link_libraries(ParallelCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Pa
 if(EXISTS "${CMAKE_SOURCE_DIR}/ThirdParty/loguru")
   target_include_directories(ParallelCxxTests PRIVATE "${CMAKE_SOURCE_DIR}/ThirdParty/loguru")
 endif()
-if(TARGET Logging::loguru)
-  target_link_libraries(ParallelCxxTests PRIVATE Logging::loguru)
+if(TARGET Loguru::loguru)
+  target_link_libraries(ParallelCxxTests PRIVATE Loguru::loguru)
+endif()
+if(TARGET Fmt::fmt)
+  target_link_libraries(ParallelCxxTests PRIVATE Fmt::fmt)
 endif()
 
 set_target_properties(

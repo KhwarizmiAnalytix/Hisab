@@ -367,6 +367,12 @@ add_third_party_library(magic_enum
     AUTO_ADD_TO_DEPENDENCIES OFF
 )
 
+list(APPEND CORE_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/fmt/include")
+list(APPEND CORE_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/cpuinfo/include")
+if(CORE_ENABLE_MAGICENUM)
+  list(APPEND CORE_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/magic_enum/include")
+endif()
+
 # ============================================================================= Source discovery
 # =============================================================================
 set(quarisma_headers "")
