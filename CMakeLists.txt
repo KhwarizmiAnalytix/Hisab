@@ -100,28 +100,6 @@ set(CORE_DEPENDENCY_INCLUDE_DIRS)
 # Libraries
 # =============================================================================
 
-# Aggregate per-module gtest/benchmark flags: ThirdParty builds GoogleTest / Benchmark only when at
-# least one module requests them.
-set(QUARISMA_ENABLE_GTEST OFF)
-if(LOGGING_ENABLE_GTEST
-   OR MEMORY_ENABLE_GTEST
-   OR CORE_ENABLE_GTEST
-   OR PARALLEL_ENABLE_GTEST
-   OR PROFILER_ENABLE_GTEST
-)
-  set(QUARISMA_ENABLE_GTEST ON)
-endif()
-
-set(QUARISMA_ENABLE_BENCHMARK OFF)
-if(LOGGING_ENABLE_BENCHMARK
-   OR MEMORY_ENABLE_BENCHMARK
-   OR CORE_ENABLE_BENCHMARK
-   OR PARALLEL_ENABLE_BENCHMARK
-   OR PROFILER_ENABLE_BENCHMARK
-)
-  set(QUARISMA_ENABLE_BENCHMARK ON)
-endif()
-
 add_subdirectory(ThirdParty)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")

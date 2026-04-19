@@ -332,6 +332,41 @@ compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_EXPERIMENTAL)
 # magic_enum static reflection.
 compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_MAGICENUM)
 
+# =============================================================================
+# Third-party dependencies owned by Core
+# =============================================================================
+set(_tpdir "${CMAKE_SOURCE_DIR}/ThirdParty")
+
+# fmt — modern formatting library; also consumed by Kineto (via FMT_SOURCE_DIR).
+add_third_party_library(fmt
+    LIBRARY_TYPE STATIC
+    SOURCE_DIR "${_tpdir}/fmt"
+    ALIASES "fmt::fmt-header-only"
+    QUARISMA_TARGETS "Fmt::fmt=fmt::fmt-header-only|fmt::fmt|fmt"
+    INCLUDE_DIR "${_tpdir}/fmt/include"
+    AUTO_ADD_TO_DEPENDENCIES OFF
+)
+
+# cpuinfo — CPU feature detection used across the project.
+add_third_party_library(cpuinfo
+    LIBRARY_TYPE STATIC
+    SOURCE_DIR "${_tpdir}/cpuinfo"
+    FILTER_FLAGS "-flto=thin" "-flto=full"
+    QUARISMA_TARGETS "Cpuinfo::cpuinfo=cpuinfo::cpuinfo|cpuinfo"
+    INCLUDE_DIR "${_tpdir}/cpuinfo/include"
+    AUTO_ADD_TO_DEPENDENCIES OFF
+)
+
+# magic_enum — zero-overhead compile-time enum reflection (header-only).
+add_third_party_library(magic_enum
+    CONDITION CORE_ENABLE_MAGICENUM
+    LIBRARY_TYPE HEADER_ONLY
+    SOURCE_DIR "${_tpdir}/magic_enum"
+    QUARISMA_TARGETS "MagicEnum::magic_enum=magic_enum"
+    INCLUDE_DIR "${_tpdir}/magic_enum/include"
+    AUTO_ADD_TO_DEPENDENCIES OFF
+)
+
 # ============================================================================= Source discovery
 # =============================================================================
 set(quarisma_headers "")
@@ -427,6 +462,15 @@ if(CORE_DEPENDENCY_INCLUDE_DIRS)
 endif()
 
 target_link_libraries(Core PUBLIC Core::build Logging::Logging Memory::Memory)
+if(TARGET Fmt::fmt)
+  target_link_libraries(Core PUBLIC Fmt::fmt)
+endif()
+if(TARGET Cpuinfo::cpuinfo)
+  target_link_libraries(Core PUBLIC Cpuinfo::cpuinfo)
+endif()
+if(CORE_ENABLE_MAGICENUM AND TARGET MagicEnum::magic_enum)
+  target_link_libraries(Core PUBLIC MagicEnum::magic_enum)
+endif()
 
 if(CORE_ENABLE_CLANGTIDY)
   include(clang_tidy)

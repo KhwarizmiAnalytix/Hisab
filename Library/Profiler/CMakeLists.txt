@@ -205,12 +205,69 @@ endif()
 include(linker)
 quarisma_find_linker(${PROFILER_LINKER_CHOICE})
 
+# --- Third-party dependencies owned by Profiler ---
+set(_tpdir "${CMAKE_SOURCE_DIR}/ThirdParty")
+
+# Kineto: configure GPU-backend knobs before building the library.
+if(PROFILER_ENABLE_KINETO)
+  set(LIBKINETO_NOAIUPTI ON CACHE STRING "" FORCE)
+  if(NOT MEMORY_ENABLE_CUDA)
+    set(LIBKINETO_NOCUPTI ON CACHE STRING "" FORCE)
+  else()
+    set(LIBKINETO_NOCUPTI OFF CACHE STRING "" FORCE)
+    message(STATUS "Using Kineto with CUPTI support")
+  endif()
+  if(NOT QUARISMA_ENABLE_ROCM)
+    set(LIBKINETO_NOROCTRACER ON CACHE STRING "" FORCE)
+  else()
+    set(LIBKINETO_NOROCTRACER OFF CACHE STRING "" FORCE)
+    message(STATUS "Using Kineto with Roctracer support")
+  endif()
+  if(LIBKINETO_NOCUPTI AND LIBKINETO_NOROCTRACER AND LIBKINETO_NOXPUPTI)
+    message(STATUS "Using CPU-only version of Kineto")
+  endif()
+  set(KINETO_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  set(KINETO_LIBRARY_TYPE "static" CACHE STRING "" FORCE)
+  # Reuse Quarisma's fmt build to avoid duplicate symbols.
+  set(FMT_SOURCE_DIR "${_tpdir}/fmt" CACHE STRING "Use Quarisma's fmt library" FORCE)
+endif()
+
+add_third_party_library(kineto
+    CONDITION PROFILER_ENABLE_KINETO
+    LIBRARY_TYPE STATIC
+    SOURCE_DIR "${_tpdir}/kineto/libkineto"
+    DISABLE_WARNINGS
+    FILTER_FLAGS "-flto=thin" "-flto=full"
+    QUARISMA_TARGETS "Kineto::kineto=kineto"
+    INCLUDE_DIR "${_tpdir}/kineto/libkineto/include"
+    AUTO_ADD_TO_DEPENDENCIES OFF
+)
+
+if(PROFILER_ENABLE_KINETO AND NOT TARGET Kineto::kineto)
+  message(STATUS "Kineto not found — disabling PROFILER_ENABLE_KINETO")
+  set(PROFILER_ENABLE_KINETO OFF CACHE BOOL "Enable Quarisma Kineto profiling library." FORCE)
+endif()
+
+# ITT — Intel VTune API (external system dependency, not bundled).
+if(PROFILER_ENABLE_ITT)
+  find_package(ITT)
+  if(ITT_FOUND)
+    if(TARGET Itt::itt)
+      list(APPEND PROFILER_DEPENDENCY_LIBS Itt::itt)
+      if(TARGET Itt::jitprofiling)
+        list(APPEND PROFILER_DEPENDENCY_LIBS Itt::jitprofiling)
+      endif()
+      message(STATUS "Dependency: Itt::itt added to PROFILER_DEPENDENCY_LIBS")
+    endif()
+  else()
+    message(STATUS "ITT API not found — disabling PROFILER_ENABLE_ITT")
+    set(PROFILER_ENABLE_ITT OFF CACHE BOOL "Enable Intel ITT API for VTune profiling." FORCE)
+  endif()
+endif()
+
 # --- Runtime library wiring ---
 if(PROFILER_ENABLE_KINETO AND TARGET Kineto::kineto)
   list(APPEND PROFILER_DEPENDENCY_LIBS Kineto::kineto)
-endif()
-if(QUARISMA_PROFILER_DEPENDENCY_LIBS)
-  list(APPEND PROFILER_DEPENDENCY_LIBS ${QUARISMA_PROFILER_DEPENDENCY_LIBS})
 endif()
 
 # --- Source discovery: only sources for the active backend are compiled ---

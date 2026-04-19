@@ -162,6 +162,28 @@ endif()
 include(linker)
 quarisma_find_linker(${LOGGING_LINKER_CHOICE})
 
+# --- Third-party dependencies owned by Logging ---
+set(_tpdir "${CMAKE_SOURCE_DIR}/ThirdParty")
+
+add_third_party_library(loguru
+    CONDITION LOGGING_ENABLE_LOGURU
+    LIBRARY_TYPE STATIC
+    SOURCE_DIR "${_tpdir}/loguru"
+    FILTER_FLAGS "-flto=thin" "-flto=full"
+    QUARISMA_TARGETS "Loguru::loguru=loguru::loguru|loguru"
+    INCLUDE_DIR "${_tpdir}/loguru"
+    AUTO_ADD_TO_DEPENDENCIES OFF
+)
+
+add_third_party_library(glog
+    CONDITION LOGGING_ENABLE_GLOG
+    SOURCE_DIR "${_tpdir}/glog"
+    FILTER_FLAGS "-flto=thin" "-flto=full"
+    QUARISMA_TARGETS "Glog::glog=glog::glog|glog"
+    INCLUDE_DIR "${_tpdir}/glog/src"
+    AUTO_ADD_TO_DEPENDENCIES OFF
+)
+
 # --- Source discovery ---
 set(logging_headers "")
 set(logging_sources "")

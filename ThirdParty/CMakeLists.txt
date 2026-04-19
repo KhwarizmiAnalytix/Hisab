@@ -92,6 +92,11 @@ set(MI_BUILD_SHARED OFF CACHE BOOL "Build mimalloc as static library" FORCE)
 set(MI_BUILD_STATIC ON CACHE BOOL "Build mimalloc as static library" FORCE)
 # Note: MI_BUILD_STATIC is now controlled by add_third_party_library LIBRARY_TYPE parameter
 
+# Path to this ThirdParty directory — used by library modules that call
+# add_third_party_library() with absolute SOURCE_DIR / INCLUDE_DIR paths.
+set(QUARISMA_THIRDPARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH
+    "Root directory of Quarisma's bundled third-party sources" FORCE)
+
 # =============================================================================
 # Helper Functions for Third-Party Library Management
 # =============================================================================
@@ -447,6 +452,25 @@ function(add_third_party_library name)
     endif()
 
     # -------------------------------------------------------------------------
+    # Resolve SOURCE_DIR and INCLUDE_DIR to absolute paths.
+    # Callers outside ThirdParty/ pass absolute paths; callers inside pass
+    # relative names.  IS_ABSOLUTE lets both conventions coexist.
+    # -------------------------------------------------------------------------
+    if(IS_ABSOLUTE "${TPL_SOURCE_DIR}")
+        set(_tpl_abs_source_dir "${TPL_SOURCE_DIR}")
+    else()
+        set(_tpl_abs_source_dir "${CMAKE_CURRENT_SOURCE_DIR}/${TPL_SOURCE_DIR}")
+    endif()
+
+    if(DEFINED TPL_INCLUDE_DIR)
+        if(IS_ABSOLUTE "${TPL_INCLUDE_DIR}")
+            set(_tpl_abs_include_dir "${TPL_INCLUDE_DIR}")
+        else()
+            set(_tpl_abs_include_dir "${CMAKE_CURRENT_SOURCE_DIR}/${TPL_INCLUDE_DIR}")
+        endif()
+    endif()
+
+    # -------------------------------------------------------------------------
     # Step 1: Check if already processed to avoid duplicates
     # -------------------------------------------------------------------------
     get_property(QUARISMA_${name}_PROCESSED GLOBAL PROPERTY QUARISMA_${name}_PROCESSED)
@@ -490,10 +514,8 @@ function(add_third_party_library name)
 
         # Add include directory to the INTERFACE library
         # This will be propagated to any target that links against this library
-        target_include_directories(${name} INTERFACE
-            "${CMAKE_CURRENT_SOURCE_DIR}/${TPL_INCLUDE_DIR}"
-        )
-        message(STATUS "Added include directory to ${name}: ${TPL_INCLUDE_DIR}")
+        target_include_directories(${name} INTERFACE "${_tpl_abs_include_dir}")
+        message(STATUS "Added include directory to ${name}: ${_tpl_abs_include_dir}")
 
         # Create default namespaced alias for the INTERFACE library
         if(NOT TARGET ${name}::${name})
@@ -509,7 +531,7 @@ function(add_third_party_library name)
 
         # Add include directory to global include paths for project-wide access
         get_property(_temp_includes GLOBAL PROPERTY _QUARISMA_DEPENDENCY_INCLUDE_DIRS)
-        list(APPEND _temp_includes "${CMAKE_CURRENT_SOURCE_DIR}/${TPL_INCLUDE_DIR}")
+        list(APPEND _temp_includes "${_tpl_abs_include_dir}")
         set_property(GLOBAL PROPERTY _QUARISMA_DEPENDENCY_INCLUDE_DIRS "${_temp_includes}")
         message(STATUS "Dependency: ${TPL_INCLUDE_DIR} added to QUARISMA_DEPENDENCY_INCLUDE_DIRS (header-only)")
 
@@ -581,8 +603,7 @@ function(add_third_party_library name)
                 message(STATUS "Dependency: ${name}::${name} added to QUARISMA_DEPENDENCY_LIBS (external)")
             endif()
 
-            # Add include directory if specified
-            # For external libraries, try TPL_INCLUDE_DIR first, then fall back to ${name}_INCLUDE_DIR
+            # Add include directory if specified (external path from find_package)
             if(DEFINED ${name}_INCLUDE_DIR)
                 # Fall back to the include directory set by find_package
                 get_property(_temp_includes GLOBAL PROPERTY _QUARISMA_DEPENDENCY_INCLUDE_DIRS)
@@ -704,7 +725,7 @@ function(add_third_party_library name)
     # Step 8: Add the third-party library subdirectory
     # -------------------------------------------------------------------------
         # Support both standard (SOURCE_DIR/CMakeLists.txt) and nested (SOURCE_DIR/subdir/CMakeLists.txt) structures
-        set(lib_source_dir "${CMAKE_CURRENT_SOURCE_DIR}/${TPL_SOURCE_DIR}")
+        set(lib_source_dir "${_tpl_abs_source_dir}")
         set(lib_cmakelists_path "${lib_source_dir}/CMakeLists.txt")
 
         # If CMakeLists.txt doesn't exist at the top level, check if it's in a subdirectory
@@ -777,9 +798,9 @@ function(add_third_party_library name)
                 if(DEFINED TPL_INCLUDE_DIR)
                     # Add to QUARISMA_DEPENDENCY_INCLUDE_DIRS using global property
                     get_property(_temp_includes GLOBAL PROPERTY _QUARISMA_DEPENDENCY_INCLUDE_DIRS)
-                    list(APPEND _temp_includes "${CMAKE_CURRENT_SOURCE_DIR}/${TPL_INCLUDE_DIR}")
+                    list(APPEND _temp_includes "${_tpl_abs_include_dir}")
                     set_property(GLOBAL PROPERTY _QUARISMA_DEPENDENCY_INCLUDE_DIRS "${_temp_includes}")
-                    message(STATUS "Dependency: ${TPL_INCLUDE_DIR} added to QUARISMA_DEPENDENCY_INCLUDE_DIRS")
+                    message(STATUS "Dependency: ${_tpl_abs_include_dir} added to QUARISMA_DEPENDENCY_INCLUDE_DIRS")
                 endif()
             endif()
         else()
@@ -799,359 +820,14 @@ function(add_third_party_library name)
 endfunction()
 
 # =============================================================================
-# Third-Party Library Declarations
-# =============================================================================
-
-# Add third-party libraries conditionally based on QUARISMA_ENABLE_XXX options
-
-# fmt - Modern formatting library (header-only mode)
-# Using header-only version to avoid shared library issues and ensure compatibility with Kineto
-# Creates INTERFACE library target with Fmt::fmt alias and fmt::fmt-header-only alias
-# for Kineto compatibility (Kineto checks for this target to determine if fmt is available)
-add_third_party_library(fmt
-    LIBRARY_TYPE STATIC
-    ALIASES "fmt::fmt-header-only"
-    QUARISMA_TARGETS "Fmt::fmt=fmt::fmt-header-only|fmt::fmt|fmt"
-    INCLUDE_DIR "fmt/include"
-)
-
-# cpuinfo - CPU feature detection library (mandatory dependency)
-add_third_party_library(cpuinfo
-    LIBRARY_TYPE STATIC
-    FILTER_FLAGS "-flto=thin" "-flto=full"
-    QUARISMA_TARGETS "Cpuinfo::cpuinfo=cpuinfo::cpuinfo|cpuinfo"
-    INCLUDE_DIR "cpuinfo/include"
-)
-
-# magic_enum - Static reflection for enums in C++
-# Header-only library with INTERFACE target and namespaced magic_enum alias
-# Note: FILTER_FLAGS, DISABLE_WARNINGS, EXTRA_FLAGS, and LIBRARY_TYPE_VAR are not applicable
-#       (no compilation occurs for header-only libraries)
-add_third_party_library(magic_enum
-    CONDITION CORE_ENABLE_MAGICENUM
-    LIBRARY_TYPE HEADER_ONLY
-    QUARISMA_TARGETS "MagicEnum::magic_enum=magic_enum"
-    INCLUDE_DIR "magic_enum/include"
-)
-
-# loguru - Lightweight C++ logging library (forced to static)
-add_third_party_library(loguru
-    CONDITION LOGGING_ENABLE_LOGURU
-    LIBRARY_TYPE STATIC
-    FILTER_FLAGS "-flto=thin" "-flto=full"
-    QUARISMA_TARGETS "Loguru::loguru=loguru::loguru|loguru"
-    INCLUDE_DIR "loguru"
-    AUTO_ADD_TO_DEPENDENCIES OFF  # loguru is Logging-only; wired in CMakeLists.txt
-)
-
-# glog - Google logging library
-add_third_party_library(glog
-    CONDITION LOGGING_ENABLE_GLOG
-    FILTER_FLAGS "-flto=thin" "-flto=full"
-    QUARISMA_TARGETS "Glog::glog=glog::glog|glog"
-    INCLUDE_DIR "glog/src"
-    AUTO_ADD_TO_DEPENDENCIES OFF  # glog is Logging-only; wired in CMakeLists.txt
-)
-
-# mimalloc - Microsoft's high-performance memory allocator (conditional)
-# By default builds as static library, controlled by LIBRARY_TYPE parameter
-add_third_party_library(mimalloc
-    CONDITION MEMORY_ENABLE_MIMALLOC
-    LIBRARY_TYPE STATIC
-    LIBRARY_TYPE_VAR MI_BUILD_STATIC
-    FILTER_FLAGS "-Wno-strict-prototypes" "-flto=thin" "-flto=full"
-    QUARISMA_TARGETS "Mimalloc::mimalloc=mimalloc|mimalloc-static"
-    INCLUDE_DIR "mimalloc/include"
-    AUTO_ADD_TO_DEPENDENCIES OFF  # mimalloc is Memory-only; wired in CMakeLists.txt
-)
-
-# mimalloc adds Windows system libraries as bare names (e.g. "psapi") via
-# PRIVATE target_link_libraries.  MinGW's linker treats bare names as file
-# paths; they must have the -l prefix.
+# NOTE: All per-project third-party declarations have been moved to each
+# project's own CMakeLists.txt (and Testing/Cxx/CMakeLists.txt for testing
+# frameworks).  This file only defines helper functions and global options.
 #
-# CMake stores PRIVATE deps of static libraries in two forms:
-#   LINK_LIBRARIES          : plain "psapi"
-#   INTERFACE_LINK_LIBRARIES: "$<LINK_ONLY:psapi>"  (generator expression)
-# Both must be patched; consumers are generated from INTERFACE_LINK_LIBRARIES.
-if(WIN32 AND (MINGW OR CMAKE_CXX_COMPILER MATCHES "msys64") AND TARGET mimalloc-static)
-  set(_mi_win_syslibs psapi shell32 user32 advapi32 bcrypt)
-
-  # --- patch LINK_LIBRARIES (plain names) ---
-  get_target_property(_mi_ll mimalloc-static LINK_LIBRARIES)
-  if(_mi_ll)
-    set(_changed FALSE)
-    foreach(_lib IN LISTS _mi_win_syslibs)
-      if("${_lib}" IN_LIST _mi_ll)
-        list(REMOVE_ITEM _mi_ll "${_lib}")
-        list(APPEND     _mi_ll "-l${_lib}")
-        set(_changed TRUE)
-      endif()
-    endforeach()
-    if(_changed)
-      set_property(TARGET mimalloc-static PROPERTY LINK_LIBRARIES "${_mi_ll}")
-      message(STATUS "mimalloc: patched LINK_LIBRARIES for MinGW (-l prefix)")
-    endif()
-  endif()
-
-  # --- patch INTERFACE_LINK_LIBRARIES ($<LINK_ONLY:name> generator exprs) ---
-  get_target_property(_mi_il mimalloc-static INTERFACE_LINK_LIBRARIES)
-  if(_mi_il)
-    set(_changed FALSE)
-    foreach(_lib IN LISTS _mi_win_syslibs)
-      # bare form (unlikely here, but be safe)
-      if("${_lib}" IN_LIST _mi_il)
-        list(REMOVE_ITEM _mi_il "${_lib}")
-        list(APPEND     _mi_il "-l${_lib}")
-        set(_changed TRUE)
-      endif()
-      # generator-expression form produced by CMake for PRIVATE deps
-      set(_ge  "$<LINK_ONLY:${_lib}>")
-      set(_ge2 "$<LINK_ONLY:-l${_lib}>")
-      if("${_ge}" IN_LIST _mi_il)
-        list(REMOVE_ITEM _mi_il "${_ge}")
-        list(APPEND     _mi_il "${_ge2}")
-        set(_changed TRUE)
-      endif()
-    endforeach()
-    if(_changed)
-      set_property(TARGET mimalloc-static PROPERTY INTERFACE_LINK_LIBRARIES "${_mi_il}")
-      message(STATUS "mimalloc: patched INTERFACE_LINK_LIBRARIES for MinGW (-l prefix)")
-    endif()
-  endif()
-endif()
-
-# Kineto - Quarisma profiling library
-# Aligned with Quarisma's PROFILER_ENABLE_KINETO configuration for feature parity.
-# Supports GPU backends: CUPTI (NVIDIA), ROCtracer (AMD), XPUPTI (Intel XPU), AIUPTI (AI accelerators)
-
-# Configure GPU backend support based on enabled platforms
-set(LIBKINETO_NOAIUPTI ON CACHE STRING "" FORCE)
-if(NOT MEMOY_ENABLE_CUDA)
-    set(LIBKINETO_NOCUPTI ON CACHE STRING "" FORCE)
-else()
-    set(LIBKINETO_NOCUPTI OFF CACHE STRING "" FORCE)
-    message(STATUS "Using Kineto with CUPTI support")
-endif()
-
-if(NOT QUARISMA_ENABLE_ROCM)
-    set(LIBKINETO_NOROCTRACER ON CACHE STRING "" FORCE)
-else()
-    set(LIBKINETO_NOROCTRACER OFF CACHE STRING "" FORCE)
-    message(STATUS "Using Kineto with Roctracer support")
-endif()
-
-if(LIBKINETO_NOCUPTI AND LIBKINETO_NOROCTRACER AND LIBKINETO_NOXPUPTI)
-    message(STATUS "Using CPU-only version of Kineto")
-endif()
-
-# Configure Kineto library
-set(KINETO_BUILD_TESTS OFF CACHE BOOL "")
-set(KINETO_LIBRARY_TYPE "static" CACHE STRING "")
-
-# Tell Kineto to use Quarisma's fmt library instead of its embedded one
-# This prevents duplicate symbol errors when linking
-# Set FMT_SOURCE_DIR to Quarisma's fmt directory so Kineto can build from it
-# This ensures Kineto uses the same fmt version as Quarisma
-set(FMT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/fmt" CACHE STRING "Use Quarisma's fmt library" FORCE)
-
-message(STATUS "Configuring Kineto dependency:")
-message(STATUS "  KINETO_BUILD_TESTS = ${KINETO_BUILD_TESTS}")
-message(STATUS "  KINETO_LIBRARY_TYPE = ${KINETO_LIBRARY_TYPE}")
-message(STATUS "  FMT_SOURCE_DIR = ${FMT_SOURCE_DIR} (using Quarisma's fmt)")
-
-add_third_party_library(kineto
-    CONDITION PROFILER_ENABLE_KINETO
-    LIBRARY_TYPE STATIC
-    SOURCE_DIR kineto/libkineto
-    DISABLE_WARNINGS
-    FILTER_FLAGS "-flto=thin" "-flto=full"
-    QUARISMA_TARGETS "Kineto::kineto=kineto"
-    INCLUDE_DIR "kineto/libkineto/include"
-    AUTO_ADD_TO_DEPENDENCIES OFF  # Kineto has special handling in manual section
-)
-
-# Disable Kineto if the library was not found
-if(PROFILER_ENABLE_KINETO AND NOT TARGET Kineto::kineto)
-    message(STATUS "Kineto library not found - disabling PROFILER_ENABLE_KINETO")
-    set(PROFILER_ENABLE_KINETO OFF CACHE BOOL "Enable Quarisma Kineto profiling library." FORCE)
-endif()
-
+# Project → third-party mapping:
+#   Library/Core       → fmt, cpuinfo, magic_enum
+#   Library/Logging    → loguru, glog
+#   Library/Memory     → mimalloc
+#   Library/Profiler   → kineto, ITT
+#   */Testing/Cxx      → googletest, google-benchmark
 # =============================================================================
-# Google Test and Google Benchmark Integration
-# =============================================================================
-
-# Note: googletest and benchmark require special handling due to EXCLUDE_FROM_ALL
-# and MSVC-specific settings, so they use manual add_subdirectory calls
-
-# Google Test - Unit testing framework
-if(QUARISMA_ENABLE_GTEST)
-    # Check if gtest target already exists (avoid duplicate add_subdirectory)
-    if(NOT TARGET gtest)
-        set(gtest_external_found FALSE)
-        if(QUARISMA_ENABLE_EXTERNAL)
-            find_package(GTest QUIET)
-
-            if(GTest_FOUND)
-                message(STATUS "Found external Google Test")
-                # Create Quarisma:: namespace aliases for googletest
-                _create_third_party_interface_targets(
-                    "Gtest::gtest=GTest::gtest|gtest"
-                    "Gtest::gtest_main=GTest::gtest_main|gtest_main"
-                )
-                set(gtest_external_found TRUE)
-            endif()
-        endif()
-
-        if(NOT gtest_external_found)
-            message(STATUS "Adding Google Test from ThirdParty/googletest")
-
-            # Set options before adding subdirectory
-            # Force shared CRT on MSVC to match Quarisma's runtime library settings
-            if(MSVC)
-                set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-            endif()
-
-            # Add googletest subdirectory
-            # This creates targets: gtest, gtest_main, gmock, gmock_main
-            add_subdirectory(
-                "${CMAKE_CURRENT_SOURCE_DIR}/googletest"
-                "${CMAKE_CURRENT_BINARY_DIR}/googletest"
-                EXCLUDE_FROM_ALL
-            )
-
-            # Set folder properties for all googletest targets
-            _set_third_party_folder_properties("googletest" "${CMAKE_CURRENT_BINARY_DIR}/googletest")
-
-            message(STATUS "Google Test targets created: gtest, gtest_main")
-        endif()
-    else()
-        message(STATUS "Google Test targets already exist, skipping add_subdirectory")
-    endif()
-
-    # Create Quarisma:: namespace aliases for googletest
-    _create_third_party_interface_targets(
-        "Gtest::gtest=GTest::gtest|gtest"
-        "Gtest::gtest_main=GTest::gtest_main|gtest_main"
-    )
-endif()
-
-# Google Benchmark - Microbenchmarking framework
-if(QUARISMA_ENABLE_BENCHMARK)
-    # Check if benchmark target already exists (avoid duplicate add_subdirectory)
-    if(NOT TARGET benchmark)
-        set(benchmark_external_found FALSE)
-        if(QUARISMA_ENABLE_EXTERNAL)
-            find_package(benchmark QUIET)
-
-            if(benchmark_FOUND)
-                message("Found external Google Benchmark")
-                # Create Quarisma:: namespace alias for benchmark
-                _create_third_party_interface_targets(
-                    "Benchmark::benchmark=benchmark::benchmark|benchmark"
-                    "Benchmark::benchmark_main=benchmark::benchmark_main|benchmark_main"
-                )
-                set(benchmark_external_found TRUE)
-            endif()
-        endif()
-
-        if(NOT benchmark_external_found)
-            message(STATUS "Adding Google Benchmark from ThirdParty/benchmark")
-
-            # Add benchmark subdirectory
-            # This creates targets: benchmark, benchmark_main
-            add_subdirectory(
-                "${CMAKE_CURRENT_SOURCE_DIR}/benchmark"
-                "${CMAKE_CURRENT_BINARY_DIR}/benchmark"
-                EXCLUDE_FROM_ALL
-            )
-
-            # Set folder properties for all benchmark targets
-            _set_third_party_folder_properties("benchmark" "${CMAKE_CURRENT_BINARY_DIR}/benchmark")
-
-            message(STATUS "Google Benchmark targets created: benchmark, benchmark_main")
-        endif()
-    else()
-        message(STATUS "Google Benchmark targets already exist, skipping add_subdirectory")
-    endif()
-
-    # Create Quarisma:: namespace alias for benchmark
-    _create_third_party_interface_targets(
-        "Benchmark::benchmark=benchmark::benchmark|benchmark"
-        "Benchmark::benchmark_main=benchmark::benchmark_main|benchmark_main"
-    )
-endif()
-
-# -----------------------------------------------------------------------------
-# ITT - Intel VTune API (External System Dependency)
-# -----------------------------------------------------------------------------
-# ITT is an external system dependency that uses find_package, not bundled
-# in ThirdParty, so it's handled separately here.
-if(PROFILER_ENABLE_ITT)
-  find_package(ITT)
-  if(ITT_FOUND)
-    if(TARGET Itt::itt)
-      get_property(_temp_profiler_libs GLOBAL PROPERTY _QUARISMA_PROFILER_DEPENDENCY_LIBS)
-      list(APPEND _temp_profiler_libs Itt::itt)
-      if(TARGET Itt::jitprofiling)
-        list(APPEND _temp_profiler_libs Itt::jitprofiling)
-      endif()
-      set_property(GLOBAL PROPERTY _QUARISMA_PROFILER_DEPENDENCY_LIBS "${_temp_profiler_libs}")
-      message(STATUS "Dependency: Itt::itt added to QUARISMA_PROFILER_DEPENDENCY_LIBS (profiler-only)")
-    endif()
-  else()
-    message(STATUS "ITT API not found - disabling PROFILER_ENABLE_ITT")
-    set(PROFILER_ENABLE_ITT OFF CACHE BOOL "Enable Intel ITT API for VTune profiling." FORCE)
-  endif()
-endif()
-
-# -----------------------------------------------------------------------------
-# TBB - Threading Building Blocks
-# -----------------------------------------------------------------------------
-# TBB targets (Tbb::tbb, Tbb::tbbmalloc) are created by tbb_multithreading.cmake
-# and tbb_memory.cmake, which now run inside Library/Parallel and Library/Memory
-# respectively — after this subdirectory. Each module links TBB directly in its
-# own CMakeLists.txt.
-
-# -----------------------------------------------------------------------------
-# Enzyme - Automatic Differentiation (Handled by enzyme.cmake)
-# -----------------------------------------------------------------------------
-# Enzyme is configured by enzyme.cmake (included before ThirdParty subdirectory)
-# which creates Enzyme::enzyme interface target.
-# NOTE: Enzyme is NOT added to QUARISMA_DEPENDENCY_LIBS because it should only be applied
-# to specific source files that use it (via set_source_files_properties), not globally.
-# The Enzyme plugin can cause compilation crashes on files that don't use it.
-if(CORE_ENABLE_ENZYME)
-  if(TARGET Enzyme::enzyme)
-    message(STATUS "Enzyme: Enzyme::enzyme target available (apply selectively to source files)")
-  endif()
-endif()
-
-# -----------------------------------------------------------------------------
-# Propagate dependency lists to parent scope
-# -----------------------------------------------------------------------------
-# Read from global properties (populated by add_third_party_library function)
-# and set as regular variables in parent scope for use by the main build system
-
-# Read from global properties and merge with any manually added dependencies
-get_property(_global_libs GLOBAL PROPERTY _QUARISMA_DEPENDENCY_LIBS)
-get_property(_global_includes GLOBAL PROPERTY _QUARISMA_DEPENDENCY_INCLUDE_DIRS)
-get_property(_global_profiler_libs GLOBAL PROPERTY _QUARISMA_PROFILER_DEPENDENCY_LIBS)
-
-if(_global_libs)
-    list(APPEND QUARISMA_DEPENDENCY_LIBS ${_global_libs})
-endif()
-if(_global_includes)
-    list(APPEND QUARISMA_DEPENDENCY_INCLUDE_DIRS ${_global_includes})
-endif()
-if(_global_profiler_libs)
-    list(APPEND QUARISMA_PROFILER_DEPENDENCY_LIBS ${_global_profiler_libs})
-endif()
-
-# Propagate to parent scope
-set(QUARISMA_DEPENDENCY_LIBS "${QUARISMA_DEPENDENCY_LIBS}" PARENT_SCOPE)
-set(QUARISMA_DEPENDENCY_INCLUDE_DIRS "${QUARISMA_DEPENDENCY_INCLUDE_DIRS}" PARENT_SCOPE)
-set(QUARISMA_PROFILER_DEPENDENCY_LIBS "${QUARISMA_PROFILER_DEPENDENCY_LIBS}" PARENT_SCOPE)
-
-message(STATUS "ThirdParty: QUARISMA_DEPENDENCY_LIBS populated with: ${QUARISMA_DEPENDENCY_LIBS}")
-message(STATUS "ThirdParty: QUARISMA_DEPENDENCY_INCLUDE_DIRS populated with: ${QUARISMA_DEPENDENCY_INCLUDE_DIRS}")
-message(STATUS "ThirdParty: QUARISMA_PROFILER_DEPENDENCY_LIBS populated with: ${QUARISMA_PROFILER_DEPENDENCY_LIBS}")

@@ -3,6 +3,34 @@
 # =============================================================================
 # Following cpuinfo's simple pattern for test integration
 
+# --- GoogleTest setup (first module to reach this wins; subsequent ones are no-ops) ---
+if(NOT TARGET gtest)
+  set(_gtest_external_found FALSE)
+  if(QUARISMA_ENABLE_EXTERNAL)
+    find_package(GTest QUIET)
+    if(GTest_FOUND)
+      message(STATUS "Found external Google Test")
+      _create_third_party_interface_targets("Gtest::gtest=GTest::gtest|gtest"
+                                            "Gtest::gtest_main=GTest::gtest_main|gtest_main")
+      set(_gtest_external_found TRUE)
+    endif()
+  endif()
+  if(NOT _gtest_external_found)
+    if(MSVC)
+      set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    endif()
+    add_subdirectory(
+      "${QUARISMA_THIRDPARTY_DIR}/googletest"
+      "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build"
+      EXCLUDE_FROM_ALL
+    )
+    _set_third_party_folder_properties("googletest"
+                                       "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build")
+  endif()
+endif()
+_create_third_party_interface_targets("Gtest::gtest=GTest::gtest|gtest"
+                                      "Gtest::gtest_main=GTest::gtest_main|gtest_main")
+
 # ============================================================================= Test Source Files
 # Discovery
 # =============================================================================
@@ -160,11 +188,39 @@ endif()
 # ============================================================================= Individual Benchmark
 # Executables
 # =============================================================================
-# Each benchmark is built as a separate executable for: - Parallel compilation (faster builds) -
-# Selective rebuilding (only rebuild changed benchmarks) - Independent execution (run specific
-# benchmarks in isolation) - Better CTest integration (individual test reporting)
-# =============================================================================
 if(CORE_ENABLE_BENCHMARK)
+  # --- Google Benchmark setup ---
+  if(NOT TARGET benchmark)
+    set(_bench_external_found FALSE)
+    if(QUARISMA_ENABLE_EXTERNAL)
+      find_package(benchmark QUIET)
+      if(benchmark_FOUND)
+        message(STATUS "Found external Google Benchmark")
+        _create_third_party_interface_targets(
+          "Benchmark::benchmark=benchmark::benchmark|benchmark"
+          "Benchmark::benchmark_main=benchmark::benchmark_main|benchmark_main"
+        )
+        set(_bench_external_found TRUE)
+      endif()
+    endif()
+    if(NOT _bench_external_found)
+      add_subdirectory(
+        "${QUARISMA_THIRDPARTY_DIR}/benchmark"
+        "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build"
+        EXCLUDE_FROM_ALL
+      )
+      _set_third_party_folder_properties("benchmark"
+                                         "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build")
+    endif()
+  endif()
+  _create_third_party_interface_targets(
+    "Benchmark::benchmark=benchmark::benchmark|benchmark"
+    "Benchmark::benchmark_main=benchmark::benchmark_main|benchmark_main"
+  )
+  if(TARGET Benchmark::benchmark AND NOT TARGET Core::benchmark)
+    add_library(Core::benchmark ALIAS benchmark)
+    add_library(Core::benchmark_main ALIAS benchmark_main)
+  endif()
 
   # Discover all benchmark source files
   file(GLOB_RECURSE bench_sources LIST_DIRECTORIES false
