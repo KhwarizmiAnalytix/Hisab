@@ -13,14 +13,6 @@
 # repeats) so add_subdirectory(ThirdParty) sees global flags. Root CMakeLists no longer includes
 # these directly.
 # =============================================================================
-
-include(compiler_checks)
-include(cache)
-include(build_type)
-include(checks)
-include(utils)
-include(platform)
-
 set(LOGGING_BACKEND "LOGURU" CACHE STRING
                                    "Logging backend to use. Options are NATIVE, LOGURU, or GLOG"
 )
@@ -45,14 +37,3 @@ elseif(LOGGING_BACKEND STREQUAL "NATIVE")
 endif()
 
 message(STATUS "Logging backend: ${LOGGING_BACKEND}")
-
-# Profiler: PROFILER_BACKEND / PROFILER_ENABLE_KINETO must exist before ThirdParty (Kineto gate).
-# Library/Profiler/CMakeLists.txt handles this via an early include pass (see
-# PROFILER_INCLUDE_GATE_ONLY).
-set(PROFILER_INCLUDE_GATE_ONLY ON)
-include("${CMAKE_SOURCE_DIR}/Library/Profiler/CMakeLists.txt")
-unset(PROFILER_INCLUDE_GATE_ONLY)
-
-# compile_definitions.cmake sets PROJECT_DEPENDENCY_COMPILE_DEFINITIONS in the root scope so every
-# Library/* subdirectory inherits the same baseline flags.
-include(compile_definitions)

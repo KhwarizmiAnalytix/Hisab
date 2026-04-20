@@ -158,31 +158,26 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_EQ(nullptr, obj.get());
     }
 
-    //TEST(IntrusivePtrTest, givenValidPtr_whenDereferencing_thenReturnsObject)
     {
         intrusive_ptr<SomeClass1Parameter> obj = make_intrusive<SomeClass1Parameter>(5);
         EXPECT_EQ(5, (*obj).param);
     }
 
-    //TEST(IntrusivePtrTest, givenValidPtr_whenConstDereferencing_thenReturnsObject)
     {
         const intrusive_ptr<SomeClass1Parameter> obj = make_intrusive<SomeClass1Parameter>(5);
         EXPECT_EQ(5, (*obj).param);
     }
 
-    //TEST(IntrusivePtrTest, givenValidPtr_whenArrowDereferencing_thenReturnsObject)
     {
         intrusive_ptr<SomeClass1Parameter> obj = make_intrusive<SomeClass1Parameter>(3);
         EXPECT_EQ(3, obj->param);
     }
 
-    //TEST(IntrusivePtrTest, givenValidPtr_whenConstArrowDereferencing_thenReturnsObject)
     {
         const intrusive_ptr<SomeClass1Parameter> obj = make_intrusive<SomeClass1Parameter>(3);
         EXPECT_EQ(3, obj->param);
     }
 
-    //TEST(IntrusivePtrTest, givenValidPtr_whenMoveAssigning_thenPointsToSameObject)
     {
         intrusive_ptr<SomeClass> obj1    = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> obj2    = make_intrusive<SomeClass>();
@@ -191,7 +186,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_EQ(obj1ptr, obj2.get());
     }
 
-    //TEST(IntrusivePtrTest, givenValidPtr_whenMoveAssigning_thenOldInstanceInvalid)
     {
         intrusive_ptr<SomeClass> obj1 = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> obj2 = make_intrusive<SomeClass>();
@@ -200,7 +194,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_FALSE(obj1.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenValidPtr_whenMoveAssigningToSelf_thenPointsToSameObject)
     {
         intrusive_ptr<SomeClass> obj1    = make_intrusive<SomeClass>();
         SomeClass*               obj1ptr = obj1.get();
@@ -209,7 +202,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_EQ(obj1ptr, obj1.get());
     }
 
-    //TEST(IntrusivePtrTest, givenValidPtr_whenMoveAssigningToSelf_thenStaysValid)
     {
         intrusive_ptr<SomeClass> obj1 = make_intrusive<SomeClass>();
         obj1                          = std::move(obj1);
@@ -217,7 +209,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_TRUE(obj1.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenInvalidPtr_whenMoveAssigningToSelf_thenStaysInvalid)
     {
         intrusive_ptr<SomeClass> obj1;
         obj1 = std::move(obj1);
@@ -225,7 +216,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_FALSE(obj1.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenInvalidPtr_whenMoveAssigning_thenNewInstanceIsValid)
     {
         intrusive_ptr<SomeClass> obj1 = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> obj2;
@@ -233,7 +223,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_TRUE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenInvalidPtr_whenMoveAssigning_thenPointsToSameObject)
     {
         intrusive_ptr<SomeClass> obj1 = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> obj2;
@@ -242,7 +231,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_EQ(obj1ptr, obj2.get());
     }
 
-    //TEST(IntrusivePtrTest, givenValidPtr_whenMoveAssigningFromInvalidPtr_thenNewInstanceIsInvalid)
     {
         intrusive_ptr<SomeClass> obj1;
         intrusive_ptr<SomeClass> obj2 = make_intrusive<SomeClass>();
@@ -251,7 +239,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_FALSE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenValidPtr_whenMoveAssigningToBaseClass_thenPointsToSameObject)
     {
         intrusive_ptr<SomeChildClass> obj1    = make_intrusive<SomeChildClass>(1);
         intrusive_ptr<SomeBaseClass>  obj2    = make_intrusive<SomeBaseClass>(2);
@@ -261,7 +248,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_EQ(1, obj2->v);
     }
 
-    //TEST(IntrusivePtrTest, givenValidPtr_whenMoveAssigningToBaseClass_thenOldInstanceInvalid)
     {
         intrusive_ptr<SomeChildClass> obj1 = make_intrusive<SomeChildClass>(1);
         intrusive_ptr<SomeBaseClass>  obj2 = make_intrusive<SomeBaseClass>(2);
@@ -270,7 +256,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_FALSE(obj1.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenInvalidPtr_whenMoveAssigningToBaseClass_thenNewInstanceIsValid)
     {
         intrusive_ptr<SomeChildClass> obj1 = make_intrusive<SomeChildClass>(5);
         intrusive_ptr<SomeBaseClass>  obj2;
@@ -278,7 +263,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_TRUE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenInvalidPtr_whenMoveAssigningToBaseClass_thenPointsToSameObject)
     {
         intrusive_ptr<SomeChildClass> obj1 = make_intrusive<SomeChildClass>(5);
         intrusive_ptr<SomeBaseClass>  obj2;
@@ -296,7 +280,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_FALSE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenNullPtr_whenMoveAssigningToDifferentNullptr_thenHasNewNullptr)
     {
         intrusive_ptr<SomeClass, NullType1> obj1;
         intrusive_ptr<SomeClass, NullType2> obj2;
@@ -309,7 +292,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_FALSE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenValidPtr_whenCopyAssigning_thenPointsToSameObject)
     {
         intrusive_ptr<SomeClass> obj1    = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> obj2    = make_intrusive<SomeClass>();
@@ -318,7 +300,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_EQ(obj1ptr, obj2.get());
     }
 
-    //TEST(IntrusivePtrTest, givenValidPtr_whenCopyAssigning_thenOldInstanceValid)
     {
         intrusive_ptr<SomeClass> obj1 = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> obj2 = make_intrusive<SomeClass>();
@@ -326,7 +307,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_TRUE(obj1.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenValidPtr_whenCopyAssigningToSelf_thenPointsToSameObject)
     {
         intrusive_ptr<SomeClass> obj1    = make_intrusive<SomeClass>();
         SomeClass*               obj1ptr = obj1.get();
@@ -335,7 +315,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_EQ(obj1ptr, obj1.get());
     }
 
-    //TEST(IntrusivePtrTest, givenValidPtr_whenCopyAssigningToSelf_thenStaysValid)
     {
         intrusive_ptr<SomeClass> obj1 = make_intrusive<SomeClass>();
         // NOLINTNEXTLINE(clang-diagnostic-self-assign-overloaded)
@@ -343,7 +322,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_TRUE(obj1.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenInvalidPtr_whenCopyAssigningToSelf_thenStaysInvalid)
     {
         intrusive_ptr<SomeClass> obj1;
         // NOLINTNEXTLINE(clang-diagnostic-self-assign-overloaded)
@@ -351,7 +329,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_FALSE(obj1.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenInvalidPtr_whenCopyAssigning_thenNewInstanceIsValid)
     {
         intrusive_ptr<SomeClass> obj1 = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> obj2;
@@ -359,7 +336,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_TRUE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenValidPtr_whenCopyAssigningToBaseClass_thenPointsToSameObject)
     {
         intrusive_ptr<SomeChildClass> child = make_intrusive<SomeChildClass>(3);
         intrusive_ptr<SomeBaseClass>  base  = make_intrusive<SomeBaseClass>(10);
@@ -367,7 +343,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_EQ(3, base->v);
     }
 
-    //TEST(IntrusivePtrTest, givenValidPtr_whenCopyAssigningToBaseClass_thenOldInstanceInvalid)
     {
         intrusive_ptr<SomeChildClass> obj1 = make_intrusive<SomeChildClass>(3);
         intrusive_ptr<SomeBaseClass>  obj2 = make_intrusive<SomeBaseClass>(10);
@@ -375,7 +350,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_TRUE(obj1.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenInvalidPtr_whenCopyAssigningToBaseClass_thenNewInstanceIsValid)
     {
         intrusive_ptr<SomeChildClass> obj1 = make_intrusive<SomeChildClass>(5);
         intrusive_ptr<SomeBaseClass>  obj2;
@@ -383,7 +357,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_TRUE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenInvalidPtr_whenCopyAssigningToBaseClass_thenPointsToSameObject)
     {
         intrusive_ptr<SomeChildClass> obj1 = make_intrusive<SomeChildClass>(5);
         intrusive_ptr<SomeBaseClass>  obj2;
@@ -393,7 +366,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_EQ(5, obj2->v);
     }
 
-    //TEST(IntrusivePtrTest, givenPtr_whenCopyAssigningInvalidPtrToBaseClass_thenNewInstanceIsInvalid)
     {
         intrusive_ptr<SomeChildClass> obj1;
         intrusive_ptr<SomeBaseClass>  obj2 = make_intrusive<SomeBaseClass>(2);
@@ -402,7 +374,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_FALSE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenNullPtr_whenCopyAssigningToDifferentNullptr_thenHasNewNullptr)
     {
         intrusive_ptr<SomeClass, NullType1> obj1;
         intrusive_ptr<SomeClass, NullType2> obj2;
@@ -414,7 +385,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_FALSE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenPtr_whenMoveConstructing_thenPointsToSameObject)
     {
         intrusive_ptr<SomeClass> obj1    = make_intrusive<SomeClass>();
         SomeClass*               obj1ptr = obj1.get();
@@ -422,7 +392,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_EQ(obj1ptr, obj2.get());
     }
 
-    //TEST(IntrusivePtrTest, givenPtr_whenMoveConstructing_thenOldInstanceInvalid)
     {
         intrusive_ptr<SomeClass> obj1 = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> obj2 = std::move(obj1);
@@ -430,21 +399,18 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_FALSE(obj1.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenPtr_whenMoveConstructing_thenNewInstanceValid)
     {
         intrusive_ptr<SomeClass> obj1 = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> obj2 = std::move(obj1);
         EXPECT_TRUE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenPtr_whenMoveConstructingFromInvalidPtr_thenNewInstanceInvalid)
     {
         intrusive_ptr<SomeClass> obj1;
         intrusive_ptr<SomeClass> obj2 = std::move(obj1);
         EXPECT_FALSE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenPtr_whenMoveConstructingToBaseClass_thenPointsToSameObject)
     {
         intrusive_ptr<SomeChildClass> child  = make_intrusive<SomeChildClass>(3);
         SomeBaseClass*                objptr = child.get();
@@ -453,7 +419,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_EQ(objptr, base.get());
     }
 
-    //TEST(IntrusivePtrTest, givenPtr_whenMoveConstructingToBaseClass_thenOldInstanceInvalid)
     {
         intrusive_ptr<SomeChildClass> child = make_intrusive<SomeChildClass>(3);
         intrusive_ptr<SomeBaseClass>  base  = std::move(child);
@@ -461,21 +426,18 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_FALSE(child.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenPtr_whenMoveConstructingToBaseClass_thenNewInstanceValid)
     {
         intrusive_ptr<SomeChildClass> obj1 = make_intrusive<SomeChildClass>(2);
         intrusive_ptr<SomeBaseClass>  obj2 = std::move(obj1);
         EXPECT_TRUE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenPtr_whenMoveConstructingToBaseClassFromInvalidPtr_thenNewInstanceInvalid)
     {
         intrusive_ptr<SomeChildClass> obj1;
         intrusive_ptr<SomeBaseClass>  obj2 = std::move(obj1);
         EXPECT_FALSE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenNullPtr_whenMoveConstructingToDifferentNullptr_thenHasNewNullptr)
     {
         intrusive_ptr<SomeClass, NullType1> obj1;
         intrusive_ptr<SomeClass, NullType2> obj2 = std::move(obj1);
@@ -487,7 +449,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_FALSE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenPtr_whenCopyConstructing_thenPointsToSameObject)
     {
         intrusive_ptr<SomeClass> obj1    = make_intrusive<SomeClass>();
         SomeClass*               obj1ptr = obj1.get();
@@ -497,7 +458,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_TRUE(obj1.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenPtr_whenCopyConstructing_thenOldInstanceValid)
     {
         intrusive_ptr<SomeClass> obj1 = make_intrusive<SomeClass>();
         // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
@@ -505,7 +465,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_TRUE(obj1.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenPtr_whenCopyConstructing_thenNewInstanceValid)
     {
         intrusive_ptr<SomeClass> obj1 = make_intrusive<SomeClass>();
         // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
@@ -513,7 +472,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_TRUE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenPtr_whenCopyConstructingFromInvalidPtr_thenNewInstanceInvalid)
     {
         intrusive_ptr<SomeClass> obj1;
         // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
@@ -521,7 +479,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_FALSE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenPtr_whenCopyConstructingToBaseClass_thenPointsToSameObject)
     {
         intrusive_ptr<SomeChildClass> child  = make_intrusive<SomeChildClass>(3);
         SomeBaseClass*                objptr = child.get();
@@ -530,28 +487,24 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_EQ(objptr, base.get());
     }
 
-    //TEST(IntrusivePtrTest, givenPtr_whenCopyConstructingToBaseClass_thenOldInstanceInvalid)
     {
         intrusive_ptr<SomeChildClass> child = make_intrusive<SomeChildClass>(3);
         intrusive_ptr<SomeBaseClass>  base  = child;
         EXPECT_TRUE(child.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenPtr_whenCopyConstructingToBaseClass_thenNewInstanceInvalid)
     {
         intrusive_ptr<SomeChildClass> child = make_intrusive<SomeChildClass>(3);
         intrusive_ptr<SomeBaseClass>  base  = child;
         EXPECT_TRUE(base.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenPtr_whenCopyConstructingToBaseClassFromInvalidPtr_thenNewInstanceInvalid)
     {
         intrusive_ptr<SomeChildClass> obj1;
         intrusive_ptr<SomeBaseClass>  obj2 = obj1;
         EXPECT_FALSE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, givenNullPtr_whenCopyConstructingToDifferentNullptr_thenHasNewNullptr)
     {
         intrusive_ptr<SomeClass, NullType1> obj1;
         intrusive_ptr<SomeClass, NullType2> obj2 = obj1;
@@ -562,7 +515,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_FALSE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, SwapFunction)
     {
         intrusive_ptr<SomeClass> obj1    = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> obj2    = make_intrusive<SomeClass>();
@@ -573,7 +525,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_EQ(obj1ptr, obj2.get());
     }
 
-    //TEST(IntrusivePtrTest, SwapMethod)
     {
         intrusive_ptr<SomeClass> obj1    = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> obj2    = make_intrusive<SomeClass>();
@@ -584,7 +535,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_EQ(obj1ptr, obj2.get());
     }
 
-    //TEST(IntrusivePtrTest, SwapFunctionFromInvalid)
     {
         intrusive_ptr<SomeClass> obj1;
         intrusive_ptr<SomeClass> obj2    = make_intrusive<SomeClass>();
@@ -595,7 +545,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_FALSE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, SwapMethodFromInvalid)
     {
         intrusive_ptr<SomeClass> obj1;
         intrusive_ptr<SomeClass> obj2    = make_intrusive<SomeClass>();
@@ -606,7 +555,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_FALSE(obj2.defined());
     }
 
-    //TEST(IntrusivePtrTest, SwapFunctionWithInvalid)
     {
         intrusive_ptr<SomeClass> obj1 = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> obj2;
@@ -617,7 +565,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_EQ(obj1ptr, obj2.get());
     }
 
-    //TEST(IntrusivePtrTest, SwapMethodWithInvalid)
     {
         intrusive_ptr<SomeClass> obj1 = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> obj2;
@@ -627,8 +574,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_TRUE(obj2.defined());
         EXPECT_EQ(obj1ptr, obj2.get());
     }
-
-    //TEST(IntrusivePtrTest, SwapFunctionInvalidWithInvalid)
     {
         intrusive_ptr<SomeClass> obj1;
         intrusive_ptr<SomeClass> obj2;
@@ -636,8 +581,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_FALSE(obj1.defined());
         EXPECT_FALSE(obj2.defined());
     }
-
-    //TEST(IntrusivePtrTest, SwapMethodInvalidWithInvalid)
     {
         intrusive_ptr<SomeClass> obj1;
         intrusive_ptr<SomeClass> obj2;
@@ -645,29 +588,21 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_FALSE(obj1.defined());
         EXPECT_FALSE(obj2.defined());
     }
-
-    //TEST(IntrusivePtrTest, CanBePutInContainer)
     {
         std::vector<intrusive_ptr<SomeClass1Parameter>> vec;
         vec.push_back(make_intrusive<SomeClass1Parameter>(5));
         EXPECT_EQ(5, vec[0]->param);
     }
-
-    //TEST(IntrusivePtrTest, CanBePutInSet)
     {
         std::set<intrusive_ptr<SomeClass1Parameter>> set;
         set.insert(make_intrusive<SomeClass1Parameter>(5));
         EXPECT_EQ(5, (*set.begin())->param);
     }
-
-    //TEST(IntrusivePtrTest, CanBePutInUnorderedSet)
     {
         std::unordered_set<intrusive_ptr<SomeClass1Parameter>> set;
         set.insert(make_intrusive<SomeClass1Parameter>(5));
         EXPECT_EQ(5, (*set.begin())->param);
     }
-
-    //TEST(IntrusivePtrTest, CanBePutInMap)
     {
         std::map<intrusive_ptr<SomeClass1Parameter>, intrusive_ptr<SomeClass1Parameter>> map;
         map.insert(std::make_pair(
@@ -675,8 +610,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_EQ(5, map.begin()->first->param);
         EXPECT_EQ(3, map.begin()->second->param);
     }
-
-    //TEST(IntrusivePtrTest, CanBePutInUnorderedMap)
     {
         std::unordered_map<intrusive_ptr<SomeClass1Parameter>, intrusive_ptr<SomeClass1Parameter>>
             map;
@@ -685,8 +618,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_EQ(3, map.begin()->first->param);
         EXPECT_EQ(5, map.begin()->second->param);
     }
-
-    //TEST(IntrusivePtrTest, Equality_AfterCopyConstructor)
     {
         intrusive_ptr<SomeClass> var1 = make_intrusive<SomeClass>();
         // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
@@ -694,8 +625,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_TRUE(var1 == var2);
         EXPECT_FALSE(var1 != var2);
     }
-
-    //TEST(IntrusivePtrTest, Equality_AfterCopyAssignment)
     {
         intrusive_ptr<SomeClass> var1 = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> var2 = make_intrusive<SomeClass>();
@@ -703,40 +632,30 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_TRUE(var1 == var2);
         EXPECT_FALSE(var1 != var2);
     }
-
-    //TEST(IntrusivePtrTest, Equality_Nullptr)
     {
         intrusive_ptr<SomeClass> var1;
         intrusive_ptr<SomeClass> var2;
         EXPECT_TRUE(var1 == var2);
         EXPECT_FALSE(var1 != var2);
     }
-
-    //TEST(IntrusivePtrTest, Inequality)
     {
         intrusive_ptr<SomeClass> var1 = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> var2 = make_intrusive<SomeClass>();
         EXPECT_TRUE(var1 != var2);
         EXPECT_FALSE(var1 == var2);
     }
-
-    //TEST(IntrusivePtrTest, Inequality_NullptrLeft)
     {
         intrusive_ptr<SomeClass> var1;
         intrusive_ptr<SomeClass> var2 = make_intrusive<SomeClass>();
         EXPECT_TRUE(var1 != var2);
         EXPECT_FALSE(var1 == var2);
     }
-
-    //TEST(IntrusivePtrTest, Inequality_NullptrRight)
     {
         intrusive_ptr<SomeClass> var1 = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> var2;
         EXPECT_TRUE(var1 != var2);
         EXPECT_FALSE(var1 == var2);
     }
-
-    //TEST(IntrusivePtrTest, HashIsDifferent)
     {
         intrusive_ptr<SomeClass> var1 = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> var2 = make_intrusive<SomeClass>();
@@ -744,8 +663,6 @@ TEST(MakeIntrusiveTest, Test)
             std::hash<intrusive_ptr<SomeClass>>()(var1),
             std::hash<intrusive_ptr<SomeClass>>()(var2));
     }
-
-    //TEST(IntrusivePtrTest, HashIsDifferent_ValidAndInvalid)
     {
         intrusive_ptr<SomeClass> var1;
         intrusive_ptr<SomeClass> var2 = make_intrusive<SomeClass>();
@@ -753,8 +670,6 @@ TEST(MakeIntrusiveTest, Test)
             std::hash<intrusive_ptr<SomeClass>>()(var1),
             std::hash<intrusive_ptr<SomeClass>>()(var2));
     }
-
-    //TEST(IntrusivePtrTest, HashIsSame_AfterCopyConstructor)
     {
         intrusive_ptr<SomeClass> var1 = make_intrusive<SomeClass>();
         // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
@@ -763,8 +678,6 @@ TEST(MakeIntrusiveTest, Test)
             std::hash<intrusive_ptr<SomeClass>>()(var1),
             std::hash<intrusive_ptr<SomeClass>>()(var2));
     }
-
-    //TEST(IntrusivePtrTest, HashIsSame_AfterCopyAssignment)
     {
         intrusive_ptr<SomeClass> var1 = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> var2 = make_intrusive<SomeClass>();
@@ -773,8 +686,6 @@ TEST(MakeIntrusiveTest, Test)
             std::hash<intrusive_ptr<SomeClass>>()(var1),
             std::hash<intrusive_ptr<SomeClass>>()(var2));
     }
-
-    //TEST(IntrusivePtrTest, HashIsSame_BothNullptr)
     {
         intrusive_ptr<SomeClass> var1;
         intrusive_ptr<SomeClass> var2;
@@ -782,8 +693,6 @@ TEST(MakeIntrusiveTest, Test)
             std::hash<intrusive_ptr<SomeClass>>()(var1),
             std::hash<intrusive_ptr<SomeClass>>()(var2));
     }
-
-    //TEST(IntrusivePtrTest, OneIsLess)
     {
         intrusive_ptr<SomeClass> var1 = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> var2 = make_intrusive<SomeClass>();
@@ -793,48 +702,36 @@ TEST(MakeIntrusiveTest, Test)
             // NOLINTNEXTLINE(modernize-use-transparent-functors)
             std::less<intrusive_ptr<SomeClass>>()(var2, var1));
     }
-
-    //TEST(IntrusivePtrTest, NullptrIsLess1)
     {
         intrusive_ptr<SomeClass> var1;
         intrusive_ptr<SomeClass> var2 = make_intrusive<SomeClass>();
         // NOLINTNEXTLINE(modernize-use-transparent-functors)
         EXPECT_TRUE(std::less<intrusive_ptr<SomeClass>>()(var1, var2));
     }
-
-    //TEST(IntrusivePtrTest, NullptrIsLess2)
     {
         intrusive_ptr<SomeClass> var1 = make_intrusive<SomeClass>();
         intrusive_ptr<SomeClass> var2;
         // NOLINTNEXTLINE(modernize-use-transparent-functors)
         EXPECT_FALSE(std::less<intrusive_ptr<SomeClass>>()(var1, var2));
     }
-
-    //TEST(IntrusivePtrTest, NullptrIsNotLessThanNullptr)
     {
         intrusive_ptr<SomeClass> var1;
         intrusive_ptr<SomeClass> var2;
         // NOLINTNEXTLINE(modernize-use-transparent-functors)
         EXPECT_FALSE(std::less<intrusive_ptr<SomeClass>>()(var1, var2));
     }
-
-    //TEST(IntrusivePtrTest, givenPtr_whenCallingReset_thenIsInvalid)
     {
         auto obj = make_intrusive<SomeClass>();
         EXPECT_TRUE(obj.defined());
         obj.reset();
         EXPECT_FALSE(obj.defined());
     }
-
-    //TEST(IntrusivePtrTest, givenPtr_whenCallingReset_thenHoldsNullptr)
     {
         auto obj = make_intrusive<SomeClass>();
         EXPECT_NE(nullptr, obj.get());
         obj.reset();
         EXPECT_EQ(nullptr, obj.get());
     }
-
-    //TEST(IntrusivePtrTest, givenPtr_whenDestructed_thenDestructsObject)
     {
         bool resourcesReleased = false;
         bool wasDestructed     = false;
@@ -846,8 +743,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_TRUE(resourcesReleased);
         EXPECT_TRUE(wasDestructed);
     }
-
-    //TEST(IntrusivePtrTest, givenPtr_whenMoveConstructed_thenDestructsObjectAfterSecondDestructed)
     {
         bool resourcesReleased = false;
         bool wasDestructed     = false;
@@ -860,8 +755,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_TRUE(resourcesReleased);
         EXPECT_TRUE(wasDestructed);
     }
-
-    //TEST(IntrusivePtrTest,givenPtr_whenMoveConstructedToBaseClass_thenDestructsObjectAfterSecondDestructed)
     {
         bool resourcesReleased = false;
         bool wasDestructed     = false;
@@ -874,8 +767,6 @@ TEST(MakeIntrusiveTest, Test)
         EXPECT_TRUE(resourcesReleased);
         EXPECT_TRUE(wasDestructed);
     }
-
-    //TEST(IntrusivePtrTest, givenPtr_whenMoveAssigned_thenDestructsOldObject)
     {
         bool dummy             = false;
         bool resourcesReleased = false;
@@ -890,8 +781,6 @@ TEST(MakeIntrusiveTest, Test)
             EXPECT_TRUE(wasDestructed);
         }
     }
-
-    //TEST(IntrusivePtrTest, givenPtr_whenMoveAssignedToBaseClass_thenDestructsOldObject)
     {
         bool dummy             = false;
         bool resourcesReleased = false;

@@ -101,12 +101,13 @@ include(CheckSymbolExists)
 
 # b) Shared toolchain helpers
 include(compiler_checks) # Detects compiler capabilities; sets PROJECT_* flags
-include(cache) # Configures per-target compiler cache launcher
-include(build_type) # Validates / normalises CMAKE_BUILD_TYPE
 include(checks) # Additional feature-check macros
-include(utils) # Utility macros shared across all modules
+include(build_type) # Validates / normalises CMAKE_BUILD_TYPE
 include(platform) # Platform flags (macOS rpath, Windows /utf-8, …)
+include(utils) # Utility macros shared across all modules
 include(CMakeDependentOption)
+
+include(cache) # Configures per-target compiler cache launcher
 
 # c) Parallel-owned feature finders (Library/Parallel/Cmake/)
 include(threads) # Detects pthreads / Win32 threads; sets PARALLEL_ENABLE_PTHREADS

@@ -1578,7 +1578,7 @@ int64_t adjust_durations_dfs(std::shared_ptr<Result>& r)
         int64_t       children_total_duration = std::accumulate(
             r->children_.begin(),
             r->children_.end(),
-            0,
+            int64_t{0},
             [](int64_t acc, std::shared_ptr<Result>& child)
             { return acc + adjust_durations_dfs(child); });
 
@@ -1646,7 +1646,7 @@ int64_t adjust_timestamps_dfs(std::shared_ptr<Result>& r, int64_t new_start_time
         int64_t const children_total_duration = std::accumulate(
             r->children_.begin(),
             r->children_.end(),
-            0,
+            int64_t{0},
             [](int64_t acc, std::shared_ptr<Result>& child)
             { return acc + (child->endTimeNS() - child->start_time_ns_); });
 

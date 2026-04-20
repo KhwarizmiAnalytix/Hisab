@@ -1,6 +1,7 @@
 include_guard(GLOBAL)
 
-# ============================================================================= Quarisma Build Type
+# ============================================================================= 
+# Quarisma Build Type
 # Configuration Module
 
 # This module optimizes build configurations for maximum performance and minimal CMake

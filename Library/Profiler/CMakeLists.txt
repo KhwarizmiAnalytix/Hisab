@@ -160,12 +160,15 @@ include(CheckSymbolExists)
 
 # b) Shared toolchain helpers
 include(compiler_checks) # Detects compiler capabilities; sets PROJECT_* flags
-include(cache) # Configures per-target compiler cache launcher
-include(build_type) # Validates / normalises CMAKE_BUILD_TYPE
 include(checks) # Additional feature-check macros
-include(utils) # Utility macros shared across all modules
+include(build_type) # Validates / normalises CMAKE_BUILD_TYPE
 include(platform) # Platform flags (macOS rpath, Windows /utf-8, …)
+include(utils) # Utility macros shared across all modules
 include(CMakeDependentOption)
+
+include(cache) # Configures per-target compiler cache launcher
+
+
 if(PROFILER_ENABLE_SANITIZER)
   include(sanitize)
   quarisma_configure_sanitizer(PROFILER)
@@ -247,7 +250,7 @@ foreach(_kineto_target kineto kineto_base kineto_api)
     endif()
 endforeach()
 # Clang 20 crashes with -fPIC -O3 on CuptiActivityProfiler.cpp (ReachingDefAnalysis bug).
-if(TARGET kineto_base)
+if(TARGET kineto_base AND NOT MSVC)
     target_compile_options(kineto_base PRIVATE -O2)
 endif()
 if(TARGET kineto AND DEFINED CUDA_nvperf_host_LIBRARY)

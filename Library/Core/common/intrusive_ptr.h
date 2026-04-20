@@ -324,9 +324,9 @@ private:
     {
         if (target_ != NullType::singleton())
         {
-            uint32_t new_refcount = detail::atomic_refcount_increment(target_->combined_refcount_);
+            QUARISMA_UNUSED uint32_t new_refcount = detail::atomic_refcount_increment(target_->combined_refcount_);
             QUARISMA_CHECK_DEBUG(
-                new_refcount != 1,
+                new_refcount != 1, 
                 "intrusive_ptr: Cannot increase refcount after it reached zero.");
         }
     }
@@ -773,7 +773,7 @@ private:
     {
         if (target_ != NullType::singleton())
         {
-            uint32_t new_weakcount =
+            QUARISMA_UNUSED uint32_t new_weakcount =
                 detail::atomic_weakcount_increment(target_->combined_refcount_);
             QUARISMA_CHECK_DEBUG(
                 new_weakcount != 1,

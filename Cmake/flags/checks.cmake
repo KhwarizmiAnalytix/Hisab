@@ -1,6 +1,7 @@
-include_guard(GLOBAL)
-# ============================================================================= Quarisma System
+# ============================================================================= 
+# Quarisma System
 # Validation and Checks Module
+# ============================================================================= 
 
 # This module performs efficient system validation with aggressive caching to minimize CMake
 # reconfiguration overhead while ensuring all required dependencies and capabilities are available.
@@ -128,10 +129,8 @@ else()
   message(WARNING "Quarisma: Unknown compiler '${CMAKE_CXX_COMPILER_ID}'. Build may fail.")
 endif()
 
-# C++ standard is owned per-module (LOGGING_CXX_STANDARD, MEMORY_CXX_STANDARD, etc.) Validation and
-# set_target_properties happen inside each Library/*/CMakeLists.txt.
-
-# ============================================================================= Essential System
+# ============================================================================= 
+# Essential System
 # Dependencies Validation
 
 include(CheckIncludeFile)
@@ -168,6 +167,9 @@ endif()
 include(CheckCXXSourceCompiles)
 
 # C++17 features validation (cached)
+if(MSVC)
+  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} /Zc:__cplusplus /std:c++17")
+endif()
 if(NOT DEFINED TEMP_CXX17_FEATURES_VALIDATED)
   # Test structured bindings
   check_cxx_source_compiles(

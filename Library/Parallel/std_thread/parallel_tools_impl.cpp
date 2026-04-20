@@ -53,6 +53,10 @@ int number_of_threads_stdthread()
 template <>
 void parallel_tools_impl<backend_type::std_thread>::initialize(int num_threads)
 {
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
     const int max_threads =
         parallel_tools_impl<backend_type::std_thread>::estimated_default_number_of_threads();
     if (num_threads == 0)
@@ -77,6 +81,9 @@ void parallel_tools_impl<backend_type::std_thread>::initialize(int num_threads)
         num_threads               = std::min(num_threads, max_threads);
         specified_num_threads_std = num_threads;
     }
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 }
 
 //------------------------------------------------------------------------------
