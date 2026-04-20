@@ -232,40 +232,39 @@ if(PROFILER_ENABLE_KINETO)
   set(KINETO_LIBRARY_TYPE "static" CACHE STRING "" FORCE)
   # Reuse Quarisma's fmt build to avoid duplicate symbols.
   set(FMT_SOURCE_DIR "${_tpdir}/fmt" CACHE STRING "Use Quarisma's fmt library" FORCE)
-endif()
 
-add_third_party_library(kineto
-    CONDITION PROFILER_ENABLE_KINETO
-    LIBRARY_TYPE STATIC
-    SOURCE_DIR "${_tpdir}/kineto/libkineto"
-    DISABLE_WARNINGS
-    FILTER_FLAGS "-flto=thin" "-flto=full"
-    QUARISMA_TARGETS "Kineto::kineto=kineto"
-    INCLUDE_DIR "${_tpdir}/kineto/libkineto/include"
-    AUTO_ADD_TO_DEPENDENCIES OFF
-)
-foreach(_kineto_target kineto kineto_base kineto_api)
-    if(TARGET ${_kineto_target})
-        set_property(TARGET ${_kineto_target} PROPERTY POSITION_INDEPENDENT_CODE ON)
-    endif()
-endforeach()
-# Clang 20 crashes with -fPIC -O3 on CuptiActivityProfiler.cpp (ReachingDefAnalysis bug).
-if(TARGET kineto_base AND NOT MSVC)
-    target_compile_options(kineto_base PRIVATE -O2)
-endif()
-if(TARGET kineto AND DEFINED CUDA_nvperf_host_LIBRARY)
-    target_link_libraries(kineto PUBLIC "${CUDA_nvperf_host_LIBRARY}")
-endif()
+  add_third_party_library(kineto
+      CONDITION PROFILER_ENABLE_KINETO
+      LIBRARY_TYPE STATIC
+      SOURCE_DIR "${_tpdir}/kineto/libkineto"
+      DISABLE_WARNINGS
+      FILTER_FLAGS "-flto=thin" "-flto=full"
+      QUARISMA_TARGETS "Kineto::kineto=kineto"
+      INCLUDE_DIR "${_tpdir}/kineto/libkineto/include"
+      AUTO_ADD_TO_DEPENDENCIES OFF
+  )
+  foreach(_kineto_target kineto kineto_base kineto_api)
+      if(TARGET ${_kineto_target})
+          set_property(TARGET ${_kineto_target} PROPERTY POSITION_INDEPENDENT_CODE ON)
+      endif()
+  endforeach()
+  # Clang 20 crashes with -fPIC -O3 on CuptiActivityProfiler.cpp (ReachingDefAnalysis bug).
+  if(TARGET kineto_base AND NOT MSVC)
+      target_compile_options(kineto_base PRIVATE -O2)
+  endif()
+  if(TARGET kineto AND DEFINED CUDA_nvperf_host_LIBRARY)
+      target_link_libraries(kineto PUBLIC "${CUDA_nvperf_host_LIBRARY}")
+  endif()
 
-if(PROFILER_ENABLE_KINETO AND NOT TARGET Kineto::kineto)
-  message(STATUS "Kineto not found — disabling PROFILER_ENABLE_KINETO")
-  set(PROFILER_ENABLE_KINETO OFF CACHE BOOL "Enable Quarisma Kineto profiling library." FORCE)
+  if(NOT TARGET Kineto::kineto)
+    message(STATUS "Kineto not found — disabling PROFILER_ENABLE_KINETO")
+    set(PROFILER_ENABLE_KINETO OFF CACHE BOOL "Enable Quarisma Kineto profiling library." FORCE)
+  endif()
+  list(APPEND PROFILER_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/kineto/libkineto/include")
 endif()
 
 list(APPEND PROFILER_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/fmt/include")
-if(PROFILER_ENABLE_KINETO)
-  list(APPEND PROFILER_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/kineto/libkineto/include")
-endif()
+
 
 # ITT — Intel VTune API (external system dependency, not bundled).
 if(PROFILER_ENABLE_ITT)

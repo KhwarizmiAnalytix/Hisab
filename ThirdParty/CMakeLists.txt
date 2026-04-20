@@ -813,9 +813,18 @@ function(add_third_party_library name)
     # Restore BUILD_SHARED_LIBS
     set(BUILD_SHARED_LIBS ${_saved_build_shared_libs})
 
-    # Restore compiler/linker flags if they were filtered
+    # Restore compiler/linker flags if they were filtered.
+    # _restore_third_party_flags sets PARENT_SCOPE = this function's scope.
+    # We must then propagate back up to the caller's (directory) scope,
+    # because DISABLE_WARNINGS leaked the modified flags there via PARENT_SCOPE.
     if(_TPL_SAVED_FLAGS)
         _restore_third_party_flags(${name})
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" PARENT_SCOPE)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}" PARENT_SCOPE)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}" PARENT_SCOPE)
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}" PARENT_SCOPE)
+        set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS}" PARENT_SCOPE)
+        set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS}" PARENT_SCOPE)
     endif()
 endfunction()
 
