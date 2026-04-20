@@ -17,80 +17,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 option(QUARISMA_ENABLE_EXTERNAL "Use external copies of third party libraries by default" ON)
 mark_as_advanced(QUARISMA_ENABLE_EXTERNAL)
 
-
-# Global option to control third-party library type (STATIC, SHARED, DEFAULT, or HEADER_ONLY)
-# DEFAULT means respect each library's own settings or BUILD_SHARED_LIBS
-# HEADER_ONLY means the library is header-only (no compilation/linking needed)
-set(QUARISMA_THIRDPARTY_TYPE "DEFAULT" CACHE STRING "Default library type for third-party libraries (STATIC, SHARED, DEFAULT, or HEADER_ONLY)")
-set_property(CACHE QUARISMA_THIRDPARTY_TYPE PROPERTY STRINGS "STATIC" "SHARED" "DEFAULT" "HEADER_ONLY")
-
 # Configure Visual Studio folder structure to match file system
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# Disable tests, examples, and benchmarks for all third-party libraries
-set(BUILD_TESTING OFF CACHE BOOL "Disable testing for third-party libraries" FORCE)
-set(BUILD_EXAMPLES OFF CACHE BOOL "Disable examples for third-party libraries" FORCE)
-set(BUILD_BENCHMARKS OFF CACHE BOOL "Disable benchmarks for third-party libraries" FORCE)
-
-
-# fmt-specific options
-set(FMT_TEST OFF CACHE BOOL "Disable fmt tests" FORCE)
-set(FMT_DOC OFF CACHE BOOL "Disable fmt documentation" FORCE)
-set(FMT_INSTALL OFF CACHE BOOL "Disable fmt install" FORCE)
-set(FMT_HEADER_ONLY ON CACHE BOOL "Use header-only fmt library" FORCE)
-
-# cpuinfo-specific options
-set(CPUINFO_BUILD_TOOLS OFF CACHE BOOL "Disable cpuinfo tools" FORCE)
-set(CPUINFO_BUILD_UNIT_TESTS OFF CACHE BOOL "Disable cpuinfo unit tests" FORCE)
-set(CPUINFO_BUILD_MOCK_TESTS OFF CACHE BOOL "Disable cpuinfo mock tests" FORCE)
-set(CPUINFO_BUILD_BENCHMARKS OFF CACHE BOOL "Disable cpuinfo benchmarks" FORCE)
-set(CPUINFO_LIBRARY_TYPE "static" CACHE STRING "Type of cpuinfo library (shared, static, or default) to build")
-
-# magic_enum-specific options
-set(MAGIC_ENUM_OPT_BUILD_EXAMPLES OFF CACHE BOOL "Disable magic_enum examples" FORCE)
-set(MAGIC_ENUM_OPT_BUILD_TESTS OFF CACHE BOOL "Disable magic_enum tests" FORCE)
-
-# loguru-specific options
-set(LOGURU_BUILD_EXAMPLES OFF CACHE BOOL "Disable loguru examples" FORCE)
-#set(LOGURU_USE_FMTLIB ON CACHE BOOL "Enable fmtlib formatting in loguru" FORCE)
-set(LOGURU_WITH_STREAMS ON CACHE BOOL "Enable streams in loguru" FORCE)
-
-# glog-specific options
-set(BUILD_EXAMPLES OFF CACHE BOOL "Disable glog examples" FORCE)
-set(WITH_GFLAGS OFF CACHE BOOL "Disable gflags dependency for glog" FORCE)
-set(WITH_GTEST OFF CACHE BOOL "Disable gtest for glog" FORCE)
-set(WITH_GMOCK OFF CACHE BOOL "Disable gmock for glog" FORCE)
-
-# googletest-specific options
-set(BUILD_GMOCK OFF CACHE BOOL "Disable Google Mock" FORCE)
-set(INSTALL_GTEST OFF CACHE BOOL "Disable Google Test install" FORCE)
-set(gtest_build_samples OFF CACHE BOOL "Disable Google Test samples" FORCE)
-set(gtest_build_tests OFF CACHE BOOL "Disable Google Test tests" FORCE)
-
-
-
-# Google Benchmark-specific options
-set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "Disable benchmark tests" FORCE)
-set(BENCHMARK_ENABLE_EXCEPTIONS ON CACHE BOOL "Enable benchmark exceptions" FORCE)
-set(BENCHMARK_ENABLE_LTO OFF CACHE BOOL "Disable benchmark LTO" FORCE)
-set(BENCHMARK_USE_LIBCXX OFF CACHE BOOL "Disable benchmark libcxx" FORCE)
-set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "Disable benchmark werror" FORCE)
-set(BENCHMARK_FORCE_WERROR OFF CACHE BOOL "Disable benchmark force werror" FORCE)
-set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "Disable benchmark install" FORCE)
-set(BENCHMARK_INSTALL_DOCS OFF CACHE BOOL "Disable benchmark docs install" FORCE)
-set(BENCHMARK_ENABLE_DOXYGEN OFF CACHE BOOL "Disable benchmark doxygen" FORCE)
-set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "Disable benchmark gtest tests" FORCE)
-set(BENCHMARK_USE_BUNDLED_GTEST OFF CACHE BOOL "Don't use bundled gtest for benchmark" FORCE)
-set(BENCHMARK_DOWNLOAD_DEPENDENCIES OFF CACHE BOOL "Don't download dependencies" FORCE)
-
-# mimalloc-specific options
-set(MI_BUILD_TESTS OFF CACHE BOOL "Disable mimalloc tests" FORCE)
-set(MI_BUILD_OBJECT OFF CACHE BOOL "Disable mimalloc object library" FORCE)
-set(MI_INSTALL_TOPLEVEL OFF CACHE BOOL "Disable mimalloc top-level install" FORCE)
-set(MI_OVERRIDE OFF CACHE BOOL "Disable mimalloc malloc override" FORCE)
-set(MI_BUILD_SHARED OFF CACHE BOOL "Build mimalloc as static library" FORCE)
-set(MI_BUILD_STATIC ON CACHE BOOL "Build mimalloc as static library" FORCE)
-# Note: MI_BUILD_STATIC is now controlled by add_third_party_library LIBRARY_TYPE parameter
 
 # Path to this ThirdParty directory — used by library modules that call
 # add_third_party_library() with absolute SOURCE_DIR / INCLUDE_DIR paths.
@@ -379,7 +308,6 @@ endfunction()
 #   LIBRARY_TYPE <type>         - Type of library: STATIC, SHARED, DEFAULT, or HEADER_ONLY
 #                                 HEADER_ONLY: Creates INTERFACE library target with include dirs
 #                                 Supports ALIASES and QUARISMA_TARGETS for header-only libraries
-#                                 If not specified, uses QUARISMA_THIRDPARTY_TYPE
 #   LIBRARY_TYPE_VAR <var>      - CMake variable name for library-specific control
 #                                 Example: MI_BUILD_STATIC for mimalloc
 #                                 Note: Not applicable for HEADER_ONLY libraries
@@ -483,12 +411,10 @@ function(add_third_party_library name)
     # -------------------------------------------------------------------------
     # Step 2: Determine library type
     # -------------------------------------------------------------------------
-    # Priority: LIBRARY_TYPE parameter > QUARISMA_THIRDPARTY_TYPE global > DEFAULT
+    # Priority: LIBRARY_TYPE parameter
     set(lib_type "DEFAULT")
     if(DEFINED TPL_LIBRARY_TYPE)
         set(lib_type ${TPL_LIBRARY_TYPE})
-    elseif(NOT QUARISMA_THIRDPARTY_TYPE STREQUAL "DEFAULT")
-        set(lib_type ${QUARISMA_THIRDPARTY_TYPE})
     endif()
 
     # -------------------------------------------------------------------------

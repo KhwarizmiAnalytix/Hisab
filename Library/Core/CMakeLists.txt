@@ -338,7 +338,16 @@ compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_MAGICENUM)
 # =============================================================================
 set(_tpdir "${CMAKE_SOURCE_DIR}/ThirdParty")
 
+set(BUILD_TESTING OFF CACHE BOOL "Disable testing for third-party libraries" FORCE)
+set(BUILD_EXAMPLES OFF CACHE BOOL "Disable examples for third-party libraries" FORCE)
+set(BUILD_BENCHMARKS OFF CACHE BOOL "Disable benchmarks for third-party libraries" FORCE)
+
 # fmt — modern formatting library; also consumed by Kineto (via FMT_SOURCE_DIR).
+set(FMT_TEST OFF CACHE BOOL "Disable fmt tests" FORCE)
+set(FMT_DOC OFF CACHE BOOL "Disable fmt documentation" FORCE)
+set(FMT_INSTALL OFF CACHE BOOL "Disable fmt install" FORCE)
+set(FMT_HEADER_ONLY ON CACHE BOOL "Use header-only fmt library" FORCE)
+
 add_third_party_library(fmt
     LIBRARY_TYPE STATIC
     SOURCE_DIR "${_tpdir}/fmt"
@@ -349,6 +358,12 @@ add_third_party_library(fmt
 )
 
 # cpuinfo — CPU feature detection used across the project.
+set(CPUINFO_BUILD_TOOLS OFF CACHE BOOL "Disable cpuinfo tools" FORCE)
+set(CPUINFO_BUILD_UNIT_TESTS OFF CACHE BOOL "Disable cpuinfo unit tests" FORCE)
+set(CPUINFO_BUILD_MOCK_TESTS OFF CACHE BOOL "Disable cpuinfo mock tests" FORCE)
+set(CPUINFO_BUILD_BENCHMARKS OFF CACHE BOOL "Disable cpuinfo benchmarks" FORCE)
+set(CPUINFO_LIBRARY_TYPE "static" CACHE STRING "Type of cpuinfo library (shared, static, or default) to build")
+
 add_third_party_library(cpuinfo
     LIBRARY_TYPE STATIC
     SOURCE_DIR "${_tpdir}/cpuinfo"
@@ -367,17 +382,20 @@ endforeach()
 
 list(APPEND CORE_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/fmt/include")
 list(APPEND CORE_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/cpuinfo/include")
+
 # magic_enum — zero-overhead compile-time enum reflection (header-only).
 if(CORE_ENABLE_MAGICENUM)
-
-add_third_party_library(magic_enum
-    CONDITION CORE_ENABLE_MAGICENUM
-    LIBRARY_TYPE HEADER_ONLY
-    SOURCE_DIR "${_tpdir}/magic_enum"
-    QUARISMA_TARGETS "MagicEnum::magic_enum=magic_enum"
-    INCLUDE_DIR "${_tpdir}/magic_enum/include"
-    AUTO_ADD_TO_DEPENDENCIES OFF
-)
+  set(MAGIC_ENUM_OPT_BUILD_EXAMPLES OFF CACHE BOOL "Disable magic_enum examples" FORCE)
+  set(MAGIC_ENUM_OPT_BUILD_TESTS OFF CACHE BOOL "Disable magic_enum tests" FORCE)
+  
+  add_third_party_library(magic_enum
+      CONDITION CORE_ENABLE_MAGICENUM
+      LIBRARY_TYPE HEADER_ONLY
+      SOURCE_DIR "${_tpdir}/magic_enum"
+      QUARISMA_TARGETS "MagicEnum::magic_enum=magic_enum"
+      INCLUDE_DIR "${_tpdir}/magic_enum/include"
+      AUTO_ADD_TO_DEPENDENCIES OFF
+  )
   list(APPEND CORE_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/magic_enum/include")
 endif()
 

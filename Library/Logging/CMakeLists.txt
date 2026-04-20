@@ -165,8 +165,28 @@ include(linker)
 # --- Third-party dependencies owned by Logging ---
 set(_tpdir "${CMAKE_SOURCE_DIR}/ThirdParty")
 
+set(BUILD_TESTING OFF CACHE BOOL "Disable testing for third-party libraries" FORCE)
+set(BUILD_EXAMPLES OFF CACHE BOOL "Disable examples for third-party libraries" FORCE)
+set(BUILD_BENCHMARKS OFF CACHE BOOL "Disable benchmarks for third-party libraries" FORCE)
+
+# loguru-specific options
+set(LOGURU_BUILD_EXAMPLES OFF CACHE BOOL "Disable loguru examples" FORCE)
+#set(LOGURU_USE_FMTLIB ON CACHE BOOL "Enable fmtlib formatting in loguru" FORCE)
+set(LOGURU_WITH_STREAMS ON CACHE BOOL "Enable streams in loguru" FORCE)
+
+# glog-specific options
+set(BUILD_EXAMPLES OFF CACHE BOOL "Disable glog examples" FORCE)
+set(WITH_GFLAGS OFF CACHE BOOL "Disable gflags dependency for glog" FORCE)
+set(WITH_GTEST OFF CACHE BOOL "Disable gtest for glog" FORCE)
+set(WITH_GMOCK OFF CACHE BOOL "Disable gmock for glog" FORCE)
+
 # fmt — Logging uses fmt directly and is processed before Core, so we initialise
 # fmt here. Core's identical add_third_party_library(fmt...) call is a no-op (processed flag).
+set(FMT_TEST OFF CACHE BOOL "Disable fmt tests" FORCE)
+set(FMT_DOC OFF CACHE BOOL "Disable fmt documentation" FORCE)
+set(FMT_INSTALL OFF CACHE BOOL "Disable fmt install" FORCE)
+set(FMT_HEADER_ONLY ON CACHE BOOL "Use header-only fmt library" FORCE)
+
 add_third_party_library(fmt
     LIBRARY_TYPE STATIC
     SOURCE_DIR "${_tpdir}/fmt"
@@ -191,6 +211,7 @@ endif()
 
 add_third_party_library(glog
     CONDITION LOGGING_ENABLE_GLOG
+    LIBRARY_TYPE STATIC
     SOURCE_DIR "${_tpdir}/glog"
     FILTER_FLAGS "-flto=thin" "-flto=full"
     QUARISMA_TARGETS "Glog::glog=glog::glog|glog"

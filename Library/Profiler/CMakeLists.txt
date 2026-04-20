@@ -210,6 +210,10 @@ include(linker)
 # --- Third-party dependencies owned by Profiler ---
 set(_tpdir "${CMAKE_SOURCE_DIR}/ThirdParty")
 
+set(BUILD_TESTING OFF CACHE BOOL "Disable testing for third-party libraries" FORCE)
+set(BUILD_EXAMPLES OFF CACHE BOOL "Disable examples for third-party libraries" FORCE)
+set(BUILD_BENCHMARKS OFF CACHE BOOL "Disable benchmarks for third-party libraries" FORCE)
+
 # Kineto: configure GPU-backend knobs before building the library.
 if(PROFILER_ENABLE_KINETO)
   set(LIBKINETO_NOAIUPTI ON CACHE STRING "" FORCE)
