@@ -800,6 +800,130 @@ jobs:
 
 
   # ============================================================================
+  # Per-Project Flag + Backend Matrix Testing
+  # Validates each library project under feature flag ON/OFF and backend variants
+  # ============================================================================
+  project-flag-backend-tests:
+    name: "Project Matrix - ${{ matrix.project }} - ${{ matrix.external }} - ${{ matrix.backend_label }}"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: Core
+            external: "ON"
+            backend_label: default
+            extra_cmake_flags: ""
+          - project: Core
+            external: "OFF"
+            backend_label: default
+            extra_cmake_flags: ""
+
+          - project: Logging
+            external: "ON"
+            backend_label: LOGURU
+            extra_cmake_flags: "-DLOGGING_BACKEND=LOGURU"
+          - project: Logging
+            external: "OFF"
+            backend_label: NATIVE
+            extra_cmake_flags: "-DLOGGING_BACKEND=NATIVE"
+          - project: Logging
+            external: "ON"
+            backend_label: GLOG
+            extra_cmake_flags: "-DLOGGING_BACKEND=GLOG"
+
+          - project: Memory
+            external: "ON"
+            backend_label: default
+            extra_cmake_flags: ""
+          - project: Memory
+            external: "OFF"
+            backend_label: default
+            extra_cmake_flags: ""
+
+          - project: Parallel
+            external: "ON"
+            backend_label: std
+            extra_cmake_flags: "-DPARALLEL_BACKEND=std"
+          - project: Parallel
+            external: "OFF"
+            backend_label: openmp
+            extra_cmake_flags: "-DPARALLEL_BACKEND=openmp"
+          - project: Parallel
+            external: "ON"
+            backend_label: tbb
+            extra_cmake_flags: "-DPARALLEL_BACKEND=tbb"
+
+          - project: Profiler
+            external: "ON"
+            backend_label: NATIVE
+            extra_cmake_flags: "-DPROFILER_BACKEND=NATIVE"
+          - project: Profiler
+            external: "OFF"
+            backend_label: ITT
+            extra_cmake_flags: "-DPROFILER_BACKEND=ITT"
+          - project: Profiler
+            external: "ON"
+            backend_label: KINETO
+            extra_cmake_flags: "-DPROFILER_BACKEND=KINETO"
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache
+          build/ThirdParty
+        key: ubuntu-project-matrix-${{ env.CACHE_VERSION }}-${{ hashFiles('**/CMakeLists.txt') }}
+        restore-keys: |
+          ubuntu-project-matrix-${{ env.CACHE_VERSION }}-
+
+    - name: Install dependencies
+      run: |
+        chmod +x .github/workflows/install/install-deps-ubuntu.sh
+        ./.github/workflows/install/install-deps-ubuntu.sh --with-tbb
+
+    - name: Configure
+      shell: bash
+      run: |
+        cmake -B build \
+          -C .github/cmake/configure_cache.cmake \
+          -S . \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_C_COMPILER=clang \
+          -DCMAKE_CXX_COMPILER=clang++ \
+          -DCMAKE_CXX_STANDARD=17 \
+          -DQUARISMA_ENABLE_EXTERNAL=${{ matrix.external }} \
+          -DBUILD_TESTING=ON \
+          -DQUARISMA_ENABLE_GTEST=ON \
+          -DQUARISMA_ENABLE_BENCHMARK=OFF \
+          -DQUARISMA_ENABLE_TBB=ON \
+          -DMEMOY_ENABLE_CUDA=OFF \
+          -DQUARISMA_ENABLE_LTO=OFF \
+          ${{ matrix.extra_cmake_flags }}
+
+    - name: Build
+      run: cmake --build build -j 2
+
+    - name: Run ${{ matrix.project }} tests
+      shell: bash
+      run: |
+        regex=".*${{ matrix.project }}.*"
+        if ctest --test-dir build -N -R "$regex" | grep -q "Total Tests: 0"; then
+          echo "No project-specific test regex match found; running full test suite."
+          ctest --test-dir build --output-on-failure -j 2
+        else
+          ctest --test-dir build --output-on-failure -R "$regex" -j 2
+        fi
+
+  # ============================================================================
   # Optimization Flags Testing
   # Tests different compiler optimization levels to ensure code works correctly
   # across various optimization settings (-O0, -O2, -O3)
@@ -1453,6 +1577,34 @@ jobs:
         retention-days: 30
 
   # ============================================================================
+  # Windows build CLI smoke test (no compile — verifies Python entrypoints)
+  # ============================================================================
+  windows-cli-smoke:
+    name: Windows — build CLI smoke
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Smoke-test Scripts/setup.py --help
+      shell: pwsh
+      run: |
+        python Scripts\setup.py --help
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+    - name: Smoke-test Scripts/setup_bazel.py --help
+      shell: pwsh
+      run: |
+        python Scripts\setup_bazel.py --help
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  # ============================================================================
   # CI Success Summary
   # ============================================================================
   ci-success:
@@ -1461,12 +1613,14 @@ jobs:
       - build-matrix
       - tbb-specific-tests
       - sanitizer-tests
+      - project-flag-backend-tests
       - optimization-flags-test
       - lto-tests
       - benchmark-tests
       - sccache-baseline-tests
       - sccache-enabled-tests
       - clang-coverage-tests
+      - windows-cli-smoke
     runs-on: ubuntu-latest
     if: always()
 
@@ -1477,11 +1631,13 @@ jobs:
         echo "Build Matrix: ${{ needs.build-matrix.result }}"
         echo "TBB Specific Tests: ${{ needs.tbb-specific-tests.result }}"
         echo "Sanitizer Tests: ${{ needs.sanitizer-tests.result }}"
+        echo "Project Flag + Backend Tests: ${{ needs.project-flag-backend-tests.result }}"
         echo "Optimization Flags: ${{ needs.optimization-flags-test.result }}"
         echo "Benchmark Tests: ${{ needs.benchmark-tests.result }}"
         echo "Sccache Baseline Tests: ${{ needs.sccache-baseline-tests.result }}"
         echo "Sccache Enabled Tests: ${{ needs.sccache-enabled-tests.result }}"
         echo "Clang Coverage Tests: ${{ needs.clang-coverage-tests.result }}"
+        echo "Windows CLI Smoke: ${{ needs.windows-cli-smoke.result }}"
         echo ""
 
         # Check if any required job failed
@@ -1495,6 +1651,10 @@ jobs:
         fi
         if [ "${{ needs.sanitizer-tests.result }}" != "success" ]; then
           echo "ERROR: Sanitizer tests failed"
+          exit 1
+        fi
+        if [ "${{ needs.project-flag-backend-tests.result }}" != "success" ]; then
+          echo "ERROR: Project flag + backend tests failed"
           exit 1
         fi
         if [ "${{ needs.optimization-flags-test.result }}" != "success" ]; then

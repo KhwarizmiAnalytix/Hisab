@@ -1,7 +1,10 @@
 load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
 
+# C++ standard for Memory — mirrors CMake MEMORY_CXX_STANDARD (default: 20)
+MEMORY_CXX_STD = "c++20"
+
 def memory_copts():
-    return quarisma_copts()
+    return quarisma_copts(cxx_std = MEMORY_CXX_STD)
 
 def memory_defines():
     """Returns compile definitions for Library/Memory.

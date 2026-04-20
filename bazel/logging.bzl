@@ -1,7 +1,10 @@
 load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
 
+# C++ standard for Logging — mirrors CMake LOGGING_CXX_STANDARD (default: 20)
+LOGGING_CXX_STD = "c++20"
+
 def logging_copts():
-    return quarisma_copts()
+    return quarisma_copts(cxx_std = LOGGING_CXX_STD)
 
 def logging_defines():
     """Returns compile definitions for Library/Logging.

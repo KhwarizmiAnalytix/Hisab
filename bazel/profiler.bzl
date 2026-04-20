@@ -1,7 +1,10 @@
 load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
 
+# C++ standard for Profiler — mirrors CMake PROFILER_CXX_STANDARD (default: 20)
+PROFILER_CXX_STD = "c++20"
+
 def profiler_copts():
-    return quarisma_copts()
+    return quarisma_copts(cxx_std = PROFILER_CXX_STD)
 
 def profiler_defines():
     """Returns compile definitions for Library/Profiler.

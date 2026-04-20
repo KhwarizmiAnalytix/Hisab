@@ -1,7 +1,10 @@
 load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_enzyme_copts", "quarisma_enzyme_linkopts", "quarisma_linkopts")
 
+# C++ standard for Core — mirrors CMake CORE_CXX_STANDARD (default: 20)
+CORE_CXX_STD = "c++20"
+
 def core_copts():
-    return quarisma_copts()
+    return quarisma_copts(cxx_std = CORE_CXX_STD)
 
 def core_defines():
     """Returns compile definitions for Library/Core.

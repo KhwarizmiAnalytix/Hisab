@@ -1,7 +1,10 @@
 load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
 
+# C++ standard for Parallel — mirrors CMake PARALLEL_CXX_STANDARD (default: 20)
+PARALLEL_CXX_STD = "c++20"
+
 def parallel_copts():
-    return quarisma_copts()
+    return quarisma_copts(cxx_std = PARALLEL_CXX_STD)
 
 def parallel_defines():
     """Returns compile definitions for Library/Parallel.

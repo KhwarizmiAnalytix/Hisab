@@ -34,7 +34,7 @@ else()
   message(STATUS "IWYU found: ${IWYU_EXECUTABLE}")
 
   # Check if mapping file exists
-  set(IWYU_MAPPING_FILE "${CMAKE_SOURCE_DIR}/Scripts/iwyu/iwyu_exclusion.imp")
+  set(IWYU_MAPPING_FILE "${PROJECT_SOURCE_DIR}/Scripts/iwyu/iwyu_exclusion.imp")
   if(EXISTS "${IWYU_MAPPING_FILE}")
     message(STATUS "Using IWYU mapping file: ${IWYU_MAPPING_FILE}")
   else()
@@ -69,8 +69,9 @@ else()
   set(IWYU_LOG_DIR "${CMAKE_BINARY_DIR}/iwyu_logs")
   file(MAKE_DIRECTORY "${IWYU_LOG_DIR}")
 
-  # Set IWYU log file path
-  set(IWYU_LOG_FILE "${CMAKE_BINARY_DIR}/iwyu.log")
+  # Set IWYU log file path — CACHE INTERNAL so it survives include_guard(GLOBAL)
+  # across all modules that call quarisma_apply_iwyu from their own scope.
+  set(IWYU_LOG_FILE "${CMAKE_BINARY_DIR}/iwyu.log" CACHE INTERNAL "IWYU log file path")
 
   # Prepare IWYU arguments with crash-resistant settings
   set(PROJECT_IWYU_ARGS
@@ -114,7 +115,7 @@ else()
   endforeach()
 
   # Create configure detector script path
-  set(CONFIGURE_DETECTOR_SCRIPT "${CMAKE_SOURCE_DIR}/Scripts/iwyu/iwyu_configure_detector.py")
+  set(CONFIGURE_DETECTOR_SCRIPT "${PROJECT_SOURCE_DIR}/Scripts/iwyu/iwyu_configure_detector.py")
 
   message(STATUS "IWYU will analyze include dependencies for Quarisma targets only")
   message(STATUS "IWYU analysis will be logged to: ${IWYU_LOG_FILE}")
@@ -124,10 +125,10 @@ else()
     message(STATUS "Running Quarisma configure header detection...")
     execute_process(
       COMMAND
-        ${CMAKE_COMMAND} -E env python "${CONFIGURE_DETECTOR_SCRIPT}" "${CMAKE_SOURCE_DIR}/Library"
-        --log-file "${CMAKE_BINARY_DIR}/configure_detection.log" --report-file
-        "${CMAKE_BINARY_DIR}/configure_analysis_report.txt" --recursive
-      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        ${CMAKE_COMMAND} -E env python "${CONFIGURE_DETECTOR_SCRIPT}" "${PROJECT_SOURCE_DIR}/Library"
+        --log-file "${PROJECT_BINARY_DIR}/configure_detection.log" --report-file
+        "${PROJECT_BINARY_DIR}/configure_analysis_report.txt" --recursive
+      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
       RESULT_VARIABLE CONFIGURE_DETECTION_RESULT
       OUTPUT_VARIABLE CONFIGURE_DETECTION_OUTPUT
       ERROR_VARIABLE CONFIGURE_DETECTION_ERROR
@@ -138,11 +139,11 @@ else()
     else()
       message(
         WARNING
-          "Configure header detection found issues - check ${CMAKE_BINARY_DIR}/configure_analysis_report.txt"
+          "Configure header detection found issues - check ${PROJECT_BINARY_DIR}/configure_analysis_report.txt"
       )
     endif()
 
-    message(STATUS "Configure analysis report: ${CMAKE_BINARY_DIR}/configure_analysis_report.txt")
+    message(STATUS "Configure analysis report: ${PROJECT_BINARY_DIR}/configure_analysis_report.txt")
   else()
     message(WARNING "Configure detector script not found: ${CONFIGURE_DETECTOR_SCRIPT}")
   endif()
@@ -151,7 +152,7 @@ endif()
 # Function to create IWYU wrapper script for enhanced logging. Optional ARGN items are extra flags
 # appended to IWYU args (e.g. per-language -D defines).
 function(quarisma_create_iwyu_wrapper target_name lang)
-  set(WRAPPER_SCRIPT "${CMAKE_BINARY_DIR}/iwyu_wrapper_${target_name}_${lang}.cmake")
+  set(WRAPPER_SCRIPT "${PROJECT_BINARY_DIR}/iwyu_wrapper_${target_name}_${lang}.cmake")
 
   # Build per-item list(APPEND) calls to safely embed all IWYU args in the generated script
   set(IWYU_ARGS_INIT_CODE "set(IWYU_EXTRA_ARGS)\n")
@@ -238,9 +239,9 @@ function(quarisma_apply_iwyu target_name)
   set_target_properties(
     ${target_name}
     PROPERTIES CXX_INCLUDE_WHAT_YOU_USE
-               "${CMAKE_COMMAND};-P;${CMAKE_BINARY_DIR}/iwyu_wrapper_${target_name}_CXX.cmake"
+               "${CMAKE_COMMAND};-P;${PROJECT_BINARY_DIR}/iwyu_wrapper_${target_name}_CXX.cmake"
                C_INCLUDE_WHAT_YOU_USE
-               "${CMAKE_COMMAND};-P;${CMAKE_BINARY_DIR}/iwyu_wrapper_${target_name}_C.cmake"
+               "${CMAKE_COMMAND};-P;${PROJECT_BINARY_DIR}/iwyu_wrapper_${target_name}_C.cmake"
   )
 
   message(STATUS "Applied IWYU to target: ${target_name} (logging to ${IWYU_LOG_FILE})")

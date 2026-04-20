@@ -78,7 +78,7 @@ struct TagToIOType
     InputOutputEncoder::IOType io_type;
 };
 
-constexpr int tagCount = ((int)InputOutputEncoder::Tag::TERMINATOR) + 1;
+constexpr int tagCount = (static_cast<int>(InputOutputEncoder::Tag::TERMINATOR)) + 1;
 constexpr std::array<TagToIOType, tagCount> tag_map = {{
     {InputOutputEncoder::Tag::Tensor, InputOutputEncoder::IOType::Shapes},
     {InputOutputEncoder::Tag::UndefinedTensor, InputOutputEncoder::IOType::Shapes},
@@ -92,13 +92,13 @@ constexpr std::array<TagToIOType, tagCount> tag_map = {{
 constexpr bool allTagsMapped(int idx = 0)
 {
     return tag_map[idx].tag == InputOutputEncoder::Tag::TERMINATOR ||
-           ((idx == (int)tag_map[idx].tag) && allTagsMapped(idx + 1));
+           ((idx == static_cast<int>(tag_map[idx].tag)) && allTagsMapped(idx + 1));
 }
 static_assert(allTagsMapped(), "tag_map is out of order");
 
 [[maybe_unused]] constexpr InputOutputEncoder::IOType tagToIOType(InputOutputEncoder::Tag tag)
 {
-    return tag_map[(int)tag].io_type;
+    return tag_map[static_cast<int>(tag)].io_type;
 }
 }  // namespace
 
@@ -513,7 +513,7 @@ struct StealOrDefault
     StealOrDefault& operator=(StealOrDefault&&)      = delete;
     ~StealOrDefault() { container_.get().clear(); }
 
-    typename T::Iterator::value_type operator()()
+    T::Iterator::value_type operator()()
     {
         if (it_.exhausted())
         {
@@ -526,7 +526,7 @@ struct StealOrDefault
     }
 
     std::reference_wrapper<T> container_;
-    typename T::Iterator      it_;
+    T::Iterator      it_;
 };
 }  // namespace
 
@@ -927,7 +927,7 @@ void mark_finished(const std::shared_ptr<Result>& r)
 // not exceed 2^48 -1.
 uint64_t getForwardThreadKey(uint64_t tid, uint64_t seqNr)
 {
-    return ((tid << 48) | (seqNr & (((uint64_t)1 << 48) - 1)));
+    return ((tid << 48) | (seqNr & (((static_cast<uint64_t>(1)) << 48) - 1)));
 }
 
 void generateForwardBackwardLink(

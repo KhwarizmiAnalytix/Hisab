@@ -15,8 +15,6 @@
 build --enable_workspace
 
 build --enable_platform_specific_config
-build --cxxopt=-std=c++17
-build --host_cxxopt=-std=c++17
 build --experimental_repo_remote_exec
 
 # Enable colored output
@@ -37,20 +35,26 @@ build --experimental_repository_cache_hardlinks
 # =============================================================================
 # C++ Standard Selection
 # =============================================================================
-# Default is C++17 (set above)
-# Use --cxxopt=-std=c++XX to override at command line
+# --cxxopt=-std=c++XX is GCC/Clang syntax only; MSVC uses /std:c++XX.
+# Each config uses --per_file_copt so the correct flag is applied per compiler.
+# The windows platform config applies /std:c++XX via quarisma_copts() per-target,
+# but these configs guard against leakage when --config=cxx20 etc. are passed
+# explicitly on Windows.
 
-# C++17 (default)
-build:cxx17 --cxxopt=-std=c++17
+# C++17
+build:cxx17 --per_file_copt=Library/.*@-std=c++17
 build:cxx17 --host_cxxopt=-std=c++17
+build:cxx17:windows --per_file_copt=Library/.*@/std:c++17
 
 # C++20
-build:cxx20 --cxxopt=-std=c++20
+build:cxx20 --per_file_copt=Library/.*@-std=c++20
 build:cxx20 --host_cxxopt=-std=c++20
+build:cxx20:windows --per_file_copt=Library/.*@/std:c++20
 
 # C++23
-build:cxx23 --cxxopt=-std=c++23
+build:cxx23 --per_file_copt=Library/.*@-std=c++23
 build:cxx23 --host_cxxopt=-std=c++23
+build:cxx23:windows --per_file_copt=Library/.*@/std:c++23
 
 # =============================================================================
 # Optimization Levels
@@ -121,15 +125,20 @@ build:avx512 --copt=-mavx512vl
 
 # Clang compiler configuration
 # --repo_env forces local_config_cc to select Clang instead of the system GCC default.
+# C++ standard is NOT set here: on Linux/macOS it comes from the platform config
+# (build:linux/build:macos --cxxopt=-std=c++20); on Windows the actual compiler is
+# still cl.exe (repo_env only affects fetch), so Library targets get /std:c++20 via
+# quarisma_copts(). Putting -std=c++20 here would pass a GCC/Clang flag to cl.exe.
 build:clang --repo_env=CC=clang
 build:clang --repo_env=CXX=clang++
-build:clang --cxxopt=-std=c++20
 
 # GCC compiler configuration (uses system GCC if available)
-build:gcc --cxxopt=-std=c++20
+# C++ standard comes from build:linux --cxxopt=-std=c++20.
 
 # MSVC compiler configuration (uses system MSVC if available)
-build:msvc --cxxopt=-std=c++20
+# C++ standard for MSVC is set per-target via quarisma_copts() (/std:c++20).
+# --cxxopt=-std=c++XX is GCC/Clang syntax; MSVC ignores it with D9002 warning.
+build:msvc --copt=/W4
 
 # Xcode configuration (macOS with Clang)
 build:xcode --apple_platform_type=macos
@@ -141,6 +150,8 @@ build:xcode --cxxopt=-std=c++20
 # =============================================================================
 
 # macOS specific settings
+build:macos --cxxopt=-std=c++20
+build:macos --host_cxxopt=-std=c++20
 build:macos --cxxopt=-stdlib=libc++
 build:macos --cxxopt=-faligned-allocation
 build:macos --cxxopt=-mmacosx-version-min=10.13
@@ -148,44 +159,77 @@ build:macos --linkopt=-undefined
 build:macos --linkopt=dynamic_lookup
 
 # Linux specific settings
+build:linux --cxxopt=-std=c++20
+build:linux --host_cxxopt=-std=c++20
 build:linux --cxxopt=-pthread
 build:linux --linkopt=-pthread
 build:linux --linkopt=-ldl
 build:linux --linkopt=-lrt
 
-# Windows specific settings (MSVC)
-build:windows --copt=/std:c++17
-build:windows --copt=/W4
-build:windows --copt=/EHsc
+# Windows specific settings (MSVC) — mirrors compiler_checks.cmake.
+# Per-module MSVC flags (/std:c++XX, /Zc:__cplusplus, /bigobj, /utf-8, /wd*, /EHsc) are set
+# per-target via quarisma_copts() in bazel/quarisma.bzl so Library targets are self-contained.
+# ThirdParty/external targets need a C++17 baseline so they compile on MSVC (e.g. kineto).
+# Use --per_file_copt to apply the baseline only to those paths, not to Library.
+build:windows --per_file_copt=external/.*@/std:c++17
+build:windows --per_file_copt=ThirdParty/.*@/std:c++17
 build:windows --define=_WIN32_WINNT=0x0A00
+build:windows --shell_executable=cmd.exe
+# Bazel's Windows toolchain unconditionally implies `generate_pdb_file` which injects
+# /DEBUG:FASTLINK. Modern MSVC dropped FASTLINK and emits LNK4315. We cannot disable
+# the feature (Bazel 8 enforces unconditionally-implied features), so suppress the
+# warning and override with /DEBUG:FULL so the linker uses full PDB generation.
+build:windows --linkopt=/DEBUG:FULL
+build:windows --linkopt=/ignore:4315
 
 # =============================================================================
 # Sanitizer Configurations
 # =============================================================================
 
-# Address Sanitizer
+# Address Sanitizer — -O1 -g -fno-optimize-sibling-calls mirrors CMake sanitize.cmake
 build:asan --strip=never
 build:asan --copt=-fsanitize=address
+build:asan --copt=-O1
+build:asan --copt=-g
 build:asan --copt=-fno-omit-frame-pointer
+build:asan --copt=-fno-optimize-sibling-calls
 build:asan --linkopt=-fsanitize=address
 
 # Thread Sanitizer
 build:tsan --strip=never
 build:tsan --copt=-fsanitize=thread
+build:tsan --copt=-O1
+build:tsan --copt=-g
 build:tsan --copt=-fno-omit-frame-pointer
+build:tsan --copt=-fno-optimize-sibling-calls
 build:tsan --linkopt=-fsanitize=thread
 
 # Undefined Behavior Sanitizer
 build:ubsan --strip=never
 build:ubsan --copt=-fsanitize=undefined
+build:ubsan --copt=-O1
+build:ubsan --copt=-g
 build:ubsan --copt=-fno-omit-frame-pointer
+build:ubsan --copt=-fno-optimize-sibling-calls
 build:ubsan --linkopt=-fsanitize=undefined
 
 # Memory Sanitizer
 build:msan --strip=never
 build:msan --copt=-fsanitize=memory
+build:msan --copt=-O1
+build:msan --copt=-g
 build:msan --copt=-fno-omit-frame-pointer
+build:msan --copt=-fno-optimize-sibling-calls
 build:msan --linkopt=-fsanitize=memory
+
+# Leak Sanitizer (CMake sanitizer_enum=leak)
+build:lsan --strip=never
+build:lsan --copt=-fsanitize=leak
+build:lsan --copt=-O1
+build:lsan --copt=-g
+build:lsan --copt=-fno-omit-frame-pointer
+build:lsan --copt=-fno-optimize-sibling-calls
+build:lsan --linkopt=-fsanitize=leak
 
 # =============================================================================
 # Feature Flags (equivalent to QUARISMA_ENABLE_* options)
@@ -207,6 +251,10 @@ build:tbb --define=quarisma_enable_tbb=true
 
 # Enable MKL
 build:mkl --define=quarisma_enable_mkl=true
+
+# NUMA / memkind (MEMORY_HAS_* — mirrors CMake MEMORY_ENABLE_NUMA / MEMORY_ENABLE_MEMKIND)
+build:numa --define=quarisma_enable_numa=true
+build:memkind --define=quarisma_enable_memkind=true
 
 # Enable mimalloc
 build:mimalloc --define=quarisma_enable_mimalloc=true
@@ -286,12 +334,6 @@ build:logging_native --define=quarisma_logging_backend=native
 build:gpu_alloc_sync --define=quarisma_gpu_alloc=sync
 build:gpu_alloc_async --define=quarisma_gpu_alloc=async
 build:gpu_alloc_pool_async --define=quarisma_gpu_alloc=pool_async
-
-# =============================================================================
-# Windows-Specific Configuration
-# =============================================================================
-# Use cmd.exe for genrule commands on Windows
-build:windows --shell_executable=cmd.exe
 
 # =============================================================================
 # Bazel --batch (manual use)

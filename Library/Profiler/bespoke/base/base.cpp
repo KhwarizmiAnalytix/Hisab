@@ -12,7 +12,7 @@ namespace
 {
 struct DefaultStubs : public ProfilerStubs
 {
-    explicit DefaultStubs(const char* name) : name_{name} {}
+    explicit DefaultStubs(const char* name) noexcept : name_{name} {}
 
     void record(
         int16_t* /*device*/, ProfilerVoidEventStub* /*event*/, int64_t* /*cpu_ns*/) const override

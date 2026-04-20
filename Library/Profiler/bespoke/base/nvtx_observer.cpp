@@ -7,6 +7,9 @@
 namespace profiler::profiler_impl::impl
 {
 
+namespace
+{
+
 struct NVTXThreadLocalState : ProfilerStateBase
 {
     explicit NVTXThreadLocalState(const ProfilerConfig& config) : ProfilerStateBase(config)
@@ -69,6 +72,8 @@ std::pair<profiler::RecordFunctionHandle, int> NVTXThreadLocalState::getOpIdFrom
     //}
     return producer_op_pair;
 }
+
+}  // anonymous namespace
 
 // static std::list<std::pair<profiler::RecordFunctionHandle, int>> flattenOpIdList(
 //     const profiler::List<profiler::IValue>& list)

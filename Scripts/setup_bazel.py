@@ -15,6 +15,7 @@ Usage:
 import glob
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -132,6 +133,40 @@ def find_enzyme_pass_plugin() -> Optional[str]:
     return candidates[0] if candidates else None
 
 
+# Maps CMake sanitizer names (setup.py / -DSANITIZER_TYPE) to Bazel --config names in .bazelrc
+_CMAKE_SAN_TO_BAZEL = {
+    "address": "asan",
+    "undefined": "ubsan",
+    "thread": "tsan",
+    "memory": "msan",
+    "leak": "lsan",
+}
+
+
+def _merge_dotted_segments(parts: List[str]) -> List[str]:
+    """Merge split segments like parallel.openmp, sanitizer.address into single tokens."""
+    out: List[str] = []
+    pl = [p.lower() for p in parts]
+    i = 0
+    while i < len(pl):
+        if pl[i] == "parallel" and i + 1 < len(pl) and pl[i + 1] in ("std", "openmp", "tbb"):
+            out.append(f"parallel.{pl[i + 1]}")
+            i += 2
+        elif pl[i] == "sanitizer" and i + 1 < len(pl) and pl[i + 1] in _CMAKE_SAN_TO_BAZEL:
+            out.append(_CMAKE_SAN_TO_BAZEL[pl[i + 1]])
+            i += 2
+        elif pl[i] == "profiler" and i + 1 < len(pl) and pl[i + 1] in ("kineto", "itt", "native"):
+            out.append(f"profiler_{pl[i + 1]}")
+            i += 2
+        elif pl[i] == "logging" and i + 1 < len(pl) and pl[i + 1] in ("native", "loguru", "glog"):
+            out.append(f"logging_{pl[i + 1]}")
+            i += 2
+        else:
+            out.append(pl[i])
+            i += 1
+    return out
+
+
 class BazelConfiguration:
     """Manages Bazel build configuration and execution."""
 
@@ -168,7 +203,25 @@ class BazelConfiguration:
         self.visual_studio_version: Optional[str] = None  # VS version: "vs17", "vs19", "vs22", "vs26"
         self.system = platform.system()
 
+        # Mirrors CMake PARALLEL_BACKEND (std | openmp | tbb). None = infer only from tbb/openmp tokens.
+        self.parallel_backend: Optional[str] = None
+        # CMake: passing `gtest` disables per-module ENABLE_GTEST (default ON).
+        self.disable_gtest: bool = False
+        # CMake: token `static` sets BUILD_SHARED_LIBS=ON (shared DLLs).
+        self.shared_libs: bool = False
+
+        # CMake-only flags — not executed in Bazel but tracked so the summary is accurate.
+        self.spell:      bool = False
+        self.clangtidy:  bool = False
+        self.fix:        bool = False
+        self.iwyu:       bool = False
+        self.valgrind:   bool = False
+        self.icecc:      bool = False
+        self.examples:   bool = False
+        self.cppcheck:   bool = False
+
         self._parse_arguments()
+        self._finalize_parallel_configs()
         self._apply_defaults()
 
     def _is_visual_studio_arg(self, arg: str) -> bool:
@@ -186,7 +239,7 @@ class BazelConfiguration:
 
     def _is_clang_compiler(self, arg: str) -> bool:
         """Check if argument is a Clang compiler specification."""
-        return "clang" in arg.lower() and arg.lower() not in ["clang-cl", "clangtidy"]
+        return "clang" in arg.lower() and arg.lower() not in ["clang-cl", "clangtidy", "clangtid", "clang-tidy", "clang_tidy"]
 
     def _is_gcc_compiler(self, arg: str) -> bool:
         """Check if argument is a GCC compiler specification."""
@@ -234,9 +287,80 @@ class BazelConfiguration:
             elif arg_lower in ["mimalloc", "magic_enum", "tbb", "mkl", "openmp", "cuda", "hip"]:
                 self.configs.append(arg_lower)
 
+            # NUMA / memkind (see .bazelrc build:numa / build:memkind)
+            elif arg_lower in ("numa", "memkind"):
+                self.configs.append(arg_lower)
+
+            # Google Benchmark (opt-in, matches CMake)
+            elif arg_lower == "benchmark":
+                self.configs.append("benchmark")
+
+            # CMake inverse: `gtest` token disables CORE_HAS_GTEST / test framework defines
+            elif arg_lower == "gtest":
+                self.disable_gtest = True
+
+            # CMake: token `static` enables shared libraries (BUILD_SHARED_LIBS=ON)
+            elif arg_lower == "static":
+                self.shared_libs = True
+
+            # SMP backend (same semantics as setup.py --parallel.* / parallel.openmp in dotted args)
+            elif arg_lower.startswith("parallel."):
+                backend = arg_lower.split(".", 1)[1]
+                if backend in ("std", "openmp", "tbb"):
+                    self.parallel_backend = backend
+                else:
+                    print_status(
+                        f"Invalid parallel backend '{backend}'. Use std, openmp, or tbb.",
+                        "ERROR",
+                    )
+                    sys.exit(1)
+
+            # Sanitizer shorthand (matches help text and CMake names via parse_args)
+            elif arg_lower in ("asan", "tsan", "ubsan", "msan", "lsan"):
+                self.configs.append(arg_lower)
+
             # Enzyme AD (matches .bazelrc build:enzyme)
             elif arg_lower == "enzyme":
                 self.configs.append("enzyme")
+
+            # CMake-only developer flags — tracked for summary accuracy, not executed in Bazel
+            elif arg_lower in ["spell"]:
+                self.spell = True
+                print_status("Token 'spell': spell-checking is CMake-only (shown in summary, not run).", "WARNING")
+
+            elif arg_lower in ["clangtidy", "clangtid", "clang-tidy", "clang_tidy"]:
+                self.clangtidy = True
+                print_status("Token 'clangtidy': clang-tidy is CMake-only (shown in summary, not run).", "WARNING")
+
+            elif arg_lower in ["fix"]:
+                self.fix = True
+                print_status("Token 'fix': clang-tidy --fix is CMake-only (shown in summary, not run).", "WARNING")
+
+            elif arg_lower in ["iwyu"]:
+                self.iwyu = True
+                print_status("Token 'iwyu': include-what-you-use is CMake-only (shown in summary, not run).", "WARNING")
+
+            elif arg_lower in ["valgrind"]:
+                self.valgrind = True
+                print_status("Token 'valgrind': Valgrind is CMake-only (shown in summary, not run).", "WARNING")
+
+            elif arg_lower in ["icecc"]:
+                self.icecc = True
+                print_status("Token 'icecc': Icecream compiler is CMake-only (shown in summary, not run).", "WARNING")
+
+            elif arg_lower in ["examples"]:
+                self.examples = True
+                print_status("Token 'examples': examples are CMake-only (shown in summary, not run).", "WARNING")
+
+            elif arg_lower in ["cppcheck"]:
+                self.cppcheck = True
+                print_status("Token 'cppcheck': cppcheck is CMake-only (shown in summary, not run).", "WARNING")
+
+            elif arg_lower in ("external", "cache", "linker"):
+                print_status(
+                    f"Token '{arg_lower}': CMake-only, no Bazel equivalent (see Docs/readme/bazel.md).",
+                    "WARNING",
+                )
 
             # Verbose test log output (maps to --test_output=all)
             elif arg_lower == "vv":
@@ -266,11 +390,20 @@ class BazelConfiguration:
                     elif backend == "native":
                         self.configs.append("native_profiler")
 
-            # Sanitizers (with sanitizer_ prefix)
+            # Sanitizers: sanitizer_asan or legacy sanitizer_address -> asan
             elif arg_lower.startswith("sanitizer_"):
-                sanitizer = arg_lower[10:]  # Remove "sanitizer_" prefix
-                if sanitizer in ["asan", "tsan", "ubsan", "msan"]:
+                sanitizer = arg_lower[10:]
+                if sanitizer in _CMAKE_SAN_TO_BAZEL:
+                    self.configs.append(_CMAKE_SAN_TO_BAZEL[sanitizer])
+                elif sanitizer in ("asan", "tsan", "ubsan", "msan", "lsan"):
                     self.configs.append(sanitizer)
+                else:
+                    print_status(
+                        f"Unknown sanitizer token '{arg_lower}'. "
+                        f"Use asan, tsan, ubsan, msan, lsan or CMake-style sanitizer.*",
+                        "ERROR",
+                    )
+                    sys.exit(1)
 
             # Actions
             elif arg_lower == "build":
@@ -283,6 +416,16 @@ class BazelConfiguration:
                 self.run_clean = True
             elif arg_lower == "config":
                 self.run_config = True
+
+    def _finalize_parallel_configs(self) -> None:
+        """Apply PARALLEL_BACKEND-style exclusivity (std vs OpenMP vs TBB)."""
+        if self.parallel_backend is None:
+            return
+        self.configs = [c for c in self.configs if c not in ("openmp", "tbb")]
+        if self.parallel_backend == "openmp":
+            self.configs.append("openmp")
+        elif self.parallel_backend == "tbb":
+            self.configs.append("tbb")
 
     def _apply_defaults(self) -> None:
         """Apply default compiler and build tool settings.
@@ -304,9 +447,10 @@ class BazelConfiguration:
             )
             return
 
-        # If Xcode is specified on macOS, use it
+        # If Xcode is specified on macOS, use it (Kineto unsupported — matches setup.py)
         if self.build_tool == "xcode" and self.system == "Darwin":
             print_status("Using Xcode generator", "INFO")
+            self.profiler_backend = "native"
             return
 
         # Default to Ninja + Clang on all platforms
@@ -340,29 +484,47 @@ class BazelConfiguration:
         if self.build_tool == "xcode":
             cmd.append("--config=xcode")
 
+        if self.shared_libs:
+            cmd.append("--define=quarisma_build_shared_libs=true")
+
+        # Stable, de-duplicated config list (do not mutate self.configs — execute() may call twice)
+        cfg_list: List[str] = []
+        seen_cfg: set[str] = set()
+        for c in self.configs:
+            if c not in seen_cfg:
+                seen_cfg.add(c)
+                cfg_list.append(c)
+
+        # GoogleTest: CMake defaults ENABLE_GTEST ON; token `gtest` turns it OFF (see disable_gtest).
+        if self.disable_gtest:
+            cmd.append("--define=quarisma_enable_gtest=false")
+            cfg_list = [c for c in cfg_list if c != "gtest"]
+        elif "gtest" not in cfg_list:
+            cfg_list.append("gtest")
+
         # Add default logging backend if not explicitly set
-        if not any(c.startswith("logging_") for c in self.configs):
-            self.configs.append(f"logging_{self.logging_backend}")
+        if not any(c.startswith("logging_") for c in cfg_list):
+            cfg_list.append(f"logging_{self.logging_backend}")
 
         # Add default profiler backend if not explicitly set
         profiler_configs = ["kineto", "itt", "native_profiler"]
-        if not any(c in profiler_configs for c in self.configs):
+        if not any(c in profiler_configs for c in cfg_list):
             if self.profiler_backend == "kineto":
-                self.configs.append("kineto")
+                cfg_list.append("kineto")
             elif self.profiler_backend == "itt":
-                self.configs.append("itt")
+                cfg_list.append("itt")
             elif self.profiler_backend == "native":
-                self.configs.append("native_profiler")
+                cfg_list.append("native_profiler")
 
         # Add all config flags
-        for config in self.configs:
+        for config in cfg_list:
             cmd.append(f"--config={config}")
 
         # Enzyme: CMake applies -fpass-plugin at compile and link for Enzyme::enzyme.
         # Bazel only toggles QUARISMA_HAS_ENZYME; without the plugin, __enzyme_* calls are
         # unresolved (crash at null). Restrict --per_file_copt to //Library so GCC-built
         # third-party targets never see -fpass-plugin.
-        if "enzyme" in self.configs:
+        if "enzyme" in cfg_list:
             if self.compiler != "clang":
                 print_status(
                     "Enzyme requires Clang; skipping -fpass-plugin (Enzyme tests may fail).",
@@ -435,6 +597,117 @@ class BazelConfiguration:
         except (subprocess.TimeoutExpired, FileNotFoundError):
             pass
 
+    # -------------------------------------------------------------------------
+    # Per-module summary helpers
+    # -------------------------------------------------------------------------
+
+    def _on_off(self, condition: bool) -> str:
+        return f"{Fore.GREEN}ON{Style.RESET_ALL}" if condition else f"{Fore.RED}OFF{Style.RESET_ALL}"
+
+    def _na(self) -> str:
+        return self._on_off(False)
+
+    def _cxx_std_display(self) -> str:
+        if self.cxx_standard:
+            return self.cxx_standard.replace("cxx", "C++")
+        return "C++20"
+
+    def _sanitizer_info(self) -> tuple:
+        for token, san_type in [
+            ("asan", "address"),
+            ("tsan", "thread"),
+            ("ubsan", "undefined"),
+            ("msan", "memory"),
+            ("lsan", "leak"),
+        ]:
+            if token in self.configs:
+                return True, san_type
+        return False, "address"
+
+    def _pf(self, label: str, value: str, width: int = 20) -> None:
+        print(f"  {label:{width}}: {value}")
+
+    def print_module_summaries(self) -> None:
+        """Print per-module configuration summaries mirroring CMake's per-module output."""
+        W         = 20   # uniform column width across all modules
+        na        = self._na()
+        cxx       = self._cxx_std_display()
+        has_san, san_type = self._sanitizer_info()
+        lto       = self._on_off("lto" in self.configs)
+        coverage  = self._on_off(self.run_coverage)
+        testing   = self._on_off(self.run_tests)
+        gtest     = self._on_off(not self.disable_gtest)
+        benchmark = self._on_off("benchmark" in self.configs)
+        vec       = self.vectorization.upper() if self.vectorization else "None"
+        sanitizer = self._on_off(has_san)
+        mimalloc_on = self.system != "Windows"
+
+        # Common trailing fields shared by all modules — every flag reflects actual passed state
+        def common() -> None:
+            self._pf("Cache",          na,                                   W)
+            self._pf("Cache backend",  na,                                   W)
+            self._pf("Icecc",          self._on_off(self.icecc),             W)
+            self._pf("Linker",         na,                                   W)
+            self._pf("Lto",            lto,                                  W)
+            self._pf("Coverage",       coverage,                             W)
+            self._pf("Testing",        testing,                              W)
+            self._pf("Examples",       self._on_off(self.examples),          W)
+            self._pf("Gtest",          gtest,                                W)
+            self._pf("Benchmark",      benchmark,                            W)
+            self._pf("Clang-tidy",     self._on_off(self.clangtidy),         W)
+            self._pf("Fix",            self._on_off(self.fix),               W)
+            self._pf("Iwyu",           self._on_off(self.iwyu),              W)
+            self._pf("Sanitizer",      sanitizer,                            W)
+            self._pf("Sanitizer type", san_type,                             W)
+            self._pf("Spell",          self._on_off(self.spell),             W)
+            self._pf("Valgrind",       self._on_off(self.valgrind),          W)
+
+        # ── Core ──────────────────────────────────────────────────────────────
+        print(f"\n{Fore.CYAN}******** Core module (Bazel flags) ********{Style.RESET_ALL}")
+        self._pf("Vectorization type", vec,                                   W)
+        self._pf("Mkl",               self._on_off("mkl" in self.configs),    W)
+        self._pf("Svml",              na,                                      W)
+        self._pf("Rocm",              na,                                      W)
+        self._pf("Experimental",      na,                                      W)
+        self._pf("Magic enum",        self._on_off(True),                      W)
+        self._pf("Enzyme",            self._on_off("enzyme" in self.configs),  W)
+        self._pf("Compression",       na,                                      W)
+        self._pf("Cxx standard",      cxx,                                     W)
+        common()
+
+        # ── Logging ───────────────────────────────────────────────────────────
+        print(f"\n{Fore.CYAN}******** Logging module (Bazel flags) ********{Style.RESET_ALL}")
+        self._pf("Backend",      self.logging_backend.upper(), W)
+        self._pf("Cxx standard", cxx,                          W)
+        common()
+
+        # ── Memory ────────────────────────────────────────────────────────────
+        print(f"\n{Fore.CYAN}******** Memory module (Bazel flags) ********{Style.RESET_ALL}")
+        gpu_configs = [c for c in self.configs if c.startswith("gpu_alloc_")]
+        gpu_alloc   = gpu_configs[0].replace("gpu_alloc_", "").upper() if gpu_configs else "POOL_ASYNC"
+        self._pf("Mimalloc",     self._on_off(mimalloc_on),           W)
+        self._pf("Memkind",      na,                                   W)
+        self._pf("Numa",         na,                                   W)
+        self._pf("Tbb",          self._on_off("tbb"  in self.configs), W)
+        self._pf("Cuda",         self._on_off("cuda" in self.configs), W)
+        self._pf("Hip",          self._on_off("hip"  in self.configs), W)
+        self._pf("Gpu alloc",    gpu_alloc,                            W)
+        self._pf("Cxx standard", cxx,                                  W)
+        common()
+
+        # ── Parallel ──────────────────────────────────────────────────────────
+        print(f"\n{Fore.CYAN}******** Parallel module (Bazel flags) ********{Style.RESET_ALL}")
+        self._pf("Tbb",          self._on_off("tbb"    in self.configs), W)
+        self._pf("Openmp",       self._on_off("openmp" in self.configs), W)
+        self._pf("Cxx standard", cxx,                                    W)
+        common()
+
+        # ── Profiler ──────────────────────────────────────────────────────────
+        print(f"\n{Fore.CYAN}******** Profiler module (Bazel flags) ********{Style.RESET_ALL}")
+        self._pf("Backend",      self.profiler_backend.upper(), W)
+        self._pf("Cxx standard", cxx,                           W)
+        common()
+
     def print_configuration_summary(self) -> None:
         """Print a summary of the build configuration."""
         print("\n" + "=" * 80)
@@ -457,7 +730,7 @@ class BazelConfiguration:
         if self.cxx_standard:
             print(f"  C++ Standard:      {self.cxx_standard.upper()}")
         else:
-            print("  C++ Standard:      C++17 (default)")
+            print("  C++ Standard:      C++20 (default)")
 
         # Vectorization
         if self.vectorization:
@@ -465,34 +738,37 @@ class BazelConfiguration:
         else:
             print("  Vectorization:     None")
 
-        # Feature flags (CMake defaults: mimalloc, magic_enum ON; opt-in via --config listed below)
+        # Feature flags — computed from the same state as per-module summaries
+        mimalloc_on = self.system != "Windows"   # OFF on Windows (quarisma.bzl select)
+        gtest_on    = not self.disable_gtest     # ON by default (mirrors CMake option(... ON))
+
         print(f"\n{Fore.CYAN}Feature Flags:{Style.RESET_ALL}")
-        features = {
-            "mimalloc": ("MEMORY_ENABLE_MIMALLOC", True),
-            "magic_enum": ("QUARISMA_ENABLE_MAGIC_ENUM", True),
-            "tbb": ("QUARISMA_ENABLE_TBB", False),
-            "openmp": ("QUARISMA_ENABLE_OPENMP", False),
-            "cuda": ("MEMOY_ENABLE_CUDA", False),
-            "hip": ("QUARISMA_ENABLE_HIP", False),
-            "lto": ("QUARISMA_ENABLE_LTO", False),
-            "enzyme": ("CORE_ENABLE_ENZYME", False),
-        }
+        flags = [
+            ("MEMORY_ENABLE_MIMALLOC",    mimalloc_on),
+            ("CORE_HAS_MAGICENUM",        True),
+            ("PARALLEL/MEMORY_HAS_TBB",   "tbb"    in self.configs),
+            ("PARALLEL_HAS_OPENMP",       "openmp" in self.configs),
+            ("MEMORY_HAS_CUDA",           "cuda"   in self.configs),
+            ("MEMORY_HAS_HIP",            "hip"    in self.configs),
+            ("QUARISMA_ENABLE_LTO",       "lto"    in self.configs),
+            ("CORE_HAS_ENZYME",           "enzyme" in self.configs),
+            ("QUARISMA_ENABLE_GTEST",     gtest_on),
+            ("BUILD_SHARED_LIBS",         self.shared_libs),
+            ("ENABLE_SPELL",              self.spell),
+            ("ENABLE_CLANGTIDY",          self.clangtidy),
+            ("ENABLE_FIX",                self.fix),
+            ("ENABLE_IWYU",               self.iwyu),
+            ("ENABLE_CPPCHECK",           self.cppcheck),
+            ("ENABLE_VALGRIND",           self.valgrind),
+            ("ENABLE_ICECC",              self.icecc),
+            ("ENABLE_EXAMPLES",           self.examples),
+        ]
+        for flag, state in flags:
+            print(f"  {flag:30} {self._on_off(state)}")
 
-        for feature, (flag, cmake_default_on) in features.items():
-            if feature in self.configs:
-                status = "ON"
-            elif cmake_default_on:
-                status = "ON (default)"
-            else:
-                status = "OFF"
-            color = Fore.GREEN if status.startswith("ON") else Fore.RED
-            print(f"  {flag:30} {color}{status}{Style.RESET_ALL}")
-
-        # Logging backend
+        # Logging / Profiler backends
         print(f"\n{Fore.CYAN}Logging Backend:{Style.RESET_ALL}")
         print(f"  Backend:           {self.logging_backend.upper()}")
-
-        # Profiler backend
         print(f"\n{Fore.CYAN}Profiler Backend:{Style.RESET_ALL}")
         print(f"  Backend:           {self.profiler_backend.upper()}")
 
@@ -500,19 +776,23 @@ class BazelConfiguration:
         sanitizers = [c for c in self.configs if c in ["asan", "tsan", "ubsan", "msan"]]
         print(f"\n{Fore.CYAN}Sanitizers:{Style.RESET_ALL}")
         if sanitizers:
-            for sanitizer in sanitizers:
-                print(f"  {sanitizer.upper():30} ON")
+            for san in sanitizers:
+                print(f"  {san.upper():30} {self._on_off(True)}")
         else:
-            print(f"  {'None':30} (disabled)")
+            print(f"  {'None':30} {self._on_off(False)}")
+
+        # Bazel command preview
+        if self.run_build or self.run_tests or self.run_coverage:
+            action = "test" if self.run_tests else ("coverage" if self.run_coverage else "build")
+            cmd = self.build_bazel_command(action)
+            print(f"\n{Fore.CYAN}Bazel Command:{Style.RESET_ALL}")
+            print(f"  {' '.join(cmd)}")
 
         print("\n" + "=" * 80 + "\n")
 
     def config(self) -> None:
-        """Print configuration summary without building."""
-        if not self.run_config:
-            return
-
-        self.print_configuration_summary()
+        """Handle config action (summary already printed by execute())."""
+        pass
 
     def clean(self) -> None:
         """Clean Bazel build artifacts."""
@@ -673,11 +953,13 @@ class BazelConfiguration:
 
     def execute(self) -> None:
         """Execute the build pipeline."""
-        # Only print summary if not running config action
-        # (config action will print it separately)
-        if not self.run_config:
-            self.print_configuration_summary()
+        self.print_module_summaries()
+        self.print_configuration_summary()
         self.config()
+        # config token implies a clean slate — force expunge before any build/test.
+        if self.run_config and (self.run_build or self.run_tests or self.run_coverage):
+            print_status("Config requested: forcing clean build (bazel clean --expunge).", "INFO")
+            self.run_clean = True
         self.clean()
         if self.run_build or self.run_tests or self.run_coverage:
             self._kill_stale_bazel_processes()
@@ -688,18 +970,82 @@ class BazelConfiguration:
 
 
 def parse_args(args: list[str]) -> list[str]:
-    """Parse command line arguments."""
-    processed_args = []
+    """Parse argv like Scripts/setup.py: long flags, dotted shortcuts, compiler paths.
+
+    Supports the same long-option spellings as setup.py where applicable:
+      --sanitizer.address, --logging.LOGURU, --profiler.kineto, --parallel.tbb
+    """
+    processed: List[str] = []
 
     for arg in args:
-        # Handle dot-separated arguments (e.g., config.build.test.release)
-        if "." in arg:
-            parts = arg.split(".")
-            processed_args.extend(parts)
-        else:
-            processed_args.append(arg)
+        if arg.startswith("--sanitizer."):
+            st = arg.split(".", 1)[1].lower()
+            if st in _CMAKE_SAN_TO_BAZEL:
+                processed.append(_CMAKE_SAN_TO_BAZEL[st])
+            else:
+                print_status(
+                    f"Invalid sanitizer type: {st}. Valid: {', '.join(_CMAKE_SAN_TO_BAZEL)}",
+                    "ERROR",
+                )
+                sys.exit(1)
+            continue
 
-    return processed_args
+        if arg.startswith("--logging."):
+            bt = arg.split(".", 1)[1].lower()
+            if bt in ("native", "loguru", "glog"):
+                processed.append(f"logging_{bt}")
+                print_status(f"Logging backend set to {bt.upper()}", "INFO")
+            else:
+                print_status(
+                    f"Invalid logging backend: {bt}. Valid: native, loguru, glog",
+                    "ERROR",
+                )
+                sys.exit(1)
+            continue
+
+        if arg.startswith("--profiler."):
+            bt = arg.split(".", 1)[1].lower()
+            prof_map = {"kineto": "kineto", "itt": "itt", "native": "native"}
+            if bt in prof_map:
+                processed.append(f"profiler_{bt}")
+                print_status(f"Profiler backend set to {prof_map[bt]}", "INFO")
+            else:
+                print_status(
+                    f"Invalid profiler backend: {bt}. Valid: {', '.join(prof_map)}",
+                    "ERROR",
+                )
+                sys.exit(1)
+            continue
+
+        if arg.startswith("--parallel."):
+            bt = arg.split(".", 1)[1].lower()
+            if bt in ("std", "openmp", "tbb"):
+                processed.append(f"parallel.{bt}")
+                print_status(f"SMP backend set to {bt}", "INFO")
+            else:
+                print_status(
+                    f"Invalid SMP backend: {bt}. Valid: std, openmp, tbb",
+                    "ERROR",
+                )
+                sys.exit(1)
+            continue
+
+        # Compiler path: pass through verbatim (matches setup.py)
+        if re.search(r"[/\\]", arg) and re.search(
+            r"[Cc]lang|[Gg][Cc][Cc]|[Gg]\+\+", arg
+        ):
+            processed.append(arg)
+            continue
+
+        # Dot-separated convenience tokens: config.build.parallel.openmp
+        if "." in arg and not arg.startswith("--"):
+            parts = arg.split(".")
+            processed.extend(_merge_dotted_segments(parts))
+            continue
+
+        processed.append(arg.lower())
+
+    return processed
 
 
 def print_help() -> None:
@@ -743,8 +1089,8 @@ def print_help() -> None:
     print("  clang         - Clang compiler (default)")
     print("  gcc           - GCC compiler")
     print("\nC++ Standard:")
-    print("  cxx17         - C++17 (default)")
-    print("  cxx20         - C++20")
+    print("  cxx17         - C++17")
+    print("  cxx20         - C++20 (default)")
     print("  cxx23         - C++23")
     print("\nVectorization options:")
     print("  sse           - SSE vectorization")
@@ -758,18 +1104,29 @@ def print_help() -> None:
     print("  tbb           - Intel TBB")
     print("  openmp        - OpenMP support")
     print("  enzyme        - Enzyme AD defines (see .bazelrc build:enzyme)")
+    print("  numa          - NUMA (build:numa)")
+    print("  memkind       - memkind (build:memkind)")
+    print("  benchmark     - Google Benchmark (build:benchmark)")
+    print("  gtest         - Disables GTest defines (CMake inverse; default is ON in both systems)")
+    print("  static        - Shared libraries (CMake: BUILD_SHARED_LIBS=ON)")
+    print("  parallel.std | parallel.openmp | parallel.tbb  — exclusive SMP backend")
+    print("  --parallel.* / --logging.* / --profiler.*  — same long flags as setup.py")
     print("  vv            - Verbose Bazel test output (--test_output=all)")
     print("  batch         - Pass --batch to Bazel; script runs `bazel shutdown` first to avoid")
     print("                  startup-option warnings (or run: bazel shutdown; bazel --batch ...)")
+    print("  spell         - (CMake only) Spell-check — ignored in Bazel, warning emitted")
+    print("  clangtidy     - (CMake only) Clang-tidy — ignored in Bazel, warning emitted")
     print("\nLogging backends:")
     print("  glog          - Google glog")
     print("  loguru        - Loguru logging")
     print("  native        - Native logging")
-    print("\nSanitizers:")
-    print("  asan          - AddressSanitizer")
-    print("  tsan          - ThreadSanitizer")
-    print("  ubsan         - UndefinedBehaviorSanitizer")
-    print("  msan          - MemorySanitizer")
+    print("\nSanitizers (Bazel --config; CMake names accepted via dotted args or --sanitizer.*):")
+    print("  asan          - AddressSanitizer (CMake: address)")
+    print("  tsan          - ThreadSanitizer (CMake: thread)")
+    print("  ubsan         - UndefinedBehaviorSanitizer (CMake: undefined)")
+    print("  msan          - MemorySanitizer (CMake: memory)")
+    print("  lsan          - LeakSanitizer (CMake: leak)")
+    print("  --sanitizer.address | .undefined | .thread | .memory | .leak  (same as setup.py)")
     print("\nActions:")
     print("  config        - Show configuration summary (no build)")
     print("  build         - Build the project")

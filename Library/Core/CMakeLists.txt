@@ -288,8 +288,8 @@ endif()
 if(CORE_ENABLE_COVERAGE)
   include(coverage)
 elseif(MSVC)
-  string(APPEND CMAKE_EXE_LINKER_FLAGS " /DEBUG:FASTLINK")
-  string(APPEND CMAKE_SHARED_LINKER_FLAGS " /DEBUG:FASTLINK")
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " /DEBUG:FULL")
+  string(APPEND CMAKE_SHARED_LINKER_FLAGS " /DEBUG:FULL")
 endif()
 
 # e) LTO — must run after coverage/sanitizer flags are known so CMAKE_IPO matches reality

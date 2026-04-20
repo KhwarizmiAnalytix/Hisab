@@ -8,16 +8,28 @@
 #   bazel/logging.bzl, bazel/profiler.bzl
 # =============================================================================
 
-def quarisma_copts():
-    """Returns common compiler options for Quarisma targets."""
+def quarisma_copts(cxx_std = "c++20"):
+    """Returns common compiler options for Quarisma targets.
+
+    Args:
+        cxx_std: C++ standard to use (default: c++20, matches CMake default).
+                 Each module passes its own standard so targets are self-contained
+                 and do not rely on --cxxopt in .bazelrc.
+    """
     return select({
         "@platforms//os:windows": [
-            "/std:c++17",
-            "/W4",
-            "/EHsc",
+            "/std:" + cxx_std,
+            "/Zc:__cplusplus",  # expose correct __cplusplus value (mirrors CMake /Zc:__cplusplus)
+            "/EHsc",            # structured exception handling
+            "/bigobj",          # large object files (mirrors CMake /bigobj)
+            "/utf-8",           # UTF-8 source/output encoding (mirrors CMake /utf-8)
+            "/wd4244",          # narrowing conversion (mirrors CMake /wd4244)
+            "/wd4267",          # size_t → int conversion (mirrors CMake /wd4267)
+            "/wd4715",          # not all control paths return (mirrors CMake /wd4715)
+            "/wd4018",          # signed/unsigned comparison (mirrors CMake /wd4018)
         ],
         "//conditions:default": [
-            "-std=c++17",
+            "-std=" + cxx_std,
             "-Wall",
             "-Wextra",
             "-Wpedantic",
@@ -30,7 +42,17 @@ def quarisma_defines():
     All module-specific HAS_* flags are owned by their respective module bzl
     files (core.bzl, memory.bzl, etc.) and are NOT included here.
     """
-    return []
+    return select({
+        # Mirrors CMake add_definitions(-D_CRT_SECURE_NO_DEPRECATE ...) in compiler_checks.cmake
+        "@platforms//os:windows": [
+            "_CRT_SECURE_NO_DEPRECATE",
+            "_CRT_NONSTDC_NO_DEPRECATE",
+            "_CRT_SECURE_NO_WARNINGS",
+            "_SCL_SECURE_NO_DEPRECATE",
+            "_SCL_SECURE_NO_WARNINGS",
+        ],
+        "//conditions:default": [],
+    })
 
 def quarisma_linkopts():
     """Returns common linker options for Quarisma targets."""
