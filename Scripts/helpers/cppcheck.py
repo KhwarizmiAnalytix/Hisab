@@ -146,6 +146,10 @@ def build_cppcheck_command(
         "-i./.lintbin",
         "-i.ruff_cache",
         "-i./.ruff_cache",
+        # These files OOM cppcheck at --check-level=exhaustive due to heavy template
+        # instantiations; suppress them before analysis rather than after.
+        "-iLibrary/Core/Testing/Cxx/TestFlatHash.cpp",
+        "-iLibrary/Logging/Testing/Cxx/TestLazy.cpp",
     ]
     cmd.extend(default_excludes)
 

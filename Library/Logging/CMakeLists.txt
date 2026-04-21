@@ -207,6 +207,9 @@ add_third_party_library(loguru
 )
 if(TARGET loguru)
     set_property(TARGET loguru PROPERTY POSITION_INDEPENDENT_CODE ON)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(loguru PRIVATE -Wno-format-truncation)
+    endif()
 endif()
 
 add_third_party_library(glog

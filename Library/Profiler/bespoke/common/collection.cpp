@@ -513,7 +513,7 @@ struct StealOrDefault
     StealOrDefault& operator=(StealOrDefault&&)      = delete;
     ~StealOrDefault() { container_.get().clear(); }
 
-    T::Iterator::value_type operator()()
+    typename T::Iterator::value_type operator()()
     {
         if (it_.exhausted())
         {
@@ -526,7 +526,7 @@ struct StealOrDefault
     }
 
     std::reference_wrapper<T> container_;
-    T::Iterator      it_;
+    typename T::Iterator      it_;
 };
 }  // namespace
 
