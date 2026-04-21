@@ -1,5 +1,8 @@
 {
     "claudeCode.initialPermissionMode": "acceptEdits",
+    "cSpell.words": [
+        "crtp"
+    ],
     "files.associations": {
         "expected": "cpp",
         "chrono": "cpp",
