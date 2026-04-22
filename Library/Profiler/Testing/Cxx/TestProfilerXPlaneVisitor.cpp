@@ -8,6 +8,12 @@
  * Tests visitor pattern implementation for XPlane data structures
  */
 
+// clang-cl ICE: deeply nested lambdas across 15 test bodies overwhelm the Function Pass Manager
+// in Release mode. Disabling the optimizer for this TU is safe — test correctness is unaffected.
+#if defined(__clang__)
+#  pragma clang optimize off
+#endif
+
 #include "ProfilerTest.h"
 #include "native/exporters/xplane/xplane.h"
 #include "native/exporters/xplane/xplane_builder.h"

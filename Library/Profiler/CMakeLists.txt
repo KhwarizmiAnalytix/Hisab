@@ -252,9 +252,19 @@ if(PROFILER_ENABLE_KINETO)
           set_property(TARGET ${_kineto_target} PROPERTY POSITION_INDEPENDENT_CODE ON)
       endif()
   endforeach()
-  # Clang 20 crashes with -fPIC -O3 on CuptiActivityProfiler.cpp (ReachingDefAnalysis bug).
-  if(TARGET kineto_base AND NOT MSVC)
-      target_compile_options(kineto_base PRIVATE -O2)
+  # Clang 20 crashes at -O3 on kineto sources: ReachingDefAnalysis bug on Linux/macOS and
+  # fmt-header-only inliner stack overflow on Windows (clang-cl). Downgrade to -O2 for all
+  # Clang variants. clang-cl requires the /clang: prefix to pass native Clang driver flags.
+  if(TARGET kineto_base AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      if(MSVC)
+          foreach(_kt kineto_base kineto_api)
+              if(TARGET ${_kt})
+                  target_compile_options(${_kt} PRIVATE /clang:-O2)
+              endif()
+          endforeach()
+      else()
+          target_compile_options(kineto_base PRIVATE -O2)
+      endif()
   endif()
   if(TARGET kineto AND DEFINED CUDA_nvperf_host_LIBRARY)
       target_link_libraries(kineto PUBLIC "${CUDA_nvperf_host_LIBRARY}")

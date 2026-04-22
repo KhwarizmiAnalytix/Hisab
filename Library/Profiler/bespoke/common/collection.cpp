@@ -1339,16 +1339,17 @@ private:
                 {
                     if (i.flow.type == libkineto::kLinkAsyncCpuGpu && i.flow.start)
                     {
-                        auto inserted = flow_map.insert({i.flow.id, e});
 #ifdef PROFILER_USE_ROCM
+                        auto inserted = flow_map.insert({i.flow.id, e});
                         if (inserted.second)
                         {
                             /* PROFILER_LOG_WARNING(
                                 "ROCTracer produced duplicate flow start: ", i.flow.id);
                             */
                         }
-#else   // PROFILER_USE_ROCM \
-        // PROFILER_CHECK(inserted.second);
+#else
+                        flow_map.insert({i.flow.id, e});
+                        // PROFILER_CHECK(inserted.second);
 #endif  // PROFILER_USE_ROCM
                     }
                     // PROFILER_CHECK(e->parent_.expired());
@@ -1475,7 +1476,7 @@ void build_tree(std::vector<std::shared_ptr<Result>>& sorted_events)
         }
 
         // PROFILER_CHECK(event->parent_.expired());
-        for (const auto& child : event->children_)
+        for ([[maybe_unused]] const auto& child : event->children_)
         {
             // PROFILER_CHECK(child->finished_);
         }

@@ -178,10 +178,12 @@ if(MSVC)
   set(CMAKE_CXX_MP_NUM_PROCESSORS ${PROCESSOR_COUNT}
       CACHE STRING "The maximum number of processes for the /MP flag"
   )
-  if(CMAKE_CXX_MP_FLAG)
+  if(CMAKE_CXX_MP_FLAG AND NOT (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_GENERATOR MATCHES "Ninja"))
     message(STATUS "  MSVC: parallel compilation enabled (/MP${CMAKE_CXX_MP_NUM_PROCESSORS})")
     string(APPEND CMAKE_CXX_FLAGS " /MP${CMAKE_CXX_MP_NUM_PROCESSORS}")
     string(APPEND CMAKE_C_FLAGS " /MP${CMAKE_CXX_MP_NUM_PROCESSORS}")
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_GENERATOR MATCHES "Ninja")
+    message(STATUS "  Clang/Ninja: skipping /MP — Ninja handles parallelism")
   endif()
 
   # Enable /bigobj for MSVC to allow larger symbol tables
@@ -203,6 +205,36 @@ if(MSVC)
   message(STATUS "  MSVC: enabling structured exception handling (/EHsc)")
   string(APPEND CMAKE_CXX_FLAGS " /EHsc")
   string(APPEND CMAKE_C_FLAGS " /EHsc")
+endif()
+
+if(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  message(STATUS "Clang on Windows: applying Clang-specific flags")
+
+  # Colored diagnostics — Ninja relays Clang's ANSI codes correctly; MSVC color codes are not
+  string(APPEND CMAKE_CXX_FLAGS " -fcolor-diagnostics")
+  string(APPEND CMAKE_C_FLAGS " -fcolor-diagnostics")
+
+  # Suppress spurious warnings that fire when MSVC-style flags are mixed with Clang
+  string(APPEND CMAKE_CXX_FLAGS " -Wno-unused-command-line-argument")
+  string(APPEND CMAKE_C_FLAGS " -Wno-unused-command-line-argument")
+
+  # MSVC CRT marks getenv/strcpy/etc. with __declspec(deprecated) under Clang; _CRT_SECURE_NO_WARNINGS
+  # removes the #pragma form but not the __declspec form, so Clang still fires -Wdeprecated-declarations
+  string(APPEND CMAKE_CXX_FLAGS " -Wno-deprecated-declarations")
+  string(APPEND CMAKE_C_FLAGS " -Wno-deprecated-declarations")
+
+  # Third-party C code (e.g. mimalloc) uses old-style K&R function declarations without prototypes
+  string(APPEND CMAKE_C_FLAGS " -Wno-strict-prototypes")
+
+  if(CMAKE_GENERATOR MATCHES "Ninja")
+    message(STATUS "  Clang/Ninja/Windows: applying Ninja-specific adjustments")
+
+    if(NOT MSVC)
+      # Plain clang++ driver: emit CodeView debug info so WinDbg / VS can read symbols
+      string(APPEND CMAKE_CXX_FLAGS " -gcodeview")
+      string(APPEND CMAKE_C_FLAGS " -gcodeview")
+    endif()
+  endif()
 endif()
 
 if(APPLE)

@@ -56,6 +56,7 @@ public:
             "Python tracing requested at level {}, but Python integration is not available in "
             "this build.",
             requested_level_); */
+        (void)requested_level_;
         return profiler_status::Ok();
     }
 

@@ -34,7 +34,7 @@ struct DefaultStubs : public ProfilerStubs
     ~DefaultStubs() override = default;
 
 private:
-    void fail() const {}  // PROFILER_CHECK(false, "{} used in profiler but not enabled.", name_);
+    void fail() const { (void)name_; }  // PROFILER_CHECK(false, "{} used in profiler but not enabled.", name_);
 
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
     const char* const name_;

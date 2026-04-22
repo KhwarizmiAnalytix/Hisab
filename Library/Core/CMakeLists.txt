@@ -399,7 +399,10 @@ if(CORE_ENABLE_MAGICENUM)
   list(APPEND CORE_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/magic_enum/include")
 endif()
 
-# ============================================================================= Source discovery
+message("--avx compiler flags: ${VECTORIZATION_COMPILER_FLAGS}") 
+set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}") 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}") 
+
 # =============================================================================
 set(quarisma_headers "")
 set(quarisma_sources "")
