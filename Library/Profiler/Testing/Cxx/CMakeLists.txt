@@ -8,8 +8,9 @@ if(NOT TARGET gtest)
     find_package(GTest QUIET)
     if(GTest_FOUND)
       message(STATUS "Found external Google Test")
-      _create_third_party_interface_targets("Gtest::gtest=GTest::gtest|gtest"
-                                            "Gtest::gtest_main=GTest::gtest_main|gtest_main")
+      _create_third_party_interface_targets(
+        "Gtest::gtest=GTest::gtest|gtest" "Gtest::gtest_main=GTest::gtest_main|gtest_main"
+      )
       set(_gtest_external_found TRUE)
     endif()
   endif()
@@ -22,16 +23,17 @@ if(NOT TARGET gtest)
       set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     endif()
     add_subdirectory(
-      "${QUARISMA_THIRDPARTY_DIR}/googletest"
-      "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build"
+      "${QUARISMA_THIRDPARTY_DIR}/googletest" "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build"
       EXCLUDE_FROM_ALL
     )
-    _set_third_party_folder_properties("googletest"
-                                       "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build")
+    _set_third_party_folder_properties(
+      "googletest" "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build"
+    )
   endif()
 endif()
-_create_third_party_interface_targets("Gtest::gtest=GTest::gtest|gtest"
-                                      "Gtest::gtest_main=GTest::gtest_main|gtest_main")
+_create_third_party_interface_targets(
+  "Gtest::gtest=GTest::gtest|gtest" "Gtest::gtest_main=GTest::gtest_main|gtest_main"
+)
 file(GLOB_RECURSE profiler_test_sources LIST_DIRECTORIES false
      "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cpp"
 )
