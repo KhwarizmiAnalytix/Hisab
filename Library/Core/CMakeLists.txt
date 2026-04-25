@@ -23,9 +23,9 @@ cmake_minimum_required(VERSION 3.16)
 # These cache variables are the public configuration API for this module. Pass them on the CMake
 # command line: -DCORE_ENABLE_ENZYME=ON
 #
-# Detection-based tokens (SSE/AVX/EXCEPTION_PTR) are set by Library/Core/Cmake/utils.cmake /
-# platform.cmake which runs before add_subdirectory, so they are already in scope here; see Section
-# 2 for their HAS_ mapping.
+# Detection-based tokens (SSE/AVX/EXCEPTION_PTR) are set by Library/Vectorization/Cmake/utils.cmake
+# / platform.cmake which runs before add_subdirectory, so they are already in scope here; see
+# Section 2 for their HAS_ mapping.
 # =============================================================================
 
 # Link-Time Optimization — disabled when CORE_ENABLE_COVERAGE or CORE_ENABLE_SANITIZER is ON (LTO
@@ -131,8 +131,8 @@ set_property(CACHE VECTORIZATION_TYPE PROPERTY STRINGS no sse avx avx2 avx512)
 #
 # Two categories are handled here:
 #
-# a) Detection-based tokens — values set by Library/Core/Cmake/utils.cmake / platform.cmake,
-# included via include(utils) in Section 3. Examples: HAS_SSE, HAS_EXCEPTION_PTR.
+# a) Detection-based tokens — values set by Library/Vectorization/Cmake/utils.cmake /
+# platform.cmake, included via include(utils) in Section 3. Examples: HAS_SSE, HAS_EXCEPTION_PTR.
 #
 # b) User-option tokens — derived directly from CORE_ENABLE_* flags declared in Section 1.  The
 # compile_definition() macro (defined in Cmake/flags/compile_definitions.cmake) maps CORE_ENABLE_X →
@@ -232,7 +232,7 @@ include(compiler_checks) # Detects compiler capabilities; sets PROJECT_* flags
 include(checks) # Additional feature-check macros
 include(build_type) # Validates / normalises CMAKE_BUILD_TYPE
 include(platform) # Platform flags (macOS rpath, Windows /utf-8, …)
-include(utils) # Utility macros shared across all modules
+include(utils) # SIMD/compiler detection — Library/Vectorization/Cmake/utils.cmake
 
 include(CMakeDependentOption)
 

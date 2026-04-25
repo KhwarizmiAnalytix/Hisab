@@ -67,7 +67,6 @@ if(NOT TMP_NEED_TO_TURN_OFF_DEPRECATION_WARNING AND NOT MSVC)
   message("--Turning off deprecation warning.")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated")
 endif()
-cmake_pop_check_state()
 
 if(NOT INTERN_BUILD_MOBILE)
   # ---[ Check if the compiler has SSE support.
@@ -196,7 +195,6 @@ if(NOT INTERN_BUILD_MOBILE)
 
   # ---[ Check if the compiler has FMA support.
   cmake_push_check_state(RESET)
-  set(CMAKE_REQUIRED_FLAGS "${VECTORIZATION_COMPILER_FLAGS}")
   if(MSVC)
     set(CMAKE_REQUIRED_FLAGS "${VECTORIZATION_COMPILER_FLAGS} /D__FMA__")
   else()
@@ -224,34 +222,6 @@ if(NOT INTERN_BUILD_MOBILE)
   endif()
   cmake_pop_check_state()
 
-  # ---[ Check if the compiler has SVML support.
-  cmake_push_check_state(RESET)
-  set(CMAKE_REQUIRED_FLAGS "${VECTORIZATION_COMPILER_FLAGS}")
-  check_cxx_source_compiles(
-    "#if defined(_MSC_VER)
-     #include <intrin.h>
-     #else
-     #include <immintrin.h>
-     #endif
-
-      int main() {
-        __m256 a, b;
-        a = _mm256_setzero_ps();
-        b = _mm256_exp_ps(a);
-        b = _mm256_cos_ps(a);
-        b = _mm256_tanh_ps(a);
-        return 0;
-      }"
-    TMP_COMPILER_SUPPORTS_SVML_EXTENSIONS
-  )
-
-  if(NOT TMP_COMPILER_SUPPORTS_SVML_EXTENSIONS AND VECTORIZATION)
-    message("--Current compiler does not supports SVML functoins. Turn ON CORE_ENABLE_SVML")
-    set(CORE_ENABLE_SVML 1)
-  else()
-    message("--Current compiler supports SVML functoins. Turn OFF CORE_ENABLE_SVML")
-  endif()
-  cmake_pop_check_state()
 endif()
 
 if(USE_NATIVE_ARCH)
