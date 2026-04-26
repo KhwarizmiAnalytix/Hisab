@@ -3,15 +3,8 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
- *
- *   - Open-source License (GPLv3):
- *       Free for personal, academic, and research use under the terms of
- *       the GNU General Public License v3.0 or later.
- *
- *   - Commercial License:
- *       A commercial license is required for proprietary, closed-source,
- *       or SaaS usage. Contact us to obtain a commercial agreement.
+ * SIMD micro-benchmarks (Google Benchmark). Built as target `benchmark_simd`, same pattern as
+ * `benchmark_parallel` in Library/Parallel/Testing/Cxx.
  *
  * Contact: licensing@quarisma.co.uk
  * Website: https://www.quarisma.co.uk
@@ -27,13 +20,10 @@
 
 //#include "common/constants.h"
 #include "common/vectorization_macros.h"
-#include "cpu/allocator.h"
-#include "distribution/hartman_watson_distribution.h"
 #include "expressions/expressions.h"
-#include "quadrature/gaussian_quadrature.h"
 #include "terminals/vector.h"
 
-#if VECTORIZATION_VECTORIZED
+
 namespace
 {
 double y_max = exp(5.);
@@ -492,92 +482,5 @@ SIMD_BENCHMARK(hypot);
 SIMDHORIZANTALBENCHMARK(hmin, min);
 SIMDHORIZANTALBENCHMARK(hmax, max);
 SIMDHORIZANTALBENCHMARK(accumulate, accumulate);
-
-using namespace vectorization;
-static void BM_Allocation(benchmark::State& state)
-{
-    const int  arg = state.range(0);
-    Allocator* a   = cpu_allocator();
-
-    // Broader range of sizes with more variation
-    std::vector<size_t> sizes = {
-        64,      // Cache line size
-        256,     // Small object
-        512,     // Medium small
-        4096,    // Page size
-        16384,   // 16KB
-        65536,   // 64KB
-        262144,  // 256KB
-        524288,  // 512KB
-        1048576  // 1MB
-    };
-
-    // Use random size selection for more realistic testing
-    std::random_device              rd;
-    std::mt19937ac                  gen(rd());
-    std::uniform_int_distribution<> dis(0, sizes.size() - 1);
-
-    // Track allocation statistics
-    size_t total_allocated  = 0;
-    size_t allocation_count = 0;
-
-    if (arg)
-    {
-        EnableCPUAllocatorStats();
-    }
-
-    // Preallocate pointers vector to avoid measurement interference
-    std::vector<void*> allocated_ptrs;
-    allocated_ptrs.reserve(100);  // Keep some pointers alive
-
-    for (auto _ : state)
-    {
-        state.PauseTiming();  // Pause while selecting size
-        size_t bytes = sizes[dis(gen)];
-        state.ResumeTiming();
-
-        void* p = a->allocate_raw(1, bytes);
-
-        // Randomly decide whether to keep this allocation
-        if (dis(gen) % 4 == 0)
-        {  // 25% chance to keep allocation
-            allocated_ptrs.push_back(p);
-            if (allocated_ptrs.size() > 100)
-            {
-                // Free oldest allocation when we hit limit
-                a->deallocate_raw(allocated_ptrs.front());
-                allocated_ptrs.erase(allocated_ptrs.begin());
-            }
-        }
-        else
-        {
-            a->deallocate_raw(p);
-        }
-
-        total_allocated += bytes;
-        allocation_count++;
-    }
-
-    // Cleanup remaining allocations
-    for (void* p : allocated_ptrs)
-    {
-        a->deallocate_raw(p);
-    }
-
-    if (arg)
-    {
-        DisableCPUAllocatorStats();
-    }
-
-    // Report statistics
-    state.counters["Avg_Allocation_Size"] = static_cast<double>(total_allocated) / allocation_count;
-    state.counters["Total_Allocated_MB"]  = static_cast<double>(total_allocated) / (1024 * 1024);
-    state.counters["Allocation_Count"]    = allocation_count;
-}
-
-// Run benchmark with different configurations
-BENCHMARK(BM_Allocation)->Arg(0)->Arg(1)->Unit(benchmark::kMicrosecond)->UseRealTime();
-
-#endif
 
 BENCHMARK_MAIN();

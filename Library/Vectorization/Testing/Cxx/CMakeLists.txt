@@ -64,53 +64,114 @@ endif()
 message(STATUS "VectorizationCxxTests registered with CTest")
 
 # =============================================================================
-# Benchmark executable (optional)
+# Individual benchmark executables (same pattern as Library/Parallel/Testing/Cxx)
 # =============================================================================
-
 if(VECTORIZATION_ENABLE_BENCHMARK)
+  # --- Google Benchmark setup ---
   if(NOT TARGET benchmark)
-    set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "Disable benchmark tests" FORCE)
-    set(BENCHMARK_ENABLE_EXCEPTIONS ON CACHE BOOL "Enable benchmark exceptions" FORCE)
-    set(BENCHMARK_ENABLE_LTO OFF CACHE BOOL "Disable benchmark LTO" FORCE)
-    set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "Disable benchmark install" FORCE)
-    set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "Disable benchmark gtest tests" FORCE)
-    add_subdirectory(
-      "${QUARISMA_THIRDPARTY_DIR}/benchmark"
-      "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build"
-      EXCLUDE_FROM_ALL
-    )
+    set(_bench_external_found FALSE)
+    if(QUARISMA_ENABLE_EXTERNAL)
+      find_package(benchmark QUIET)
+      if(benchmark_FOUND)
+        message(STATUS "Found external Google Benchmark")
+        _create_third_party_interface_targets(
+          "Benchmark::benchmark=benchmark::benchmark|benchmark"
+          "Benchmark::benchmark_main=benchmark::benchmark_main|benchmark_main"
+        )
+        set(_bench_external_found TRUE)
+      endif()
+    endif()
+    if(NOT _bench_external_found)
+      if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        string(APPEND CMAKE_CXX_FLAGS " -Wno-c2y-extensions")
+      endif()
+      set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "Disable benchmark tests" FORCE)
+      set(BENCHMARK_ENABLE_EXCEPTIONS ON CACHE BOOL "Enable benchmark exceptions" FORCE)
+      set(BENCHMARK_ENABLE_LTO OFF CACHE BOOL "Disable benchmark LTO" FORCE)
+      set(BENCHMARK_USE_LIBCXX OFF CACHE BOOL "Disable benchmark libcxx" FORCE)
+      set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "Disable benchmark werror" FORCE)
+      set(BENCHMARK_FORCE_WERROR OFF CACHE BOOL "Disable benchmark force werror" FORCE)
+      set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "Disable benchmark install" FORCE)
+      set(BENCHMARK_INSTALL_DOCS OFF CACHE BOOL "Disable benchmark docs install" FORCE)
+      set(BENCHMARK_ENABLE_DOXYGEN OFF CACHE BOOL "Disable benchmark doxygen" FORCE)
+      set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "Disable benchmark gtest tests" FORCE)
+      set(BENCHMARK_USE_BUNDLED_GTEST OFF CACHE BOOL "Don't use bundled gtest for benchmark" FORCE)
+      set(BENCHMARK_DOWNLOAD_DEPENDENCIES OFF CACHE BOOL "Don't download dependencies" FORCE)
+      add_subdirectory(
+        "${QUARISMA_THIRDPARTY_DIR}/benchmark"
+        "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build"
+        EXCLUDE_FROM_ALL
+      )
+      _set_third_party_folder_properties("benchmark"
+                                         "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build")
+    endif()
   endif()
   _create_third_party_interface_targets(
     "Benchmark::benchmark=benchmark::benchmark|benchmark"
     "Benchmark::benchmark_main=benchmark::benchmark_main|benchmark_main"
   )
+  if(TARGET Benchmark::benchmark AND NOT TARGET Vectorization::benchmark)
+    add_library(Vectorization::benchmark ALIAS benchmark)
+    add_library(Vectorization::benchmark_main ALIAS benchmark_main)
+  endif()
 
   file(GLOB_RECURSE bench_sources LIST_DIRECTORIES false
        "${CMAKE_CURRENT_SOURCE_DIR}/Benchmark*.cpp"
   )
-  if(bench_sources)
-    add_executable(VectorizationCxxBenchmark ${bench_sources})
-    target_link_libraries(
-      VectorizationCxxBenchmark PRIVATE Benchmark::benchmark Benchmark::benchmark_main
-                                        Vectorization::Vectorization
+
+  if(VECTORIZATION_TYPE STREQUAL "no")
+    list(FILTER bench_sources EXCLUDE REGEX ".*BenchmarkSimd\\.cpp$")
+    message(
+      STATUS
+        "Vectorization: VECTORIZATION_TYPE=no — BenchmarkSimd.cpp excluded (no SIMD backend active)"
     )
-    set_target_properties(
-      VectorizationCxxBenchmark PROPERTIES
-      CXX_STANDARD          ${VECTORIZATION_CXX_STANDARD}
-      CXX_STANDARD_REQUIRED ON
-      FOLDER                "Benchmarks"
-    )
-    add_test(
-      NAME    VectorizationCxxBenchmark
-      COMMAND VectorizationCxxBenchmark --benchmark_min_time=0.01s
-      WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
-    )
-    set_tests_properties(
-      VectorizationCxxBenchmark PROPERTIES TIMEOUT 600 LABELS "Benchmark;Vectorization"
-    )
-    if(COMMAND quarisma_set_target_output_directories)
-      quarisma_set_target_output_directories(VectorizationCxxBenchmark)
-    endif()
-    message(STATUS "VectorizationCxxBenchmark registered with CTest")
   endif()
+
+  foreach(_bench_source IN ITEMS ${bench_sources})
+    get_filename_component(bench_name "${_bench_source}" NAME_WE)
+
+    string(REPLACE "Benchmark" "" bench_suffix "${bench_name}")
+    string(TOLOWER "${bench_suffix}" bench_suffix_lower)
+    set(target_name "benchmark_${bench_suffix_lower}")
+
+    add_executable(${target_name} "${_bench_source}")
+
+    # Clang on Windows can ICE on heavy template/fmt use in this TU (same idea as Parallel TestAsyncParallel).
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND WIN32)
+      get_filename_component(_vectorization_bench_file "${_bench_source}" NAME)
+      if(_vectorization_bench_file STREQUAL "BenchmarkSimd.cpp")
+        set_source_files_properties("${_bench_source}" PROPERTIES COMPILE_FLAGS "-O1")
+      endif()
+    endif()
+
+    target_link_libraries(
+      ${target_name} PRIVATE Vectorization::benchmark Vectorization::benchmark_main
+                            Vectorization::Vectorization
+    )
+
+    set_target_properties(
+      ${target_name} PROPERTIES FOLDER "Benchmarks" OUTPUT_NAME "${target_name}"
+    )
+
+    if(COMMAND quarisma_set_target_output_directories)
+      quarisma_set_target_output_directories(${target_name})
+    else()
+      set_target_properties(
+        ${target_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+      )
+    endif()
+
+    add_test(NAME ${target_name} COMMAND ${target_name} --benchmark_min_time=0.01s
+             WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+    )
+
+    set_tests_properties(
+      ${target_name} PROPERTIES TIMEOUT 600 LABELS "Benchmark;Performance;Vectorization"
+    )
+
+    message(STATUS "✓ Benchmark target configured: ${target_name} (from ${bench_name}.cpp)")
+  endforeach()
+
+  list(LENGTH bench_sources bench_count)
+  message(STATUS "✓ Individual benchmark executables configured (${bench_count} total)")
 endif()

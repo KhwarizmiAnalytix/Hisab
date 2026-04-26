@@ -208,6 +208,11 @@ if(CORE_ENABLE_BENCHMARK)
       endif()
     endif()
     if(NOT _bench_external_found)
+      # googlebenchmark uses -pedantic-errors on non-MSVC paths; Clang diagnoses __COUNTER__ in
+      # benchmark headers as -Wc2y-extensions, which is fatal under -pedantic-errors.
+      if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        string(APPEND CMAKE_CXX_FLAGS " -Wno-c2y-extensions")
+      endif()
       set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "Disable benchmark tests" FORCE)
       set(BENCHMARK_ENABLE_EXCEPTIONS ON CACHE BOOL "Enable benchmark exceptions" FORCE)
       set(BENCHMARK_ENABLE_LTO OFF CACHE BOOL "Disable benchmark LTO" FORCE)

@@ -116,7 +116,7 @@ The module is a classic **expression-template + SIMD backend** stack:
 
 ### Phase D — Performance hardening (optional / product-driven)
 
-1. **Micro-benchmarks per kernel** — Expand `Benchmark_simd.cpp` into named families (load/store, fma, reductions, expression trees).
+1. **Micro-benchmarks per kernel** — Expand `BenchmarkSimd.cpp` into named families (load/store, fma, reductions, expression trees).
 2. **Runtime dispatch (if needed)** — Separate static libraries or object files per ISA + resolver in a thin facade target; only if product needs single binary across CPUs.
 3. **Alignment API** — Document and enforce alignment expectations for `store` vs `storeu` on terminals; consider `alignas(VECTORIZATION_ALIGNMENT)` assertions in debug.
 
