@@ -23,11 +23,10 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "common/configure.h"
 #include "common/intrin.h"
 #include "common/packet.h"
 
-namespace quarisma
+namespace vectorization
 {
 
 template <typename T>
@@ -69,9 +68,9 @@ struct is_packet<scalar_type_mask_t<float>>
 };
 #endif
 
-}  // namespace quarisma
+}  // namespace vectorization
 
-namespace quarisma
+namespace vectorization
 {
 template <typename T>
 struct remove_cvref
@@ -81,21 +80,21 @@ struct remove_cvref
 
 template <typename T>
 using remove_cvref_t = typename remove_cvref<T>::type;
-}  // namespace quarisma
+}  // namespace vectorization
 
-namespace quarisma
+namespace vectorization
 {
 //================================================================================================
 template <typename T>
 struct is_fundamental
 {
     static constexpr bool value =
-        (std::is_fundamental<quarisma::remove_cvref_t<T>>::value ||
-         is_packet<quarisma::remove_cvref_t<T>>::value);
+        (std::is_fundamental<vectorization::remove_cvref_t<T>>::value ||
+         is_packet<vectorization::remove_cvref_t<T>>::value);
 };
-}  // namespace quarisma
+}  // namespace vectorization
 
-namespace quarisma
+namespace vectorization
 {
 template <typename value_t>
 class vector;
@@ -126,9 +125,9 @@ class matrix_vector_multiplication_expression;
 
 template <typename LHS, typename RHS>
 class vector_matrix_multiplication_expression;
-}  // namespace quarisma
+}  // namespace vectorization
 
-namespace quarisma
+namespace vectorization
 {
 //================================================================================================
 /*!
@@ -216,9 +215,9 @@ struct is_expression
 {
     static constexpr bool value = (is_pure_expression<T>::value || is_base_expression<T>::value);
 };
-}  // namespace quarisma
+}  // namespace vectorization
 
-namespace quarisma
+namespace vectorization
 {
 //================================================================================================
 /*!
@@ -277,7 +276,7 @@ struct scalar_type<vector<value_t>, T>
 };
 
 template <typename T, typename value_t>
-struct scalar_type<T, vector<value_t>, typename std::enable_if_t<quarisma::is_fundamental<T>::value>>
+struct scalar_type<T, vector<value_t>, typename std::enable_if_t<vectorization::is_fundamental<T>::value>>
 {
     using value = value_t;
 };
@@ -289,7 +288,7 @@ struct scalar_type<matrix<value_t>, T>
 };
 
 template <typename T, typename value_t>
-struct scalar_type<T, matrix<value_t>, typename std::enable_if_t<quarisma::is_fundamental<T>::value>>
+struct scalar_type<T, matrix<value_t>, typename std::enable_if_t<vectorization::is_fundamental<T>::value>>
 {
     using value = value_t;
 };
@@ -301,7 +300,7 @@ struct scalar_type<tensor<value_t>, T>
 };
 
 template <typename value_t, typename T>
-struct scalar_type<T, tensor<value_t>, typename std::enable_if_t<quarisma::is_fundamental<T>::value>>
+struct scalar_type<T, tensor<value_t>, typename std::enable_if_t<vectorization::is_fundamental<T>::value>>
 {
     using value = value_t;
 };
@@ -316,47 +315,47 @@ template <typename T, typename E, typename EVALUATOR>
 struct scalar_type<
     T,
     unary_expression<E, EVALUATOR>,
-    typename std::enable_if_t<quarisma::is_fundamental<T>::value>>
+    typename std::enable_if_t<vectorization::is_fundamental<T>::value>>
 {
-    using value = typename scalar_type<quarisma::remove_cvref_t<E>, quarisma::remove_cvref_t<E>>::value;
+    using value = typename scalar_type<vectorization::remove_cvref_t<E>, vectorization::remove_cvref_t<E>>::value;
 };
 
 template <typename LHS, typename RHS, typename EVALUATOR, typename T>
 struct scalar_type<binary_expression<LHS, RHS, EVALUATOR>, T>
 {
     using value =
-        typename scalar_type<quarisma::remove_cvref_t<LHS>, quarisma::remove_cvref_t<RHS>>::value;
+        typename scalar_type<vectorization::remove_cvref_t<LHS>, vectorization::remove_cvref_t<RHS>>::value;
 };
 
 template <typename T, typename LHS, typename RHS, typename EVALUATOR>
 struct scalar_type<
     T,
     binary_expression<LHS, RHS, EVALUATOR>,
-    typename std::enable_if_t<quarisma::is_fundamental<T>::value>>
+    typename std::enable_if_t<vectorization::is_fundamental<T>::value>>
 {
     using value =
-        typename scalar_type<quarisma::remove_cvref_t<LHS>, quarisma::remove_cvref_t<RHS>>::value;
+        typename scalar_type<vectorization::remove_cvref_t<LHS>, vectorization::remove_cvref_t<RHS>>::value;
 };
 
 template <typename LHS, typename MHS, typename RHS, typename EVALUATOR, typename T>
 struct scalar_type<trinary_expression<LHS, MHS, RHS, EVALUATOR>, T>
 {
     using value =
-        typename scalar_type<quarisma::remove_cvref_t<MHS>, quarisma::remove_cvref_t<RHS>>::value;
+        typename scalar_type<vectorization::remove_cvref_t<MHS>, vectorization::remove_cvref_t<RHS>>::value;
 };
 
 template <typename T, typename LHS, typename MHS, typename RHS, typename EVALUATOR>
 struct scalar_type<
     T,
     trinary_expression<LHS, MHS, RHS, EVALUATOR>,
-    typename std::enable_if_t<quarisma::is_fundamental<T>::value>>
+    typename std::enable_if_t<vectorization::is_fundamental<T>::value>>
 {
     using value =
-        typename scalar_type<quarisma::remove_cvref_t<MHS>, quarisma::remove_cvref_t<RHS>>::value;
+        typename scalar_type<vectorization::remove_cvref_t<MHS>, vectorization::remove_cvref_t<RHS>>::value;
 };
-}  // namespace quarisma
+}  // namespace vectorization
 
-namespace quarisma
+namespace vectorization
 {
 //================================================================================================
 /*!
@@ -410,9 +409,9 @@ struct is_matrix_evalute<vector_matrix_multiplication_expression<T1, T2>>
 {
     static constexpr bool value = true;
 };
-}  // namespace quarisma
+}  // namespace vectorization
 
-namespace quarisma
+namespace vectorization
 {
 //================================================================================================
 /*!
@@ -430,9 +429,9 @@ struct is_transpose_expression<matrix_transpose_expression<T>>
 {
     static constexpr bool value = true;
 };
-}  // namespace quarisma
+}  // namespace vectorization
 
-namespace quarisma
+namespace vectorization
 {
 template <typename M>
 struct is_matrix
@@ -457,4 +456,4 @@ struct is_vector<vector<M>>
 {
     static constexpr bool value = true;
 };
-}  // namespace quarisma
+}  // namespace vectorization

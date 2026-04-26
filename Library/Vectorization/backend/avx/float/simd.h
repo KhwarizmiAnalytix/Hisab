@@ -25,7 +25,7 @@
 #pragma clang diagnostic ignored "-Wcast-calling-convention"
 #endif
 
-#include "avx/svml.h"
+#include "backend/avx/svml.h"
 
 #ifdef __clang__
 #pragma clang diagnostic pop

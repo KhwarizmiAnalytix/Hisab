@@ -24,17 +24,9 @@
 #include <vector>
 
 #include "common/packet.h"
-#include "memory/allocator.h"
-#include "memory/data_ptr.h"
-#include "util/exception.h"
-
-#ifndef __CUDACC__
-#include "serialization.h"
-#endif  // !__CUDACC__
-
 #include "expressions/expressions.h"
 
-namespace quarisma
+namespace vectorization
 {
 template <typename value_t>
 class vector
@@ -60,22 +52,24 @@ public:
     };
 
     VECTORIZATION_CUDA_FUNCTION_TYPE vector(
-        void* data, size_type length, quarisma::device_enum type = quarisma::device_enum::CPU) noexcept
+        void*                 data,
+        size_type             length,
+        vectorization::device_enum type = vectorization::device_enum::CPU) noexcept
         : vector((value_t*)data, length, type)
     {
     }
 
     VECTORIZATION_CUDA_FUNCTION_TYPE vector(
-        size_type length, quarisma::device_enum type = quarisma::device_enum::CPU) noexcept
+        size_type length, vectorization::device_enum type = vectorization::device_enum::CPU) noexcept
         : storage_(length, type)
     {
     }
 
     VECTORIZATION_CUDA_FUNCTION_TYPE vector(
-        value_t             start,
-        value_t             end,
-        size_type           length,
-        quarisma::device_enum type = quarisma::device_enum::CPU) noexcept
+        value_t               start,
+        value_t               end,
+        size_type             length,
+        vectorization::device_enum type = vectorization::device_enum::CPU) noexcept
         : vector(length, type)
     {
         auto dx = (end - start) / (length - 1);
@@ -86,7 +80,7 @@ public:
 
     VECTORIZATION_CUDA_FUNCTION_TYPE vector(
         std::initializer_list<value_t> list,
-        quarisma::device_enum            type = quarisma::device_enum::CPU) noexcept
+        vectorization::device_enum          type = vectorization::device_enum::CPU) noexcept
         : vector(list.size(), type)
     {
         const auto& ptr = list.begin();
@@ -95,28 +89,31 @@ public:
 
     VECTORIZATION_CUDA_FUNCTION_TYPE vector(
         std::vector<value_t> const& rhs,
-        quarisma::device_enum         type = quarisma::device_enum::CPU) noexcept
+        vectorization::device_enum       type = vectorization::device_enum::CPU) noexcept
         : vector(const_cast<value_t*>(rhs.data()), rhs.size(), type)
     {
     }
 
     VECTORIZATION_CUDA_FUNCTION_TYPE vector(
-        value_t*            data,
-        size_type           length,
-        quarisma::device_enum type = quarisma::device_enum::CPU) noexcept
+        value_t*              data,
+        size_type             length,
+        vectorization::device_enum type = vectorization::device_enum::CPU) noexcept
         : storage_(data, length, type)
     {
     }
 
     VECTORIZATION_CUDA_FUNCTION_TYPE vector(
-        const value_t*      data,
-        size_type           length,
-        quarisma::device_enum type = quarisma::device_enum::CPU) noexcept
+        const value_t*        data,
+        size_type             length,
+        vectorization::device_enum type = vectorization::device_enum::CPU) noexcept
         : vector(const_cast<value_t*>(data), length, type)
     {
     }
 
-    VECTORIZATION_CUDA_FUNCTION_TYPE vector(vector&& rhs) noexcept : storage_(std::move(rhs.storage_)) {}
+    VECTORIZATION_CUDA_FUNCTION_TYPE vector(vector&& rhs) noexcept
+        : storage_(std::move(rhs.storage_))
+    {
+    }
 
     VECTORIZATION_CUDA_FUNCTION_TYPE vector& operator=(vector&& rhs) noexcept
     {
@@ -165,8 +162,10 @@ public:
         return const_reverse_iterator(begin());
     }
 
-
-    VECTORIZATION_CUDA_FUNCTION_TYPE const value_t* data(size_type i) const noexcept { return data() + i; }
+    VECTORIZATION_CUDA_FUNCTION_TYPE const value_t* data(size_type i) const noexcept
+    {
+        return data() + i;
+    }
 
     VECTORIZATION_CUDA_FUNCTION_TYPE value_t* data(size_type i) noexcept { return data() + i; }
 
@@ -185,7 +184,7 @@ public:
 
     template <
         typename E,
-        typename std::enable_if<quarisma::is_pure_expression<E>::value, bool>::type = true>
+        typename std::enable_if<vectorization::is_pure_expression<E>::value, bool>::type = true>
     VECTORIZATION_FUNCTION_ATTRIBUTE vector(E const& expr)
     {
         storage_ = data_t(expr.size(), device_enum::CPU);
@@ -194,7 +193,7 @@ public:
 
     template <
         typename E,
-        typename std::enable_if<quarisma::is_pure_expression<E>::value, bool>::type = true>
+        typename std::enable_if<vectorization::is_pure_expression<E>::value, bool>::type = true>
     VECTORIZATION_FUNCTION_ATTRIBUTE vector(E&& expr)  // NOLINT
     {
         storage_ = data_t(expr.size(), device_enum::CPU);
@@ -203,7 +202,7 @@ public:
 
     template <
         typename E,
-        typename std::enable_if<quarisma::is_pure_expression<E>::value, bool>::type = true>
+        typename std::enable_if<vectorization::is_pure_expression<E>::value, bool>::type = true>
     VECTORIZATION_FUNCTION_ATTRIBUTE vector& operator=(E const& expr)
     {
         evaluator::template run<E, vector>(expr, *this);
@@ -212,7 +211,7 @@ public:
 
     template <
         typename E,
-        typename std::enable_if<quarisma::is_pure_expression<E>::value, bool>::type = true>
+        typename std::enable_if<vectorization::is_pure_expression<E>::value, bool>::type = true>
     VECTORIZATION_FUNCTION_ATTRIBUTE vector& operator=(E&& expr)
     {
         evaluator::template run<E, vector>(std::move(expr), *this);
@@ -224,58 +223,10 @@ public:
         typename std::enable_if<std::is_fundamental<T2>::value, bool>::type = true>
     VECTORIZATION_FUNCTION_ATTRIBUTE vector& operator=(T2 value) noexcept
     {
-        evaluator::template fill<value_t, quarisma::vector<value_t>>(
+        evaluator::template fill<value_t, vectorization::vector<value_t>>(
             static_cast<value_t>(value), *this);
         return *this;
     }
-
-#ifndef __CUDACC__
-    // serialization
-    static void binary_serialize(multi_process_stream& buffer, const vector& v)
-    {
-        buffer << v.size();
-        buffer.Push(v.begin(), v.size());
-    }
-
-    static void binary_deserialize(multi_process_stream& buffer, vector& v)
-    {
-        size_t size;
-        buffer >> size;
-
-        v = vector(size);
-
-        unsigned int n;
-        buffer.Pop(v.begin(), n);
-    }
-
-    static void read_from_json(const json& root, vector& v)
-    {
-        auto size = root["size"].get<size_t>();
-
-        v = vector(size);
-
-        const auto& archiver = root["data"].array();
-
-        for (size_t i = 0; i < v.size(); ++i)
-        {
-            v[i] = archiver.at(i).get<value_t>();
-        }
-    }
-
-    static void write_to_json(json& root, const vector& v)
-    {
-        root["class"] = "quarisma.vector";
-        root["size"]  = v.size();
-
-        // Write data directly to JSON array
-        root["data"] = json::array();
-        for (size_t i = 0; i < v.size(); ++i)
-        {
-            root["data"].push_back(v[i]);
-        }
-    }
-#endif  // !__CUDACC__
-
 
     std::string to_string() const
     {
@@ -309,9 +260,9 @@ private:
 };
 
 template <typename value_t>
-std::ostream& operator<<(std::ostream& s, const quarisma::vector<value_t>& v)
+std::ostream& operator<<(std::ostream& s, const vectorization::vector<value_t>& v)
 {
     s << v.to_string();
     return s;
 }
-}  // namespace quarisma
+}  // namespace vectorization

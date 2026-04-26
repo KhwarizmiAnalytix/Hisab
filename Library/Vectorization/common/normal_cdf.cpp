@@ -24,9 +24,9 @@
 #include <cmath>
 #include <limits>
 
-#include "common/constants.h"
+//#include "common/constants.h"
 
-namespace quarisma
+namespace vectorization
 {
 
 //-----------------------------------------------------------------------------
@@ -232,4 +232,4 @@ double inv_normalcdf(double p)
     return (q < 0.) ? -z : z;
 }
 
-}  // namespace quarisma
+}  // namespace vectorization

@@ -6,34 +6,34 @@
 #include <cmath>
 #include <numeric>
 
-#include "common/constants.h"
+//#include "common/constants.h"
 #include "matrix_operation/matrix_multiplication.h"
 #include "matrix_operation/matrix_transpose.h"
 #include "memory/allocator.h"
 
-namespace quarisma
+namespace vectorization
 {
 //-----------------------------------------------------------------------------
 template <typename value_t>
-matrix<value_t>::matrix(size_type rows, size_type columns, quarisma::device_type type) noexcept
+matrix<value_t>::matrix(size_type rows, size_type columns, vectorization::device_type type) noexcept
     : storage_(rows * columns, type), rows_(rows), columns_(columns){};
 
 //-----------------------------------------------------------------------------
 template <typename value_t>
 matrix<value_t>::matrix(
-    value_t* data, size_type rows, size_type columns, quarisma::device_type type) noexcept
+    value_t* data, size_type rows, size_type columns, vectorization::device_type type) noexcept
     : storage_(data, rows * columns, type), rows_(rows), columns_(columns){};
 
 //-----------------------------------------------------------------------------
 template <typename value_t>
 matrix<value_t>::matrix(
-    void* data, size_type rows, size_type columns, quarisma::device_type type) noexcept
+    void* data, size_type rows, size_type columns, vectorization::device_type type) noexcept
     : matrix((value_t*)data, rows, columns, type){};
 
 //-----------------------------------------------------------------------------
 template <typename value_t>
 matrix<value_t>::matrix(
-    std::initializer_list<std::initializer_list<value_t>> list, quarisma::device_type type) noexcept
+    std::initializer_list<std::initializer_list<value_t>> list, vectorization::device_type type) noexcept
     : storage_((list.begin())->size() * list.size(), type),
       rows_(list.size()),
       columns_((list.begin())->size())
@@ -46,7 +46,7 @@ matrix<value_t>::matrix(
 //-----------------------------------------------------------------------------
 template <typename value_t>
 matrix<value_t>::matrix(
-    const value_t* data, size_type rows, size_type columns, quarisma::device_type type) noexcept
+    const value_t* data, size_type rows, size_type columns, vectorization::device_type type) noexcept
     : matrix(const_cast<value_t*>(data), rows, columns, type){};
 
 //-----------------------------------------------------------------------------
@@ -117,7 +117,7 @@ __VECTORIZATION_FUNCTION_ATTRIBUTE__ void matrix<value_t>::matrix_multiplication
     size_t ldrhs = rhs.columns();
     size_t depth = transpose_lhs ? lhs.rows() : lhs.columns();
 
-    quarisma::matrix_multiplication(
+    vectorization::matrix_multiplication(
         transpose_lhs,
         transpose_rhs,
         rows(),
@@ -143,7 +143,7 @@ template <typename value_t>
 bool matrix<value_t>::is_zero() const
 {
     for (size_type i = 0; i < size(); ++i)
-        if (!quarisma::is_almost_zero(data()[i]))
+        if (!vectorization::is_almost_zero(data()[i]))
             return false;
 
     return true;
@@ -227,7 +227,7 @@ bool matrix<value_t>::symmetric() const
         {
             auto a  = at(i, j);
             auto ta = at(j, i);
-            if (!quarisma::is_almost_zero(a - ta))
+            if (!vectorization::is_almost_zero(a - ta))
                 return false;
         }
     }
@@ -240,8 +240,8 @@ template <typename value_t>
 __VECTORIZATION_FUNCTION_ATTRIBUTE__ void matrix<value_t>::matrix_transpose(matrix const& A)
 {
     this->deepcopy(A);  //fixme!
-    quarisma::matrix_transpose(A.rows(), A.columns(), begin());
+    vectorization::matrix_transpose(A.rows(), A.columns(), begin());
     std::swap(columns_, rows_);
 }
-}  // namespace quarisma
+}  // namespace vectorization
 #endif  // COMPILE_MATRIX_HXX

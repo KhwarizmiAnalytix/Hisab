@@ -29,13 +29,13 @@ Do_not_include_expression_functor_directly_use_expression_it;
 #define MACRO_FUNCTION_EVALUATOR(op)                                                             \
     struct MACRO_EVALUATOR_SUFIX(op)                                                             \
     {                                                                                            \
-        template <typename T, std::enable_if_t<quarisma::is_fundamental<T>::value, bool> = true>   \
+        template <typename T, std::enable_if_t<vectorization::is_fundamental<T>::value, bool> = true>   \
         VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(T const& lhs) noexcept           \
         {                                                                                        \
-            if constexpr (quarisma::is_packet<quarisma::remove_cvref_t<T>>::value)                   \
+            if constexpr (vectorization::is_packet<vectorization::remove_cvref_t<T>>::value)                   \
             {                                                                                    \
                 using value_t =                                                                  \
-                    typename scalar_type<quarisma::remove_cvref_t<T>, quarisma::remove_cvref_t<T>>:: \
+                    typename scalar_type<vectorization::remove_cvref_t<T>, vectorization::remove_cvref_t<T>>:: \
                         value;                                                                   \
                 using array_simd_t = typename packet<value_t>::array_simd_t;                     \
                 array_simd_t ret{};                                                              \
@@ -47,13 +47,13 @@ Do_not_include_expression_functor_directly_use_expression_it;
                 return std::op(lhs);                                                             \
             }                                                                                    \
         }                                                                                        \
-        template <typename T, std::enable_if_t<quarisma::is_fundamental<T>::value, bool> = true>   \
+        template <typename T, std::enable_if_t<vectorization::is_fundamental<T>::value, bool> = true>   \
         VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(T&& lhs) noexcept                \
         {                                                                                        \
-            if constexpr (quarisma::is_packet<quarisma::remove_cvref_t<T>>::value)                   \
+            if constexpr (vectorization::is_packet<vectorization::remove_cvref_t<T>>::value)                   \
             {                                                                                    \
                 using value_t =                                                                  \
-                    typename scalar_type<quarisma::remove_cvref_t<T>, quarisma::remove_cvref_t<T>>:: \
+                    typename scalar_type<vectorization::remove_cvref_t<T>, vectorization::remove_cvref_t<T>>:: \
                         value;                                                                   \
                 using array_simd_t = typename packet<value_t>::array_simd_t;                     \
                 array_simd_t ret{};                                                              \
@@ -67,7 +67,7 @@ Do_not_include_expression_functor_directly_use_expression_it;
         }                                                                                        \
     };
 
-namespace quarisma
+namespace vectorization
 {
 MACRO_FUNCTION_EVALUATOR(lnot);
 MACRO_FUNCTION_EVALUATOR(neg);
@@ -100,7 +100,7 @@ MACRO_FUNCTION_EVALUATOR(cdf);
 MACRO_FUNCTION_EVALUATOR(inv_cdf);
 MACRO_FUNCTION_EVALUATOR(trunc);
 MACRO_FUNCTION_EVALUATOR(invsqrt);
-}  // namespace quarisma
+}  // namespace vectorization
 
 //================================================================================================
 #define MACRO_OPERATION_EVALUATOR(op, f)                                                       \
@@ -110,14 +110,14 @@ MACRO_FUNCTION_EVALUATOR(invsqrt);
             typename LHS,                                                                      \
             typename RHS,                                                                      \
             std::enable_if_t<                                                                  \
-                quarisma::is_fundamental<LHS>::value && quarisma::is_fundamental<RHS>::value,      \
+                vectorization::is_fundamental<LHS>::value && vectorization::is_fundamental<RHS>::value,      \
                 bool> = true>                                                                  \
         VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(                               \
             LHS const& lhs, RHS const& rhs) noexcept                                           \
         {                                                                                      \
             if constexpr (                                                                     \
-                is_packet<quarisma::remove_cvref_t<LHS>>::value &&                               \
-                is_packet<quarisma::remove_cvref_t<RHS>>::value)                                 \
+                is_packet<vectorization::remove_cvref_t<LHS>>::value &&                               \
+                is_packet<vectorization::remove_cvref_t<RHS>>::value)                                 \
             {                                                                                  \
                 using value_t      = typename scalar_type<LHS, RHS>::value;                    \
                 using array_simd_t = typename packet<value_t>::array_simd_t;                   \
@@ -125,7 +125,7 @@ MACRO_FUNCTION_EVALUATOR(invsqrt);
                 packet<value_t>::f(lhs, rhs, ret);                                             \
                 return ret;                                                                    \
             }                                                                                  \
-            else if constexpr (is_packet<quarisma::remove_cvref_t<RHS>>::value)                  \
+            else if constexpr (is_packet<vectorization::remove_cvref_t<RHS>>::value)                  \
             {                                                                                  \
                 using value_t      = typename scalar_type<RHS, RHS>::value;                    \
                 using array_simd_t = typename packet<value_t>::array_simd_t;                   \
@@ -136,7 +136,7 @@ MACRO_FUNCTION_EVALUATOR(invsqrt);
                 packet<value_t>::f(temp, rhs, ret);                                            \
                 return ret;                                                                    \
             }                                                                                  \
-            else if constexpr (is_packet<quarisma::remove_cvref_t<LHS>>::value)                  \
+            else if constexpr (is_packet<vectorization::remove_cvref_t<LHS>>::value)                  \
             {                                                                                  \
                 using value_t      = typename scalar_type<LHS, LHS>::value;                    \
                 using array_simd_t = typename packet<value_t>::array_simd_t;                   \
@@ -154,13 +154,13 @@ MACRO_FUNCTION_EVALUATOR(invsqrt);
             typename LHS,                                                                      \
             typename RHS,                                                                      \
             std::enable_if_t<                                                                  \
-                quarisma::is_fundamental<LHS>::value && quarisma::is_fundamental<RHS>::value,      \
+                vectorization::is_fundamental<LHS>::value && vectorization::is_fundamental<RHS>::value,      \
                 bool> = true>                                                                  \
         VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(LHS&& lhs, RHS&& rhs) noexcept \
         {                                                                                      \
             if constexpr (                                                                     \
-                is_packet<quarisma::remove_cvref_t<LHS>>::value &&                               \
-                is_packet<quarisma::remove_cvref_t<RHS>>::value)                                 \
+                is_packet<vectorization::remove_cvref_t<LHS>>::value &&                               \
+                is_packet<vectorization::remove_cvref_t<RHS>>::value)                                 \
             {                                                                                  \
                 using value_t      = typename scalar_type<LHS, RHS>::value;                    \
                 using array_simd_t = typename packet<value_t>::array_simd_t;                   \
@@ -168,7 +168,7 @@ MACRO_FUNCTION_EVALUATOR(invsqrt);
                 packet<value_t>::f(lhs, rhs, ret);                                             \
                 return ret;                                                                    \
             }                                                                                  \
-            else if constexpr (is_packet<quarisma::remove_cvref_t<RHS>>::value)                  \
+            else if constexpr (is_packet<vectorization::remove_cvref_t<RHS>>::value)                  \
             {                                                                                  \
                 using value_t      = typename scalar_type<RHS, RHS>::value;                    \
                 using array_simd_t = typename packet<value_t>::array_simd_t;                   \
@@ -179,7 +179,7 @@ MACRO_FUNCTION_EVALUATOR(invsqrt);
                 packet<value_t>::f(temp, rhs, ret);                                            \
                 return ret;                                                                    \
             }                                                                                  \
-            else if constexpr (is_packet<quarisma::remove_cvref_t<LHS>>::value)                  \
+            else if constexpr (is_packet<vectorization::remove_cvref_t<LHS>>::value)                  \
             {                                                                                  \
                 using value_t      = typename scalar_type<LHS, LHS>::value;                    \
                 using array_simd_t = typename packet<value_t>::array_simd_t;                   \
@@ -195,7 +195,7 @@ MACRO_FUNCTION_EVALUATOR(invsqrt);
         }                                                                                      \
     };
 
-namespace quarisma
+namespace vectorization
 {
 MACRO_OPERATION_EVALUATOR(add, add);
 MACRO_OPERATION_EVALUATOR(mul, mul);
@@ -206,7 +206,7 @@ MACRO_OPERATION_EVALUATOR(min, min);
 MACRO_OPERATION_EVALUATOR(pow, pow);
 MACRO_OPERATION_EVALUATOR(hypot, hypot);
 MACRO_OPERATION_EVALUATOR(copysign, signcopy);
-}  // namespace quarisma
+}  // namespace vectorization
 //================================================================================================
 #define MACRO_OPERATION_EVALUATOR_MASK(op, f)                                                  \
     struct MACRO_EVALUATOR_SUFIX(op)                                                           \
@@ -215,14 +215,14 @@ MACRO_OPERATION_EVALUATOR(copysign, signcopy);
             typename LHS,                                                                      \
             typename RHS,                                                                      \
             std::enable_if_t<                                                                  \
-                quarisma::is_fundamental<LHS>::value && quarisma::is_fundamental<RHS>::value,      \
+                vectorization::is_fundamental<LHS>::value && vectorization::is_fundamental<RHS>::value,      \
                 bool> = true>                                                                  \
         VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(                               \
             LHS const& lhs, RHS const& rhs) noexcept                                           \
         {                                                                                      \
             if constexpr (                                                                     \
-                is_packet<quarisma::remove_cvref_t<LHS>>::value &&                               \
-                is_packet<quarisma::remove_cvref_t<RHS>>::value)                                 \
+                is_packet<vectorization::remove_cvref_t<LHS>>::value &&                               \
+                is_packet<vectorization::remove_cvref_t<RHS>>::value)                                 \
             {                                                                                  \
                 using value_t      = typename scalar_type<LHS, RHS>::value;                    \
                 using array_mask_t = typename packet<value_t>::array_mask_t;                   \
@@ -230,7 +230,7 @@ MACRO_OPERATION_EVALUATOR(copysign, signcopy);
                 packet<value_t>::f(lhs, rhs, ret);                                             \
                 return ret;                                                                    \
             }                                                                                  \
-            else if constexpr (is_packet<quarisma::remove_cvref_t<RHS>>::value)                  \
+            else if constexpr (is_packet<vectorization::remove_cvref_t<RHS>>::value)                  \
             {                                                                                  \
                 using value_t      = typename scalar_type<RHS, RHS>::value;                    \
                 using array_mask_t = typename packet<value_t>::array_mask_t;                   \
@@ -241,7 +241,7 @@ MACRO_OPERATION_EVALUATOR(copysign, signcopy);
                 packet<value_t>::f(temp, rhs, ret);                                            \
                 return ret;                                                                    \
             }                                                                                  \
-            else if constexpr (is_packet<quarisma::remove_cvref_t<LHS>>::value)                  \
+            else if constexpr (is_packet<vectorization::remove_cvref_t<LHS>>::value)                  \
             {                                                                                  \
                 using value_t      = typename scalar_type<LHS, LHS>::value;                    \
                 using array_mask_t = typename packet<value_t>::array_mask_t;                   \
@@ -259,13 +259,13 @@ MACRO_OPERATION_EVALUATOR(copysign, signcopy);
             typename LHS,                                                                      \
             typename RHS,                                                                      \
             std::enable_if_t<                                                                  \
-                quarisma::is_fundamental<LHS>::value && quarisma::is_fundamental<RHS>::value,      \
+                vectorization::is_fundamental<LHS>::value && vectorization::is_fundamental<RHS>::value,      \
                 bool> = true>                                                                  \
         VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(LHS&& lhs, RHS&& rhs) noexcept \
         {                                                                                      \
             if constexpr (                                                                     \
-                is_packet<quarisma::remove_cvref_t<LHS>>::value &&                               \
-                is_packet<quarisma::remove_cvref_t<RHS>>::value)                                 \
+                is_packet<vectorization::remove_cvref_t<LHS>>::value &&                               \
+                is_packet<vectorization::remove_cvref_t<RHS>>::value)                                 \
             {                                                                                  \
                 using value_t      = typename scalar_type<LHS, RHS>::value;                    \
                 using array_mask_t = typename packet<value_t>::array_mask_t;                   \
@@ -273,7 +273,7 @@ MACRO_OPERATION_EVALUATOR(copysign, signcopy);
                 packet<value_t>::f(lhs, rhs, ret);                                             \
                 return ret;                                                                    \
             }                                                                                  \
-            else if constexpr (is_packet<quarisma::remove_cvref_t<RHS>>::value)                  \
+            else if constexpr (is_packet<vectorization::remove_cvref_t<RHS>>::value)                  \
             {                                                                                  \
                 using value_t      = typename scalar_type<RHS, RHS>::value;                    \
                 using array_mask_t = typename packet<value_t>::array_mask_t;                   \
@@ -284,7 +284,7 @@ MACRO_OPERATION_EVALUATOR(copysign, signcopy);
                 packet<value_t>::f(temp, rhs, ret);                                            \
                 return ret;                                                                    \
             }                                                                                  \
-            else if constexpr (is_packet<quarisma::remove_cvref_t<LHS>>::value)                  \
+            else if constexpr (is_packet<vectorization::remove_cvref_t<LHS>>::value)                  \
             {                                                                                  \
                 using value_t      = typename scalar_type<LHS, LHS>::value;                    \
                 using array_mask_t = typename packet<value_t>::array_mask_t;                   \
@@ -300,12 +300,12 @@ MACRO_OPERATION_EVALUATOR(copysign, signcopy);
         }                                                                                      \
     };
 
-namespace quarisma
+namespace vectorization
 {
 MACRO_OPERATION_EVALUATOR_MASK(land, land);
 MACRO_OPERATION_EVALUATOR_MASK(lor, lor);
 MACRO_OPERATION_EVALUATOR_MASK(lxor, lxor);
-}  // namespace quarisma
+}  // namespace vectorization
 
 //================================================================================================
 #define MACRO_OPERATION_EVALUATOR_COMP(op, f)                                                  \
@@ -315,14 +315,14 @@ MACRO_OPERATION_EVALUATOR_MASK(lxor, lxor);
             typename LHS,                                                                      \
             typename RHS,                                                                      \
             std::enable_if_t<                                                                  \
-                quarisma::is_fundamental<LHS>::value && quarisma::is_fundamental<RHS>::value,      \
+                vectorization::is_fundamental<LHS>::value && vectorization::is_fundamental<RHS>::value,      \
                 bool> = true>                                                                  \
         VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(                               \
             LHS const& lhs, RHS const& rhs) noexcept                                           \
         {                                                                                      \
             if constexpr (                                                                     \
-                is_packet<quarisma::remove_cvref_t<LHS>>::value &&                               \
-                is_packet<quarisma::remove_cvref_t<RHS>>::value)                                 \
+                is_packet<vectorization::remove_cvref_t<LHS>>::value &&                               \
+                is_packet<vectorization::remove_cvref_t<RHS>>::value)                                 \
             {                                                                                  \
                 using value_t      = typename scalar_type<LHS, RHS>::value;                    \
                 using array_mask_t = typename packet<value_t>::array_mask_t;                   \
@@ -330,7 +330,7 @@ MACRO_OPERATION_EVALUATOR_MASK(lxor, lxor);
                 packet<value_t>::f(lhs, rhs, ret);                                             \
                 return ret;                                                                    \
             }                                                                                  \
-            else if constexpr (is_packet<quarisma::remove_cvref_t<RHS>>::value)                  \
+            else if constexpr (is_packet<vectorization::remove_cvref_t<RHS>>::value)                  \
             {                                                                                  \
                 using value_t      = typename scalar_type<RHS, RHS>::value;                    \
                 using array_mask_t = typename packet<value_t>::array_mask_t;                   \
@@ -341,7 +341,7 @@ MACRO_OPERATION_EVALUATOR_MASK(lxor, lxor);
                 packet<value_t>::f(temp, rhs, ret);                                            \
                 return ret;                                                                    \
             }                                                                                  \
-            else if constexpr (is_packet<quarisma::remove_cvref_t<LHS>>::value)                  \
+            else if constexpr (is_packet<vectorization::remove_cvref_t<LHS>>::value)                  \
             {                                                                                  \
                 using value_t      = typename scalar_type<LHS, LHS>::value;                    \
                 using array_mask_t = typename packet<value_t>::array_mask_t;                   \
@@ -359,13 +359,13 @@ MACRO_OPERATION_EVALUATOR_MASK(lxor, lxor);
             typename LHS,                                                                      \
             typename RHS,                                                                      \
             std::enable_if_t<                                                                  \
-                quarisma::is_fundamental<LHS>::value && quarisma::is_fundamental<RHS>::value,      \
+                vectorization::is_fundamental<LHS>::value && vectorization::is_fundamental<RHS>::value,      \
                 bool> = true>                                                                  \
         VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(LHS&& lhs, RHS&& rhs) noexcept \
         {                                                                                      \
             if constexpr (                                                                     \
-                is_packet<quarisma::remove_cvref_t<LHS>>::value &&                               \
-                is_packet<quarisma::remove_cvref_t<RHS>>::value)                                 \
+                is_packet<vectorization::remove_cvref_t<LHS>>::value &&                               \
+                is_packet<vectorization::remove_cvref_t<RHS>>::value)                                 \
             {                                                                                  \
                 using value_t      = typename scalar_type<LHS, RHS>::value;                    \
                 using array_mask_t = typename packet<value_t>::array_mask_t;                   \
@@ -373,7 +373,7 @@ MACRO_OPERATION_EVALUATOR_MASK(lxor, lxor);
                 packet<value_t>::f(lhs, rhs, ret);                                             \
                 return ret;                                                                    \
             }                                                                                  \
-            else if constexpr (is_packet<quarisma::remove_cvref_t<RHS>>::value)                  \
+            else if constexpr (is_packet<vectorization::remove_cvref_t<RHS>>::value)                  \
             {                                                                                  \
                 using value_t      = typename scalar_type<RHS, RHS>::value;                    \
                 using array_mask_t = typename packet<value_t>::array_mask_t;                   \
@@ -384,7 +384,7 @@ MACRO_OPERATION_EVALUATOR_MASK(lxor, lxor);
                 packet<value_t>::f(temp, rhs, ret);                                            \
                 return ret;                                                                    \
             }                                                                                  \
-            else if constexpr (is_packet<quarisma::remove_cvref_t<LHS>>::value)                  \
+            else if constexpr (is_packet<vectorization::remove_cvref_t<LHS>>::value)                  \
             {                                                                                  \
                 using value_t      = typename scalar_type<LHS, LHS>::value;                    \
                 using array_mask_t = typename packet<value_t>::array_mask_t;                   \
@@ -400,7 +400,7 @@ MACRO_OPERATION_EVALUATOR_MASK(lxor, lxor);
         }                                                                                      \
     };
 
-namespace quarisma
+namespace vectorization
 {
 MACRO_OPERATION_EVALUATOR_COMP(cmpgt, gt);
 MACRO_OPERATION_EVALUATOR_COMP(cmplt, lt);
@@ -408,7 +408,7 @@ MACRO_OPERATION_EVALUATOR_COMP(cmpge, ge);
 MACRO_OPERATION_EVALUATOR_COMP(cmple, le);
 MACRO_OPERATION_EVALUATOR_COMP(cmpeq, eq);
 MACRO_OPERATION_EVALUATOR_COMP(cmpne, neq);
-}  // namespace quarisma
+}  // namespace vectorization
 
 //================================================================================================
 #define MACRO_MOPERATION_EVALUATOR(op, symbole)                                                    \
@@ -418,13 +418,13 @@ MACRO_OPERATION_EVALUATOR_COMP(cmpne, neq);
             typename LHS,                                                                          \
             typename RHS,                                                                          \
             std::enable_if_t<                                                                      \
-                quarisma::is_fundamental<LHS>::value && quarisma::is_fundamental<RHS>::value,          \
+                vectorization::is_fundamental<LHS>::value && vectorization::is_fundamental<RHS>::value,          \
                 bool> = true>                                                                      \
         VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(LHS& lhs, RHS const& rhs) noexcept \
         {                                                                                          \
             if constexpr (                                                                         \
-                is_packet<quarisma::remove_cvref_t<LHS>>::value &&                                   \
-                is_packet<quarisma::remove_cvref_t<RHS>>::value)                                     \
+                is_packet<vectorization::remove_cvref_t<LHS>>::value &&                                   \
+                is_packet<vectorization::remove_cvref_t<RHS>>::value)                                     \
             {                                                                                      \
                 using value_t      = typename scalar_type<LHS, RHS>::value;                        \
                 using array_simd_t = typename packet<value_t>::array_simd_t;                       \
@@ -432,7 +432,7 @@ MACRO_OPERATION_EVALUATOR_COMP(cmpne, neq);
                 packet<value_t>::f(lhs, rhs, lhs);                                                 \
                 return ret;                                                                        \
             }                                                                                      \
-            else if constexpr (is_packet<quarisma::remove_cvref_t<LHS>>::value)                      \
+            else if constexpr (is_packet<vectorization::remove_cvref_t<LHS>>::value)                      \
             {                                                                                      \
                 using value_t      = typename scalar_type<LHS, RHS>::value;                        \
                 using array_simd_t = typename packet<value_t>::array_simd_t;                       \
@@ -444,21 +444,21 @@ MACRO_OPERATION_EVALUATOR_COMP(cmpne, neq);
                 return ret;                                                                        \
             }                                                                                      \
             else if constexpr (                                                                    \
-                std::is_fundamental<quarisma::remove_cvref_t<RHS>>::value &&                         \
-                std::is_fundamental<quarisma::remove_cvref_t<LHS>>::value)                           \
+                std::is_fundamental<vectorization::remove_cvref_t<RHS>>::value &&                         \
+                std::is_fundamental<vectorization::remove_cvref_t<LHS>>::value)                           \
                 return std::f(lhs, rhs);                                                           \
         }                                                                                          \
         template <                                                                                 \
             typename LHS,                                                                          \
             typename RHS,                                                                          \
             std::enable_if_t<                                                                      \
-                quarisma::is_fundamental<LHS>::value && quarisma::is_fundamental<RHS>::value,          \
+                vectorization::is_fundamental<LHS>::value && vectorization::is_fundamental<RHS>::value,          \
                 bool> = true>                                                                      \
         VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(LHS& lhs, RHS&& rhs) noexcept      \
         {                                                                                          \
             if constexpr (                                                                         \
-                is_packet<quarisma::remove_cvref_t<LHS>>::value &&                                   \
-                is_packet<quarisma::remove_cvref_t<RHS>>::value)                                     \
+                is_packet<vectorization::remove_cvref_t<LHS>>::value &&                                   \
+                is_packet<vectorization::remove_cvref_t<RHS>>::value)                                     \
             {                                                                                      \
                 using value_t      = typename scalar_type<LHS, RHS>::value;                        \
                 using array_simd_t = typename packet<value_t>::array_simd_t;                       \
@@ -466,7 +466,7 @@ MACRO_OPERATION_EVALUATOR_COMP(cmpne, neq);
                 packet<value_t>::f(lhs, rhs, lhs);                                                 \
                 return ret;                                                                        \
             }                                                                                      \
-            else if constexpr (is_packet<quarisma::remove_cvref_t<LHS>>::value)                      \
+            else if constexpr (is_packet<vectorization::remove_cvref_t<LHS>>::value)                      \
             {                                                                                      \
                 using value_t      = typename scalar_type<LHS, RHS>::value;                        \
                 using array_simd_t = typename packet<value_t>::array_simd_t;                       \
@@ -478,22 +478,22 @@ MACRO_OPERATION_EVALUATOR_COMP(cmpne, neq);
                 return ret;                                                                        \
             }                                                                                      \
             else if constexpr (                                                                    \
-                std::is_fundamental<quarisma::remove_cvref_t<RHS>>::value &&                         \
-                std::is_fundamental<quarisma::remove_cvref_t<LHS>>::value)                           \
+                std::is_fundamental<vectorization::remove_cvref_t<RHS>>::value &&                         \
+                std::is_fundamental<vectorization::remove_cvref_t<LHS>>::value)                           \
                 return std::f(lhs, rhs);                                                           \
         }                                                                                          \
     };
 
-namespace quarisma
+namespace vectorization
 {
 MACRO_OPERATION_EVALUATOR(madd, add);
 MACRO_OPERATION_EVALUATOR(mmul, mul);
 MACRO_OPERATION_EVALUATOR(mdiv, div);
 MACRO_OPERATION_EVALUATOR(msub, sub);
-}  // namespace quarisma
+}  // namespace vectorization
 
 //================================================================================================
-namespace quarisma
+namespace vectorization
 {
 struct if_else_evaluator
 {
@@ -502,27 +502,27 @@ struct if_else_evaluator
         typename MHS,
         typename RHS,
         std::enable_if_t<
-            quarisma::is_fundamental<LHS>::value && quarisma::is_fundamental<MHS>::value &&
-                quarisma::is_fundamental<RHS>::value,
+            vectorization::is_fundamental<LHS>::value && vectorization::is_fundamental<MHS>::value &&
+                vectorization::is_fundamental<RHS>::value,
             bool> = true>
     VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(
         LHS&& lhs, MHS&& mhs, RHS&& rhs) noexcept
     {
-        if constexpr (quarisma::is_packet<quarisma::remove_cvref_t<LHS>>::value)
+        if constexpr (vectorization::is_packet<vectorization::remove_cvref_t<LHS>>::value)
         {
             using value_t =
-                typename scalar_type<quarisma::remove_cvref_t<LHS>, quarisma::remove_cvref_t<LHS>>::
+                typename scalar_type<vectorization::remove_cvref_t<LHS>, vectorization::remove_cvref_t<LHS>>::
                     value;
             if constexpr (
-                is_packet<quarisma::remove_cvref_t<MHS>>::value &&
-                is_packet<quarisma::remove_cvref_t<RHS>>::value)
+                is_packet<vectorization::remove_cvref_t<MHS>>::value &&
+                is_packet<vectorization::remove_cvref_t<RHS>>::value)
             {
                 using array_simd_t = typename packet<value_t>::array_simd_t;
                 array_simd_t ret{};
                 packet<value_t>::if_else(lhs, mhs, rhs, ret);
                 return ret;
             }
-            else if constexpr (is_packet<quarisma::remove_cvref_t<RHS>>::value)
+            else if constexpr (is_packet<vectorization::remove_cvref_t<RHS>>::value)
             {
                 using array_simd_t = typename packet<value_t>::array_simd_t;
                 using simd_t       = typename packet<value_t>::simd_t;
@@ -532,7 +532,7 @@ struct if_else_evaluator
                 packet<value_t>::if_else(lhs, temp, rhs, ret);
                 return ret;
             }
-            else if constexpr (is_packet<quarisma::remove_cvref_t<MHS>>::value)
+            else if constexpr (is_packet<vectorization::remove_cvref_t<MHS>>::value)
             {
                 using array_simd_t = typename packet<value_t>::array_simd_t;
                 using simd_t       = typename packet<value_t>::simd_t;
@@ -547,9 +547,9 @@ struct if_else_evaluator
             return std::if_else(lhs, mhs, rhs);
     };
 };
-}  // namespace quarisma
+}  // namespace vectorization
 
-namespace quarisma
+namespace vectorization
 {
 struct fma_evaluator
 {
@@ -558,17 +558,17 @@ struct fma_evaluator
         typename MHS,
         typename RHS,
         std::enable_if_t<
-            quarisma::is_fundamental<LHS>::value && quarisma::is_fundamental<MHS>::value &&
-                quarisma::is_fundamental<RHS>::value,
+            vectorization::is_fundamental<LHS>::value && vectorization::is_fundamental<MHS>::value &&
+                vectorization::is_fundamental<RHS>::value,
             bool> = true>
     VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(
         LHS&& lhs, MHS&& mhs, RHS&& rhs) noexcept
     {
-        using rmv_lhs = quarisma::remove_cvref_t<LHS>;
-        using rmv_mhs = quarisma::remove_cvref_t<MHS>;
-        using rmv_rhs = quarisma::remove_cvref_t<RHS>;
+        using rmv_lhs = vectorization::remove_cvref_t<LHS>;
+        using rmv_mhs = vectorization::remove_cvref_t<MHS>;
+        using rmv_rhs = vectorization::remove_cvref_t<RHS>;
 
-        if constexpr (quarisma::is_packet<rmv_lhs>::value)
+        if constexpr (vectorization::is_packet<rmv_lhs>::value)
         {
             using value_t      = typename scalar_type<rmv_lhs, rmv_lhs>::value;
             using array_simd_t = typename packet<value_t>::array_simd_t;
@@ -656,17 +656,17 @@ struct fma_evaluator
         typename MHS,
         typename RHS,
         std::enable_if_t<
-            quarisma::is_fundamental<LHS>::value && quarisma::is_fundamental<MHS>::value &&
-                quarisma::is_fundamental<RHS>::value,
+            vectorization::is_fundamental<LHS>::value && vectorization::is_fundamental<MHS>::value &&
+                vectorization::is_fundamental<RHS>::value,
             bool> = true>
     VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(
         LHS const& lhs, MHS const& mhs, RHS const& rhs) noexcept
     {
-        using rmv_lhs = quarisma::remove_cvref_t<LHS>;
-        using rmv_mhs = quarisma::remove_cvref_t<MHS>;
-        using rmv_rhs = quarisma::remove_cvref_t<RHS>;
+        using rmv_lhs = vectorization::remove_cvref_t<LHS>;
+        using rmv_mhs = vectorization::remove_cvref_t<MHS>;
+        using rmv_rhs = vectorization::remove_cvref_t<RHS>;
 
-        if constexpr (quarisma::is_packet<rmv_lhs>::value)
+        if constexpr (vectorization::is_packet<rmv_lhs>::value)
         {
             using value_t      = typename scalar_type<rmv_lhs, rmv_lhs>::value;
             using array_simd_t = typename packet<value_t>::array_simd_t;
@@ -747,5 +747,5 @@ struct fma_evaluator
         }
     };
 };
-}  // namespace quarisma
+}  // namespace vectorization
 

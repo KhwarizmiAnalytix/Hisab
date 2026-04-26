@@ -28,10 +28,10 @@
 
 //================================================================================================
 #define MACRO_EXPRESSION_FUNCTION_1_ARG_(op, ref)                                             \
-    template <typename LHS, std::enable_if_t<quarisma::is_expression<LHS>::value, bool> = true> \
+    template <typename LHS, std::enable_if_t<vectorization::is_expression<LHS>::value, bool> = true> \
     VECTORIZATION_FUNCTION_ATTRIBUTE auto op(LHS ref expr)                                           \
     {                                                                                         \
-        return quarisma::unary_expression<LHS, quarisma::MACRO_EVALUATOR_SUFIX(op)>(expr);        \
+        return vectorization::unary_expression<LHS, vectorization::MACRO_EVALUATOR_SUFIX(op)>(expr);        \
     }
 
 #define MACRO_EXPRESSION_FUNCTION_1_ARG(op)       \
@@ -71,28 +71,28 @@ MACRO_EXPRESSION_FUNCTION_1_ARG(invsqrt)
 
 //================================================================================================
 #define MACRO_EXPRESSION_OPERATOR_1_ARG_MOVE(op, symbole, ref)                                \
-    template <typename LHS, std::enable_if_t<quarisma::is_expression<LHS>::value, bool> = true> \
+    template <typename LHS, std::enable_if_t<vectorization::is_expression<LHS>::value, bool> = true> \
     VECTORIZATION_FUNCTION_ATTRIBUTE auto OPERATOR(symbole)(LHS && expr)                             \
     {                                                                                         \
-        return quarisma::unary_expression<LHS, quarisma::MACRO_EVALUATOR_SUFIX(op)>(expr);        \
+        return vectorization::unary_expression<LHS, vectorization::MACRO_EVALUATOR_SUFIX(op)>(expr);        \
     }
 
 #define MACRO_EXPRESSION_OPERATOR_1_ARG_COPY(op, symbole, ref)                                \
-    template <typename LHS, std::enable_if_t<quarisma::is_expression<LHS>::value, bool> = true> \
+    template <typename LHS, std::enable_if_t<vectorization::is_expression<LHS>::value, bool> = true> \
     VECTORIZATION_FUNCTION_ATTRIBUTE auto OPERATOR(symbole)(LHS const& expr)                         \
     {                                                                                         \
-        return quarisma::unary_expression<LHS, quarisma::MACRO_EVALUATOR_SUFIX(op)>(expr);        \
+        return vectorization::unary_expression<LHS, vectorization::MACRO_EVALUATOR_SUFIX(op)>(expr);        \
     }
 
 #define MACRO_EXPRESSION_OPERATOR_1_ARG(op, symbole)           \
     MACRO_EXPRESSION_OPERATOR_1_ARG_COPY(op, symbole, const&); \
     MACRO_EXPRESSION_OPERATOR_1_ARG_MOVE(op, symbole, &&);
 //------------------------------------------------------------------------------------------------
-namespace quarisma
+namespace vectorization
 {
 MACRO_EXPRESSION_OPERATOR_1_ARG(neg, -);
 MACRO_EXPRESSION_OPERATOR_1_ARG(lnot, !);
-}  // namespace quarisma
+}  // namespace vectorization
 
 //================================================================================================
 #define MACRO_EXPRESSION_FUNCTION_2_ARG_(op, ref)                                                \
@@ -100,11 +100,11 @@ MACRO_EXPRESSION_OPERATOR_1_ARG(lnot, !);
         typename LHS,                                                                            \
         typename RHS,                                                                            \
         std::enable_if_t<                                                                        \
-            quarisma::is_expression<LHS>::value || quarisma::is_expression<RHS>::value,              \
+            vectorization::is_expression<LHS>::value || vectorization::is_expression<RHS>::value,              \
             bool> = true>                                                                        \
     VECTORIZATION_FUNCTION_ATTRIBUTE auto op(LHS ref lhs, RHS ref rhs)                                  \
     {                                                                                            \
-        return quarisma::binary_expression<LHS, RHS, quarisma::MACRO_EVALUATOR_SUFIX(op)>(lhs, rhs); \
+        return vectorization::binary_expression<LHS, RHS, vectorization::MACRO_EVALUATOR_SUFIX(op)>(lhs, rhs); \
     };
 
 #define MACRO_EXPRESSION_FUNCTION_2_ARG(op)       \
@@ -123,7 +123,7 @@ MACRO_EXPRESSION_FUNCTION_2_ARG(copysign);
     template <typename LHS, typename MHS, typename RHS>                                      \
     VECTORIZATION_FUNCTION_ATTRIBUTE auto op(LHS ref lhs, MHS ref mhs, RHS ref rhs)                 \
     {                                                                                        \
-        return quarisma::trinary_expression<LHS, MHS, RHS, quarisma::MACRO_EVALUATOR_SUFIX(op)>( \
+        return vectorization::trinary_expression<LHS, MHS, RHS, vectorization::MACRO_EVALUATOR_SUFIX(op)>( \
             lhs, mhs, rhs);                                                                  \
     }
 
@@ -140,18 +140,18 @@ MACRO_EXPRESSION_FUNCTION_3_ARG(if_else);
         typename LHS,                                                                            \
         typename RHS,                                                                            \
         std::enable_if_t<                                                                        \
-            quarisma::is_expression<LHS>::value || quarisma::is_expression<RHS>::value,              \
+            vectorization::is_expression<LHS>::value || vectorization::is_expression<RHS>::value,              \
             bool> = true>                                                                        \
     VECTORIZATION_FUNCTION_ATTRIBUTE auto OPERATOR(symbole)(LHS ref lhs, RHS ref rhs) noexcept          \
     {                                                                                            \
-        return quarisma::binary_expression<LHS, RHS, quarisma::MACRO_EVALUATOR_SUFIX(op)>(lhs, rhs); \
+        return vectorization::binary_expression<LHS, RHS, vectorization::MACRO_EVALUATOR_SUFIX(op)>(lhs, rhs); \
     }
 
 #define MACRO_EXPRESSION_OPERATOR_2_ARG(op, symbole)      \
     EXPRESSION_ARG2_OPERATOR_HELPER(op, symbole, const&); \
     EXPRESSION_ARG2_OPERATOR_HELPER(op, symbole, &&);
 //------------------------------------------------------------------------------------------------
-namespace quarisma
+namespace vectorization
 {
 MACRO_EXPRESSION_OPERATOR_2_ARG(land, &&);
 MACRO_EXPRESSION_OPERATOR_2_ARG(lor, ||);
@@ -167,91 +167,91 @@ MACRO_EXPRESSION_OPERATOR_2_ARG(sub, -);
 // MACRO_EXPRESSION_OPERATOR_2_ARG(mul, *);
 MACRO_EXPRESSION_OPERATOR_2_ARG(div, /);
 
-}  // namespace quarisma
+}  // namespace vectorization
 
 //================================================================================================
-namespace quarisma
+namespace vectorization
 {
 template <
     typename LHS,
     typename RHS,
-    std::enable_if_t<quarisma::is_expression<LHS>::value || quarisma::is_expression<RHS>::value, bool> =
+    std::enable_if_t<vectorization::is_expression<LHS>::value || vectorization::is_expression<RHS>::value, bool> =
         true>
 VECTORIZATION_FUNCTION_ATTRIBUTE auto operator*(LHS const& lhs, RHS const& rhs) noexcept
 {
-    if constexpr ((!quarisma::is_matrix_operation<LHS>::value &&
-                   !quarisma::is_matrix_operation<RHS>::value))
+    if constexpr ((!vectorization::is_matrix_operation<LHS>::value &&
+                   !vectorization::is_matrix_operation<RHS>::value))
     {
-        return quarisma::binary_expression<LHS, RHS, quarisma::MACRO_EVALUATOR_SUFIX(mul)>(lhs, rhs);
+        return vectorization::binary_expression<LHS, RHS, vectorization::MACRO_EVALUATOR_SUFIX(mul)>(lhs, rhs);
     }
     else if constexpr (
-        quarisma::is_matrix_operation<LHS>::value && !quarisma::is_matrix_operation<RHS>::value)
+        vectorization::is_matrix_operation<LHS>::value && !vectorization::is_matrix_operation<RHS>::value)
     {
-        return quarisma::matrix_vector_multiplication_expression<LHS, RHS>(lhs, rhs);
+        return vectorization::matrix_vector_multiplication_expression<LHS, RHS>(lhs, rhs);
     }
     else if constexpr (
-        !quarisma::is_matrix_operation<LHS>::value && quarisma::is_matrix_operation<RHS>::value)
+        !vectorization::is_matrix_operation<LHS>::value && vectorization::is_matrix_operation<RHS>::value)
     {
         if constexpr (std::is_fundamental<LHS>::value)
         {
-            return quarisma::binary_expression<LHS, RHS, quarisma::MACRO_EVALUATOR_SUFIX(mul)>(
+            return vectorization::binary_expression<LHS, RHS, vectorization::MACRO_EVALUATOR_SUFIX(mul)>(
                 lhs, rhs);
         }
         else
         {
-            return quarisma::vector_matrix_multiplication_expression<LHS, RHS>(lhs, rhs);
+            return vectorization::vector_matrix_multiplication_expression<LHS, RHS>(lhs, rhs);
         }
     }
     else if constexpr (
-        quarisma::is_matrix_operation<LHS>::value && quarisma::is_matrix_operation<RHS>::value)
+        vectorization::is_matrix_operation<LHS>::value && vectorization::is_matrix_operation<RHS>::value)
     {
-        return quarisma::matrix_multiplication_expression<LHS, RHS>(lhs, rhs);
+        return vectorization::matrix_multiplication_expression<LHS, RHS>(lhs, rhs);
     }
 }
 
 template <
     typename LHS,
     typename RHS,
-    std::enable_if_t<quarisma::is_expression<LHS>::value || quarisma::is_expression<RHS>::value, bool> =
+    std::enable_if_t<vectorization::is_expression<LHS>::value || vectorization::is_expression<RHS>::value, bool> =
         true>
 VECTORIZATION_FUNCTION_ATTRIBUTE auto operator*(LHS&& lhs, RHS&& rhs) noexcept
 {
-    using rmv_lhs = quarisma::remove_cvref_t<LHS>;
-    using rmv_rhs = quarisma::remove_cvref_t<RHS>;
+    using rmv_lhs = vectorization::remove_cvref_t<LHS>;
+    using rmv_rhs = vectorization::remove_cvref_t<RHS>;
     if constexpr (
-        !quarisma::is_matrix_operation<rmv_lhs>::value &&
-        !quarisma::is_matrix_operation<rmv_rhs>::value)
+        !vectorization::is_matrix_operation<rmv_lhs>::value &&
+        !vectorization::is_matrix_operation<rmv_rhs>::value)
     {
-        return quarisma::binary_expression<rmv_lhs, rmv_rhs, quarisma::MACRO_EVALUATOR_SUFIX(mul)>(
+        return vectorization::binary_expression<rmv_lhs, rmv_rhs, vectorization::MACRO_EVALUATOR_SUFIX(mul)>(
             lhs, rhs);
     }
     else if constexpr (
-        quarisma::is_matrix_operation<rmv_lhs>::value && !quarisma::is_matrix_operation<rmv_rhs>::value)
+        vectorization::is_matrix_operation<rmv_lhs>::value && !vectorization::is_matrix_operation<rmv_rhs>::value)
     {
-        return quarisma::matrix_vector_multiplication_expression<rmv_lhs, rmv_rhs>(lhs, rhs);
+        return vectorization::matrix_vector_multiplication_expression<rmv_lhs, rmv_rhs>(lhs, rhs);
     }
     else if constexpr (
-        !quarisma::is_matrix_operation<rmv_lhs>::value && quarisma::is_matrix_operation<rmv_rhs>::value)
+        !vectorization::is_matrix_operation<rmv_lhs>::value && vectorization::is_matrix_operation<rmv_rhs>::value)
     {
-        return quarisma::vector_matrix_multiplication_expression<rmv_lhs, rmv_rhs>(lhs, rhs);
+        return vectorization::vector_matrix_multiplication_expression<rmv_lhs, rmv_rhs>(lhs, rhs);
     }
     else if constexpr (
-        quarisma::is_matrix_operation<rmv_lhs>::value && quarisma::is_matrix_operation<rmv_rhs>::value)
+        vectorization::is_matrix_operation<rmv_lhs>::value && vectorization::is_matrix_operation<rmv_rhs>::value)
     {
-        return quarisma::matrix_multiplication_expression<rmv_lhs, rmv_rhs>(lhs, rhs);
+        return vectorization::matrix_multiplication_expression<rmv_lhs, rmv_rhs>(lhs, rhs);
     }
 }
-}  // namespace quarisma
+}  // namespace vectorization
 
 //================================================================================================
 #define EXPRESSION_ARG2_MOPERATOR_HELPER(op, symbole, ref)                            \
     template <                                                                        \
         typename LHS,                                                                 \
         typename RHS,                                                                 \
-        std::enable_if_t<quarisma::is_base_expression<LHS>::value, int> = 0>            \
+        std::enable_if_t<vectorization::is_base_expression<LHS>::value, int> = 0>            \
     VECTORIZATION_FUNCTION_ATTRIBUTE void OPERATOR(symbole)(LHS ref lhs, RHS const ref rhs)  \
     {                                                                                 \
-        lhs = quarisma::binary_expression<LHS, RHS, quarisma::MACRO_EVALUATOR_SUFIX(op)>( \
+        lhs = vectorization::binary_expression<LHS, RHS, vectorization::MACRO_EVALUATOR_SUFIX(op)>( \
             static_cast<LHS const&>(lhs), static_cast<RHS const&>(rhs));              \
     }
 
@@ -259,12 +259,12 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto operator*(LHS&& lhs, RHS&& rhs) noexcept
     EXPRESSION_ARG2_MOPERATOR_HELPER(op, symbole, &); \
     EXPRESSION_ARG2_MOPERATOR_HELPER(op, symbole, &&);
 
-namespace quarisma
+namespace vectorization
 {
 MACRO_EXPRESSION_MOPERATOR_2_ARG(madd, +=);
 MACRO_EXPRESSION_MOPERATOR_2_ARG(msub, -=);
 MACRO_EXPRESSION_MOPERATOR_2_ARG(mmul, *=);
 MACRO_EXPRESSION_MOPERATOR_2_ARG(mdiv, /=);
-}  // namespace quarisma
+}  // namespace vectorization
 
 #endif

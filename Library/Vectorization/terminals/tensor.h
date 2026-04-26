@@ -24,11 +24,9 @@
 
 #include "common/packet.h"
 #include "expressions/expressions.h"
-#include "memory/allocator.h"
-#include "memory/data_ptr.h"
 #include "terminals/matrix.h"
 
-namespace quarisma
+namespace vectorization
 {
 template <typename value_t>
 class tensor
@@ -47,7 +45,7 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(
         value_t*               data,
         const dimensions_type& dimensions,
-        quarisma::device_enum    type = quarisma::device_enum::CPU)
+        vectorization::device_enum    type = vectorization::device_enum::CPU)
         : dimensions_(dimensions),
           sizes_(accumulate_array(dimensions)),
           storage_(data, sizes_.front(), type)
@@ -57,7 +55,7 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(
         value_t*            data,
         dimensions_type&&   dimensions,
-        quarisma::device_enum type = quarisma::device_enum::CPU)
+        vectorization::device_enum type = vectorization::device_enum::CPU)
         : dimensions_(std::move(dimensions)),
           sizes_(accumulate_array(dimensions_)),
           storage_(data, sizes_.front(), type)
@@ -67,7 +65,7 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(
         void*                  data,
         const dimensions_type& dimensions,
-        quarisma::device_enum    type = quarisma::device_enum::CPU)
+        vectorization::device_enum    type = vectorization::device_enum::CPU)
         : tensor((value_t*)data, dimensions, type)
     {
     }
@@ -75,13 +73,13 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(
         const value_t*         data,
         const dimensions_type& dimensions,
-        quarisma::device_enum    type = quarisma::device_enum::CPU)
+        vectorization::device_enum    type = vectorization::device_enum::CPU)
         : tensor(const_cast<value_t*>(data), dimensions, type)
     {
     }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(
-        const dimensions_type& v, quarisma::device_enum type = quarisma::device_enum::CPU)  // NOLINT
+        const dimensions_type& v, vectorization::device_enum type = vectorization::device_enum::CPU)  // NOLINT
         : dimensions_(v), sizes_(accumulate_array(dimensions_)), storage_(sizes_.front(), type)
     {
     }
@@ -205,7 +203,7 @@ public:
 
     template <
         typename E,
-        typename std::enable_if<quarisma::is_pure_expression<E>::value, bool>::type = true>
+        typename std::enable_if<vectorization::is_pure_expression<E>::value, bool>::type = true>
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(E const& expr)
     {
         storage_ = data_t(expr.size(), device_enum::CPU);
@@ -214,7 +212,7 @@ public:
 
     template <
         typename E,
-        typename std::enable_if<quarisma::is_pure_expression<E>::value, bool>::type = true>
+        typename std::enable_if<vectorization::is_pure_expression<E>::value, bool>::type = true>
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(E&& expr)  // NOLINT
     {
         storage_ = data_t(expr.size(), device_enum::CPU);
@@ -223,7 +221,7 @@ public:
 
     template <
         typename E,
-        typename std::enable_if<quarisma::is_pure_expression<E>::value, bool>::type = true>
+        typename std::enable_if<vectorization::is_pure_expression<E>::value, bool>::type = true>
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor& operator=(E const& expr)
     {
         evaluator::template run<E, tensor>(expr, *this);
@@ -232,7 +230,7 @@ public:
 
     template <
         typename E,
-        typename std::enable_if<quarisma::is_pure_expression<E>::value, bool>::type = true>
+        typename std::enable_if<vectorization::is_pure_expression<E>::value, bool>::type = true>
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor& operator=(E&& expr)
     {
         evaluator::template run<E, tensor>(static_cast<E const&>(expr), *this);
@@ -244,7 +242,7 @@ public:
         typename std::enable_if<std::is_fundamental<T2>::value, bool>::type = true>
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor& operator=(T2 value) noexcept
     {
-        evaluator::template fill<value_t, quarisma::tensor<value_t> >(
+        evaluator::template fill<value_t, vectorization::tensor<value_t> >(
             static_cast<value_t>(value), *this);
         return *this;
     }
@@ -301,4 +299,4 @@ private:
     dimensions_type sizes_;
     data_t          storage_{};
 };
-}  // namespace quarisma
+}  // namespace vectorization

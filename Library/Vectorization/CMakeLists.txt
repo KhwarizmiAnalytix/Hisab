@@ -69,6 +69,13 @@ option(VECTORIZATION_ENABLE_AVX512 "Enable AVX-512 SIMD tier" ${_def_avx512})
 option(VECTORIZATION_ENABLE_SVML "Enable Intel SVML short vector math library" OFF)
 mark_as_advanced(VECTORIZATION_ENABLE_SVML)
 
+# Memory presence — detected from the CMake target; not a user option.
+if(TARGET Memory::Memory)
+  set(_vec_has_memory 1)
+else()
+  set(_vec_has_memory 0)
+endif()
+
 option(VECTORIZATION_ENABLE_ICECC "Use Icecream distributed compiler for Vectorization" OFF)
 mark_as_advanced(VECTORIZATION_ENABLE_ICECC)
 option(VECTORIZATION_ENABLE_CACHE "Enable compiler caching for the Vectorization target" ON)
@@ -211,6 +218,7 @@ compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_AVX2)
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_AVX512)
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_SVML)
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_GTEST)
+list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_MEMORY=${_vec_has_memory})
 
 set(VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS "")
 list(APPEND VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS ${VECTORIZATION_COMPILE_DEFINITIONS})
@@ -234,23 +242,23 @@ list(FILTER templates EXCLUDE REGEX ".*/Testing/.*")
 
 # Exclude SIMD subdirectories whose tier flag is OFF.
 if(NOT VECTORIZATION_ENABLE_SSE)
-  list(FILTER headers   EXCLUDE REGEX ".*/sse/.*")
-  list(FILTER sources   EXCLUDE REGEX ".*/sse/.*")
-  list(FILTER templates EXCLUDE REGEX ".*/sse/.*")
+  list(FILTER headers   EXCLUDE REGEX ".*/backend/sse/.*")
+  list(FILTER sources   EXCLUDE REGEX ".*/backend/sse/.*")
+  list(FILTER templates EXCLUDE REGEX ".*/backend/sse/.*")
 endif()
 
-# avx/ serves both AVX and AVX2; include it when either (or AVX512) is active.
+# backend/avx/ serves both AVX and AVX2; include it when either (or AVX512) is active.
 if(NOT VECTORIZATION_ENABLE_AVX AND NOT VECTORIZATION_ENABLE_AVX2
    AND NOT VECTORIZATION_ENABLE_AVX512)
-  list(FILTER headers   EXCLUDE REGEX ".*/avx/.*")
-  list(FILTER sources   EXCLUDE REGEX ".*/avx/.*")
-  list(FILTER templates EXCLUDE REGEX ".*/avx/.*")
+  list(FILTER headers   EXCLUDE REGEX ".*/backend/avx/.*")
+  list(FILTER sources   EXCLUDE REGEX ".*/backend/avx/.*")
+  list(FILTER templates EXCLUDE REGEX ".*/backend/avx/.*")
 endif()
 
 if(NOT VECTORIZATION_ENABLE_AVX512)
-  list(FILTER headers   EXCLUDE REGEX ".*/avx512/.*")
-  list(FILTER sources   EXCLUDE REGEX ".*/avx512/.*")
-  list(FILTER templates EXCLUDE REGEX ".*/avx512/.*")
+  list(FILTER headers   EXCLUDE REGEX ".*/backend/avx512/.*")
+  list(FILTER sources   EXCLUDE REGEX ".*/backend/avx512/.*")
+  list(FILTER templates EXCLUDE REGEX ".*/backend/avx512/.*")
 endif()
 
 if(NOT VECTORIZATION_ENABLE_SVML)
@@ -288,7 +296,6 @@ generate_export_header(
 )
 
 add_library(Vectorization::Vectorization ALIAS Vectorization)
-add_library(Quarisma::Vectorization      ALIAS Vectorization)
 
 set_target_properties(
   Vectorization PROPERTIES
@@ -342,7 +349,9 @@ if(VECTORIZATION_DEPENDENCY_INCLUDE_DIRS)
   message(STATUS "Vectorization: extra include dirs: ${VECTORIZATION_DEPENDENCY_INCLUDE_DIRS}")
 endif()
 
-target_link_libraries(Vectorization PUBLIC Core::Core)
+if(_vec_has_memory)
+  target_link_libraries(Vectorization PUBLIC Memory::Memory)
+endif()
 
 if(VECTORIZATION_DEPENDENCY_LIBS)
   target_link_libraries(Vectorization PUBLIC ${VECTORIZATION_DEPENDENCY_LIBS})
@@ -374,16 +383,16 @@ quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 
 install(
   TARGETS Vectorization
-  EXPORT  QuarismaTargets
+  EXPORT  VectorizationTargets
   LIBRARY   DESTINATION lib
   ARCHIVE   DESTINATION lib
   RUNTIME   DESTINATION bin
   INCLUDES  DESTINATION include
 )
-install(FILES ${headers} DESTINATION include/Quarisma/Vectorization COMPONENT Development)
+install(FILES ${headers} DESTINATION include/Vectorization COMPONENT Development)
 install(
   FILES "${CMAKE_CURRENT_BINARY_DIR}/vectorization_export.h"
-  DESTINATION include/Quarisma/Vectorization
+  DESTINATION include/Vectorization
   COMPONENT Development
 )
 
@@ -412,6 +421,7 @@ message("  Enable AVX           : ${VECTORIZATION_ENABLE_AVX}")
 message("  Enable AVX2          : ${VECTORIZATION_ENABLE_AVX2}")
 message("  Enable AVX512        : ${VECTORIZATION_ENABLE_AVX512}")
 message("  Svml                 : ${VECTORIZATION_ENABLE_SVML}")
+message("  Memory (HAS)         : ${_vec_has_memory}")
 message("  Cxx standard         : ${VECTORIZATION_CXX_STANDARD}")
 message("  Cache                : ${VECTORIZATION_ENABLE_CACHE}")
 message("  Cache backend        : ${VECTORIZATION_CACHE_BACKEND}")

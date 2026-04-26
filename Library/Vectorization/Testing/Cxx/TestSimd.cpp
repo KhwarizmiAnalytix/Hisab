@@ -23,8 +23,7 @@
 #include <string>
 #include <vector>
 
-#include "common/configure.h"
-#include "common/constants.h"
+//#include "common/constants.h"
 #include "common/packet.h"
 #include "memory/allocator.h"
 #include "terminals/vector.h"
@@ -248,11 +247,11 @@ void test_all_simd_function(value_t tolerance)
 
     using simd_t       = typename simd<value_t>::simd_t;
     using mask_t       = typename simd<value_t>::mask_t;
-    using xsigma_int_t = typename simd<value_t>::int_t;
+    using vec_int_t = typename simd<value_t>::int_t;
 
     const size_t n = (2 << 8) + 3;
 
-    using allocator_t = typename quarisma::allocator<value_t>;
+    using allocator_t = typename vectorization::allocator<value_t>;
 
     auto* x = allocator_t::allocate(n);
     auto* y = allocator_t::allocate(n);
@@ -303,7 +302,7 @@ void test_all_simd_function(value_t tolerance)
     simd_t b;
     simd<value_t>::set(0.1, b);
 
-    VECTORIZATION_ALIGN(VECTORIZATION_ALIGNMENT) xsigma_int_t tmp[simd<value_t>::size];
+    VECTORIZATION_ALIGN(VECTORIZATION_ALIGNMENT) vec_int_t tmp[simd<value_t>::size];
 
     mask_t m;
     simd<value_t>::set(0, m);

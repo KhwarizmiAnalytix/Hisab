@@ -19,26 +19,26 @@
 
 #pragma once
 
-#include "common/configure.h"
+
 
 #include <array>
 
 #include "common/intrin.h"
-#include "common/macros.h"
+#include "common/vectorization_macros.h"
 #include "common/scalar_helper_functions.h"
 
 #if defined(VECTORIZATION_HAS_AVX512)
-#include "avx512/double/simd.h"
-#include "avx512/float/simd.h"
+#include "backend/avx512/double/simd.h"
+#include "backend/avx512/float/simd.h"
 #elif defined(VECTORIZATION_HAS_AVX2) || defined(VECTORIZATION_HAS_AVX)
-#include "avx/double/simd.h"
-#include "avx/float/simd.h"
+#include "backend/avx/double/simd.h"
+#include "backend/avx/float/simd.h"
 #elif defined VECTORIZATION_HAS_SSE
-#include "sse/double/simd.h"
-#include "sse/float/simd.h"
+#include "backend/sse/double/simd.h"
+#include "backend/sse/float/simd.h"
 #endif
 
-namespace quarisma
+namespace vectorization
 {
 #define LOAD(op)                                                           \
     simd<value_t>::op(from, data.data_[0]);                                \
@@ -603,9 +603,9 @@ namespace quarisma
         simd<value_t>::op(x.data_[30], data.data_[30]); \
         simd<value_t>::op(x.data_[31], data.data_[31]); \
     }
-}  // namespace quarisma
+}  // namespace vectorization
 
-namespace quarisma
+namespace vectorization
 {
 template <typename simd_t, uint32_t N>
 struct array
@@ -643,8 +643,8 @@ struct packet
     static constexpr uint32_t Length = N;
 #endif  // VECTORIZATION_VECTORIZED
 
-    using array_simd_t = typename quarisma::array<simd_t, N>;
-    using array_mask_t = typename quarisma::array<mask_t, N>;
+    using array_simd_t = typename vectorization::array<simd_t, N>;
+    using array_mask_t = typename vectorization::array<mask_t, N>;
 
     static constexpr uint32_t size() noexcept { return N; }
 
@@ -1586,5 +1586,5 @@ struct packet
 
     VECTORIZATION_SIMD_RETURN_TYPE hmin(array_simd_t const& y, simd_t& x) { FUNCTION_HORIZANTAL(min); }
 };  // namespace packet
-}  // namespace quarisma
+}  // namespace vectorization
 

@@ -19,22 +19,22 @@
 
 #pragma once
 
-#include "common/macros.h"
+#include "common/vectorization_macros.h"
 #include "common/packet.h"
 #include "common/scalar_helper_functions.h"
 #include "common/vectorization_type_traits.h"
 
-namespace quarisma
+namespace vectorization
 {
 template <typename LHS, bool vectorize>
 class expression_loader final
 {
 public:
-    using rmv_lhs = quarisma::remove_cvref_t<LHS>;
+    using rmv_lhs = vectorization::remove_cvref_t<LHS>;
 
     VECTORIZATION_FUNCTION_ATTRIBUTE static auto evaluate(rmv_lhs const& expr, size_t index) noexcept
     {
-        if constexpr (quarisma::is_base_expression<rmv_lhs>::value)
+        if constexpr (vectorization::is_base_expression<rmv_lhs>::value)
         {
             if constexpr (vectorize)
             {
@@ -57,7 +57,7 @@ public:
                 return expr.data()[index];
             }
         }
-        else if constexpr (quarisma::is_pure_expression<rmv_lhs>::value)
+        else if constexpr (vectorization::is_pure_expression<rmv_lhs>::value)
         {
             return rmv_lhs::template evaluate<vectorize>(expr, index);
         }
@@ -70,4 +70,4 @@ public:
 private:
     rmv_lhs lhs_;
 };
-}  // namespace quarisma
+}  // namespace vectorization

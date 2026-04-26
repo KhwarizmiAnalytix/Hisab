@@ -25,8 +25,7 @@
 #include <string>
 #include <vector>
 
-#include "common/configure.h"
-#include "common/constants.h"
+//#include "common/constants.h"
 #include "distribution/hartman_watson_distribution.h"
 #include "expressions/expressions.h"
 #include "memory/cpu/allocator.h"
@@ -59,7 +58,7 @@ double T     = 5.;
         template <typename T>                                              \
         VECTORIZATION_FORCE_INLINE static void run(T const& a, T const&, T& c)    \
         {                                                                  \
-            if constexpr (quarisma::is_fundamental<T>::value)                \
+            if constexpr (vectorization::is_fundamental<T>::value)                \
                 BENCHMARK_DONOT_OPTIMIZE(c = std::op_inv(std::op(a)) / a); \
             else                                                           \
             {                                                              \
@@ -75,7 +74,7 @@ double T     = 5.;
         template <typename T>                                             \
         VECTORIZATION_FORCE_INLINE static void run(T const& a, T const& b, T& c) \
         {                                                                 \
-            if constexpr (quarisma::is_fundamental<T>::value)               \
+            if constexpr (vectorization::is_fundamental<T>::value)               \
                 BENCHMARK_DONOT_OPTIMIZE(c = std::op(a, b));              \
             else                                                          \
                 BENCHMARK_DONOT_OPTIMIZE(c = op(a, b));                   \
@@ -91,7 +90,7 @@ inline T accumulate(T a, double c)
 }
 }  // namespace std
 
-namespace quarisma
+namespace vectorization
 {
 MACRO_TEST_SIMD_FUNC(sqr, sqrt);
 MACRO_TEST_SIMD_FUNC(invsqrt, sqr);
@@ -132,7 +131,7 @@ public:
     template <typename T>
     VECTORIZATION_FORCE_INLINE static void run(T const& a, T const& b, T& c)
     {
-        if constexpr (quarisma::is_fundamental<T>::value)
+        if constexpr (vectorization::is_fundamental<T>::value)
         {
             auto t = -fabs(a - b) + a + b;
             c      = floor(log1p(fabs(t)) + 1) + ceil(a) + sin(t) + trunc(a) +
@@ -175,7 +174,7 @@ public:
         }
     };
 };
-}  // namespace quarisma
+}  // namespace vectorization
 
 #define SIMD_BENCHMARK(op)                                                \
     template <typename scalar_t>                                          \
@@ -183,9 +182,9 @@ public:
     {                                                                     \
         const size_t n = (2 << 12) + 3;                                   \
                                                                           \
-        quarisma::vector<scalar_t>   a(n);                                  \
-        quarisma::vector<scalar_t>   b(n);                                  \
-        quarisma::vector<scalar_t>   c(n);                                  \
+        vectorization::vector<scalar_t>   a(n);                                  \
+        vectorization::vector<scalar_t>   b(n);                                  \
+        vectorization::vector<scalar_t>   c(n);                                  \
         std::default_random_engine generator;                             \
                                                                           \
         std::uniform_real_distribution<scalar_t> distribution(-5., 5.);   \
@@ -199,16 +198,16 @@ public:
         }                                                                 \
                                                                           \
         for (auto _ : state)                                              \
-            quarisma::func_##op::run(a, b, c);                              \
+            vectorization::func_##op::run(a, b, c);                              \
     }                                                                     \
     template <typename scalar_t>                                          \
     static void Scalar_##op(benchmark::State& state)                      \
     {                                                                     \
         const size_t n = (2 << 12) + 3;                                   \
                                                                           \
-        quarisma::vector<scalar_t>   a(n);                                  \
-        quarisma::vector<scalar_t>   b(n);                                  \
-        quarisma::vector<scalar_t>   c(n);                                  \
+        vectorization::vector<scalar_t>   a(n);                                  \
+        vectorization::vector<scalar_t>   b(n);                                  \
+        vectorization::vector<scalar_t>   c(n);                                  \
         std::default_random_engine generator;                             \
                                                                           \
         std::uniform_real_distribution<scalar_t> distribution(-5., 5.);   \
@@ -223,16 +222,16 @@ public:
                                                                           \
         for (auto _ : state)                                              \
             for (size_t i = 0; i < n; ++i)                                \
-                quarisma::func_##op::run(a[i], b[i], c[i]);                 \
+                vectorization::func_##op::run(a[i], b[i], c[i]);                 \
     }                                                                     \
     BENCHMARK_TEMPLATE(Vectorized_##op, float)->MeasureProcessCPUTime();  \
     BENCHMARK_TEMPLATE(Scalar_##op, float)->MeasureProcessCPUTime();      \
     BENCHMARK_TEMPLATE(Vectorized_##op, double)->MeasureProcessCPUTime(); \
     BENCHMARK_TEMPLATE(Scalar_##op, double)->MeasureProcessCPUTime();
 
-namespace xsigma_test
+namespace vectorization_test
 {
-inline void transpose8x8_intrinsic([[maybe_unused]] quarisma::array<simd<double>::simd_t, 8> reg)
+inline void transpose8x8_intrinsic([[maybe_unused]] vectorization::array<simd<double>::simd_t, 8> reg)
 {
 #ifdef VECTORIZATION_HAS_AVX512
     simd<double>::simd_t tmp[8];
@@ -283,7 +282,7 @@ inline void transpose8x8_intrinsic([[maybe_unused]] quarisma::array<simd<double>
 #endif  // VECTORIZATION_HAS_AVX512
 }
 
-inline void transpose16x16_intrinsic([[maybe_unused]] quarisma::array<simd<float>::simd_t, 16> reg)
+inline void transpose16x16_intrinsic([[maybe_unused]] vectorization::array<simd<float>::simd_t, 16> reg)
 {
 #ifdef VECTORIZATION_HAS_AVX512
     simd<float>::simd_t tmp[16];
@@ -336,17 +335,17 @@ inline void transpose16x16_intrinsic([[maybe_unused]] quarisma::array<simd<float
     }
 #endif  // VECTORIZATION_HAS_AVX512
 }
-}  // namespace xsigma_test
+}  // namespace vectorization_test
 
 template <typename scalar_t>
 static void Vectorized_transpose(benchmark::State& state)
 {
-    quarisma::array<simd<float>::simd_t, 16> reg_s;
-    quarisma::array<simd<double>::simd_t, 8> reg_d;
+    vectorization::array<simd<float>::simd_t, 16> reg_s;
+    vectorization::array<simd<double>::simd_t, 8> reg_d;
 
     const auto n = 16 * 16;
 
-    quarisma::vector<scalar_t> r(n);
+    vectorization::vector<scalar_t> r(n);
     for (size_t i = 0; i < n; ++i)
     {
         r[i] = y_min + i * dy;
@@ -354,11 +353,11 @@ static void Vectorized_transpose(benchmark::State& state)
 
     if constexpr (std::is_same_v<float, scalar_t>)
     {
-        quarisma::packet<float, 16>::load(r.data(), reg_s);
+        vectorization::packet<float, 16>::load(r.data(), reg_s);
     }
     else
     {
-        quarisma::packet<double, 8>::load(r.data(), reg_d);
+        vectorization::packet<double, 8>::load(r.data(), reg_d);
     }
     const size_t c = (2 << 12) + 3;
     for (auto _ : state)
@@ -380,12 +379,12 @@ static void Vectorized_transpose(benchmark::State& state)
 template <typename scalar_t>
 static void Scalar_transpose(benchmark::State& state)
 {
-    quarisma::array<simd<float>::simd_t, 16> reg_s;
-    quarisma::array<simd<double>::simd_t, 8> reg_d;
+    vectorization::array<simd<float>::simd_t, 16> reg_s;
+    vectorization::array<simd<double>::simd_t, 8> reg_d;
 
     const auto n = 16 * 16;
 
-    quarisma::vector<scalar_t> r(n);
+    vectorization::vector<scalar_t> r(n);
     for (size_t i = 0; i < n; ++i)
     {
         r[i] = y_min + i * dy;
@@ -393,11 +392,11 @@ static void Scalar_transpose(benchmark::State& state)
 
     if constexpr (std::is_same_v<float, scalar_t>)
     {
-        quarisma::packet<float, 16>::load(r.data(), reg_s);
+        vectorization::packet<float, 16>::load(r.data(), reg_s);
     }
     else
     {
-        quarisma::packet<double, 8>::load(r.data(), reg_d);
+        vectorization::packet<double, 8>::load(r.data(), reg_d);
     }
 
     const size_t c = (2 << 12) + 3;
@@ -407,11 +406,11 @@ static void Scalar_transpose(benchmark::State& state)
         {
             if constexpr (std::is_same_v<float, scalar_t>)
             {
-                xsigma_test::transpose16x16_intrinsic(reg_s);
+                vectorization_test::transpose16x16_intrinsic(reg_s);
             }
             else
             {
-                xsigma_test::transpose8x8_intrinsic(reg_d);
+                vectorization_test::transpose8x8_intrinsic(reg_d);
             }
         }
     }
@@ -453,7 +452,7 @@ SIMD_BENCHMARK(hypot);
     {                                                                       \
         const size_t n = (2 << 12) + 3;                                     \
                                                                             \
-        quarisma::vector<scalar_t>   a(n);                                    \
+        vectorization::vector<scalar_t>   a(n);                                    \
         std::default_random_engine generator;                               \
                                                                             \
         std::uniform_real_distribution<scalar_t> distribution(-5., 5.);     \
@@ -465,13 +464,13 @@ SIMD_BENCHMARK(hypot);
         }                                                                   \
                                                                             \
         for (auto _ : state)                                                \
-            BENCHMARK_DONOT_OPTIMIZE(quarisma::op1(a));                       \
+            BENCHMARK_DONOT_OPTIMIZE(vectorization::op1(a));                       \
     }                                                                       \
     template <typename scalar_t>                                            \
     static void Scalar_h##op2(benchmark::State& state)                      \
     {                                                                       \
         const size_t               n = (2 << 12) + 3;                       \
-        quarisma::vector<scalar_t>   a(n);                                    \
+        vectorization::vector<scalar_t>   a(n);                                    \
         std::default_random_engine generator;                               \
                                                                             \
         std::uniform_real_distribution<scalar_t> distribution(-5., 5.);     \
@@ -498,7 +497,7 @@ SIMDHORIZANTALBENCHMARK(hmin, min);
 SIMDHORIZANTALBENCHMARK(hmax, max);
 SIMDHORIZANTALBENCHMARK(accumulate, accumulate);
 
-using namespace quarisma;
+using namespace vectorization;
 static void BM_Allocation(benchmark::State& state)
 {
     const int  arg = state.range(0);

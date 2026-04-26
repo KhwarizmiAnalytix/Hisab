@@ -23,7 +23,7 @@
 
 #include "vectorization_export.h"
 
-namespace quarisma
+namespace vectorization
 {
 /**
     //tex:
@@ -36,4 +36,4 @@ VECTORIZATION_API double normalcdf(double z);
     //$$N^{-1}(x)$$
     **/
 VECTORIZATION_API double inv_normalcdf(double p);
-}  // namespace quarisma
+}  // namespace vectorization

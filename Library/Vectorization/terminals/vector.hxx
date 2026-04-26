@@ -3,13 +3,13 @@
 
 #include "memory/allocator.h"
 
-#define size_type quarisma::vector<value_t>::size_type
+#define size_type vectorization::vector<value_t>::size_type
 
-namespace quarisma
+namespace vectorization
 {
 //-----------------------------------------------------------------------------
 template <typename value_t>
-vector<value_t>::vector(size_type length, quarisma::device_type type) noexcept
+vector<value_t>::vector(size_type length, vectorization::device_type type) noexcept
     : storage_(length, type)
 {
 }
@@ -17,7 +17,7 @@ vector<value_t>::vector(size_type length, quarisma::device_type type) noexcept
 //-----------------------------------------------------------------------------
 template <typename value_t>
 __VECTORIZATION_FUNCTION_ATTRIBUTE__ vector<value_t>::vector(
-    std::initializer_list<value_t> list, quarisma::device_type type) noexcept
+    std::initializer_list<value_t> list, vectorization::device_type type) noexcept
     : vector(list.size(), type)
 {
     const auto& ptr = list.begin();
@@ -27,7 +27,7 @@ __VECTORIZATION_FUNCTION_ATTRIBUTE__ vector<value_t>::vector(
 //-----------------------------------------------------------------------------
 template <typename value_t>
 __VECTORIZATION_FUNCTION_ATTRIBUTE__ vector<value_t>::vector(
-    value_t* data, size_type length, quarisma::device_type type) noexcept
+    value_t* data, size_type length, vectorization::device_type type) noexcept
     : storage_(data, length, type)
 {
 }
@@ -35,7 +35,7 @@ __VECTORIZATION_FUNCTION_ATTRIBUTE__ vector<value_t>::vector(
 //-----------------------------------------------------------------------------
 template <typename value_t>
 __VECTORIZATION_FUNCTION_ATTRIBUTE__ vector<value_t>::vector(
-    void* data, size_type length, quarisma::device_type type) noexcept
+    void* data, size_type length, vectorization::device_type type) noexcept
     : vector((value_t*)data, length, type)
 {
 }
@@ -43,7 +43,7 @@ __VECTORIZATION_FUNCTION_ATTRIBUTE__ vector<value_t>::vector(
 //-----------------------------------------------------------------------------
 template <typename value_t>
 __VECTORIZATION_CUDA_FUNCTION_TYPE__ vector<value_t>::vector(
-    std::vector<value_t> const& rhs, quarisma::device_type type) noexcept
+    std::vector<value_t> const& rhs, vectorization::device_type type) noexcept
     : vector(const_cast<value_t*>(rhs.data()), rhs.size(), type)
 {
 }
@@ -51,7 +51,7 @@ __VECTORIZATION_CUDA_FUNCTION_TYPE__ vector<value_t>::vector(
 //-----------------------------------------------------------------------------
 template <typename value_t>
 __VECTORIZATION_CUDA_FUNCTION_TYPE__ vector<value_t>::vector(
-    value_t const* data, size_type length, quarisma::device_type type) noexcept
+    value_t const* data, size_type length, vectorization::device_type type) noexcept
     : vector(const_cast<value_t*>(data), length, type)
 {
 }
@@ -59,7 +59,7 @@ __VECTORIZATION_CUDA_FUNCTION_TYPE__ vector<value_t>::vector(
 //-----------------------------------------------------------------------------
 template <typename value_t>
 __VECTORIZATION_CUDA_FUNCTION_TYPE__ vector<value_t>::vector(
-    value_t start, value_t end, size_type length, quarisma::device_type type) noexcept
+    value_t start, value_t end, size_type length, vectorization::device_type type) noexcept
     : vector(length, type)
 {
     auto dx = (end - start) / (length - 1);
@@ -120,7 +120,7 @@ __VECTORIZATION_FUNCTION_ATTRIBUTE__ value_t* vector<value_t>::data(size_type i)
 
 //-----------------------------------------------------------------------------
 template <typename value_t>
-void vector<value_t>::binary_serialize(quarisma::multi_process_stream& buffer, const vector& v)
+void vector<value_t>::binary_serialize(vectorization::multi_process_stream& buffer, const vector& v)
 {
     buffer << v.size();
     buffer.Push(v.begin(), v.size());
@@ -128,7 +128,7 @@ void vector<value_t>::binary_serialize(quarisma::multi_process_stream& buffer, c
 
 //-----------------------------------------------------------------------------
 template <typename value_t>
-void vector<value_t>::binary_deserialize(quarisma::multi_process_stream& buffer, vector& v)
+void vector<value_t>::binary_deserialize(vectorization::multi_process_stream& buffer, vector& v)
 {
     size_t size;
     buffer >> size;
@@ -159,7 +159,7 @@ void vector<value_t>::read_from_json(const json& root, vector& v)
 template <typename value_t>
 void vector<value_t>::write_to_json(json& root, const vector& v)
 {
-    root["class"] = "quarisma.vector";
+    root["class"] = "vectorization.vector";
     root["size"]  = v.size();
 
     auto& archiver = root["data"];
@@ -171,7 +171,7 @@ void vector<value_t>::write_to_json(json& root, const vector& v)
     }
 }
 #endif
-}  // namespace quarisma
+}  // namespace vectorization
 
 #undef size_type
 #endif

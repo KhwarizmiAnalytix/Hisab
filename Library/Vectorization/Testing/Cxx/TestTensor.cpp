@@ -34,7 +34,7 @@ namespace
 template <typename T>
 void test_tensor()
 {
-    EXPECT_EQ(quarisma::tensor<T>::length(), quarisma::packet<T>::length());
+    EXPECT_EQ(vectorization::tensor<T>::length(), vectorization::packet<T>::length());
 
     size_t n1 = 4;
     size_t n2 = 3;
@@ -42,12 +42,12 @@ void test_tensor()
 
     std::vector<T> v(n1 * n2 * n3);
 
-    quarisma::tensor<T> t1({n1, n2, n3});
+    vectorization::tensor<T> t1({n1, n2, n3});
     t1 = 0.l;
 
-    quarisma::tensor<T> t2(v.data(), {n1, n2, n3});
+    vectorization::tensor<T> t2(v.data(), {n1, n2, n3});
 
-    quarisma::tensor<T> tMP((void*)v.data(), {n1, n2, n3});
+    vectorization::tensor<T> tMP((void*)v.data(), {n1, n2, n3});
 
     t2 = static_cast<T>(3.5);
 
@@ -65,15 +65,15 @@ void test_tensor()
 
     t2.dimensions();
 
-    using dimensions_t = typename quarisma::tensor<T>::dimensions_type;
+    using dimensions_t = typename vectorization::tensor<T>::dimensions_type;
 
     dimensions_t indices = {0};
 
     t2.get_matrix(indices);
 
-    quarisma::tensor<T> t = t1 + t2;
+    vectorization::tensor<T> t = t1 + t2;
 
-    quarisma::tensor<T> t3 = exp(t1);
+    vectorization::tensor<T> t3 = exp(t1);
 }
 }  // namespace
 

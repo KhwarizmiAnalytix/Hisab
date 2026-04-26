@@ -23,9 +23,8 @@
 #include <string>
 #include <vector>
 
-#include "common/configure.h"
-#include "common/constants.h"
-#include "common/macros.h"
+//#include "common/constants.h"
+#include "common/vectorization_macros.h"
 #include "common/packet.h"
 #include "memory/allocator.h"
 #include "terminals/vector.h"
@@ -40,7 +39,7 @@
         template <typename T>                                           \
         VECTORIZATION_FORCE_INLINE static void run(T const& a, T const&, T& c) \
         {                                                               \
-            if constexpr (quarisma::is_fundamental<T>::value)             \
+            if constexpr (vectorization::is_fundamental<T>::value)             \
                 c = std::op_inv(std::op(a)) / a;                        \
             else                                                        \
             {                                                           \
@@ -55,14 +54,14 @@
         template <typename T>                                             \
         VECTORIZATION_FORCE_INLINE static void run(T const& a, T const& b, T& c) \
         {                                                                 \
-            if constexpr (quarisma::is_fundamental<T>::value)               \
+            if constexpr (vectorization::is_fundamental<T>::value)               \
                 c = std::op(a, b);                                        \
             else                                                          \
                 c = op(a, b);                                             \
         };                                                                \
     }
 
-namespace quarisma
+namespace vectorization
 {
 MACRO_TEST_SIMD_FUNC(sqr, sqrt);
 MACRO_TEST_SIMD_FUNC(invsqrt, invsqrt);
@@ -92,7 +91,7 @@ struct func_sum
     template <typename T>
     VECTORIZATION_FORCE_INLINE static void run(T const& x, T const& y, T& z)
     {
-        if constexpr (quarisma::is_fundamental<T>::value)
+        if constexpr (vectorization::is_fundamental<T>::value)
         {
             z = x * y - x + std::fma(x, y, x);
         }
@@ -108,7 +107,7 @@ struct func_mixed_formula
     template <typename T>
     VECTORIZATION_FORCE_INLINE static void run(T const& a, T const& b, T& c)
     {
-        if constexpr (quarisma::is_fundamental<T>::value)
+        if constexpr (vectorization::is_fundamental<T>::value)
         {
             auto t = -fabs(a - b) + a + b;
             c      = floor(log1p(fabs(t)) + 1.) + ceil(a) + sin(t) + trunc(a) +
@@ -148,14 +147,14 @@ struct func_fma
     VECTORIZATION_FORCE_INLINE static void run(T1 const& a, T2 const& b, T3 const& c, T4& d)
     {
         if constexpr (
-            quarisma::is_fundamental<T1>::value && quarisma::is_fundamental<T2>::value &&
-            quarisma::is_fundamental<T3>::value)
+            vectorization::is_fundamental<T1>::value && vectorization::is_fundamental<T2>::value &&
+            vectorization::is_fundamental<T3>::value)
             d = std::fma(a, b, c);
         else
             d = fma(a, b, c);
     };
 };
-}  // namespace quarisma
+}  // namespace vectorization
 
 template <typename>
 struct packetTolerance
@@ -178,21 +177,21 @@ template <typename T, typename F>
 void TestFunction(
     size_t n, T const* x, T const* y, T* z_v, T* z_l, T tolerance = packetTolerance<T>::tolerance)
 {
-    quarisma::vector<T> a(x, n);
-    quarisma::vector<T> b(y, n);
-    quarisma::vector<T> c_v(z_v, n);
+    vectorization::vector<T> a(x, n);
+    vectorization::vector<T> b(y, n);
+    vectorization::vector<T> c_v(z_v, n);
 
     F::run(a, b, c_v);
 
     for (size_t i = 0; i < n; ++i)
         F::run(x[i], y[i], z_l[i]);
 
-    quarisma::vector<T> c_l(z_l, n);
-    quarisma::vector<T> diff(n);
+    vectorization::vector<T> c_l(z_l, n);
+    vectorization::vector<T> diff(n);
 
     diff = fabs(c_v - c_l);
 
-    auto max_error = quarisma::hmax(fabs(if_else(
+    auto max_error = vectorization::hmax(fabs(if_else(
         fabs(c_v) < std::numeric_limits<T>::epsilon() &&
             fabs(c_l) < std::numeric_limits<T>::epsilon(),
         0.,
@@ -209,31 +208,31 @@ template <typename T>
 void TestFMA(
     size_t n, T const* x, T const* y, T* z_v, T* z_l, T tolerance = packetTolerance<T>::tolerance)
 {
-    quarisma::vector<T> a(x, n);
-    quarisma::vector<T> c_v(z_v, n);
+    vectorization::vector<T> a(x, n);
+    vectorization::vector<T> c_v(z_v, n);
     {
-        quarisma::vector<T> b(y, n);
-        quarisma::vector<T> e(y, n);
-        quarisma::func_fma::run(a, b, e, c_v);
+        vectorization::vector<T> b(y, n);
+        vectorization::vector<T> e(y, n);
+        vectorization::func_fma::run(a, b, e, c_v);
 
         for (size_t i = 0; i < n; ++i)
-            quarisma::func_fma::run(x[i], y[i], y[i], z_l[i]);
+            vectorization::func_fma::run(x[i], y[i], y[i], z_l[i]);
     }
     /*{
         T b = 0.5;
         T e = 1.5;
-        quarisma::func_fma::run(a, b, e, c_v);
+        vectorization::func_fma::run(a, b, e, c_v);
 
         for (size_t i = 0; i < n; ++i)
-            quarisma::func_fma::run(x[i], b, e, z_l[i]);
+            vectorization::func_fma::run(x[i], b, e, z_l[i]);
     }*/
 
-    quarisma::vector<T> c_l(z_l, n);
-    quarisma::vector<T> diff(n);
+    vectorization::vector<T> c_l(z_l, n);
+    vectorization::vector<T> diff(n);
 
     diff = fabs(c_v - c_l);
 
-    auto max_error = quarisma::hmax(fabs(if_else(
+    auto max_error = vectorization::hmax(fabs(if_else(
         fabs(c_v) < std::numeric_limits<T>::epsilon() &&
             fabs(c_l) < std::numeric_limits<T>::epsilon(),
         0.,
@@ -243,7 +242,7 @@ void TestFMA(
     VECTORIZATION_LOGF(
         INFO,
         "[%s]:   max error(%.2e)",
-        MACRO_CORE_TYPE_ID_NAME(quarisma::func_fma),
+        MACRO_CORE_TYPE_ID_NAME(vectorization::func_fma),
         float(max_error));
 #endif  // DEBUG_SIMD_TEST
 
@@ -253,12 +252,12 @@ void TestFMA(
 template <typename T>
 void TestHorizontalFunction(size_t n, T const* x, T const* y)
 {
-    quarisma::vector<T> a(x, n);
-    quarisma::vector<T> b(y, n);
+    vectorization::vector<T> a(x, n);
+    vectorization::vector<T> b(y, n);
 
-    auto ret_v_min = quarisma::hmin(a);
-    auto ret_v_max = quarisma::hmax(b);
-    auto ret_v_sum = quarisma::accumulate(a);
+    auto ret_v_min = vectorization::hmin(a);
+    auto ret_v_max = vectorization::hmax(b);
+    auto ret_v_sum = vectorization::accumulate(a);
 
     auto   ret_l_min = x[0];
     auto   ret_l_max = y[0];
@@ -299,12 +298,12 @@ namespace
 template <typename T>
 void test_packet_functions()
 {
-    /*constexpr uint32_t N_alignment = quarisma::packet<T>::alignment();
+    /*constexpr uint32_t N_alignment = vectorization::packet<T>::alignment();
     EXPECT_EQ(N_alignment, 64);*/
 
     const size_t n = (2 << 8) + 3;
 
-    using allocator_t = typename quarisma::allocator<T>;
+    using allocator_t = typename vectorization::allocator<T>;
     using value_t     = T;
 
     auto* x   = allocator_t::allocate(n);
@@ -319,9 +318,9 @@ void test_packet_functions()
         y[i] = static_cast<value_t>(4. - 0.8 * static_cast<value_t>(i) * dt);
     }
 
-    quarisma::vector<T> a(x, n);
-    quarisma::vector<T> b(y, n);
-    quarisma::vector<T> c(z_v, n);
+    vectorization::vector<T> a(x, n);
+    vectorization::vector<T> b(y, n);
+    vectorization::vector<T> c(z_v, n);
 
     auto alpha = static_cast<value_t>(0.5);
 
@@ -338,37 +337,37 @@ void test_packet_functions()
 
     auto t = a - b;
 
-    EXPECT_EQ(t.length(), quarisma::vector<T>::length());
-    EXPECT_EQ(quarisma::accumulate(if_else(a > alpha, alpha, a)), quarisma::accumulate(min(alpha, a)));
-    EXPECT_LE(quarisma::accumulate(t), n);
+    EXPECT_EQ(t.length(), vectorization::vector<T>::length());
+    EXPECT_EQ(vectorization::accumulate(if_else(a > alpha, alpha, a)), vectorization::accumulate(min(alpha, a)));
+    EXPECT_LE(vectorization::accumulate(t), n);
 
-    TestFunction<value_t, quarisma::func_sum>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_sqr>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_invsqrt>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_exp>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_exp2>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_expm1>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_sin>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_cos>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_atan>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_sinh>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_cosh>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_tanh>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_cdf>(n, x, y, z_v, z_l, (value_t)5.e-4);
-    TestFunction<value_t, quarisma::func_ceil>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_trunc>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_fabs>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_cbrt>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_min>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_max>(n, x, y, z_v, z_l);
-    //TestFunction<value_t, quarisma::func_pow>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_sum>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_sqr>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_invsqrt>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_exp>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_exp2>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_expm1>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_sin>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_cos>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_atan>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_sinh>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_cosh>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_tanh>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_cdf>(n, x, y, z_v, z_l, (value_t)5.e-4);
+    TestFunction<value_t, vectorization::func_ceil>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_trunc>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_fabs>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_cbrt>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_min>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_max>(n, x, y, z_v, z_l);
+    //TestFunction<value_t, vectorization::func_pow>(n, x, y, z_v, z_l);
 
-    TestFunction<value_t, quarisma::func_copysign>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_hypot>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_copysign>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_hypot>(n, x, y, z_v, z_l);
 
     TestFMA<value_t>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_mixed_if_else>(n, x, y, z_v, z_l);
-    TestFunction<value_t, quarisma::func_mixed_formula>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_mixed_if_else>(n, x, y, z_v, z_l);
+    TestFunction<value_t, vectorization::func_mixed_formula>(n, x, y, z_v, z_l);
 
     TestHorizontalFunction(n, x, y);
 

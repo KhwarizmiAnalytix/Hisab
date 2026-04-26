@@ -19,13 +19,13 @@
 
 #pragma once
 
-#include "common/macros.h"
+#include "common/vectorization_macros.h"
 #include "common/packet.h"
 #include "common/scalar_helper_functions.h"
 #include "common/vectorization_type_traits.h"
 #include "expressions/expression_interface_loader.h"
 
-namespace quarisma
+namespace vectorization
 {
 /*!
  * \brief An unary expression
@@ -36,7 +36,7 @@ template <typename LHS, typename EVALUATOR>
 class unary_expression final
 {
     LHS lhs_;
-    using rmv_lhs = quarisma::remove_cvref_t<LHS>;
+    using rmv_lhs = vectorization::remove_cvref_t<LHS>;
 
 public:
     VECTORIZATION_FUNCTION_ATTRIBUTE size_t size() const noexcept { return lhs_.size(); }
@@ -96,8 +96,8 @@ public:
 template <typename LHS, typename RHS, typename EVALUATOR>
 class binary_expression final
 {
-    using rmv_lhs = quarisma::remove_cvref_t<LHS>;
-    using rmv_rhs = quarisma::remove_cvref_t<RHS>;
+    using rmv_lhs = vectorization::remove_cvref_t<LHS>;
+    using rmv_rhs = vectorization::remove_cvref_t<RHS>;
 
     rmv_lhs lhs_;
     rmv_rhs rhs_;
@@ -107,11 +107,11 @@ public:
     {
         size_t ret = 0;
 
-        if constexpr (quarisma::is_expression<rmv_rhs>::value)  // NOLINT
+        if constexpr (vectorization::is_expression<rmv_rhs>::value)  // NOLINT
         {
             ret = rhs_.size();
         }
-        else if constexpr (quarisma::is_expression<rmv_lhs>::value)  // NOLINT
+        else if constexpr (vectorization::is_expression<rmv_lhs>::value)  // NOLINT
         {
             ret = lhs_.size();
         }
@@ -122,7 +122,7 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr size_t length()
     {
         if constexpr (
-            quarisma::is_expression<rmv_rhs>::value && quarisma::is_expression<rmv_lhs>::value)
+            vectorization::is_expression<rmv_rhs>::value && vectorization::is_expression<rmv_lhs>::value)
         {
             static_assert(
                 rmv_rhs::length() == rmv_lhs::length(), "expresions have different strides!");
@@ -130,11 +130,11 @@ public:
         }
         else
         {
-            if constexpr (quarisma::is_expression<rmv_rhs>::value)
+            if constexpr (vectorization::is_expression<rmv_rhs>::value)
             {
                 return rmv_rhs::length();
             }
-            else if constexpr (quarisma::is_expression<rmv_lhs>::value)
+            else if constexpr (vectorization::is_expression<rmv_lhs>::value)
             {
                 return rmv_lhs::length();
             }
@@ -201,9 +201,9 @@ public:
 template <typename LHS, typename MHS, typename RHS, typename EVALUATOR>
 class trinary_expression final
 {
-    using rmv_lhs = quarisma::remove_cvref_t<LHS>;
-    using rmv_mhs = quarisma::remove_cvref_t<MHS>;
-    using rmv_rhs = quarisma::remove_cvref_t<RHS>;
+    using rmv_lhs = vectorization::remove_cvref_t<LHS>;
+    using rmv_mhs = vectorization::remove_cvref_t<MHS>;
+    using rmv_rhs = vectorization::remove_cvref_t<RHS>;
 
     rmv_lhs lhs_;
     rmv_mhs mhs_;
@@ -212,21 +212,21 @@ class trinary_expression final
 public:
     VECTORIZATION_FUNCTION_ATTRIBUTE size_t size() const noexcept
     {
-        if constexpr (quarisma::is_expression<rmv_lhs>::value)
+        if constexpr (vectorization::is_expression<rmv_lhs>::value)
             return lhs_.size();
-        else if constexpr (quarisma::is_expression<rmv_mhs>::value)
+        else if constexpr (vectorization::is_expression<rmv_mhs>::value)
             return mhs_.size();
-        else if constexpr (quarisma::is_expression<rmv_rhs>::value)
+        else if constexpr (vectorization::is_expression<rmv_rhs>::value)
             return rhs_.size();
     }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr size_t length()
     {
-        if constexpr (quarisma::is_expression<rmv_lhs>::value)
+        if constexpr (vectorization::is_expression<rmv_lhs>::value)
             return rmv_lhs::length();
-        else if constexpr (quarisma::is_expression<rmv_mhs>::value)
+        else if constexpr (vectorization::is_expression<rmv_mhs>::value)
             return rmv_mhs::length();
-        else if constexpr (quarisma::is_expression<rmv_rhs>::value)
+        else if constexpr (vectorization::is_expression<rmv_rhs>::value)
             return rmv_rhs::length();
     }
 
@@ -272,4 +272,4 @@ public:
         return EVALUATOR::functor(lhs, mhs, rhs);
     }
 };
-}  // namespace quarisma
+}  // namespace vectorization

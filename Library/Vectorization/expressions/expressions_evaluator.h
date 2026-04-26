@@ -25,7 +25,7 @@ Do_not_include_expression_evaluator_directly_use_expression_it;
 
 #include "expressions/expression_interface_loader.h"
 
-namespace quarisma
+namespace vectorization
 {
 struct expressions_evaluator
 {
@@ -51,19 +51,19 @@ struct expressions_evaluator
             size_t n         = rhs.size();
 
 #if defined(VECTORIZATION_VECTORIZED)
-            using value_t = typename quarisma::scalar_type<T, T>::value;
+            using value_t = typename vectorization::scalar_type<T, T>::value;
 
             constexpr auto length = T::length();
             loop_peel             = length * (n / length);
             for (size_t i = 0, size = loop_peel; i < size; i += length)
             {
-                const auto temp = quarisma::expression_loader<E, true>::evaluate(expr, i);
+                const auto temp = vectorization::expression_loader<E, true>::evaluate(expr, i);
                 packet<value_t>::storeu(temp, &data[i]);
             }
 #endif
 
             for (auto i = loop_peel; i < n; i++)
-                data[i] = quarisma::expression_loader<E, false>::evaluate(expr, i);
+                data[i] = vectorization::expression_loader<E, false>::evaluate(expr, i);
         }
     }
 
@@ -89,19 +89,19 @@ struct expressions_evaluator
             size_t n         = rhs.size();
 
 #if defined(VECTORIZATION_VECTORIZED)
-            using value_t = typename quarisma::scalar_type<T, T>::value;
+            using value_t = typename vectorization::scalar_type<T, T>::value;
 
             constexpr auto length = T::length();
             loop_peel             = length * (n / length);
             for (size_t i = 0, size = loop_peel; i < size; i += length)
             {
-                const auto temp = quarisma::expression_loader<E, true>::evaluate(expr, i);
+                const auto temp = vectorization::expression_loader<E, true>::evaluate(expr, i);
                 packet<value_t>::storeu(temp, &data[i]);
             }
 #endif
 
             for (auto i = loop_peel; i < n; i++)
-                data[i] = quarisma::expression_loader<E, false>::evaluate(expr, i);
+                data[i] = vectorization::expression_loader<E, false>::evaluate(expr, i);
         }
     }
 
@@ -114,7 +114,7 @@ struct expressions_evaluator
         size_t n         = from.size();
 
 #if defined(VECTORIZATION_VECTORIZED)
-        using value_t      = typename quarisma::scalar_type<T, T>::value;
+        using value_t      = typename vectorization::scalar_type<T, T>::value;
         using array_simd_t = typename packet<value_t>::array_simd_t;
 
         constexpr auto length = T::length();
@@ -140,7 +140,7 @@ struct expressions_evaluator
         auto*  data      = rhs.begin();
 
 #if defined(VECTORIZATION_VECTORIZED)
-        using value_t      = typename quarisma::scalar_type<T, T>::value;
+        using value_t      = typename vectorization::scalar_type<T, T>::value;
         using array_simd_t = typename packet<value_t>::array_simd_t;
 
         constexpr auto length = T::length();
@@ -156,22 +156,22 @@ struct expressions_evaluator
             data[i] = value;
     }
 };
-}  // namespace quarisma
+}  // namespace vectorization
 //================================================================================================
 
-namespace quarisma
+namespace vectorization
 {
 //================================================================================================
 template <typename EXPR>
 VECTORIZATION_FUNCTION_ATTRIBUTE double accumulate(EXPR&& expression) noexcept
 {
-    using E = quarisma::remove_cvref_t<EXPR>;
+    using E = vectorization::remove_cvref_t<EXPR>;
 
     double sum = 0;
     size_t i   = 0;
 
 #if defined(VECTORIZATION_VECTORIZED)
-    using value_t = typename quarisma::scalar_type<E, E>::value;
+    using value_t = typename vectorization::scalar_type<E, E>::value;
 
     constexpr auto length    = E::length();
     size_t         loop_peel = length * (expression.size() / length);
@@ -186,14 +186,14 @@ VECTORIZATION_FUNCTION_ATTRIBUTE double accumulate(EXPR&& expression) noexcept
         for (size_t size = loop_peel; i < size; i += length)
         {
             const auto& temp =
-                quarisma::expression_loader<E, true>::evaluate(static_cast<E const&>(expression), i);
+                vectorization::expression_loader<E, true>::evaluate(static_cast<E const&>(expression), i);
             packet<value_t>::accumulate(temp, sum_packet);
         }
         sum += simd<value_t>::accumulate(sum_packet);
     }
 #endif
     for (size_t size = expression.size(); i < size; i++)
-        sum += quarisma::expression_loader<E, false>::evaluate(static_cast<E const&>(expression), i);
+        sum += vectorization::expression_loader<E, false>::evaluate(static_cast<E const&>(expression), i);
 
     return sum;
 }
@@ -202,8 +202,8 @@ VECTORIZATION_FUNCTION_ATTRIBUTE double accumulate(EXPR&& expression) noexcept
 template <typename EXPR>
 VECTORIZATION_FUNCTION_ATTRIBUTE auto hmin(EXPR&& expression) noexcept
 {
-    using E       = quarisma::remove_cvref_t<EXPR>;
-    using value_t = typename quarisma::scalar_type<E, E>::value;
+    using E       = vectorization::remove_cvref_t<EXPR>;
+    using value_t = typename vectorization::scalar_type<E, E>::value;
 
     value_t ret = std::numeric_limits<value_t>::max();
     size_t  i   = 0;
@@ -222,7 +222,7 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto hmin(EXPR&& expression) noexcept
         for (size_t size = loop_peel; i < size; i += length)
         {
             const auto& temp =
-                quarisma::expression_loader<E, true>::evaluate(static_cast<E const&>(expression), i);
+                vectorization::expression_loader<E, true>::evaluate(static_cast<E const&>(expression), i);
             packet<value_t>::hmin(temp, sum_packet);
         }
         ret = simd<value_t>::hmin(sum_packet);
@@ -230,7 +230,7 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto hmin(EXPR&& expression) noexcept
 #endif
     for (size_t size = expression.size(); i < size; i++)
         ret = std::fmin(
-            ret, quarisma::expression_loader<E, false>::evaluate(static_cast<E&>(expression), i));
+            ret, vectorization::expression_loader<E, false>::evaluate(static_cast<E&>(expression), i));
 
     return ret;
 }
@@ -239,8 +239,8 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto hmin(EXPR&& expression) noexcept
 template <typename EXPR>
 VECTORIZATION_FUNCTION_ATTRIBUTE auto hmax(EXPR&& expression) noexcept
 {
-    using E       = quarisma::remove_cvref_t<EXPR>;
-    using value_t = typename quarisma::scalar_type<E, E>::value;
+    using E       = vectorization::remove_cvref_t<EXPR>;
+    using value_t = typename vectorization::scalar_type<E, E>::value;
 
     auto   ret = std::numeric_limits<value_t>::min();
     size_t i   = 0;
@@ -259,16 +259,16 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto hmax(EXPR&& expression) noexcept
         for (size_t size = loop_peel; i < size; i += length)
         {
             const auto& temp =
-                quarisma::expression_loader<E, true>::evaluate(static_cast<E const&>(expression), i);
+                vectorization::expression_loader<E, true>::evaluate(static_cast<E const&>(expression), i);
             packet<value_t>::hmax(temp, sum_packet);
         }
         ret = simd<value_t>::hmax(sum_packet);
     }
 #endif
     for (size_t size = expression.size(); i < size; i++)
-        ret = std::fmax(ret, quarisma::expression_loader<E, false>::evaluate(expression, i));
+        ret = std::fmax(ret, vectorization::expression_loader<E, false>::evaluate(expression, i));
 
     return ret;
 }
-}  // namespace quarisma
+}  // namespace vectorization
 

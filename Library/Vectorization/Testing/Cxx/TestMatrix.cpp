@@ -33,14 +33,14 @@ namespace
 template <typename T>
 void test_matrix()
 {
-    EXPECT_EQ(quarisma::matrix<T>::dimensions(), 2);
-    EXPECT_EQ(quarisma::matrix<T>::length(), quarisma::packet<T>::length());
+    EXPECT_EQ(vectorization::matrix<T>::dimensions(), 2);
+    EXPECT_EQ(vectorization::matrix<T>::length(), vectorization::packet<T>::length());
 
-    quarisma::matrix<T> v = {{1.}, {2.}};
+    vectorization::matrix<T> v = {{1.}, {2.}};
 
-    quarisma::matrix<T> v1(v.data(), 2, 1);
+    vectorization::matrix<T> v1(v.data(), 2, 1);
 
-    quarisma::matrix<T> v2(2, 1);
+    vectorization::matrix<T> v2(2, 1);
 
     v2.deepcopy(v1);
 
@@ -56,7 +56,7 @@ void test_matrix()
     v2.is_zero();
     v2.symmetric();
 
-    quarisma::matrix<T> v3 = {{1., -0.5}, {-.5, 1.}};
+    vectorization::matrix<T> v3 = {{1., -0.5}, {-.5, 1.}};
 
     v3.is_correlation();
     v3.is_zero();

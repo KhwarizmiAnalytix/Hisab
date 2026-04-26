@@ -32,16 +32,14 @@
 #include <numeric>
 #include <sstream>
 
-#include "common/constants.h"
+//#include "common/constants.h"
 #include "common/vectorization_type_traits.h"
-#include "matrix_operation/matrix_multiplication.h"
-#include "matrix_operation/matrix_transpose.h"
-#include "memory/allocator.h"
-#include "memory/data_ptr.h"
-#include "serialization_impl.h"
+//#include "matrix_operation/matrix_multiplication.h"
+//#include "matrix_operation/matrix_transpose.h"
+//#include "serialization_impl.h"
 #include "terminals/vector.h"
 
-namespace quarisma
+namespace vectorization
 {
 template <typename value_t>
 class matrix
@@ -69,19 +67,19 @@ public:
     VECTORIZATION_CUDA_FUNCTION_TYPE matrix(
         size_type           rows,
         size_type           columns,
-        quarisma::device_enum type = quarisma::device_enum::CPU) noexcept
+        vectorization::device_enum type = vectorization::device_enum::CPU) noexcept
         : storage_(rows * columns, type), rows_(rows), columns_(columns) {};
 
     VECTORIZATION_CUDA_FUNCTION_TYPE matrix(
         void*               data,
         size_type           rows,
         size_type           columns,
-        quarisma::device_enum type = quarisma::device_enum::CPU) noexcept
+        vectorization::device_enum type = vectorization::device_enum::CPU) noexcept
         : matrix((value_t*)data, rows, columns, type) {};
 
     VECTORIZATION_CUDA_FUNCTION_TYPE matrix(
         std::initializer_list<std::initializer_list<value_t>> list,
-        quarisma::device_enum type = quarisma::device_enum::CPU) noexcept
+        vectorization::device_enum type = vectorization::device_enum::CPU) noexcept
         : storage_((list.begin())->size() * list.size(), type),
           rows_(list.size()),
           columns_((list.begin())->size())
@@ -95,14 +93,14 @@ public:
         value_t*            data,
         size_type           rows,
         size_type           columns,
-        quarisma::device_enum type = quarisma::device_enum::CPU) noexcept
+        vectorization::device_enum type = vectorization::device_enum::CPU) noexcept
         : storage_(data, rows * columns, type), rows_(rows), columns_(columns) {};
 
     VECTORIZATION_CUDA_FUNCTION_TYPE matrix(
         const value_t*      data,
         size_type           rows,
         size_type           columns,
-        quarisma::device_enum type = quarisma::device_enum::CPU) noexcept
+        vectorization::device_enum type = vectorization::device_enum::CPU) noexcept
         : matrix(const_cast<value_t*>(data), rows, columns, type) {};
 
     VECTORIZATION_CUDA_FUNCTION_TYPE void deepcopy(matrix const& rhs) noexcept
@@ -213,7 +211,7 @@ public:
     bool is_zero() const
     {
         for (size_type i = 0; i < size(); ++i)
-            if (!quarisma::is_almost_zero(data()[i]))
+            if (!vectorization::is_almost_zero(data()[i]))
                 return false;
 
         return true;
@@ -287,7 +285,7 @@ public:
             {
                 auto a  = at(i, j);
                 auto ta = at(j, i);
-                if (!quarisma::is_almost_zero(a - ta))
+                if (!vectorization::is_almost_zero(a - ta))
                     return false;
             }
         }
@@ -353,7 +351,7 @@ public:
         size_t ldrhs = rhs.columns();
         size_t depth = transpose_lhs ? lhs.rows() : lhs.columns();
 
-        quarisma::matrix_multiplication(
+        vectorization::matrix_multiplication(
             transpose_lhs,
             transpose_rhs,
             rows(),
@@ -370,7 +368,7 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE void matrix_transpose(matrix const& A)
     {
         this->deepcopy(A);  //fixme!
-        quarisma::matrix_transpose(A.rows(), A.columns(), begin());
+        vectorization::matrix_transpose(A.rows(), A.columns(), begin());
         std::swap(columns_, rows_);
     }
 
@@ -378,7 +376,7 @@ public:
 
     template <
         typename E,
-        typename std::enable_if<quarisma::is_pure_expression<E>::value, bool>::type = true>
+        typename std::enable_if<vectorization::is_pure_expression<E>::value, bool>::type = true>
     VECTORIZATION_FUNCTION_ATTRIBUTE matrix& operator=(E const& expr)
     {
         evaluator::template run<E, matrix>(expr, *this);
@@ -387,7 +385,7 @@ public:
 
     template <
         typename E,
-        typename std::enable_if<quarisma::is_pure_expression<E>::value, bool>::type = true>
+        typename std::enable_if<vectorization::is_pure_expression<E>::value, bool>::type = true>
     VECTORIZATION_FUNCTION_ATTRIBUTE matrix& operator=(E&& expr)
     {
         evaluator::template run<E, matrix>(static_cast<E const&>(expr), *this);
@@ -397,7 +395,7 @@ public:
     template <typename T2, typename = typename std::enable_if<std::is_fundamental<T2>::value>::type>
     VECTORIZATION_FUNCTION_ATTRIBUTE matrix& operator=(T2 value) noexcept
     {
-        evaluator::template fill<value_t, quarisma::matrix<value_t>>(
+        evaluator::template fill<value_t, vectorization::matrix<value_t>>(
             static_cast<value_t>(value), *this);
         return *this;
     }
@@ -448,93 +446,17 @@ private:
     size_type columns_{0};
 };
 
-}  // namespace quarisma
+}  // namespace vectorization
 
-namespace quarisma
+namespace vectorization
 {
-#ifndef __CUDACC__
-// serialization
-namespace impl
-{
-template <typename T>
-struct serilizer_impl<quarisma::multi_process_stream, quarisma::matrix<T>>
-{
-    static void xsigma_save(quarisma::multi_process_stream& buffer, const matrix<T>& mat)
-    {
-        buffer << mat.rows();
-        buffer << mat.columns();
-        buffer.Push(mat.begin(), static_cast<unsigned int>(mat.size()));
-    };
-
-    static void xsigma_load(quarisma::multi_process_stream& buffer, matrix<T>& mat)
-    {
-        size_t rows;
-        size_t columns;
-        buffer >> rows;
-        buffer >> columns;
-
-        mat = matrix<T>(rows, columns);
-
-        auto* data = mat.begin();
-
-        auto size = static_cast<unsigned int>(mat.size());
-
-        buffer.Pop(data, size);
-    }
-};
-
-template <typename T>
-struct serilizer_impl<json, matrix<T>>
-{
-    static void xsigma_load(const json& root, matrix<T>& m)
-    {
-        auto rows    = root["rows"].get<size_t>();
-        auto columns = root["columns"].get<size_t>();
-
-        m = matrix<T>(rows, columns);
-
-        const auto& archiver = root["data"];
-
-        // Load data as rows (archiver[i] contains row i)
-        for (size_t i = 0; i < m.rows(); ++i)
-        {
-            const auto& archiver_i = archiver.at(i);
-            for (size_t j = 0; j < m.columns(); ++j)
-            {
-                m.at(i, j) = archiver_i.at(j).get<T>();
-            }
-        }
-    }
-
-    static void xsigma_save(json& root, const matrix<T>& m)
-    {
-        root["class"]   = "quarisma.matrix";
-        root["rows"]    = m.rows();
-        root["columns"] = m.columns();
-
-        // Save data as rows directly to JSON
-        root["data"] = json::array();
-        for (size_t i = 0; i < m.rows(); ++i)
-        {
-            json row = json::array();
-            for (size_t j = 0; j < m.columns(); ++j)
-            {
-                row.push_back(m.at(i, j));
-            }
-            root["data"].push_back(row);
-        }
-    }
-};
-}  // namespace impl
-#endif  // !__CUDACC__
-
 template <typename value_t>
-std::ostream& operator<<(std::ostream& s, const quarisma::matrix<value_t>& m)
+std::ostream& operator<<(std::ostream& s, const vectorization::matrix<value_t>& m)
 {
     s << m.to_string();
     return s;
 }
-}  // namespace quarisma
+}  // namespace vectorization
 
 #if defined(_MSC_VER) && !defined(VECTORIZATION_DISPLAY_WIN32_WARNINGS)
 #pragma warning(pop)

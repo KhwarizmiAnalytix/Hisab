@@ -22,7 +22,7 @@
 #include <cmath>        // for fma, sqrt
 #include <type_traits>  // for enable_if_t
 
-#include "common/macros.h"      // for __VECTORIZATION_FORCE_I...
+#include "common/vectorization_macros.h"
 #include "common/normal_cdf.h"  // for normal_distribu...
 
 namespace std
@@ -64,12 +64,12 @@ VECTORIZATION_FORCE_INLINE T sqr(T a)
 template <typename T, std::enable_if_t<std::is_fundamental<T>::value, int> = 0>
 VECTORIZATION_FORCE_INLINE T cdf(T a)
 {
-    return quarisma::normalcdf(a);
+    return vectorization::normalcdf(a);
 };
 template <typename T, std::enable_if_t<std::is_fundamental<T>::value, int> = 0>
 VECTORIZATION_FORCE_INLINE T inv_cdf(T a)
 {
-    return static_cast<T>(quarisma::inv_normalcdf(a));
+    return static_cast<T>(vectorization::inv_normalcdf(a));
 };
 
 template <

@@ -19,7 +19,7 @@
 
 #pragma once
 
-namespace quarisma
+namespace vectorization
 {
 template <size_t SIZE, typename T, typename... Ts>
 using all_same =
@@ -158,9 +158,9 @@ private:
     VECTORIZATION_ALIGN(Alignment) packet_t data_[SIZE];
 };
 
-}  // namespace quarisma
+}  // namespace vectorization
 
-namespace quarisma
+namespace vectorization
 {
 #ifdef __SSE4_1__
 #define IF_ELSE(mask, a, b) _mm_blendv_ps(b, a, mask);
@@ -364,5 +364,5 @@ public:
 };
 
 #undef IF_ELSE
-}  // namespace quarisma
+}  // namespace vectorization
 

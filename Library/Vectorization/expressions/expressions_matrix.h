@@ -25,7 +25,7 @@ Do_not_include_expression_matrix_directly_use_expression_it;
 
 #include "expressions/expression_interface_loader.h"
 
-namespace quarisma
+namespace vectorization
 {
 //================================================================================================
 template <typename MAT>
@@ -58,8 +58,8 @@ private:
 template <typename LHS, typename RHS>
 class matrix_multiplication_expression
 {
-    using rmv_lhs = quarisma::remove_cvref_t<LHS>;
-    using rmv_rhs = quarisma::remove_cvref_t<RHS>;
+    using rmv_lhs = vectorization::remove_cvref_t<LHS>;
+    using rmv_rhs = vectorization::remove_cvref_t<RHS>;
 
 public:
     VECTORIZATION_FUNCTION_ATTRIBUTE
@@ -132,8 +132,8 @@ private:
 template <typename LHS, typename RHS>
 class matrix_vector_multiplication_expression
 {
-    using rmv_lhs      = quarisma::remove_cvref_t<LHS>;
-    using rmv_rhs      = quarisma::remove_cvref_t<RHS>;
+    using rmv_lhs      = vectorization::remove_cvref_t<LHS>;
+    using rmv_rhs      = vectorization::remove_cvref_t<RHS>;
     using value_t      = typename scalar_type<rmv_lhs, rmv_rhs>::value;
     using packet_t     = packet<value_t, packet_size<value_t>::value>;
     using array_simd_t = typename packet<value_t>::array_simd_t;
@@ -214,16 +214,16 @@ private:
     static void matrix_vector_multiplication(
         rmv_lhs const& rhs, size_t row, size_t column, T const& t, R& ret) noexcept
     {
-        if constexpr (quarisma::is_packet<R>::value)
+        if constexpr (vectorization::is_packet<R>::value)
         {
             array_simd_t tmp{};
 
-            if constexpr (quarisma::is_packet<T>::value)
+            if constexpr (vectorization::is_packet<T>::value)
             {
                 constexpr uint32_t n = packet_t::length();
                 simd_t             sum_t;
 
-                quarisma::array<value_t, packet_t::length()> data_tmp{};
+                vectorization::array<value_t, packet_t::length()> data_tmp{};
 
                 for (size_t r = 0; r < n; ++r)
                 {
@@ -257,7 +257,7 @@ private:
     void validate() const
     {
         static_assert(
-            quarisma::is_expression<rmv_rhs>::value && quarisma::is_expression<rmv_lhs>::value,
+            vectorization::is_expression<rmv_rhs>::value && vectorization::is_expression<rmv_lhs>::value,
             "are not expresions!");
 
         VECTORIZATION_CHECK_DEBUG(
@@ -276,8 +276,8 @@ private:
 template <typename LHS, typename RHS>
 class vector_matrix_multiplication_expression
 {
-    using rmv_lhs      = quarisma::remove_cvref_t<LHS>;
-    using rmv_rhs      = quarisma::remove_cvref_t<RHS>;
+    using rmv_lhs      = vectorization::remove_cvref_t<LHS>;
+    using rmv_rhs      = vectorization::remove_cvref_t<RHS>;
     using value_t      = typename scalar_type<rmv_lhs, rmv_rhs>::value;
     using packet_t     = packet<value_t, packet_size<value_t>::value>;
     using array_simd_t = typename packet<value_t>::array_simd_t;
@@ -359,15 +359,15 @@ private:
     static void vector_matrix_multiplication(
         rmv_rhs const& rhs, size_t row, size_t column, T const& t, R& ret) noexcept
     {
-        if constexpr (quarisma::is_packet<R>::value)
+        if constexpr (vectorization::is_packet<R>::value)
         {
             array_simd_t tmp{};
 
-            if constexpr (quarisma::is_packet<T>::value)
+            if constexpr (vectorization::is_packet<T>::value)
             {
                 simd_t sum_t;
 
-                quarisma::array<value_t, packet_t::length()> data_tmp{};
+                vectorization::array<value_t, packet_t::length()> data_tmp{};
 
                 for (size_t c = 0; c < packet_t::length(); ++c)
                 {
@@ -416,5 +416,5 @@ private:
     LHS lhs_;
     RHS rhs_;
 };
-}  // namespace quarisma
+}  // namespace vectorization
 

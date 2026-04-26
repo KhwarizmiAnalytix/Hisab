@@ -29,7 +29,7 @@ _create_third_party_interface_targets(
 # VectorizationCxxTests executable
 # =============================================================================
 
-file(GLOB_RECURSE test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cxx")
+file(GLOB_RECURSE test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cpp")
 
 add_executable(VectorizationCxxTests ${test_sources})
 
@@ -86,7 +86,7 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
   )
 
   file(GLOB_RECURSE bench_sources LIST_DIRECTORIES false
-       "${CMAKE_CURRENT_SOURCE_DIR}/Benchmark*.cxx"
+       "${CMAKE_CURRENT_SOURCE_DIR}/Benchmark*.cpp"
   )
   if(bench_sources)
     add_executable(VectorizationCxxBenchmark ${bench_sources})

@@ -59,11 +59,11 @@ struct simd
 {
 };
 
-namespace quarisma
+namespace vectorization
 {
 template <typename value_t>
 struct packet_size
 {
     static constexpr uint32_t value = 4;
 };
-}  // namespace quarisma
+}  // namespace vectorization

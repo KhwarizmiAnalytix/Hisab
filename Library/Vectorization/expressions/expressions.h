@@ -25,8 +25,7 @@
 #include <limits>
 #include <type_traits>
 
-#include "common/configure.h"  // IWYU pragma: keep
-#include "common/macros.h"
+#include "common/vectorization_macros.h"
 #include "common/scalar_helper_functions.h"
 #include "common/vectorization_type_traits.h"
 #include "util/exception.h"
