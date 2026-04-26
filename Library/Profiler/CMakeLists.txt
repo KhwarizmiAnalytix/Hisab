@@ -46,7 +46,7 @@ option(PROFILER_ENABLE_EXAMPLES "Build Profiler example programs" OFF)
 option(PROFILER_ENABLE_GTEST "Enable GoogleTest for Profiler" ON)
 
 # Google Benchmark integration for Profiler micro-benchmarks.
-option(PROFILER_ENABLE_BENCHMARK "Enable Google Benchmark for Profiler" OFF)
+option(PROFILER_ENABLE_BENCHMARK "Enable Google Benchmark for Profiler" ON)
 
 # Icecream distributed compilation launcher (rarely needed; hidden by default).
 option(PROFILER_ENABLE_ICECC "Use Icecream (icecc) distributed compiler for Profiler" OFF)

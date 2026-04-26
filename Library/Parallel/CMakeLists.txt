@@ -33,7 +33,7 @@ option(PARALLEL_ENABLE_EXAMPLES "Build Parallel example programs" OFF)
 option(PARALLEL_ENABLE_GTEST "Enable GoogleTest for Parallel" ON)
 
 # Google Benchmark integration for SMP micro-benchmarks.
-option(PARALLEL_ENABLE_BENCHMARK "Enable Google Benchmark for Parallel" OFF)
+option(PARALLEL_ENABLE_BENCHMARK "Enable Google Benchmark for Parallel" ON)
 
 # Icecream distributed compilation launcher (rarely needed; hidden by default).
 option(PARALLEL_ENABLE_ICECC "Use Icecream (icecc) distributed compiler for Parallel" OFF)

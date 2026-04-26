@@ -49,7 +49,7 @@ option(CORE_ENABLE_GTEST "Enable GoogleTest for Core" ON)
 # profile-counter stores that Enzyme's LLVM pass cannot differentiate — never enable both together.
 
 # Google Benchmark integration for Core micro-benchmarks.
-option(CORE_ENABLE_BENCHMARK "Enable Google Benchmark for Core" OFF)
+option(CORE_ENABLE_BENCHMARK "Enable Google Benchmark for Core" ON)
 
 # Intel MKL — high-performance math kernel library (BLAS, FFT, LAPACK, …).
 option(CORE_ENABLE_MKL "Enable Intel MKL math library" OFF)

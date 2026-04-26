@@ -42,7 +42,7 @@ option(VECTORIZATION_ENABLE_COVERAGE "Enable coverage instrumentation for Vector
 option(VECTORIZATION_ENABLE_TESTING "Build Vectorization test suite" ON)
 option(VECTORIZATION_ENABLE_EXAMPLES "Build Vectorization example programs" OFF)
 option(VECTORIZATION_ENABLE_GTEST "Enable GoogleTest for Vectorization" ON)
-option(VECTORIZATION_ENABLE_BENCHMARK "Enable Google Benchmark for Vectorization" OFF)
+option(VECTORIZATION_ENABLE_BENCHMARK "Enable Google Benchmark for Vectorization" ON)
 
 
 # Intel SVML — short vector math library for fast sin/cos/exp/log on SIMD lanes.
@@ -144,11 +144,11 @@ endforeach()
 set(QUARISMA_VECTORIZATION_COMPILER_FLAGS "${VECTORIZATION_COMPILER_FLAGS}" CACHE INTERNAL
     "Quarisma: SIMD flags from Vectorization utils" FORCE)
 
-if(NOT VECTORIZATION_ENABLE_COVERAGE AND NOT VECTORIZATION_ENABLE_SANITIZER)
-  message("--avx compiler flags: ${VECTORIZATION_COMPILER_FLAGS}") 
-  set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}") 
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}") 
-endif()
+#if(NOT VECTORIZATION_ENABLE_COVERAGE AND NOT VECTORIZATION_ENABLE_SANITIZER)
+message("--avx compiler flags: ${VECTORIZATION_COMPILER_FLAGS}") 
+set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}") 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}") 
+#endif()
 
 # =============================================================================
 # SECTION 2 — VECTORIZATION_TYPE ↔ exactly one VECTORIZATION_HAS_* and backend trees

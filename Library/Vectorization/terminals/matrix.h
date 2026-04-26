@@ -86,7 +86,7 @@ public:
 
     VECTORIZATION_CUDA_FUNCTION_TYPE matrix(
         std::initializer_list<std::initializer_list<value_t>> list,
-        vectorization::device_enum type = vectorization::device_enum::CPU) noexcept
+        vectorization::device_enum type = vectorization::device_enum::CPU)
         : storage_((list.begin())->size() * list.size(), type),
           rows_(list.size()),
           columns_((list.begin())->size())
@@ -148,38 +148,38 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE auto rows() const noexcept { return rows_; }
     VECTORIZATION_FUNCTION_ATTRIBUTE auto columns() const noexcept { return columns_; }
 
-    VECTORIZATION_FUNCTION_ATTRIBUTE auto operator[](size_type idx) const noexcept
+    VECTORIZATION_FUNCTION_ATTRIBUTE auto operator[](size_type idx) const
     {
         VECTORIZATION_CHECK_DEBUG(idx < rows_, "row index out of range");
         return vector_type(data() + columns_ * idx, columns_);
     };
 
-    VECTORIZATION_FUNCTION_ATTRIBUTE auto operator[](size_type idx) noexcept
+    VECTORIZATION_FUNCTION_ATTRIBUTE auto operator[](size_type idx)
     {
         VECTORIZATION_CHECK_DEBUG(idx < rows_, "row index out of range");
         return vector_type(data() + columns_ * idx, columns_);
     };
 
-    VECTORIZATION_FUNCTION_ATTRIBUTE const auto at(size_type idx) const noexcept
+    VECTORIZATION_FUNCTION_ATTRIBUTE const auto at(size_type idx) const
     {
         VECTORIZATION_CHECK_DEBUG(idx < rows_, "row index out of range");
         return vector_type(data() + columns_ * idx, columns_);
     };
 
-    VECTORIZATION_FUNCTION_ATTRIBUTE auto at(size_type idx) noexcept
+    VECTORIZATION_FUNCTION_ATTRIBUTE auto at(size_type idx)
     {
         VECTORIZATION_CHECK_DEBUG(idx < rows_, "row index out of range");
         return vector_type(data() + columns_ * idx, columns_);
     };
 
-    VECTORIZATION_FUNCTION_ATTRIBUTE const auto at(size_type i, size_type j) const noexcept
+    VECTORIZATION_FUNCTION_ATTRIBUTE const auto at(size_type i, size_type j) const
     {
         VECTORIZATION_CHECK_DEBUG(i < rows_, "row index out of range");
         VECTORIZATION_CHECK_DEBUG(j < columns_, "column index out of range");
         return *(data() + columns_ * i + j);
     };
 
-    VECTORIZATION_FUNCTION_ATTRIBUTE auto& at(size_type i, size_type j) noexcept
+    VECTORIZATION_FUNCTION_ATTRIBUTE auto& at(size_type i, size_type j)
     {
         VECTORIZATION_CHECK_DEBUG(i < rows_, "row index out of range");
         VECTORIZATION_CHECK_DEBUG(j < columns_, "column index out of range");

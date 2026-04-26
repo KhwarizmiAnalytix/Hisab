@@ -754,6 +754,7 @@ class QuarismaFlags:
                 "parallel_backend": "std",  # Default SMP backend
                 "lto": self.OFF,
                 "gtest": self.ON,   # *_ENABLE_GTEST CMake defaults are ON
+                "benchmark": self.ON,  # *_ENABLE_BENCHMARK CMake defaults are ON
                 "magic_enum": self.ON,
                 "mimalloc": self.ON,
                 "profiler_type": "KINETO",
@@ -1005,13 +1006,14 @@ class QuarismaFlags:
                     f"-DPARALLEL_CXX_STANDARD={std_value}",
                     f"-DPROFILER_CXX_STANDARD={std_value}",
                     f"-DCORE_CXX_STANDARD={std_value}",
+                    f"-DVECTORIZATION_CXX_STANDARD={std_value}",
                 ]
             )
 
         # ------------------------------------------------------------------ per-module fan-outs
-        # Every flag in this section is propagated to all five library modules so that a
+        # Every flag in this section is propagated to all library modules so that a
         # single setup.py argument controls the entire project uniformly.
-        ALL_MODULES = ["CORE", "LOGGING", "MEMORY", "PARALLEL", "PROFILER"]
+        ALL_MODULES = ["CORE", "LOGGING", "MEMORY", "PARALLEL", "PROFILER", "VECTORIZATION"]
 
         def _fan_bool(key, cmake_suffix):
             val = self.__value.get(key)
@@ -1807,12 +1809,12 @@ def main():
         print("  # Note: Coverage analysis is automatic when 'coverage' is enabled")
         print("  #       No need to add '.analyze' to coverage builds")
         print("\nBenchmark examples:")
-        print("  # Enable Google Benchmark for performance testing")
+        print("  # Google Benchmark is on by default; Release + explicit .benchmark is typical for numbers")
         print("  python setup.py config.build.ninja.clang.release.benchmark")
         print("  python setup.py config.build.ninja.clang.release.lto.benchmark")
         print()
         print(
-            "  # Note: Benchmark is disabled by default. Use 'benchmark' flag to enable."
+            "  # Note: To disable, pass CMake defines such as -DCORE_ENABLE_BENCHMARK=OFF (and the same for other *_ENABLE_BENCHMARK options)."
         )
         print(
             "  #       Recommended to use with Release build for accurate performance results."

@@ -32,7 +32,7 @@ option(LOGGING_ENABLE_EXAMPLES "Build Logging example programs" OFF)
 option(LOGGING_ENABLE_GTEST "Enable GoogleTest for Logging" ON)
 
 # Google Benchmark integration for Logging micro-benchmarks.
-option(LOGGING_ENABLE_BENCHMARK "Enable Google Benchmark for Logging" OFF)
+option(LOGGING_ENABLE_BENCHMARK "Enable Google Benchmark for Logging" ON)
 
 # Icecream distributed compilation launcher (rarely needed; hidden by default).
 option(LOGGING_ENABLE_ICECC "Use Icecream (icecc) distributed compiler for Logging" OFF)
