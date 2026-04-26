@@ -354,8 +354,8 @@ if(VECTORIZATION_DEPENDENCY_INCLUDE_DIRS)
   message(STATUS "Vectorization: extra include dirs: ${VECTORIZATION_DEPENDENCY_INCLUDE_DIRS}")
 endif()
 
-# Logging before Memory so "util/exception.h" and other overlapping paths resolve to Logging
-# (Memory also provides util/exception.h; Vectorization macros need LOGGING_* from Logging).
+# Link Logging when Vectorization needs LOGGING_* (vectorization_macros.h includes
+# util/logging_exception.h explicitly).
 if(_vec_has_logging)
   target_link_libraries(Vectorization PUBLIC Logging::Logging)
 endif()

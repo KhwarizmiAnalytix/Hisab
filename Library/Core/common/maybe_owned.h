@@ -5,7 +5,7 @@
 #include <utility>
 
 #include "common/macros.h"
-#include "util/exception.h"
+#include "util/core_exception.h"
 
 namespace quarisma
 {

@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "common/macros.h"
-#include "util/exception.h"
+#include "util/core_exception.h"
 #include "util/flat_hash.h"
 
 template <typename T>

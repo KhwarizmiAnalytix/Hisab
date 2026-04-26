@@ -47,7 +47,7 @@
 //#include "common/intrusive_ptr.h"
 //#include "common/device.h"
 #include "common/array_ref.h"
-//#include "util/exception.h"
+//#include "util/logging_exception.h"
 
 #if 1
 namespace profiler

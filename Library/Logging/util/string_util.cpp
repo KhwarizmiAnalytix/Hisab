@@ -25,7 +25,7 @@
 #include <string_view>
 
 #include "common/logging_macros.h"   // for LOGGING_UNUSED, LOGGING_HAS_CXA_DEMANGLE
-#include "util/exception.h"  // for LOGGING_CHECK_DEBUG, LOGGING_CHECK, LOGGING_CHECK_VALUE
+#include "util/logging_exception.h"  // for LOGGING_CHECK_DEBUG, LOGGING_CHECK, LOGGING_CHECK_VALUE
 
 // =============================================================================
 // PLATFORM-SPECIFIC CONFIGURATION

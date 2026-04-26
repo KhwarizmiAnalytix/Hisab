@@ -1,4 +1,4 @@
-#include "util/exception.h"
+#include "util/logging_exception.h"
 
 #include <atomic>
 #include <cstdlib>  // for getenv

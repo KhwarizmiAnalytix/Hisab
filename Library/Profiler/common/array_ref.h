@@ -25,7 +25,7 @@
 #include <vector>
 
 #include "common/profiler_macros.h"
-//#include "util/exception.h"
+//#include "util/logging_exception.h"
 #include "common/small_vector.h"
 
 namespace profiler

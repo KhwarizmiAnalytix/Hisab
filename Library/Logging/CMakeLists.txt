@@ -289,7 +289,7 @@ configure_file(
   "${CMAKE_CURRENT_BINARY_DIR}/Testing/LoggingTest.h" @ONLY
 )
 
-# Include roots: Library/Logging        → "util/exception.h", "common/logging_export.h"
+# Include roots: Library/Logging        → "util/logging_exception.h", "common/logging_export.h"
 # Library/Logging/logger → "logger.h", "back_trace.h", "logger_verbosity_enum.h"
 target_include_directories(
   Logging

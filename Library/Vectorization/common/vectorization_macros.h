@@ -74,11 +74,11 @@ inline constexpr std::size_t VECTORIZATION_ALIGNMENT = 64;
 
 
 // Logging uses fmt-style placeholders ({}) in format strings. Include logger.h first (unique to
-// Logging) so LOGGING_LOG is always defined. "util/exception.h" must resolve to Logging's header:
+// Logging) so LOGGING_LOG is always defined. Include Logging's exception header explicitly:
 // link Logging::Logging before Memory::Memory on the Vectorization target (see CMakeLists.txt).
 #if VECTORIZATION_HAS_LOGGING
 #  include "logger/logger.h"
-#  include "util/exception.h"
+#  include "util/logging_exception.h"
 
 #  define VECTORIZATION_LOGF(verbosity_name, format_string, ...) \
       LOGGING_LOG(verbosity_name, format_string, ##__VA_ARGS__)

@@ -7,7 +7,7 @@
 
 #include "common/export.h"
 #include "common/maybe_owned.h"
-#include "util/exception.h"
+#include "util/core_exception.h"
 
 namespace pybind11
 {
