@@ -24,9 +24,9 @@
 #include <string>
 #include <vector>
 
+#include "common/vectorization_macros.h"
 #include "terminals/vector.h"
-#include "util/logger.h"
-#include "xsigmaTest.h"
+#include "VectorizationTest.h"
 
 namespace
 {

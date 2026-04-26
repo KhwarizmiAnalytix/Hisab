@@ -26,18 +26,14 @@
 #include <vector>
 
 //#include "common/constants.h"
+#include "common/vectorization_macros.h"
+#include "cpu/allocator.h"
 #include "distribution/hartman_watson_distribution.h"
 #include "expressions/expressions.h"
-#include "memory/cpu/allocator.h"
-#include "memory/cpu/allocator_bfc.h"
-#include "memory/cpu/allocator_pool.h"
-#include "memory/cpu/allocator_typed.h"
-#include "memory/cpu/process_state.h"
 #include "quadrature/gaussian_quadrature.h"
 #include "terminals/vector.h"
-#include "xsigmaTestingHelper.h"
 
-#ifdef VECTORIZATION_VECTORIZED
+#if VECTORIZATION_VECTORIZED
 namespace
 {
 double y_max = exp(5.);
@@ -233,7 +229,7 @@ namespace vectorization_test
 {
 inline void transpose8x8_intrinsic([[maybe_unused]] vectorization::array<simd<double>::simd_t, 8> reg)
 {
-#ifdef VECTORIZATION_HAS_AVX512
+#if VECTORIZATION_HAS_AVX512
     simd<double>::simd_t tmp[8];
 
     tmp[0] = _mm512_unpacklo_pd(reg[0], reg[1]);
@@ -284,7 +280,7 @@ inline void transpose8x8_intrinsic([[maybe_unused]] vectorization::array<simd<do
 
 inline void transpose16x16_intrinsic([[maybe_unused]] vectorization::array<simd<float>::simd_t, 16> reg)
 {
-#ifdef VECTORIZATION_HAS_AVX512
+#if VECTORIZATION_HAS_AVX512
     simd<float>::simd_t tmp[16];
 // Transpose 8x8 blocks (block size is 2x2) within 16x16 matrix
 // Not a true transpose:

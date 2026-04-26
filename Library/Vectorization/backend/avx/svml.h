@@ -20,7 +20,7 @@
 #pragma once
 
 
-#if defined(VECTORIZATION_HAS_SVML) && (defined(VECTORIZATION_HAS_AVX2) || defined(VECTORIZATION_HAS_AVX))
+#if VECTORIZATION_HAS_SVML && (VECTORIZATION_HAS_AVX2 || VECTORIZATION_HAS_AVX)
 
 #define svml_ps(op) __svml_##op##f8
 #define svml_pd(op) __svml_##op##4

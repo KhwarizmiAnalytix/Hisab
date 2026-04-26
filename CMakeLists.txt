@@ -61,8 +61,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
 
 add_subdirectory(Library/Logging)
 add_subdirectory(Library/Memory)
-add_subdirectory(Library/Core)
+# Before Core: Vectorization runs utils.cmake and publishes QUARISMA_* / PROJECT_* CACHE entries.
 add_subdirectory(Library/Vectorization)
+add_subdirectory(Library/Core)
 add_subdirectory(Library/Parallel)
 add_subdirectory(Library/Profiler)
 

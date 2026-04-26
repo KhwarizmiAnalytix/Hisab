@@ -24,10 +24,13 @@
 #include <cmath>
 #include <limits>
 
-//#include "common/constants.h"
-
 namespace vectorization
 {
+namespace
+{
+// 1 / sqrt(2 * pi); same value as quarisma::constants::INVERSE_SQRT_2PI in Core.
+inline constexpr double k_inverse_sqrt_2pi = 0.3989422804014326779399460599343818684758576;
+}  // namespace
 
 //-----------------------------------------------------------------------------
 template <typename T1, typename T2>
@@ -78,7 +81,7 @@ double normalcdf(double z)
                        3. * x2 *
                            (1. - 5. * x2 * (1. - 7. * x2 * (1. - 9. * x2 * (1. - 11. * x2))))))));
 
-        return constants::INVERSE_SQRT_2PI * exp(p);
+        return k_inverse_sqrt_2pi * std::exp(p);
     }
 
     const auto x = std::fabs(z);
@@ -117,7 +120,7 @@ double normalcdf(double z)
     {
         const double x2 = 1. / (z * z);
         p *=
-            constants::INVERSE_SQRT_2PI *
+            k_inverse_sqrt_2pi *
             std::fabs(
                 1. / z *
                 (1. - x2 * (1. - 3. * x2 *

@@ -262,9 +262,8 @@ private:
 
         VECTORIZATION_CHECK_DEBUG(
             lhs_.columns() == rhs_.size(),
-            "matrix_vector_multiplication vector size ",
+            "matrix_vector_multiplication vector size {} is different from matrix number of columns {}",
             rhs_.size(),
-            " is different from matrix number of culmns ",
             lhs_.columns());
     }
 
@@ -407,9 +406,8 @@ private:
 
         VECTORIZATION_CHECK_DEBUG(
             rhs_.rows() == lhs_.size(),
-            "vector_matrix_multiplication_expression vector size ",
+            "vector_matrix_multiplication_expression vector size {} is different from matrix number of rows {}",
             lhs_.size(),
-            " is different from matrix number of rows ",
             rhs_.rows());
     }
 

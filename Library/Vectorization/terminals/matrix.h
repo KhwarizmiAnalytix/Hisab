@@ -34,13 +34,20 @@
 
 //#include "common/constants.h"
 #include "common/vectorization_type_traits.h"
-//#include "matrix_operation/matrix_multiplication.h"
-//#include "matrix_operation/matrix_transpose.h"
+#include "matrix_operation/matrix_multiplication.h"
+#include "matrix_operation/matrix_transpose.h"
 //#include "serialization_impl.h"
 #include "terminals/vector.h"
 
 namespace vectorization
 {
+
+template <typename T>
+inline constexpr bool is_almost_zero(T x, T epsilon = std::numeric_limits<T>::epsilon()) noexcept
+{
+    return (std::fabs(x) < epsilon);
+}
+
 template <typename value_t>
 class matrix
 {

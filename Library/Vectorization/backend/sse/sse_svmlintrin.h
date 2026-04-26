@@ -292,7 +292,7 @@ VECTORIZATION_FORCE_INLINE auto _mm_mask_not_pd(__m128d a)
     return _mm_andnot_pd(a, _mm_cmpeq_pd(a, a));
 }
 
-#if defined(VECTORIZATION_HAS_SVML) && defined(VECTORIZATION_HAS_SSE)
+#if VECTORIZATION_HAS_SVML && VECTORIZATION_HAS_SSE
 
 #define svml_ps(op) __svml_##op##f4
 #define svml_pd(op) __svml_##op##2

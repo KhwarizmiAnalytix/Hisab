@@ -9,7 +9,7 @@
 //#include "common/constants.h"
 #include "matrix_operation/matrix_multiplication.h"
 #include "matrix_operation/matrix_transpose.h"
-#include "memory/allocator.h"
+#include "common/vectorization_macros.h"
 
 namespace vectorization
 {

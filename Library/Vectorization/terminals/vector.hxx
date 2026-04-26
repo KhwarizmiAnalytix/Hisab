@@ -1,7 +1,7 @@
 #ifdef COMPILE_VECTOR_HXX
 #include <utility>
 
-#include "memory/allocator.h"
+#include "common/vectorization_macros.h"
 
 #define size_type vectorization::vector<value_t>::size_type
 

@@ -28,7 +28,6 @@
 #include "common/vectorization_macros.h"
 #include "common/scalar_helper_functions.h"
 #include "common/vectorization_type_traits.h"
-#include "util/exception.h"
 
 #define __VECTORIZATION_EXPRESSIONS_INCLUDES_INSIDE__
 #include "expressions/expression_interface.h"

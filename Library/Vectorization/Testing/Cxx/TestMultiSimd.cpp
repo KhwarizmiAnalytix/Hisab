@@ -26,10 +26,8 @@
 //#include "common/constants.h"
 #include "common/vectorization_macros.h"
 #include "common/packet.h"
-#include "memory/allocator.h"
 #include "terminals/vector.h"
-#include "xsigmaTest.h"
-#include "xsigmaTestingHelper.h"
+#include "VectorizationTest.h"
 
 #define DEBUG_SIMD_TEST
 
@@ -198,7 +196,7 @@ void TestFunction(
         c_v / c_l - 1.)));
 
 #ifdef DEBUG_SIMD_TEST
-    VECTORIZATION_LOGF(INFO, "[%s]:   max error(%.2e)", MACRO_CORE_TYPE_ID_NAME(F), float(max_error));
+    VECTORIZATION_LOGF(INFO, "[{}]:   max error({:.2e})", MACRO_CORE_TYPE_ID_NAME(F), float(max_error));
 #endif  // DEBUG_SIMD_TEST
 
     EXPECT_LE(max_error, tolerance);
@@ -241,7 +239,7 @@ void TestFMA(
 #ifdef DEBUG_SIMD_TEST
     VECTORIZATION_LOGF(
         INFO,
-        "[%s]:   max error(%.2e)",
+        "[{}]:   max error({:.2e})",
         MACRO_CORE_TYPE_ID_NAME(vectorization::func_fma),
         float(max_error));
 #endif  // DEBUG_SIMD_TEST
@@ -273,17 +271,17 @@ void TestHorizontalFunction(size_t n, T const* x, T const* y)
 #ifdef DEBUG_SIMD_TEST
     VECTORIZATION_LOGF(
         INFO,
-        "hmin       [%s]:   max error(%.2e)",
+        "hmin       [{}]:   max error({:.2e})",
         MACRO_CORE_TYPE_ID_NAME(T),
         float(ret_v_min - ret_l_min));
     VECTORIZATION_LOGF(
         INFO,
-        "hmax       [%s]:   max error(%.2e)",
+        "hmax       [{}]:   max error({:.2e})",
         MACRO_CORE_TYPE_ID_NAME(T),
         float(ret_v_max - ret_l_max));
     VECTORIZATION_LOGF(
         INFO,
-        "accumulate [%s]:   max error(%.2e)",
+        "accumulate [{}]:   max error({:.2e})",
         MACRO_CORE_TYPE_ID_NAME(T),
         float(ret_v_sum - ret_l_sum));
 #endif
@@ -380,7 +378,7 @@ void test_packet_functions()
 
 VECTORIZATIONTEST(Math, MultiSimd)
 {
-#ifdef VECTORIZATION_VECTORIZED
+#if VECTORIZATION_VECTORIZED
 
     test_packet_functions<float>();
     test_packet_functions<double>();

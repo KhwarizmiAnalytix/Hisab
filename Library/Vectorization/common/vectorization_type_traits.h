@@ -50,7 +50,7 @@ struct is_packet<scalar_type_simd_t<float>>
     static constexpr bool value = true;
 };
 
-#ifdef VECTORIZATION_HAS_AVX512
+#if VECTORIZATION_HAS_AVX512
 
 template <typename value_t>
 using scalar_type_mask_t = typename packet<value_t>::array_mask_t;
@@ -253,7 +253,7 @@ struct scalar_type<scalar_type_simd_t<float>, T>
     using value = float;
 };
 
-#ifdef VECTORIZATION_HAS_AVX512
+#if VECTORIZATION_HAS_AVX512
 
 template <typename T>
 struct scalar_type<scalar_type_mask_t<double>, T>

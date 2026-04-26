@@ -20,7 +20,7 @@
 #pragma once
 #include <cstdint>
 
-#if defined(VECTORIZATION_VECTORIZED)
+#if VECTORIZATION_VECTORIZED
 #if defined(_MSC_VER) && (_MSC_VER >= 1400)
 /* Microsoft C/C++-compatible compiler */
 #include <intrin.h>

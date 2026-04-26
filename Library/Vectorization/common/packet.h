@@ -27,13 +27,13 @@
 #include "common/vectorization_macros.h"
 #include "common/scalar_helper_functions.h"
 
-#if defined(VECTORIZATION_HAS_AVX512)
+#if VECTORIZATION_HAS_AVX512
 #include "backend/avx512/double/simd.h"
 #include "backend/avx512/float/simd.h"
-#elif defined(VECTORIZATION_HAS_AVX2) || defined(VECTORIZATION_HAS_AVX)
+#elif VECTORIZATION_HAS_AVX2 || VECTORIZATION_HAS_AVX
 #include "backend/avx/double/simd.h"
 #include "backend/avx/float/simd.h"
-#elif defined VECTORIZATION_HAS_SSE
+#elif VECTORIZATION_HAS_SSE
 #include "backend/sse/double/simd.h"
 #include "backend/sse/float/simd.h"
 #endif
@@ -633,7 +633,7 @@ struct packet
 {
     using value_t = T;
 
-#ifdef VECTORIZATION_VECTORIZED
+#if VECTORIZATION_VECTORIZED
     using simd_t                     = typename simd<value_t>::simd_t;
     using mask_t                     = typename simd<value_t>::mask_t;
     static constexpr uint32_t Length = N * simd<value_t>::size;

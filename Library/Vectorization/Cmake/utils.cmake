@@ -1,4 +1,4 @@
-include_guard(GLOBAL)
+include_guard()
 
 if(UNIX)
   include(CheckFunctionExists)

@@ -19,7 +19,7 @@
 
 #pragma once
 
-#ifdef VECTORIZATION_HAS_SVML
+#if VECTORIZATION_HAS_SVML
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcast-calling-convention"
@@ -30,6 +30,12 @@
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
+#endif
+
+#if !VECTORIZATION_HAS_SVML
+#  include <cmath>
+
+#  include "common/normal_cdf.h"
 #endif
 
 template <>
@@ -96,7 +102,7 @@ struct simd<float>
         ret = _mm256_div_ps(x, y);
     }
 
-#ifdef VECTORIZATION_HAS_SVML
+#if VECTORIZATION_HAS_SVML
     VECTORIZATION_SIMD_RETURN_TYPE pow(const simd_t& x, const simd_t& y, simd_t& ret)
     {
         ret = _mm256_pow_ps(x, y);
@@ -105,6 +111,29 @@ struct simd<float>
     VECTORIZATION_SIMD_RETURN_TYPE hypot(const simd_t& x, const simd_t& y, simd_t& ret)
     {
         ret = _mm256_hypot_ps(x, y);
+    }
+#else
+    VECTORIZATION_SIMD_RETURN_TYPE pow(const simd_t& x, const simd_t& y, simd_t& ret)
+    {
+        alignas(32) value_t bx[size];
+        alignas(32) value_t by[size];
+        storeu(x, bx);
+        storeu(y, by);
+        for (int i = 0; i < size; ++i)
+            bx[i] = static_cast<value_t>(std::pow(static_cast<double>(bx[i]), static_cast<double>(by[i])));
+        loadu(bx, ret);
+    }
+
+    VECTORIZATION_SIMD_RETURN_TYPE hypot(const simd_t& x, const simd_t& y, simd_t& ret)
+    {
+        alignas(32) value_t bx[size];
+        alignas(32) value_t by[size];
+        storeu(x, bx);
+        storeu(y, by);
+        for (int i = 0; i < size; ++i)
+            bx[i] = static_cast<value_t>(
+                std::hypot(static_cast<double>(bx[i]), static_cast<double>(by[i])));
+        loadu(bx, ret);
     }
 #endif  // VECTORIZATION_HAS_SVML
 
@@ -143,7 +172,7 @@ struct simd<float>
 
     VECTORIZATION_SIMD_RETURN_TYPE floor(const simd_t& x, simd_t& ret) { ret = _mm256_floor_ps(x); }
 
-#ifdef VECTORIZATION_HAS_SVML
+#if VECTORIZATION_HAS_SVML
     VECTORIZATION_SIMD_RETURN_TYPE exp(const simd_t& x, simd_t& ret) { ret = _mm256_exp_ps(x); }
     VECTORIZATION_SIMD_RETURN_TYPE expm1(const simd_t& x, simd_t& ret) { ret = _mm256_expm1_ps(x); }
     VECTORIZATION_SIMD_RETURN_TYPE exp2(const simd_t& x, simd_t& ret) { ret = _mm256_exp2_ps(x); }
@@ -174,9 +203,204 @@ struct simd<float>
     VECTORIZATION_SIMD_RETURN_TYPE inv_cdf(const simd_t& x, simd_t& ret) { ret = _mm256_cdfnorminv_ps(x); }
 
     VECTORIZATION_SIMD_RETURN_TYPE trunc(const simd_t& x, simd_t& ret) { ret = _mm256_trunc_ps(x); }
+#else
+    VECTORIZATION_SIMD_RETURN_TYPE exp(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::exp(b[i]);
+        loadu(b, ret);
+    }
+    VECTORIZATION_SIMD_RETURN_TYPE expm1(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::expm1(b[i]);
+        loadu(b, ret);
+    }
+    VECTORIZATION_SIMD_RETURN_TYPE exp2(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::exp2(b[i]);
+        loadu(b, ret);
+    }
 
-    VECTORIZATION_SIMD_RETURN_TYPE invsqrt(const simd_t& x, simd_t& ret) { ret = _mm256_invsqrt_ps(x); }
+    VECTORIZATION_SIMD_RETURN_TYPE log(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::log(b[i]);
+        loadu(b, ret);
+    }
+    VECTORIZATION_SIMD_RETURN_TYPE log1p(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::log1p(b[i]);
+        loadu(b, ret);
+    }
+    VECTORIZATION_SIMD_RETURN_TYPE log2(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::log2(b[i]);
+        loadu(b, ret);
+    }
+
+    VECTORIZATION_SIMD_RETURN_TYPE sin(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::sin(b[i]);
+        loadu(b, ret);
+    }
+    VECTORIZATION_SIMD_RETURN_TYPE cos(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::cos(b[i]);
+        loadu(b, ret);
+    }
+    VECTORIZATION_SIMD_RETURN_TYPE tan(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::tan(b[i]);
+        loadu(b, ret);
+    }
+
+    VECTORIZATION_SIMD_RETURN_TYPE asin(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::asin(b[i]);
+        loadu(b, ret);
+    }
+    VECTORIZATION_SIMD_RETURN_TYPE acos(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::acos(b[i]);
+        loadu(b, ret);
+    }
+    VECTORIZATION_SIMD_RETURN_TYPE atan(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::atan(b[i]);
+        loadu(b, ret);
+    }
+
+    VECTORIZATION_SIMD_RETURN_TYPE sinh(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::sinh(b[i]);
+        loadu(b, ret);
+    }
+    VECTORIZATION_SIMD_RETURN_TYPE cosh(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::cosh(b[i]);
+        loadu(b, ret);
+    }
+    VECTORIZATION_SIMD_RETURN_TYPE tanh(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::tanh(b[i]);
+        loadu(b, ret);
+    }
+
+    VECTORIZATION_SIMD_RETURN_TYPE asinh(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::asinh(b[i]);
+        loadu(b, ret);
+    }
+    VECTORIZATION_SIMD_RETURN_TYPE acosh(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::acosh(b[i]);
+        loadu(b, ret);
+    }
+    VECTORIZATION_SIMD_RETURN_TYPE atanh(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::atanh(b[i]);
+        loadu(b, ret);
+    }
+
+    VECTORIZATION_SIMD_RETURN_TYPE cbrt(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::cbrt(b[i]);
+        loadu(b, ret);
+    }
+
+    VECTORIZATION_SIMD_RETURN_TYPE cdf(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = static_cast<value_t>(vectorization::normalcdf(static_cast<double>(b[i])));
+        loadu(b, ret);
+    }
+    VECTORIZATION_SIMD_RETURN_TYPE inv_cdf(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = static_cast<value_t>(vectorization::inv_normalcdf(static_cast<double>(b[i])));
+        loadu(b, ret);
+    }
+
+    VECTORIZATION_SIMD_RETURN_TYPE trunc(const simd_t& x, simd_t& ret)
+    {
+        alignas(32) value_t b[size];
+        storeu(x, b);
+        for (int i = 0; i < size; ++i)
+            b[i] = std::trunc(b[i]);
+        loadu(b, ret);
+    }
 #endif  // VECTORIZATION_HAS_SVML
+
+#if VECTORIZATION_HAS_SVML
+    VECTORIZATION_SIMD_RETURN_TYPE invsqrt(const simd_t& x, simd_t& ret) { ret = _mm256_invsqrt_ps(x); }
+#else
+    VECTORIZATION_SIMD_RETURN_TYPE invsqrt(const simd_t& x, simd_t& ret)
+    {
+        simd_t s;
+        sqrt(x, s);
+        ret = _mm256_div_ps(_mm256_set1_ps(1.0F), s);
+    }
+#endif
+
     VECTORIZATION_SIMD_RETURN_TYPE fabs(const simd_t& x, simd_t& ret)
     {
         ret = _mm256_andnot_ps(sign_mask, x);

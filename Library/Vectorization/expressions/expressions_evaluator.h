@@ -41,16 +41,15 @@ struct expressions_evaluator
         {
             VECTORIZATION_CHECK(
                 expr.size() == rhs.size(),
-                "expression has diferrent size ",
+                "expression has different size {} than destination {}",
                 expr.size(),
-                " than destination ",
                 rhs.size());
 
             size_t loop_peel = 0;
             auto*  data      = rhs.begin();
             size_t n         = rhs.size();
 
-#if defined(VECTORIZATION_VECTORIZED)
+#if VECTORIZATION_VECTORIZED
             using value_t = typename vectorization::scalar_type<T, T>::value;
 
             constexpr auto length = T::length();
@@ -79,16 +78,15 @@ struct expressions_evaluator
         {
             VECTORIZATION_CHECK(
                 expr.size() == rhs.size(),
-                "expression has diferrent size ",
+                "expression has different size {} than destination {}",
                 expr.size(),
-                " than destination ",
                 rhs.size());
 
             size_t loop_peel = 0;
             auto*  data      = rhs.begin();
             size_t n         = rhs.size();
 
-#if defined(VECTORIZATION_VECTORIZED)
+#if VECTORIZATION_VECTORIZED
             using value_t = typename vectorization::scalar_type<T, T>::value;
 
             constexpr auto length = T::length();
@@ -113,7 +111,7 @@ struct expressions_evaluator
         auto*  data      = to.begin() + k;
         size_t n         = from.size();
 
-#if defined(VECTORIZATION_VECTORIZED)
+#if VECTORIZATION_VECTORIZED
         using value_t      = typename vectorization::scalar_type<T, T>::value;
         using array_simd_t = typename packet<value_t>::array_simd_t;
 
@@ -139,7 +137,7 @@ struct expressions_evaluator
         size_t loop_peel = 0;
         auto*  data      = rhs.begin();
 
-#if defined(VECTORIZATION_VECTORIZED)
+#if VECTORIZATION_VECTORIZED
         using value_t      = typename vectorization::scalar_type<T, T>::value;
         using array_simd_t = typename packet<value_t>::array_simd_t;
 
@@ -170,7 +168,7 @@ VECTORIZATION_FUNCTION_ATTRIBUTE double accumulate(EXPR&& expression) noexcept
     double sum = 0;
     size_t i   = 0;
 
-#if defined(VECTORIZATION_VECTORIZED)
+#if VECTORIZATION_VECTORIZED
     using value_t = typename vectorization::scalar_type<E, E>::value;
 
     constexpr auto length    = E::length();
@@ -208,7 +206,7 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto hmin(EXPR&& expression) noexcept
     value_t ret = std::numeric_limits<value_t>::max();
     size_t  i   = 0;
 
-#if defined(VECTORIZATION_VECTORIZED)
+#if VECTORIZATION_VECTORIZED
     constexpr auto length    = E::length();
     size_t         loop_peel = length * (expression.size() / length);
 
@@ -245,7 +243,7 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto hmax(EXPR&& expression) noexcept
     auto   ret = std::numeric_limits<value_t>::min();
     size_t i   = 0;
 
-#if defined(VECTORIZATION_VECTORIZED)
+#if VECTORIZATION_VECTORIZED
     constexpr auto length    = E::length();
     size_t         loop_peel = length * (expression.size() / length);
 

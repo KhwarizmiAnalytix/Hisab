@@ -24,13 +24,12 @@
 #include <vector>
 
 //#include "common/constants.h"
+#include "common/vectorization_macros.h"
 #include "common/packet.h"
-#include "memory/allocator.h"
 #include "terminals/vector.h"
-#include "xsigmaTest.h"
-#include "xsigmaTestingHelper.h"
+#include "VectorizationTest.h"
 
-#ifdef VECTORIZATION_VECTORIZED
+#if VECTORIZATION_VECTORIZED
 namespace
 {
 #define TEST_SIMD_FUNC_1_ARGS(op)                            \
@@ -54,7 +53,7 @@ namespace
         simd<value_t>::storeu(c, out.data());                \
         for (auto e : out)                                   \
         {                                                    \
-            VECTORIZATION_LOGF(INFO, "vec: %f seq: %f", e, z);      \
+            VECTORIZATION_LOGF(INFO, "vec: {} seq: {}", e, z);      \
             EXPECT_LE(std::fabs(e - z), tolerance);          \
         }                                                    \
     }
@@ -86,7 +85,7 @@ namespace
         simd<value_t>::storeu(c, out.data());                \
         for (auto e : out)                                   \
         {                                                    \
-            VECTORIZATION_LOGF(INFO, "vec: %f seq: %f", e, z);      \
+            VECTORIZATION_LOGF(INFO, "vec: {} seq: {}", e, z);      \
             EXPECT_LE(std::fabs(e - z), tolerance);          \
         }                                                    \
     }
