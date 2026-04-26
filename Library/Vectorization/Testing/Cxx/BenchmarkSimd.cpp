@@ -23,7 +23,6 @@
 #include "expressions/expressions.h"
 #include "terminals/vector.h"
 
-
 namespace
 {
 double y_max = exp(5.);
@@ -34,37 +33,36 @@ double T     = 5.;
 
 };  // namespace
 
-//#define BENCHMARK_DONOT_OPTIMIZE(X) benchmark::DoNotOptimize(X)
-#define BENCHMARK_DONOT_OPTIMIZE(X) X
+#define BENCHMARK_DONOT_OPTIMIZE(X) benchmark::DoNotOptimize(X)
 
-#define MACRO_TEST_SIMD_FUNC(op, op_inv)                                   \
-    class func_##op                                                        \
-    {                                                                      \
-    public:                                                                \
-        template <typename T>                                              \
-        VECTORIZATION_FORCE_INLINE static void run(T const& a, T const&, T& c)    \
-        {                                                                  \
-            if constexpr (vectorization::is_fundamental<T>::value)                \
-                BENCHMARK_DONOT_OPTIMIZE(c = std::op_inv(std::op(a)) / a); \
-            else                                                           \
-            {                                                              \
-                BENCHMARK_DONOT_OPTIMIZE(c = op_inv(op(a)) / a);           \
-            }                                                              \
-        };                                                                 \
+#define MACRO_TEST_SIMD_FUNC(op, op_inv)                                       \
+    class func_##op                                                            \
+    {                                                                          \
+    public:                                                                    \
+        template <typename T>                                                  \
+        VECTORIZATION_FORCE_INLINE static void run(T const& a, T const&, T& c) \
+        {                                                                      \
+            if constexpr (vectorization::is_fundamental<T>::value)             \
+                BENCHMARK_DONOT_OPTIMIZE(c = std::op_inv(std::op(a)) / a);     \
+            else                                                               \
+            {                                                                  \
+                BENCHMARK_DONOT_OPTIMIZE(c = op_inv(op(a)) / a);               \
+            }                                                                  \
+        };                                                                     \
     }
 
-#define MACRO_TEST_SIMD_FUNC2(op)                                         \
-    class func_##op                                                       \
-    {                                                                     \
-    public:                                                               \
-        template <typename T>                                             \
+#define MACRO_TEST_SIMD_FUNC2(op)                                                \
+    class func_##op                                                              \
+    {                                                                            \
+    public:                                                                      \
+        template <typename T>                                                    \
         VECTORIZATION_FORCE_INLINE static void run(T const& a, T const& b, T& c) \
-        {                                                                 \
+        {                                                                        \
             if constexpr (vectorization::is_fundamental<T>::value)               \
-                BENCHMARK_DONOT_OPTIMIZE(c = std::op(a, b));              \
-            else                                                          \
-                BENCHMARK_DONOT_OPTIMIZE(c = op(a, b));                   \
-        };                                                                \
+                BENCHMARK_DONOT_OPTIMIZE(c = std::op(a, b));                     \
+            else                                                                 \
+                BENCHMARK_DONOT_OPTIMIZE(c = op(a, b));                          \
+        };                                                                       \
     }
 
 namespace std
@@ -168,10 +166,10 @@ public:
     {                                                                     \
         const size_t n = (2 << 12) + 3;                                   \
                                                                           \
-        vectorization::vector<scalar_t>   a(n);                                  \
-        vectorization::vector<scalar_t>   b(n);                                  \
-        vectorization::vector<scalar_t>   c(n);                                  \
-        std::default_random_engine generator;                             \
+        vectorization::vector<scalar_t> a(n);                             \
+        vectorization::vector<scalar_t> b(n);                             \
+        vectorization::vector<scalar_t> c(n);                             \
+        std::default_random_engine      generator;                        \
                                                                           \
         std::uniform_real_distribution<scalar_t> distribution(-5., 5.);   \
                                                                           \
@@ -184,17 +182,17 @@ public:
         }                                                                 \
                                                                           \
         for (auto _ : state)                                              \
-            vectorization::func_##op::run(a, b, c);                              \
+            vectorization::func_##op::run(a, b, c);                       \
     }                                                                     \
     template <typename scalar_t>                                          \
     static void Scalar_##op(benchmark::State& state)                      \
     {                                                                     \
         const size_t n = (2 << 12) + 3;                                   \
                                                                           \
-        vectorization::vector<scalar_t>   a(n);                                  \
-        vectorization::vector<scalar_t>   b(n);                                  \
-        vectorization::vector<scalar_t>   c(n);                                  \
-        std::default_random_engine generator;                             \
+        vectorization::vector<scalar_t> a(n);                             \
+        vectorization::vector<scalar_t> b(n);                             \
+        vectorization::vector<scalar_t> c(n);                             \
+        std::default_random_engine      generator;                        \
                                                                           \
         std::uniform_real_distribution<scalar_t> distribution(-5., 5.);   \
                                                                           \
@@ -208,7 +206,7 @@ public:
                                                                           \
         for (auto _ : state)                                              \
             for (size_t i = 0; i < n; ++i)                                \
-                vectorization::func_##op::run(a[i], b[i], c[i]);                 \
+                vectorization::func_##op::run(a[i], b[i], c[i]);          \
     }                                                                     \
     BENCHMARK_TEMPLATE(Vectorized_##op, float)->MeasureProcessCPUTime();  \
     BENCHMARK_TEMPLATE(Scalar_##op, float)->MeasureProcessCPUTime();      \
@@ -217,7 +215,8 @@ public:
 
 namespace vectorization_test
 {
-inline void transpose8x8_intrinsic([[maybe_unused]] vectorization::array<simd<double>::simd_t, 8> reg)
+inline void transpose8x8_intrinsic(
+    [[maybe_unused]] vectorization::array<simd<double>::simd_t, 8> reg)
 {
 #if VECTORIZATION_HAS_AVX512
     simd<double>::simd_t tmp[8];
@@ -268,7 +267,8 @@ inline void transpose8x8_intrinsic([[maybe_unused]] vectorization::array<simd<do
 #endif  // VECTORIZATION_HAS_AVX512
 }
 
-inline void transpose16x16_intrinsic([[maybe_unused]] vectorization::array<simd<float>::simd_t, 16> reg)
+inline void transpose16x16_intrinsic(
+    [[maybe_unused]] vectorization::array<simd<float>::simd_t, 16> reg)
 {
 #if VECTORIZATION_HAS_AVX512
     simd<float>::simd_t tmp[16];
@@ -438,8 +438,8 @@ SIMD_BENCHMARK(hypot);
     {                                                                       \
         const size_t n = (2 << 12) + 3;                                     \
                                                                             \
-        vectorization::vector<scalar_t>   a(n);                                    \
-        std::default_random_engine generator;                               \
+        vectorization::vector<scalar_t> a(n);                               \
+        std::default_random_engine      generator;                          \
                                                                             \
         std::uniform_real_distribution<scalar_t> distribution(-5., 5.);     \
                                                                             \
@@ -450,14 +450,14 @@ SIMD_BENCHMARK(hypot);
         }                                                                   \
                                                                             \
         for (auto _ : state)                                                \
-            BENCHMARK_DONOT_OPTIMIZE(vectorization::op1(a));                       \
+            BENCHMARK_DONOT_OPTIMIZE(vectorization::op1(a));                \
     }                                                                       \
     template <typename scalar_t>                                            \
     static void Scalar_h##op2(benchmark::State& state)                      \
     {                                                                       \
-        const size_t               n = (2 << 12) + 3;                       \
-        vectorization::vector<scalar_t>   a(n);                                    \
-        std::default_random_engine generator;                               \
+        const size_t                    n = (2 << 12) + 3;                  \
+        vectorization::vector<scalar_t> a(n);                               \
+        std::default_random_engine      generator;                          \
                                                                             \
         std::uniform_real_distribution<scalar_t> distribution(-5., 5.);     \
                                                                             \
