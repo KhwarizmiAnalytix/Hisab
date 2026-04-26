@@ -227,7 +227,8 @@ endif()
 if(USE_NATIVE_ARCH)
   check_cxx_compiler_flag("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
   if(COMPILER_SUPPORTS_MARCH_NATIVE)
-    add_definitions("-march=native")
+    string(APPEND CMAKE_C_FLAGS " -march=native")
+    string(APPEND CMAKE_CXX_FLAGS " -march=native")
   else()
     message(WARNING "Your compiler does not support -march=native. Turn off this warning "
                     "by setting -DUSE_NATIVE_ARCH=OFF."

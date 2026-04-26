@@ -1,19 +1,19 @@
 # =============================================================================
-# Library/Parallel — CMakeLists.txt
+# Library/Parallel —
+# CMakeLists.txt
 #
-# Thread-pool, task-queue, multi-threader facade, and pluggable SMP backends
-# (std::thread, OpenMP, Intel TBB).
+# Thread-pool, task-queue, multi-threader facade, and pluggable SMP backends (std::thread, OpenMP,
+# Intel TBB).
 #
-# Public compile definitions:
-#   PARALLEL_HAS_TBB=1/0           — Intel TBB work-stealing backend active
-#   PARALLEL_HAS_OPENMP=1/0        — OpenMP directive-based backend active
-#   PARALLEL_HAS_PTHREADS=1/0      — POSIX threads available
-#   PARALLEL_HAS_WIN32_THREADS=1/0 — Win32 native threading API used
+# Public compile definitions: PARALLEL_HAS_TBB=1/0           — Intel TBB work-stealing backend
+# active PARALLEL_HAS_OPENMP=1/0        — OpenMP directive-based backend active
+# PARALLEL_HAS_PTHREADS=1/0      — POSIX threads available PARALLEL_HAS_WIN32_THREADS=1/0 — Win32
+# native threading API used
 # =============================================================================
 cmake_minimum_required(VERSION 3.16)
 
-# --- Section 1: Feature flags (PARALLEL_ENABLE_*) ---
-# TBB/OpenMP/thread flags are set by module-owned finders in Section 3.
+# --- Section 1: Feature flags (PARALLEL_ENABLE_*) --- TBB/OpenMP/thread flags are set by
+# module-owned finders in Section 3.
 
 # Link-Time Optimization — disabled when PARALLEL_ENABLE_COVERAGE or PARALLEL_ENABLE_SANITIZER is ON
 # (LTO conflicts with instrumentation / sanitizers).
@@ -82,12 +82,12 @@ if(NOT PARALLEL_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
   message(FATAL_ERROR "PARALLEL_CXX_STANDARD must be one of: 11 14 17 20 23")
 endif()
 
-# --- Section 2: PARALLEL_ENABLE_* → PARALLEL_HAS_* compile definitions ---
-# All ENABLE flags come from Section 3 finders; this block is completed after those includes.
+# --- Section 2: PARALLEL_ENABLE_* → PARALLEL_HAS_* compile definitions --- All ENABLE flags come
+# from Section 3 finders; this block is completed after those includes.
 set(PARALLEL_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS})
 
-# --- Section 3: CMake module includes ---
-# Order: introspection → toolchain helpers → Parallel-owned finders → coverage/sanitizer → LTO/linker.
+# --- Section 3: CMake module includes --- Order: introspection → toolchain helpers → Parallel-owned
+# finders → coverage/sanitizer → LTO/linker.
 
 # LTO is incompatible with coverage/sanitizer — clear before any include().
 if(PARALLEL_ENABLE_COVERAGE OR PARALLEL_ENABLE_SANITIZER)

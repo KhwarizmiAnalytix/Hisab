@@ -1,4 +1,5 @@
-# ============================================================================= Quarisma
+# =============================================================================
+# Quarisma
 # Compiler-Cache Configuration Module
 #
 # Provides quarisma_target_apply_cache() — a per-target compiler-cache setter. Each Library module
@@ -11,8 +12,7 @@
 # Note: compiler caches are safe to apply per-target because they only intercept compilation; they
 # never alter flags or output semantics.
 # =============================================================================
-
-include_guard(GLOBAL)
+# include_guard(GLOBAL)
 
 # quarisma_target_apply_cache(<target> <enable_var> <backend_var>) enable_var  – boolean CACHE
 # variable controlling whether caching is active (e.g. LOGGING_ENABLE_CACHE) backend_var – string

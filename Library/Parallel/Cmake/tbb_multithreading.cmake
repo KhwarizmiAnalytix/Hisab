@@ -1,4 +1,5 @@
-# ============================================================================= Quarisma Intel TBB -
+# =============================================================================
+# Quarisma Intel TBB -
 # Multithreading Backend (Threading Building Blocks) Parallel Task Scheduling
 
 # This module configures Intel TBB as the parallel task scheduling backend. It is activated when
@@ -22,7 +23,8 @@ endif()
 
 message(STATUS "Configuring Intel TBB multithreading support...")
 
-# ============================================================================= Configuration
+# =============================================================================
+# Configuration
 # Options
 
 # Option to force building TBB from source (useful for testing)
@@ -41,7 +43,8 @@ set(PROJECT_TBB_REPOSITORY "https://github.com/oneapi-src/oneTBB.git" CACHE STRI
 )
 mark_as_advanced(PROJECT_TBB_REPOSITORY)
 
-# ============================================================================= Step 1: Try to find
+# =============================================================================
+# Step 1: Try to find
 # system-installed TBB
 
 set(TBB_FOUND FALSE)
@@ -118,7 +121,8 @@ if(NOT PROJECT_TBB_FORCE_BUILD_FROM_SOURCE)
   endif()
 endif()
 
-# ============================================================================= Step 2: Build TBB
+# =============================================================================
+# Step 2: Build TBB
 # from source using FetchContent
 
 message(STATUS "Building Intel TBB from source...")
@@ -180,7 +184,8 @@ message(STATUS "✅ Successfully downloaded Intel TBB source")
 message(STATUS "   Source directory: ${onetbb_SOURCE_DIR}")
 message(STATUS "   Binary directory: ${onetbb_BINARY_DIR}")
 
-# ============================================================================= Step 3: Verify
+# =============================================================================
+# Step 3: Verify
 # TBB::tbb target was created
 
 if(NOT TARGET TBB::tbb)
@@ -193,7 +198,8 @@ set(TBB_FOUND TRUE)
 message(STATUS "✅ Successfully built Intel TBB from source")
 message(STATUS "   TBB::tbb target available")
 
-# ============================================================================= Step 4: Create
+# =============================================================================
+# Step 4: Create
 # Tbb::tbb interface target
 
 if(NOT TARGET Tbb::tbb)
@@ -201,7 +207,8 @@ if(NOT TARGET Tbb::tbb)
   target_link_libraries(Tbb::tbb INTERFACE TBB::tbb)
 endif()
 
-# ============================================================================= Step 5: Configure
+# =============================================================================
+# Step 5: Configure
 # output directories for the tbb target
 
 if(TBB_FROM_SOURCE AND TARGET tbb)
@@ -228,7 +235,8 @@ if(TBB_FROM_SOURCE AND TARGET tbb)
   message(STATUS "Configured output directories for TBB target 'tbb'")
 endif()
 
-# ============================================================================= Step 6: Export TBB
+# =============================================================================
+# Step 6: Export TBB
 # information for other modules (e.g. tbb_memory.cmake)
 
 set(TBB_FOUND TRUE CACHE BOOL "TBB was found or built successfully" FORCE)

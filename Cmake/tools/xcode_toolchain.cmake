@@ -1,4 +1,5 @@
-# ============================================================================= Xcode Toolchain
+# =============================================================================
+# Xcode Toolchain
 # Configuration Module When building with the Xcode generator, this module configures CMake to use
 # the same LLVM as both (1) Xcode's TOOLCHAINS setting and (2) CMAKE_*_COMPILER. Compilers are the
 # clang/clang++ inside the registered *.xctoolchain (e.g. LLVM22.1.2.xctoolchain), not a separate

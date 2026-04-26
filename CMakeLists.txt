@@ -1,10 +1,10 @@
-# ============================================================================= Quarisma Main CMake
-# Configuration
+# =============================================================================
+# Quarisma Main
+# CMake Configuration
 # =============================================================================
 # Third-party deps: ThirdParty/CMakeLists.txt. Feature flags → compile defs:
 # Cmake/flags/compile_definitions.cmake. Library modules: Library/*/CMakeLists.txt.
 # =============================================================================
-
 cmake_minimum_required(VERSION 3.16)
 cmake_policy(SET CMP0069 NEW)
 
@@ -41,15 +41,13 @@ set(CMAKE_COLOR_DIAGNOSTICS ON)
 
 enable_testing()
 
-# Always use bundled googletest — external shared gtest (e.g. from conda) causes rpath failures
-# at runtime because its dylib install path is not in our test executables' rpath.
+# Always use bundled googletest — external shared gtest (e.g. from conda) causes rpath failures at
+# runtime because its dylib install path is not in our test executables' rpath.
 set(CMAKE_DISABLE_FIND_PACKAGE_GTest TRUE)
-
 
 set(PROJECT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(PROJECT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 set(PROJECT_VERSION "${PROJECT_VERSION}")
-
 
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 

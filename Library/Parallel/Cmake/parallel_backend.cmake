@@ -1,4 +1,5 @@
-# ============================================================================= SMP Backend
+# =============================================================================
+# SMP Backend
 # Selection Configuration
 
 # This module handles the selection of the PARALLEL (Symmetric Multi-Processing) backend for

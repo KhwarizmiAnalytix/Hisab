@@ -1,8 +1,9 @@
-# ============================================================================= Quarisma Profiling
-# Examples CMakeLists.txt
 # =============================================================================
-# This CMakeLists.txt configures and builds the Quarisma Profiling example programs that demonstrate
-# the usage of profiling APIs.
+# Quarisma
+# Profiling Examples CMakeLists.txt
+# =============================================================================
+# This CMakeLists.txt configures and builds the Quarisma Profiling example programs that
+# demonstrate the usage of profiling APIs.
 #
 # Examples included: - example_profiling_basic: Comprehensive profiling example with Quarisma,
 # Kineto, and ITT
@@ -12,14 +13,16 @@
 #
 # Or manually: cmake -DQUARISMA_ENABLE_EXAMPLES=ON .. cmake --build .
 # =============================================================================
-
 cmake_minimum_required(VERSION 3.16)
 
-# ============================================================================= Example Source Files
+# =============================================================================
+# Example Source
+# Files
 # =============================================================================
 set(example_sources example_profiling_basic.cpp)
 
-# ============================================================================= Build Examples
+# =============================================================================
+# Build Examples
 # =============================================================================
 foreach(example_source ${example_sources})
   # Extract example name from filename (remove .cpp extension)

@@ -1,4 +1,5 @@
-# ============================================================================= Quarisma
+# =============================================================================
+# Quarisma
 # Experimental Features Configuration Module
 
 # This module configures experimental features for the Quarisma project. Experimental features are
@@ -22,7 +23,8 @@ endif()
 
 message(STATUS "Configuring experimental features...")
 
-# ============================================================================= Experimental
+# =============================================================================
+# Experimental
 # Features Configuration
 
 # Set flag to indicate experimental features are available

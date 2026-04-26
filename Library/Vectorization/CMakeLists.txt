@@ -1,31 +1,28 @@
 # =============================================================================
 # Library/Vectorization — CMakeLists.txt
 #
-# Provides the Vectorization library: SIMD packet abstractions, expression
-# templates, and architecture-specific kernels for SSE, AVX, AVX2, and AVX-512.
+# Provides the Vectorization library: SIMD packet abstractions, expression templates, and
+# architecture-specific kernels for SSE, AVX, AVX2, and AVX-512.
 #
-# VECTORIZATION_TYPE (cache: no | sse | avx | avx2 | avx512) selects which backend/
-# source trees are compiled in. Optional VECTORIZATION_ENABLE_SVML adds SVML headers.
+# VECTORIZATION_TYPE (cache: no | sse | avx | avx2 | avx512) selects which backend/ source trees are
+# compiled in. Optional VECTORIZATION_ENABLE_SVML adds SVML headers.
 #
-# C++ preprocessor defines (exactly one is 1 when vectorized; the rest are 0):
-#   no     → all VECTORIZATION_HAS_* = 0
-#   sse    → VECTORIZATION_HAS_SSE = 1
-#   avx    → VECTORIZATION_HAS_AVX = 1
-#   avx2   → VECTORIZATION_HAS_AVX2 = 1  (sources under backend/avx/)
-#   avx512 → VECTORIZATION_HAS_AVX512 = 1
-#   VECTORIZATION_HAS_SVML=1/0   — SVML active in C++ code
-#   VECTORIZATION_HAS_GTEST=1/0  — Google Test available to Vectorization tests
+# C++ preprocessor defines (exactly one is 1 when vectorized; the rest are 0): no     → all
+# VECTORIZATION_HAS_* = 0 sse    → VECTORIZATION_HAS_SSE = 1 avx    → VECTORIZATION_HAS_AVX = 1 avx2
+# → VECTORIZATION_HAS_AVX2 = 1  (sources under backend/avx/) avx512 → VECTORIZATION_HAS_AVX512 = 1
+# VECTORIZATION_HAS_SVML=1/0   — SVML active in C++ code VECTORIZATION_HAS_GTEST=1/0  — Google Test
+# available to Vectorization tests
 # =============================================================================
 cmake_minimum_required(VERSION 3.16)
 
 # =============================================================================
-# SECTION 1 — Cache options (VECTORIZATION_TYPE, tooling) and backend selectors
+# SECTION 1 — Cache
+# options (VECTORIZATION_TYPE, tooling) and backend selectors
 #
-# include(utils) runs compiler feature checks (SIMD flags, exception_ptr); results are published
-# to CACHE for Core (QUARISMA_VECTORIZATION_COMPILER_FLAGS, PROJECT_*).
-# VECTORIZATION_TYPE drives backend source filters and VECTORIZATION_HAS_* one-to-one.
+# include(utils) runs compiler feature checks (SIMD flags, exception_ptr); results are published to
+# CACHE for Core (QUARISMA_VECTORIZATION_COMPILER_FLAGS, PROJECT_*). VECTORIZATION_TYPE drives
+# backend source filters and VECTORIZATION_HAS_* one-to-one.
 # =============================================================================
-
 set(VECTORIZATION_TYPE "avx2"
     CACHE STRING "vectorization implementation to use. Options are no, sse, avx, avx2, or avx512"
 )
@@ -33,7 +30,7 @@ set_property(CACHE VECTORIZATION_TYPE PROPERTY STRINGS no sse avx avx2 avx512)
 if(NOT VECTORIZATION_TYPE MATCHES "^(no|sse|avx|avx2|avx512)$")
   message(
     FATAL_ERROR
-    "VECTORIZATION_TYPE must be one of: no, sse, avx, avx2, avx512 (got '${VECTORIZATION_TYPE}')"
+      "VECTORIZATION_TYPE must be one of: no, sse, avx, avx2, avx512 (got '${VECTORIZATION_TYPE}')"
   )
 endif()
 
@@ -43,6 +40,11 @@ option(VECTORIZATION_ENABLE_TESTING "Build Vectorization test suite" ON)
 option(VECTORIZATION_ENABLE_EXAMPLES "Build Vectorization example programs" OFF)
 option(VECTORIZATION_ENABLE_GTEST "Enable GoogleTest for Vectorization" ON)
 option(VECTORIZATION_ENABLE_BENCHMARK "Enable Google Benchmark for Vectorization" ON)
+
+# Clang/GCC: append -march=native for extra instruction scheduling / tuning on the build host.
+# Improves runtime on this machine; the binary may not run on older CPUs. MSVC ignores this (no flag
+# added).
+option(USE_NATIVE_ARCH "Prefer host CPU instruction tuning (-march=native, Clang/GCC only)" OFF)
 
 # Intel SVML — short vector math library for fast sin/cos/exp/log on SIMD lanes.
 option(VECTORIZATION_ENABLE_SVML "Enable Intel SVML short vector math library" OFF)
@@ -72,17 +74,20 @@ option(VECTORIZATION_ENABLE_FIX "Enable clang-tidy fix options for Vectorization
 mark_as_advanced(VECTORIZATION_ENABLE_FIX)
 option(VECTORIZATION_ENABLE_IWYU "Enable include-what-you-use analysis for Vectorization" OFF)
 mark_as_advanced(VECTORIZATION_ENABLE_IWYU)
-option(VECTORIZATION_ENABLE_SANITIZER
-       "Build Vectorization with sanitizer support (Clang/GCC only)" OFF)
+option(VECTORIZATION_ENABLE_SANITIZER "Build Vectorization with sanitizer support (Clang/GCC only)"
+       OFF
+)
 set(VECTORIZATION_SANITIZER_TYPE "address"
     CACHE STRING
           "Sanitizer type for Vectorization. Options: address, undefined, thread, memory, leak"
 )
-set_property(CACHE VECTORIZATION_SANITIZER_TYPE PROPERTY STRINGS address undefined thread memory
-                                                                  leak)
+set_property(
+  CACHE VECTORIZATION_SANITIZER_TYPE PROPERTY STRINGS address undefined thread memory leak
+)
 mark_as_advanced(VECTORIZATION_ENABLE_SANITIZER VECTORIZATION_SANITIZER_TYPE)
 option(VECTORIZATION_ENABLE_SPELL
-       "Enable spell checking for Vectorization (WARNING: modifies source files)" OFF)
+       "Enable spell checking for Vectorization (WARNING: modifies source files)" OFF
+)
 mark_as_advanced(VECTORIZATION_ENABLE_SPELL)
 option(VECTORIZATION_ENABLE_VALGRIND "Execute Vectorization test suite with Valgrind" OFF)
 mark_as_advanced(VECTORIZATION_ENABLE_VALGRIND)
@@ -97,17 +102,17 @@ set(VECTORIZATION_CACHE_BACKEND "none"
 )
 set_property(CACHE VECTORIZATION_CACHE_BACKEND PROPERTY STRINGS none ccache sccache buildcache)
 mark_as_advanced(VECTORIZATION_CACHE_BACKEND)
-set(VECTORIZATION_CXX_STANDARD "20"
-    CACHE STRING "C++ standard for Vectorization. Options: 11 14 17 20 23"
+set(VECTORIZATION_CXX_STANDARD "20" CACHE STRING
+                                          "C++ standard for Vectorization. Options: 11 14 17 20 23"
 )
 set_property(CACHE VECTORIZATION_CXX_STANDARD PROPERTY STRINGS 11 14 17 20 23)
 if(NOT VECTORIZATION_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
   message(FATAL_ERROR "VECTORIZATION_CXX_STANDARD must be one of: 11 14 17 20 23")
 endif()
 # =============================================================================
-# SECTION 3 — CMake module includes
+# SECTION 3 — CMake
+# module includes
 # =============================================================================
-
 if(VECTORIZATION_ENABLE_COVERAGE OR VECTORIZATION_ENABLE_SANITIZER)
   set(VECTORIZATION_ENABLE_LTO OFF)
 endif()
@@ -127,11 +132,13 @@ include(utils)
 
 # Other libraries must not include Vectorization CMake modules; expose probes for Core et al.
 if(HAS_EXCEPTION_PTR)
-  set(PROJECT_HAS_EXCEPTION_PTR 1 CACHE INTERNAL "Quarisma: std::exception_ptr (Vectorization utils)"
-      FORCE)
+  set(PROJECT_HAS_EXCEPTION_PTR 1 CACHE INTERNAL
+                                        "Quarisma: std::exception_ptr (Vectorization utils)" FORCE
+  )
 else()
-  set(PROJECT_HAS_EXCEPTION_PTR 0 CACHE INTERNAL "Quarisma: std::exception_ptr (Vectorization utils)"
-      FORCE)
+  set(PROJECT_HAS_EXCEPTION_PTR 0 CACHE INTERNAL
+                                        "Quarisma: std::exception_ptr (Vectorization utils)" FORCE
+  )
 endif()
 foreach(_simd IN ITEMS SSE AVX AVX2 AVX512)
   if(HAS_${_simd})
@@ -140,17 +147,19 @@ foreach(_simd IN ITEMS SSE AVX AVX2 AVX512)
     set(PROJECT_${_simd} 0 CACHE INTERNAL "Quarisma: SIMD (Vectorization utils)" FORCE)
   endif()
 endforeach()
-set(QUARISMA_VECTORIZATION_COMPILER_FLAGS "${VECTORIZATION_COMPILER_FLAGS}" CACHE INTERNAL
-    "Quarisma: SIMD flags from Vectorization utils" FORCE)
+set(QUARISMA_VECTORIZATION_COMPILER_FLAGS "${VECTORIZATION_COMPILER_FLAGS}"
+    CACHE INTERNAL "Quarisma: SIMD flags from Vectorization utils" FORCE
+)
 
-#if(NOT VECTORIZATION_ENABLE_COVERAGE AND NOT VECTORIZATION_ENABLE_SANITIZER)
-message("--avx compiler flags: ${VECTORIZATION_COMPILER_FLAGS}") 
-set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}") 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}") 
-#endif()
+if(NOT VECTORIZATION_ENABLE_COVERAGE AND NOT VECTORIZATION_ENABLE_SANITIZER)
+  message("--avx compiler flags: ${VECTORIZATION_COMPILER_FLAGS}")
+  set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
+endif()
 
 # =============================================================================
-# SECTION 2 — VECTORIZATION_TYPE ↔ exactly one VECTORIZATION_HAS_* and backend trees
+# SECTION 2 —
+# VECTORIZATION_TYPE ↔ exactly one VECTORIZATION_HAS_* and backend trees
 # =============================================================================
 if(VECTORIZATION_ENABLE_SANITIZER)
   include(sanitize)
@@ -172,7 +181,8 @@ elseif(MSVC)
 endif()
 
 if(VECTORIZATION_ENABLE_LTO AND NOT VECTORIZATION_ENABLE_COVERAGE
-   AND NOT VECTORIZATION_ENABLE_SANITIZER)
+   AND NOT VECTORIZATION_ENABLE_SANITIZER
+)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
   message(STATUS "Link Time Optimization (LTO) enabled for Vectorization")
@@ -187,7 +197,7 @@ include(linker)
 set(VECTORIZATION_COMPILE_DEFINITIONS "")
 
 if(VECTORIZATION_TYPE STREQUAL "sse")
-list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_SSE=1)
+  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_SSE=1)
 else()
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_SSE=0)
 endif()
@@ -224,39 +234,37 @@ set(VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS "")
 list(APPEND VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS ${VECTORIZATION_COMPILE_DEFINITIONS})
 
 # =============================================================================
-# SECTION 4 — Source discovery with SIMD-tier filtering
+# SECTION 4 — Source
+# discovery with SIMD-tier filtering
 # =============================================================================
-
 set(CMAKE_CXX_STANDARD ${VECTORIZATION_CXX_STANDARD})
 
-file(GLOB_RECURSE headers LIST_DIRECTORIES false
-     "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
-     "${CMAKE_CURRENT_SOURCE_DIR}/*.inl"
+file(GLOB_RECURSE headers LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
+                                                 "${CMAKE_CURRENT_SOURCE_DIR}/*.inl"
 )
-file(GLOB_RECURSE sources LIST_DIRECTORIES false
-     "${CMAKE_CURRENT_SOURCE_DIR}/*.cxx"
-     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
+file(GLOB_RECURSE sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/*.cxx"
+                                                 "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
 )
 file(GLOB_RECURSE templates LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/*.hxx")
 
-list(FILTER sources   EXCLUDE REGEX ".*/Testing/.*")
-list(FILTER headers   EXCLUDE REGEX ".*/Testing/.*")
+list(FILTER sources EXCLUDE REGEX ".*/Testing/.*")
+list(FILTER headers EXCLUDE REGEX ".*/Testing/.*")
 list(FILTER templates EXCLUDE REGEX ".*/Testing/.*")
 
 # Exclude SIMD backend trees not selected by VECTORIZATION_TYPE.
 if(NOT VECTORIZATION_TYPE STREQUAL "sse")
-  list(FILTER headers   EXCLUDE REGEX ".*/backend/sse/.*")
-  list(FILTER sources   EXCLUDE REGEX ".*/backend/sse/.*")
+  list(FILTER headers EXCLUDE REGEX ".*/backend/sse/.*")
+  list(FILTER sources EXCLUDE REGEX ".*/backend/sse/.*")
   list(FILTER templates EXCLUDE REGEX ".*/backend/sse/.*")
 endif()
 if(NOT VECTORIZATION_TYPE MATCHES "^(avx|avx2)$")
-  list(FILTER headers   EXCLUDE REGEX ".*/backend/avx/.*")
-  list(FILTER sources   EXCLUDE REGEX ".*/backend/avx/.*")
+  list(FILTER headers EXCLUDE REGEX ".*/backend/avx/.*")
+  list(FILTER sources EXCLUDE REGEX ".*/backend/avx/.*")
   list(FILTER templates EXCLUDE REGEX ".*/backend/avx/.*")
 endif()
 if(NOT VECTORIZATION_TYPE STREQUAL "avx512")
-  list(FILTER headers   EXCLUDE REGEX ".*/backend/avx512/.*")
-  list(FILTER sources   EXCLUDE REGEX ".*/backend/avx512/.*")
+  list(FILTER headers EXCLUDE REGEX ".*/backend/avx512/.*")
+  list(FILTER sources EXCLUDE REGEX ".*/backend/avx512/.*")
   list(FILTER templates EXCLUDE REGEX ".*/backend/avx512/.*")
 endif()
 
@@ -265,9 +273,9 @@ if(NOT VECTORIZATION_ENABLE_SVML)
 endif()
 
 # =============================================================================
-# SECTION 5 — Target definition
+# SECTION 5 — Target
+# definition
 # =============================================================================
-
 add_library(Vectorization ${sources} ${headers} ${templates})
 quarisma_find_linker(${VECTORIZATION_LINKER_CHOICE} Vectorization)
 quarisma_target_apply_cache(Vectorization VECTORIZATION_ENABLE_CACHE VECTORIZATION_CACHE_BACKEND)
@@ -288,10 +296,14 @@ endif()
 include(GenerateExportHeader)
 generate_export_header(
   Vectorization
-  BASE_NAME         VECTORIZATION
-  EXPORT_MACRO_NAME VECTORIZATION_API
-  EXPORT_FILE_NAME  "${CMAKE_CURRENT_BINARY_DIR}/vectorization_export.h"
-  STATIC_DEFINE     VECTORIZATION_STATIC_DEFINE
+  BASE_NAME
+  VECTORIZATION
+  EXPORT_MACRO_NAME
+  VECTORIZATION_API
+  EXPORT_FILE_NAME
+  "${CMAKE_CURRENT_BINARY_DIR}/vectorization_export.h"
+  STATIC_DEFINE
+  VECTORIZATION_STATIC_DEFINE
 )
 
 add_library(Vectorization::Vectorization ALIAS Vectorization)
@@ -302,18 +314,14 @@ configure_file(
 )
 
 set_target_properties(
-  Vectorization PROPERTIES
-  CXX_STANDARD          ${VECTORIZATION_CXX_STANDARD}
-  CXX_STANDARD_REQUIRED ON
-  CXX_EXTENSIONS        OFF
+  Vectorization PROPERTIES CXX_STANDARD ${VECTORIZATION_CXX_STANDARD} CXX_STANDARD_REQUIRED ON
+                           CXX_EXTENSIONS OFF
 )
 
 if(MSVC)
   target_compile_options(Vectorization PRIVATE /WX)
   if(EXISTS "${PROJECT_SOURCE_DIR}/PRETORIAN.natvis")
-    target_sources(
-      Vectorization PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/PRETORIAN.natvis>
-    )
+    target_sources(Vectorization PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/PRETORIAN.natvis>)
   endif()
   if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND VECTORIZATION_TYPE STREQUAL "sse")
     target_compile_definitions(Vectorization PUBLIC VECTORIZATION_CLANG_CL)
@@ -333,19 +341,17 @@ if(_vec_simd_flags)
 endif()
 
 # =============================================================================
-# SECTION 6 — Include directories and link libraries
+# SECTION 6 — Include
+# directories and link libraries
 # =============================================================================
-
 target_include_directories(
   Vectorization
-  PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Testing>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/Testing>
-    $<INSTALL_INTERFACE:include>
-  PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Testing>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/Testing>
+         $<INSTALL_INTERFACE:include>
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 if(VECTORIZATION_DEPENDENCY_INCLUDE_DIRS)
@@ -388,29 +394,27 @@ endif()
 quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 
 # =============================================================================
-# SECTION 7 — Installation
+# SECTION 7 —
+# Installation
 # =============================================================================
-
 install(
   TARGETS Vectorization
-  EXPORT  VectorizationTargets
-  LIBRARY   DESTINATION lib
-  ARCHIVE   DESTINATION lib
-  RUNTIME   DESTINATION bin
-  INCLUDES  DESTINATION include
+  EXPORT VectorizationTargets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES
+  DESTINATION include
 )
 install(FILES ${headers} DESTINATION include/Vectorization COMPONENT Development)
-install(
-  FILES "${CMAKE_CURRENT_BINARY_DIR}/vectorization_export.h"
-        "${CMAKE_CURRENT_BINARY_DIR}/Testing/VectorizationTest.h"
-  DESTINATION include/Vectorization
-  COMPONENT Development
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vectorization_export.h"
+              "${CMAKE_CURRENT_BINARY_DIR}/Testing/VectorizationTest.h"
+        DESTINATION include/Vectorization COMPONENT Development
 )
 
 # =============================================================================
 # SECTION 8 — Testing
 # =============================================================================
-
 if(VECTORIZATION_ENABLE_TESTING)
   add_subdirectory(Testing/Cxx)
 endif()
@@ -420,9 +424,9 @@ if(VECTORIZATION_ENABLE_VALGRIND AND VECTORIZATION_ENABLE_TESTING)
 endif()
 
 # =============================================================================
-# SECTION 9 — Summary message
+# SECTION 9 — Summary
+# message
 # =============================================================================
-
 message("")
 message("******** Vectorization module (CMake flags) ********")
 message("  Vectorization type   : ${VECTORIZATION_TYPE}")
@@ -443,7 +447,9 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
   if(VECTORIZATION_TYPE STREQUAL "no")
     message("  BenchmarkSimd.cpp    : excluded (VECTORIZATION_TYPE=no)")
   else()
-    message("  BenchmarkSimd.cpp    : included → benchmark_simd (VECTORIZATION_TYPE=${VECTORIZATION_TYPE})")
+    message(
+      "  BenchmarkSimd.cpp    : included → benchmark_simd (VECTORIZATION_TYPE=${VECTORIZATION_TYPE})"
+    )
   endif()
 endif()
 message("  Clang-tidy           : ${VECTORIZATION_ENABLE_CLANGTIDY}")

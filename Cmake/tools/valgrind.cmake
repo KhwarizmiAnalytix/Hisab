@@ -1,5 +1,6 @@
-# ============================================================================= Quarisma Valgrind
-# Memory Checking Configuration Module
+# =============================================================================
+# Quarisma
+# Valgrind Memory Checking Configuration Module
 
 # This module configures Valgrind memory checking for CTest. All Valgrind options and settings are
 # centralized here. Provides comprehensive memory leak detection and error tracking.
@@ -12,8 +13,9 @@
 
 message(STATUS "Configuring Valgrind memory checking...")
 
-# ============================================================================= Platform Detection
-# and Compatibility Checks
+# =============================================================================
+# Platform
+# Detection and Compatibility Checks
 
 cmake_host_system_information(RESULT PLATFORM_ARCH QUERY OS_PLATFORM)
 message(STATUS "Platform architecture: ${PLATFORM_ARCH}")
@@ -28,7 +30,8 @@ if(APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
   )
 endif()
 
-# ============================================================================= Find Valgrind
+# =============================================================================
+# Find Valgrind
 # Executable
 
 find_program(CMAKE_MEMORYCHECK_COMMAND valgrind)
@@ -45,7 +48,8 @@ execute_process(
 )
 message(STATUS "Valgrind version: ${VALGRIND_VERSION_OUTPUT}")
 
-# ============================================================================= Valgrind Timeout
+# =============================================================================
+# Valgrind Timeout
 # Configuration
 
 set(PROJECT_VALGRIND_TIMEOUT_MULTIPLIER 20
@@ -58,7 +62,8 @@ set(CTEST_TEST_TIMEOUT 1800 CACHE STRING
 message(STATUS "Valgrind timeout multiplier: ${PROJECT_VALGRIND_TIMEOUT_MULTIPLIER}x")
 message(STATUS "Global CTest timeout: ${CTEST_TEST_TIMEOUT} seconds")
 
-# ============================================================================= Valgrind Command
+# =============================================================================
+# Valgrind Command
 # Options
 
 set(CMAKE_MEMORYCHECK_COMMAND_OPTIONS
@@ -69,7 +74,8 @@ set(CMAKE_MEMORYCHECK_COMMAND_OPTIONS
     "--xml-file=${CMAKE_BINARY_DIR}/Testing/Temporary/valgrind_%p.xml"
 )
 
-# ============================================================================= Suppression File
+# =============================================================================
+# Suppression File
 # Configuration
 
 set(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE
@@ -86,7 +92,8 @@ else()
   message(WARNING "Consider creating a suppression file to filter known false positives")
 endif()
 
-# ============================================================================= Summary
+# =============================================================================
+# Summary
 
 set(memcheck_command "${CMAKE_MEMORYCHECK_COMMAND}")
 foreach(opt ${CMAKE_MEMORYCHECK_COMMAND_OPTIONS})
@@ -97,7 +104,8 @@ message(STATUS "Valgrind command: ${memcheck_command}")
 message(STATUS "Valgrind configuration complete")
 message(STATUS "Use 'ctest -T memcheck' to run tests with Valgrind")
 
-# ============================================================================= Helper Function:
+# =============================================================================
+# Helper Function:
 # Apply Valgrind Timeouts to Tests
 #
 # Call after all tests are registered in the module. Multiplies existing timeouts by

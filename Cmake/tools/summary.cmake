@@ -1,11 +1,11 @@
-# ============================================================================= Quarisma
+# =============================================================================
+# Quarisma
 # Configuration Summary Module
 #
-# print_configuration_summary — workspace-wide toolchain and CMake metadata only.
-# Per-library CMake flag summaries live at the end of each Library/*/CMakeLists.txt.
+# print_configuration_summary — workspace-wide toolchain and CMake metadata only. Per-library CMake
+# flag summaries live at the end of each Library/*/CMakeLists.txt.
 # =============================================================================
-
-include_guard(GLOBAL)
+# include_guard(GLOBAL)
 
 function(print_configuration_summary)
   message("")

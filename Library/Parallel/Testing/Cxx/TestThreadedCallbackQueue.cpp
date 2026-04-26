@@ -14,9 +14,8 @@
 #include <string>
 #include <thread>
 
-#include <loguru.hpp>
-
 #include "ParallelTest.h"
+#include "logger/logger.h"
 #include "tools/threaded_callback_queue.h"
 
 namespace parallel
@@ -70,14 +69,14 @@ void RunThreads(int nthreadsBegin, int nthreadsEnd)
 //=============================================================================
 struct A
 {
-    A() { LOG_F(INFO, "Constructor"); }
+    A() { MEMORY_LOG_INFO("Constructor"); }
     A(A&& other) noexcept : array(std::move(other.array)), val(other.val)
     {
-        LOG_F(INFO, "Move constructor");
+        MEMORY_LOG_INFO("Move constructor");
     }
     A(const A& other) : array(other.array), val(other.val)
     {
-        LOG_F(INFO, "Copy constructor called.");
+        MEMORY_LOG_INFO("Copy constructor called.");
     }
     void f(A&, A&&) {}
     void const_f(A&, A&&) const {}
@@ -164,10 +163,9 @@ bool TestSharedFutures()
             std::unique_lock<std::mutex> lock(mutex);
             if (count++ < low)
             {
-                LOG_F(
-                    ERROR,
-                    "Task %s started too early, in %dth position instead of %dth.",
-                    s.c_str(),
+                LOGGING_LOG_ERROR(
+                    "Task {} started too early, in {}th position instead of {}th.",
+                    s,
                     count.load(),
                     low + 1);
                 return false;
@@ -223,17 +221,15 @@ bool TestSharedFutures()
 
 PARALLELTEST(TestThreadedCallbackQueue, Test)
 {
-    LOG_F(INFO, "Testing futures");
+    MEMORY_LOG_INFO("Testing futures");
     bool retVal = parallel::TestSharedFutures();
 
     retVal &= parallel::TestFunctionTypeCompleteness();
 
-    LOG_F(INFO, "Testing expanding from 2 to 8 threads");
-    // Testing expanding the number of threads
+    MEMORY_LOG_INFO("Testing expanding from 2 to 8 threads");
     parallel::RunThreads(2, 8);
 
-    LOG_F(INFO, "Testing shrinking from 8 to 2 threads");
-    // Testing shrinking the number of threads
+    MEMORY_LOG_INFO("Testing shrinking from 8 to 2 threads");
     parallel::RunThreads(8, 2);
 }
 }  // namespace parallel

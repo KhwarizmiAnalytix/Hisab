@@ -1,12 +1,13 @@
-# ============================================================================= Code Coverage
+# =============================================================================
+# Code Coverage
 # Configuration Module
 
 # This module configures code coverage instrumentation and automated report generation. Supports
 # LLVM (Clang), GCC (gcov), and MSVC (OpenCppCoverage) coverage workflows. Generates coverage
 # reports in text and HTML formats.
 
-# Note: no include_guard here — each module has its own directory scope, so each module that
-# enables coverage must run this file to append flags to its own CMAKE_CXX_FLAGS copy.
+# Note: no include_guard here — each module has its own directory scope, so each module that enables
+# coverage must run this file to append flags to its own CMAKE_CXX_FLAGS copy.
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   string(APPEND CMAKE_C_FLAGS " --coverage -g -O0  -fprofile-arcs -ftest-coverage")

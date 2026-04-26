@@ -2,10 +2,9 @@
 # Vectorization Library C++ Tests
 # =============================================================================
 
-# --- GoogleTest setup ---
-# Core/Testing/Cxx builds gtest first in a full-project build; this block is
-# a no-op in that case (TARGET gtest already exists). It activates when
-# Vectorization tests are built in isolation.
+# --- GoogleTest setup --- Core/Testing/Cxx builds gtest first in a full-project build; this block
+# is a no-op in that case (TARGET gtest already exists). It activates when Vectorization tests are
+# built in isolation.
 if(NOT TARGET gtest)
   set(BUILD_GMOCK OFF CACHE BOOL "Disable Google Mock" FORCE)
   set(INSTALL_GTEST OFF CACHE BOOL "Disable Google Test install" FORCE)
@@ -15,14 +14,12 @@ if(NOT TARGET gtest)
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
   endif()
   add_subdirectory(
-    "${QUARISMA_THIRDPARTY_DIR}/googletest"
-    "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build"
+    "${QUARISMA_THIRDPARTY_DIR}/googletest" "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build"
     EXCLUDE_FROM_ALL
   )
 endif()
 _create_third_party_interface_targets(
-  "Gtest::gtest=GTest::gtest|gtest"
-  "Gtest::gtest_main=GTest::gtest_main|gtest_main"
+  "Gtest::gtest=GTest::gtest|gtest" "Gtest::gtest_main=GTest::gtest_main|gtest_main"
 )
 
 # =============================================================================
@@ -43,17 +40,30 @@ target_link_libraries(
 )
 
 set_target_properties(
-  VectorizationCxxTests PROPERTIES
-  FOLDER                        "Tests"
-  CXX_STANDARD                  ${VECTORIZATION_CXX_STANDARD}
-  CXX_STANDARD_REQUIRED         ON
-  VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+  VectorizationCxxTests
+  PROPERTIES FOLDER "Tests"
+             CXX_STANDARD ${VECTORIZATION_CXX_STANDARD}
+             CXX_STANDARD_REQUIRED ON
+             VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
 )
 
 add_test(NAME VectorizationCxxTests COMMAND VectorizationCxxTests
          WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
 )
 set_tests_properties(VectorizationCxxTests PROPERTIES TIMEOUT 120 LABELS "Vectorization;Unit")
+
+# ThinLTO + lld-link OOM: when project-wide IPO is on, INTERPROCEDURAL_OPTIMIZATION=OFF alone is
+# not enough — -flto stays on the compile line through PUBLIC options. Force -fno-lto explicitly.
+if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+  set_target_properties(VectorizationCxxTests PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+  target_compile_options(VectorizationCxxTests PRIVATE -fno-lto)
+  target_link_options(VectorizationCxxTests PRIVATE -fno-lto)
+  if(TARGET gtest AND TARGET gtest_main)
+    set_target_properties(gtest gtest_main PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+    target_compile_options(gtest PRIVATE -fno-lto)
+    target_compile_options(gtest_main PRIVATE -fno-lto)
+  endif()
+endif()
 
 quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -63,8 +73,8 @@ endif()
 
 message(STATUS "VectorizationCxxTests registered with CTest")
 
-# =============================================================================
-# Individual benchmark executables (same pattern as Library/Parallel/Testing/Cxx)
+# ============================================================================= Individual benchmark
+# executables (same pattern as Library/Parallel/Testing/Cxx)
 # =============================================================================
 if(VECTORIZATION_ENABLE_BENCHMARK)
   # --- Google Benchmark setup ---
@@ -98,12 +108,12 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
       set(BENCHMARK_USE_BUNDLED_GTEST OFF CACHE BOOL "Don't use bundled gtest for benchmark" FORCE)
       set(BENCHMARK_DOWNLOAD_DEPENDENCIES OFF CACHE BOOL "Don't download dependencies" FORCE)
       add_subdirectory(
-        "${QUARISMA_THIRDPARTY_DIR}/benchmark"
-        "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build"
+        "${QUARISMA_THIRDPARTY_DIR}/benchmark" "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build"
         EXCLUDE_FROM_ALL
       )
-      _set_third_party_folder_properties("benchmark"
-                                         "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build")
+      _set_third_party_folder_properties(
+        "benchmark" "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build"
+      )
     endif()
   endif()
   _create_third_party_interface_targets(
@@ -136,7 +146,8 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
 
     add_executable(${target_name} "${_bench_source}")
 
-    # Clang on Windows can ICE on heavy template/fmt use in this TU (same idea as Parallel TestAsyncParallel).
+    # Clang on Windows can ICE on heavy template/fmt use in this TU (same idea as Parallel
+    # TestAsyncParallel).
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND WIN32)
       get_filename_component(_vectorization_bench_file "${_bench_source}" NAME)
       if(_vectorization_bench_file STREQUAL "BenchmarkSimd.cpp")
@@ -146,8 +157,15 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
 
     target_link_libraries(
       ${target_name} PRIVATE Vectorization::benchmark Vectorization::benchmark_main
-                            Vectorization::Vectorization
+                             Vectorization::Vectorization
     )
+
+    # ThinLTO + lld-link OOM: same guard as VectorizationCxxTests above.
+    if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+      set_target_properties(${target_name} PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+      target_compile_options(${target_name} PRIVATE -fno-lto)
+      target_link_options(${target_name} PRIVATE -fno-lto)
+    endif()
 
     set_target_properties(
       ${target_name} PROPERTIES FOLDER "Benchmarks" OUTPUT_NAME "${target_name}"

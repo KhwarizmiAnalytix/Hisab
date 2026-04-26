@@ -122,8 +122,11 @@ markup:
   # Canonicalize hashrulers to this character
   canonicalize_hashrulers: true
 
-  # Enable comment markup processing
-  enable_markup: true
+  # Disable comment markup/reflow so "# =====...=====" rulers stay on their own line and the next
+  # "# ..." line (titles, instructions) is not merged onto the ruler or reflowed into paragraph text.
+  # cmakelang only auto-preserves rulers that start with hashruler_min_length '#' chars; Quarisma
+  # uses "# =" dividers, which otherwise get parsed as plain comments and joined with following lines.
+  enable_markup: false
 
 # Options affecting listfile parsing
 parse:

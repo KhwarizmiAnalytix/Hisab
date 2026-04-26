@@ -22,6 +22,11 @@ from typing import NamedTuple
 
 IS_WINDOWS: bool = os.name == "nt"
 
+def _is_under_third_party(path: str) -> bool:
+    """True if path is inside ThirdParty/ (never format vendored CMake)."""
+    norm = path.replace("\\", "/")
+    return "/ThirdParty/" in norm
+
 
 class LintSeverity(str, Enum):
     """Severity levels for lint messages."""
@@ -103,6 +108,8 @@ def check_file(
     timeout: int,
 ) -> list[LintMessage]:
     """Check a CMake file with cmake-format."""
+    if _is_under_third_party(filename):
+        return []
     try:
         with open(filename, "rb") as f:
             original = f.read()

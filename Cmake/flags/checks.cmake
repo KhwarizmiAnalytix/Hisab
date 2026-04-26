@@ -1,8 +1,7 @@
-# ============================================================================= 
+# =============================================================================
 # Quarisma System
 # Validation and Checks Module
-# ============================================================================= 
-
+# =============================================================================
 # This module performs efficient system validation with aggressive caching to minimize CMake
 # reconfiguration overhead while ensuring all required dependencies and capabilities are available.
 #
@@ -30,8 +29,9 @@ endif()
 
 message(STATUS "Quarisma: Performing system validation...")
 
-# ============================================================================= Platform Detection
-# with Caching
+# =============================================================================
+# Platform
+# Detection with Caching
 
 # Fast platform detection with cached results
 if(NOT DEFINED TEMP_PLATFORM_DETECTED)
@@ -52,7 +52,8 @@ if(NOT DEFINED TEMP_PLATFORM_DETECTED)
   message(STATUS "Quarisma: Platform detected: ${TEMP_PLATFORM}")
 endif()
 
-# ============================================================================= Compiler Version
+# =============================================================================
+# Compiler Version
 # Validation (Updated for Modern Requirements)
 
 # Updated minimum compiler versions for C++17 support and modern optimizations
@@ -129,7 +130,7 @@ else()
   message(WARNING "Quarisma: Unknown compiler '${CMAKE_CXX_COMPILER_ID}'. Build may fail.")
 endif()
 
-# ============================================================================= 
+# =============================================================================
 # Essential System
 # Dependencies Validation
 
@@ -161,8 +162,9 @@ if(NOT DEFINED TEMP_MATH_LIB_VALIDATED)
   message(STATUS "Quarisma: Math library support validated")
 endif()
 
-# ============================================================================= Compiler Capability
-# Validation (Cached)
+# =============================================================================
+# Compiler
+# Capability Validation (Cached)
 
 include(CheckCXXSourceCompiles)
 
@@ -248,8 +250,9 @@ if(NOT DEFINED TEMP_EXCEPTION_HANDLING_VALIDATED)
   message(STATUS "Quarisma: Exception handling validated")
 endif()
 
-# ============================================================================= Platform-Specific
-# Validations
+# =============================================================================
+# #
+# Platform-Specific Validations
 
 # Windows-specific checks
 if(TEMP_PLATFORM_WINDOWS)
@@ -276,7 +279,8 @@ if(TEMP_PLATFORM_LINUX OR TEMP_PLATFORM_MACOS)
   endif()
 endif()
 
-# ============================================================================= Validation
+# =============================================================================
+# Validation
 # Completion and Caching
 
 # Mark validation as completed for this configuration
@@ -293,4 +297,6 @@ set(TEMP_VALIDATION_SUMMARY
 message(STATUS "Checks: System validation completed successfully")
 message(STATUS "Checks: ${TEMP_VALIDATION_SUMMARY}")
 
-# ============================================================================= End of checks.cmake
+# =============================================================================
+# End of
+# checks.cmake

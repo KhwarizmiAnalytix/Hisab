@@ -1,4 +1,5 @@
-# ============================================================================= Quarisma
+# =============================================================================
+# Quarisma
 # Include-What-You-Use (IWYU) Configuration Module
 
 # This module configures include-what-you-use for analyzing include dependencies. It detects
@@ -69,8 +70,8 @@ else()
   set(IWYU_LOG_DIR "${CMAKE_BINARY_DIR}/iwyu_logs")
   file(MAKE_DIRECTORY "${IWYU_LOG_DIR}")
 
-  # Set IWYU log file path — CACHE INTERNAL so it survives include_guard(GLOBAL)
-  # across all modules that call quarisma_apply_iwyu from their own scope.
+  # Set IWYU log file path — CACHE INTERNAL so it survives include_guard(GLOBAL) across all modules
+  # that call quarisma_apply_iwyu from their own scope.
   set(IWYU_LOG_FILE "${CMAKE_BINARY_DIR}/iwyu.log" CACHE INTERNAL "IWYU log file path")
 
   # Prepare IWYU arguments with crash-resistant settings
@@ -125,9 +126,9 @@ else()
     message(STATUS "Running Quarisma configure header detection...")
     execute_process(
       COMMAND
-        ${CMAKE_COMMAND} -E env python "${CONFIGURE_DETECTOR_SCRIPT}" "${PROJECT_SOURCE_DIR}/Library"
-        --log-file "${PROJECT_BINARY_DIR}/configure_detection.log" --report-file
-        "${PROJECT_BINARY_DIR}/configure_analysis_report.txt" --recursive
+        ${CMAKE_COMMAND} -E env python "${CONFIGURE_DETECTOR_SCRIPT}"
+        "${PROJECT_SOURCE_DIR}/Library" --log-file "${PROJECT_BINARY_DIR}/configure_detection.log"
+        --report-file "${PROJECT_BINARY_DIR}/configure_analysis_report.txt" --recursive
       WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
       RESULT_VARIABLE CONFIGURE_DETECTION_RESULT
       OUTPUT_VARIABLE CONFIGURE_DETECTION_OUTPUT

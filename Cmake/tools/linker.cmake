@@ -1,4 +1,5 @@
-# ============================================================================= Quarisma Faster
+# =============================================================================
+# Quarisma Faster
 # Linker Configuration Module
 
 # Configures faster linker selection for improved build performance. Supports mold, lld, gold, and
@@ -10,9 +11,9 @@
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)
 
-# quarisma_find_linker(<linker_choice> <target_name>)
-#   linker_choice: "default" (auto-detect) | "lld" | "mold" | "gold" | "lld-link"
-#   target_name:   CMake target to receive the -fuse-ld= link option (e.g. Logging, Core, …)
+# quarisma_find_linker(<linker_choice> <target_name>) linker_choice: "default" (auto-detect) | "lld"
+# | "mold" | "gold" | "lld-link" target_name:   CMake target to receive the -fuse-ld= link option
+# (e.g. Logging, Core, …)
 function(quarisma_find_linker linker_choice target_name)
   set(LINKER_CHOICE "${linker_choice}")
 
@@ -21,8 +22,11 @@ function(quarisma_find_linker linker_choice target_name)
   set(LINKER_FLAGS)
 
   # Skip faster linker selection if LTO is enabled — LTO with faster linkers (especially gold) can
-  # cause out-of-memory errors
-  if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+  # cause out-of-memory errors and lld-link crashes when ThinLTO is active. Check both the local
+  # variable AND the cache value: individual CMakeLists may shadow the cache to OFF, but test
+  # targets that don't set the variable will still inherit the cache ON value and get LTO object
+  # files, causing lld-link to crash at link time.
+  if(CMAKE_INTERPROCEDURAL_OPTIMIZATION OR "$CACHE{CMAKE_INTERPROCEDURAL_OPTIMIZATION}")
     message("LTO is enabled - skipping faster linker configuration to avoid memory issues")
     return()
   endif()
@@ -110,8 +114,10 @@ function(quarisma_find_linker linker_choice target_name)
   # Apply linker flags to the named project target
   if(LINKER_FOUND)
     if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-      set(CMAKE_LINKER "${LINKER_NAME}" CACHE FILEPATH "Linker executable")
-      message("Linker configured: ${LINKER_NAME}")
+      # lld-link is already the default linker for Clang on Windows. Setting CMAKE_LINKER causes
+      # CMake to inject -fuse-ld=lld-link into the link command, which clang rejects as an invalid
+      # linker name (only "lld" is accepted by -fuse-ld=).
+      message("Windows/Clang: lld-link is already the default linker, no override needed")
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
       get_filename_component(LINKER_BASENAME "${LINKER_NAME}" NAME)
       string(REPLACE "ld." "" LINKER_SHORTNAME "${LINKER_BASENAME}")

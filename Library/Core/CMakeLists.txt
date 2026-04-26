@@ -1,4 +1,5 @@
-# ============================================================================= Library/Core —
+# =============================================================================
+# Library/Core —
 # CMakeLists.txt
 #
 # Provides the Core library: shared utilities, smart ownership primitives, compile-time type traits,
@@ -17,13 +18,13 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.16)
 
-# ============================================================================= SECTION 1 — Feature
+# =============================================================================
+# SECTION 1 — Feature
 # flags (CORE_ENABLE_*) and backend selectors
 #
 # These cache variables are the public configuration API for this module. Pass them on the CMake
 # command line: -DCORE_ENABLE_ENZYME=ON
 # =============================================================================
-
 # Link-Time Optimization — disabled when CORE_ENABLE_COVERAGE or CORE_ENABLE_SANITIZER is ON (LTO
 # conflicts with profiling instrumentation and typical sanitizer workflows).
 option(CORE_ENABLE_LTO "Enable Link Time Optimization for Core" OFF)
@@ -118,11 +119,10 @@ if(NOT CORE_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
   message(FATAL_ERROR "CORE_CXX_STANDARD must be one of: 11 14 17 20 23")
 endif()
 
-# -------------------------------------------------------------------------- 
+# --------------------------------------------------------------------------
 # a) Detection-based HAS
 # tokens (PROJECT_* set by root CMakeLists.txt includes)
 # --------------------------------------------------------------------------
-
 # std::exception_ptr — missing on some embedded or older MSVC toolchains.
 if(PROJECT_HAS_EXCEPTION_PTR)
   list(APPEND CORE_COMPILE_DEFINITIONS CORE_HAS_EXCEPTION_PTR=1)
@@ -181,7 +181,8 @@ endif()
 set(CORE_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS})
 list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS ${CORE_COMPILE_DEFINITIONS})
 
-# ============================================================================= SECTION 3 — CMake
+# =============================================================================
+# SECTION 3 — CMake
 # module includes
 #
 # Inclusion order: a) Standard CMake introspection helpers b) Shared toolchain helpers
@@ -196,7 +197,6 @@ list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS ${CORE_COMPILE_DEFINITIONS})
 # both be ON at the same time.  The coverage gate is placed after include(enzyme) so that a
 # developer enabling both gets a clear diagnostic from the build system.
 # =============================================================================
-
 # LTO is incompatible with coverage/sanitizer — clear before any include().
 if(CORE_ENABLE_COVERAGE OR CORE_ENABLE_SANITIZER)
   set(CORE_ENABLE_LTO OFF)
@@ -290,10 +290,10 @@ endif()
 
 include(linker)
 
-# -------------------------------------------------------------------------- b) User-option HAS
+# --------------------------------------------------------------------------
+# b) User-option HAS
 # tokens — compile_definition() converts ENABLE_X → HAS_X.
 # --------------------------------------------------------------------------
-
 # Intel MKL — high-performance BLAS/FFT/LAPACK.
 compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_MKL)
 
@@ -313,7 +313,8 @@ compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_EXPERIMENTAL)
 compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_MAGICENUM)
 
 # =============================================================================
-# Third-party dependencies owned by Core
+# Third-party
+# dependencies owned by Core
 # =============================================================================
 set(_tpdir "${CMAKE_SOURCE_DIR}/ThirdParty")
 
@@ -327,13 +328,20 @@ set(FMT_DOC OFF CACHE BOOL "Disable fmt documentation" FORCE)
 set(FMT_INSTALL OFF CACHE BOOL "Disable fmt install" FORCE)
 set(FMT_HEADER_ONLY ON CACHE BOOL "Use header-only fmt library" FORCE)
 
-add_third_party_library(fmt
-    LIBRARY_TYPE STATIC
-    SOURCE_DIR "${_tpdir}/fmt"
-    ALIASES "fmt::fmt-header-only"
-    QUARISMA_TARGETS "Fmt::fmt=fmt::fmt-header-only|fmt::fmt|fmt"
-    INCLUDE_DIR "${_tpdir}/fmt/include"
-    AUTO_ADD_TO_DEPENDENCIES OFF
+add_third_party_library(
+  fmt
+  LIBRARY_TYPE
+  STATIC
+  SOURCE_DIR
+  "${_tpdir}/fmt"
+  ALIASES
+  "fmt::fmt-header-only"
+  QUARISMA_TARGETS
+  "Fmt::fmt=fmt::fmt-header-only|fmt::fmt|fmt"
+  INCLUDE_DIR
+  "${_tpdir}/fmt/include"
+  AUTO_ADD_TO_DEPENDENCIES
+  OFF
 )
 
 # cpuinfo — CPU feature detection used across the project.
@@ -341,23 +349,31 @@ set(CPUINFO_BUILD_TOOLS OFF CACHE BOOL "Disable cpuinfo tools" FORCE)
 set(CPUINFO_BUILD_UNIT_TESTS OFF CACHE BOOL "Disable cpuinfo unit tests" FORCE)
 set(CPUINFO_BUILD_MOCK_TESTS OFF CACHE BOOL "Disable cpuinfo mock tests" FORCE)
 set(CPUINFO_BUILD_BENCHMARKS OFF CACHE BOOL "Disable cpuinfo benchmarks" FORCE)
-set(CPUINFO_LIBRARY_TYPE "static" CACHE STRING "Type of cpuinfo library (shared, static, or default) to build")
+set(CPUINFO_LIBRARY_TYPE "static"
+    CACHE STRING "Type of cpuinfo library (shared, static, or default) to build"
+)
 
-add_third_party_library(cpuinfo
-    LIBRARY_TYPE STATIC
-    SOURCE_DIR "${_tpdir}/cpuinfo"
-    FILTER_FLAGS "-flto=thin" "-flto=full"
-    QUARISMA_TARGETS "Cpuinfo::cpuinfo=cpuinfo::cpuinfo|cpuinfo"
-    INCLUDE_DIR "${_tpdir}/cpuinfo/include"
-    AUTO_ADD_TO_DEPENDENCIES OFF
+add_third_party_library(
+  cpuinfo
+  LIBRARY_TYPE
+  STATIC
+  SOURCE_DIR
+  "${_tpdir}/cpuinfo"
+  FILTER_FLAGS
+  "-flto=thin"
+  "-flto=full"
+  QUARISMA_TARGETS
+  "Cpuinfo::cpuinfo=cpuinfo::cpuinfo|cpuinfo"
+  INCLUDE_DIR
+  "${_tpdir}/cpuinfo/include"
+  AUTO_ADD_TO_DEPENDENCIES
+  OFF
 )
 foreach(_cpuinfo_target cpuinfo cpuinfo_internals)
-    if(TARGET ${_cpuinfo_target})
-        set_property(TARGET ${_cpuinfo_target} PROPERTY POSITION_INDEPENDENT_CODE ON)
-    endif()
+  if(TARGET ${_cpuinfo_target})
+    set_property(TARGET ${_cpuinfo_target} PROPERTY POSITION_INDEPENDENT_CODE ON)
+  endif()
 endforeach()
-
-
 
 list(APPEND CORE_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/fmt/include")
 list(APPEND CORE_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/cpuinfo/include")
@@ -366,14 +382,21 @@ list(APPEND CORE_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/cpuinfo/include")
 if(CORE_ENABLE_MAGICENUM)
   set(MAGIC_ENUM_OPT_BUILD_EXAMPLES OFF CACHE BOOL "Disable magic_enum examples" FORCE)
   set(MAGIC_ENUM_OPT_BUILD_TESTS OFF CACHE BOOL "Disable magic_enum tests" FORCE)
-  
-  add_third_party_library(magic_enum
-      CONDITION CORE_ENABLE_MAGICENUM
-      LIBRARY_TYPE HEADER_ONLY
-      SOURCE_DIR "${_tpdir}/magic_enum"
-      QUARISMA_TARGETS "MagicEnum::magic_enum=magic_enum"
-      INCLUDE_DIR "${_tpdir}/magic_enum/include"
-      AUTO_ADD_TO_DEPENDENCIES OFF
+
+  add_third_party_library(
+    magic_enum
+    CONDITION
+    CORE_ENABLE_MAGICENUM
+    LIBRARY_TYPE
+    HEADER_ONLY
+    SOURCE_DIR
+    "${_tpdir}/magic_enum"
+    QUARISMA_TARGETS
+    "MagicEnum::magic_enum=magic_enum"
+    INCLUDE_DIR
+    "${_tpdir}/magic_enum/include"
+    AUTO_ADD_TO_DEPENDENCIES
+    OFF
   )
   list(APPEND CORE_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/magic_enum/include")
 endif()
@@ -412,7 +435,7 @@ if(CORE_ENABLE_COMPRESSION)
   endif()
 endif()
 
-# ============================================================================= 
+# =============================================================================
 # Target definition
 # =============================================================================
 add_library(Core ${sources} ${headers} ${templates})
@@ -508,7 +531,8 @@ if(MEMORY_ENABLE_MIMALLOC AND TARGET Memory::mimalloc)
   add_dependencies(Core Memory::mimalloc)
 endif()
 
-# ============================================================================= Installation
+# =============================================================================
+# Installation
 # =============================================================================
 install(
   TARGETS Core
@@ -528,7 +552,7 @@ install(
   COMPONENT Development
 )
 
-# ============================================================================= 
+# =============================================================================
 # Testing
 # =============================================================================
 if(CORE_ENABLE_TESTING)

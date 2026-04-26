@@ -632,6 +632,7 @@ class QuarismaFlags:
             "cache_type",
             "enzyme",
             "parallel_backend",
+            "native",
         ]
         self.__description = [
             # Valid CMake options
@@ -668,6 +669,7 @@ class QuarismaFlags:
             "compiler cache backend for all library targets: none, ccache, sccache, or buildcache",
             "enable Enzyme automatic differentiation support",
             "SMP backend: std, openmp, or tbb",
+            "Clang/GCC: -march=native for max CPU tuning (binary may not run on older CPUs)",
         ]
 
     def __build_cmake_flag(self):
@@ -725,6 +727,7 @@ class QuarismaFlags:
                 "valgrind": self.OFF,   # Can conflict with sanitizer
                 "coverage": self.OFF,   # Coverage analysis is optional
                 "icecc": self.OFF,      # Distributed compilation is site-specific
+                "native": self.OFF,  # Portable binaries by default
                 "examples": self.ON,
                 "linker": "default",    # Keep auto-detect in "all" mode
                 "profiler_type": "KINETO",
@@ -759,6 +762,7 @@ class QuarismaFlags:
                 "mimalloc": self.ON,
                 "profiler_type": "KINETO",
                 "icecc": self.OFF,
+                "native": self.OFF,
                 "examples": self.OFF,
                 "linker": "default",  # *_LINKER_CHOICE default is "default" (auto-detect)
             }
@@ -1059,6 +1063,10 @@ class QuarismaFlags:
         if self.__value.get("lto") == self.ON:
             cmake_cmd_flags.append("-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON")
 
+        # Tune generated code for the host CPU (Clang/GCC; see Library/Vectorization/Cmake/utils.cmake).
+        if self.__value.get("native") == self.ON:
+            cmake_cmd_flags.append("-DUSE_NATIVE_ARCH=ON")
+
         # Add compilation database generation flag
         cmake_cmd_flags.append("-DCMAKE_EXPORT_COMPILE_COMMANDS=ON")
 
@@ -1084,6 +1092,8 @@ class QuarismaFlags:
                 key = "address, undefined, thread, memory, leak"
             elif key == "linker":
                 key = "linker.mold | linker.lld | linker.gold | linker.lld-link"
+            elif key == "native":
+                key = "native (with release.lto for aggressive runtime)"
             print(f"{key:<30}{description}")
 
     def enable_gtest(self):

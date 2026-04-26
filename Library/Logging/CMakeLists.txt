@@ -1,18 +1,19 @@
 # =============================================================================
-# Library/Logging — CMakeLists.txt
+# Library/Logging —
+# CMakeLists.txt
 #
-# Structured log levels, back-trace capture, and pluggable backend support
-# (Loguru, GLog, Native).
+# Structured log levels, back-trace capture, and pluggable backend support (Loguru, GLog, Native).
 #
-# Public compile definitions:
-#   LOGGING_HAS_LOGURU=1/0  — Loguru backend active
-#   LOGGING_HAS_GLOG=1/0    — GLog backend active
-#   LOGGING_HAS_NATIVE=1/0  — Native (fmt-based) backend active
+# Public compile definitions: LOGGING_HAS_LOGURU=1/0  — Loguru backend active LOGGING_HAS_GLOG=1/0 —
+# GLog backend active LOGGING_HAS_NATIVE=1/0  — Native (fmt-based) backend active
 # =============================================================================
 cmake_minimum_required(VERSION 3.16)
 
 # --- Section 1: Feature flags (LOGGING_ENABLE_*) and backend selector ---
-# LOGGING_BACKEND is declared in logging_backend.cmake (included by root before ThirdParty).
+set(LOGGING_BACKEND "LOGURU" CACHE STRING
+                                   "Logging backend to use. Options are NATIVE, LOGURU, or GLOG"
+)
+set_property(CACHE LOGGING_BACKEND PROPERTY STRINGS NATIVE LOGURU GLOG)
 
 # Link-Time Optimization — disabled when LOGGING_ENABLE_COVERAGE or LOGGING_ENABLE_SANITIZER is ON
 # (LTO conflicts with instrumentation / sanitizers).
@@ -81,8 +82,8 @@ if(NOT LOGGING_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
   message(FATAL_ERROR "LOGGING_CXX_STANDARD must be one of: 11 14 17 20 23")
 endif()
 
-# --- Section 2: LOGGING_ENABLE_* → LOGGING_HAS_* compile definitions ---
-# Exactly one HAS_* will be 1; the others 0.
+# --- Section 2: LOGGING_ENABLE_* → LOGGING_HAS_* compile definitions --- Exactly one HAS_* will be
+# 1; the others 0.
 
 if(LOGGING_BACKEND STREQUAL "LOGURU")
   # Loguru — header-only, supports custom verbosity levels and callbacks.
@@ -102,8 +103,8 @@ elseif(LOGGING_BACKEND STREQUAL "NATIVE")
 endif()
 list(APPEND LOGGING_DEPENDENCY_COMPILE_DEFINITIONS ${LOGGING_COMPILE_DEFINITIONS})
 
-# --- Section 3: CMake module includes ---
-# Order: introspection → toolchain helpers → coverage/sanitizer → LTO/linker.
+# --- Section 3: CMake module includes --- Order: introspection → toolchain helpers →
+# coverage/sanitizer → LTO/linker.
 
 # LTO is incompatible with coverage/sanitizer — clear before any include().
 if(LOGGING_ENABLE_COVERAGE OR LOGGING_ENABLE_SANITIZER)
@@ -124,7 +125,6 @@ include(platform) # Platform flags (macOS rpath, Windows /utf-8, …)
 include(cache) # Configures per-target compiler cache launcher
 include(CMakeDependentOption)
 include(helper_macros)
-include(logging_backend)
 if(LOGGING_ENABLE_SANITIZER)
   include(sanitize)
   quarisma_configure_sanitizer(LOGGING)
@@ -170,7 +170,7 @@ set(BUILD_BENCHMARKS OFF CACHE BOOL "Disable benchmarks for third-party librarie
 
 # loguru-specific options
 set(LOGURU_BUILD_EXAMPLES OFF CACHE BOOL "Disable loguru examples" FORCE)
-#set(LOGURU_USE_FMTLIB ON CACHE BOOL "Enable fmtlib formatting in loguru" FORCE)
+# set(LOGURU_USE_FMTLIB ON CACHE BOOL "Enable fmtlib formatting in loguru" FORCE)
 set(LOGURU_WITH_STREAMS ON CACHE BOOL "Enable streams in loguru" FORCE)
 
 # glog-specific options
@@ -179,55 +179,74 @@ set(WITH_GFLAGS OFF CACHE BOOL "Disable gflags dependency for glog" FORCE)
 set(WITH_GTEST OFF CACHE BOOL "Disable gtest for glog" FORCE)
 set(WITH_GMOCK OFF CACHE BOOL "Disable gmock for glog" FORCE)
 
-# fmt — Logging uses fmt directly and is processed before Core, so we initialise
-# fmt here. Core's identical add_third_party_library(fmt...) call is a no-op (processed flag).
+# fmt — Logging uses fmt directly and is processed before Core, so we initialise fmt here. Core's
+# identical add_third_party_library(fmt...) call is a no-op (processed flag).
 set(FMT_TEST OFF CACHE BOOL "Disable fmt tests" FORCE)
 set(FMT_DOC OFF CACHE BOOL "Disable fmt documentation" FORCE)
 set(FMT_INSTALL OFF CACHE BOOL "Disable fmt install" FORCE)
 set(FMT_HEADER_ONLY ON CACHE BOOL "Use header-only fmt library" FORCE)
 
-add_third_party_library(fmt
-    LIBRARY_TYPE STATIC
-    SOURCE_DIR "${_tpdir}/fmt"
-    ALIASES "fmt::fmt-header-only"
-    QUARISMA_TARGETS "Fmt::fmt=fmt::fmt-header-only|fmt::fmt|fmt"
-    INCLUDE_DIR "${_tpdir}/fmt/include"
-    AUTO_ADD_TO_DEPENDENCIES OFF
+add_third_party_library(
+  fmt
+  LIBRARY_TYPE
+  STATIC
+  SOURCE_DIR
+  "${_tpdir}/fmt"
+  ALIASES
+  "fmt::fmt-header-only"
+  QUARISMA_TARGETS
+  "Fmt::fmt=fmt::fmt-header-only|fmt::fmt|fmt"
+  INCLUDE_DIR
+  "${_tpdir}/fmt/include"
+  AUTO_ADD_TO_DEPENDENCIES
+  OFF
 )
 
-add_third_party_library(loguru
-    CONDITION LOGGING_ENABLE_LOGURU
-    LIBRARY_TYPE STATIC
-    SOURCE_DIR "${_tpdir}/loguru"
-    FILTER_FLAGS "-flto=thin" "-flto=full"
-    QUARISMA_TARGETS "Loguru::loguru=loguru::loguru|loguru"
-    INCLUDE_DIR "${_tpdir}/loguru"
-    AUTO_ADD_TO_DEPENDENCIES OFF
-)
-if(TARGET loguru)
+# fmt is used by Logging source files directly; Fmt::fmt is not available here (it is created by
+# Core, which is processed after Logging).
+list(APPEND LOGGING_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/fmt/include")
+if(LOGGING_BACKEND STREQUAL "LOGURU")
+  add_third_party_library(
+    loguru
+    LIBRARY_TYPE
+    STATIC
+    SOURCE_DIR
+    "${_tpdir}/loguru"
+    FILTER_FLAGS
+    "-flto=thin"
+    "-flto=full"
+    QUARISMA_TARGETS
+    "Loguru::loguru=loguru::loguru|loguru"
+    INCLUDE_DIR
+    "${_tpdir}/loguru"
+    AUTO_ADD_TO_DEPENDENCIES
+    OFF
+  )
+  if(TARGET loguru)
     set_property(TARGET loguru PROPERTY POSITION_INDEPENDENT_CODE ON)
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        target_compile_options(loguru PRIVATE -Wno-format-truncation)
+      target_compile_options(loguru PRIVATE -Wno-format-truncation)
     endif()
-endif()
-
-add_third_party_library(glog
-    CONDITION LOGGING_ENABLE_GLOG
-    LIBRARY_TYPE STATIC
-    SOURCE_DIR "${_tpdir}/glog"
-    FILTER_FLAGS "-flto=thin" "-flto=full"
-    QUARISMA_TARGETS "Glog::glog=glog::glog|glog"
-    INCLUDE_DIR "${_tpdir}/glog/src"
-    AUTO_ADD_TO_DEPENDENCIES OFF
-)
-
-# fmt is used by Logging source files directly; Fmt::fmt is not available here
-# (it is created by Core, which is processed after Logging).
-list(APPEND LOGGING_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/fmt/include")
-if(LOGGING_ENABLE_LOGURU OR LOGGING_BACKEND STREQUAL "LOGURU")
+  endif()
   list(APPEND LOGGING_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/loguru")
 endif()
-if(LOGGING_ENABLE_GLOG OR LOGGING_BACKEND STREQUAL "GLOG")
+if(LOGGING_BACKEND STREQUAL "GLOG")
+  add_third_party_library(
+    glog
+    LIBRARY_TYPE
+    STATIC
+    SOURCE_DIR
+    "${_tpdir}/glog"
+    FILTER_FLAGS
+    "-flto=thin"
+    "-flto=full"
+    QUARISMA_TARGETS
+    "Glog::glog=glog::glog|glog"
+    INCLUDE_DIR
+    "${_tpdir}/glog/src"
+    AUTO_ADD_TO_DEPENDENCIES
+    OFF
+  )
   list(APPEND LOGGING_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/glog/src")
 endif()
 
@@ -243,14 +262,6 @@ file(GLOB_RECURSE logging_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE
 # Keep test sources out of the Logging library target.
 list(FILTER logging_sources EXCLUDE REGEX ".*/Testing/.*")
 list(FILTER logging_headers EXCLUDE REGEX ".*/Testing/.*")
-
-# The NATIVE backend provides its own fmt-based logger; exclude the Loguru-backed logger.cpp /
-# logger.h to avoid duplicate symbols.
-if(LOGGING_ENABLE_NATIVE)
-  list(REMOVE_ITEM logging_sources "${CMAKE_CURRENT_SOURCE_DIR}/logger/logger.cpp")
-  list(REMOVE_ITEM logging_headers "${CMAKE_CURRENT_SOURCE_DIR}/logger/logger.h")
-  message(STATUS "NATIVE logging backend: excluding logger.cpp / logger.h (Loguru implementation)")
-endif()
 
 # --- Target definition ---
 set(CMAKE_CXX_STANDARD ${LOGGING_CXX_STANDARD})
@@ -309,10 +320,10 @@ endif()
 if(TARGET Fmt::fmt)
   list(APPEND LOGGING_DEPENDENCY_LIBS Fmt::fmt)
 endif()
-if(LOGGING_ENABLE_LOGURU AND TARGET Loguru::loguru)
+if(TARGET Loguru::loguru)
   list(APPEND LOGGING_DEPENDENCY_LIBS Loguru::loguru)
 endif()
-if(LOGGING_ENABLE_GLOG AND TARGET Glog::glog)
+if(TARGET Glog::glog)
   list(APPEND LOGGING_DEPENDENCY_LIBS Glog::glog)
 endif()
 

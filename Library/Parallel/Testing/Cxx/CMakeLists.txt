@@ -1,7 +1,7 @@
-# ============================================================================= Parallel Library C++
+# =============================================================================
+# Parallel Library C++
 # Tests
 # =============================================================================
-
 # --- GoogleTest setup ---
 if(NOT TARGET gtest)
   set(_gtest_external_found FALSE)
@@ -9,8 +9,9 @@ if(NOT TARGET gtest)
     find_package(GTest QUIET)
     if(GTest_FOUND)
       message(STATUS "Found external Google Test")
-      _create_third_party_interface_targets("Gtest::gtest=GTest::gtest|gtest"
-                                            "Gtest::gtest_main=GTest::gtest_main|gtest_main")
+      _create_third_party_interface_targets(
+        "Gtest::gtest=GTest::gtest|gtest" "Gtest::gtest_main=GTest::gtest_main|gtest_main"
+      )
       set(_gtest_external_found TRUE)
     endif()
   endif()
@@ -23,18 +24,20 @@ if(NOT TARGET gtest)
       set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     endif()
     add_subdirectory(
-      "${QUARISMA_THIRDPARTY_DIR}/googletest"
-      "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build"
+      "${QUARISMA_THIRDPARTY_DIR}/googletest" "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build"
       EXCLUDE_FROM_ALL
     )
-    _set_third_party_folder_properties("googletest"
-                                       "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build")
+    _set_third_party_folder_properties(
+      "googletest" "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build"
+    )
   endif()
 endif()
-_create_third_party_interface_targets("Gtest::gtest=GTest::gtest|gtest"
-                                      "Gtest::gtest_main=GTest::gtest_main|gtest_main")
+_create_third_party_interface_targets(
+  "Gtest::gtest=GTest::gtest|gtest" "Gtest::gtest_main=GTest::gtest_main|gtest_main"
+)
 
-# ============================================================================= Test Source Files
+# =============================================================================
+# Test Source Files
 # Discovery
 # =============================================================================
 file(GLOB_RECURSE test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cpp")
@@ -62,7 +65,8 @@ foreach(_test_source IN ITEMS ${test_sources})
   list(APPEND TestFiles "${_test_source}")
 endforeach()
 
-# ============================================================================= ParallelCxxTests
+# =============================================================================
+# ParallelCxxTests
 # Executable
 # =============================================================================
 add_executable(ParallelCxxTests ${TestFiles})
@@ -81,8 +85,8 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 endif()
 
 target_link_libraries(ParallelCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Parallel::Parallel)
-if(EXISTS "${CMAKE_SOURCE_DIR}/ThirdParty/loguru")
-  target_include_directories(ParallelCxxTests PRIVATE "${CMAKE_SOURCE_DIR}/ThirdParty/loguru")
+if(TARGET Logging::Logging)
+  target_link_libraries(ParallelCxxTests PRIVATE Logging::Logging)
 endif()
 if(TARGET Loguru::loguru)
   target_link_libraries(ParallelCxxTests PRIVATE Loguru::loguru)
@@ -115,7 +119,8 @@ endif()
 message(STATUS "✓ ParallelCxxTests registered with CTest")
 message(STATUS "  - Working directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
-# ============================================================================= Individual Benchmark
+# =============================================================================
+# Individual Benchmark
 # Executables
 # =============================================================================
 if(PARALLEL_ENABLE_BENCHMARK)
@@ -150,12 +155,12 @@ if(PARALLEL_ENABLE_BENCHMARK)
       set(BENCHMARK_USE_BUNDLED_GTEST OFF CACHE BOOL "Don't use bundled gtest for benchmark" FORCE)
       set(BENCHMARK_DOWNLOAD_DEPENDENCIES OFF CACHE BOOL "Don't download dependencies" FORCE)
       add_subdirectory(
-        "${QUARISMA_THIRDPARTY_DIR}/benchmark"
-        "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build"
+        "${QUARISMA_THIRDPARTY_DIR}/benchmark" "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build"
         EXCLUDE_FROM_ALL
       )
-      _set_third_party_folder_properties("benchmark"
-                                         "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build")
+      _set_third_party_folder_properties(
+        "benchmark" "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build"
+      )
     endif()
   endif()
   _create_third_party_interface_targets(

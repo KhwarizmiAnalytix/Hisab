@@ -1,19 +1,18 @@
 # =============================================================================
-# Library/Profiler — CMakeLists.txt
+# Library/Profiler —
+# CMakeLists.txt
 #
-# Activity tracing, timing primitives, and pluggable profiler-backend support
-# (Kineto, Intel ITT/VTune, Native).
+# Activity tracing, timing primitives, and pluggable profiler-backend support (Kineto, Intel
+# ITT/VTune, Native).
 #
-# Public compile definitions:
-#   PROFILER_HAS_KINETO=1/0  — Kineto (PyTorch-compatible) backend active
-#   PROFILER_HAS_ITT=1/0     — Intel ITT/VTune backend active
-#   PROFILER_HAS_NATIVE=1/0  — Lightweight standalone native backend active
+# Public compile definitions: PROFILER_HAS_KINETO=1/0  — Kineto (PyTorch-compatible) backend active
+# PROFILER_HAS_ITT=1/0     — Intel ITT/VTune backend active PROFILER_HAS_NATIVE=1/0  — Lightweight
+# standalone native backend active
 # =============================================================================
 cmake_minimum_required(VERSION 3.16)
 
-# --- Early-exit gate ---
-# When PROFILER_INCLUDE_GATE_ONLY=ON, only set PROFILER_ENABLE_KINETO and return early
-# so the root can gate ThirdParty/Kineto before add_subdirectory runs.
+# --- Early-exit gate --- When PROFILER_INCLUDE_GATE_ONLY=ON, only set PROFILER_ENABLE_KINETO and
+# return early so the root can gate ThirdParty/Kineto before add_subdirectory runs.
 if(PROFILER_INCLUDE_GATE_ONLY)
   set(PROFILER_BACKEND "KINETO" CACHE STRING "Profiler backend. Options: KINETO, NATIVE, ITT")
   set_property(CACHE PROFILER_BACKEND PROPERTY STRINGS KINETO NATIVE ITT)
@@ -25,8 +24,8 @@ if(PROFILER_INCLUDE_GATE_ONLY)
   return()
 endif()
 
-# --- Section 1: Feature flags (PROFILER_ENABLE_*) and backend selector ---
-# PROFILER_BACKEND is the single control point; derived booleans are mutually exclusive.
+# --- Section 1: Feature flags (PROFILER_ENABLE_*) and backend selector --- PROFILER_BACKEND is the
+# single control point; derived booleans are mutually exclusive.
 
 # Link-Time Optimization — disabled when PROFILER_ENABLE_COVERAGE or PROFILER_ENABLE_SANITIZER is ON
 # (LTO conflicts with instrumentation / sanitizers).
@@ -122,8 +121,8 @@ if(NOT PROFILER_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
   message(FATAL_ERROR "PROFILER_CXX_STANDARD must be one of: 11 14 17 20 23")
 endif()
 
-# --- Section 2: PROFILER_ENABLE_* → PROFILER_HAS_* compile definitions ---
-# Exactly one HAS_* will be 1; the others 0.
+# --- Section 2: PROFILER_ENABLE_* → PROFILER_HAS_* compile definitions --- Exactly one HAS_* will
+# be 1; the others 0.
 set(PROFILER_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS})
 
 if(PROFILER_ENABLE_KINETO)
@@ -145,8 +144,8 @@ endif()
 
 list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS ${PROFILER_COMPILE_DEFINITIONS})
 
-# --- Section 3: CMake module includes ---
-# Order: introspection → toolchain helpers → coverage/sanitizer → LTO/linker.
+# --- Section 3: CMake module includes --- Order: introspection → toolchain helpers →
+# coverage/sanitizer → LTO/linker.
 
 # LTO is incompatible with coverage/sanitizer — clear before any include().
 if(PROFILER_ENABLE_COVERAGE OR PROFILER_ENABLE_SANITIZER)
@@ -166,7 +165,6 @@ include(platform) # Platform flags (macOS rpath, Windows /utf-8, …)
 include(CMakeDependentOption)
 
 include(cache) # Configures per-target compiler cache launcher
-
 
 if(PROFILER_ENABLE_SANITIZER)
   include(sanitize)
@@ -236,37 +234,46 @@ if(PROFILER_ENABLE_KINETO)
   # Reuse Quarisma's fmt build to avoid duplicate symbols.
   set(FMT_SOURCE_DIR "${_tpdir}/fmt" CACHE STRING "Use Quarisma's fmt library" FORCE)
 
-  add_third_party_library(kineto
-      CONDITION PROFILER_ENABLE_KINETO
-      LIBRARY_TYPE STATIC
-      SOURCE_DIR "${_tpdir}/kineto/libkineto"
-      DISABLE_WARNINGS
-      FILTER_FLAGS "-flto=thin" "-flto=full"
-      QUARISMA_TARGETS "Kineto::kineto=kineto"
-      INCLUDE_DIR "${_tpdir}/kineto/libkineto/include"
-      AUTO_ADD_TO_DEPENDENCIES OFF
+  add_third_party_library(
+    kineto
+    CONDITION
+    PROFILER_ENABLE_KINETO
+    LIBRARY_TYPE
+    STATIC
+    SOURCE_DIR
+    "${_tpdir}/kineto/libkineto"
+    DISABLE_WARNINGS
+    FILTER_FLAGS
+    "-flto=thin"
+    "-flto=full"
+    QUARISMA_TARGETS
+    "Kineto::kineto=kineto"
+    INCLUDE_DIR
+    "${_tpdir}/kineto/libkineto/include"
+    AUTO_ADD_TO_DEPENDENCIES
+    OFF
   )
   foreach(_kineto_target kineto kineto_base kineto_api)
-      if(TARGET ${_kineto_target})
-          set_property(TARGET ${_kineto_target} PROPERTY POSITION_INDEPENDENT_CODE ON)
-      endif()
+    if(TARGET ${_kineto_target})
+      set_property(TARGET ${_kineto_target} PROPERTY POSITION_INDEPENDENT_CODE ON)
+    endif()
   endforeach()
   # Clang 20 crashes at -O3 on kineto sources: ReachingDefAnalysis bug on Linux/macOS and
-  # fmt-header-only inliner stack overflow on Windows (clang-cl). Downgrade to -O2 for all
-  # Clang variants. clang-cl requires the /clang: prefix to pass native Clang driver flags.
+  # fmt-header-only inliner stack overflow on Windows (clang-cl). Downgrade to -O2 for all Clang
+  # variants. clang-cl requires the /clang: prefix to pass native Clang driver flags.
   if(TARGET kineto_base AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-      if(MSVC)
-          foreach(_kt kineto_base kineto_api)
-              if(TARGET ${_kt})
-                  target_compile_options(${_kt} PRIVATE /clang:-O2)
-              endif()
-          endforeach()
-      else()
-          target_compile_options(kineto_base PRIVATE -O2)
-      endif()
+    if(MSVC)
+      foreach(_kt kineto_base kineto_api)
+        if(TARGET ${_kt})
+          target_compile_options(${_kt} PRIVATE /clang:-O2)
+        endif()
+      endforeach()
+    else()
+      target_compile_options(kineto_base PRIVATE -O2)
+    endif()
   endif()
   if(TARGET kineto AND DEFINED CUDA_nvperf_host_LIBRARY)
-      target_link_libraries(kineto PUBLIC "${CUDA_nvperf_host_LIBRARY}")
+    target_link_libraries(kineto PUBLIC "${CUDA_nvperf_host_LIBRARY}")
   endif()
 
   if(NOT TARGET Kineto::kineto)
@@ -277,7 +284,6 @@ if(PROFILER_ENABLE_KINETO)
 endif()
 
 list(APPEND PROFILER_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/fmt/include")
-
 
 # ITT — Intel VTune API (external system dependency, not bundled).
 if(PROFILER_ENABLE_ITT)

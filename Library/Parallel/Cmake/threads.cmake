@@ -1,4 +1,5 @@
-# ============================================================================= Parallel Threading
+# =============================================================================
+# Parallel Threading
 # Library Detection and Configuration This module detects the threading library available on the
 # platform and sets appropriate CMake variables and compiler definitions: -
 # PARALLEL_ENABLE_PTHREADS: ON on Unix-like systems with pthreads support -
@@ -17,13 +18,15 @@ include_guard(GLOBAL)
 
 message(STATUS "Parallel: Detecting threading library support...")
 
-# ============================================================================= Thread Library
+# =============================================================================
+# Thread Library
 # Detection
 
 # Use CMake's built-in thread detection
 find_package(Threads REQUIRED)
 
-# ============================================================================= Platform-Specific
+# =============================================================================
+# Platform-Specific
 # Thread Configuration
 
 # Initialize thread flags to OFF
@@ -50,7 +53,8 @@ else()
   set(PARALLEL_ENABLE_WIN32_THREADS OFF CACHE INTERNAL "Use Win32 threads" FORCE)
 endif()
 
-# ============================================================================= Maximum Thread Count
+# =============================================================================
+# Maximum Thread Count
 # Configuration
 
 # Set maximum number of threads (can be overridden by user)
@@ -67,7 +71,8 @@ endif()
 
 message(STATUS "Parallel: Maximum threads: ${PARALLEL_MAX_THREADS}")
 
-# ============================================================================= Thread Library
+# =============================================================================
+# Thread Library
 # Linking
 
 # Create an interface library for threading support
@@ -110,7 +115,8 @@ if(NOT TARGET Threads::threads)
   message(STATUS "Parallel: Threads::threads added to PROJECT_DEPENDENCY_LIBS")
 endif()
 
-# ============================================================================= Summary
+# =============================================================================
+# Summary
 
 message(STATUS "Parallel: Thread configuration summary:")
 message(STATUS "  - PARALLEL_ENABLE_PTHREADS:      ${PARALLEL_ENABLE_PTHREADS}")

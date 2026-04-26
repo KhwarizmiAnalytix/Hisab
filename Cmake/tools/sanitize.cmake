@@ -1,5 +1,6 @@
-# ============================================================================= Quarisma Sanitizer
-# Configuration Module
+# =============================================================================
+# Quarisma
+# Sanitizer Configuration Module
 #
 # Configures per-module compiler sanitizers for runtime error detection. Supports AddressSanitizer,
 # UndefinedBehaviorSanitizer, ThreadSanitizer, MemorySanitizer, and LeakSanitizer (Clang/GCC only).

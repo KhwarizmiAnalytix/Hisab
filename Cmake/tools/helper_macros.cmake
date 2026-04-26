@@ -1,4 +1,5 @@
-# ============================================================================= Quarisma Helper
+# =============================================================================
+# Quarisma Helper
 # Macros Module
 
 # This module provides utility macros for common CMake operations used throughout the Quarisma build

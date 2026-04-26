@@ -1,7 +1,7 @@
-# ============================================================================= Logging Library C++
+# =============================================================================
+# Logging Library C++
 # Tests
 # =============================================================================
-
 # --- GoogleTest setup ---
 if(NOT TARGET gtest)
   set(_gtest_external_found FALSE)
@@ -9,8 +9,9 @@ if(NOT TARGET gtest)
     find_package(GTest QUIET)
     if(GTest_FOUND)
       message(STATUS "Found external Google Test")
-      _create_third_party_interface_targets("Gtest::gtest=GTest::gtest|gtest"
-                                            "Gtest::gtest_main=GTest::gtest_main|gtest_main")
+      _create_third_party_interface_targets(
+        "Gtest::gtest=GTest::gtest|gtest" "Gtest::gtest_main=GTest::gtest_main|gtest_main"
+      )
       set(_gtest_external_found TRUE)
     endif()
   endif()
@@ -26,17 +27,18 @@ if(NOT TARGET gtest)
     set(_saved_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
     set(BUILD_SHARED_LIBS OFF)
     add_subdirectory(
-      "${QUARISMA_THIRDPARTY_DIR}/googletest"
-      "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build"
+      "${QUARISMA_THIRDPARTY_DIR}/googletest" "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build"
       EXCLUDE_FROM_ALL
     )
     set(BUILD_SHARED_LIBS ${_saved_BUILD_SHARED_LIBS})
-    _set_third_party_folder_properties("googletest"
-                                       "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build")
+    _set_third_party_folder_properties(
+      "googletest" "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build"
+    )
   endif()
 endif()
-_create_third_party_interface_targets("Gtest::gtest=GTest::gtest|gtest"
-                                      "Gtest::gtest_main=GTest::gtest_main|gtest_main")
+_create_third_party_interface_targets(
+  "Gtest::gtest=GTest::gtest|gtest" "Gtest::gtest_main=GTest::gtest_main|gtest_main"
+)
 
 file(GLOB_RECURSE test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cpp")
 
@@ -51,7 +53,8 @@ endforeach()
 
 add_executable(LoggingCxxTests ${TestFiles})
 
-# Testing/ (sources + generated *Test.h) and third-party includes match the Logging::Logging interface.
+# Testing/ (sources + generated *Test.h) and third-party includes match the Logging::Logging
+# interface.
 target_include_directories(
   LoggingCxxTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/.." "${CMAKE_CURRENT_BINARY_DIR}/.."
 )
@@ -64,9 +67,7 @@ target_compile_definitions(
                           LOGGING_GOOGLE_TEST USE_GTEST _VARIADIC_MAX=10
 )
 
-target_link_libraries(
-  LoggingCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Logging::Logging
-)
+target_link_libraries(LoggingCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Logging::Logging)
 if(LOGGING_DEPENDENCY_LIBS)
   target_link_libraries(LoggingCxxTests PRIVATE ${LOGGING_DEPENDENCY_LIBS})
 endif()

@@ -1,4 +1,5 @@
-# ============================================================================= Quarisma OpenMP
+# =============================================================================
+# Quarisma OpenMP
 # (Open Multi-Processing) Configuration Module
 
 # This module configures OpenMP for parallel processing support. It detects OpenMP availability and
@@ -20,7 +21,8 @@ endif()
 
 message(STATUS "Configuring OpenMP support...")
 
-# ============================================================================= Find OpenMP
+# =============================================================================
+# Find OpenMP
 
 # Try to find OpenMP using CMake's built-in FindOpenMP module
 find_package(OpenMP QUIET)

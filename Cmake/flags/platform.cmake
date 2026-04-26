@@ -1,9 +1,12 @@
-# if(NOT PROJECT_ENABLE_COVERAGE AND NOT LOGGING_ENABLE_SANITIZER AND NOT MEMORY_ENABLE_SANITIZER
-# AND NOT CORE_ENABLE_SANITIZER AND NOT PARALLEL_ENABLE_SANITIZER AND NOT PROFILER_ENABLE_SANITIZER)
-# message("--avx compiler flags: ${VECTORIZATION_COMPILER_FLAGS}") set(CMAKE_C_FLAGS
-# "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}") set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}
-# ${VECTORIZATION_COMPILER_FLAGS}") endif() make sure Crun is linked in with the native compiler, it
-# is not used by default for shared libraries and is required for things like java to work.
+if(NOT PROJECT_ENABLE_COVERAGE AND NOT LOGGING_ENABLE_SANITIZER AND NOT MEMORY_ENABLE_SANITIZER
+   AND NOT CORE_ENABLE_SANITIZER AND NOT PARALLEL_ENABLE_SANITIZER AND NOT PROFILER_ENABLE_SANITIZER)
+  message("--avx compiler flags: ${VECTORIZATION_COMPILER_FLAGS}")
+  set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
+endif()
+
+# Make sure Crun is linked in with the native compiler; it is not used by default for shared
+# libraries and is required for things like Java to work.
 if(CMAKE_SYSTEM MATCHES "SunOS.*")
   if(NOT CMAKE_COMPILER_IS_GNUCXX)
     message(STATUS "SunOS + Sun CC: searching for Crun/Cstd runtime libraries")
@@ -101,7 +104,9 @@ else()
     string(APPEND CMAKE_CXX_FLAGS " -timplicit_local -no_implicit_include")
   endif()
   if(CMAKE_SYSTEM MATCHES "AIX.*")
-    message(STATUS "AIX: enabling RTTI (-qrtti=all), suppressing duplicate symbol warnings (-bhalt:5)")
+    message(
+      STATUS "AIX: enabling RTTI (-qrtti=all), suppressing duplicate symbol warnings (-bhalt:5)"
+    )
     # allow t-ypeid and d-ynamic_cast usage (normally off by default on xlC)
     string(APPEND CMAKE_CXX_FLAGS " -qrtti=all")
     # silence duplicate symbol warnings on AIX
@@ -144,7 +149,10 @@ if(_MAY_BE_INTEL_COMPILER)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "PGI")
-  message(STATUS "PGI compiler: suppressing diagnostic 236 (constant value asserts) and 381 (redundant semicolons)")
+  message(
+    STATUS
+      "PGI compiler: suppressing diagnostic 236 (constant value asserts) and 381 (redundant semicolons)"
+  )
   # --diag_suppress=236 is for constant value asserts used for error handling This can be restricted
   # to the implementation and doesn't need to propagate
   string(APPEND CMAKE_CXX_FLAGS " --diag_suppress=236")
@@ -164,7 +172,10 @@ if(MSVC)
   string(APPEND CMAKE_CXX_FLAGS " /Zc:__cplusplus")
   # Treat warnings as errors set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX") Disable C4244: conversion
   # warnings
-  message(STATUS "  MSVC: disabling conversion/truncation/signed warnings (/wd4244 /wd4267 /wd4715 /wd4018)")
+  message(
+    STATUS
+      "  MSVC: disabling conversion/truncation/signed warnings (/wd4244 /wd4267 /wd4715 /wd4018)"
+  )
   string(APPEND CMAKE_CXX_FLAGS " /wd4244 /wd4267 /wd4715 /wd4018")
   string(APPEND CMAKE_C_FLAGS " /wd4244 /wd4267 /wd4715 /wd4018")
 
@@ -178,7 +189,9 @@ if(MSVC)
   set(CMAKE_CXX_MP_NUM_PROCESSORS ${PROCESSOR_COUNT}
       CACHE STRING "The maximum number of processes for the /MP flag"
   )
-  if(CMAKE_CXX_MP_FLAG AND NOT (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_GENERATOR MATCHES "Ninja"))
+  if(CMAKE_CXX_MP_FLAG AND NOT (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_GENERATOR MATCHES
+                                                                           "Ninja")
+  )
     message(STATUS "  MSVC: parallel compilation enabled (/MP${CMAKE_CXX_MP_NUM_PROCESSORS})")
     string(APPEND CMAKE_CXX_FLAGS " /MP${CMAKE_CXX_MP_NUM_PROCESSORS}")
     string(APPEND CMAKE_C_FLAGS " /MP${CMAKE_CXX_MP_NUM_PROCESSORS}")
@@ -218,8 +231,9 @@ if(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   string(APPEND CMAKE_CXX_FLAGS " -Wno-unused-command-line-argument")
   string(APPEND CMAKE_C_FLAGS " -Wno-unused-command-line-argument")
 
-  # MSVC CRT marks getenv/strcpy/etc. with __declspec(deprecated) under Clang; _CRT_SECURE_NO_WARNINGS
-  # removes the #pragma form but not the __declspec form, so Clang still fires -Wdeprecated-declarations
+  # MSVC CRT marks getenv/strcpy/etc. with __declspec(deprecated) under Clang;
+  # _CRT_SECURE_NO_WARNINGS removes the #pragma form but not the __declspec form, so Clang still
+  # fires -Wdeprecated-declarations
   string(APPEND CMAKE_CXX_FLAGS " -Wno-deprecated-declarations")
   string(APPEND CMAKE_C_FLAGS " -Wno-deprecated-declarations")
 
@@ -282,15 +296,15 @@ if(UNIX AND NOT APPLE)
     endif()
   endmacro()
 
-  # Append flag to all linker flag variables if the linker accepts it.
-  # Uses CMAKE_REQUIRED_LINK_OPTIONS (CMake >= 3.14) since check_linker_flag needs 3.18.
+  # Append flag to all linker flag variables if the linker accepts it. Uses
+  # CMAKE_REQUIRED_LINK_OPTIONS (CMake >= 3.14) since check_linker_flag needs 3.18.
   macro(_quarisma_add_linker_flag _flag)
     string(MAKE_C_IDENTIFIER "${_flag}" _id)
     set(CMAKE_REQUIRED_LINK_OPTIONS "${_flag}")
     check_cxx_source_compiles("int main(){}" _LINKER_HAS${_id})
     unset(CMAKE_REQUIRED_LINK_OPTIONS)
     if(_LINKER_HAS${_id})
-      string(APPEND CMAKE_EXE_LINKER_FLAGS    " ${_flag}")
+      string(APPEND CMAKE_EXE_LINKER_FLAGS " ${_flag}")
       string(APPEND CMAKE_SHARED_LINKER_FLAGS " ${_flag}")
       string(APPEND CMAKE_MODULE_LINKER_FLAGS " ${_flag}")
     endif()
