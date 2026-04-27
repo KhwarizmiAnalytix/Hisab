@@ -690,7 +690,6 @@ class QuarismaFlags:
             "mimalloc": "MEMORY_ENABLE_MIMALLOC",
             "external": "QUARISMA_ENABLE_EXTERNAL",
             "profiler_type": "PROFILER_BACKEND",
-
             "enzyme": "CORE_ENABLE_ENZYME",
             "parallel_backend": "PARALLEL_BACKEND",
             # Non-CMake flags (for internal use, not passed to CMake)
@@ -722,14 +721,14 @@ class QuarismaFlags:
                 "javatargetversion": 1.8,
                 "cxxstd": "cxx20",
                 # Keep some flags OFF even in "all" mode for safety/compatibility
-                "cuda": self.OFF,       # CUDA requires special hardware
+                "cuda": self.OFF,  # CUDA requires special hardware
                 "sanitizer": self.OFF,  # Can conflict with other tools
-                "valgrind": self.OFF,   # Can conflict with sanitizer
-                "coverage": self.OFF,   # Coverage analysis is optional
-                "icecc": self.OFF,      # Distributed compilation is site-specific
+                "valgrind": self.OFF,  # Can conflict with sanitizer
+                "coverage": self.OFF,  # Coverage analysis is optional
+                "icecc": self.OFF,  # Distributed compilation is site-specific
                 "native": self.OFF,  # Portable binaries by default
                 "examples": self.ON,
-                "linker": "default",    # Keep auto-detect in "all" mode
+                "linker": "default",  # Keep auto-detect in "all" mode
                 "profiler_type": "KINETO",
                 "cache": self.ON,
                 "cache_type": "ccache",
@@ -756,7 +755,7 @@ class QuarismaFlags:
                 "cache_type": "none",  # Default cache backend is none
                 "parallel_backend": "std",  # Default SMP backend
                 "lto": self.OFF,
-                "gtest": self.ON,   # *_ENABLE_GTEST CMake defaults are ON
+                "gtest": self.ON,  # *_ENABLE_GTEST CMake defaults are ON
                 "benchmark": self.ON,  # *_ENABLE_BENCHMARK CMake defaults are ON
                 "magic_enum": self.ON,
                 "mimalloc": self.ON,
@@ -819,7 +818,8 @@ class QuarismaFlags:
                     self.__value["profiler_type"] = profiler_choices[backend_key]
                     self.builder_suffix += f"_profiler_{backend_key}"
                     print_status(
-                        f"Selecting profiler backend: {profiler_choices[backend_key]}", "INFO"
+                        f"Selecting profiler backend: {profiler_choices[backend_key]}",
+                        "INFO",
                     )
                 else:
                     print_status(
@@ -851,9 +851,7 @@ class QuarismaFlags:
                 if backend_value in parallel_backend_list:
                     self.__value["parallel_backend"] = backend_value
                     self.builder_suffix += f"_parallel_{backend_value}"
-                    print_status(
-                        f"Selecting SMP backend: {backend_value}", "INFO"
-                    )
+                    print_status(f"Selecting SMP backend: {backend_value}", "INFO")
                 else:
                     print_status(
                         f"Invalid SMP backend '{backend_value}'. Valid options: {', '.join(parallel_backend_list)}",
@@ -866,9 +864,9 @@ class QuarismaFlags:
                 self.__value["cxxstd"] = std_version
                 # self.builder_suffix += f"_{arg.lower()}"
                 print_status(f"Setting C++ standard to C++{std_version}", "INFO")
-            elif re.match(r'^c\+\+(\d+)$', arg.lower()):
+            elif re.match(r"^c\+\+(\d+)$", arg.lower()):
                 # Handle "c++20" style syntax (alternative to "cxx20")
-                std_version = re.match(r'^c\+\+(\d+)$', arg.lower()).group(1)
+                std_version = re.match(r"^c\+\+(\d+)$", arg.lower()).group(1)
                 self.__value["cxxstd"] = std_version
                 print_status(f"Setting C++ standard to C++{std_version}", "INFO")
             elif arg.isdigit():
@@ -1017,7 +1015,14 @@ class QuarismaFlags:
         # ------------------------------------------------------------------ per-module fan-outs
         # Every flag in this section is propagated to all library modules so that a
         # single setup.py argument controls the entire project uniformly.
-        ALL_MODULES = ["CORE", "LOGGING", "MEMORY", "PARALLEL", "PROFILER", "VECTORIZATION"]
+        ALL_MODULES = [
+            "CORE",
+            "LOGGING",
+            "MEMORY",
+            "PARALLEL",
+            "PROFILER",
+            "VECTORIZATION",
+        ]
 
         def _fan_bool(key, cmake_suffix):
             val = self.__value.get(key)
@@ -1031,22 +1036,22 @@ class QuarismaFlags:
                 for mod in ALL_MODULES:
                     cmake_cmd_flags.append(f"-D{mod}_{cmake_suffix}={val}")
 
-        _fan_bool("benchmark",     "ENABLE_BENCHMARK")
-        _fan_bool("coverage",      "ENABLE_COVERAGE")
-        _fan_bool("lto",           "ENABLE_LTO")
-        _fan_bool("gtest",         "ENABLE_GTEST")
-        _fan_bool("clangtidy",     "ENABLE_CLANGTIDY")
-        _fan_bool("iwyu",          "ENABLE_IWYU")
-        _fan_bool("sanitizer",     "ENABLE_SANITIZER")
-        _fan_bool("valgrind",      "ENABLE_VALGRIND")
-        _fan_bool("spell",         "ENABLE_SPELL")
-        _fan_bool("fix",           "ENABLE_FIX")
-        _fan_bool("icecc",         "ENABLE_ICECC")
-        _fan_bool("examples",      "ENABLE_EXAMPLES")
-        _fan_bool("cppcheck",      "ENABLE_CPPCHECK")
+        _fan_bool("benchmark", "ENABLE_BENCHMARK")
+        _fan_bool("coverage", "ENABLE_COVERAGE")
+        _fan_bool("lto", "ENABLE_LTO")
+        _fan_bool("gtest", "ENABLE_GTEST")
+        _fan_bool("clangtidy", "ENABLE_CLANGTIDY")
+        _fan_bool("iwyu", "ENABLE_IWYU")
+        _fan_bool("sanitizer", "ENABLE_SANITIZER")
+        _fan_bool("valgrind", "ENABLE_VALGRIND")
+        _fan_bool("spell", "ENABLE_SPELL")
+        _fan_bool("fix", "ENABLE_FIX")
+        _fan_bool("icecc", "ENABLE_ICECC")
+        _fan_bool("examples", "ENABLE_EXAMPLES")
+        _fan_bool("cppcheck", "ENABLE_CPPCHECK")
         _fan_str("sanitizer_enum", "SANITIZER_TYPE")
-        _fan_str("cache_type",     "CACHE_BACKEND")
-        _fan_str("linker",         "LINKER_CHOICE")
+        _fan_str("cache_type", "CACHE_BACKEND")
+        _fan_str("linker", "LINKER_CHOICE")
 
         if self.__value.get("cache") in [self.ON, self.OFF]:
             cv = self.__value.get("cache")
@@ -1263,7 +1268,10 @@ class QuarismaConfiguration:
         self.__compiler_user_specified = True
 
     def __is_visual_studio(self, arg):
-        return arg in ["vs17", "vs19", "vs22","vs26"] and self.__value["system"] == "Windows"
+        return (
+            arg in ["vs17", "vs19", "vs22", "vs26"]
+            and self.__value["system"] == "Windows"
+        )
 
     def __set_visual_studio(self, arg):
         vs_versions = {
@@ -1724,7 +1732,9 @@ def parse_args(args):
                 )
                 sys.exit(1)
 
-        elif re.search(r"[/\\]", arg) and re.search(r"[Cc]lang|[Gg][Cc][Cc]|[Gg]\+\+", arg):
+        elif re.search(r"[/\\]", arg) and re.search(
+            r"[Cc]lang|[Gg][Cc][Cc]|[Gg]\+\+", arg
+        ):
             # Compiler path argument: contains a directory separator and a compiler name.
             # Pass through verbatim — do NOT split on '.' or '_' or lowercase, as that
             # would destroy paths like C:/msys64/mingw64/bin/clang.exe.
@@ -1819,12 +1829,15 @@ def main():
         print("  # Note: Coverage analysis is automatic when 'coverage' is enabled")
         print("  #       No need to add '.analyze' to coverage builds")
         print("\nBenchmark examples:")
-        print("  # Google Benchmark is on by default; Release + explicit .benchmark is typical for numbers")
+        print(
+            "  # Google Benchmark is on by default; Release + explicit .benchmark is typical for numbers"
+        )
         print("  python setup.py config.build.ninja.clang.release.benchmark")
         print("  python setup.py config.build.ninja.clang.release.lto.benchmark")
         print()
         print(
-            "  # Note: To disable, pass CMake defines such as -DCORE_ENABLE_BENCHMARK=OFF (and the same for other *_ENABLE_BENCHMARK options)."
+            "  # Note: To disable, pass CMake defines such as -DCORE_ENABLE_BENCHMARK=OFF"
+            " (and the same for other *_ENABLE_BENCHMARK options)."
         )
         print(
             "  #       Recommended to use with Release build for accurate performance results."

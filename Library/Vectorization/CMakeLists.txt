@@ -130,6 +130,19 @@ include(CMakeDependentOption)
 include(cache)
 include(utils)
 
+# Auto-downgrade to "no" if the requested SIMD tier is unsupported (e.g. ARM64 has no x86 SSE/AVX).
+if(NOT VECTORIZATION_TYPE STREQUAL "no" AND NOT VECTORIZATION)
+  message(
+    WARNING
+      "VECTORIZATION_TYPE '${VECTORIZATION_TYPE}' is not supported by this compiler/architecture. "
+      "Falling back to VECTORIZATION_TYPE=no."
+  )
+  set(VECTORIZATION_TYPE "no"
+      CACHE STRING "vectorization implementation to use. Options are no, sse, avx, avx2, or avx512"
+      FORCE
+  )
+endif()
+
 # Other libraries must not include Vectorization CMake modules; expose probes for Core et al.
 if(HAS_EXCEPTION_PTR)
   set(PROJECT_HAS_EXCEPTION_PTR 1 CACHE INTERNAL

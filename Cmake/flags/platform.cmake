@@ -1,9 +1,4 @@
-if(NOT PROJECT_ENABLE_COVERAGE AND NOT LOGGING_ENABLE_SANITIZER AND NOT MEMORY_ENABLE_SANITIZER
-   AND NOT CORE_ENABLE_SANITIZER AND NOT PARALLEL_ENABLE_SANITIZER AND NOT PROFILER_ENABLE_SANITIZER)
-  message("--avx compiler flags: ${VECTORIZATION_COMPILER_FLAGS}")
-  set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
-endif()
+
 
 # Make sure Crun is linked in with the native compiler; it is not used by default for shared
 # libraries and is required for things like Java to work.
