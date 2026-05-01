@@ -32,10 +32,8 @@ Do_not_include_expression_functor_directly_use_expression_it;
 // * VECTORIZATION_FUNCTION_ATTRIBUTE expands to __host__ __device__ when
 //   building with NVCC/HIPCC, making all functor() methods callable from
 //   GPU device kernels.
-// * On GPU, VECTORIZATION_ON_GPU_DEVICE == 1 and is_packet<T>::value is
-//   always false (no SIMD register types).  Every SIMD branch is prefixed
-//   with !VECTORIZATION_ON_GPU_DEVICE so the compiler sees a single
-//   unconditional scalar path on device — no dead SIMD code to parse.
+// * On GPU, is_packet<T>::value is always false (no SIMD register types defined).
+//   The scalar else branch is the only path compiled on device.
 // * The const-ref and rvalue functor() overloads that existed before were
 //   identical in every macro.  An rvalue argument binds to const-ref in C++
 //   without a separate overload, so the rvalue copies were pure bloat and
@@ -54,7 +52,7 @@ Do_not_include_expression_functor_directly_use_expression_it;
         VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(T const& lhs) noexcept    \
         {                                                                                         \
             if constexpr (                                                                        \
-                !VECTORIZATION_ON_GPU_DEVICE &&                                                   \
+                \
                 vectorization::is_packet<vectorization::remove_cvref_t<T>>::value)                \
             {                                                                                     \
                 using value_t =                                                                   \
@@ -126,7 +124,7 @@ MACRO_FUNCTION_EVALUATOR(invsqrt);
             LHS const& lhs, RHS const& rhs) noexcept                                             \
         {                                                                                         \
             if constexpr (                                                                        \
-                !VECTORIZATION_ON_GPU_DEVICE &&                                                   \
+                \
                 is_packet<vectorization::remove_cvref_t<LHS>>::value &&                           \
                 is_packet<vectorization::remove_cvref_t<RHS>>::value)                             \
             {                                                                                     \
@@ -137,7 +135,7 @@ MACRO_FUNCTION_EVALUATOR(invsqrt);
                 return ret;                                                                       \
             }                                                                                     \
             else if constexpr (                                                                   \
-                !VECTORIZATION_ON_GPU_DEVICE &&                                                   \
+                \
                 is_packet<vectorization::remove_cvref_t<RHS>>::value)                             \
             {                                                                                     \
                 using value_t      = typename scalar_type<RHS, RHS>::value;                       \
@@ -150,7 +148,7 @@ MACRO_FUNCTION_EVALUATOR(invsqrt);
                 return ret;                                                                       \
             }                                                                                     \
             else if constexpr (                                                                   \
-                !VECTORIZATION_ON_GPU_DEVICE &&                                                   \
+                \
                 is_packet<vectorization::remove_cvref_t<LHS>>::value)                             \
             {                                                                                     \
                 using value_t      = typename scalar_type<LHS, LHS>::value;                       \
@@ -197,7 +195,7 @@ MACRO_OPERATION_EVALUATOR(copysign, signcopy);
             LHS const& lhs, RHS const& rhs) noexcept                                             \
         {                                                                                         \
             if constexpr (                                                                        \
-                !VECTORIZATION_ON_GPU_DEVICE &&                                                   \
+                \
                 is_packet<vectorization::remove_cvref_t<LHS>>::value &&                           \
                 is_packet<vectorization::remove_cvref_t<RHS>>::value)                             \
             {                                                                                     \
@@ -208,7 +206,7 @@ MACRO_OPERATION_EVALUATOR(copysign, signcopy);
                 return ret;                                                                       \
             }                                                                                     \
             else if constexpr (                                                                   \
-                !VECTORIZATION_ON_GPU_DEVICE &&                                                   \
+                \
                 is_packet<vectorization::remove_cvref_t<RHS>>::value)                             \
             {                                                                                     \
                 using value_t      = typename scalar_type<RHS, RHS>::value;                       \
@@ -221,7 +219,7 @@ MACRO_OPERATION_EVALUATOR(copysign, signcopy);
                 return ret;                                                                       \
             }                                                                                     \
             else if constexpr (                                                                   \
-                !VECTORIZATION_ON_GPU_DEVICE &&                                                   \
+                \
                 is_packet<vectorization::remove_cvref_t<LHS>>::value)                             \
             {                                                                                     \
                 using value_t      = typename scalar_type<LHS, LHS>::value;                       \
@@ -262,7 +260,7 @@ MACRO_OPERATION_EVALUATOR_MASK(lxor, lxor);
             LHS const& lhs, RHS const& rhs) noexcept                                             \
         {                                                                                         \
             if constexpr (                                                                        \
-                !VECTORIZATION_ON_GPU_DEVICE &&                                                   \
+                \
                 is_packet<vectorization::remove_cvref_t<LHS>>::value &&                           \
                 is_packet<vectorization::remove_cvref_t<RHS>>::value)                             \
             {                                                                                     \
@@ -273,7 +271,7 @@ MACRO_OPERATION_EVALUATOR_MASK(lxor, lxor);
                 return ret;                                                                       \
             }                                                                                     \
             else if constexpr (                                                                   \
-                !VECTORIZATION_ON_GPU_DEVICE &&                                                   \
+                \
                 is_packet<vectorization::remove_cvref_t<RHS>>::value)                             \
             {                                                                                     \
                 using value_t      = typename scalar_type<RHS, RHS>::value;                       \
@@ -286,7 +284,7 @@ MACRO_OPERATION_EVALUATOR_MASK(lxor, lxor);
                 return ret;                                                                       \
             }                                                                                     \
             else if constexpr (                                                                   \
-                !VECTORIZATION_ON_GPU_DEVICE &&                                                   \
+                \
                 is_packet<vectorization::remove_cvref_t<LHS>>::value)                             \
             {                                                                                     \
                 using value_t      = typename scalar_type<LHS, LHS>::value;                       \
@@ -352,7 +350,7 @@ struct if_else_evaluator
         using rmv_mhs = vectorization::remove_cvref_t<MHS>;
         using rmv_rhs = vectorization::remove_cvref_t<RHS>;
 
-        if constexpr (!VECTORIZATION_ON_GPU_DEVICE && vectorization::is_packet<rmv_lhs>::value)
+        if constexpr (vectorization::is_packet<rmv_lhs>::value)
         {
             using value_t      = typename scalar_type<rmv_lhs, rmv_lhs>::value;
             using array_simd_t = typename packet<value_t>::array_simd_t;
@@ -424,7 +422,7 @@ struct fma_evaluator
         using rmv_mhs = vectorization::remove_cvref_t<MHS>;
         using rmv_rhs = vectorization::remove_cvref_t<RHS>;
 
-        if constexpr (!VECTORIZATION_ON_GPU_DEVICE && vectorization::is_packet<rmv_lhs>::value)
+        if constexpr (vectorization::is_packet<rmv_lhs>::value)
         {
             // lhs is a SIMD packet
             using value_t      = typename scalar_type<rmv_lhs, rmv_lhs>::value;
@@ -465,7 +463,7 @@ struct fma_evaluator
             }
         }
         else if constexpr (
-            !VECTORIZATION_ON_GPU_DEVICE && is_packet<rmv_mhs>::value && is_packet<rmv_rhs>::value)
+            is_packet<rmv_mhs>::value && is_packet<rmv_rhs>::value)
         {
             // lhs scalar, mhs SIMD, rhs SIMD
             using value_t      = typename scalar_type<rmv_mhs, rmv_rhs>::value;
@@ -477,7 +475,7 @@ struct fma_evaluator
             packet<value_t>::fma(temp, mhs, rhs, ret);
             return ret;
         }
-        else if constexpr (!VECTORIZATION_ON_GPU_DEVICE && is_packet<rmv_rhs>::value)
+        else if constexpr (is_packet<rmv_rhs>::value)
         {
             // lhs scalar, mhs scalar, rhs SIMD — pre-multiply scalars, add to vector
             using value_t      = typename scalar_type<rmv_rhs, rmv_rhs>::value;
@@ -489,7 +487,7 @@ struct fma_evaluator
             packet<value_t>::add(temp, rhs, ret);
             return ret;
         }
-        else if constexpr (!VECTORIZATION_ON_GPU_DEVICE && is_packet<rmv_mhs>::value)
+        else if constexpr (is_packet<rmv_mhs>::value)
         {
             // lhs scalar, mhs SIMD, rhs scalar
             using value_t      = typename scalar_type<rmv_mhs, rmv_mhs>::value;

@@ -151,77 +151,11 @@ new_local_repository(
 # -----------------------------------------------------------------------------
 # CUDA Support (optional)
 # -----------------------------------------------------------------------------
-# CUDA configuration for kineto profiler
-# This creates a local_config_cuda repository that provides CUDA libraries
+# Resolves CUDA toolkit from CUDA_PATH / CUDA_HOME, or default install paths
+# (Windows: Program Files/NVIDIA GPU Computing Toolkit/CUDA/v*; Linux: /usr/local/cuda, /opt/cuda).
+load("//bazel:cuda_configure.bzl", "cuda_configure")
 
-load("@bazel_tools//tools/build_defs/repo:local.bzl", "new_local_repository")
-
-# Detect CUDA installation path from environment or standard locations
-# Priority: CUDA_PATH env var > /usr/local/cuda > /opt/cuda
-new_local_repository(
-    name = "local_config_cuda",
-    build_file_content = """
-package(default_visibility = ["//visibility:public"])
-
-# CUDA Runtime Library
-cc_library(
-    name = "cudart",
-    srcs = glob([
-        "targets/x86_64-linux/lib/libcudart.so*",
-        "lib64/libcudart.so*",
-    ], allow_empty = True),
-    hdrs = glob([
-        "targets/x86_64-linux/include/**/*.h",
-        "targets/x86_64-linux/include/**/*.hpp",
-        "include/**/*.h",
-        "include/**/*.hpp",
-    ], allow_empty = True),
-    includes = [
-        "targets/x86_64-linux/include",
-        "include",
-    ],
-    linkopts = ["-Wl,-rpath,$$ORIGIN"],
-)
-
-# CUDA Profiling Tools Interface (CUPTI)
-cc_library(
-    name = "cupti",
-    srcs = glob([
-        "targets/x86_64-linux/lib/libcupti.so*",
-        "targets/x86_64-linux/lib/libnvperf_host.so*",
-        "targets/x86_64-linux/lib/libnvperf_target.so*",
-        "extras/CUPTI/lib64/libcupti.so*",
-        "lib64/libnvperf_host.so*",
-        "lib64/libnvperf_target.so*",
-    ], allow_empty = True),
-    hdrs = glob([
-        "targets/x86_64-linux/include/**/*.h",
-        "targets/x86_64-linux/include/**/*.hpp",
-        "extras/CUPTI/include/**/*.h",
-        "extras/CUPTI/include/**/*.hpp",
-        "include/**/*.h",
-        "include/**/*.hpp",
-    ], allow_empty = True),
-    includes = [
-        "targets/x86_64-linux/include",
-        "extras/CUPTI/include",
-        "include",
-    ],
-    linkopts = ["-Wl,-rpath,$$ORIGIN"],
-    deps = [":cudart"],
-)
-
-# Convenience target for cuda package
-cc_library(
-    name = "cuda",
-    deps = [
-        ":cudart",
-        ":cupti",
-    ],
-)
-""",
-    path = "/usr/local/cuda",  # Default CUDA path on Linux
-)
+cuda_configure(name = "local_config_cuda")
 
 # -----------------------------------------------------------------------------
 # Intel MKL Support (optional)

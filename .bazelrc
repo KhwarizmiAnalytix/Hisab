@@ -346,6 +346,9 @@ build:gpu_alloc_pool_async --define=quarisma_gpu_alloc=pool_async
 # =============================================================================
 # CMake-equivalent defaults
 # =============================================================================
+# SIMD tier for //Library/Vectorization (matches CMake VECTORIZATION_TYPE default: avx2).
+build --define=quarisma_vectorization_type=avx2
+#
 # Feature defaults (mimalloc, magic_enum, KINETO profiler, LOGURU, Sobol 1111, POOL_ASYNC GPU
 # alloc) are applied in //bazel:quarisma.bzl — plain `bazel build //...` matches root CMakeLists.txt
 # without extra --define. Opt out with --define=quarisma_enable_*=false / disable_sobol_1111, etc.

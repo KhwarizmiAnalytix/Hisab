@@ -5,6 +5,8 @@
 # Equivalent to CMake option() and set() commands
 # =============================================================================
 
+load(":vectorization_settings.bzl", "define_vectorization_platform_settings")
+
 package(default_visibility = ["//visibility:public"])
 
 # Export the helper functions
@@ -227,6 +229,32 @@ config_setting(
     define_values = {"quarisma_enable_svml": "true"},
 )
 
+# Vectorization SIMD tier (default in vectorization.bzl = AVX2 when unset)
+config_setting(
+    name = "vectorization_type_no",
+    define_values = {"quarisma_vectorization_type": "no"},
+)
+
+config_setting(
+    name = "vectorization_type_sse",
+    define_values = {"quarisma_vectorization_type": "sse"},
+)
+
+config_setting(
+    name = "vectorization_type_avx",
+    define_values = {"quarisma_vectorization_type": "avx"},
+)
+
+config_setting(
+    name = "vectorization_type_avx2",
+    define_values = {"quarisma_vectorization_type": "avx2"},
+)
+
+config_setting(
+    name = "vectorization_type_avx512",
+    define_values = {"quarisma_vectorization_type": "avx512"},
+)
+
 config_setting(
     name = "enable_rocm",
     define_values = {"quarisma_enable_rocm": "true"},
@@ -255,3 +283,6 @@ config_setting(
     name = "enable_benchmark",
     define_values = {"quarisma_enable_benchmark": "true"},
 )
+
+# (quarisma_vectorization_type) × OS — used by //bazel:vectorization.bzl SIMD copts
+define_vectorization_platform_settings()

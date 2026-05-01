@@ -315,7 +315,7 @@ quarisma_find_linker(${VECTORIZATION_LINKER_CHOICE} Vectorization)
 quarisma_target_apply_cache(Vectorization VECTORIZATION_ENABLE_CACHE VECTORIZATION_CACHE_BACKEND)
 quarisma_target_optional_icecc(Vectorization VECTORIZATION_ENABLE_ICECC)
 
-# --- DLL-export macros (VECTORIZATION_API declared in generated vectorization_export.h) ---
+# --- DLL-export macros (VECTORIZATION_API in source-tree vectorization_export.h) ---
 if(BUILD_SHARED_LIBS)
   target_compile_definitions(
     Vectorization PUBLIC VECTORIZATION_SHARED_DEFINE PRIVATE VECTORIZATION_BUILDING_DLL
@@ -326,19 +326,6 @@ if(BUILD_SHARED_LIBS)
 else()
   target_compile_definitions(Vectorization PUBLIC VECTORIZATION_STATIC_DEFINE)
 endif()
-
-include(GenerateExportHeader)
-generate_export_header(
-  Vectorization
-  BASE_NAME
-  VECTORIZATION
-  EXPORT_MACRO_NAME
-  VECTORIZATION_API
-  EXPORT_FILE_NAME
-  "${CMAKE_CURRENT_BINARY_DIR}/vectorization_export.h"
-  STATIC_DEFINE
-  VECTORIZATION_STATIC_DEFINE
-)
 
 add_library(Vectorization::Vectorization ALIAS Vectorization)
 
@@ -439,8 +426,8 @@ install(
   DESTINATION include
 )
 install(FILES ${headers} DESTINATION include/Vectorization COMPONENT Development)
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vectorization_export.h"
-              "${CMAKE_CURRENT_BINARY_DIR}/Testing/VectorizationTest.h"
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/vectorization_export.h"
+              "${CMAKE_CURRENT_SOURCE_DIR}/Testing/VectorizationTest.h"
         DESTINATION include/Vectorization COMPONENT Development
 )
 

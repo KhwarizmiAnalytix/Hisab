@@ -123,10 +123,12 @@ public:
         }
         else
         {
+            // Split into two assignments to limit expression-tree depth and avoid
+            // Clang 22 LiveDebugValues crash on the combined single-expression form.
             auto t = -fabs(a - b) + a + b;
-            c      = floor(log1p(fabs(t)) + 1) + ceil(a) + sin(t) + trunc(a) +
-                if_else(
-                    fabs(t) < std::numeric_limits<double>::epsilon(), 1. - 0.5 * t, expm1(t) / t);
+            c      = floor(log1p(fabs(t)) + 1) + ceil(a) + sin(t) + trunc(a);
+            c += if_else(
+                fabs(t) < std::numeric_limits<double>::epsilon(), 1. - 0.5 * t, expm1(t) / t);
         }
     };
 };

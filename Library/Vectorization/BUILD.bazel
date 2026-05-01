@@ -1,0 +1,163 @@
+# Library/Vectorization — SIMD packet layer (headers under ., backends under backend/).
+# Include roots match CMake: "common/packet.h", "backend/avx/float/simd.h", etc.
+load("//bazel:vectorization.bzl", "vectorization_copts", "vectorization_defines", "vectorization_linkopts")
+
+package(default_visibility = ["//visibility:public"])
+
+_VEC_TEST = ["Testing/**"]
+
+cc_library(
+    name = "vectorization_lib",
+    srcs = select({
+        "//bazel:vectorization_type_no": glob(
+            ["**/*.cpp", "**/*.cxx"],
+            exclude = _VEC_TEST + ["backend/**"],
+            allow_empty = True,
+        ),
+        "//bazel:vectorization_type_sse": glob(
+            ["**/*.cpp", "**/*.cxx"],
+            exclude = _VEC_TEST + [
+                "backend/avx/**",
+                "backend/avx512/**",
+            ],
+            allow_empty = True,
+        ),
+        "//bazel:vectorization_type_avx": glob(
+            ["**/*.cpp", "**/*.cxx"],
+            exclude = _VEC_TEST + [
+                "backend/sse/**",
+                "backend/avx512/**",
+            ],
+            allow_empty = True,
+        ),
+        "//bazel:vectorization_type_avx512": glob(
+            ["**/*.cpp", "**/*.cxx"],
+            exclude = _VEC_TEST + [
+                "backend/sse/**",
+                "backend/avx/**",
+            ],
+            allow_empty = True,
+        ),
+        "//conditions:default": glob(
+            ["**/*.cpp", "**/*.cxx"],
+            exclude = _VEC_TEST + [
+                "backend/sse/**",
+                "backend/avx512/**",
+            ],
+            allow_empty = True,
+        ),
+    }),
+    hdrs = select({
+        "//bazel:vectorization_type_no": glob(
+            [
+                "**/*.h",
+                "**/*.inl",
+                "**/*.hxx",
+            ],
+            exclude = _VEC_TEST + ["backend/**"],
+            allow_empty = True,
+        ),
+        "//bazel:vectorization_type_sse": glob(
+            [
+                "**/*.h",
+                "**/*.inl",
+                "**/*.hxx",
+            ],
+            exclude = _VEC_TEST + [
+                "backend/avx/**",
+                "backend/avx512/**",
+            ],
+            allow_empty = True,
+        ),
+        "//bazel:vectorization_type_avx": glob(
+            [
+                "**/*.h",
+                "**/*.inl",
+                "**/*.hxx",
+            ],
+            exclude = _VEC_TEST + [
+                "backend/sse/**",
+                "backend/avx512/**",
+            ],
+            allow_empty = True,
+        ),
+        "//bazel:vectorization_type_avx512": glob(
+            [
+                "**/*.h",
+                "**/*.inl",
+                "**/*.hxx",
+            ],
+            exclude = _VEC_TEST + [
+                "backend/sse/**",
+                "backend/avx/**",
+            ],
+            allow_empty = True,
+        ),
+        "//conditions:default": glob(
+            [
+                "**/*.h",
+                "**/*.inl",
+                "**/*.hxx",
+            ],
+            exclude = _VEC_TEST + [
+                "backend/sse/**",
+                "backend/avx512/**",
+            ],
+            allow_empty = True,
+        ),
+    }),
+    copts = vectorization_copts(),
+    defines = vectorization_defines() + select({
+        "//bazel:shared_libs": [
+            "VECTORIZATION_SHARED_DEFINE",
+            "VECTORIZATION_BUILDING_DLL",
+        ],
+        "//conditions:default": ["VECTORIZATION_STATIC_DEFINE"],
+    }),
+    includes = [
+        ".",
+        "Testing",
+    ],
+    linkopts = vectorization_linkopts(),
+    linkstatic = select({
+        "//bazel:shared_libs": False,
+        "//conditions:default": True,
+    }),
+    deps = [
+        "//Library/Logging:Logging",
+        "//Library/Memory:Memory",
+    ],
+    visibility = ["//Library/Vectorization:__pkg__"],
+)
+
+cc_library(
+    name = "Vectorization",
+    deps = [":vectorization_lib"],
+    visibility = ["//visibility:public"],
+)
+
+# Mirrors CMake VectorizationCxxTests (Test*.cpp only; benchmarks are separate).
+cc_test(
+    name = "VectorizationCxxTests",
+    size = "large",
+    timeout = "long",
+    srcs = glob(["Testing/Cxx/Test*.cpp"], allow_empty = True),
+    copts = vectorization_copts(),
+    defines = vectorization_defines() + [
+        "QUARISMA_HAS_GTEST=1",
+        "QUARISMA_GOOGLE_TEST",
+        "USE_GTEST",
+        "_VARIADIC_MAX=10",
+    ],
+    includes = [
+        "Testing/Cxx",
+        ".",
+        "Testing",
+    ],
+    linkopts = vectorization_linkopts(),
+    deps = [
+        ":Vectorization",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

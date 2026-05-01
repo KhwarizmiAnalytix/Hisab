@@ -53,7 +53,6 @@ namespace
         simd<value_t>::storeu(c, out.data());                \
         for (auto e : out)                                   \
         {                                                    \
-            VECTORIZATION_LOGF(INFO, "vec: {} seq: {}", e, z);      \
             EXPECT_LE(std::fabs(e - z), tolerance);          \
         }                                                    \
     }

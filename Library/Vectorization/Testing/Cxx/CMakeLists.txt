@@ -30,6 +30,16 @@ file(GLOB_RECURSE test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DI
 
 add_executable(VectorizationCxxTests ${test_sources})
 
+# Clang 22 ICE: LiveDebugValues crashes on TestMultiSimd.cpp with -gcodeview + AVX2 +
+# the large number of TestFunction<func_X> template instantiations.  Disabling debug
+# info for this single TU (-g0 overrides -gcodeview) eliminates the crash.
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND WIN32)
+  set_source_files_properties(
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestMultiSimd.cpp"
+    PROPERTIES COMPILE_FLAGS "-O1 -g0"
+  )
+endif()
+
 target_compile_definitions(
   VectorizationCxxTests PRIVATE QUARISMA_HAS_GTEST=1 QUARISMA_GOOGLE_TEST USE_GTEST
                                 _VARIADIC_MAX=10
@@ -146,8 +156,9 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
 
     add_executable(${target_name} "${_bench_source}")
 
-    # Clang on Windows can ICE on heavy template/fmt use in this TU (same idea as Parallel
-    # TestAsyncParallel).
+    # Clang 22 ICE: LiveDebugValues and GVN crash on heavy template instantiation TUs when
+    # -gcodeview + AVX2 are active.  -O1 reduces IR complexity (avoids GVN);
+    # -g0 disables CodeView debug-info emission (avoids LiveDebugValues).
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND WIN32)
       get_filename_component(_vectorization_bench_file "${_bench_source}" NAME)
       if(_vectorization_bench_file STREQUAL "BenchmarkSimd.cpp")

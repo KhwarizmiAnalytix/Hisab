@@ -5,7 +5,7 @@
 #
 # Module-specific defines live in the corresponding module bzl files:
 #   bazel/core.bzl, bazel/memory.bzl, bazel/parallel.bzl,
-#   bazel/logging.bzl, bazel/profiler.bzl
+#   bazel/logging.bzl, bazel/profiler.bzl, bazel/vectorization.bzl
 # =============================================================================
 
 def quarisma_copts(cxx_std = "c++20"):
