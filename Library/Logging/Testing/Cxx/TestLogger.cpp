@@ -98,7 +98,7 @@ LOGGINGTEST(Logger, test)
         LOGGING_LOG_START_SCOPE(INFO, "scope-0");
     }
     LOGGING_LOG_START_SCOPE(INFO, "scope-1");
-    MEMORY_LOG_INFO("some text");
+    LOGGING_LOG_INFO("some text");
     LOGGING_LOG_END_SCOPE("scope-1");
     {
         LOGGING_LOG_END_SCOPE("scope-0");

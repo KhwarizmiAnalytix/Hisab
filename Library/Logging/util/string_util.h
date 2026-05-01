@@ -27,7 +27,7 @@
 #include <vector>       // for vector
 
 #include "common/logging_export.h"  // for LOGGING_API, LOGGING_VISIBILITY
-#include "common/logging_macros.h"  // for LOGGING_PRINTF_ATTRIBUTE
+#include "common/logging_macros.h"  // LOGGING_FORCE_INLINE
 
 // =============================================================================
 // ENUM CONVERSION UTILITIES

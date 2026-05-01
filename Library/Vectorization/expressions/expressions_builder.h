@@ -275,4 +275,33 @@ MACRO_EXPRESSION_MOPERATOR_2_ARG(mmul, *=);
 MACRO_EXPRESSION_MOPERATOR_2_ARG(mdiv, /=);
 }  // namespace vectorization
 
+//================================================================================================
+// matmul(A, B) — explicit matrix multiply.
+// tensor * tensor is element-wise; use matmul() to request matrix multiplication.
+// The result is a matrix_multiplication_expression which must be directly assigned
+// to an output tensor (it cannot be nested inside a further element-wise expression).
+//================================================================================================
+namespace vectorization
+{
+template <typename LHS, typename RHS,
+          std::enable_if_t<vectorization::is_expression<LHS>::value &&
+                               vectorization::is_expression<RHS>::value,
+                           bool> = true>
+VECTORIZATION_FUNCTION_ATTRIBUTE auto matmul(LHS const& lhs, RHS const& rhs) noexcept
+{
+    return vectorization::matrix_multiplication_expression<LHS, RHS>(lhs, rhs);
+}
+
+template <typename LHS, typename RHS,
+          std::enable_if_t<vectorization::is_expression<LHS>::value &&
+                               vectorization::is_expression<RHS>::value,
+                           bool> = true>
+VECTORIZATION_FUNCTION_ATTRIBUTE auto matmul(LHS&& lhs, RHS&& rhs) noexcept
+{
+    using rmv_lhs = vectorization::remove_cvref_t<LHS>;
+    using rmv_rhs = vectorization::remove_cvref_t<RHS>;
+    return vectorization::matrix_multiplication_expression<rmv_lhs, rmv_rhs>(lhs, rhs);
+}
+}  // namespace vectorization
+
 #endif

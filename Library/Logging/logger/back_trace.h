@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "common/logging_export.h"
-#include "common/logging_macros.h"
 
 namespace logging
 {

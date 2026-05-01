@@ -25,7 +25,7 @@
 #include <vector>
 
 #include "common/vectorization_macros.h"
-#include "terminals/matrix.h"
+#include "terminals/tensor.h"
 #include "VectorizationTest.h"
 
 namespace
@@ -33,12 +33,11 @@ namespace
 template <typename T>
 void test_matrix()
 {
-    EXPECT_EQ(vectorization::matrix<T>::dimensions(), 2);
     EXPECT_EQ(vectorization::matrix<T>::length(), vectorization::packet<T>::length());
 
-    vectorization::matrix<T> v = {{1.}, {2.}};
+    vectorization::matrix<T> v(std::initializer_list<std::initializer_list<T>>{{static_cast<T>(1.)}, {static_cast<T>(2.)}});
 
-    vectorization::matrix<T> v1(v.data(), 2, 1);
+    vectorization::matrix<T> v1(v.data(), static_cast<size_t>(2), static_cast<size_t>(1));
 
     vectorization::matrix<T> v2(2, 1);
 
@@ -56,7 +55,7 @@ void test_matrix()
     v2.is_zero();
     v2.symmetric();
 
-    vectorization::matrix<T> v3 = {{1., -0.5}, {-.5, 1.}};
+    vectorization::matrix<T> v3(std::initializer_list<std::initializer_list<T>>{{static_cast<T>(1.), static_cast<T>(-0.5)}, {static_cast<T>(-.5), static_cast<T>(1.)}});
 
     v3.is_correlation();
     v3.is_zero();

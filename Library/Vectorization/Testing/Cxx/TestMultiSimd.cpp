@@ -26,7 +26,7 @@
 //#include "common/constants.h"
 #include "common/vectorization_macros.h"
 #include "common/packet.h"
-#include "terminals/vector.h"
+#include "terminals/tensor.h"
 #include "VectorizationTest.h"
 
 #define DEBUG_SIMD_TEST

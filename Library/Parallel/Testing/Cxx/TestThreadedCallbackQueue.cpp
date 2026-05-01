@@ -15,7 +15,6 @@
 #include <thread>
 
 #include "ParallelTest.h"
-#include "logger/logger.h"
 #include "tools/threaded_callback_queue.h"
 
 namespace parallel
@@ -69,15 +68,9 @@ void RunThreads(int nthreadsBegin, int nthreadsEnd)
 //=============================================================================
 struct A
 {
-    A() { MEMORY_LOG_INFO("Constructor"); }
-    A(A&& other) noexcept : array(std::move(other.array)), val(other.val)
-    {
-        MEMORY_LOG_INFO("Move constructor");
-    }
-    A(const A& other) : array(other.array), val(other.val)
-    {
-        MEMORY_LOG_INFO("Copy constructor called.");
-    }
+    A() = default;
+    A(A&& other) noexcept : array(std::move(other.array)), val(other.val) {}
+    A(const A& other) : array(other.array), val(other.val) {}
     void f(A&, A&&) {}
     void const_f(A&, A&&) const {}
     void operator()(A&, A&&) { std::cout << array->name << std::endl; }
@@ -163,11 +156,8 @@ bool TestSharedFutures()
             std::unique_lock<std::mutex> lock(mutex);
             if (count++ < low)
             {
-                LOGGING_LOG_ERROR(
-                    "Task {} started too early, in {}th position instead of {}th.",
-                    s,
-                    count.load(),
-                    low + 1);
+                std::cerr << "Task " << s << " started too early, in " << count.load()
+                          << "th position instead of " << (low + 1) << "th.\n";
                 return false;
             }
             lock.unlock();
@@ -221,15 +211,12 @@ bool TestSharedFutures()
 
 PARALLELTEST(TestThreadedCallbackQueue, Test)
 {
-    MEMORY_LOG_INFO("Testing futures");
     bool retVal = parallel::TestSharedFutures();
 
     retVal &= parallel::TestFunctionTypeCompleteness();
 
-    MEMORY_LOG_INFO("Testing expanding from 2 to 8 threads");
     parallel::RunThreads(2, 8);
 
-    MEMORY_LOG_INFO("Testing shrinking from 8 to 2 threads");
     parallel::RunThreads(8, 2);
 }
 }  // namespace parallel

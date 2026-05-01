@@ -85,15 +85,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 endif()
 
 target_link_libraries(ParallelCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Parallel::Parallel)
-if(TARGET Logging::Logging)
-  target_link_libraries(ParallelCxxTests PRIVATE Logging::Logging)
-endif()
-if(TARGET Loguru::loguru)
-  target_link_libraries(ParallelCxxTests PRIVATE Loguru::loguru)
-endif()
-if(TARGET Fmt::fmt)
-  target_link_libraries(ParallelCxxTests PRIVATE Fmt::fmt)
-endif()
 
 set_target_properties(
   ParallelCxxTests PROPERTIES FOLDER "Tests" VS_DEBUGGER_WORKING_DIRECTORY

@@ -21,7 +21,7 @@
 //#include "common/constants.h"
 #include "common/vectorization_macros.h"
 #include "expressions/expressions.h"
-#include "terminals/vector.h"
+#include "terminals/tensor.h"
 
 namespace
 {

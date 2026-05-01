@@ -26,7 +26,7 @@
 
 #include "common/vectorization_macros.h"
 #include "terminals/tensor.h"
-#include "terminals/vector.h"
+#include "terminals/tensor.h"
 #include "VectorizationTest.h"
 
 namespace
@@ -42,12 +42,13 @@ void test_tensor()
 
     std::vector<T> v(n1 * n2 * n3);
 
-    vectorization::tensor<T> t1({n1, n2, n3});
+    using dims_t = typename vectorization::tensor<T>::dimensions_type;
+    vectorization::tensor<T> t1(dims_t{n1, n2, n3});
     t1 = 0.l;
 
-    vectorization::tensor<T> t2(v.data(), {n1, n2, n3});
+    vectorization::tensor<T> t2(v.data(), dims_t{n1, n2, n3});
 
-    vectorization::tensor<T> tMP((void*)v.data(), {n1, n2, n3});
+    vectorization::tensor<T> tMP((void*)v.data(), dims_t{n1, n2, n3});
 
     t2 = static_cast<T>(3.5);
 

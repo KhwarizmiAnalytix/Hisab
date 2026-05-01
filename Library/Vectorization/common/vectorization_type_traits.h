@@ -26,6 +26,9 @@
 #include "common/intrin.h"
 #include "common/packet.h"
 
+// ---------------------------------------------------------------------------
+// is_packet
+// ---------------------------------------------------------------------------
 namespace vectorization
 {
 
@@ -51,7 +54,6 @@ struct is_packet<scalar_type_simd_t<float>>
 };
 
 #if VECTORIZATION_HAS_AVX512
-
 template <typename value_t>
 using scalar_type_mask_t = typename packet<value_t>::array_mask_t;
 
@@ -70,6 +72,9 @@ struct is_packet<scalar_type_mask_t<float>>
 
 }  // namespace vectorization
 
+// ---------------------------------------------------------------------------
+// remove_cvref
+// ---------------------------------------------------------------------------
 namespace vectorization
 {
 template <typename T>
@@ -82,9 +87,11 @@ template <typename T>
 using remove_cvref_t = typename remove_cvref<T>::type;
 }  // namespace vectorization
 
+// ---------------------------------------------------------------------------
+// is_fundamental (extends std::is_fundamental with SIMD packet types)
+// ---------------------------------------------------------------------------
 namespace vectorization
 {
-//================================================================================================
 template <typename T>
 struct is_fundamental
 {
@@ -94,17 +101,28 @@ struct is_fundamental
 };
 }  // namespace vectorization
 
+// ---------------------------------------------------------------------------
+// Forward declarations
+//
+// tensor<T> is the sole container type.  vector<T> and matrix<T> are
+// transparent type aliases so that existing code continues to compile while
+// emitting a deprecation diagnostic.  All trait specialisations are written
+// once for tensor<T> and automatically cover the aliases.
+// ---------------------------------------------------------------------------
 namespace vectorization
 {
-template <typename value_t>
-class vector;
-
-template <typename value_t>
-class matrix;
 
 template <typename value_t>
 class tensor;
 
+// Deprecated aliases — prefer tensor<T> directly.
+template <typename value_t>
+using vector [[deprecated("use tensor<value_t> directly")]] = tensor<value_t>;
+
+template <typename value_t>
+using matrix [[deprecated("use tensor<value_t> directly")]] = tensor<value_t>;
+
+// Expression node types
 template <typename LHS, typename EVALUATOR>
 class unary_expression;
 
@@ -125,31 +143,19 @@ class matrix_vector_multiplication_expression;
 
 template <typename LHS, typename RHS>
 class vector_matrix_multiplication_expression;
+
 }  // namespace vectorization
 
+// ---------------------------------------------------------------------------
+// is_base_expression / is_pure_expression / is_expression
+// ---------------------------------------------------------------------------
 namespace vectorization
 {
-//================================================================================================
-/*!
- * \brief Traits indicating if the given value is a base expr.
- * \tparam T The value to test
- */
+
 template <typename T>
 struct is_base_expression
 {
     static constexpr bool value = false;
-};
-
-template <typename value_t>
-struct is_base_expression<vector<value_t>>
-{
-    static constexpr bool value = true;
-};
-
-template <typename value_t>
-struct is_base_expression<matrix<value_t>>
-{
-    static constexpr bool value = true;
 };
 
 template <typename value_t>
@@ -158,10 +164,6 @@ struct is_base_expression<tensor<value_t>>
     static constexpr bool value = true;
 };
 
-/*!
- * \brief Traits indicating if the given value is a base expr.
- * \tparam T The value to test
- */
 template <typename T>
 struct is_pure_expression
 {
@@ -215,16 +217,16 @@ struct is_expression
 {
     static constexpr bool value = (is_pure_expression<T>::value || is_base_expression<T>::value);
 };
+
 }  // namespace vectorization
 
+// ---------------------------------------------------------------------------
+// scalar_type — maps an expression type to its underlying scalar (float/double)
+// ---------------------------------------------------------------------------
 namespace vectorization
 {
-//================================================================================================
-/*!
- * \brief Traits to get the scalar value of an expr.
- * \tparam T The value to test
- */
-template <typename T, typename v, typename Dummy = void>
+
+template <typename T, typename V, typename Dummy = void>
 struct scalar_type
 {
 };
@@ -254,7 +256,6 @@ struct scalar_type<scalar_type_simd_t<float>, T>
 };
 
 #if VECTORIZATION_HAS_AVX512
-
 template <typename T>
 struct scalar_type<scalar_type_mask_t<double>, T>
 {
@@ -266,41 +267,20 @@ struct scalar_type<scalar_type_mask_t<float>, T>
 {
     using value = float;
 };
-
 #endif  // VECTORIZATION_HAS_AVX512
 
-template <typename value_t, typename T>
-struct scalar_type<vector<value_t>, T>
-{
-    using value = value_t;
-};
-
-template <typename T, typename value_t>
-struct scalar_type<T, vector<value_t>, typename std::enable_if_t<vectorization::is_fundamental<T>::value>>
-{
-    using value = value_t;
-};
-
-template <typename value_t, typename T>
-struct scalar_type<matrix<value_t>, T>
-{
-    using value = value_t;
-};
-
-template <typename T, typename value_t>
-struct scalar_type<T, matrix<value_t>, typename std::enable_if_t<vectorization::is_fundamental<T>::value>>
-{
-    using value = value_t;
-};
-
+// tensor<value_t> — covers former vector<T> and matrix<T> since they alias tensor
 template <typename value_t, typename T>
 struct scalar_type<tensor<value_t>, T>
 {
     using value = value_t;
 };
 
-template <typename value_t, typename T>
-struct scalar_type<T, tensor<value_t>, typename std::enable_if_t<vectorization::is_fundamental<T>::value>>
+template <typename T, typename value_t>
+struct scalar_type<
+    T,
+    tensor<value_t>,
+    typename std::enable_if_t<vectorization::is_fundamental<T>::value>>
 {
     using value = value_t;
 };
@@ -317,14 +297,17 @@ struct scalar_type<
     unary_expression<E, EVALUATOR>,
     typename std::enable_if_t<vectorization::is_fundamental<T>::value>>
 {
-    using value = typename scalar_type<vectorization::remove_cvref_t<E>, vectorization::remove_cvref_t<E>>::value;
+    using value =
+        typename scalar_type<vectorization::remove_cvref_t<E>,
+                             vectorization::remove_cvref_t<E>>::value;
 };
 
 template <typename LHS, typename RHS, typename EVALUATOR, typename T>
 struct scalar_type<binary_expression<LHS, RHS, EVALUATOR>, T>
 {
     using value =
-        typename scalar_type<vectorization::remove_cvref_t<LHS>, vectorization::remove_cvref_t<RHS>>::value;
+        typename scalar_type<vectorization::remove_cvref_t<LHS>,
+                             vectorization::remove_cvref_t<RHS>>::value;
 };
 
 template <typename T, typename LHS, typename RHS, typename EVALUATOR>
@@ -334,14 +317,16 @@ struct scalar_type<
     typename std::enable_if_t<vectorization::is_fundamental<T>::value>>
 {
     using value =
-        typename scalar_type<vectorization::remove_cvref_t<LHS>, vectorization::remove_cvref_t<RHS>>::value;
+        typename scalar_type<vectorization::remove_cvref_t<LHS>,
+                             vectorization::remove_cvref_t<RHS>>::value;
 };
 
 template <typename LHS, typename MHS, typename RHS, typename EVALUATOR, typename T>
 struct scalar_type<trinary_expression<LHS, MHS, RHS, EVALUATOR>, T>
 {
     using value =
-        typename scalar_type<vectorization::remove_cvref_t<MHS>, vectorization::remove_cvref_t<RHS>>::value;
+        typename scalar_type<vectorization::remove_cvref_t<MHS>,
+                             vectorization::remove_cvref_t<RHS>>::value;
 };
 
 template <typename T, typename LHS, typename MHS, typename RHS, typename EVALUATOR>
@@ -351,28 +336,32 @@ struct scalar_type<
     typename std::enable_if_t<vectorization::is_fundamental<T>::value>>
 {
     using value =
-        typename scalar_type<vectorization::remove_cvref_t<MHS>, vectorization::remove_cvref_t<RHS>>::value;
+        typename scalar_type<vectorization::remove_cvref_t<MHS>,
+                             vectorization::remove_cvref_t<RHS>>::value;
 };
+
 }  // namespace vectorization
 
+// ---------------------------------------------------------------------------
+// is_matrix_operation
+//
+// True for tensor<T> (covers all ranks — runtime rank dispatch happens inside
+// tensor::matrix_multiplication()).  Also true for expressions derived from
+// tensor (transpose, matrix-multiply chains).
+// ---------------------------------------------------------------------------
 namespace vectorization
 {
-//================================================================================================
-/*!
- * \brief Traits indicating if the given value is a matrix expr.
- * \tparam T The value to test
- */
+
 template <typename T>
 struct is_matrix_operation
 {
     static constexpr bool value = false;
 };
 
-template <typename value_t>
-struct is_matrix_operation<matrix<value_t>>
-{
-    static constexpr bool value = true;
-};
+// tensor<T> is NOT a matrix operation — tensor * tensor is element-wise.
+// Matrix multiply is performed explicitly via matmul(A, B) which creates
+// matrix_multiplication_expression.  is_matrix_operation remains false for
+// tensor so that all arithmetic operators on tensors are element-wise.
 
 template <typename T>
 struct is_matrix_operation<matrix_transpose_expression<T>>
@@ -387,11 +376,7 @@ struct is_matrix_operation<matrix_multiplication_expression<LHS, RHS>>
         is_matrix_operation<LHS>::value && is_matrix_operation<RHS>::value;
 };
 
-//================================================================================================
-/*!
- * \brief Traits indicating if the given value is a matrix evaluate.
- * \tparam T The value to test
- */
+// is_matrix_evalute — kept for expression system compatibility
 template <typename T>
 struct is_matrix_evalute
 {
@@ -409,15 +394,51 @@ struct is_matrix_evalute<vector_matrix_multiplication_expression<T1, T2>>
 {
     static constexpr bool value = true;
 };
+
+// is_matrix_compute — true for expression types that write their result into an
+// output container in a single call (evaluate(output)), rather than producing
+// one element at a time.  expressions_evaluator::run dispatches on this trait.
+// This is SEPARATE from is_matrix_operation: tensor<T> is not a matrix_operation
+// (so tensor*tensor is element-wise), but matrix_multiplication_expression and
+// matrix_transpose_expression always use the bulk-output evaluate protocol.
+template <typename T>
+struct is_matrix_compute
+{
+    static constexpr bool value = false;
+};
+
+template <typename LHS, typename RHS>
+struct is_matrix_compute<matrix_multiplication_expression<LHS, RHS>>
+{
+    static constexpr bool value = true;
+};
+
+template <typename T>
+struct is_matrix_compute<matrix_transpose_expression<T>>
+{
+    static constexpr bool value = true;
+};
+
+template <typename T1, typename T2>
+struct is_matrix_compute<matrix_vector_multiplication_expression<T1, T2>>
+{
+    static constexpr bool value = true;
+};
+
+template <typename T1, typename T2>
+struct is_matrix_compute<vector_matrix_multiplication_expression<T1, T2>>
+{
+    static constexpr bool value = true;
+};
+
 }  // namespace vectorization
 
+// ---------------------------------------------------------------------------
+// is_transpose_expression
+// ---------------------------------------------------------------------------
 namespace vectorization
 {
-//================================================================================================
-/*!
- * \brief Traits indicating if the given value is a transpose expr.
- * \tparam T The value to test
- */
+
 template <typename T>
 struct is_transpose_expression
 {
@@ -429,18 +450,24 @@ struct is_transpose_expression<matrix_transpose_expression<T>>
 {
     static constexpr bool value = true;
 };
+
 }  // namespace vectorization
 
+// ---------------------------------------------------------------------------
+// is_matrix / is_vector
+// Both are true for tensor<T> since a tensor can act as either.
+// ---------------------------------------------------------------------------
 namespace vectorization
 {
+
 template <typename M>
 struct is_matrix
 {
     static constexpr bool value = false;
 };
 
-template <typename M>
-struct is_matrix<matrix<M>>
+template <typename T>
+struct is_matrix<tensor<T>>
 {
     static constexpr bool value = true;
 };
@@ -451,9 +478,10 @@ struct is_vector
     static constexpr bool value = false;
 };
 
-template <typename M>
-struct is_vector<vector<M>>
+template <typename T>
+struct is_vector<tensor<T>>
 {
     static constexpr bool value = true;
 };
+
 }  // namespace vectorization

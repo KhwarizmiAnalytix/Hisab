@@ -465,7 +465,7 @@ private:
  * These macros provide shortcuts for the most commonly used severity levels.
  *
  * Examples:
- *     MEMORY_LOG_INFO("Application started");
+ *     LOGGING_LOG_INFO("Application started");
  *     LOGGING_LOG_WARNING("Low memory: {} MB remaining", free_mb);
  *     LOGGING_LOG_ERROR("Failed to open file: {}", filename);
  *     LOGGING_LOG_FATAL("Critical error: {}", error_msg);
@@ -476,7 +476,7 @@ private:
  * @param format_string Format string with {} placeholders
  * @param ... Optional arguments to format
  */
-#define MEMORY_LOG_INFO(format_string, ...) LOGGING_LOG(INFO, format_string, ##__VA_ARGS__)
+#define LOGGING_LOG_INFO(format_string, ...) LOGGING_LOG(INFO, format_string, ##__VA_ARGS__)
 
 /**
  * @brief Log an informational message (debug builds only).
@@ -484,7 +484,7 @@ private:
  * @param ... Optional arguments to format
  */
 #ifndef NDEBUG
-#define LOGGING_LOG_INFO_DEBUG(format_string, ...) MEMORY_LOG_INFO(format_string, ##__VA_ARGS__)
+#define LOGGING_LOG_INFO_DEBUG(format_string, ...) LOGGING_LOG_INFO(format_string, ##__VA_ARGS__)
 #else
 #define LOGGING_LOG_INFO_DEBUG(format_string, ...)
 #endif  // !NDEBUG

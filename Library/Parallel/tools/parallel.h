@@ -28,9 +28,6 @@
 
 #pragma once
 
-// Maximum number of backends
-#define PARALLEL_MAX_BACKENDS_NB 3
-
 namespace parallel
 {
 namespace detail

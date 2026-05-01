@@ -33,7 +33,7 @@ struct expressions_evaluator
     template <typename E, typename T>
     VECTORIZATION_FUNCTION_ATTRIBUTE static void run(E const& expr, T& rhs)
     {
-        if constexpr (is_matrix_operation<E>::value)
+        if constexpr (is_matrix_compute<E>::value)
         {
             expr.template evaluate<T>(rhs);
         }
@@ -70,7 +70,7 @@ struct expressions_evaluator
     template <typename E, typename T>
     VECTORIZATION_FUNCTION_ATTRIBUTE static void run(E&& expr, T& rhs)
     {
-        if constexpr (is_matrix_operation<E>::value)
+        if constexpr (is_matrix_compute<E>::value)
         {
             expr.template evaluate<T>(rhs);
         }

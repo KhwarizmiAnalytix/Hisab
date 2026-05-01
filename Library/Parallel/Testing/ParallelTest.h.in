@@ -33,7 +33,7 @@
 #include <gtest/gtest.h>
 #endif
 
-// Logging macros for tests
+// END_TEST() — no-op with GTest; standalone test main uses EXIT_SUCCESS
 #if PARALLEL_HAS_GTEST
 #define END_TEST()
 #else

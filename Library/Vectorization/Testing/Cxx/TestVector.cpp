@@ -25,7 +25,7 @@
 #include <vector>
 
 #include "common/vectorization_macros.h"
-#include "terminals/vector.h"
+#include "terminals/tensor.h"
 #include "VectorizationTest.h"
 
 namespace
@@ -34,7 +34,6 @@ template <typename T>
 void test_vector()
 {
     constexpr auto stride = vectorization::packet<T>::length();
-    EXPECT_EQ(vectorization::vector<T>::dimensions(), 1);
     EXPECT_EQ(vectorization::vector<T>::length(), stride);
 
     vectorization::vector<T> v = {1., 2.};

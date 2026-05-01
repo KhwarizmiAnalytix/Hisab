@@ -214,13 +214,13 @@ LOGGINGTEST(BackTrace, set_stack_trace_on_error)
 
 LOGGINGTEST(BackTrace, usage_in_logging)
 {
-    MEMORY_LOG_INFO("Error occurred at:\n{}", logging::back_trace::print(0, 5));
+    LOGGING_LOG_INFO("Error occurred at:\n{}", logging::back_trace::print(0, 5));
     END_TEST();
 }
 
 LOGGINGTEST(BackTrace, usage_in_compact_logging)
 {
     // Test that compact backtrace can be used in logging
-    MEMORY_LOG_INFO("Call chain: {}", logging::back_trace::compact(5));
+    LOGGING_LOG_INFO("Call chain: {}", logging::back_trace::compact(5));
     END_TEST();
 }
