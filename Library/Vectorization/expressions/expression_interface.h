@@ -50,20 +50,10 @@ public:
     {
     }
 
-    /*!
-     * \brief Copy construct a new unary expression
-     * \param e The expression from which to copy
-     */
-    unary_expression(unary_expression const& e) = default;
-
-    /*!
-     * \brief Move construct a new unary expression
-     * \param e The expression from which to move
-     */
-    VECTORIZATION_FUNCTION_ATTRIBUTE unary_expression(unary_expression&& e) noexcept
-        : lhs_(std::move(e.lhs_))
-    {
-    }
+    // Defaulted copy/move must carry __host__ __device__ for CUDA/HIP device
+    // code to be able to copy expression nodes (e.g. when capturing in a kernel).
+    VECTORIZATION_FUNCTION_ATTRIBUTE unary_expression(unary_expression const& e) = default;
+    VECTORIZATION_FUNCTION_ATTRIBUTE unary_expression(unary_expression&& e) noexcept = default;
 
     // Expressions are invariant
     VECTORIZATION_FUNCTION_ATTRIBUTE unary_expression& operator=(unary_expression const& e) = delete;
@@ -74,13 +64,6 @@ public:
     template <bool vectorize>
     VECTORIZATION_FUNCTION_ATTRIBUTE static auto evaluate(
         unary_expression const& expr, size_t index) noexcept
-    {
-        const auto rhs = expression_loader<rmv_lhs, vectorize>::evaluate(expr.rhs(), index);
-        return EVALUATOR::functor(rhs);
-    }
-
-    template <bool vectorize>
-    VECTORIZATION_FUNCTION_ATTRIBUTE static auto evaluate(unary_expression&& expr, size_t index) noexcept
     {
         const auto rhs = expression_loader<rmv_lhs, vectorize>::evaluate(expr.rhs(), index);
         return EVALUATOR::functor(rhs);
@@ -105,18 +88,12 @@ class binary_expression final
 public:
     VECTORIZATION_FUNCTION_ATTRIBUTE size_t size() const noexcept
     {
-        size_t ret = 0;
-
         if constexpr (vectorization::is_expression<rmv_rhs>::value)  // NOLINT
-        {
-            ret = rhs_.size();
-        }
+            return rhs_.size();
         else if constexpr (vectorization::is_expression<rmv_lhs>::value)  // NOLINT
-        {
-            ret = lhs_.size();
-        }
-
-        return ret;
+            return lhs_.size();
+        else
+            return 0;
     }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr size_t length()
@@ -128,16 +105,21 @@ public:
                 rmv_rhs::length() == rmv_lhs::length(), "expresions have different strides!");
             return rmv_rhs::length();
         }
+        else if constexpr (vectorization::is_expression<rmv_rhs>::value)
+        {
+            return rmv_rhs::length();
+        }
+        else if constexpr (vectorization::is_expression<rmv_lhs>::value)
+        {
+            return rmv_lhs::length();
+        }
         else
         {
-            if constexpr (vectorization::is_expression<rmv_rhs>::value)
-            {
-                return rmv_rhs::length();
-            }
-            else if constexpr (vectorization::is_expression<rmv_lhs>::value)
-            {
-                return rmv_lhs::length();
-            }
+            static_assert(
+                vectorization::is_expression<rmv_lhs>::value ||
+                    vectorization::is_expression<rmv_rhs>::value,
+                "binary_expression: neither operand is an expression");
+            return 0;  // unreachable; satisfies the compiler
         }
     }
 
@@ -152,20 +134,8 @@ public:
     {
     }
 
-    /*!
-     * \brief Copy construct a new binary expression
-     * \param e The expression from which to copy
-     */
-    binary_expression(binary_expression const& e) = default;
-
-    /*!
-     * \brief Move construct a new binary expression
-     * \param e The expression from which to move
-     */
-    VECTORIZATION_FUNCTION_ATTRIBUTE binary_expression(binary_expression&& e) noexcept
-        : lhs_(std::move(e.lhs_)), rhs_(std::move(e.rhs_))
-    {
-    }
+    VECTORIZATION_FUNCTION_ATTRIBUTE binary_expression(binary_expression const& e) = default;
+    VECTORIZATION_FUNCTION_ATTRIBUTE binary_expression(binary_expression&& e) noexcept = default;
 
     // Expressions are invariant
     VECTORIZATION_FUNCTION_ATTRIBUTE binary_expression& operator=(binary_expression const& e) = delete;
@@ -177,14 +147,6 @@ public:
     template <bool vectorize>
     VECTORIZATION_FUNCTION_ATTRIBUTE static auto evaluate(
         binary_expression const& expr, size_t index) noexcept
-    {
-        const auto lhs = expression_loader<rmv_lhs, vectorize>::evaluate(expr.lhs(), index);
-        const auto rhs = expression_loader<rmv_rhs, vectorize>::evaluate(expr.rhs(), index);
-        return EVALUATOR::functor(lhs, rhs);
-    }
-
-    template <bool vectorize>
-    VECTORIZATION_FUNCTION_ATTRIBUTE static auto evaluate(binary_expression&& expr, size_t index) noexcept
     {
         const auto lhs = expression_loader<rmv_lhs, vectorize>::evaluate(expr.lhs(), index);
         const auto rhs = expression_loader<rmv_rhs, vectorize>::evaluate(expr.rhs(), index);
@@ -218,6 +180,15 @@ public:
             return mhs_.size();
         else if constexpr (vectorization::is_expression<rmv_rhs>::value)
             return rhs_.size();
+        else
+        {
+            static_assert(
+                vectorization::is_expression<rmv_lhs>::value ||
+                    vectorization::is_expression<rmv_mhs>::value ||
+                    vectorization::is_expression<rmv_rhs>::value,
+                "trinary_expression: no operand is an expression");
+            return 0;  // unreachable; satisfies the compiler
+        }
     }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr size_t length()
@@ -228,6 +199,15 @@ public:
             return rmv_mhs::length();
         else if constexpr (vectorization::is_expression<rmv_rhs>::value)
             return rmv_rhs::length();
+        else
+        {
+            static_assert(
+                vectorization::is_expression<rmv_lhs>::value ||
+                    vectorization::is_expression<rmv_mhs>::value ||
+                    vectorization::is_expression<rmv_rhs>::value,
+                "trinary_expression: no operand is an expression");
+            return 0;  // unreachable; satisfies the compiler
+        }
     }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE trinary_expression(
@@ -242,17 +222,8 @@ public:
     {
     }
 
-    /*!
-     * \brief Copy construct a new trinary expression
-     * \param e The expression from which to copy
-     */
-    trinary_expression(trinary_expression const& e) = default;
-
-    /*!
-     * \brief Move construct a new trinary expression
-     * \param e The expression from which to move
-     */
-    trinary_expression(trinary_expression&& e) noexcept = default;
+    VECTORIZATION_FUNCTION_ATTRIBUTE trinary_expression(trinary_expression const& e) = default;
+    VECTORIZATION_FUNCTION_ATTRIBUTE trinary_expression(trinary_expression&& e) noexcept = default;
 
     // Expressions are invariant
     VECTORIZATION_FUNCTION_ATTRIBUTE trinary_expression& operator=(trinary_expression const& e) = delete;

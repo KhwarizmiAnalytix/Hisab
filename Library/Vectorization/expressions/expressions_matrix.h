@@ -38,8 +38,10 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE
     matrix_transpose_expression(MAT&& mat) noexcept : mat_(std::move(mat)) {}
 
+    VECTORIZATION_FUNCTION_ATTRIBUTE
     matrix_transpose_expression(matrix_transpose_expression const& expr) noexcept = default;
 
+    VECTORIZATION_FUNCTION_ATTRIBUTE
     matrix_transpose_expression(matrix_transpose_expression&& expr) noexcept = default;
 
     VECTORIZATION_FUNCTION_ATTRIBUTE const auto& mat() const { return mat_; }
@@ -154,10 +156,10 @@ public:
         validate();
     }
 
-    matrix_vector_multiplication_expression(
+    VECTORIZATION_FUNCTION_ATTRIBUTE matrix_vector_multiplication_expression(
         matrix_vector_multiplication_expression<LHS, RHS> const& expr) noexcept = default;
 
-    matrix_vector_multiplication_expression(
+    VECTORIZATION_FUNCTION_ATTRIBUTE matrix_vector_multiplication_expression(
         matrix_vector_multiplication_expression<LHS, RHS>&& expr) noexcept = default;
 
     VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr size_t length()
@@ -297,10 +299,10 @@ public:
         validate();
     }
 
-    vector_matrix_multiplication_expression(
+    VECTORIZATION_FUNCTION_ATTRIBUTE vector_matrix_multiplication_expression(
         vector_matrix_multiplication_expression<LHS, RHS> const& rhs) = default;
 
-    vector_matrix_multiplication_expression(
+    VECTORIZATION_FUNCTION_ATTRIBUTE vector_matrix_multiplication_expression(
         vector_matrix_multiplication_expression<LHS, RHS>&& rhs) = default;
 
     VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr size_t length()

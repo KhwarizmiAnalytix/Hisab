@@ -164,7 +164,7 @@ public:
     template <typename scalar_t>                                          \
     static void Vectorized_##op(benchmark::State& state)                  \
     {                                                                     \
-        const size_t n = (2 << 12) + 3;                                   \
+        const size_t n = (2 << 16) + 3;                                   \
                                                                           \
         vectorization::vector<scalar_t> a(n);                             \
         vectorization::vector<scalar_t> b(n);                             \
@@ -187,7 +187,7 @@ public:
     template <typename scalar_t>                                          \
     static void Scalar_##op(benchmark::State& state)                      \
     {                                                                     \
-        const size_t n = (2 << 12) + 3;                                   \
+        const size_t n =  (2 << 16) + 3;                                    \
                                                                           \
         vectorization::vector<scalar_t> a(n);                             \
         vectorization::vector<scalar_t> b(n);                             \

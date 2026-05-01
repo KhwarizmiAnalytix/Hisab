@@ -683,6 +683,7 @@ class QuarismaFlags:
             "numa": "MEMORY_ENABLE_NUMA",
             "memkind": "MEMORY_ENABLE_MEMKIND",
             "vectorisation": "VECTORIZATION_TYPE",
+            "packet_size": "VECTORIZATION_PACKET_SIZE",
             "static": "BUILD_SHARED_LIBS",
             "test": "BUILD_TESTING",
             "logging_backend": "LOGGING_BACKEND",
@@ -812,6 +813,19 @@ class QuarismaFlags:
             elif arg in vectorisation_list:
                 self.__value["vectorisation"] = arg
                 self.builder_suffix += f"_{arg}"
+            elif re.match(r"^psize([1-9][0-9]*)$", arg.lower()):
+                n = int(
+                    re.match(r"^psize([1-9][0-9]*)$", arg.lower()).group(1)
+                )
+                if n > 256:
+                    print_status(
+                        "packet size must be between 1 and 256 (inclusive)",
+                        "ERROR",
+                    )
+                    sys.exit(1)
+                self.__value["packet_size"] = n
+                self.builder_suffix += f"_psize{n}"
+                print_status(f"Setting VECTORIZATION_PACKET_SIZE to {n}", "INFO")
             elif arg.startswith("profiler."):
                 backend_key = arg.split(".", 1)[1].lower()
                 if backend_key in profiler_choices:
@@ -1704,6 +1718,22 @@ def parse_args(args):
                     "ERROR",
                 )
                 sys.exit(1)
+        elif arg.startswith("--packet-size="):
+            size_part = arg.split("=", 1)[1].strip()
+            if not size_part.isdigit() or int(size_part) < 1:
+                print_status(
+                    f"Invalid --packet-size value: {size_part!r}. Expected a positive integer.",
+                    "ERROR",
+                )
+                sys.exit(1)
+            if int(size_part) > 256:
+                print_status(
+                    "packet size must be between 1 and 256 (inclusive)",
+                    "ERROR",
+                )
+                sys.exit(1)
+            processed_args.append(f"psize{size_part}")
+            print_status(f"Packet size set to {size_part}", "INFO")
         elif arg.startswith("--parallel."):
             # Parse SMP backend selection flag (--parallel.std, --parallel.openmp, --parallel.tbb)
             # This is the first stage of argument parsing that converts command-line flags
@@ -1790,6 +1820,9 @@ def main():
         print(
             "  fix                        Enable clang-tidy fix-errors and fix options"
         )
+        print("\nVectorization packet size:")
+        print("  --packet-size=N    SIMD lane count (CMake VECTORIZATION_PACKET_SIZE; default 4)")
+        print("  psizeN             Same as --packet-size=N (e.g. psize8)")
         print("\nLogging backend flags:")
         print("  --logging=BACKEND  Set logging backend")
         print("                             Options: NATIVE, LOGURU, GLOG")

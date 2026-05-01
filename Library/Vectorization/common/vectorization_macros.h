@@ -37,16 +37,30 @@
 #endif
 
 //------------------------------------------------------------------------
+// VECTORIZATION_SIMD_RETURN_TYPE marks packet<> static methods.
+// The CUDA_FUNCTION_TYPE qualifier makes them __host__ __device__ when
+// compiling with NVCC/HIPCC so the methods are callable from both host
+// and device contexts (needed when the packet type is instantiated inside
+// a .cu translation unit even if the SIMD path is inactive on the device).
 #ifdef NDEBUG
-#define VECTORIZATION_SIMD_RETURN_TYPE VECTORIZATION_FORCE_INLINE static void VECTORIZATION_VECTORCALL
+#define VECTORIZATION_SIMD_RETURN_TYPE \
+    VECTORIZATION_FORCE_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static void VECTORIZATION_VECTORCALL
 #else
-#define VECTORIZATION_SIMD_RETURN_TYPE static void
+#define VECTORIZATION_SIMD_RETURN_TYPE VECTORIZATION_CUDA_FUNCTION_TYPE static void
 #endif
 
 #if defined(__CUDACC__) || defined(__HIPCC__)
 #define VECTORIZATION_CUDA_FUNCTION_TYPE __host__ __device__
 #else
 #define VECTORIZATION_CUDA_FUNCTION_TYPE
+#endif
+
+// True when compiling the device-side pass (GPU kernel body).
+// Safe to use inside __host__ __device__ functions to select device-only paths.
+#if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)
+#define VECTORIZATION_ON_GPU_DEVICE 1
+#else
+#define VECTORIZATION_ON_GPU_DEVICE 0
 #endif
 
 #ifdef NDEBUG

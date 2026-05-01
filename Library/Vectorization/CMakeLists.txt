@@ -20,7 +20,7 @@ cmake_minimum_required(VERSION 3.16)
 # options (VECTORIZATION_TYPE, tooling) and backend selectors
 #
 # include(utils) runs compiler feature checks (SIMD flags, exception_ptr); results are published to
-# CACHE for Core (QUARISMA_VECTORIZATION_COMPILER_FLAGS, PROJECT_*). VECTORIZATION_TYPE drives
+# CACHE for Core (VECTORIZATION_COMPILER_FLAGS, PROJECT_*). VECTORIZATION_TYPE drives
 # backend source filters and VECTORIZATION_HAS_* one-to-one.
 # =============================================================================
 set(VECTORIZATION_TYPE "avx2"
@@ -31,6 +31,23 @@ if(NOT VECTORIZATION_TYPE MATCHES "^(no|sse|avx|avx2|avx512)$")
   message(
     FATAL_ERROR
       "VECTORIZATION_TYPE must be one of: no, sse, avx, avx2, avx512 (got '${VECTORIZATION_TYPE}')"
+  )
+endif()
+
+set(VECTORIZATION_PACKET_SIZE "4"
+    CACHE STRING
+        "SIMD packet lane count (vectorization::packet_size<T>::value); must match your ISA and kernels"
+)
+if(NOT VECTORIZATION_PACKET_SIZE MATCHES "^[1-9][0-9]*$")
+  message(
+    FATAL_ERROR
+      "VECTORIZATION_PACKET_SIZE must be a positive decimal integer (got '${VECTORIZATION_PACKET_SIZE}')"
+  )
+endif()
+if(VECTORIZATION_PACKET_SIZE GREATER 256)
+  message(
+    FATAL_ERROR
+      "VECTORIZATION_PACKET_SIZE must be at most 256 (got '${VECTORIZATION_PACKET_SIZE}')"
   )
 endif()
 
@@ -160,7 +177,7 @@ foreach(_simd IN ITEMS SSE AVX AVX2 AVX512)
     set(PROJECT_${_simd} 0 CACHE INTERNAL "Quarisma: SIMD (Vectorization utils)" FORCE)
   endif()
 endforeach()
-set(QUARISMA_VECTORIZATION_COMPILER_FLAGS "${VECTORIZATION_COMPILER_FLAGS}"
+set(VECTORIZATION_COMPILER_FLAGS "${VECTORIZATION_COMPILER_FLAGS}"
     CACHE INTERNAL "Quarisma: SIMD flags from Vectorization utils" FORCE
 )
 
@@ -242,6 +259,10 @@ if(VECTORIZATION_TYPE MATCHES "^(sse|avx|avx2|avx512)$")
 else()
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_VECTORIZED=0)
 endif()
+
+list(APPEND VECTORIZATION_COMPILE_DEFINITIONS
+     VECTORIZATION_PACKET_SIZE=${VECTORIZATION_PACKET_SIZE}
+)
 
 set(VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS "")
 list(APPEND VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS ${VECTORIZATION_COMPILE_DEFINITIONS})
@@ -372,8 +393,6 @@ if(VECTORIZATION_DEPENDENCY_INCLUDE_DIRS)
   message(STATUS "Vectorization: extra include dirs: ${VECTORIZATION_DEPENDENCY_INCLUDE_DIRS}")
 endif()
 
-# Link Logging when Vectorization needs LOGGING_* (vectorization_macros.h includes
-# util/logging_exception.h explicitly).
 if(_vec_has_logging)
   target_link_libraries(Vectorization PUBLIC Logging::Logging)
 endif()
@@ -443,6 +462,7 @@ endif()
 message("")
 message("******** Vectorization module (CMake flags) ********")
 message("  Vectorization type   : ${VECTORIZATION_TYPE}")
+message("  Packet size          : ${VECTORIZATION_PACKET_SIZE}")
 message("  Svml                 : ${VECTORIZATION_ENABLE_SVML}")
 message("  Memory (HAS)         : ${_vec_has_memory}")
 message("  Logging (HAS)        : ${_vec_has_logging}")

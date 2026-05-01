@@ -160,17 +160,18 @@ struct expressions_evaluator
 namespace vectorization
 {
 //================================================================================================
+// accumulate: returns value_t (not hardcoded double) to avoid implicit widening
+// for float expressions.
 template <typename EXPR>
-VECTORIZATION_FUNCTION_ATTRIBUTE double accumulate(EXPR&& expression) noexcept
+VECTORIZATION_FUNCTION_ATTRIBUTE auto accumulate(EXPR&& expression) noexcept
 {
-    using E = vectorization::remove_cvref_t<EXPR>;
-
-    double sum = 0;
-    size_t i   = 0;
-
-#if VECTORIZATION_VECTORIZED
+    using E       = vectorization::remove_cvref_t<EXPR>;
     using value_t = typename vectorization::scalar_type<E, E>::value;
 
+    value_t sum = 0;
+    size_t  i   = 0;
+
+#if VECTORIZATION_VECTORIZED
     constexpr auto length    = E::length();
     size_t         loop_peel = length * (expression.size() / length);
 
@@ -228,7 +229,7 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto hmin(EXPR&& expression) noexcept
 #endif
     for (size_t size = expression.size(); i < size; i++)
         ret = std::fmin(
-            ret, vectorization::expression_loader<E, false>::evaluate(static_cast<E&>(expression), i));
+            ret, vectorization::expression_loader<E, false>::evaluate(static_cast<E const&>(expression), i));
 
     return ret;
 }
@@ -240,8 +241,10 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto hmax(EXPR&& expression) noexcept
     using E       = vectorization::remove_cvref_t<EXPR>;
     using value_t = typename vectorization::scalar_type<E, E>::value;
 
-    auto   ret = std::numeric_limits<value_t>::min();
-    size_t i   = 0;
+    // Use -max(), not min(): for floats std::numeric_limits<float>::min() is the
+    // smallest *positive* value (~1.2e-38), not the most negative one.
+    value_t ret = -std::numeric_limits<value_t>::max();
+    size_t  i   = 0;
 
 #if VECTORIZATION_VECTORIZED
     constexpr auto length    = E::length();
@@ -269,4 +272,3 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto hmax(EXPR&& expression) noexcept
     return ret;
 }
 }  // namespace vectorization
-

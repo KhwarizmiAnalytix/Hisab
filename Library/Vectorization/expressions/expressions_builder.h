@@ -233,7 +233,15 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto operator*(LHS&& lhs, RHS&& rhs) noexcept
     else if constexpr (
         !vectorization::is_matrix_operation<rmv_lhs>::value && vectorization::is_matrix_operation<rmv_rhs>::value)
     {
-        return vectorization::vector_matrix_multiplication_expression<rmv_lhs, rmv_rhs>(lhs, rhs);
+        if constexpr (std::is_fundamental<rmv_lhs>::value)
+        {
+            return vectorization::binary_expression<rmv_lhs, rmv_rhs, vectorization::MACRO_EVALUATOR_SUFIX(mul)>(
+                lhs, rhs);
+        }
+        else
+        {
+            return vectorization::vector_matrix_multiplication_expression<rmv_lhs, rmv_rhs>(lhs, rhs);
+        }
     }
     else if constexpr (
         vectorization::is_matrix_operation<rmv_lhs>::value && vectorization::is_matrix_operation<rmv_rhs>::value)

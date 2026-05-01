@@ -46,8 +46,11 @@ public:
 
                 auto const* ptr = &expr.data()[index];
 
-                packet<value_t>::prefetch(ptr);
-
+                // Prefetch is a CPU-only hint; it must look ahead, not at the
+                // address about to be loaded (that data is already in flight).
+#if !VECTORIZATION_ON_GPU_DEVICE
+                packet<value_t>::prefetch(ptr + packet_t::length() * 8);
+#endif
                 packet<value_t>::loadu(ptr, t);
 
                 return t;
@@ -66,8 +69,5 @@ public:
             return expr;
         }
     }
-
-private:
-    rmv_lhs lhs_;
 };
 }  // namespace vectorization

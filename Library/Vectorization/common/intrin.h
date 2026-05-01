@@ -64,6 +64,6 @@ namespace vectorization
 template <typename value_t>
 struct packet_size
 {
-    static constexpr uint32_t value = 4;
+    static constexpr uint32_t value = VECTORIZATION_PACKET_SIZE;
 };
 }  // namespace vectorization
