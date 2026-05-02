@@ -168,7 +168,6 @@ include(cache) # Configures per-target compiler cache launcher
 
 if(PROFILER_ENABLE_SANITIZER)
   include(sanitize)
-  quarisma_configure_sanitizer(PROFILER)
 endif()
 if(PROFILER_ENABLE_SPELL)
   include(spell)
@@ -381,6 +380,9 @@ endif()
 
 # --- Target definition ---
 add_library(Profiler ${profiler_sources} ${profiler_headers})
+if(PROFILER_ENABLE_SANITIZER)
+  quarisma_configure_sanitizer(PROFILER)
+endif()
 quarisma_find_linker(${PROFILER_LINKER_CHOICE} Profiler)
 quarisma_target_apply_cache(Profiler PROFILER_ENABLE_CACHE PROFILER_CACHE_BACKEND)
 quarisma_target_optional_icecc(Profiler PROFILER_ENABLE_ICECC)

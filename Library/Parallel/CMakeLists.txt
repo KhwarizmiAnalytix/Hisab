@@ -115,7 +115,6 @@ include(openmp) # Finds/configures OpenMP when PARALLEL_ENABLE_OPENMP=ON
 include(tbb_multithreading) # Finds/builds Intel TBB when PARALLEL_ENABLE_TBB=ON
 if(PARALLEL_ENABLE_SANITIZER)
   include(sanitize)
-  quarisma_configure_sanitizer(PARALLEL)
 endif()
 if(PARALLEL_ENABLE_SPELL)
   include(spell)
@@ -226,6 +225,9 @@ endif()
 
 # --- Target definition ---
 add_library(Parallel ${parallel_sources} ${parallel_headers})
+if(PARALLEL_ENABLE_SANITIZER)
+  quarisma_configure_sanitizer(PARALLEL)
+endif()
 quarisma_find_linker(${PARALLEL_LINKER_CHOICE} Parallel)
 quarisma_target_apply_cache(Parallel PARALLEL_ENABLE_CACHE PARALLEL_CACHE_BACKEND)
 quarisma_target_optional_icecc(Parallel PARALLEL_ENABLE_ICECC)

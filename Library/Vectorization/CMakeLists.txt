@@ -191,7 +191,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
 # =============================================================================
 if(VECTORIZATION_ENABLE_SANITIZER)
   include(sanitize)
-  quarisma_configure_sanitizer(VECTORIZATION)
 endif()
 if(VECTORIZATION_ENABLE_SPELL)
   include(spell)
@@ -310,6 +309,9 @@ endif()
 # definition
 # =============================================================================
 add_library(Vectorization ${sources} ${headers} ${templates})
+if(VECTORIZATION_ENABLE_SANITIZER)
+  quarisma_configure_sanitizer(VECTORIZATION)
+endif()
 quarisma_find_linker(${VECTORIZATION_LINKER_CHOICE} Vectorization)
 quarisma_target_apply_cache(Vectorization VECTORIZATION_ENABLE_CACHE VECTORIZATION_CACHE_BACKEND)
 quarisma_target_optional_icecc(Vectorization VECTORIZATION_ENABLE_ICECC)

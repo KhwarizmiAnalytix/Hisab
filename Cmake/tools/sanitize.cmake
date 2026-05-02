@@ -35,7 +35,11 @@ function(quarisma_configure_sanitizer module_name)
   endif()
 
   string(TOLOWER "${module_name}" _mod_lower)
-  set(_build_target "${_mod_lower}build")
+  string(SUBSTRING "${_mod_lower}" 0 1 _first_char)
+  string(TOUPPER "${_first_char}" _first_char)
+  string(SUBSTRING "${_mod_lower}" 1 -1 _rest_chars)
+  set(_target_name "${_first_char}${_rest_chars}")
+
   set(_san_type "${${module_name}_SANITIZER_TYPE}")
 
   message(STATUS "${module_name}: sanitizer enabled (${_san_type})")
@@ -69,6 +73,6 @@ function(quarisma_configure_sanitizer module_name)
     list(APPEND _san_args "SHELL:-fsanitize-blacklist=${PROJECT_BINARY_DIR}/sanitizer_ignore.txt")
   endif()
 
-  target_compile_options(${_build_target} INTERFACE "$<BUILD_INTERFACE:${_san_args}>")
-  target_link_options(${_build_target} INTERFACE "$<BUILD_INTERFACE:-fsanitize=${_san_type}>")
+  target_compile_options(${_target_name} PRIVATE ${_san_args})
+  target_link_options(${_target_name} PRIVATE "-fsanitize=${_san_type}")
 endfunction()

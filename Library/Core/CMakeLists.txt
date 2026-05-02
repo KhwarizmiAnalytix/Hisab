@@ -218,7 +218,6 @@ include(CMakeDependentOption)
 include(cache) # Configures per-target compiler cache launcher
 if(CORE_ENABLE_SANITIZER)
   include(sanitize)
-  quarisma_configure_sanitizer(CORE)
 endif()
 if(CORE_ENABLE_SPELL)
   include(spell)
@@ -439,6 +438,9 @@ endif()
 # Target definition
 # =============================================================================
 add_library(Core ${sources} ${headers} ${templates})
+if(CORE_ENABLE_SANITIZER)
+  quarisma_configure_sanitizer(CORE)
+endif()
 quarisma_find_linker(${CORE_LINKER_CHOICE} Core)
 quarisma_target_apply_cache(Core CORE_ENABLE_CACHE CORE_CACHE_BACKEND)
 quarisma_target_optional_icecc(Core CORE_ENABLE_ICECC)
