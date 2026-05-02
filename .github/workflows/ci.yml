@@ -384,10 +384,9 @@ jobs:
           -DCMAKE_CXX_STANDARD=${{ matrix.cxx_std }} \
           -DLOGGING_BACKEND=${{ matrix.logging_backend }} \
           -DBUILD_TESTING=ON \
-          -DQUARISMA_ENABLE_GTEST=ON \
-          -DQUARISMA_ENABLE_TBB=${{ matrix.tbb_enabled }} \
-          -DMEMOY_ENABLE_CUDA=${{ matrix.cuda_enabled }} \
-          -DQUARISMA_ENABLE_LTO=OFF
+          -DPARALLEL_ENABLE_TBB=${{ matrix.tbb_enabled }} \
+          -DMEMORY_ENABLE_TBB=${{ matrix.tbb_enabled }} \
+          -DMEMORY_ENABLE_CUDA=${{ matrix.cuda_enabled }}
 
         # Build
         cmake --build "$BUILD_DIR" -j 2
@@ -418,10 +417,9 @@ jobs:
           -DCMAKE_CXX_STANDARD=${{ matrix.cxx_std }} `
           -DLOGGING_BACKEND=${{ matrix.logging_backend }} `
           -DBUILD_TESTING=ON `
-          -DQUARISMA_ENABLE_GTEST=ON `
-          -DQUARISMA_ENABLE_TBB=${{ matrix.tbb_enabled }} `
-          -DMEMOY_ENABLE_CUDA=${{ matrix.cuda_enabled }} `
-          -DQUARISMA_ENABLE_LTO=OFF
+          -DPARALLEL_ENABLE_TBB=${{ matrix.tbb_enabled }} `
+          -DMEMORY_ENABLE_TBB=${{ matrix.tbb_enabled }} `
+          -DMEMORY_ENABLE_CUDA=${{ matrix.cuda_enabled }}
 
         # Build
         cmake --build "$buildDir" -j 2
@@ -596,11 +594,15 @@ jobs:
           -DCMAKE_CXX_STANDARD=17 \
           -DLOGGING_BACKEND=LOGURU \
           -DBUILD_TESTING=ON \
-          -DQUARISMA_ENABLE_GTEST=ON \
-          -DQUARISMA_ENABLE_BENCHMARK=OFF \
-          -DQUARISMA_ENABLE_TBB=ON \
-          -DMEMOY_ENABLE_CUDA=OFF \
-          -DQUARISMA_ENABLE_LTO=OFF
+          -DCORE_ENABLE_BENCHMARK=OFF \
+          -DMEMORY_ENABLE_BENCHMARK=OFF \
+          -DLOGGING_ENABLE_BENCHMARK=OFF \
+          -DVECTORIZATION_ENABLE_BENCHMARK=OFF \
+          -DPARALLEL_ENABLE_BENCHMARK=OFF \
+          -DPROFILER_ENABLE_BENCHMARK=OFF \
+          -DPARALLEL_ENABLE_TBB=ON \
+          -DMEMORY_ENABLE_TBB=ON \
+          -DMEMORY_ENABLE_CUDA=OFF
 
     # ===== Build and Test TBB Functionality =====
     - name: Build
@@ -751,13 +753,22 @@ jobs:
           -DCMAKE_CXX_COMPILER=clang++ \
           -DCMAKE_CXX_STANDARD=17 \
           -DLOGGING_BACKEND=NATIVE \
-          -DQUARISMA_ENABLE_SANITIZER=ON \
-          -DQUARISMA_SANITIZER_TYPE=${{ matrix.sanitizer }} \
+          -DCORE_ENABLE_SANITIZER=ON \
+          -DCORE_SANITIZER_TYPE=${{ matrix.sanitizer }} \
+          -DMEMORY_ENABLE_SANITIZER=ON \
+          -DMEMORY_SANITIZER_TYPE=${{ matrix.sanitizer }} \
+          -DLOGGING_ENABLE_SANITIZER=ON \
+          -DLOGGING_SANITIZER_TYPE=${{ matrix.sanitizer }} \
+          -DVECTORIZATION_ENABLE_SANITIZER=ON \
+          -DVECTORIZATION_SANITIZER_TYPE=${{ matrix.sanitizer }} \
+          -DPARALLEL_ENABLE_SANITIZER=ON \
+          -DPARALLEL_SANITIZER_TYPE=${{ matrix.sanitizer }} \
+          -DPROFILER_ENABLE_SANITIZER=ON \
+          -DPROFILER_SANITIZER_TYPE=${{ matrix.sanitizer }} \
           -DBUILD_TESTING=ON \
-          -DQUARISMA_ENABLE_GTEST=ON \
-          -DQUARISMA_ENABLE_LTO=OFF \
-          -DQUARISMA_ENABLE_TBB=ON \
-          -DMEMOY_ENABLE_CUDA=OFF
+          -DPARALLEL_ENABLE_TBB=ON \
+          -DMEMORY_ENABLE_TBB=ON \
+          -DMEMORY_ENABLE_CUDA=OFF
 
     - name: Build
       run: cmake --build build -j 2
@@ -902,11 +913,15 @@ jobs:
           -DCMAKE_CXX_STANDARD=17 \
           -DQUARISMA_ENABLE_EXTERNAL=${{ matrix.external }} \
           -DBUILD_TESTING=ON \
-          -DQUARISMA_ENABLE_GTEST=ON \
-          -DQUARISMA_ENABLE_BENCHMARK=OFF \
-          -DQUARISMA_ENABLE_TBB=ON \
-          -DMEMOY_ENABLE_CUDA=OFF \
-          -DQUARISMA_ENABLE_LTO=OFF \
+          -DCORE_ENABLE_BENCHMARK=OFF \
+          -DMEMORY_ENABLE_BENCHMARK=OFF \
+          -DLOGGING_ENABLE_BENCHMARK=OFF \
+          -DVECTORIZATION_ENABLE_BENCHMARK=OFF \
+          -DPARALLEL_ENABLE_BENCHMARK=OFF \
+          -DPROFILER_ENABLE_BENCHMARK=OFF \
+          -DPARALLEL_ENABLE_TBB=ON \
+          -DMEMORY_ENABLE_TBB=ON \
+          -DMEMORY_ENABLE_CUDA=OFF \
           ${{ matrix.extra_cmake_flags }}
 
     - name: Build
@@ -986,10 +1001,7 @@ jobs:
           -DCMAKE_C_FLAGS="${{ matrix.opt_level }}" \
           -DCMAKE_CXX_FLAGS="${{ matrix.opt_level }}" \
           -DLOGGING_BACKEND=LOGURU \
-          -DBUILD_TESTING=ON \
-          -DQUARISMA_ENABLE_GTEST=ON \
-          -DQUARISMA_ENABLE_LTO=OFF \
-          -DQUARISMA_ENABLE_TBB=OFF
+          -DBUILD_TESTING=ON
 
     - name: Build
       run: cmake --build build -j 2
@@ -1051,9 +1063,14 @@ jobs:
           -DCMAKE_CXX_COMPILER=clang++ \
           -DLOGGING_BACKEND=LOGURU \
           -DBUILD_TESTING=ON \
-          -DQUARISMA_ENABLE_GTEST=ON \
-          -DQUARISMA_ENABLE_LTO=${{ matrix.lto_enabled }} \
-          -DQUARISMA_ENABLE_TBB=ON
+          -DCORE_ENABLE_LTO=${{ matrix.lto_enabled }} \
+          -DMEMORY_ENABLE_LTO=${{ matrix.lto_enabled }} \
+          -DLOGGING_ENABLE_LTO=${{ matrix.lto_enabled }} \
+          -DVECTORIZATION_ENABLE_LTO=${{ matrix.lto_enabled }} \
+          -DPARALLEL_ENABLE_LTO=${{ matrix.lto_enabled }} \
+          -DPROFILER_ENABLE_LTO=${{ matrix.lto_enabled }} \
+          -DPARALLEL_ENABLE_TBB=ON \
+          -DMEMORY_ENABLE_TBB=ON
 
     - name: Build
       run: cmake --build build -j 2
@@ -1112,9 +1129,20 @@ jobs:
           -DCMAKE_CXX_COMPILER=clang++ \
           -DLOGGING_BACKEND=LOGURU \
           -DBUILD_TESTING=ON \
-          -DQUARISMA_ENABLE_BENCHMARK=OFF \
-          -DQUARISMA_ENABLE_LTO=ON \
-          -DQUARISMA_ENABLE_TBB=ON
+          -DCORE_ENABLE_BENCHMARK=OFF \
+          -DMEMORY_ENABLE_BENCHMARK=OFF \
+          -DLOGGING_ENABLE_BENCHMARK=OFF \
+          -DVECTORIZATION_ENABLE_BENCHMARK=OFF \
+          -DPARALLEL_ENABLE_BENCHMARK=OFF \
+          -DPROFILER_ENABLE_BENCHMARK=OFF \
+          -DCORE_ENABLE_LTO=ON \
+          -DMEMORY_ENABLE_LTO=ON \
+          -DLOGGING_ENABLE_LTO=ON \
+          -DVECTORIZATION_ENABLE_LTO=ON \
+          -DPARALLEL_ENABLE_LTO=ON \
+          -DPROFILER_ENABLE_LTO=ON \
+          -DPARALLEL_ENABLE_TBB=ON \
+          -DMEMORY_ENABLE_TBB=ON
 
     - name: Build
       run: cmake --build build -j 2
@@ -1217,11 +1245,12 @@ jobs:
           -DCMAKE_CXX_COMPILER=clang++ \
           -DLOGGING_BACKEND=LOGURU \
           -DBUILD_TESTING=ON \
-          -DQUARISMA_ENABLE_BENCHMARK=OFF \
-          -DQUARISMA_ENABLE_LTO=OFF \
-          -DBUILD_TESTING=ON \
-          -DQUARISMA_ENABLE_GTEST=ON \
-          -DQUARISMA_ENABLE_TBB=OFF
+          -DCORE_ENABLE_BENCHMARK=OFF \
+          -DMEMORY_ENABLE_BENCHMARK=OFF \
+          -DLOGGING_ENABLE_BENCHMARK=OFF \
+          -DVECTORIZATION_ENABLE_BENCHMARK=OFF \
+          -DPARALLEL_ENABLE_BENCHMARK=OFF \
+          -DPROFILER_ENABLE_BENCHMARK=OFF
 
     # ===== Build and Test (Baseline - No Sccache) =====
     - name: Record build start time (Baseline)
@@ -1376,11 +1405,13 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_C_COMPILER=clang \
           -DCMAKE_CXX_COMPILER=clang++ \
-          -DQUARISMA_ENABLE_BENCHMARK=OFF \
-          -DQUARISMA_ENABLE_LTO=OFF \
-          -DBUILD_TESTING=ON \
-          -DQUARISMA_ENABLE_GTEST=ON \
-          -DQUARISMA_ENABLE_TBB=OFF
+          -DCORE_ENABLE_BENCHMARK=OFF \
+          -DMEMORY_ENABLE_BENCHMARK=OFF \
+          -DLOGGING_ENABLE_BENCHMARK=OFF \
+          -DVECTORIZATION_ENABLE_BENCHMARK=OFF \
+          -DPARALLEL_ENABLE_BENCHMARK=OFF \
+          -DPROFILER_ENABLE_BENCHMARK=OFF \
+          -DBUILD_TESTING=ON
 
     - name: Configure CMake (Windows - With Sccache)
       if: runner.os == 'Windows'
@@ -1397,11 +1428,13 @@ jobs:
           -DCMAKE_CXX_STANDARD=${{ matrix.cxx_std }} `
           -DLOGGING_BACKEND=${{ matrix.logging_backend }} `
           -DBUILD_TESTING=ON `
-          -DQUARISMA_ENABLE_GTEST=ON `
-          -DQUARISMA_ENABLE_BENCHMARK=OFF `
-          -DQUARISMA_ENABLE_LTO=OFF `
-          -DQUARISMA_ENABLE_TBB=OFF `
-          -DMEMOY_ENABLE_CUDA=${{ matrix.cuda_enabled }}
+          -DCORE_ENABLE_BENCHMARK=OFF `
+          -DMEMORY_ENABLE_BENCHMARK=OFF `
+          -DLOGGING_ENABLE_BENCHMARK=OFF `
+          -DVECTORIZATION_ENABLE_BENCHMARK=OFF `
+          -DPARALLEL_ENABLE_BENCHMARK=OFF `
+          -DPROFILER_ENABLE_BENCHMARK=OFF `
+          -DMEMORY_ENABLE_CUDA=${{ matrix.cuda_enabled }}
 
     # ===== Build and Test (With Sccache) =====
     - name: Record build start time (Sccache)
@@ -1499,11 +1532,13 @@ jobs:
           -DCMAKE_CXX_STANDARD=17 \
           -DLOGGING_BACKEND=NATIVE \
           -DBUILD_TESTING=ON \
-          -DQUARISMA_ENABLE_GTEST=ON \
-          -DQUARISMA_ENABLE_COVERAGE=ON \
-          -DQUARISMA_ENABLE_TBB=OFF \
-          -DMEMOY_ENABLE_CUDA=OFF \
-          -DQUARISMA_ENABLE_LTO=OFF
+          -DCORE_ENABLE_COVERAGE=ON \
+          -DMEMORY_ENABLE_COVERAGE=ON \
+          -DLOGGING_ENABLE_COVERAGE=ON \
+          -DVECTORIZATION_ENABLE_COVERAGE=ON \
+          -DPARALLEL_ENABLE_COVERAGE=ON \
+          -DPROFILER_ENABLE_COVERAGE=ON \
+          -DMEMORY_ENABLE_CUDA=OFF
 
         # Build
         cmake --build build -j 2
