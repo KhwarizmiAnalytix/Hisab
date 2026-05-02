@@ -221,7 +221,52 @@ if(NOT INTERN_BUILD_MOBILE)
     set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
   endif()
   cmake_pop_check_state()
+  
+  # ---[ Check if the compiler has SVML support.
+  cmake_push_check_state(RESET)
+  set(CMAKE_REQUIRED_FLAGS "${VECTORIZATION_COMPILER_FLAGS}")
+  check_cxx_source_compiles(
+    "#if defined(_MSC_VER)
+	 #include <intrin.h>
+	 #else
+	 #include <immintrin.h>
+	 #endif
 
+	  int main() {
+		__m256 a, b;
+		a = _mm256_setzero_ps();
+		b = _mm256_exp_ps(a);
+		b = _mm256_cos_ps(a);
+		b = _mm256_tanh_ps(a);
+		return 0;
+	  }"
+    TMP_COMPILER_SUPPORTS_SVML_EXTENSIONS)
+
+  if(NOT TMP_COMPILER_SUPPORTS_SVML_EXTENSIONS AND VECTORIZATION)
+    message(
+      "--Current compiler does not supports SVML functoins. Turn ON VECTORIZATION_ENABLE_SVML"
+    )
+    set(VECTORIZATION_ENABLE_SVML ON CACHE BOOL "Enable Intel SVML short vector math library" FORCE)
+  else()
+    message(
+      "--Current compiler supports SVML functoins. Turn OFF VECTORIZATION_ENABLE_SVML")
+    set(VECTORIZATION_ENABLE_SVML OFF CACHE BOOL "Enable Intel SVML short vector math library" FORCE)
+  endif()
+  cmake_pop_check_state()
+
+  # Locate ThirdParty SVML binaries when the flag is ON.
+  if(VECTORIZATION_ENABLE_SVML)
+    find_package(SVML QUIET)
+    if(SVML_FOUND)
+      message("--SVML: ThirdParty package found.")
+    else()
+      message(
+        WARNING
+          "--VECTORIZATION_ENABLE_SVML=ON but ThirdParty SVML binaries were not found. "
+          "Ensure ThirdParty/svml/ contains the required libraries."
+      )
+    endif()
+  endif()
 endif()
 
 if(USE_NATIVE_ARCH)

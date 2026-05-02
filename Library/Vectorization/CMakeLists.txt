@@ -392,6 +392,30 @@ if(VECTORIZATION_DEPENDENCY_LIBS)
   message(STATUS "Vectorization: linked dependencies: ${VECTORIZATION_DEPENDENCY_LIBS}")
 endif()
 
+# Link ThirdParty SVML and stage its runtime binaries next to the output library.
+if(VECTORIZATION_ENABLE_SVML AND TARGET SVML::SVML)
+  target_link_libraries(Vectorization PUBLIC SVML::SVML)
+  if(TARGET SVML::IRC)
+    target_link_libraries(Vectorization PUBLIC SVML::IRC)
+  endif()
+  if(TARGET SVML::INTLC)
+    target_link_libraries(Vectorization PUBLIC SVML::INTLC)
+  endif()
+  foreach(_svml_rt IN LISTS SVML_RUNTIME_LIBRARIES)
+    if(_svml_rt)
+      add_custom_command(TARGET Vectorization POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${_svml_rt}"
+          "$<TARGET_FILE_DIR:Vectorization>"
+        COMMENT "Staging SVML runtime: ${_svml_rt}"
+        VERBATIM
+      )
+    endif()
+  endforeach()
+  unset(_svml_rt)
+  message(STATUS "Vectorization: linked SVML::SVML (ThirdParty); runtime files: ${SVML_RUNTIME_LIBRARIES}")
+endif()
+
 if(VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS)
   target_compile_definitions(Vectorization PUBLIC ${VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS})
   message(

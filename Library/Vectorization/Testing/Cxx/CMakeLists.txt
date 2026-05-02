@@ -85,7 +85,8 @@ endif()
 
 message(STATUS "VectorizationCxxTests registered with CTest")
 
-# ============================================================================= Individual benchmark
+# ============================================================================= 
+# Individual benchmark
 # executables (same pattern as Library/Parallel/Testing/Cxx)
 # =============================================================================
 if(VECTORIZATION_ENABLE_BENCHMARK)

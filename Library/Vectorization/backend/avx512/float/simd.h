@@ -18,7 +18,6 @@
  */
 
 #pragma once
-
 #if VECTORIZATION_HAS_SVML
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -31,7 +30,6 @@
 #pragma clang diagnostic pop
 #endif
 #endif
-
 template <>
 struct simd<float>
 {

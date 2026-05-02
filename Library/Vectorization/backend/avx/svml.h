@@ -91,3 +91,5 @@ SVML_FUNCTION_TWO_ARGS(hypot)
 #undef svml_pd
 #undef svml_ps_mask
 #undef svml_pd_mask
+
+#endif  // VECTORIZATION_HAS_SVML && (VECTORIZATION_HAS_AVX2 || VECTORIZATION_HAS_AVX)
