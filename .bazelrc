@@ -242,11 +242,11 @@ build:cuda --crosstool_top=@local_config_cuda//crosstool:toolchain
 # Enable HIP support
 build:hip --define=memory_enable_hip=true
 
-# Enable OpenMP (parallel backend + compile flags)
-build:openmp --define=parallel_enable_openmp=true --copt=-fopenmp --linkopt=-fopenmp
+# Enable OpenMP (parallel backend + compile flags) — mirrors CMake PARALLEL_BACKEND=openmp
+build:openmp --define=parallel_backend=openmp --define=parallel_enable_openmp=true --copt=-fopenmp --linkopt=-fopenmp
 
-# Enable TBB (Memory scalable allocator + Parallel backend; mirrors one-shot enable_tbb usage)
-build:tbb --define=memory_enable_tbb=true --define=parallel_enable_tbb=true
+# Enable TBB (Memory scalable allocator + Parallel backend) — mirrors PARALLEL_BACKEND=tbb + MEMORY_ENABLE_TBB
+build:tbb --define=parallel_backend=tbb --define=memory_enable_tbb=true
 
 # Enable MKL
 build:mkl --define=core_enable_mkl=true
@@ -308,8 +308,8 @@ test --test_timeout=300
 # Enable Google Test
 build:gtest --define=enable_gtest=true
 
-# Enable Google Benchmark
-build:benchmark --define=enable_benchmark=true
+# Google Benchmark — per-module flags match CMake *ENABLE_BENCHMARK=ON (also set globally below)
+build:benchmark --define=enable_benchmark=true --define=core_enable_benchmark=true --define=memory_enable_benchmark=true --define=parallel_enable_benchmark=true --define=logging_enable_benchmark=true --define=profiler_enable_benchmark=true --define=vectorization_enable_benchmark=true
 
 # =============================================================================
 # Code Coverage
@@ -345,8 +345,8 @@ build:gpu_alloc_pool_async --define=memory_gpu_alloc=pool_async
 # =============================================================================
 # CMake-equivalent defaults
 # =============================================================================
-# Defaults: VECTORIZATION_TYPE=avx2; all modules’ *ENABLE_BENCHMARK=ON (vectorization + project-wide).
-build --define=vectorization_type=avx2 --define=vectorization_enable_benchmark=true --define=enable_benchmark=true
+# Defaults: VECTORIZATION_TYPE=avx2; every library’s *ENABLE_BENCHMARK=ON (Core/Memory/Parallel/Logging/Profiler/Vectorization + umbrella enable_benchmark).
+build --define=parallel_backend=std --define=vectorization_type=avx2 --define=memory_enable_mimalloc=true --define=core_enable_benchmark=true --define=memory_enable_benchmark=true --define=parallel_enable_benchmark=true --define=logging_enable_benchmark=true --define=profiler_enable_benchmark=true --define=vectorization_enable_benchmark=true --define=enable_benchmark=true
 #
 # Feature defaults (mimalloc, magic_enum, KINETO profiler, LOGURU, Sobol 1111, POOL_ASYNC GPU
 # alloc) are applied in //bazel:*.bzl — plain `bazel build //...` matches root CMakeLists.txt

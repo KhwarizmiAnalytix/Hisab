@@ -644,7 +644,7 @@ class BazelConfiguration:
         benchmark = self._on_off("benchmark" in self.configs)
         vec       = self.vectorization.upper() if self.vectorization else "None"
         sanitizer = self._on_off(has_san)
-        mimalloc_on = self.system != "Windows"
+        mimalloc_on = True  # default: .bazelrc + memory.bzl; opt out: --define=memory_enable_mimalloc=false
 
         # Common trailing fields shared by all modules — every flag reflects actual passed state
         def common() -> None:
@@ -743,7 +743,7 @@ class BazelConfiguration:
             print("  Vectorization:     None")
 
         # Feature flags — computed from the same state as per-module summaries
-        mimalloc_on = self.system != "Windows"   # OFF on Windows (quarisma.bzl select)
+        mimalloc_on = True  # Bazel default ON (see .bazelrc memory_enable_mimalloc)
         gtest_on    = not self.disable_gtest     # ON by default (mirrors CMake option(... ON))
 
         print(f"\n{Fore.CYAN}Feature Flags:{Style.RESET_ALL}")

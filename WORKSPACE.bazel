@@ -25,6 +25,11 @@ http_archive(
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 bazel_skylib_workspace()
 
+load("//bazel:svml_configure.bzl", "svml_configure")
+
+# Host compile probe — mirrors Vectorization Cmake/utils.cmake native SVML check (per SIMD tier).
+svml_configure(name = "vectorization_svml_autodetect")
+
 # =============================================================================
 # Third-Party Dependencies
 # =============================================================================
@@ -146,7 +151,8 @@ new_local_repository(
 
 # -----------------------------------------------------------------------------
 # Intel SVML — Short Vector Math Library (optional, vendored binaries)
-# Enabled at build time with --define vectorization_enable_svml=true
+# Link when autodetect says compiler needs it (see //bazel:svml_configure.bzl) or when
+# --define=vectorization_enable_svml=true; opt out with vectorization_enable_svml=false.
 # Mirrors CMake FindSVML.cmake + VECTORIZATION_ENABLE_SVML logic.
 # -----------------------------------------------------------------------------
 new_local_repository(

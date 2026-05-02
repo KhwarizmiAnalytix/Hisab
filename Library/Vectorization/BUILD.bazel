@@ -7,6 +7,8 @@ load(
     "vectorization_defines",
     "vectorization_library_copts",
     "vectorization_linkopts",
+    "vectorization_svml_deps",
+    "vectorization_svml_hdrs_extra",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -130,11 +132,7 @@ cc_library(
                 ],
                 allow_empty = True,
             ),
-        }) +
-        select({
-            "//bazel:enable_svml": [_VEC_SVML_H],
-            "//conditions:default": [],
-        }),
+        }) + vectorization_svml_hdrs_extra(_VEC_SVML_H),
     copts = vectorization_library_copts(),
     defines = vectorization_defines() + select({
         "//bazel:shared_libs": [
@@ -155,10 +153,7 @@ cc_library(
     deps = [
         "//Library/Logging:Logging",
         "//Library/Memory:Memory",
-    ] + select({
-        "//bazel:enable_svml": ["@svml//:SVML"],
-        "//conditions:default": [],
-    }),
+    ] + vectorization_svml_deps(),
     visibility = ["//Library/Vectorization:__pkg__"],
 )
 

@@ -9,8 +9,7 @@
 # supported by the toolchain CORE_SSE=1/0                 — SSE2 SIMD instructions available
 # CORE_AVX=1/0                 — AVX SIMD instructions available CORE_AVX2=1/0                — AVX2
 # SIMD instructions available CORE_AVX512=1/0              — AVX-512 SIMD instructions available
-# CORE_HAS_MKL=1/0             — Intel MKL math library linked CORE_HAS_SVML=1/0            — Intel
-# SVML short-vector math library linked CORE_HAS_ROCM=1/0            — AMD ROCm GPU support compiled
+# CORE_HAS_MKL=1/0             — Intel MKL math library linked CORE_HAS_ROCM=1/0            — AMD ROCm GPU support compiled
 # in CORE_HAS_GTEST=1/0           — Google Test available to Core tests CORE_HAS_EXPERIMENTAL=1/0 —
 # Experimental features enabled (use with caution) CORE_HAS_MAGICENUM=1/0       — magic_enum static
 # enum-reflection active CORE_HAS_ENZYME=1/0          — Enzyme automatic-differentiation plugin
@@ -54,10 +53,6 @@ option(CORE_ENABLE_BENCHMARK "Enable Google Benchmark for Core" ON)
 
 # Intel MKL — high-performance math kernel library (BLAS, FFT, LAPACK, …).
 option(CORE_ENABLE_MKL "Enable Intel MKL math library" OFF)
-
-# Intel SVML — short vector math library for fast sin/cos/exp/log on SIMD lanes.
-option(CORE_ENABLE_SVML "Enable Intel SVML short vector math library" OFF)
-mark_as_advanced(CORE_ENABLE_SVML)
 
 # AMD ROCm — GPU support for AMD Radeon Instinct / CDNA devices.
 option(CORE_ENABLE_ROCM "Enable AMD ROCm GPU support" OFF)
@@ -295,9 +290,6 @@ include(linker)
 # --------------------------------------------------------------------------
 # Intel MKL — high-performance BLAS/FFT/LAPACK.
 compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_MKL)
-
-# Intel SVML — fast vectorised transcendentals.
-compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_SVML)
 
 # AMD ROCm — heterogeneous GPU computing.
 compile_definition(CORE_COMPILE_DEFINITIONS CORE_ENABLE_ROCM)
@@ -569,7 +561,6 @@ message("")
 message("******** Core module (CMake flags) ********")
 message("  Vectorization type   : ${VECTORIZATION_TYPE}")
 message("  Mkl                  : ${CORE_ENABLE_MKL}")
-message("  Svml                 : ${CORE_ENABLE_SVML}")
 message("  Rocm                 : ${CORE_ENABLE_ROCM}")
 message("  Experimental         : ${CORE_ENABLE_EXPERIMENTAL}")
 message("  Magic enum           : ${CORE_ENABLE_MAGICENUM}")

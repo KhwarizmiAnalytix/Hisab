@@ -8,6 +8,7 @@
 #   "common/parallel_tools_api.h"           -> Library/Parallel/common/...
 # =============================================================================
 
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("//bazel:parallel.bzl", "parallel_copts", "parallel_defines", "parallel_linkopts")
 
 package(default_visibility = ["//visibility:public"])
@@ -46,18 +47,34 @@ cc_library(
     name = "parallel_lib",
     srcs = [
         ":parallel_srcs",
-    ] + select({
-        # Parallel backend: TBB > OpenMP > std_thread (matches CMake exclusion logic)
-        "//bazel:parallel_enable_tbb": glob(["tbb/*.cpp"], allow_empty = True),
-        "//bazel:enable_openmp": glob(["openmp/*.cpp"], allow_empty = True),
-        "//conditions:default": glob(["std_thread/*.cpp"], allow_empty = True),
+    ] + selects.with_or({
+        # Parallel backend: TBB > OpenMP > std_thread (matches CMake PARALLEL_BACKEND + legacy flags)
+        (
+            "//bazel:parallel_backend_tbb",
+            "//bazel:parallel_enable_tbb",
+        ): glob(["tbb/*.cpp"], allow_empty = True),
+        "//conditions:default": selects.with_or({
+            (
+                "//bazel:parallel_backend_openmp",
+                "//bazel:enable_openmp",
+            ): glob(["openmp/*.cpp"], allow_empty = True),
+            "//conditions:default": glob(["std_thread/*.cpp"], allow_empty = True),
+        }),
     }),
     hdrs = [
         ":parallel_hdrs",
-    ] + select({
-        "//bazel:parallel_enable_tbb": glob(["tbb/*.h", "tbb/*.hxx"], allow_empty = True),
-        "//bazel:enable_openmp": glob(["openmp/*.h", "openmp/*.hxx"], allow_empty = True),
-        "//conditions:default": glob(["std_thread/*.h", "std_thread/*.hxx"], allow_empty = True),
+    ] + selects.with_or({
+        (
+            "//bazel:parallel_backend_tbb",
+            "//bazel:parallel_enable_tbb",
+        ): glob(["tbb/*.h", "tbb/*.hxx"], allow_empty = True),
+        "//conditions:default": selects.with_or({
+            (
+                "//bazel:parallel_backend_openmp",
+                "//bazel:enable_openmp",
+            ): glob(["openmp/*.h", "openmp/*.hxx"], allow_empty = True),
+            "//conditions:default": glob(["std_thread/*.h", "std_thread/*.hxx"], allow_empty = True),
+        }),
     }),
     copts = parallel_copts(),
     defines = parallel_defines() + select({
@@ -77,8 +94,11 @@ cc_library(
         "//bazel:shared_libs": False,
         "//conditions:default": True,
     }),
-    deps = select({
-        "//bazel:parallel_enable_tbb": [
+    deps = selects.with_or({
+        (
+            "//bazel:parallel_backend_tbb",
+            "//bazel:parallel_enable_tbb",
+        ): [
             "@tbb//:tbb",
             "@tbb//:tbbmalloc",
         ],

@@ -3,7 +3,7 @@
 # =============================================================================
 # Config settings for conditional compilation
 # Starlark --define keys mirror CMake cache names: lowercase MODULE_* (e.g. core_enable_mkl,
-# memory_enable_cuda, parallel_enable_openmp, vectorization_type, logging_backend).
+# memory_enable_cuda, parallel_backend, parallel_enable_openmp, vectorization_type, logging_backend).
 # =============================================================================
 
 load(":vectorization_settings.bzl", "define_vectorization_platform_settings")
@@ -43,6 +43,17 @@ config_setting(
 config_setting(
     name = "enable_openmp",
     define_values = {"parallel_enable_openmp": "true"},
+)
+
+# CMake PARALLEL_BACKEND=openmp|tbb — drives Parallel SMP backend (default std via .bazelrc).
+config_setting(
+    name = "parallel_backend_openmp",
+    define_values = {"parallel_backend": "openmp"},
+)
+
+config_setting(
+    name = "parallel_backend_tbb",
+    define_values = {"parallel_backend": "tbb"},
 )
 
 config_setting(
@@ -233,6 +244,11 @@ config_setting(
 config_setting(
     name = "enable_svml",
     define_values = {"vectorization_enable_svml": "true"},
+)
+
+config_setting(
+    name = "disable_svml",
+    define_values = {"vectorization_enable_svml": "false"},
 )
 
 # Vectorization SIMD tier (default in vectorization.bzl = AVX2 when unset)

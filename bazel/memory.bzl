@@ -31,10 +31,9 @@ def memory_defines():
         "//conditions:default": ["MEMORY_HAS_TBB=0"],
     })
 
-    # mimalloc — MEMORY_HAS_MIMALLOC (default ON; disabled on Windows)
+    # mimalloc — MEMORY_HAS_MIMALLOC (default ON; matches CMake MEMORY_ENABLE_MIMALLOC)
     defines += select({
         "//bazel:disable_mimalloc": ["MEMORY_HAS_MIMALLOC=0"],
-        "@platforms//os:windows": ["MEMORY_HAS_MIMALLOC=0"],
         "//conditions:default": ["MEMORY_HAS_MIMALLOC=1"],
     })
 

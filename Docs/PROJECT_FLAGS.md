@@ -119,7 +119,7 @@ These are set with plain `set()` (no CACHE). They are derived from detection pro
 | `PROJECT_COMPILER_SUPPORTS_AVX2_EXTENSIONS` | [tools/utils.cmake](tools/utils.cmake) | Raw probe result: compiler accepts AVX2 intrinsics. |
 | `PROJECT_COMPILER_SUPPORTS_AVX512_EXTENSIONS` | [tools/utils.cmake](tools/utils.cmake) | Raw probe result: compiler accepts AVX512F/DQ/VL intrinsics. |
 | `PROJECT_COMPILER_SUPPORTS_FMA_EXTENSIONS` | [tools/utils.cmake](tools/utils.cmake) | Raw probe result: compiler accepts FMA intrinsics. Extends `VECTORIZATION_COMPILER_FLAGS` when true. |
-| `PROJECT_COMPILER_SUPPORTS_SVML_EXTENSIONS` | [tools/utils.cmake](tools/utils.cmake) | Raw probe result: compiler has native SVML (`_mm256_exp_ps` etc.). When absent and vectorization is active, `CORE_ENABLE_SVML` is forced to `1`. |
+| `PROJECT_COMPILER_SUPPORTS_SVML_EXTENSIONS` | [tools/utils.cmake](tools/utils.cmake) | Raw probe result: compiler has native SVML (`_mm256_exp_ps` etc.). When absent and vectorization is active, `VECTORIZATION_ENABLE_SVML` is forced to `ON` (see [Library/Vectorization/Cmake/utils.cmake](../Library/Vectorization/Cmake/utils.cmake)). |
 | `PROJECT_SSE` | [tools/utils.cmake](tools/utils.cmake) | Set to `1` when `VECTORIZATION_TYPE=sse` and SSE is supported. Consumed by [flags/compile_definitions.cmake](flags/compile_definitions.cmake). |
 | `PROJECT_AVX` | [tools/utils.cmake](tools/utils.cmake) | Set to `1` when `VECTORIZATION_TYPE=avx` and AVX is supported. |
 | `PROJECT_AVX2` | [tools/utils.cmake](tools/utils.cmake) | Set to `1` when `VECTORIZATION_TYPE=avx2` and AVX2 is supported. |

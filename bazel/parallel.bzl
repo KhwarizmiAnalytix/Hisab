@@ -1,3 +1,4 @@
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
 
 # C++ standard for Parallel — mirrors CMake PARALLEL_CXX_STANDARD (default: 20)
@@ -28,15 +29,21 @@ def parallel_defines():
         ],
     })
 
-    # TBB multithreading — PARALLEL_HAS_TBB
-    defines += select({
-        "//bazel:parallel_enable_tbb": ["PARALLEL_HAS_TBB=1"],
+    # TBB multithreading — PARALLEL_HAS_TBB (parallel_backend=tbb or legacy parallel_enable_tbb)
+    defines += selects.with_or({
+        (
+            "//bazel:parallel_backend_tbb",
+            "//bazel:parallel_enable_tbb",
+        ): ["PARALLEL_HAS_TBB=1"],
         "//conditions:default": ["PARALLEL_HAS_TBB=0"],
     })
 
-    # OpenMP — PARALLEL_HAS_OPENMP
-    defines += select({
-        "//bazel:enable_openmp": ["PARALLEL_HAS_OPENMP=1"],
+    # OpenMP — PARALLEL_HAS_OPENMP (parallel_backend=openmp or legacy parallel_enable_openmp)
+    defines += selects.with_or({
+        (
+            "//bazel:parallel_backend_openmp",
+            "//bazel:enable_openmp",
+        ): ["PARALLEL_HAS_OPENMP=1"],
         "//conditions:default": ["PARALLEL_HAS_OPENMP=0"],
     })
 

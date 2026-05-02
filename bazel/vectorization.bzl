@@ -3,6 +3,8 @@
 # Mirrors Library/Vectorization/CMakeLists.txt VECTORIZATION_* compile definitions.
 # =============================================================================
 
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@vectorization_svml_autodetect//:config.bzl", "SVML_NEEDED_AVX", "SVML_NEEDED_AVX2", "SVML_NEEDED_AVX512", "SVML_NEEDED_SSE")
 load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
 
 VECTORIZATION_CXX_STD = "c++20"
@@ -64,6 +66,58 @@ def vectorization_simd_copts():
     d["//conditions:default"] = unix["avx2"]
     return select(d)
 
+def _svml_macro(needed):
+    """VECTORIZATION_HAS_SVML from autodetect bool (mirrors CMake VECTORIZATION_ENABLE_SVML)."""
+    return ["VECTORIZATION_HAS_SVML=1"] if needed else ["VECTORIZATION_HAS_SVML=0"]
+
+def _svml_autodetect_defines():
+    return select({
+        "//bazel:disable_svml": ["VECTORIZATION_HAS_SVML=0"],
+        "//bazel:vectorization_type_no": ["VECTORIZATION_HAS_SVML=0"],
+        "//bazel:vectorization_type_sse": _svml_macro(SVML_NEEDED_SSE),
+        "//bazel:vectorization_type_avx": _svml_macro(SVML_NEEDED_AVX),
+        "//bazel:vectorization_type_avx2": _svml_macro(SVML_NEEDED_AVX2),
+        "//bazel:vectorization_type_avx512": _svml_macro(SVML_NEEDED_AVX512),
+        "//conditions:default": _svml_macro(SVML_NEEDED_AVX2),
+    })
+
+def vectorization_svml_defines():
+    """SVML define: force on/off via --define, else autodetect (utils.cmake parity)."""
+    return selects.with_or({
+        ("//bazel:enable_svml",): ["VECTORIZATION_HAS_SVML=1"],
+        "//conditions:default": _svml_autodetect_defines(),
+    })
+
+def vectorization_svml_deps():
+    """Link @svml when HAS_SVML=1 for the active configuration."""
+    return selects.with_or({
+        ("//bazel:enable_svml",): ["@svml//:SVML"],
+        "//conditions:default": select({
+            "//bazel:disable_svml": [],
+            "//bazel:vectorization_type_no": [],
+            "//bazel:vectorization_type_sse": ["@svml//:SVML"] if SVML_NEEDED_SSE else [],
+            "//bazel:vectorization_type_avx": ["@svml//:SVML"] if SVML_NEEDED_AVX else [],
+            "//bazel:vectorization_type_avx2": ["@svml//:SVML"] if SVML_NEEDED_AVX2 else [],
+            "//bazel:vectorization_type_avx512": ["@svml//:SVML"] if SVML_NEEDED_AVX512 else [],
+            "//conditions:default": ["@svml//:SVML"] if SVML_NEEDED_AVX2 else [],
+        }),
+    })
+
+def vectorization_svml_hdrs_extra(svml_hdr):
+    """Extra hdrs entry for backend/avx/svml.h when SVML is in use."""
+    return selects.with_or({
+        ("//bazel:enable_svml",): [svml_hdr],
+        "//conditions:default": select({
+            "//bazel:disable_svml": [],
+            "//bazel:vectorization_type_no": [],
+            "//bazel:vectorization_type_sse": [svml_hdr] if SVML_NEEDED_SSE else [],
+            "//bazel:vectorization_type_avx": [svml_hdr] if SVML_NEEDED_AVX else [],
+            "//bazel:vectorization_type_avx2": [svml_hdr] if SVML_NEEDED_AVX2 else [],
+            "//bazel:vectorization_type_avx512": [svml_hdr] if SVML_NEEDED_AVX512 else [],
+            "//conditions:default": [svml_hdr] if SVML_NEEDED_AVX2 else [],
+        }),
+    })
+
 def vectorization_defines():
     """Preprocessor defines for SIMD tier, packet size, optional SVML, Memory/Logging."""
     # Chain selects + lists (Starlark: cannot .append onto a select).
@@ -113,10 +167,7 @@ def vectorization_defines():
                 "VECTORIZATION_VECTORIZED=1",
             ],
         })
-        + select({
-            "//bazel:enable_svml": ["VECTORIZATION_HAS_SVML=1"],
-            "//conditions:default": ["VECTORIZATION_HAS_SVML=0"],
-        })
+        + vectorization_svml_defines()
         + select({
             "//bazel:disable_gtest": ["VECTORIZATION_HAS_GTEST=0"],
             "//conditions:default": ["VECTORIZATION_HAS_GTEST=1"],
