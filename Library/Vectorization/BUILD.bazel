@@ -1,10 +1,19 @@
 # Library/Vectorization — SIMD packet layer (headers under ., backends under backend/).
 # Include roots match CMake: "common/packet.h", "backend/avx/float/simd.h", etc.
-load("//bazel:vectorization.bzl", "vectorization_copts", "vectorization_defines", "vectorization_linkopts")
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load(
+    "//bazel:vectorization.bzl",
+    "vectorization_copts",
+    "vectorization_defines",
+    "vectorization_library_copts",
+    "vectorization_linkopts",
+)
 
 package(default_visibility = ["//visibility:public"])
 
 _VEC_TEST = ["Testing/**"]
+# CMake: exclude svml.h from the target when VECTORIZATION_ENABLE_SVML is OFF; re-add via hdrs select when ON.
+_VEC_SVML_H = "backend/avx/svml.h"
 
 cc_library(
     name = "vectorization_lib",
@@ -47,66 +56,86 @@ cc_library(
             allow_empty = True,
         ),
     }),
-    hdrs = select({
-        "//bazel:vectorization_type_no": glob(
-            [
-                "**/*.h",
-                "**/*.inl",
-                "**/*.hxx",
-            ],
-            exclude = _VEC_TEST + ["backend/**"],
-            allow_empty = True,
-        ),
-        "//bazel:vectorization_type_sse": glob(
-            [
-                "**/*.h",
-                "**/*.inl",
-                "**/*.hxx",
-            ],
-            exclude = _VEC_TEST + [
-                "backend/avx/**",
-                "backend/avx512/**",
-            ],
-            allow_empty = True,
-        ),
-        "//bazel:vectorization_type_avx": glob(
-            [
-                "**/*.h",
-                "**/*.inl",
-                "**/*.hxx",
-            ],
-            exclude = _VEC_TEST + [
-                "backend/sse/**",
-                "backend/avx512/**",
-            ],
-            allow_empty = True,
-        ),
-        "//bazel:vectorization_type_avx512": glob(
-            [
-                "**/*.h",
-                "**/*.inl",
-                "**/*.hxx",
-            ],
-            exclude = _VEC_TEST + [
-                "backend/sse/**",
-                "backend/avx/**",
-            ],
-            allow_empty = True,
-        ),
-        "//conditions:default": glob(
-            [
-                "**/*.h",
-                "**/*.inl",
-                "**/*.hxx",
-            ],
-            exclude = _VEC_TEST + [
-                "backend/sse/**",
-                "backend/avx512/**",
-            ],
-            allow_empty = True,
-        ),
-    }),
-    copts = vectorization_copts(),
+    hdrs =
+        select({
+            "//bazel:vectorization_type_no": glob(
+                [
+                    "**/*.h",
+                    "**/*.inl",
+                    "**/*.hxx",
+                ],
+                exclude = _VEC_TEST + ["backend/**"],
+                allow_empty = True,
+            ),
+            "//bazel:vectorization_type_sse": glob(
+                [
+                    "**/*.h",
+                    "**/*.inl",
+                    "**/*.hxx",
+                ],
+                exclude = _VEC_TEST + [
+                    "backend/avx/**",
+                    "backend/avx512/**",
+                ],
+                allow_empty = True,
+            ),
+            "//bazel:vectorization_type_avx": glob(
+                [
+                    "**/*.h",
+                    "**/*.inl",
+                    "**/*.hxx",
+                ],
+                exclude = _VEC_TEST + [
+                    "backend/sse/**",
+                    "backend/avx512/**",
+                    _VEC_SVML_H,
+                ],
+                allow_empty = True,
+            ),
+            "//bazel:vectorization_type_avx2": glob(
+                [
+                    "**/*.h",
+                    "**/*.inl",
+                    "**/*.hxx",
+                ],
+                exclude = _VEC_TEST + [
+                    "backend/sse/**",
+                    "backend/avx512/**",
+                    _VEC_SVML_H,
+                ],
+                allow_empty = True,
+            ),
+            "//bazel:vectorization_type_avx512": glob(
+                [
+                    "**/*.h",
+                    "**/*.inl",
+                    "**/*.hxx",
+                ],
+                exclude = _VEC_TEST + [
+                    "backend/sse/**",
+                    "backend/avx/**",
+                ],
+                allow_empty = True,
+            ),
+            "//conditions:default": glob(
+                [
+                    "**/*.h",
+                    "**/*.inl",
+                    "**/*.hxx",
+                ],
+                exclude = _VEC_TEST + [
+                    "backend/sse/**",
+                    "backend/avx512/**",
+                    _VEC_SVML_H,
+                ],
+                allow_empty = True,
+            ),
+        }) +
+        select({
+            "//bazel:enable_svml": [_VEC_SVML_H],
+            "//conditions:default": [],
+        }),
+    copts = vectorization_library_copts(),
     defines = vectorization_defines() + select({
         "//bazel:shared_libs": [
             "VECTORIZATION_SHARED_DEFINE",
@@ -126,7 +155,10 @@ cc_library(
     deps = [
         "//Library/Logging:Logging",
         "//Library/Memory:Memory",
-    ],
+    ] + select({
+        "//bazel:enable_svml": ["@svml//:SVML"],
+        "//conditions:default": [],
+    }),
     visibility = ["//Library/Vectorization:__pkg__"],
 )
 
@@ -155,9 +187,42 @@ cc_test(
         "Testing",
     ],
     linkopts = vectorization_linkopts(),
+    target_compatible_with = selects.with_or({
+        (
+            "//bazel:disable_gtest",
+            "//bazel:vectorization_disable_testing",
+        ): ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":Vectorization",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
+    ],
+)
+
+# CMake: benchmark_simd from BenchmarkSimd.cpp when VECTORIZATION_ENABLE_BENCHMARK and type != no.
+cc_binary(
+    name = "benchmark_simd",
+    srcs = ["Testing/Cxx/BenchmarkSimd.cpp"],
+    copts = vectorization_copts(),
+    defines = vectorization_defines(),
+    includes = [
+        "Testing/Cxx",
+        ".",
+        "Testing",
+    ],
+    linkopts = vectorization_linkopts(),
+    target_compatible_with = selects.with_or({
+        (
+            "//bazel:vectorization_disable_benchmark",
+            "//bazel:vectorization_type_no",
+        ): ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":Vectorization",
+        "@com_google_benchmark//:benchmark",
+        "@com_google_benchmark//:benchmark_main",
     ],
 )

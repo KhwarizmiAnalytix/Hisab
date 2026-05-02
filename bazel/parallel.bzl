@@ -30,7 +30,7 @@ def parallel_defines():
 
     # TBB multithreading — PARALLEL_HAS_TBB
     defines += select({
-        "//bazel:enable_tbb": ["PARALLEL_HAS_TBB=1"],
+        "//bazel:parallel_enable_tbb": ["PARALLEL_HAS_TBB=1"],
         "//conditions:default": ["PARALLEL_HAS_TBB=0"],
     })
 

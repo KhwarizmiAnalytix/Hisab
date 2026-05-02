@@ -33,7 +33,7 @@ Full CLI reference: `python Scripts/setup_bazel.py --help`.
 
 ## How Bazel maps to CMake / `setup.py`
 
-`Scripts/setup.py` drives **CMake** with a large `QuarismaFlags` surface (per-module fan-out of `*_ENABLE_*` options). `Scripts/setup_bazel.py` translates a **deliberately similar** token language into Bazel `--config=…` flags and occasional `--define=quarisma_*=…` values.
+`Scripts/setup.py` drives **CMake** with a large `QuarismaFlags` surface (per-module fan-out of `*_ENABLE_*` options). `Scripts/setup_bazel.py` translates a **deliberately similar** token language into Bazel `--config=…` flags and occasional `--define=<cmake-aligned-key>=…` values (e.g. `core_enable_mkl`, `memory_enable_cuda`, `vectorization_type`).
 
 ### Feature parity (high level)
 
@@ -50,9 +50,9 @@ Full CLI reference: `python Scripts/setup_bazel.py --help`.
 | Logging backend | `native` / `loguru` / `glog`, `--logging.*` | `--config=logging_native` / `logging_loguru` / `logging_glog` |
 | Profiler | `profiler.kineto` / `itt` / `native`, Xcode→native | `--config=kineto` / `itt` / `native_profiler`; Xcode defaults to native in `setup_bazel.py` |
 | Sanitizers | `--sanitizer.*` CMake names | `--config=asan` / `tsan` / `ubsan` / `msan` / `lsan` or same `--sanitizer.*` long flags |
-| GoogleTest | Default ON; token `gtest` **disables** | `--config=gtest` added by default; `gtest` token → `--define=quarisma_enable_gtest=false` |
+| GoogleTest | Default ON; token `gtest` **disables** | `--config=gtest` added by default; `gtest` token → `--define=enable_gtest=false` |
 | Google Benchmark | `benchmark` enables | `--config=benchmark` |
-| Shared libs | Token `static` → `BUILD_SHARED_LIBS=ON` (shared) | `--define=quarisma_build_shared_libs=true` |
+| Shared libs | Token `static` → `BUILD_SHARED_LIBS=ON` (shared) | `--define=build_shared_libs=true` |
 | Enzyme | `enzyme` + LLVM plugin | `--config=enzyme` + `-fpass-plugin` from `setup_bazel.py` or `.bazelrc.user` |
 | Compiler cache / linker / IWYU / clang-tidy fix / icecc / cppcheck / valgrind / spell | Per-target CMake options | **Not modeled** in Bazel; tokens warn in `setup_bazel.py` (use Bazel remote cache / CI instead) |
 | `external` third-party layout | `QUARISMA_ENABLE_EXTERNAL` | **CMake-only** today |

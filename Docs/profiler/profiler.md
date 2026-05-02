@@ -60,8 +60,8 @@ The **native** backend compiles only sources under `Library/Profiler/native/` (p
 
 **Bazel**
 
-- Add `--config=native_profiler` to your build or test command (see root `.bazelrc`: `build:native_profiler --define=quarisma_profiler_type=native`).
-- Equivalent: `--define=quarisma_profiler_type=native`.
+- Add `--config=native_profiler` to your build or test command (see root `.bazelrc`: `build:native_profiler --define=profiler_type=native`).
+- Equivalent: `--define=profiler_type=native`.
 - `//Library/Profiler:Profiler` then exposes include roots for `native/**` only; do not include `bespoke/*` headers unless you also enable Kineto or ITT.
 
 **Headers and API (native mode)**

@@ -144,6 +144,17 @@ new_local_repository(
     build_file = "//ThirdParty:kineto.BUILD",
 )
 
+# -----------------------------------------------------------------------------
+# Intel SVML — Short Vector Math Library (optional, vendored binaries)
+# Enabled at build time with --define vectorization_enable_svml=true
+# Mirrors CMake FindSVML.cmake + VECTORIZATION_ENABLE_SVML logic.
+# -----------------------------------------------------------------------------
+new_local_repository(
+    name = "svml",
+    path = "ThirdParty/svml",
+    build_file = "//ThirdParty:svml.BUILD",
+)
+
 # =============================================================================
 # Platform-Specific Dependencies
 # =============================================================================

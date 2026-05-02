@@ -11,7 +11,7 @@ The profiler is a separate CMake/Bazel target from Core. Link `Quarisma::Profile
 Native mode builds only `native/` (plus `common/`) sources—no Kineto or ITT `bespoke/` tree.
 
 - **CMake**: `-DQUARISMA_PROFILER_TYPE=NATIVE`, or `python setup.py ... --profiler.native` from `Scripts/`.
-- **Bazel**: pass `--config=native_profiler` (or `--define=quarisma_profiler_type=native`).
+- **Bazel**: pass `--config=native_profiler` (or `--define=profiler_type=native`).
 
 With native mode, include the session API as `"native/session/profiler.h"` (include root is `Library/Profiler`). The default CMake/Bazel backend is **Kineto**, not native.
 

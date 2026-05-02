@@ -27,7 +27,7 @@ def memory_defines():
 
     # TBB scalable allocator — MEMORY_HAS_TBB
     defines += select({
-        "//bazel:enable_tbb": ["MEMORY_HAS_TBB=1"],
+        "//bazel:memory_enable_tbb": ["MEMORY_HAS_TBB=1"],
         "//conditions:default": ["MEMORY_HAS_TBB=0"],
     })
 

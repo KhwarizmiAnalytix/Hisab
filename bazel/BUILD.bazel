@@ -2,7 +2,8 @@
 # Quarisma Bazel Configuration Settings
 # =============================================================================
 # Config settings for conditional compilation
-# Equivalent to CMake option() and set() commands
+# Starlark --define keys mirror CMake cache names: lowercase MODULE_* (e.g. core_enable_mkl,
+# memory_enable_cuda, parallel_enable_openmp, vectorization_type, logging_backend).
 # =============================================================================
 
 load(":vectorization_settings.bzl", "define_vectorization_platform_settings")
@@ -18,21 +19,21 @@ exports_files(["quarisma.bzl"])
 
 config_setting(
     name = "shared_libs",
-    define_values = {"quarisma_build_shared_libs": "true"},
+    define_values = {"build_shared_libs": "true"},
 )
 
 # =============================================================================
-# GPU Backend Configuration
+# GPU Backend Configuration (Memory)
 # =============================================================================
 
 config_setting(
     name = "enable_cuda",
-    define_values = {"quarisma_enable_cuda": "true"},
+    define_values = {"memory_enable_cuda": "true"},
 )
 
 config_setting(
     name = "enable_hip",
-    define_values = {"quarisma_enable_hip": "true"},
+    define_values = {"memory_enable_hip": "true"},
 )
 
 # =============================================================================
@@ -41,21 +42,26 @@ config_setting(
 
 config_setting(
     name = "enable_openmp",
-    define_values = {"quarisma_enable_openmp": "true"},
+    define_values = {"parallel_enable_openmp": "true"},
 )
 
 config_setting(
-    name = "enable_tbb",
-    define_values = {"quarisma_enable_tbb": "true"},
+    name = "memory_enable_tbb",
+    define_values = {"memory_enable_tbb": "true"},
+)
+
+config_setting(
+    name = "parallel_enable_tbb",
+    define_values = {"parallel_enable_tbb": "true"},
 )
 
 # =============================================================================
-# Math Library Configuration
+# Math Library Configuration (Core)
 # =============================================================================
 
 config_setting(
     name = "enable_mkl",
-    define_values = {"quarisma_enable_mkl": "true"},
+    define_values = {"core_enable_mkl": "true"},
 )
 
 # =============================================================================
@@ -64,46 +70,46 @@ config_setting(
 
 config_setting(
     name = "enable_mimalloc",
-    define_values = {"quarisma_enable_mimalloc": "true"},
+    define_values = {"memory_enable_mimalloc": "true"},
 )
 
 # Opt-out when CMake-equivalent default is ON (mimalloc, magic_enum, Sobol 1111)
 config_setting(
     name = "disable_mimalloc",
-    define_values = {"quarisma_enable_mimalloc": "false"},
+    define_values = {"memory_enable_mimalloc": "false"},
 )
 
 # =============================================================================
-# Utility Library Configuration
+# Utility Library Configuration (Core)
 # =============================================================================
 
 config_setting(
     name = "enable_magic_enum",
-    define_values = {"quarisma_enable_magic_enum": "true"},
+    define_values = {"core_enable_magic_enum": "true"},
 )
 
 config_setting(
     name = "disable_magic_enum",
-    define_values = {"quarisma_enable_magic_enum": "false"},
+    define_values = {"core_enable_magic_enum": "false"},
 )
 
 # =============================================================================
-# Profiling Configuration
+# Profiling Configuration (Profiler)
 # =============================================================================
 
 config_setting(
     name = "enable_kineto",
-    define_values = {"quarisma_enable_kineto": "true"},
+    define_values = {"profiler_enable_kineto": "true"},
 )
 
 config_setting(
     name = "enable_native_profiler",
-    define_values = {"quarisma_profiler_type": "native"},
+    define_values = {"profiler_type": "native"},
 )
 
 config_setting(
     name = "enable_itt",
-    define_values = {"quarisma_enable_itt": "true"},
+    define_values = {"profiler_enable_itt": "true"},
 )
 
 # =============================================================================
@@ -112,58 +118,58 @@ config_setting(
 
 config_setting(
     name = "logging_glog",
-    define_values = {"quarisma_logging_backend": "glog"},
+    define_values = {"logging_backend": "glog"},
 )
 
 config_setting(
     name = "logging_loguru",
-    define_values = {"quarisma_logging_backend": "loguru"},
+    define_values = {"logging_backend": "loguru"},
 )
 
 config_setting(
     name = "logging_native",
-    define_values = {"quarisma_logging_backend": "native"},
+    define_values = {"logging_backend": "native"},
 )
 
 # Compiler-wrapper caching (ccache/sccache/buildcache) is CMake-only.
 # Configure Bazel caching via remote execution or toolchains instead.
 
 # =============================================================================
-# GPU Allocation Strategy
+# GPU Allocation Strategy (Memory)
 # =============================================================================
 
 config_setting(
     name = "gpu_alloc_sync",
-    define_values = {"quarisma_gpu_alloc": "sync"},
+    define_values = {"memory_gpu_alloc": "sync"},
 )
 
 config_setting(
     name = "gpu_alloc_async",
-    define_values = {"quarisma_gpu_alloc": "async"},
+    define_values = {"memory_gpu_alloc": "async"},
 )
 
 config_setting(
     name = "gpu_alloc_pool_async",
-    define_values = {"quarisma_gpu_alloc": "pool_async"},
+    define_values = {"memory_gpu_alloc": "pool_async"},
 )
 
 # =============================================================================
-# Algorithm Configuration
+# Algorithm Configuration (Core)
 # =============================================================================
 
 config_setting(
     name = "lu_pivoting",
-    define_values = {"quarisma_lu_pivoting": "true"},
+    define_values = {"core_lu_pivoting": "true"},
 )
 
 config_setting(
     name = "sobol_1111",
-    define_values = {"quarisma_sobol_1111": "true"},
+    define_values = {"core_sobol_1111": "true"},
 )
 
 config_setting(
     name = "disable_sobol_1111",
-    define_values = {"quarisma_sobol_1111": "false"},
+    define_values = {"core_sobol_1111": "false"},
 )
 
 # =============================================================================
@@ -172,7 +178,7 @@ config_setting(
 
 config_setting(
     name = "enable_enzyme",
-    define_values = {"quarisma_enable_enzyme": "true"},
+    define_values = {"core_enable_enzyme": "true"},
 )
 
 # =============================================================================
@@ -181,15 +187,15 @@ config_setting(
 
 config_setting(
     name = "enable_compression",
-    define_values = {"quarisma_enable_compression": "true"},
+    define_values = {"core_enable_compression": "true"},
 )
 
 # Matches CMake: CORE_ENABLE_COMPRESSION=ON + CORE_COMPRESSION_TYPE=SNAPPY
 config_setting(
     name = "compression_snappy",
     define_values = {
-        "quarisma_enable_compression": "true",
-        "quarisma_compression_type": "snappy",
+        "core_enable_compression": "true",
+        "core_compression_type": "snappy",
     },
 )
 
@@ -197,8 +203,8 @@ config_setting(
 config_setting(
     name = "enable_compression_snappy",
     define_values = {
-        "quarisma_enable_compression": "true",
-        "quarisma_compression_type": "snappy",
+        "core_enable_compression": "true",
+        "core_compression_type": "snappy",
     },
 )
 
@@ -208,7 +214,7 @@ config_setting(
 
 config_setting(
     name = "enable_numa",
-    define_values = {"quarisma_enable_numa": "true"},
+    define_values = {"memory_enable_numa": "true"},
 )
 
 # =============================================================================
@@ -217,7 +223,7 @@ config_setting(
 
 config_setting(
     name = "enable_memkind",
-    define_values = {"quarisma_enable_memkind": "true"},
+    define_values = {"memory_enable_memkind": "true"},
 )
 
 # =============================================================================
@@ -226,63 +232,81 @@ config_setting(
 
 config_setting(
     name = "enable_svml",
-    define_values = {"quarisma_enable_svml": "true"},
+    define_values = {"vectorization_enable_svml": "true"},
 )
 
 # Vectorization SIMD tier (default in vectorization.bzl = AVX2 when unset)
 config_setting(
     name = "vectorization_type_no",
-    define_values = {"quarisma_vectorization_type": "no"},
+    define_values = {"vectorization_type": "no"},
 )
 
 config_setting(
     name = "vectorization_type_sse",
-    define_values = {"quarisma_vectorization_type": "sse"},
+    define_values = {"vectorization_type": "sse"},
 )
 
 config_setting(
     name = "vectorization_type_avx",
-    define_values = {"quarisma_vectorization_type": "avx"},
+    define_values = {"vectorization_type": "avx"},
 )
 
 config_setting(
     name = "vectorization_type_avx2",
-    define_values = {"quarisma_vectorization_type": "avx2"},
+    define_values = {"vectorization_type": "avx2"},
 )
 
 config_setting(
     name = "vectorization_type_avx512",
-    define_values = {"quarisma_vectorization_type": "avx512"},
+    define_values = {"vectorization_type": "avx512"},
 )
 
 config_setting(
     name = "enable_rocm",
-    define_values = {"quarisma_enable_rocm": "true"},
+    define_values = {"core_enable_rocm": "true"},
 )
 
 config_setting(
     name = "enable_experimental",
-    define_values = {"quarisma_enable_experimental": "true"},
+    define_values = {"core_enable_experimental": "true"},
 )
 
 config_setting(
     name = "enable_allocation_stats",
-    define_values = {"quarisma_enable_allocation_stats": "true"},
+    define_values = {"memory_enable_allocation_stats": "true"},
 )
 
 # =============================================================================
-# Testing Configuration
+# Testing Configuration (project-wide; mirrors *ENABLE_GTEST / *ENABLE_BENCHMARK)
 # =============================================================================
 
 config_setting(
     name = "enable_gtest",
-    define_values = {"quarisma_enable_gtest": "true"},
+    define_values = {"enable_gtest": "true"},
+)
+
+# CMake: CORE_ENABLE_GTEST / VECTORIZATION_ENABLE_GTEST default ON; opt out explicitly.
+config_setting(
+    name = "disable_gtest",
+    define_values = {"enable_gtest": "false"},
 )
 
 config_setting(
     name = "enable_benchmark",
-    define_values = {"quarisma_enable_benchmark": "true"},
+    define_values = {"enable_benchmark": "true"},
 )
 
-# (quarisma_vectorization_type) × OS — used by //bazel:vectorization.bzl SIMD copts
+# CMake: VECTORIZATION_ENABLE_TESTING default ON; opt out with false.
+config_setting(
+    name = "vectorization_disable_testing",
+    define_values = {"vectorization_enable_testing": "false"},
+)
+
+# CMake: VECTORIZATION_ENABLE_BENCHMARK default ON; opt out with false.
+config_setting(
+    name = "vectorization_disable_benchmark",
+    define_values = {"vectorization_enable_benchmark": "false"},
+)
+
+# (vectorization_type) × OS — used by //bazel:vectorization.bzl SIMD copts
 define_vectorization_platform_settings()

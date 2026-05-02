@@ -485,7 +485,7 @@ class BazelConfiguration:
             cmd.append("--config=xcode")
 
         if self.shared_libs:
-            cmd.append("--define=quarisma_build_shared_libs=true")
+            cmd.append("--define=build_shared_libs=true")
 
         # Stable, de-duplicated config list (do not mutate self.configs — execute() may call twice)
         cfg_list: List[str] = []
@@ -497,10 +497,14 @@ class BazelConfiguration:
 
         # GoogleTest: CMake defaults ENABLE_GTEST ON; token `gtest` turns it OFF (see disable_gtest).
         if self.disable_gtest:
-            cmd.append("--define=quarisma_enable_gtest=false")
+            cmd.append("--define=enable_gtest=false")
             cfg_list = [c for c in cfg_list if c != "gtest"]
         elif "gtest" not in cfg_list:
             cfg_list.append("gtest")
+
+        # Google Benchmark: CMake defaults *ENABLE_BENCHMARK ON for all library modules.
+        if "benchmark" not in cfg_list:
+            cfg_list.append("benchmark")
 
         # Add default logging backend if not explicitly set
         if not any(c.startswith("logging_") for c in cfg_list):
@@ -1106,7 +1110,7 @@ def print_help() -> None:
     print("  enzyme        - Enzyme AD defines (see .bazelrc build:enzyme)")
     print("  numa          - NUMA (build:numa)")
     print("  memkind       - memkind (build:memkind)")
-    print("  benchmark     - Google Benchmark (build:benchmark)")
+    print("  benchmark     - Google Benchmark (default ON; token optional)")
     print("  gtest         - Disables GTest defines (CMake inverse; default is ON in both systems)")
     print("  static        - Shared libraries (CMake: BUILD_SHARED_LIBS=ON)")
     print("  parallel.std | parallel.openmp | parallel.tbb  — exclusive SMP backend")

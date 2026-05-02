@@ -392,7 +392,7 @@ python Scripts/setup_bazel.py build.release.vs22
 By default, Quarisma builds static libraries. To build shared libraries:
 
 ```bash
-bazel build --define=quarisma_build_shared_libs=true //...
+bazel build --define=build_shared_libs=true //...
 ```
 
 ---
@@ -863,7 +863,7 @@ build:avx2 --copt=-mavx2
 build:avx2 --copt=-mfma
 
 # mimalloc allocator
-build:mimalloc --define=quarisma_enable_mimalloc=true
+build:mimalloc --define=memory_enable_mimalloc=true
 ```
 
 #### 4. bazel/quarisma.bzl
@@ -898,7 +898,7 @@ Bazel uses `config_setting` + defines:
 ```python
 config_setting(
     name = "enable_mimalloc",
-    define_values = {"quarisma_enable_mimalloc": "true"},
+    define_values = {"memory_enable_mimalloc": "true"},
 )
 ```
 
@@ -906,7 +906,7 @@ Used in build with:
 ```bash
 bazel build --config=mimalloc //...
 # or
-bazel build --define=quarisma_enable_mimalloc=true //...
+bazel build --define=memory_enable_mimalloc=true //...
 ```
 
 #### Conditional Compilation

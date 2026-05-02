@@ -19,12 +19,6 @@ def core_defines():
         "//conditions:default": ["CORE_HAS_MKL=0"],
     })
 
-    # SVML — CORE_HAS_SVML
-    defines += select({
-        "//bazel:enable_svml": ["CORE_HAS_SVML=1"],
-        "//conditions:default": ["CORE_HAS_SVML=0"],
-    })
-
     # ROCm — CORE_HAS_ROCM
     defines += select({
         "//bazel:enable_rocm": ["CORE_HAS_ROCM=1"],
@@ -43,10 +37,10 @@ def core_defines():
         "//conditions:default": ["CORE_HAS_MAGICENUM=1"],
     })
 
-    # Google Test availability — CORE_HAS_GTEST
+    # Google Test availability — CORE_HAS_GTEST (CMake CORE_ENABLE_GTEST default ON)
     defines += select({
-        "//bazel:enable_gtest": ["CORE_HAS_GTEST=1"],
-        "//conditions:default": ["CORE_HAS_GTEST=0"],
+        "//bazel:disable_gtest": ["CORE_HAS_GTEST=0"],
+        "//conditions:default": ["CORE_HAS_GTEST=1"],
     })
 
     # LU pivoting — CORE_LU_PIVOTING (only defined when ON, matching CMake)

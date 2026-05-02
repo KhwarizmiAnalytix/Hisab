@@ -48,14 +48,14 @@ cc_library(
         ":parallel_srcs",
     ] + select({
         # Parallel backend: TBB > OpenMP > std_thread (matches CMake exclusion logic)
-        "//bazel:enable_tbb": glob(["tbb/*.cpp"], allow_empty = True),
+        "//bazel:parallel_enable_tbb": glob(["tbb/*.cpp"], allow_empty = True),
         "//bazel:enable_openmp": glob(["openmp/*.cpp"], allow_empty = True),
         "//conditions:default": glob(["std_thread/*.cpp"], allow_empty = True),
     }),
     hdrs = [
         ":parallel_hdrs",
     ] + select({
-        "//bazel:enable_tbb": glob(["tbb/*.h", "tbb/*.hxx"], allow_empty = True),
+        "//bazel:parallel_enable_tbb": glob(["tbb/*.h", "tbb/*.hxx"], allow_empty = True),
         "//bazel:enable_openmp": glob(["openmp/*.h", "openmp/*.hxx"], allow_empty = True),
         "//conditions:default": glob(["std_thread/*.h", "std_thread/*.hxx"], allow_empty = True),
     }),
@@ -78,7 +78,7 @@ cc_library(
         "//conditions:default": True,
     }),
     deps = select({
-        "//bazel:enable_tbb": [
+        "//bazel:parallel_enable_tbb": [
             "@tbb//:tbb",
             "@tbb//:tbbmalloc",
         ],

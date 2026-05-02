@@ -7,9 +7,23 @@ load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_lin
 
 VECTORIZATION_CXX_STD = "c++20"
 
+def _vectorization_target_copts():
+    """Flags applied to Vectorization library/tests like CMake Vectorization target (MSVC /WX, Unix -include cstdlib)."""
+    return select({
+        "@platforms//os:windows": ["/WX"],
+        "//conditions:default": [
+            "-include",
+            "cstdlib",
+        ],
+    })
+
 def vectorization_copts():
-    """Compiler options: C++ standard + ISA flags for the active SIMD tier."""
+    """Compiler options: C++ standard + ISA flags (tests/benchmarks; matches their CMake flags)."""
     return quarisma_copts(cxx_std = VECTORIZATION_CXX_STD) + vectorization_simd_copts()
+
+def vectorization_library_copts():
+    """vectorization_copts() plus MSVC /WX and Unix -include cstdlib (CMake Vectorization target only)."""
+    return vectorization_copts() + _vectorization_target_copts()
 
 def vectorization_simd_copts():
     """ISA flags — must match CMake Library/Vectorization/Cmake/utils.cmake.
@@ -84,27 +98,30 @@ def vectorization_defines():
                 "VECTORIZATION_HAS_AVX512=0",
                 "VECTORIZATION_VECTORIZED=1",
             ],
-        "//bazel:vectorization_type_avx512": [
-            "VECTORIZATION_HAS_SSE=0",
-            "VECTORIZATION_HAS_AVX=0",
-            "VECTORIZATION_HAS_AVX2=0",
-            "VECTORIZATION_HAS_AVX512=1",
-            "VECTORIZATION_VECTORIZED=1",
-        ],
-        "//conditions:default": [
-            "VECTORIZATION_HAS_SSE=0",
-            "VECTORIZATION_HAS_AVX=0",
-            "VECTORIZATION_HAS_AVX2=1",
-            "VECTORIZATION_HAS_AVX512=0",
-            "VECTORIZATION_VECTORIZED=1",
-        ],
-    })
+            "//bazel:vectorization_type_avx512": [
+                "VECTORIZATION_HAS_SSE=0",
+                "VECTORIZATION_HAS_AVX=0",
+                "VECTORIZATION_HAS_AVX2=0",
+                "VECTORIZATION_HAS_AVX512=1",
+                "VECTORIZATION_VECTORIZED=1",
+            ],
+            "//conditions:default": [
+                "VECTORIZATION_HAS_SSE=0",
+                "VECTORIZATION_HAS_AVX=0",
+                "VECTORIZATION_HAS_AVX2=1",
+                "VECTORIZATION_HAS_AVX512=0",
+                "VECTORIZATION_VECTORIZED=1",
+            ],
+        })
         + select({
             "//bazel:enable_svml": ["VECTORIZATION_HAS_SVML=1"],
             "//conditions:default": ["VECTORIZATION_HAS_SVML=0"],
         })
+        + select({
+            "//bazel:disable_gtest": ["VECTORIZATION_HAS_GTEST=0"],
+            "//conditions:default": ["VECTORIZATION_HAS_GTEST=1"],
+        })
         + [
-            "VECTORIZATION_HAS_GTEST=1",
             "VECTORIZATION_HAS_MEMORY=1",
             "VECTORIZATION_HAS_LOGGING=1",
             "VECTORIZATION_PACKET_SIZE=4",
