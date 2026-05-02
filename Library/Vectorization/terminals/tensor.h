@@ -409,14 +409,14 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t  at(size_type i) const noexcept { return data()[i]; }
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t& at(size_type i)       noexcept { return data()[i]; }
 
-    // 2-D scalar element (row-major)
-    VECTORIZATION_FUNCTION_ATTRIBUTE value_t at(size_type i, size_type j) const noexcept
+    // 2-D scalar element (row-major). Not noexcept: debug bounds checks may throw (like std::vector::at).
+    VECTORIZATION_FUNCTION_ATTRIBUTE value_t at(size_type i, size_type j) const
     {
         VECTORIZATION_CHECK_DEBUG(i < rows(),    "row index out of range");
         VECTORIZATION_CHECK_DEBUG(j < columns(), "column index out of range");
         return data()[i * columns() + j];
     }
-    VECTORIZATION_FUNCTION_ATTRIBUTE value_t& at(size_type i, size_type j) noexcept
+    VECTORIZATION_FUNCTION_ATTRIBUTE value_t& at(size_type i, size_type j)
     {
         VECTORIZATION_CHECK_DEBUG(i < rows(),    "row index out of range");
         VECTORIZATION_CHECK_DEBUG(j < columns(), "column index out of range");
@@ -434,13 +434,13 @@ public:
     }
 
     // Row view as sub-tensor (for rank-2: returns a rank-1 row; for rank-N: reduces outer dim)
-    VECTORIZATION_FUNCTION_ATTRIBUTE tensor row(size_type i) const noexcept
+    VECTORIZATION_FUNCTION_ATTRIBUTE tensor row(size_type i) const
     {
         VECTORIZATION_CHECK_DEBUG(rank() >= 2, "row() requires rank >= 2");
         VECTORIZATION_CHECK_DEBUG(i < rows(), "row index out of range");
         return tensor(data() + i * columns(), columns());
     }
-    VECTORIZATION_FUNCTION_ATTRIBUTE tensor row(size_type i) noexcept
+    VECTORIZATION_FUNCTION_ATTRIBUTE tensor row(size_type i)
     {
         VECTORIZATION_CHECK_DEBUG(rank() >= 2, "row() requires rank >= 2");
         VECTORIZATION_CHECK_DEBUG(i < rows(), "row index out of range");
@@ -559,7 +559,7 @@ public:
         return true;
     }
 
-    bool symmetric() const noexcept
+    bool symmetric() const
     {
         if (rank() < 2 || rows() != columns()) return false;
         for (size_t i = 0; i < rows(); ++i)
@@ -568,7 +568,7 @@ public:
         return true;
     }
 
-    bool identity() const noexcept
+    bool identity() const
     {
         if (rank() < 2 || rows() != columns()) return false;
         for (size_t i = 0; i < rows(); ++i)
@@ -577,7 +577,7 @@ public:
         return true;
     }
 
-    bool is_correlation() const noexcept
+    bool is_correlation() const
     {
         if (!symmetric()) return false;
         for (size_t i = 0; i < rows(); ++i)
@@ -589,7 +589,7 @@ public:
         return true;
     }
 
-    value_t trace() const noexcept
+    value_t trace() const
     {
         VECTORIZATION_CHECK_DEBUG(rank() >= 2 && rows() == columns(), "trace requires square rank-2 tensor");
         value_t t = 0;

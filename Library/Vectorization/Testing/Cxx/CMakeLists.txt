@@ -33,7 +33,9 @@ add_executable(VectorizationCxxTests ${test_sources})
 # Clang 22 ICE: LiveDebugValues crashes on TestMultiSimd.cpp with -gcodeview + AVX2 +
 # the large number of TestFunction<func_X> template instantiations.  Disabling debug
 # info for this single TU (-g0 overrides -gcodeview) eliminates the crash.
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND WIN32)
+# Coverage builds add -fcoverage-mapping; combining that with -O1 -g0 triggers a different
+# Clang 22 frontend ICE (fmt::fstring codegen). Use the normal TU flags when coverage is on.
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND WIN32 AND NOT VECTORIZATION_ENABLE_COVERAGE)
   set_source_files_properties(
     "${CMAKE_CURRENT_SOURCE_DIR}/TestMultiSimd.cpp"
     PROPERTIES COMPILE_FLAGS "-O1 -g0"

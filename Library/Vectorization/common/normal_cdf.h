@@ -21,7 +21,7 @@
 
 #include <cstddef>
 
-#include "vectorization_export.h"
+#include "common/vectorization_export.h"
 
 namespace vectorization
 {

@@ -7,9 +7,8 @@
 # VECTORIZATION_TYPE (cache: no | sse | avx | avx2 | avx512) selects which backend/ source trees are
 # compiled in. Optional VECTORIZATION_ENABLE_SVML adds SVML headers.
 #
-# C++ preprocessor defines (exactly one is 1 when vectorized; the rest are 0): no     → all
-# VECTORIZATION_HAS_* = 0 sse    → VECTORIZATION_HAS_SSE = 1 avx    → VECTORIZATION_HAS_AVX = 1 avx2
-# → VECTORIZATION_HAS_AVX2 = 1  (sources under backend/avx/) avx512 → VECTORIZATION_HAS_AVX512 = 1
+# C++ preprocessor defines when vectorized: sse → HAS_SSE=1; avx → HAS_AVX=1; avx2 → HAS_AVX=1 and
+# HAS_AVX2=1 (AVX2 extends AVX; same backend/avx/ tree); avx512 → HAS_AVX512=1 (HAS_AVX may be 0).
 # VECTORIZATION_HAS_SVML=1/0   — SVML active in C++ code VECTORIZATION_HAS_GTEST=1/0  — Google Test
 # available to Vectorization tests
 # =============================================================================
@@ -181,11 +180,10 @@ set(VECTORIZATION_COMPILER_FLAGS "${VECTORIZATION_COMPILER_FLAGS}"
     CACHE INTERNAL "Quarisma: SIMD flags from Vectorization utils" FORCE
 )
 
-if(NOT VECTORIZATION_ENABLE_COVERAGE AND NOT VECTORIZATION_ENABLE_SANITIZER)
-  message("--avx compiler flags: ${VECTORIZATION_COMPILER_FLAGS}")
-  set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
-endif()
+
+message("-- SIMD compiler flags: ${VECTORIZATION_COMPILER_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
 
 # =============================================================================
 # SECTION 2 —
@@ -232,7 +230,8 @@ else()
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_SSE=0)
 endif()
 
-if(VECTORIZATION_TYPE STREQUAL "avx")
+# AVX2 implies AVX; set once to avoid duplicate -DVECTORIZATION_HAS_AVX on the command line.
+if(VECTORIZATION_TYPE STREQUAL "avx" OR VECTORIZATION_TYPE STREQUAL "avx2")
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_AVX=1)
 else()
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_AVX=0)
