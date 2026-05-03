@@ -34,12 +34,6 @@ function(quarisma_configure_sanitizer module_name)
     return()
   endif()
 
-  string(TOLOWER "${module_name}" _mod_lower)
-  string(SUBSTRING "${_mod_lower}" 0 1 _first_char)
-  string(TOUPPER "${_first_char}" _first_char)
-  string(SUBSTRING "${_mod_lower}" 1 -1 _rest_chars)
-  set(_target_name "${_first_char}${_rest_chars}")
-
   set(_san_type "${${module_name}_SANITIZER_TYPE}")
 
   message(STATUS "${module_name}: sanitizer enabled (${_san_type})")
@@ -55,8 +49,8 @@ function(quarisma_configure_sanitizer module_name)
     endif()
   endif()
 
-  set(_san_args -O1 -g -fno-omit-frame-pointer -fno-optimize-sibling-calls
-                "-fsanitize=${_san_type}"
+  set(_san_compile_flags -O1 -g -fno-omit-frame-pointer -fno-optimize-sibling-calls
+                         "-fsanitize=${_san_type}"
   )
 
   if(_is_clang)
@@ -70,9 +64,18 @@ function(quarisma_configure_sanitizer module_name)
           CACHE INTERNAL "Sanitizer blacklist already configured"
       )
     endif()
-    list(APPEND _san_args "SHELL:-fsanitize-blacklist=${PROJECT_BINARY_DIR}/sanitizer_ignore.txt")
+    list(APPEND _san_compile_flags "-fsanitize-blacklist=${PROJECT_BINARY_DIR}/sanitizer_ignore.txt")
   endif()
 
-  target_compile_options(${_target_name} PRIVATE ${_san_args})
-  target_link_options(${_target_name} PRIVATE "-fsanitize=${_san_type}")
+  list(JOIN _san_compile_flags " " _san_compile_str)
+
+  string(APPEND CMAKE_C_FLAGS " ${_san_compile_str}")
+  string(APPEND CMAKE_CXX_FLAGS " ${_san_compile_str}")
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " -fsanitize=${_san_type}")
+  string(APPEND CMAKE_SHARED_LINKER_FLAGS " -fsanitize=${_san_type}")
+
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}" PARENT_SCOPE)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" PARENT_SCOPE)
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}" PARENT_SCOPE)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}" PARENT_SCOPE)
 endfunction()

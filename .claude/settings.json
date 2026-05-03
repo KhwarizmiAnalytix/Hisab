@@ -3,7 +3,8 @@
     "allow": [
       "Read(//usr/bin/**)",
       "Read(//usr/local/bin/**)",
-      "Bash(wait)"
+      "Bash(wait)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }
