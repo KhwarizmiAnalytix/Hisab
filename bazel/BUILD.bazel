@@ -278,6 +278,16 @@ config_setting(
 )
 
 config_setting(
+    name = "vectorization_type_neon",
+    define_values = {"vectorization_type": "neon"},
+)
+
+config_setting(
+    name = "vectorization_type_sve",
+    define_values = {"vectorization_type": "sve"},
+)
+
+config_setting(
     name = "enable_rocm",
     define_values = {"core_enable_rocm": "true"},
 )

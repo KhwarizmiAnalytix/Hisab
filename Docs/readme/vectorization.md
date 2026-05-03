@@ -22,6 +22,10 @@ Quarisma supports the following CPU SIMD instruction sets:
 | `avx` | AVX instructions | `-mavx` | `/arch:AVX` | Intel Sandy Bridge+ (2011+) |
 | `avx2` | AVX2 instructions (default) | `-mavx -mavx2` | `/arch:AVX2` | Intel Haswell+ (2013+) |
 | `avx512` | AVX-512 instructions | `-mavx -mavx2 -mavx512f` | `/arch:AVX512` | Intel Skylake-X+ (2017+) |
+| `neon` | AArch64 NEON (128-bit) | `-march=armv8-a` (typical) | — | Apple Silicon, Linux AArch64 |
+| `sve` | AArch64 SVE (fixed 128-bit) | `-march=armv8-a+sve -msve-vector-bits=128` | — | SVE-capable CPUs (see below) |
+
+The `sve` preset uses a **fixed** 128-bit vector length so lane counts match the NEON kernels. Wider `-msve-vector-bits` values are not supported yet.
 
 ## Quick Start
 

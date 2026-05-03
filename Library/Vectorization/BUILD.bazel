@@ -49,6 +49,25 @@ cc_library(
             ],
             allow_empty = True,
         ),
+        "//bazel:vectorization_type_neon": glob(
+            ["**/*.cpp", "**/*.cxx"],
+            exclude = _VEC_TEST + [
+                "backend/sse/**",
+                "backend/avx/**",
+                "backend/avx512/**",
+                "backend/sve/**",
+            ],
+            allow_empty = True,
+        ),
+        "//bazel:vectorization_type_sve": glob(
+            ["**/*.cpp", "**/*.cxx"],
+            exclude = _VEC_TEST + [
+                "backend/sse/**",
+                "backend/avx/**",
+                "backend/avx512/**",
+            ],
+            allow_empty = True,
+        ),
         "//conditions:default": glob(
             ["**/*.cpp", "**/*.cxx"],
             exclude = _VEC_TEST + [
@@ -116,6 +135,35 @@ cc_library(
                 exclude = _VEC_TEST + [
                     "backend/sse/**",
                     "backend/avx/**",
+                ],
+                allow_empty = True,
+            ),
+            "//bazel:vectorization_type_neon": glob(
+                [
+                    "**/*.h",
+                    "**/*.inl",
+                    "**/*.hxx",
+                ],
+                exclude = _VEC_TEST + [
+                    "backend/sse/**",
+                    "backend/avx/**",
+                    "backend/avx512/**",
+                    "backend/sve/**",
+                    _VEC_SVML_H,
+                ],
+                allow_empty = True,
+            ),
+            "//bazel:vectorization_type_sve": glob(
+                [
+                    "**/*.h",
+                    "**/*.inl",
+                    "**/*.hxx",
+                ],
+                exclude = _VEC_TEST + [
+                    "backend/sse/**",
+                    "backend/avx/**",
+                    "backend/avx512/**",
+                    _VEC_SVML_H,
                 ],
                 allow_empty = True,
             ),

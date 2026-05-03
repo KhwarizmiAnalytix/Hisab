@@ -38,6 +38,12 @@
 #elif VECTORIZATION_HAS_SSE
 #include "backend/sse/double/simd.h"
 #include "backend/sse/float/simd.h"
+#elif VECTORIZATION_HAS_SVE
+#include "backend/sve/double/simd.h"
+#include "backend/sve/float/simd.h"
+#elif VECTORIZATION_HAS_NEON
+#include "backend/neon/double/simd.h"
+#include "backend/neon/float/simd.h"
 #endif
 
 

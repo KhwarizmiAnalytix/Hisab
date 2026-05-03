@@ -636,7 +636,7 @@ class QuarismaFlags:
         ]
         self.__description = [
             # Valid CMake options
-            "vectorisation type: no, sse, avx, avx2 or avx512",
+            "vectorisation type: no, sse, avx, avx2, avx512, neon, or sve",
             "enable Intel TBB (Threading Building Blocks) support",
             "enable OpenMP",
             "enable MKL",
@@ -770,7 +770,7 @@ class QuarismaFlags:
 
     def __process_arg_list(self, arg_list):
         sanitizer_list = ["address", "undefined", "thread", "memory", "leak"]
-        vectorisation_list = ["no", "sse", "avx", "avx2", "avx512"]
+        vectorisation_list = ["no", "sse", "avx", "avx2", "avx512", "neon", "sve"]
         cxx_std_list = ["cxx17", "cxx20", "cxx23"]
         logging_backend_list = ["native", "loguru", "glog"]
         profiler_choices = {"kineto": "KINETO", "native": "NATIVE", "itt": "ITT"}
@@ -1098,7 +1098,7 @@ class QuarismaFlags:
             elif key == "parallel_backend":
                 key = "parallel.std, parallel.openmp, or parallel.tbb"
             elif key == "vectorisation":
-                key = "sse, avx, avx2 or avx512"
+                key = "sse, avx, avx2, avx512, neon, or sve"
             elif key == "cxxstd":
                 key = "cxx11, cxx14, cxx17, cxx20, cxx23"
             elif key == "logging_backend":

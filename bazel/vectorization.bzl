@@ -63,6 +63,11 @@ def vectorization_simd_copts():
         d["//bazel:vec_%s_win" % short] = msvc[short]
         d["//bazel:vec_%s_linux" % short] = unix[short]
         d["//bazel:vec_%s_macos" % short] = unix[short]
+    arm_neon = ["-march=armv8-a"]
+    arm_sve = ["-march=armv8-a+sve", "-msve-vector-bits=128"]
+    for os_suffix in ("linux_aarch64", "macos_aarch64", "windows_aarch64"):
+        d["//bazel:vec_neon_%s" % os_suffix] = arm_neon
+        d["//bazel:vec_sve_%s" % os_suffix] = arm_sve
     d["//conditions:default"] = unix["avx2"]
     return select(d)
 
@@ -74,6 +79,8 @@ def _svml_autodetect_defines():
     return select({
         "//bazel:disable_svml": ["VECTORIZATION_HAS_SVML=0"],
         "//bazel:vectorization_type_no": ["VECTORIZATION_HAS_SVML=0"],
+        "//bazel:vectorization_type_neon": ["VECTORIZATION_HAS_SVML=0"],
+        "//bazel:vectorization_type_sve": ["VECTORIZATION_HAS_SVML=0"],
         "//bazel:vectorization_type_sse": _svml_macro(SVML_NEEDED_SSE),
         "//bazel:vectorization_type_avx": _svml_macro(SVML_NEEDED_AVX),
         "//bazel:vectorization_type_avx2": _svml_macro(SVML_NEEDED_AVX2),
@@ -95,6 +102,8 @@ def vectorization_svml_deps():
         "//conditions:default": select({
             "//bazel:disable_svml": [],
             "//bazel:vectorization_type_no": [],
+            "//bazel:vectorization_type_neon": [],
+            "//bazel:vectorization_type_sve": [],
             "//bazel:vectorization_type_sse": ["@svml//:SVML"] if SVML_NEEDED_SSE else [],
             "//bazel:vectorization_type_avx": ["@svml//:SVML"] if SVML_NEEDED_AVX else [],
             "//bazel:vectorization_type_avx2": ["@svml//:SVML"] if SVML_NEEDED_AVX2 else [],
@@ -110,6 +119,8 @@ def vectorization_svml_hdrs_extra(svml_hdr):
         "//conditions:default": select({
             "//bazel:disable_svml": [],
             "//bazel:vectorization_type_no": [],
+            "//bazel:vectorization_type_neon": [],
+            "//bazel:vectorization_type_sve": [],
             "//bazel:vectorization_type_sse": [svml_hdr] if SVML_NEEDED_SSE else [],
             "//bazel:vectorization_type_avx": [svml_hdr] if SVML_NEEDED_AVX else [],
             "//bazel:vectorization_type_avx2": [svml_hdr] if SVML_NEEDED_AVX2 else [],
@@ -129,6 +140,8 @@ def vectorization_defines():
                 "VECTORIZATION_HAS_AVX=0",
                 "VECTORIZATION_HAS_AVX2=0",
                 "VECTORIZATION_HAS_AVX512=0",
+                "VECTORIZATION_HAS_NEON=0",
+                "VECTORIZATION_HAS_SVE=0",
                 "VECTORIZATION_VECTORIZED=0",
             ],
             "//bazel:vectorization_type_sse": [
@@ -136,6 +149,8 @@ def vectorization_defines():
                 "VECTORIZATION_HAS_AVX=0",
                 "VECTORIZATION_HAS_AVX2=0",
                 "VECTORIZATION_HAS_AVX512=0",
+                "VECTORIZATION_HAS_NEON=0",
+                "VECTORIZATION_HAS_SVE=0",
                 "VECTORIZATION_VECTORIZED=1",
             ],
             "//bazel:vectorization_type_avx": [
@@ -143,6 +158,8 @@ def vectorization_defines():
                 "VECTORIZATION_HAS_AVX=1",
                 "VECTORIZATION_HAS_AVX2=0",
                 "VECTORIZATION_HAS_AVX512=0",
+                "VECTORIZATION_HAS_NEON=0",
+                "VECTORIZATION_HAS_SVE=0",
                 "VECTORIZATION_VECTORIZED=1",
             ],
             "//bazel:vectorization_type_avx2": [
@@ -150,6 +167,8 @@ def vectorization_defines():
                 "VECTORIZATION_HAS_AVX=1",
                 "VECTORIZATION_HAS_AVX2=1",
                 "VECTORIZATION_HAS_AVX512=0",
+                "VECTORIZATION_HAS_NEON=0",
+                "VECTORIZATION_HAS_SVE=0",
                 "VECTORIZATION_VECTORIZED=1",
             ],
             "//bazel:vectorization_type_avx512": [
@@ -157,6 +176,26 @@ def vectorization_defines():
                 "VECTORIZATION_HAS_AVX=0",
                 "VECTORIZATION_HAS_AVX2=0",
                 "VECTORIZATION_HAS_AVX512=1",
+                "VECTORIZATION_HAS_NEON=0",
+                "VECTORIZATION_HAS_SVE=0",
+                "VECTORIZATION_VECTORIZED=1",
+            ],
+            "//bazel:vectorization_type_neon": [
+                "VECTORIZATION_HAS_SSE=0",
+                "VECTORIZATION_HAS_AVX=0",
+                "VECTORIZATION_HAS_AVX2=0",
+                "VECTORIZATION_HAS_AVX512=0",
+                "VECTORIZATION_HAS_NEON=1",
+                "VECTORIZATION_HAS_SVE=0",
+                "VECTORIZATION_VECTORIZED=1",
+            ],
+            "//bazel:vectorization_type_sve": [
+                "VECTORIZATION_HAS_SSE=0",
+                "VECTORIZATION_HAS_AVX=0",
+                "VECTORIZATION_HAS_AVX2=0",
+                "VECTORIZATION_HAS_AVX512=0",
+                "VECTORIZATION_HAS_NEON=0",
+                "VECTORIZATION_HAS_SVE=1",
                 "VECTORIZATION_VECTORIZED=1",
             ],
             "//conditions:default": [
@@ -164,6 +203,8 @@ def vectorization_defines():
                 "VECTORIZATION_HAS_AVX=0",
                 "VECTORIZATION_HAS_AVX2=1",
                 "VECTORIZATION_HAS_AVX512=0",
+                "VECTORIZATION_HAS_NEON=0",
+                "VECTORIZATION_HAS_SVE=0",
                 "VECTORIZATION_VECTORIZED=1",
             ],
         })

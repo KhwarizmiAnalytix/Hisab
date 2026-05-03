@@ -68,10 +68,26 @@ if(NOT TMP_NEED_TO_TURN_OFF_DEPRECATION_WARNING AND NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated")
 endif()
 
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _quarisma_vec_proc)
+if(_quarisma_vec_proc MATCHES "^(x86_64|amd64|i686|i386)$")
+  set(_quarisma_vec_is_x86 TRUE)
+else()
+  set(_quarisma_vec_is_x86 FALSE)
+endif()
+if(_quarisma_vec_proc MATCHES "^(aarch64|arm64)$")
+  set(_quarisma_vec_is_aarch64 TRUE)
+else()
+  set(_quarisma_vec_is_aarch64 FALSE)
+endif()
+
 if(NOT INTERN_BUILD_MOBILE)
+  set(VECTORIZATION OFF)
+  set(HAS_NEON 0)
+  set(HAS_SVE 0)
+
+  if(_quarisma_vec_is_x86)
   # ---[ Check if the compiler has SSE support.
   cmake_push_check_state(RESET)
-  set(VECTORIZATION OFF)
   if(NOT MSVC)
     set(CMAKE_REQUIRED_FLAGS "-msse4.2 -msse4.1 -msse2 -msse")
   endif()
@@ -221,7 +237,10 @@ if(NOT INTERN_BUILD_MOBILE)
     set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
   endif()
   cmake_pop_check_state()
-  
+
+  endif()  # _quarisma_vec_is_x86
+
+  if(_quarisma_vec_is_x86)
   # ---[ Check if the compiler has SVML support.
   cmake_push_check_state(RESET)
   set(CMAKE_REQUIRED_FLAGS "${VECTORIZATION_COMPILER_FLAGS}")
@@ -267,6 +286,60 @@ if(NOT INTERN_BUILD_MOBILE)
       )
     endif()
   endif()
+
+  endif()  # _quarisma_vec_is_x86 (SVML)
+
+  if(_quarisma_vec_is_aarch64)
+    # ---[ AArch64 NEON
+    cmake_push_check_state(RESET)
+    if(NOT MSVC)
+      set(CMAKE_REQUIRED_FLAGS "-march=armv8-a")
+    endif()
+    check_cxx_source_compiles(
+      "#include <arm_neon.h>
+       int main() {
+         float32x4_t a = vdupq_n_f32(1.f);
+         float32x4_t b = vfmaq_f32(a, a, a);
+         (void)b;
+         return 0;
+       }"
+      TMP_COMPILER_SUPPORTS_ARM_NEON
+    )
+    if(TMP_COMPILER_SUPPORTS_ARM_NEON AND VECTORIZATION_TYPE STREQUAL "neon")
+      message("--Current compiler supports AArch64 NEON.")
+      set(HAS_NEON 1)
+      set(VECTORIZATION ON)
+      if(NOT MSVC)
+        set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+      endif()
+    endif()
+    cmake_pop_check_state()
+
+    # ---[ AArch64 SVE (fixed 128-bit; matches backend/sve/*/simd.h)
+    cmake_push_check_state(RESET)
+    if(NOT MSVC)
+      set(CMAKE_REQUIRED_FLAGS "-march=armv8-a+sve -msve-vector-bits=128")
+    endif()
+    check_cxx_source_compiles(
+      "#include <arm_sve.h>
+       int main() {
+         svbool_t pg = svptrue_b32();
+         (void)pg;
+         return 0;
+       }"
+      TMP_COMPILER_SUPPORTS_ARM_SVE128
+    )
+    if(TMP_COMPILER_SUPPORTS_ARM_SVE128 AND VECTORIZATION_TYPE STREQUAL "sve")
+      message("--Current compiler supports AArch64 SVE (128-bit vector length).")
+      set(HAS_SVE 1)
+      set(VECTORIZATION ON)
+      if(NOT MSVC)
+        set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+      endif()
+    endif()
+    cmake_pop_check_state()
+  endif()
+
 endif()
 
 if(USE_NATIVE_ARCH)

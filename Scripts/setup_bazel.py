@@ -275,7 +275,7 @@ class BazelConfiguration:
                 self.cxx_standard = arg_lower
 
             # Vectorization
-            elif arg_lower in ["sse", "avx", "avx2", "avx512"]:
+            elif arg_lower in ["sse", "avx", "avx2", "avx512", "neon", "sve"]:
                 self.vectorization = arg_lower
                 self.configs.append(arg_lower)
 
@@ -1101,6 +1101,8 @@ def print_help() -> None:
     print("  avx           - AVX vectorization")
     print("  avx2          - AVX2 vectorization (recommended)")
     print("  avx512        - AVX512 vectorization")
+    print("  neon          - AArch64 NEON (128-bit SIMD)")
+    print("  sve           - AArch64 SVE fixed 128-bit (-msve-vector-bits=128)")
     print("\nOptional features:")
     print("  lto           - Link-time optimization")
     print("  mimalloc      - Microsoft mimalloc allocator")

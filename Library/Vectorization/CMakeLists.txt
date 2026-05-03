@@ -4,7 +4,7 @@
 # Provides the Vectorization library: SIMD packet abstractions, expression templates, and
 # architecture-specific kernels for SSE, AVX, AVX2, and AVX-512.
 #
-# VECTORIZATION_TYPE (cache: no | sse | avx | avx2 | avx512) selects which backend/ source trees are
+# VECTORIZATION_TYPE (cache: no | sse | avx | avx2 | avx512 | neon | sve) selects which backend/ source trees are
 # compiled in. Optional VECTORIZATION_ENABLE_SVML adds SVML headers.
 #
 # C++ preprocessor defines when vectorized: sse → HAS_SSE=1; avx → HAS_AVX=1; avx2 → HAS_AVX=1 and
@@ -23,13 +23,14 @@ cmake_minimum_required(VERSION 3.16)
 # backend source filters and VECTORIZATION_HAS_* one-to-one.
 # =============================================================================
 set(VECTORIZATION_TYPE "avx2"
-    CACHE STRING "vectorization implementation to use. Options are no, sse, avx, avx2, or avx512"
+    CACHE STRING
+        "vectorization implementation to use. Options are no, sse, avx, avx2, avx512, neon, sve"
 )
-set_property(CACHE VECTORIZATION_TYPE PROPERTY STRINGS no sse avx avx2 avx512)
-if(NOT VECTORIZATION_TYPE MATCHES "^(no|sse|avx|avx2|avx512)$")
+set_property(CACHE VECTORIZATION_TYPE PROPERTY STRINGS no sse avx avx2 avx512 neon sve)
+if(NOT VECTORIZATION_TYPE MATCHES "^(no|sse|avx|avx2|avx512|neon|sve)$")
   message(
     FATAL_ERROR
-      "VECTORIZATION_TYPE must be one of: no, sse, avx, avx2, avx512 (got '${VECTORIZATION_TYPE}')"
+      "VECTORIZATION_TYPE must be one of: no, sse, avx, avx2, avx512, neon, sve (got '${VECTORIZATION_TYPE}')"
   )
 endif()
 
@@ -154,7 +155,8 @@ if(NOT VECTORIZATION_TYPE STREQUAL "no" AND NOT VECTORIZATION)
       "Falling back to VECTORIZATION_TYPE=no."
   )
   set(VECTORIZATION_TYPE "no"
-      CACHE STRING "vectorization implementation to use. Options are no, sse, avx, avx2, or avx512"
+      CACHE STRING
+          "vectorization implementation to use. Options are no, sse, avx, avx2, avx512, neon, sve"
       FORCE
   )
 endif()
@@ -169,7 +171,7 @@ else()
                                         "Quarisma: std::exception_ptr (Vectorization utils)" FORCE
   )
 endif()
-foreach(_simd IN ITEMS SSE AVX AVX2 AVX512)
+foreach(_simd IN ITEMS SSE AVX AVX2 AVX512 NEON SVE)
   if(HAS_${_simd})
     set(PROJECT_${_simd} 1 CACHE INTERNAL "Quarisma: SIMD (Vectorization utils)" FORCE)
   else()
@@ -248,11 +250,23 @@ else()
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_AVX512=0)
 endif()
 
+if(VECTORIZATION_TYPE STREQUAL "neon")
+  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_NEON=1)
+else()
+  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_NEON=0)
+endif()
+
+if(VECTORIZATION_TYPE STREQUAL "sve")
+  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_SVE=1)
+else()
+  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_SVE=0)
+endif()
+
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_SVML)
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_GTEST)
 list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_MEMORY=${_vec_has_memory})
 list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_LOGGING=${_vec_has_logging})
-if(VECTORIZATION_TYPE MATCHES "^(sse|avx|avx2|avx512)$")
+if(VECTORIZATION_TYPE MATCHES "^(sse|avx|avx2|avx512|neon|sve)$")
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_VECTORIZED=1)
 else()
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_VECTORIZED=0)
@@ -298,6 +312,16 @@ if(NOT VECTORIZATION_TYPE STREQUAL "avx512")
   list(FILTER headers EXCLUDE REGEX ".*/backend/avx512/.*")
   list(FILTER sources EXCLUDE REGEX ".*/backend/avx512/.*")
   list(FILTER templates EXCLUDE REGEX ".*/backend/avx512/.*")
+endif()
+if(NOT VECTORIZATION_TYPE STREQUAL "neon" AND NOT VECTORIZATION_TYPE STREQUAL "sve")
+  list(FILTER headers EXCLUDE REGEX ".*/backend/neon/.*")
+  list(FILTER sources EXCLUDE REGEX ".*/backend/neon/.*")
+  list(FILTER templates EXCLUDE REGEX ".*/backend/neon/.*")
+endif()
+if(NOT VECTORIZATION_TYPE STREQUAL "sve")
+  list(FILTER headers EXCLUDE REGEX ".*/backend/sve/.*")
+  list(FILTER sources EXCLUDE REGEX ".*/backend/sve/.*")
+  list(FILTER templates EXCLUDE REGEX ".*/backend/sve/.*")
 endif()
 
 if(NOT VECTORIZATION_ENABLE_SVML)
