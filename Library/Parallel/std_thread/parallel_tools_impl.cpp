@@ -23,6 +23,7 @@
 
 #include "common/parallel_tools_impl.h"
 
+#include <atomic>
 #include <charconv>
 #include <cstdlib>  // For std::getenv()
 #include <string>
@@ -40,13 +41,13 @@ namespace detail
 {
 namespace parallel_impl
 {
-static int specified_num_threads_std;  // Default initialized to zero
+static std::atomic<int> specified_num_threads_std{0};
 
 //------------------------------------------------------------------------------
 int number_of_threads_stdthread()
 {
-    return (specified_num_threads_std != 0) ? specified_num_threads_std
-                                            : std::thread::hardware_concurrency();
+    const int n = specified_num_threads_std.load(std::memory_order_relaxed);
+    return (n != 0) ? static_cast<unsigned int>(n) : std::thread::hardware_concurrency();
 }
 
 //------------------------------------------------------------------------------
@@ -90,10 +91,10 @@ void parallel_tools_impl<backend_type::std_thread>::initialize(int num_threads)
 template <>
 int parallel_tools_impl<backend_type::std_thread>::estimated_number_of_threads()
 {
-    return specified_num_threads_std > 0
-               ? specified_num_threads_std
-               : parallel_tools_impl<
-                     backend_type::std_thread>::estimated_default_number_of_threads();
+    const int n = specified_num_threads_std.load(std::memory_order_relaxed);
+    return n > 0 ? n
+                 : parallel_tools_impl<
+                       backend_type::std_thread>::estimated_default_number_of_threads();
 }
 
 //------------------------------------------------------------------------------

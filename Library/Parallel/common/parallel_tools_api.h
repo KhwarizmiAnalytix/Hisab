@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <memory>
 
 #include "common/parallel_export.h"
@@ -146,7 +147,7 @@ private:
     /**
    * Desired number of threads
    */
-    int desired_number_of_thread_ = 0;
+    std::atomic<int> desired_number_of_thread_{0};
 
     /**
    * Single backend implementation selected at compile-time
@@ -157,4 +158,3 @@ private:
 }  // namespace parallel_impl
 }  // namespace detail
 }  // namespace parallel
-

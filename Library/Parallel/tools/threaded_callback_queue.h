@@ -120,12 +120,9 @@ public:
      */
         PARALLEL_API virtual void wait() const
         {
-            if (status_ == READY)
-            {
-                return;
-            }
             std::unique_lock<std::mutex> lock(mutex_);
-            condition_variable_.wait(lock, [this] { return status_ == READY; });
+            condition_variable_.wait(
+                lock, [this] { return status_.load(std::memory_order_relaxed) == READY; });
         }
 
         friend class threaded_callback_queue;
@@ -425,8 +422,11 @@ struct threaded_callback_queue::invoker_impl
         template <class InvokerT>
         static void invoke(InvokerT&& invoker, shared_future<ReturnT>* future)
         {
-            future->return_value_ = return_value_wrapper<ReturnT>(invoker());
-            future->status_.store(READY, std::memory_order_release);
+            {
+                std::scoped_lock<std::mutex> lock(future->mutex_);
+                future->return_value_ = return_value_wrapper<ReturnT>(invoker());
+                future->status_.store(READY, std::memory_order_release);
+            }
             future->condition_variable_.notify_all();
         }
     };

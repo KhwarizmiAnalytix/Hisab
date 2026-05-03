@@ -585,7 +585,7 @@ void multi_threader::terminate_thread(int thread_id)
     // to indicate to the thread that it should terminate itself
     {
         const std::scoped_lock lockGuard(*spawned_thread_active_flag_lock_[thread_id]);
-        spawned_thread_active_flag_[thread_id] = 0;
+        spawned_thread_active_flag_[thread_id].store(0, std::memory_order_release);
     }
 
 #if PARALLEL_HAS_WIN32_THREADS
