@@ -11,9 +11,9 @@ cmake_minimum_required(VERSION 3.16)
 
 # --- Section 1: Feature flags (LOGGING_ENABLE_*) and backend selector ---
 set(LOGGING_BACKEND "LOGURU" CACHE STRING
-                                   "Logging backend to use. Options are NATIVE, LOGURU, or GLOG"
+                                   "Logging backend to use. Options are NATIVE, LOGURU, GLOG, or SPDLOG"
 )
-set_property(CACHE LOGGING_BACKEND PROPERTY STRINGS NATIVE LOGURU GLOG)
+set_property(CACHE LOGGING_BACKEND PROPERTY STRINGS NATIVE LOGURU GLOG SPDLOG)
 
 # Link-Time Optimization — disabled when LOGGING_ENABLE_COVERAGE or LOGGING_ENABLE_SANITIZER is ON
 # (LTO conflicts with instrumentation / sanitizers).
@@ -88,17 +88,22 @@ endif()
 if(LOGGING_BACKEND STREQUAL "LOGURU")
   # Loguru — header-only, supports custom verbosity levels and callbacks.
   list(APPEND LOGGING_COMPILE_DEFINITIONS LOGGING_HAS_LOGURU=1 LOGGING_HAS_GLOG=0
-       LOGGING_HAS_NATIVE=0
+       LOGGING_HAS_NATIVE=0 LOGGING_HAS_SPDLOG=0
   )
 elseif(LOGGING_BACKEND STREQUAL "GLOG")
   # GLog — Google's production logging library; thread-safe sink management.
   list(APPEND LOGGING_COMPILE_DEFINITIONS LOGGING_HAS_LOGURU=0 LOGGING_HAS_GLOG=1
-       LOGGING_HAS_NATIVE=0
+       LOGGING_HAS_NATIVE=0 LOGGING_HAS_SPDLOG=0
   )
 elseif(LOGGING_BACKEND STREQUAL "NATIVE")
   # Native — fmt-based minimal backend with no external dependencies.
   list(APPEND LOGGING_COMPILE_DEFINITIONS LOGGING_HAS_LOGURU=0 LOGGING_HAS_GLOG=0
-       LOGGING_HAS_NATIVE=1
+       LOGGING_HAS_NATIVE=1 LOGGING_HAS_SPDLOG=0
+  )
+elseif(LOGGING_BACKEND STREQUAL "SPDLOG")
+  # spdlog — header-only, fast, feature-rich backend with colored output and async support.
+  list(APPEND LOGGING_COMPILE_DEFINITIONS LOGGING_HAS_LOGURU=0 LOGGING_HAS_GLOG=0
+       LOGGING_HAS_NATIVE=0 LOGGING_HAS_SPDLOG=1 SPDLOG_FMT_EXTERNAL=1
   )
 endif()
 list(APPEND LOGGING_DEPENDENCY_COMPILE_DEFINITIONS ${LOGGING_COMPILE_DEFINITIONS})
@@ -248,6 +253,28 @@ if(LOGGING_BACKEND STREQUAL "GLOG")
   )
   list(APPEND LOGGING_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/glog/src")
 endif()
+if(LOGGING_BACKEND STREQUAL "SPDLOG")
+  # spdlog is header-only — no compiled library needed; just expose the include directory.
+  set(SPDLOG_BUILD_SHARED OFF CACHE BOOL "Disable spdlog shared build" FORCE)
+  set(SPDLOG_BUILD_EXAMPLE OFF CACHE BOOL "Disable spdlog examples" FORCE)
+  set(SPDLOG_BUILD_TESTS OFF CACHE BOOL "Disable spdlog tests" FORCE)
+  set(SPDLOG_BUILD_BENCH OFF CACHE BOOL "Disable spdlog benchmarks" FORCE)
+  set(SPDLOG_FMT_EXTERNAL_HO ON CACHE BOOL "Use external header-only fmt in spdlog" FORCE)
+  add_third_party_library(
+    spdlog
+    LIBRARY_TYPE
+    INTERFACE
+    SOURCE_DIR
+    "${_tpdir}/spdlog"
+    QUARISMA_TARGETS
+    "Spdlog::spdlog=spdlog::spdlog_header_only|spdlog_header_only"
+    INCLUDE_DIR
+    "${_tpdir}/spdlog/include"
+    AUTO_ADD_TO_DEPENDENCIES
+    OFF
+  )
+  list(APPEND LOGGING_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/spdlog/include")
+endif()
 
 # --- Source discovery ---
 set(logging_headers "")
@@ -328,6 +355,9 @@ endif()
 if(TARGET Glog::glog)
   list(APPEND LOGGING_DEPENDENCY_LIBS Glog::glog)
 endif()
+if(TARGET Spdlog::spdlog)
+  list(APPEND LOGGING_DEPENDENCY_LIBS Spdlog::spdlog)
+endif()
 
 if(LOGGING_ENABLE_CLANGTIDY)
   include(clang_tidy)
@@ -375,7 +405,7 @@ endif()
 get_property(_logging_summary_backend CACHE LOGGING_BACKEND PROPERTY VALUE)
 message("")
 message("******** Logging module (CMake flags) ********")
-message("  Backend          : ${_logging_summary_backend}")
+message("  Backend          : ${_logging_summary_backend} (options: LOGURU, GLOG, NATIVE, SPDLOG)")
 message("  Cxx standard     : ${LOGGING_CXX_STANDARD}")
 message("  Cache            : ${LOGGING_ENABLE_CACHE}")
 message("  Cache backend    : ${LOGGING_CACHE_BACKEND}")
