@@ -950,6 +950,98 @@ jobs:
         fi
 
   # ============================================================================
+  # Vectorization SIMD backend matrix (SSE, AVX-512, NEON, SVE)
+  # x86 jobs: ubuntu-latest. AArch64 jobs: ubuntu-24.04-arm (requires public repo
+  # or appropriate org plan for hosted ARM runners). CMake may fall back to
+  # VECTORIZATION_TYPE=no if the requested ISA is unsupported on the runner.
+  # ============================================================================
+  vectorization-simd-backend-tests:
+    name: "Vectorization ${{ matrix.vectorization_type }} — ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - vectorization_type: sse
+            os: ubuntu-latest
+          - vectorization_type: avx512
+            os: ubuntu-latest
+          - vectorization_type: neon
+            os: ubuntu-24.04-arm
+          - vectorization_type: sve
+            os: ubuntu-24.04-arm
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache
+          build/ThirdParty
+        key: vec-simd-${{ matrix.vectorization_type }}-${{ env.CACHE_VERSION }}-${{ hashFiles('**/CMakeLists.txt', 'Library/Vectorization/**') }}
+        restore-keys: |
+          vec-simd-${{ matrix.vectorization_type }}-${{ env.CACHE_VERSION }}-
+
+    - name: Install dependencies (Ubuntu)
+      run: |
+        chmod +x .github/workflows/install/install-deps-ubuntu.sh
+        ./.github/workflows/install/install-deps-ubuntu.sh --with-tbb
+
+    - name: Configure (Vectorization ${{ matrix.vectorization_type }})
+      shell: bash
+      run: |
+        cmake -B build \
+          -C .github/cmake/configure_cache.cmake \
+          -S . \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_C_COMPILER=clang \
+          -DCMAKE_CXX_COMPILER=clang++ \
+          -DCMAKE_CXX_STANDARD=17 \
+          -DVECTORIZATION_TYPE=${{ matrix.vectorization_type }} \
+          -DLOGGING_BACKEND=NATIVE \
+          -DBUILD_TESTING=ON \
+          -DCORE_ENABLE_BENCHMARK=OFF \
+          -DMEMORY_ENABLE_BENCHMARK=OFF \
+          -DLOGGING_ENABLE_BENCHMARK=OFF \
+          -DVECTORIZATION_ENABLE_BENCHMARK=OFF \
+          -DPARALLEL_ENABLE_BENCHMARK=OFF \
+          -DPROFILER_ENABLE_BENCHMARK=OFF \
+          -DPARALLEL_ENABLE_TBB=ON \
+          -DMEMORY_ENABLE_TBB=ON \
+          -DMEMORY_ENABLE_CUDA=OFF
+
+    - name: Build
+      run: cmake --build build -j 2
+
+    - name: Test (Vectorization focus)
+      working-directory: ${{ github.workspace }}/build
+      shell: bash
+      run: |
+        regex="Vectorization"
+        if ctest -N -R "$regex" | grep -q "Total Tests: 0"; then
+          echo "No tests matched '$regex'; running full suite."
+          ctest --output-on-failure -j 2
+        else
+          ctest --output-on-failure -R "$regex" -j 2
+        fi
+
+    - name: Upload Vectorization SIMD test logs
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: vectorization-simd-${{ matrix.vectorization_type }}-logs
+        path: |
+          build/Testing/Temporary/LastTest.log
+          build/**/*.log
+
+  # ============================================================================
   # Optimization Flags Testing
   # Tests different compiler optimization levels to ensure code works correctly
   # across various optimization settings (-O0, -O2, -O3)
@@ -1660,6 +1752,7 @@ jobs:
       - tbb-specific-tests
       - sanitizer-tests
       - project-flag-backend-tests
+      - vectorization-simd-backend-tests
       - optimization-flags-test
       - lto-tests
       - benchmark-tests
@@ -1678,6 +1771,7 @@ jobs:
         echo "TBB Specific Tests: ${{ needs.tbb-specific-tests.result }}"
         echo "Sanitizer Tests: ${{ needs.sanitizer-tests.result }}"
         echo "Project Flag + Backend Tests: ${{ needs.project-flag-backend-tests.result }}"
+        echo "Vectorization SIMD Backends: ${{ needs.vectorization-simd-backend-tests.result }}"
         echo "Optimization Flags: ${{ needs.optimization-flags-test.result }}"
         echo "Benchmark Tests: ${{ needs.benchmark-tests.result }}"
         echo "Sccache Baseline Tests: ${{ needs.sccache-baseline-tests.result }}"
@@ -1701,6 +1795,10 @@ jobs:
         fi
         if [ "${{ needs.project-flag-backend-tests.result }}" != "success" ]; then
           echo "ERROR: Project flag + backend tests failed"
+          exit 1
+        fi
+        if [ "${{ needs.vectorization-simd-backend-tests.result }}" != "success" ]; then
+          echo "ERROR: Vectorization SIMD backend tests failed"
           exit 1
         fi
         if [ "${{ needs.optimization-flags-test.result }}" != "success" ]; then
@@ -1739,11 +1837,12 @@ jobs:
 # 3. compiler-version-tests-gcc: GCC version testing (GCC 8-13 with C++17/20/23)
 # 4. tbb-specific-tests: TBB functionality testing (Unix/macOS only)
 # 4. sanitizer-tests: Memory/thread safety testing (Unix/macOS only)
-# 5. optimization-flags-test: Compiler optimization testing
-# 6. benchmark-tests: Performance regression testing (non-blocking)
-# 7. sccache-baseline-tests: Build performance baseline without sccache (all platforms)
-# 8. sccache-enabled-tests: Build performance with sccache enabled (all platforms)
-# 9. ci-success: Aggregates results from all jobs
+# 5. vectorization-simd-backend-tests: VECTORIZATION_TYPE sse/avx512 on ubuntu-latest; neon/sve on ubuntu-24.04-arm
+# 6. optimization-flags-test: Compiler optimization testing
+# 7. benchmark-tests: Performance regression testing (non-blocking)
+# 8. sccache-baseline-tests: Build performance baseline without sccache (all platforms)
+# 9. sccache-enabled-tests: Build performance with sccache enabled (all platforms)
+# 10. ci-success: Aggregates results from all jobs
 #
 # ## Platform-Specific Notes:
 # - Ubuntu: Full TBB + CUDA support, all sanitizers including leak
