@@ -353,19 +353,16 @@ jobs:
         echo "Tools verification complete"
 
     # ===== Build Configuration and Execution Using CMake =====
-    - name: Configure and Build (Unix/macOS)
+    - name: Export Unix/macOS build environment
       if: runner.os != 'Windows'
       run: |
-        # Determine compiler paths
         if [ "${{ matrix.compiler_cxx }}" = "clang" ]; then
-          CC_COMPILER="clang"
-          CXX_COMPILER="clang++"
+          echo "CC_COMPILER=clang" >> "$GITHUB_ENV"
+          echo "CXX_COMPILER=clang++" >> "$GITHUB_ENV"
         else
-          CC_COMPILER="${{ matrix.compiler_cxx }}"
-          CXX_COMPILER="g++"
+          echo "CC_COMPILER=${{ matrix.compiler_cxx }}" >> "$GITHUB_ENV"
+          echo "CXX_COMPILER=g++" >> "$GITHUB_ENV"
         fi
-
-        # Determine build directory name
         BUILD_DIR="build_ninja"
         if [ "${{ matrix.tbb_enabled }}" = "ON" ]; then
           BUILD_DIR="${BUILD_DIR}_tbb"
@@ -373,8 +370,11 @@ jobs:
         if [ "${{ matrix.cxx_std }}" != "17" ]; then
           BUILD_DIR="${BUILD_DIR}_cxx${{ matrix.cxx_std }}"
         fi
+        echo "BUILD_DIR=$BUILD_DIR" >> "$GITHUB_ENV"
 
-        # Configure CMake
+    - name: Configure (Unix/macOS)
+      if: runner.os != 'Windows'
+      run: |
         cmake -B "$BUILD_DIR" \
           -S . \
           -G Ninja \
@@ -388,11 +388,13 @@ jobs:
           -DMEMORY_ENABLE_TBB=${{ matrix.tbb_enabled }} \
           -DMEMORY_ENABLE_CUDA=${{ matrix.cuda_enabled }}
 
-        # Build
-        cmake --build "$BUILD_DIR" -j 2
+    - name: Build (Unix/macOS)
+      if: runner.os != 'Windows'
+      run: cmake --build "$BUILD_DIR" -j 2
 
-        # Run tests
-        ctest --test-dir "$BUILD_DIR" --output-on-failure -j 2
+    - name: Test (Unix/macOS)
+      if: runner.os != 'Windows'
+      run: ctest --test-dir "$BUILD_DIR" --output-on-failure -j 2
 
     - name: Configure and Build (Windows)
       if: runner.os == 'Windows'
@@ -487,11 +489,20 @@ jobs:
           fi
         fi
 
+    - name: Prepare test results artifact name
+      if: failure()
+      shell: bash
+      run: |
+        # upload-artifact rejects: " : < > | * ? CR LF \ /
+        raw='${{ matrix.name }}'
+        safe=$(printf '%s' "$raw" | tr -d '\015\012' | tr ':"<>|*?/' '-' | tr '\\' '-' | tr '"' '-' | tr -s '-')
+        echo "TEST_RESULTS_ARTIFACT_NAME=test-results-${safe}" >> "$GITHUB_ENV"
+
     - name: Upload test results
       if: failure()
       uses: actions/upload-artifact@v4
       with:
-        name: test-results-${{ matrix.name }}
+        name: ${{ env.TEST_RESULTS_ARTIFACT_NAME }}
         path: |
           build*/Testing/Temporary/LastTest.log
           build*/**/*.log
