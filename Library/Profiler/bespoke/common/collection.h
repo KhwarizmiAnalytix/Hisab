@@ -390,13 +390,15 @@ struct ExtraFields<EventType::Kineto>
         uint32_t start{0};
     };
 
-    std::string             name_;
-    int64_t                 duration_ns_{0};
-    uint64_t                correlation_id_{0};
-    libkineto::ActivityType activity_type_;
-    Flow                    flow;
-    std::weak_ptr<Result>   linked_activity_;
-    std::string             metadata_json_;
+    std::string name_;
+    int64_t     duration_ns_{0};
+    uint64_t    correlation_id_{0};
+#if PROFILER_HAS_KINETO
+    kineto::activity_type_t activity_type_;
+#endif
+    Flow                  flow;
+    std::weak_ptr<Result> linked_activity_;
+    std::string           metadata_json_;
 };
 
 struct PROFILER_VISIBILITY Result : public std::enable_shared_from_this<Result>
@@ -440,13 +442,15 @@ struct PROFILER_VISIBILITY Result : public std::enable_shared_from_this<Result>
         return visit([](const auto& i) { return deduceTag(i); });
     }
 
-    std::string             name() const;
-    std::string             overload_name() const;
-    libkineto::ActivityType kinetoType() const;
-    uint64_t                correlationID() const;
-    int64_t                 endTimeNS() const;
-    uint64_t                endTID() const;
-    profiler::device_enum   deviceType() const;
+    std::string name() const;
+    std::string overload_name() const;
+#if PROFILER_HAS_KINETO
+    kineto::activity_type_t kinetoType() const;
+#endif
+    uint64_t              correlationID() const;
+    int64_t               endTimeNS() const;
+    uint64_t              endTID() const;
+    profiler::device_enum deviceType() const;
 
     int64_t                   start_time_ns_;
     uint64_t                  start_tid_;

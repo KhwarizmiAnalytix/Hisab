@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 
-//#include "util/env.h"
+#include "util/env.h"
 
 namespace profiler
 {

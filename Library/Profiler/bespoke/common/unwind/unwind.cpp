@@ -3,7 +3,7 @@
 
 #include "bespoke/common/unwind/cpp_stacktraces.h"
 #include "common/profiler_macros.h"
-//#include "util/env.h"
+#include "util/env.h"
 
 #if !defined(__linux__) || !defined(__x86_64__) || !defined(__has_include) || \
     !__has_include("ext/stdio_filebuf.h")

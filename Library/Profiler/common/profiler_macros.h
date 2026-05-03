@@ -84,4 +84,15 @@
 #endif
 
 //----------------------------------------------------------------------------
+#include <stdexcept>
+#define PROFILER_THROW(msg) throw std::runtime_error(msg)
+
+//----------------------------------------------------------------------------
 #define PROFILER_LOG_ERROR(...)
+
+//----------------------------------------------------------------------------
+#if defined(__GNUC__) || defined(__clang__)
+#define PROFILER_USED __attribute__((used))
+#else
+#define PROFILER_USED
+#endif

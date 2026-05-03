@@ -701,11 +701,13 @@ std::string toString(const ExtraFields<EventType::PyCall>& e)
 }
 #endif
 
+#if PROFILER_HAS_KINETO
 auto scopeToType(profiler::RecordScope scope)
 {
     return scope == profiler::RecordScope::USER_SCOPE ? libkineto::ActivityType::USER_ANNOTATION
                                                       : libkineto::ActivityType::CPU_OP;
 }
+#endif  // PROFILER_HAS_KINETO
 
 int64_t torchOpEndNS(
     const ExtraFields<EventType::TorchOp>& e,
@@ -776,7 +778,8 @@ std::string Result::overload_name() const
         [](const auto& /*e*/) -> std::string { return ""; }));
 }
 
-libkineto::ActivityType Result::kinetoType() const
+#if PROFILER_HAS_KINETO
+kineto::activity_type_t Result::kinetoType() const
 {
     return visit(profiler::overloaded(
         ATTRIBUTE(TorchOp, scopeToType(e.scope_)),
@@ -789,6 +792,7 @@ libkineto::ActivityType Result::kinetoType() const
         ATTRIBUTE(PythonGC, libkineto::ActivityType::PYTHON_FUNCTION),
         ATTRIBUTE(Kineto, e.activity_type_)));
 }
+#endif  // PROFILER_HAS_KINETO
 
 uint64_t Result::correlationID() const
 {
@@ -830,7 +834,11 @@ profiler::device_enum Result::deviceType() const
     return visit(profiler::overloaded(
         ATTRIBUTE(Allocation, e.device_type_),
         ATTRIBUTE(OutOfMemory, e.device_type_),
+#if PROFILER_HAS_KINETO
         ATTRIBUTE(Kineto, deviceTypeFromActivity(e.activity_type_)),
+#else
+        [](const ExtraFields<EventType::Kineto>&) { return profiler::device_enum::CPU; },
+#endif
         [&](const auto&) { return profiler::device_enum::CPU; }));
 }
 #undef ATTRIBUTE
@@ -990,7 +998,7 @@ void generateForwardBackwardLinks(
     const std::unique_ptr<profiler::profiler_impl::impl::kineto::trace_t>& cpu_trace,
     const std::vector<std::shared_ptr<Result>>&                            results)
 {
-#ifndef PROFILER_HAS_KINETO
+#if !PROFILER_HAS_KINETO
 }
 #else   // PROFILER_HAS_KINETO
     // PROFILER_CHECK(cpu_trace->activities.size() == results.size());
@@ -1071,7 +1079,11 @@ void passEventsToKineto(
         }
         auto* activity = cpu_trace.addCPUActivity(
             name,
+#if PROFILER_HAS_KINETO
             e->kinetoType(),
+#else
+            kineto::activity_type_t{},
+#endif
             e->kineto_info_,
             e->correlationID(),
             e->start_time_ns_,
@@ -1349,7 +1361,7 @@ private:
                         }
 #else
                         flow_map.insert({i.flow.id, e});
-                        // PROFILER_CHECK(inserted.second);
+                    // PROFILER_CHECK(inserted.second);
 #endif  // PROFILER_USE_ROCM
                     }
                     // PROFILER_CHECK(e->parent_.expired());

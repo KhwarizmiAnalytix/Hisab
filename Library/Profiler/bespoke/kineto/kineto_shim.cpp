@@ -78,8 +78,9 @@ static_assert(
 DeviceAndResource kineto_ids()
 {
 #if PROFILER_HAS_KINETO
-    return {/*device=*/libkineto::processId(),
-            /*resource=*/libkineto::systemThreadId()};
+    return {
+        /*device=*/libkineto::processId(),
+        /*resource=*/libkineto::systemThreadId()};
 #else
     return {};
 #endif  // PROFILER_HAS_KINETO
@@ -118,12 +119,12 @@ TraceWrapper::TraceWrapper(const int64_t start_time, const std::string& name)
 #endif  // PROFILER_HAS_KINETO
 
 activity_t* TraceWrapper::addCPUActivity(
-    const std::string&            name,
-    const libkineto::ActivityType type,
-    const DeviceAndResource       device_and_resource,
-    const uint64_t                correlation_id,
-    const int64_t                 start_time,
-    const int64_t                 end_time)
+    const std::string&      name,
+    const activity_type_t   type,
+    const DeviceAndResource device_and_resource,
+    const uint64_t          correlation_id,
+    const int64_t           start_time,
+    const int64_t           end_time)
 {
 #if PROFILER_HAS_KINETO
     // PROFILER_CHECK((bool)(*this), "Cannot add event to non-existent trace.");
@@ -189,6 +190,7 @@ void ActivityTraceWrapper::save(const std::string& path)
 #endif  // PROFILER_HAS_KINETO
 }
 
+#if PROFILER_HAS_KINETO
 namespace
 {
 // Handles processing of Experimental Config options for Kineto
@@ -253,6 +255,7 @@ private:
     const profiler::profiler_impl::impl::ExperimentalConfig& config_;
 };
 }  // namespace
+#endif  // PROFILER_HAS_KINETO
 
 bool collectivesProfilerExists()
 {
@@ -453,6 +456,7 @@ namespace autograd::profiler_impl
 profiler::device_enum deviceTypeFromActivity(
     profiler::profiler_impl::impl::kineto::activity_type_t activity_type)
 {
+#if PROFILER_HAS_KINETO
     // fallthrough
     switch (activity_type)
     {
@@ -463,49 +467,9 @@ profiler::device_enum deviceTypeFromActivity(
     case libkineto::ActivityType::GPU_USER_ANNOTATION:
     case libkineto::ActivityType::CUDA_PROFILER_RANGE:
     {
-        // PrivateUse1 kineto backend reuse above ActivityTypes,
-        // If PrivateUse1 backend enabled, this should return
-        // profiler::device_enum::PrivateUse1.
-#if 0
-        // Disabled: get_privateuse1_backend() not available in profiler-only build.
-        profiler::device_enum device_type = []()
-        {
-            if (profiler::get_privateuse1_backend() != "privateuseone")
-            {
-                return profiler::device_enum::PrivateUse1;
-            }
-            return profiler::device_enum::CUDA;
-        }();
-#else
         profiler::device_enum const device_type = profiler::device_enum::CUDA;
-#endif
         return device_type;
     }
-    // TODO: T151322015
-#if 0
-    // Disabled: MTIA device type not available in profiler-only build.
-    case libkineto::ActivityType::MTIA_CCP_EVENTS:
-    case libkineto::ActivityType::MTIA_INSIGHT:
-    {
-        // PrivateUse1 kineto backend reuse above ActivityTypes,
-        // If PrivateUse1 backend enabled, this should return
-        // profiler::device_enum::PrivateUse1.
-        profiler::device_enum device_type = []()
-        {
-            if (profiler::get_privateuse1_backend() != "privateuseone")
-            {
-                return profiler::device_enum::PrivateUse1;
-            }
-            return profiler::device_enum::MTIA;
-        }();
-        return device_type;
-    }
-#endif
-#if 0
-    // Disabled: HPU device type not available in profiler-only build.
-    case libkineto::ActivityType::HPU_OP:
-        return profiler::device_enum::HPU;
-#endif
     case libkineto::ActivityType::CPU_OP:
     case libkineto::ActivityType::USER_ANNOTATION:
     case libkineto::ActivityType::EXTERNAL_CORRELATION:
@@ -521,14 +485,12 @@ profiler::device_enum deviceTypeFromActivity(
     case libkineto::ActivityType::OVERHEAD:
         return profiler::device_enum::CPU;
     default:
-    {
-#if 0
-        // Disabled: PROFILER_LOG_WARNING macro not available in profiler-only build.
-        // PROFILER_LOG_WARNING("Unknown activity type (", (uint8_t)activity_type, "), assuming CPU device");
-#endif
         return profiler::device_enum::CPU;
     }
-    }
+#else
+    (void)activity_type;
+    return profiler::device_enum::CPU;
+#endif  // PROFILER_HAS_KINETO
 }
 
 void addMetadataJson(const std::string& key, const std::string& value)

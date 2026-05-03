@@ -27,7 +27,7 @@ if(NOT ITT_FOUND)
   set(ITT_ROOT "${PROJECT_SOURCE_DIR}/ThirdParty/ittapi")
   find_path(ITT_INCLUDE_DIR ittnotify.h PATHS ${ITT_ROOT} PATH_SUFFIXES include)
   if(ITT_INCLUDE_DIR)
-    add_subdirectory(${ITT_ROOT})
+    add_subdirectory(${ITT_ROOT} "${CMAKE_BINARY_DIR}/ThirdParty/ittapi")
     set(ITT_LIBRARIES ittnotify)
     set(ITT_FOUND ON)
 

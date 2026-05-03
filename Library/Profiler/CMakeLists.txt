@@ -359,10 +359,12 @@ if(PROFILER_ENABLE_ITT)
     file(GLOB_RECURSE itt_base_headers LIST_DIRECTORIES false
          "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/base/*.h"
          "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/common/*.h"
+         "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/kineto/kineto_shim.h"
     )
     file(GLOB_RECURSE itt_base_sources LIST_DIRECTORIES false
          "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/base/*.cpp"
          "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/common/*.cpp"
+         "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/kineto/kineto_shim.cpp"
     )
     list(APPEND profiler_headers ${itt_base_headers})
     list(APPEND profiler_sources ${itt_base_sources})

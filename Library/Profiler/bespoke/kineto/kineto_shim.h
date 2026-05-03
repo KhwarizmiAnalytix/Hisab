@@ -68,7 +68,9 @@ struct DummyTraceInterface
 using trace_t           = DummyTraceBuffer;
 using interface_trace_t = DummyTraceBuffer;
 struct activity_t;
-struct activity_type_t;
+struct activity_type_t
+{
+};
 #endif  // PROFILER_HAS_KINETO
 
 void addMetadata(activity_t* activity, const std::string& key, const std::string& value);
