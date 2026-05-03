@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <atomic>  // For std::atomic
 #include <memory>  // For std::unique_ptr
 #include <mutex>   // For std::mutex
 
@@ -55,11 +56,11 @@ public:
     class thread_info
     {
     public:
-        int         thread_id;
-        int         number_of_threads;
-        int*        active_flag;
-        std::mutex* active_flag_lock;
-        void*       user_data;
+        int               thread_id;
+        int               number_of_threads;
+        std::atomic<int>* active_flag;
+        std::mutex*       active_flag_lock;
+        void*             user_data;
     };
 
     ///@{
@@ -175,7 +176,7 @@ protected:
 
     // Storage of MutexFunctions and ints used to control spawned
     // threads and the spawned thread ids
-    int                         spawned_thread_active_flag_[PARALLEL_MAX_THREADS];
+    std::atomic<int>            spawned_thread_active_flag_[PARALLEL_MAX_THREADS];
     std::unique_ptr<std::mutex> spawned_thread_active_flag_lock_[PARALLEL_MAX_THREADS];
     thread_process_id_type      spawned_thread_process_id_[PARALLEL_MAX_THREADS];
     thread_info                 spawned_thread_info_array_[PARALLEL_MAX_THREADS];
@@ -190,4 +191,3 @@ private:
 };
 
 using thread_info_struct = multi_threader::thread_info;
-

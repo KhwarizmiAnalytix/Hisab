@@ -124,7 +124,7 @@ void parallel_tools_api::initialize(int num_threads)
 //------------------------------------------------------------------------------
 void parallel_tools_api::refresh_number_of_thread()
 {
-    const int num_threads = this->desired_number_of_thread_;
+    const int num_threads = this->desired_number_of_thread_.load(std::memory_order_relaxed);
     backend_impl_.initialize(num_threads);
 }
 

@@ -79,7 +79,7 @@ static void spawned_worker(void* data)
     auto* counter = static_cast<std::atomic<int>*>(ti->user_data);
 
     // Check if thread should terminate (active_flag becomes 0)
-    while (ti->active_flag && *ti->active_flag != 0)
+    while (ti->active_flag && ti->active_flag->load(std::memory_order_acquire) != 0)
     {
         counter->fetch_add(1, std::memory_order_relaxed);
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
