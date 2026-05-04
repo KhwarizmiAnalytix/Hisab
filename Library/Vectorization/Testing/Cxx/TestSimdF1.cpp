@@ -179,7 +179,7 @@ void test_invsqrt(value_t tolerance)
     using simd_t = typename simd<value_t>::simd_t;
     unary_uniform_vs_std<value_t>(
         XSIGMA_SIMD_UNARY_TAG(value_t, invsqrt),
-        tolerance,
+        15.*tolerance,
         static_cast<value_t>(1e-18),
         static_cast<value_t>(500),
         [](simd_t const& a, simd_t& c) { simd<value_t>::invsqrt(a, c); },

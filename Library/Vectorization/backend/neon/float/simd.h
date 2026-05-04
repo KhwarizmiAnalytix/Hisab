@@ -69,6 +69,14 @@ struct simd<float>
         ret = vdupq_n_f32(static_cast<value_t>(alpha));
     }
 
+    template <
+        typename scalar_t,
+        typename std::enable_if<std::is_fundamental<scalar_t>::value, bool>::type = true>
+    VECTORIZATION_SIMD_RETURN_TYPE set(scalar_t alpha, mask_t& ret)
+    {
+        ret = vdupq_n_u32(static_cast<uint32_t>(alpha));
+    }
+
     VECTORIZATION_SIMD_RETURN_TYPE setzero(simd_t& ret) { ret = vdupq_n_f32(0.f); }
 
     VECTORIZATION_SIMD_RETURN_TYPE add(const simd_t& x, const simd_t& y, simd_t& ret)
@@ -441,13 +449,11 @@ struct simd<float>
         constexpr int L = size;
         if constexpr (N == 4 && L == 4)
         {
-            float32x4x2_t z01 = vzipq_f32(simd[0], simd[1]);
-            float32x4x2_t z23 = vzipq_f32(simd[2], simd[3]);
-            float32x4x2_t t01 = vzipq_f32(z01.val[0], z23.val[0]);
-            float32x4x2_t t23 = vzipq_f32(z01.val[1], z23.val[1]);
+            float32x4x2_t t01 = vtrnq_f32(simd[0], simd[1]);
+            float32x4x2_t t23 = vtrnq_f32(simd[2], simd[3]);
             simd[0]           = vcombine_f32(vget_low_f32(t01.val[0]), vget_low_f32(t23.val[0]));
-            simd[1]           = vcombine_f32(vget_high_f32(t01.val[0]), vget_high_f32(t23.val[0]));
-            simd[2]           = vcombine_f32(vget_low_f32(t01.val[1]), vget_low_f32(t23.val[1]));
+            simd[1]           = vcombine_f32(vget_low_f32(t01.val[1]), vget_low_f32(t23.val[1]));
+            simd[2]           = vcombine_f32(vget_high_f32(t01.val[0]), vget_high_f32(t23.val[0]));
             simd[3]           = vcombine_f32(vget_high_f32(t01.val[1]), vget_high_f32(t23.val[1]));
         }
         else if constexpr (N == L)

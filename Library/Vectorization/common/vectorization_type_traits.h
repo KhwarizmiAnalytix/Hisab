@@ -53,7 +53,7 @@ struct is_packet<scalar_type_simd_t<float>>
     static constexpr bool value = true;
 };
 
-#if VECTORIZATION_HAS_AVX512
+#if VECTORIZATION_HAS_AVX512 || VECTORIZATION_HAS_NEON
 template <typename value_t>
 using scalar_type_mask_t = typename packet<value_t>::array_mask_t;
 
@@ -255,7 +255,7 @@ struct scalar_type<scalar_type_simd_t<float>, T>
     using value = float;
 };
 
-#if VECTORIZATION_HAS_AVX512
+#if VECTORIZATION_HAS_AVX512 || VECTORIZATION_HAS_NEON
 template <typename T>
 struct scalar_type<scalar_type_mask_t<double>, T>
 {
@@ -267,7 +267,7 @@ struct scalar_type<scalar_type_mask_t<float>, T>
 {
     using value = float;
 };
-#endif  // VECTORIZATION_HAS_AVX512
+#endif  // VECTORIZATION_HAS_AVX512 || VECTORIZATION_HAS_NEON
 
 // tensor<value_t> — covers former vector<T> and matrix<T> since they alias tensor
 template <typename value_t, typename T>

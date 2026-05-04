@@ -68,6 +68,14 @@ struct simd<double>
         ret = vdupq_n_f64(static_cast<value_t>(alpha));
     }
 
+    template <
+        typename scalar_t,
+        typename std::enable_if<std::is_fundamental<scalar_t>::value, bool>::type = true>
+    VECTORIZATION_SIMD_RETURN_TYPE set(const scalar_t alpha, mask_t& ret)
+    {
+        ret = vdupq_n_u64(static_cast<uint64_t>(alpha));
+    }
+
     VECTORIZATION_SIMD_RETURN_TYPE setzero(simd_t& ret) { ret = vdupq_n_f64(0.); }
 
     VECTORIZATION_SIMD_RETURN_TYPE add(const simd_t& x, const simd_t& y, simd_t& ret)
@@ -277,6 +285,7 @@ struct simd<double>
     VECTORIZATION_SIMD_RETURN_TYPE invsqrt(const simd_t& x, simd_t& ret)
     {
         float64x2_t est = vrsqrteq_f64(x);
+        est             = vmulq_f64(vrsqrtsq_f64(vmulq_f64(x, est), est), est);
         est             = vmulq_f64(vrsqrtsq_f64(vmulq_f64(x, est), est), est);
         ret             = est;
     }
