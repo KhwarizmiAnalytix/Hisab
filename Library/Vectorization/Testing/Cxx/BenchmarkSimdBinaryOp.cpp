@@ -42,8 +42,7 @@ public:
         {
             auto x = -dcf * fabs(-a + b);
             c      = a * dcf *
-                ((fabs(x) < std::numeric_limits<double>::epsilon()) ? 1. - 0.5 * x
-                                                                    : expm1(x) / x);
+                ((fabs(x) < std::numeric_limits<double>::epsilon()) ? 1. - 0.5 * x : expm1(x) / x);
         }
         else
         {
@@ -51,9 +50,7 @@ public:
             auto x = -dcf * fabs(-a + b);
             c += a * dcf *
                  if_else(
-                     fabs(x) < std::numeric_limits<double>::epsilon(),
-                     1. - 0.5 * x,
-                     expm1(x) / x);
+                     fabs(x) < std::numeric_limits<double>::epsilon(), 1. - 0.5 * x, expm1(x) / x);
         }
     };
 };
@@ -70,7 +67,7 @@ public:
         vectorization::vector<scalar_t> c(n);                             \
         std::default_random_engine      generator;                        \
                                                                           \
-        std::uniform_real_distribution<scalar_t> distribution(-5., 5.); \
+        std::uniform_real_distribution<scalar_t> distribution(-5., 5.);   \
                                                                           \
         for (size_t i = 0; i < n; ++i)                                    \
         {                                                                 \
@@ -93,7 +90,7 @@ public:
         vectorization::vector<scalar_t> c(n);                             \
         std::default_random_engine      generator;                        \
                                                                           \
-        std::uniform_real_distribution<scalar_t> distribution(-5., 5.); \
+        std::uniform_real_distribution<scalar_t> distribution(-5., 5.);   \
                                                                           \
         for (size_t i = 0; i < n; ++i)                                    \
         {                                                                 \
