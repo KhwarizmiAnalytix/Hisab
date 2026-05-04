@@ -2,25 +2,7 @@
 # Vectorization Library C++ Tests
 # =============================================================================
 
-# --- GoogleTest setup --- Core/Testing/Cxx builds gtest first in a full-project build; this block
-# is a no-op in that case (TARGET gtest already exists). It activates when Vectorization tests are
-# built in isolation.
-if(NOT TARGET gtest)
-  set(BUILD_GMOCK OFF CACHE BOOL "Disable Google Mock" FORCE)
-  set(INSTALL_GTEST OFF CACHE BOOL "Disable Google Test install" FORCE)
-  set(gtest_build_samples OFF CACHE BOOL "Disable Google Test samples" FORCE)
-  set(gtest_build_tests OFF CACHE BOOL "Disable Google Test tests" FORCE)
-  if(MSVC)
-    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-  endif()
-  add_subdirectory(
-    "${QUARISMA_THIRDPARTY_DIR}/googletest" "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build"
-    EXCLUDE_FROM_ALL
-  )
-endif()
-_create_third_party_interface_targets(
-  "Gtest::gtest=GTest::gtest|gtest" "Gtest::gtest_main=GTest::gtest_main|gtest_main"
-)
+quarisma_add_googletest()
 
 # =============================================================================
 # VectorizationCxxTests executable

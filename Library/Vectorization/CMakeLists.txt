@@ -219,8 +219,6 @@ elseif(MSVC)
   string(APPEND CMAKE_SHARED_LINKER_FLAGS " /DEBUG:FULL")
 endif()
 
-include(linker)
-
 # --- VECTORIZATION_TYPE → VECTORIZATION_HAS_* (one hot) ---
 set(VECTORIZATION_COMPILE_DEFINITIONS "")
 

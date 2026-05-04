@@ -286,11 +286,11 @@ void test_all_simd_binary(value_t tolerance)
     test_min(tolerance);
     test_max(tolerance);
     test_signcopy(tolerance);
-
-#if !VECTORIZATION_HAS_SVML || !defined(MSVC)
+#if !(defined(_WIN32) && VECTORIZATION_HAS_SVML)
     test_pow(tolerance);
     test_hypot(tolerance);
 #endif
+
 }
 
 #undef XSIGMA_SIMD_BINARY_TAG

@@ -66,7 +66,7 @@ Each library module owns its cache settings. `Scripts/setup.py` fans out `cache_
 | `CORE_ENABLE_ICECC` | `OFF` | [Library/Core/CMakeLists.txt](../Library/Core/CMakeLists.txt) | Use Icecream distributed compilation for Core. |
 | `PARALLEL_ENABLE_ICECC` | `OFF` | [Library/Parallel/CMakeLists.txt](../Library/Parallel/CMakeLists.txt) | Use Icecream distributed compilation for Parallel. |
 | `PROFILER_ENABLE_ICECC` | `OFF` | [Library/Profiler/CMakeLists.txt](../Library/Profiler/CMakeLists.txt) | Use Icecream distributed compilation for Profiler. |
-| `PROJECT_LINKER_CHOICE` | `default` | [tools/linker.cmake](tools/linker.cmake) | Preferred linker. One of: `default`, `lld`, `mold`, `gold`, `lld-link`. Auto-detected when set to `default`. |
+| `PROJECT_LINKER_CHOICE` | `default` | [tools/lto.cmake](tools/lto.cmake) | Preferred linker. One of: `default`, `lld`, `mold`, `gold`, `lld-link`. Auto-detected when set to `default`. |
 
 ### Code quality / analysis
 

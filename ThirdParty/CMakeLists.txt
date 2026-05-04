@@ -362,6 +362,9 @@ endfunction()
 #                                 Example: "fmt/include" for fmt library
 #   AUTO_ADD_TO_DEPENDENCIES    - Boolean flag to automatically add to QUARISMA_DEPENDENCY_LIBS
 #                                 Default: ON (automatically adds Xxx::name target)
+#   EXCLUDE_FROM_ALL            - If set, add_subdirectory(... EXCLUDE_FROM_ALL) for the bundled lib
+#   BINARY_DIR <path>           - Out-of-tree build dir for add_subdirectory (absolute, or relative to
+#                                 CMAKE_BINARY_DIR). Default: ${CMAKE_CURRENT_BINARY_DIR}/${name}_build
 #
 # Example Usage:
 #   add_third_party_library(fmt
@@ -383,8 +386,8 @@ function(add_third_party_library name)
     # Parse function arguments
     cmake_parse_arguments(
         TPL                                                           # Prefix
-        "DISABLE_WARNINGS;AUTO_ADD_TO_DEPENDENCIES"       # Options (boolean flags)
-        "SOURCE_DIR;EXTERNAL_NAME;CONDITION;LIBRARY_TYPE;LIBRARY_TYPE_VAR;INCLUDE_DIR" # One-value keywords
+        "DISABLE_WARNINGS;AUTO_ADD_TO_DEPENDENCIES;EXCLUDE_FROM_ALL" # Options (boolean flags)
+        "SOURCE_DIR;EXTERNAL_NAME;CONDITION;LIBRARY_TYPE;LIBRARY_TYPE_VAR;INCLUDE_DIR;BINARY_DIR" # One-value keywords
         "FILTER_FLAGS;EXTRA_FLAGS;ALIASES;QUARISMA_TARGETS"             # Multi-value keywords
         ${ARGN}                                                       # Arguments to parse
     )
@@ -436,7 +439,6 @@ function(add_third_party_library name)
         message(STATUS "Third-party library ${name} already processed, skipping")
         return()
     endif()
-    set_property(GLOBAL PROPERTY QUARISMA_${name}_PROCESSED TRUE)
 
     # -------------------------------------------------------------------------
     # Step 2: Determine library type
@@ -506,6 +508,7 @@ function(add_third_party_library name)
         endif()
 
         # Early return - no further processing needed for header-only libraries
+        set_property(GLOBAL PROPERTY QUARISMA_${name}_PROCESSED TRUE)
         return()
     endif()
 
@@ -568,6 +571,7 @@ function(add_third_party_library name)
                 message(STATUS "Dependency: ${${name}_INCLUDE_DIR} added to QUARISMA_DEPENDENCY_INCLUDE_DIRS (external)")
             endif()
 
+            set_property(GLOBAL PROPERTY QUARISMA_${name}_PROCESSED TRUE)
             return()
         endif()
     endif()
@@ -706,12 +710,24 @@ function(add_third_party_library name)
         if(EXISTS "${lib_cmakelists_path}")
             message(STATUS "Using bundled ${name}")
 
-            # Store the binary directory for later use
-            # Use the library name (not the source path) for the binary directory
-            set(lib_binary_dir "${CMAKE_CURRENT_BINARY_DIR}/${name}_build")
+            # Store the binary directory for later use (caller may pin a global path when SOURCE_DIR
+            # is absolute and lives outside CMAKE_CURRENT_BINARY_DIR, e.g. tests calling from Library/*).
+            if(DEFINED TPL_BINARY_DIR)
+                if(IS_ABSOLUTE "${TPL_BINARY_DIR}")
+                    set(lib_binary_dir "${TPL_BINARY_DIR}")
+                else()
+                    set(lib_binary_dir "${CMAKE_BINARY_DIR}/${TPL_BINARY_DIR}")
+                endif()
+            else()
+                set(lib_binary_dir "${CMAKE_CURRENT_BINARY_DIR}/${name}_build")
+            endif()
 
             # Add the library
-            add_subdirectory(${lib_source_dir} ${lib_binary_dir})
+            if(TPL_EXCLUDE_FROM_ALL)
+                add_subdirectory(${lib_source_dir} ${lib_binary_dir} EXCLUDE_FROM_ALL)
+            else()
+                add_subdirectory(${lib_source_dir} ${lib_binary_dir})
+            endif()
 
             # -------------------------------------------------------------------------
             # Step 9: Automatically set FOLDER properties for IDE organization
@@ -759,8 +775,10 @@ function(add_third_party_library name)
                     message(STATUS "Dependency: ${_tpl_abs_include_dir} added to QUARISMA_DEPENDENCY_INCLUDE_DIRS")
                 endif()
             endif()
+
+            set_property(GLOBAL PROPERTY QUARISMA_${name}_PROCESSED TRUE)
         else()
-            message(WARNING "Third-party library ${name} not found in ${CMAKE_CURRENT_SOURCE_DIR}/${TPL_SOURCE_DIR}")
+            message(WARNING "Third-party library ${name} not found (expected ${lib_cmakelists_path})")
         endif()
 
     # -------------------------------------------------------------------------
@@ -785,6 +803,35 @@ function(add_third_party_library name)
 endfunction()
 
 # =============================================================================
+# GoogleTest — bundled via add_third_party_library (shared by all */Testing/Cxx)
+# =============================================================================
+function(quarisma_add_googletest)
+    set(BUILD_GMOCK OFF CACHE BOOL "Disable Google Mock" FORCE)
+    set(INSTALL_GTEST OFF CACHE BOOL "Disable Google Test install" FORCE)
+    set(gtest_build_samples OFF CACHE BOOL "Disable Google Test samples" FORCE)
+    set(gtest_build_tests OFF CACHE BOOL "Disable Google Test tests" FORCE)
+    if(MSVC)
+        set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    endif()
+    add_third_party_library(
+        googletest
+        SOURCE_DIR "${QUARISMA_THIRDPARTY_DIR}/googletest"
+        BINARY_DIR "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build"
+        EXTERNAL_NAME GTest
+        LIBRARY_TYPE STATIC
+        EXCLUDE_FROM_ALL
+        AUTO_ADD_TO_DEPENDENCIES OFF
+        QUARISMA_TARGETS
+            "Gtest::gtest=GTest::gtest|gtest"
+            "Gtest::gtest_main=GTest::gtest_main|gtest_main"
+    )
+    _create_third_party_interface_targets(
+        "Gtest::gtest=GTest::gtest|gtest"
+        "Gtest::gtest_main=GTest::gtest_main|gtest_main"
+    )
+endfunction()
+
+# =============================================================================
 # NOTE: All per-project third-party declarations have been moved to each
 # project's own CMakeLists.txt (and Testing/Cxx/CMakeLists.txt for testing
 # frameworks).  This file only defines helper functions and global options.
@@ -794,5 +841,5 @@ endfunction()
 #   Library/Logging    → fmt, loguru, glog, spdlog
 #   Library/Memory     → mimalloc
 #   Library/Profiler   → kineto, ITT
-#   */Testing/Cxx      → googletest, google-benchmark
+#   */Testing/Cxx      → quarisma_add_googletest(), google-benchmark
 # =============================================================================

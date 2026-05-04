@@ -131,8 +131,6 @@ elseif(MSVC)
   string(APPEND CMAKE_SHARED_LINKER_FLAGS " /DEBUG:FULL")
 endif()
 
-include(linker)
-
 # --- Section 2 (continued): detection-based PARALLEL_HAS_* compile definitions ---
 
 # Intel TBB — set by include(tbb_multithreading).

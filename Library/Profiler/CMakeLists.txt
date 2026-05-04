@@ -184,8 +184,6 @@ elseif(MSVC)
   string(APPEND CMAKE_SHARED_LINKER_FLAGS " /DEBUG:FULL")
 endif()
 
-include(linker)
-
 # --- Third-party dependencies owned by Profiler ---
 set(_tpdir "${CMAKE_SOURCE_DIR}/ThirdParty")
 

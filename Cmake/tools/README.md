@@ -20,7 +20,7 @@ Modules are then included as `include(<name>)` (e.g. `include(cache)`), not `inc
 | [`summary.cmake`](#summarycmake) | `print_configuration_summary()` — human-readable configure report |
 | [`cache.cmake`](#cachecmake) | Per-target compiler launchers (`ccache`, `sccache`, `buildcache`) |
 | [`helper_macros.cmake`](#helper_macroscmake) | IDE source groups, Icecream launcher, naming helper |
-| [`linker.cmake`](#linkercmake) | Optional fast linkers (`mold`, `gold`, `lld`, `lld-link`) on `quarismabuild` |
+| [`lto.cmake`](#ltocmake) | Per-target LTO (`quarisma_target_apply_lto`) + `quarisma_find_linker` (fast / LTO-safe linkers) |
 | [`coverage.cmake`](#coveragecmake) | Compiler flags for GCC/Clang/MSVC coverage workflows |
 | [`sanitize.cmake`](#sanitizecmake) | Per-module ASan/UBSan/TSan/MSan/LSan via `*build` interface targets |
 | [`clang_tidy.cmake`](#clang_tidycmake) | `clang-tidy` on targets; optional fix mode |
@@ -87,18 +87,11 @@ String transform: split on `_`, capitalize each segment’s first letter, concat
 
 ---
 
-## `linker.cmake`
+## `lto.cmake`
 
-**API:** `quarisma_find_linker([linker_choice])`
+**API:** `quarisma_lto_compute_default`, `quarisma_target_apply_lto`, `quarisma_find_linker` — see the module header in `lto.cmake`.
 
-**`linker_choice`:** `default` (auto) or explicit `mold`, `lld`, `gold`, `lld-link` (resolved via `find_program`).
-
-**Important behaviors:**
-
-- If **`CMAKE_INTERPROCEDURAL_OPTIMIZATION`** (LTO) is on, the function **returns immediately** to avoid OOM issues with alternative linkers.
-- On **GCC/Clang** (non-Windows), successful detection adds **interface** link options to target **`quarismabuild`** only: `-fuse-ld=<shortname>` (e.g. `mold`, `gold`, `lld`). Third-party targets keep their default linker.
-- On **Windows + Clang**, may set `CMAKE_LINKER` to `lld-link` when found.
-- Platform heuristics: Linux Clang prefers mold → gold → ld.lld; Linux GCC prefers mold → gold; macOS tries `ld64.lld`; Windows Clang tries `lld-link`.
+**Linker helper:** `quarisma_find_linker(<linker_choice> <target> [<PREFIX>_LTO_MODE])` with `linker_choice` = `default` or `mold` / `lld` / `gold` / `lld-link`. Chooses an **LTO-compatible** linker when LTO is on (e.g. `ld.lld` for Clang ThinLTO on Linux), and fast linkers when LTO is off. Windows **cl** / **clang-cl** use the MSVC link stack; **GNU Clang** uses `-fuse-ld=lld` like Unix.
 
 ---
 
@@ -207,7 +200,7 @@ Emits a **WARNING** that enabling spell check can modify files; commit before bu
 Library `CMakeLists.txt` files generally:
 
 1. `include(cache)` early, then call `quarisma_target_apply_cache` per target.
-2. `include(linker)` and `quarisma_find_linker(...)` where linker choice is configured.
+2. `include(lto)` and `quarisma_find_linker(...)` (same module as LTO) where linker choice is configured.
 3. Conditionally `include(coverage)`, `include(sanitize)` + `quarisma_configure_sanitizer`, `include(clang_tidy)`, `include(iwyu)`, `include(spell)`, `include(valgrind)` behind options.
 4. After tests exist, optionally `quarisma_apply_valgrind_timeouts()`.
 5. Optionally emit a **module CMake flag summary** (inline `message(...)` blocks at the end of the file).

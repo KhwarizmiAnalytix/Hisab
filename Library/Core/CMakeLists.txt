@@ -264,8 +264,6 @@ elseif(MSVC)
   string(APPEND CMAKE_SHARED_LINKER_FLAGS " /DEBUG:FULL")
 endif()
 
-include(linker)
-
 # --------------------------------------------------------------------------
 # b) User-option HAS
 # tokens — compile_definition() converts ENABLE_X → HAS_X.

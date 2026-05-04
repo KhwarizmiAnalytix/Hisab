@@ -110,7 +110,7 @@ void test_tensor_binary_vs_std()
             ref[i] = std::max(ax[i], ay[i]);
         expect_tensor_near_elementwise(out, ref, std::numeric_limits<T>::epsilon() * T(64));
     }
-#if !VECTORIZATION_HAS_SVML || !defined(MSVC)
+#if !(defined(_WIN32) && VECTORIZATION_HAS_SVML)
     {
         std::vector<T> px(n);
         std::vector<T> py(n);
