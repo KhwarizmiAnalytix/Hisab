@@ -70,6 +70,9 @@ option(USE_NATIVE_ARCH "Prefer host CPU instruction tuning (-march=native, Clang
 option(VECTORIZATION_ENABLE_SVML "Enable Intel SVML short vector math library" OFF)
 mark_as_advanced(VECTORIZATION_ENABLE_SVML)
 
+option(VECTORIZATION_ENABLE_SLEEF "Enable SLEEF SIMD math library for NEON" OFF)
+mark_as_advanced(VECTORIZATION_ENABLE_SLEEF)
+
 # Memory presence — detected from the CMake target; not a user option.
 if(TARGET Memory::Memory)
   set(_vec_has_memory 1)
@@ -260,6 +263,7 @@ else()
 endif()
 
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_SVML)
+compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_SLEEF)
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_GTEST)
 list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_MEMORY=${_vec_has_memory})
 list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_LOGGING=${_vec_has_logging})
@@ -323,6 +327,10 @@ endif()
 
 if(NOT VECTORIZATION_ENABLE_SVML)
   list(FILTER headers EXCLUDE REGEX ".*/svml\\.h$")
+endif()
+
+if(NOT VECTORIZATION_ENABLE_SLEEF)
+  list(FILTER headers EXCLUDE REGEX ".*/backend/neon/sleef\\.h$")
 endif()
 
 # =============================================================================
@@ -498,6 +506,7 @@ message("******** Vectorization module (CMake flags) ********")
 message("  Vectorization type   : ${VECTORIZATION_TYPE}")
 message("  Packet size          : ${VECTORIZATION_PACKET_SIZE}")
 message("  Svml                 : ${VECTORIZATION_ENABLE_SVML}")
+message("  Sleef                : ${VECTORIZATION_ENABLE_SLEEF}")
 message("  Memory (HAS)         : ${_vec_has_memory}")
 message("  Logging (HAS)        : ${_vec_has_logging}")
 message("  Cxx standard         : ${VECTORIZATION_CXX_STANDARD}")
