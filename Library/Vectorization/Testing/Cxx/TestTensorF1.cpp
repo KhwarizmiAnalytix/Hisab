@@ -6,6 +6,7 @@
  * Tensor tests: unary element-wise ops vs std:: (one tensor argument).
  */
 
+#include "VectorizationTest.h"
 #if VECTORIZATION_VECTORIZED
 
 #include <cmath>
@@ -16,7 +17,6 @@
 
 #include "common/vectorization_macros.h"
 #include "terminals/tensor.h"
-#include "VectorizationTest.h"
 
 namespace vectorization
 {
@@ -41,15 +41,16 @@ struct tensor_abs_tol_unary<double>
 };
 
 template <typename T>
-void expect_tensor_near_elementwise(
-    tensor<T> const& got, std::vector<T> const& ref, T abs_tol)
+void expect_tensor_near_elementwise(tensor<T> const& got, std::vector<T> const& ref, T abs_tol)
 {
     ASSERT_EQ(got.size(), ref.size());
+    double max_d = 0.;
     for (std::size_t i = 0; i < ref.size(); ++i)
     {
         T const d = std::fabs(got.data()[i] - ref[i]);
-        EXPECT_LE(d, abs_tol) << "i=" << i << " got=" << got.data()[i] << " ref=" << ref[i];
+        max_d     = max_d > d ? max_d : d;
     }
+    EXPECT_LE(max_d, abs_tol);
 }
 
 template <typename T>
@@ -63,7 +64,7 @@ void fill_uniform(std::vector<T>& v, std::mt19937& gen, T lo, T hi)
 template <typename T>
 void test_tensor_unary_vs_std()
 {
-    using tensor_t = tensor<T>;
+    using tensor_t      = tensor<T>;
     std::size_t const n = (2U << 8U) + 3U;
     std::mt19937      gen(9001u);
     T const           tol = tensor_abs_tol_unary<T>::transcendental;
@@ -111,7 +112,7 @@ void test_tensor_unary_vs_std()
 
     std::size_t const r = 12;
     std::size_t const c = 24;
-    std::vector<T>      a2(r * c);
+    std::vector<T>    a2(r * c);
     fill_uniform(a2, gen, static_cast<T>(-0.5), static_cast<T>(0.5));
     tensor_t t2d(a2.data(), r, c);
     tensor_t out2d(r, c);

@@ -6,15 +6,17 @@
  * Tensor tests: binary element-wise ops vs std:: (two tensor arguments).
  */
 
+#include "VectorizationTest.h"
 #if VECTORIZATION_VECTORIZED
 
 #include <cmath>
 #include <cstddef>
+#include <iomanip>
+#include <iostream>
 #include <limits>
 #include <random>
 #include <vector>
 
-#include "VectorizationTest.h"
 #include "common/vectorization_macros.h"
 #include "terminals/tensor.h"
 
@@ -43,14 +45,15 @@ struct tensor_abs_tol_binary<double>
 };
 
 template <typename T>
-void expect_tensor_near_elementwise(tensor<T> const& got, std::vector<T> const& ref, T abs_tol)
+T expect_tensor_near_elementwise(tensor<T> const& got, std::vector<T> const& ref)
 {
-    ASSERT_EQ(got.size(), ref.size());
+    T max_d = 0;
     for (std::size_t i = 0; i < ref.size(); ++i)
     {
         T const d = std::fabs(got.data()[i] - ref[i]);
-        EXPECT_LE(d, abs_tol) << "i=" << i << " got=" << got.data()[i] << " ref=" << ref[i];
+        max_d     = max_d > d ? max_d : d;
     }
+    return max_d;
 }
 
 template <typename T>
@@ -84,7 +87,7 @@ void test_tensor_binary_vs_std()
         std::vector<T> ref(n);
         for (std::size_t i = 0; i < n; ++i)
             ref[i] = ax[i] + ay[i];
-        expect_tensor_near_elementwise(out, ref, tol_gen);
+        EXPECT_LE(expect_tensor_near_elementwise(out, ref), tol_gen);
     }
     {
         tensor_t out(n);
@@ -92,7 +95,7 @@ void test_tensor_binary_vs_std()
         std::vector<T> ref(n);
         for (std::size_t i = 0; i < n; ++i)
             ref[i] = ax[i] * ay[i];
-        expect_tensor_near_elementwise(out, ref, tol_gen);
+        EXPECT_LE(expect_tensor_near_elementwise(out, ref), tol_gen);
     }
     {
         tensor_t out(n);
@@ -100,7 +103,8 @@ void test_tensor_binary_vs_std()
         std::vector<T> ref(n);
         for (std::size_t i = 0; i < n; ++i)
             ref[i] = std::min(ax[i], ay[i]);
-        expect_tensor_near_elementwise(out, ref, std::numeric_limits<T>::epsilon() * T(64));
+        EXPECT_LE(
+            expect_tensor_near_elementwise(out, ref), std::numeric_limits<T>::epsilon() * T(64));
     }
     {
         tensor_t out(n);
@@ -108,24 +112,26 @@ void test_tensor_binary_vs_std()
         std::vector<T> ref(n);
         for (std::size_t i = 0; i < n; ++i)
             ref[i] = std::max(ax[i], ay[i]);
-        expect_tensor_near_elementwise(out, ref, std::numeric_limits<T>::epsilon() * T(64));
+        EXPECT_LE(
+            expect_tensor_near_elementwise(out, ref), std::numeric_limits<T>::epsilon() * T(64));
     }
-#if !(defined(_WIN32) && VECTORIZATION_HAS_SVML)
     {
         std::vector<T> px(n);
         std::vector<T> py(n);
-        fill_uniform(px, gen, static_cast<T>(0.1), static_cast<T>(3));
-        fill_uniform(py, gen, static_cast<T>(-2), static_cast<T>(2));
+        fill_uniform(px, gen, static_cast<T>(0.1), static_cast<T>(3.0));
+        fill_uniform(py, gen, static_cast<T>(-4.0), static_cast<T>(4.0));
         tensor_t pa(px.data(), n);
         tensor_t pb(py.data(), n);
         tensor_t out(n);
-        out = ::pow(pa, pb);
+        out = pow(pa, pb);
+
         std::vector<T> ref(n);
         for (std::size_t i = 0; i < n; ++i)
+        {
             ref[i] = std::pow(px[i], py[i]);
-        expect_tensor_near_elementwise(out, ref, tol_pow);
+        }
+        EXPECT_LE(expect_tensor_near_elementwise(out, ref), tol_pow);
     }
-#endif
 }
 
 }  // namespace tensor_tests

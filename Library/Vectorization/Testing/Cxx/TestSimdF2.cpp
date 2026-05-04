@@ -6,6 +6,7 @@
  * SIMD tests: two-argument (binary) packet operations vs scalar std/math.
  */
 
+#include "VectorizationTest.h"
 #if VECTORIZATION_VECTORIZED
 
 #include <algorithm>
@@ -20,7 +21,6 @@
 
 #include "common/vectorization_macros.h"
 #include "common/packet.h"
-#include "VectorizationTest.h"
 
 namespace vectorization
 {
@@ -285,12 +285,9 @@ void test_all_simd_binary(value_t tolerance)
     test_div(tolerance);
     test_min(tolerance);
     test_max(tolerance);
-    test_signcopy(tolerance);
-#if !(defined(_WIN32) && VECTORIZATION_HAS_SVML)
     test_pow(tolerance);
     test_hypot(tolerance);
-#endif
-
+    test_signcopy(tolerance);
 }
 
 #undef XSIGMA_SIMD_BINARY_TAG

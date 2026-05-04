@@ -6,6 +6,7 @@
  * SIMD tests: horizontal reductions (accumulate, hmin, hmax).
  */
 
+#include "VectorizationTest.h"
 #if VECTORIZATION_VECTORIZED
 
 #include <algorithm>
@@ -18,7 +19,6 @@
 
 #include "common/vectorization_macros.h"
 #include "common/packet.h"
-#include "VectorizationTest.h"
 
 namespace vectorization
 {

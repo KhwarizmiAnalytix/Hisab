@@ -31,28 +31,6 @@ public:
     };
 };
 
-class func_mixed_formula
-{
-public:
-    template <typename T>
-    VECTORIZATION_FORCE_INLINE static void run(T const& a, T const& b, T& c)
-    {
-        if constexpr (vectorization::is_fundamental<T>::value)
-        {
-            auto t = -fabs(a - b) + a + b;
-            c      = floor(log1p(fabs(t)) + 1) + ceil(a) + sin(t) + trunc(a) +
-                (fabs(t) < std::numeric_limits<T>::epsilon() ? 1. - 0.5 * t : expm1(t) / t);
-        }
-        else
-        {
-            auto t = -fabs(a - b) + a + b;
-            c      = floor(log1p(fabs(t)) + 1) + ceil(a) + sin(t) + trunc(a);
-            c += if_else(
-                fabs(t) < std::numeric_limits<double>::epsilon(), 1. - 0.5 * t, expm1(t) / t);
-        }
-    };
-};
-
 class func_mixed_if_else
 {
 public:
@@ -135,7 +113,6 @@ public:
     BENCHMARK_TEMPLATE(Scalar_##op, double)->MeasureProcessCPUTime();
 
 SIMD_BENCHMARK(sum);
-SIMD_BENCHMARK(mixed_formula);
 SIMD_BENCHMARK(mixed_if_else);
 
 BENCHMARK_MAIN();

@@ -7,6 +7,7 @@
  * half-width fma/add/gather, predux_downto4, full-width gather/scatter, masks.
  */
 
+#include "VectorizationTest.h"
 #if VECTORIZATION_VECTORIZED
 
 #include <algorithm>
@@ -21,7 +22,6 @@
 
 #include "common/vectorization_macros.h"
 #include "common/packet.h"
-#include "VectorizationTest.h"
 
 namespace vectorization
 {

@@ -6,6 +6,7 @@
  * Tensor tests: ternary element-wise ops vs std:: (three tensor arguments; fma).
  */
 
+#include "VectorizationTest.h"
 #if VECTORIZATION_VECTORIZED
 
 #include <cmath>
@@ -15,7 +16,6 @@
 
 #include "common/vectorization_macros.h"
 #include "terminals/tensor.h"
-#include "VectorizationTest.h"
 
 namespace vectorization
 {

@@ -88,8 +88,10 @@ if(NOT INTERN_BUILD_MOBILE)
   if(_quarisma_vec_is_x86)
   # ---[ Check if the compiler has SSE support.
   cmake_push_check_state(RESET)
-  if(NOT MSVC)
-    set(CMAKE_REQUIRED_FLAGS "-msse4.2 -msse4.1 -msse2 -msse")
+  if(MSVC)
+    set(CMAKE_REQUIRED_FLAGS "/arch:SSE2")
+  else()
+    set(CMAKE_REQUIRED_FLAGS "-msse -msse2")
   endif()
   check_cxx_source_compiles(
     "#include <immintrin.h>

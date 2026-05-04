@@ -156,9 +156,27 @@ struct simd<float>
 
     VECTORIZATION_SIMD_RETURN_TYPE sqr(const simd_t& x, simd_t& ret) { ret = _mm_mul_ps(x, x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE ceil(const simd_t& x, simd_t& ret) { ret = _mm_ceil_ps(x); }
+    VECTORIZATION_SIMD_RETURN_TYPE ceil(const simd_t& x, simd_t& ret)
+    {
+#ifdef __SSE4_1__
+        ret = _mm_ceil_ps(x);
+#else
+        simd_t f    = _mm_cvtepi32_ps(_mm_cvttps_epi32(x));
+        simd_t mask = _mm_cmplt_ps(f, x);
+        ret         = _mm_add_ps(f, _mm_and_ps(mask, _mm_set1_ps(1.0f)));
+#endif
+    }
 
-    VECTORIZATION_SIMD_RETURN_TYPE floor(const simd_t& x, simd_t& ret) { ret = _mm_floor_ps(x); }
+    VECTORIZATION_SIMD_RETURN_TYPE floor(const simd_t& x, simd_t& ret)
+    {
+#ifdef __SSE4_1__
+        ret = _mm_floor_ps(x);
+#else
+        simd_t f    = _mm_cvtepi32_ps(_mm_cvttps_epi32(x));
+        simd_t mask = _mm_cmpgt_ps(f, x);
+        ret         = _mm_sub_ps(f, _mm_and_ps(mask, _mm_set1_ps(1.0f)));
+#endif
+    }
 
     VECTORIZATION_SIMD_RETURN_TYPE exp(const simd_t& x, simd_t& ret) { ret = _mm_exp_ps(x); }
     VECTORIZATION_SIMD_RETURN_TYPE expm1(const simd_t& x, simd_t& ret) { ret = _mm_expm1_ps(x); }
@@ -260,32 +278,32 @@ struct simd<float>
 
     VECTORIZATION_SIMD_RETURN_TYPE eq(const simd_t& x, const simd_t& y, mask_t& ret)
     {
-        ret = _mm_cmp_ps(x, y, _CMP_EQ_OQ);
+        ret = _mm_cmpeq_ps(x, y);
     }
 
     VECTORIZATION_SIMD_RETURN_TYPE neq(const simd_t& x, const simd_t& y, mask_t& ret)
     {
-        ret = _mm_cmp_ps(x, y, _CMP_NEQ_UQ);
+        ret = _mm_cmpneq_ps(x, y);
     }
 
     VECTORIZATION_SIMD_RETURN_TYPE gt(const simd_t& x, const simd_t& y, mask_t& ret)
     {
-        ret = _mm_cmp_ps(x, y, _CMP_GT_OS);
+        ret = _mm_cmpgt_ps(x, y);
     }
 
     VECTORIZATION_SIMD_RETURN_TYPE lt(const simd_t& x, const simd_t& y, mask_t& ret)
     {
-        ret = _mm_cmp_ps(x, y, _CMP_LT_OS);
+        ret = _mm_cmplt_ps(x, y);
     }
 
     VECTORIZATION_SIMD_RETURN_TYPE ge(const simd_t& x, const simd_t& y, mask_t& ret)
     {
-        ret = _mm_cmp_ps(x, y, _CMP_GE_OS);
+        ret = _mm_cmpge_ps(x, y);
     }
 
     VECTORIZATION_SIMD_RETURN_TYPE le(const simd_t& x, const simd_t& y, mask_t& ret)
     {
-        ret = _mm_cmp_ps(x, y, _CMP_LE_OS);
+        ret = _mm_cmple_ps(x, y);
     }
 
     VECTORIZATION_SIMD_RETURN_TYPE loadu(int_t const* from, mask_t& ret)
