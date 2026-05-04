@@ -26,10 +26,14 @@ cmake_minimum_required(VERSION 3.16)
 # =============================================================================
 # Link-Time Optimization — disabled when CORE_ENABLE_COVERAGE or CORE_ENABLE_SANITIZER is ON (LTO
 # conflicts with profiling instrumentation and typical sanitizer workflows).
-option(CORE_ENABLE_LTO "Enable Link Time Optimization for Core" OFF)
+include(lto)
+quarisma_lto_compute_default(_lto_default PROFILE PERFORMANCE)
+set(CORE_LTO_MODE "${_lto_default}"
+    CACHE STRING "LTO mode for Core: off | thin | full | ipo | auto")
+set_property(CACHE CORE_LTO_MODE PROPERTY STRINGS off thin full ipo auto)
 
-# Coverage instrumentation — forces CORE_ENABLE_LTO=OFF and activates -fprofile-instr-generate /
-# --coverage compiler flags for this module only.
+# Coverage instrumentation — activates -fprofile-instr-generate / --coverage compiler flags for
+# this module only. LTO is automatically skipped when coverage is enabled.
 option(CORE_ENABLE_COVERAGE "Enable coverage instrumentation for Core" OFF)
 
 # Testing — gates add_subdirectory(Testing/Cxx).
@@ -192,11 +196,6 @@ list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS ${CORE_COMPILE_DEFINITIONS})
 # both be ON at the same time.  The coverage gate is placed after include(enzyme) so that a
 # developer enabling both gets a clear diagnostic from the build system.
 # =============================================================================
-# LTO is incompatible with coverage/sanitizer — clear before any include().
-if(CORE_ENABLE_COVERAGE OR CORE_ENABLE_SANITIZER)
-  set(CORE_ENABLE_LTO OFF)
-endif()
-
 # a) Standard CMake introspection
 include(CheckCXXSourceCompiles)
 include(CheckCXXSourceRuns)
@@ -263,23 +262,6 @@ if(CORE_ENABLE_COVERAGE)
 elseif(MSVC)
   string(APPEND CMAKE_EXE_LINKER_FLAGS " /DEBUG:FULL")
   string(APPEND CMAKE_SHARED_LINKER_FLAGS " /DEBUG:FULL")
-endif()
-
-# e) LTO — must run after coverage/sanitizer flags are known so CMAKE_IPO matches reality
-if(CORE_ENABLE_LTO AND NOT CORE_ENABLE_COVERAGE AND NOT CORE_ENABLE_SANITIZER)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
-  message(STATUS "Link Time Optimization (LTO) enabled via CMAKE_INTERPROCEDURAL_OPTIMIZATION")
-else()
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE OFF)
-  if(CORE_ENABLE_LTO AND (CORE_ENABLE_COVERAGE OR CORE_ENABLE_SANITIZER))
-    message(
-      STATUS "Link Time Optimization (LTO) disabled (incompatible with coverage and/or sanitizer)"
-    )
-  else()
-    message(STATUS "Link Time Optimization (LTO) disabled")
-  endif()
 endif()
 
 include(linker)
@@ -430,10 +412,11 @@ endif()
 # Target definition
 # =============================================================================
 add_library(Core ${sources} ${headers} ${templates})
+quarisma_target_apply_lto(Core CORE)
 if(CORE_ENABLE_SANITIZER)
   quarisma_configure_sanitizer(CORE)
 endif()
-quarisma_find_linker(${CORE_LINKER_CHOICE} Core)
+quarisma_find_linker(${CORE_LINKER_CHOICE} Core CORE_LTO_MODE)
 quarisma_target_apply_cache(Core CORE_ENABLE_CACHE CORE_CACHE_BACKEND)
 quarisma_target_optional_icecc(Core CORE_ENABLE_ICECC)
 
@@ -571,7 +554,7 @@ message("  Cache                : ${CORE_ENABLE_CACHE}")
 message("  Cache backend        : ${CORE_CACHE_BACKEND}")
 message("  Icecc                : ${CORE_ENABLE_ICECC}")
 message("  Linker               : ${CORE_LINKER_CHOICE}")
-message("  Lto                  : ${CORE_ENABLE_LTO}")
+message("  Lto mode             : ${CORE_LTO_MODE}")
 message("  Coverage             : ${CORE_ENABLE_COVERAGE}")
 message("  Testing              : ${CORE_ENABLE_TESTING}")
 message("  Examples             : ${CORE_ENABLE_EXAMPLES}")
@@ -592,7 +575,6 @@ message("  CXX flags                : ${CMAKE_CXX_FLAGS}")
 message("  Shared linker flags      : ${CMAKE_SHARED_LINKER_FLAGS}")
 message("  Static linker flags      : ${CMAKE_STATIC_LINKER_FLAGS}")
 message("  Module linker flags      : ${CMAKE_MODULE_LINKER_FLAGS}")
-message("  IPO / LTO (CMake)        : ${CMAKE_INTERPROCEDURAL_OPTIMIZATION}")
 get_directory_property(_summary_compile_defs DIRECTORY ${PROJECT_SOURCE_DIR} COMPILE_DEFINITIONS)
 message("  Top-level compile defs   : ${_summary_compile_defs}")
 message("")

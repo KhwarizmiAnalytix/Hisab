@@ -11,9 +11,11 @@
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)
 
-# quarisma_find_linker(<linker_choice> <target_name>) linker_choice: "default" (auto-detect) | "lld"
-# | "mold" | "gold" | "lld-link" target_name:   CMake target to receive the -fuse-ld= link option
-# (e.g. Logging, Core, …)
+# quarisma_find_linker(<linker_choice> <target_name> [lto_mode_var])
+#   linker_choice  — "default" (auto-detect) | "lld" | "mold" | "gold" | "lld-link"
+#   target_name    — CMake target to receive the -fuse-ld= link option (e.g. Logging, Core, …)
+#   lto_mode_var   — optional: name of the ${PREFIX}_LTO_MODE variable for this module.
+#                    When provided and its value is not "off"/empty, linker override is skipped.
 function(quarisma_find_linker linker_choice target_name)
   set(LINKER_CHOICE "${linker_choice}")
 
@@ -21,12 +23,25 @@ function(quarisma_find_linker linker_choice target_name)
   set(LINKER_NAME "")
   set(LINKER_FLAGS)
 
-  # Skip faster linker selection if LTO is enabled — LTO with faster linkers (especially gold) can
-  # cause out-of-memory errors and lld-link crashes when ThinLTO is active. Check both the local
-  # variable AND the cache value: individual CMakeLists may shadow the cache to OFF, but test
-  # targets that don't set the variable will still inherit the cache ON value and get LTO object
-  # files, causing lld-link to crash at link time.
+  # Skip faster linker selection if LTO is (or will be) active.
+  # LTO with faster linkers — especially gold — can cause out-of-memory errors, and lld-link
+  # crashes when ThinLTO IR objects are passed. Two checks:
+  #   1. Legacy global CMAKE_INTERPROCEDURAL_OPTIMIZATION (CACHE or local).
+  #   2. Per-module ${PREFIX}_LTO_MODE variable passed as the optional 3rd argument.
+  set(_lto_active FALSE)
   if(CMAKE_INTERPROCEDURAL_OPTIMIZATION OR "$CACHE{CMAKE_INTERPROCEDURAL_OPTIMIZATION}")
+    set(_lto_active TRUE)
+  endif()
+  if(NOT _lto_active AND ARGC GREATER 2)
+    set(_lto_mode_var "${ARGV2}")
+    if(DEFINED "${_lto_mode_var}")
+      string(TOLOWER "${${_lto_mode_var}}" _lto_mode_val)
+      if(NOT _lto_mode_val STREQUAL "off" AND NOT _lto_mode_val STREQUAL "")
+        set(_lto_active TRUE)
+      endif()
+    endif()
+  endif()
+  if(_lto_active)
     message("LTO is enabled - skipping faster linker configuration to avoid memory issues")
     return()
   endif()

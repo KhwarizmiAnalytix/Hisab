@@ -172,9 +172,10 @@ if(NOT INTERN_BUILD_MOBILE)
   # ---[ Check if the compiler has AVX512 support.
   cmake_push_check_state(RESET)
   if(MSVC)
-    set(CMAKE_REQUIRED_FLAGS "/D__AVX512F__ /D__AVX512DQ__ /D__AVX512VL__ /D__F16C__")
+    # /arch:AVX512 implies __AVX512F__, __AVX512CD__, __AVX512BW__, __AVX512DQ__, __AVX512VL__
+    set(CMAKE_REQUIRED_FLAGS "/arch:AVX512 /D__F16C__")
   else()
-    set(CMAKE_REQUIRED_FLAGS "-mavx512f -mavx512dq -mavx512vl -mf16c")
+    set(CMAKE_REQUIRED_FLAGS "-mavx512f -mavx512dq -mavx512vl -mavx512bw -mavx512cd -mf16c")
   endif()
   check_cxx_source_compiles(
     "#if defined(_MSC_VER)
@@ -263,6 +264,7 @@ if(NOT INTERN_BUILD_MOBILE)
 
   if(NOT TMP_COMPILER_SUPPORTS_SVML_EXTENSIONS AND VECTORIZATION)
     message(
+        WARNING
       "--Current compiler does not supports SVML functoins. Turn ON VECTORIZATION_ENABLE_SVML"
     )
     set(VECTORIZATION_ENABLE_SVML ON CACHE BOOL "Enable Intel SVML short vector math library" FORCE)
@@ -286,10 +288,16 @@ if(NOT INTERN_BUILD_MOBILE)
   endif()  # _quarisma_vec_is_x86 (SVML)
 
   if(_quarisma_vec_is_aarch64)
-    # ---[ AArch64 NEON
+    # ---[ AArch64 NEON — probe armv8.2-a first (Cortex-A75+, Neoverse N1, Apple A12+),
+    # fall back to baseline armv8-a so the binary runs on older targets.
     cmake_push_check_state(RESET)
     if(NOT MSVC)
-      set(CMAKE_REQUIRED_FLAGS "-march=armv8-a")
+      check_cxx_compiler_flag("-march=armv8.2-a" _quarisma_vec_neon_armv82)
+      if(_quarisma_vec_neon_armv82)
+        set(CMAKE_REQUIRED_FLAGS "-march=armv8.2-a")
+      else()
+        set(CMAKE_REQUIRED_FLAGS "-march=armv8-a")
+      endif()
     endif()
     check_cxx_source_compiles(
       "#include <arm_neon.h>
@@ -311,10 +319,12 @@ if(NOT INTERN_BUILD_MOBILE)
     endif()
     cmake_pop_check_state()
 
-    # ---[ AArch64 SVE (fixed 128-bit; matches backend/sve/*/simd.h)
+    # ---[ AArch64 SVE — vector width is controlled by VECTORIZATION_SVE_VECTOR_BITS.
+    # Default is 128 (matches backend/sve/*/simd.h); set to 256/512 once backends support it.
     cmake_push_check_state(RESET)
     if(NOT MSVC)
-      set(CMAKE_REQUIRED_FLAGS "-march=armv8-a+sve -msve-vector-bits=128")
+      set(CMAKE_REQUIRED_FLAGS
+          "-march=armv8-a+sve -msve-vector-bits=${VECTORIZATION_SVE_VECTOR_BITS}")
     endif()
     check_cxx_source_compiles(
       "#include <arm_sve.h>
@@ -326,7 +336,8 @@ if(NOT INTERN_BUILD_MOBILE)
       TMP_COMPILER_SUPPORTS_ARM_SVE128
     )
     if(TMP_COMPILER_SUPPORTS_ARM_SVE128 AND VECTORIZATION_TYPE STREQUAL "sve")
-      message("--Current compiler supports AArch64 SVE (128-bit vector length).")
+      message("--Current compiler supports AArch64 SVE "
+              "(${VECTORIZATION_SVE_VECTOR_BITS}-bit vector length).")
       set(HAS_SVE 1)
       set(VECTORIZATION ON)
       if(NOT MSVC)

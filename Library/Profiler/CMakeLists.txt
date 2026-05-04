@@ -29,10 +29,14 @@ endif()
 
 # Link-Time Optimization — disabled when PROFILER_ENABLE_COVERAGE or PROFILER_ENABLE_SANITIZER is ON
 # (LTO conflicts with instrumentation / sanitizers).
-option(PROFILER_ENABLE_LTO "Enable Link Time Optimization for Profiler" OFF)
+include(lto)
+quarisma_lto_compute_default(_lto_default PROFILE SUPPORT)
+set(PROFILER_LTO_MODE "${_lto_default}"
+    CACHE STRING "LTO mode for Profiler: off | thin | full | ipo | auto")
+set_property(CACHE PROFILER_LTO_MODE PROPERTY STRINGS off thin full ipo auto)
 
-# Coverage instrumentation — forces PROFILER_ENABLE_LTO=OFF and activates -fprofile-instr-generate /
-# --coverage compiler flags for this module only.
+# Coverage instrumentation — activates -fprofile-instr-generate / --coverage compiler flags for
+# this module only. LTO is automatically skipped when coverage is enabled.
 option(PROFILER_ENABLE_COVERAGE "Enable coverage instrumentation for Profiler tests" OFF)
 
 # Testing — gates add_subdirectory(Testing/Cxx).
@@ -147,11 +151,6 @@ list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS ${PROFILER_COMPILE_DEFINITIO
 # --- Section 3: CMake module includes --- Order: introspection → toolchain helpers →
 # coverage/sanitizer → LTO/linker.
 
-# LTO is incompatible with coverage/sanitizer — clear before any include().
-if(PROFILER_ENABLE_COVERAGE OR PROFILER_ENABLE_SANITIZER)
-  set(PROFILER_ENABLE_LTO OFF)
-endif()
-
 # a) Standard CMake introspection
 include(CheckCXXSourceCompiles)
 include(CheckCXXSourceRuns)
@@ -183,22 +182,6 @@ if(PROFILER_ENABLE_COVERAGE)
 elseif(MSVC)
   string(APPEND CMAKE_EXE_LINKER_FLAGS " /DEBUG:FULL")
   string(APPEND CMAKE_SHARED_LINKER_FLAGS " /DEBUG:FULL")
-endif()
-
-if(PROFILER_ENABLE_LTO AND NOT PROFILER_ENABLE_COVERAGE AND NOT PROFILER_ENABLE_SANITIZER)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
-  message(STATUS "Link Time Optimization (LTO) enabled via CMAKE_INTERPROCEDURAL_OPTIMIZATION")
-else()
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE OFF)
-  if(PROFILER_ENABLE_LTO AND (PROFILER_ENABLE_COVERAGE OR PROFILER_ENABLE_SANITIZER))
-    message(
-      STATUS "Link Time Optimization (LTO) disabled (incompatible with coverage and/or sanitizer)"
-    )
-  else()
-    message(STATUS "Link Time Optimization (LTO) disabled")
-  endif()
 endif()
 
 include(linker)
@@ -382,10 +365,11 @@ endif()
 
 # --- Target definition ---
 add_library(Profiler ${profiler_sources} ${profiler_headers})
+quarisma_target_apply_lto(Profiler PROFILER)
 if(PROFILER_ENABLE_SANITIZER)
   quarisma_configure_sanitizer(PROFILER)
 endif()
-quarisma_find_linker(${PROFILER_LINKER_CHOICE} Profiler)
+quarisma_find_linker(${PROFILER_LINKER_CHOICE} Profiler PROFILER_LTO_MODE)
 quarisma_target_apply_cache(Profiler PROFILER_ENABLE_CACHE PROFILER_CACHE_BACKEND)
 quarisma_target_optional_icecc(Profiler PROFILER_ENABLE_ICECC)
 
@@ -478,7 +462,7 @@ message("  Cache            : ${PROFILER_ENABLE_CACHE}")
 message("  Cache backend    : ${PROFILER_CACHE_BACKEND}")
 message("  Icecc            : ${PROFILER_ENABLE_ICECC}")
 message("  Linker           : ${PROFILER_LINKER_CHOICE}")
-message("  Lto              : ${PROFILER_ENABLE_LTO}")
+message("  Lto mode         : ${PROFILER_LTO_MODE}")
 message("  Coverage         : ${PROFILER_ENABLE_COVERAGE}")
 message("  Testing          : ${PROFILER_ENABLE_TESTING}")
 message("  Examples         : ${PROFILER_ENABLE_EXAMPLES}")
@@ -499,7 +483,6 @@ message("  CXX flags                : ${CMAKE_CXX_FLAGS}")
 message("  Shared linker flags      : ${CMAKE_SHARED_LINKER_FLAGS}")
 message("  Static linker flags      : ${CMAKE_STATIC_LINKER_FLAGS}")
 message("  Module linker flags      : ${CMAKE_MODULE_LINKER_FLAGS}")
-message("  IPO / LTO (CMake)        : ${CMAKE_INTERPROCEDURAL_OPTIMIZATION}")
 get_directory_property(_summary_compile_defs DIRECTORY ${PROJECT_SOURCE_DIR} COMPILE_DEFINITIONS)
 message("  Top-level compile defs   : ${_summary_compile_defs}")
 message("")

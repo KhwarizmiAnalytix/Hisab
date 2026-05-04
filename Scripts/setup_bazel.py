@@ -185,6 +185,9 @@ def _merge_dotted_segments(parts: List[str]) -> List[str]:
         ):
             out.append(f"logging_{pl[i + 1]}")
             i += 2
+        elif pl[i] == "lto" and i + 1 < len(pl) and pl[i + 1] in ("off", "thin", "full", "ipo", "auto"):
+            out.append(f"lto.{pl[i + 1]}")
+            i += 2
         elif pl[i] == "project" and i + 1 < len(pl) and pl[i + 1] in _BAZEL_LIBRARY_PROJECTS:
             out.append(f"project.{pl[i + 1]}")
             i += 2
@@ -238,6 +241,10 @@ class BazelConfiguration:
         self.shared_libs: bool = False
         # Limit Bazel build/test to //Library/<Name>/... (--project.NAME / project.NAME).
         self.library_project: Optional[str] = None
+
+        # LTO mode: "off" | "thin" | "full" | "ipo" | "auto"
+        # All non-"off" values map to --config=lto in Bazel; the mode label is surfaced in summaries.
+        self.lto_mode: str = "off"
 
         # CMake-only flags — not executed in Bazel but tracked so the summary is accurate.
         self.spell:      bool = False
@@ -322,9 +329,22 @@ class BazelConfiguration:
                 self.vectorization = arg_lower
                 self.configs.append(arg_lower)
 
-            # LTO
-            elif arg_lower == "lto":
-                self.configs.append("lto")
+            # LTO — bare token or dotted mode (lto.thin, lto.full, lto.ipo, lto.auto)
+            elif arg_lower == "lto" or arg_lower.startswith("lto."):
+                _lto_modes = {"off", "thin", "full", "ipo", "auto"}
+                if "." in arg_lower:
+                    _mode = arg_lower.split(".", 1)[1]
+                else:
+                    _mode = "auto"  # bare 'lto' → auto
+                if _mode not in _lto_modes:
+                    print_status(
+                        f"Invalid LTO mode '{_mode}'. Valid options: {', '.join(sorted(_lto_modes))}",
+                        "ERROR",
+                    )
+                    sys.exit(1)
+                self.lto_mode = _mode
+                if _mode != "off":
+                    self.configs.append("lto")
 
             # Optional features
             elif arg_lower in ["mimalloc", "magic_enum", "tbb", "mkl", "openmp", "cuda", "hip"]:
@@ -691,7 +711,7 @@ class BazelConfiguration:
         na        = self._na()
         cxx       = self._cxx_std_display()
         has_san, san_type = self._sanitizer_info()
-        lto       = self._on_off("lto" in self.configs)
+        lto       = self.lto_mode if self.lto_mode != "off" else f"{Fore.RED}off{Style.RESET_ALL}"
         coverage  = self._on_off(self.run_coverage)
         testing   = self._on_off(self.run_tests)
         gtest     = self._on_off(not self.disable_gtest)
@@ -812,7 +832,7 @@ class BazelConfiguration:
             ("PARALLEL_HAS_OPENMP",       "openmp" in self.configs),
             ("MEMORY_HAS_CUDA",           "cuda"   in self.configs),
             ("MEMORY_HAS_HIP",            "hip"    in self.configs),
-            ("QUARISMA_ENABLE_LTO",       "lto"    in self.configs),
+            ("LTO_MODE",                  self.lto_mode),
             ("CORE_HAS_ENZYME",           "enzyme" in self.configs),
             ("QUARISMA_ENABLE_GTEST",     gtest_on),
             ("BUILD_SHARED_LIBS",         self.shared_libs),
@@ -826,7 +846,10 @@ class BazelConfiguration:
             ("ENABLE_EXAMPLES",           self.examples),
         ]
         for flag, state in flags:
-            print(f"  {flag:30} {self._on_off(state)}")
+            if isinstance(state, str):
+                print(f"  {flag:30} {state}")
+            else:
+                print(f"  {flag:30} {self._on_off(state)}")
 
         # Logging / Profiler backends
         print(f"\n{Fore.CYAN}Logging Backend:{Style.RESET_ALL}")
@@ -1052,6 +1075,20 @@ def parse_args(args: list[str]) -> list[str]:
             print_status(f"Library scope: //Library/{_BAZEL_LIBRARY_PACKAGE_DIR[proj]}/...", "INFO")
             continue
 
+        if arg.startswith("--lto."):
+            _lto_mode = arg.split(".", 1)[1].lower()
+            _valid = ("off", "thin", "full", "ipo", "auto")
+            if _lto_mode in _valid:
+                processed.append(f"lto.{_lto_mode}")
+                print_status(f"LTO mode set to {_lto_mode}", "INFO")
+            else:
+                print_status(
+                    f"Invalid LTO mode '{_lto_mode}'. Valid options: {', '.join(_valid)}",
+                    "ERROR",
+                )
+                sys.exit(1)
+            continue
+
         if arg.startswith("--sanitizer."):
             st = arg.split(".", 1)[1].lower()
             if st in _CMAKE_SAN_TO_BAZEL:
@@ -1187,7 +1224,12 @@ def print_help() -> None:
     print("  neon          - AArch64 NEON (128-bit SIMD)")
     print("  sve           - AArch64 SVE fixed 128-bit (-msve-vector-bits=128)")
     print("\nOptional features:")
-    print("  lto           - Link-time optimization")
+    print("  lto           - Link-time optimization (auto mode; maps to --config=lto)")
+    print("  --lto.thin    - ThinLTO (Clang; Bazel maps to --config=lto)")
+    print("  --lto.full    - Full/monolithic LTO (Bazel maps to --config=lto)")
+    print("  --lto.ipo     - CMake-managed IPO (Bazel maps to --config=lto)")
+    print("  --lto.auto    - Auto-select mode (same as bare 'lto')")
+    print("  --lto.off     - Explicitly disable LTO")
     print("  mimalloc      - Microsoft mimalloc allocator")
     print("  magic_enum    - Magic enum library")
     print("  tbb           - Intel TBB")

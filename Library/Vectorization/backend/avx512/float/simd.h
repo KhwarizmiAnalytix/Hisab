@@ -56,13 +56,25 @@ struct simd<float>
     // load, store, set functions
     //======================================================================================
 
-    VECTORIZATION_SIMD_RETURN_TYPE load(const value_t* addr, simd_t& ret) { ret = _mm512_load_ps(addr); }
+    VECTORIZATION_SIMD_RETURN_TYPE load(const value_t* addr, simd_t& ret)
+    {
+        ret = _mm512_load_ps(addr);
+    }
 
-    VECTORIZATION_SIMD_RETURN_TYPE loadu(const value_t* addr, simd_t& ret) { ret = _mm512_loadu_ps(addr); }
+    VECTORIZATION_SIMD_RETURN_TYPE loadu(const value_t* addr, simd_t& ret)
+    {
+        ret = _mm512_loadu_ps(addr);
+    }
 
-    VECTORIZATION_SIMD_RETURN_TYPE store(const simd_t& from, value_t* to) { _mm512_store_ps(to, from); }
+    VECTORIZATION_SIMD_RETURN_TYPE store(const simd_t& from, value_t* to)
+    {
+        _mm512_store_ps(to, from);
+    }
 
-    VECTORIZATION_SIMD_RETURN_TYPE storeu(const simd_t& from, value_t* to) { _mm512_storeu_ps(to, from); }
+    VECTORIZATION_SIMD_RETURN_TYPE storeu(const simd_t& from, value_t* to)
+    {
+        _mm512_storeu_ps(to, from);
+    }
 
     template <
         typename scalar_t,
@@ -116,7 +128,8 @@ struct simd<float>
         ret = _mm512_max_ps(x, y);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE fma(const simd_t& x, const simd_t& y, const simd_t& z, simd_t& ret)
+    VECTORIZATION_SIMD_RETURN_TYPE fma(
+        const simd_t& x, const simd_t& y, const simd_t& z, simd_t& ret)
     {
 #ifdef __FMA__
         ret = _mm512_fmadd_ps(x, y, z);
@@ -172,14 +185,32 @@ struct simd<float>
     VECTORIZATION_SIMD_RETURN_TYPE cbrt(const simd_t& x, simd_t& ret) { ret = _mm512_cbrt_ps(x); }
 
     VECTORIZATION_SIMD_RETURN_TYPE cdf(const simd_t& x, simd_t& ret) { ret = _mm512_cdfnorm_ps(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE inv_cdf(const simd_t& x, simd_t& ret) { ret = _mm512_cdfnorminv_ps(x); }
+    VECTORIZATION_SIMD_RETURN_TYPE inv_cdf(const simd_t& x, simd_t& ret)
+    {
+        ret = _mm512_cdfnorminv_ps(x);
+    }
 
     VECTORIZATION_SIMD_RETURN_TYPE trunc(const simd_t& x, simd_t& ret) { ret = _mm512_trunc_ps(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE invsqrt(const simd_t& x, simd_t& ret) { ret = _mm512_invsqrt_ps(x); }
+    VECTORIZATION_SIMD_RETURN_TYPE invsqrt(const simd_t& x, simd_t& ret)
+    {
+#if VECTORIZATION_HAS_SVML
+        ret = _mm512_invsqrt_ps(x);
+#else
+        // rsqrt14 gives ~14-bit accuracy; one Newton-Raphson step reaches ~28 bits (full float).
+        // r_new = (r / 2) * (3 - x * r^2)
+        __m512 r   = _mm512_rsqrt14_ps(x);
+        __m512 xr2 = _mm512_mul_ps(x, _mm512_mul_ps(r, r));
+        ret        = _mm512_mul_ps(
+            _mm512_mul_ps(r, _mm512_set1_ps(0.5f)), _mm512_sub_ps(_mm512_set1_ps(3.0f), xr2));
+#endif
+    }
     VECTORIZATION_SIMD_RETURN_TYPE fabs(const simd_t& x, simd_t& ret) { ret = _mm512_abs_ps(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE neg(const simd_t& x, simd_t& ret) { ret = _mm512_xor_ps(x, sign_mask); }
+    VECTORIZATION_SIMD_RETURN_TYPE neg(const simd_t& x, simd_t& ret)
+    {
+        ret = _mm512_xor_ps(x, sign_mask);
+    }
 
     //======================================================================================
     // horizantal functions
@@ -189,9 +220,15 @@ struct simd<float>
         return static_cast<double>(_mm512_reduce_add_ps(x));
     }
 
-    VECTORIZATION_FORCE_INLINE static value_t hmax(const simd_t& x) { return _mm512_reduce_max_ps(x); }
+    VECTORIZATION_FORCE_INLINE static value_t hmax(const simd_t& x)
+    {
+        return _mm512_reduce_max_ps(x);
+    }
 
-    VECTORIZATION_FORCE_INLINE static value_t hmin(const simd_t& x) { return _mm512_reduce_min_ps(x); }
+    VECTORIZATION_FORCE_INLINE static value_t hmin(const simd_t& x)
+    {
+        return _mm512_reduce_min_ps(x);
+    }
 
     //======================================================================================
     // gather/scatter function
@@ -239,7 +276,8 @@ struct simd<float>
     //======================================================================================
     // comparaison function
     //======================================================================================
-    VECTORIZATION_SIMD_RETURN_TYPE if_else(const mask_t& x, const simd_t& y, const simd_t& z, simd_t& ret)
+    VECTORIZATION_SIMD_RETURN_TYPE if_else(
+        const mask_t& x, const simd_t& y, const simd_t& z, simd_t& ret)
     {
         ret = _mm512_mask_mov_ps(z, x, y);
     }
@@ -279,76 +317,16 @@ struct simd<float>
     //======================================================================================
     VECTORIZATION_SIMD_RETURN_TYPE loadu(int_t const* from, mask_t& ret)
     {
-        ret = 0x0000;
-        if (from[0] != 0)
-            ret |= 0x0001;
-        if (from[1] != 0)
-            ret |= 0x0002;
-        if (from[2] != 0)
-            ret |= 0x0004;
-        if (from[3] != 0)
-            ret |= 0x0008;
-        if (from[4] != 0)
-            ret |= 0x0010;
-        if (from[5] != 0)
-            ret |= 0x0020;
-        if (from[6] != 0)
-            ret |= 0x0040;
-        if (from[7] != 0)
-            ret |= 0x0080;
-        if (from[8] != 0)
-            ret |= 0x0100;
-        if (from[9] != 0)
-            ret |= 0x0200;
-        if (from[10] != 0)
-            ret |= 0x0400;
-        if (from[11] != 0)
-            ret |= 0x0800;
-        if (from[12] != 0)
-            ret |= 0x1000;
-        if (from[13] != 0)
-            ret |= 0x2000;
-        if (from[14] != 0)
-            ret |= 0x4000;
-        if (from[15] != 0)
-            ret |= 0x8000;
+        // Load 16 × uint32 unaligned, set mask bit i iff from[i] != 0. 2 instructions vs 16 branches.
+        __m512i v = _mm512_loadu_si512(reinterpret_cast<const __m512i*>(from));
+        ret       = _mm512_cmpneq_epi32_mask(v, _mm512_setzero_si512());
     };
 
     VECTORIZATION_SIMD_RETURN_TYPE load(int_t const* from, mask_t& ret)
     {
-        ret = 0x0000;
-        if (from[0] != 0)
-            ret |= 0x0001;
-        if (from[1] != 0)
-            ret |= 0x0002;
-        if (from[2] != 0)
-            ret |= 0x0004;
-        if (from[3] != 0)
-            ret |= 0x0008;
-        if (from[4] != 0)
-            ret |= 0x0010;
-        if (from[5] != 0)
-            ret |= 0x0020;
-        if (from[6] != 0)
-            ret |= 0x0040;
-        if (from[7] != 0)
-            ret |= 0x0080;
-        if (from[8] != 0)
-            ret |= 0x0100;
-        if (from[9] != 0)
-            ret |= 0x0200;
-        if (from[10] != 0)
-            ret |= 0x0400;
-        if (from[11] != 0)
-            ret |= 0x0800;
-        if (from[12] != 0)
-            ret |= 0x1000;
-        if (from[13] != 0)
-            ret |= 0x2000;
-        if (from[14] != 0)
-            ret |= 0x4000;
-        if (from[15] != 0)
-            ret |= 0x8000;
+        // Aligned variant: pointer must be 64-byte aligned.
+        __m512i v = _mm512_load_si512(reinterpret_cast<const __m512i*>(from));
+        ret       = _mm512_cmpneq_epi32_mask(v, _mm512_setzero_si512());
     };
 
     VECTORIZATION_SIMD_RETURN_TYPE storeu(const mask_t& from, int_t* to)
@@ -430,15 +408,15 @@ struct simd<float>
 
 #ifdef __AVX512DQ__
 // AVX512F does not define _mm512_extractf32x8_ps to extract _m256 from _m512
-#define VECTORIZATION_EXTRACT_8f_FROM_16f(INPUT, OUTPUT)         \
+#define VECTORIZATION_EXTRACT_8f_FROM_16f(INPUT, OUTPUT)  \
     __m256 OUTPUT##_0 = _mm512_extractf32x8_ps(INPUT, 0); \
     __m256 OUTPUT##_1 = _mm512_extractf32x8_ps(INPUT, 1);
 #define VECTORIZATION_INSERT_8f_INTO_16f(OUTPUT, INPUTA, INPUTB) \
-    OUTPUT = _mm512_insertf32x8(OUTPUT, INPUTA, 0);       \
+    OUTPUT = _mm512_insertf32x8(OUTPUT, INPUTA, 0);              \
     OUTPUT = _mm512_insertf32x8(OUTPUT, INPUTB, 1);
 
 #else
-#define VECTORIZATION_EXTRACT_8f_FROM_16f(INPUT, OUTPUT)                 \
+#define VECTORIZATION_EXTRACT_8f_FROM_16f(INPUT, OUTPUT)          \
     __m256 OUTPUT##_0 = _mm256_insertf128_ps(                     \
         _mm256_castps128_ps256(_mm512_extractf32x4_ps(INPUT, 0)), \
         _mm512_extractf32x4_ps(INPUT, 1),                         \
@@ -448,7 +426,7 @@ struct simd<float>
         _mm512_extractf32x4_ps(INPUT, 3),                         \
         1);
 
-#define VECTORIZATION_INSERT_8f_INTO_16f(OUTPUT, INPUTA, INPUTB)                     \
+#define VECTORIZATION_INSERT_8f_INTO_16f(OUTPUT, INPUTA, INPUTB)              \
     OUTPUT = _mm512_insertf32x4(OUTPUT, _mm256_extractf128_ps(INPUTA, 0), 0); \
     OUTPUT = _mm512_insertf32x4(OUTPUT, _mm256_extractf128_ps(INPUTA, 1), 1); \
     OUTPUT = _mm512_insertf32x4(OUTPUT, _mm256_extractf128_ps(INPUTB, 0), 2); \
@@ -611,4 +589,3 @@ struct simd<float>
         }
     }
 };
-

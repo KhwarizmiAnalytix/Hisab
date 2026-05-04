@@ -654,7 +654,7 @@ class QuarismaFlags:
             "enable google test",
             "enable testing",
             "logging backend: NATIVE, LOGURU, GLOG, or SPDLOG",
-            "enable Link Time Optimization",
+            "LTO mode for all modules: off | thin | full | ipo | auto (bare 'lto' = auto)",
             "enable magic_enum static reflection for enums",
             "enable Microsoft mimalloc high-performance memory allocator",
             "use external copies of third party libraries by default",
@@ -756,7 +756,7 @@ class QuarismaFlags:
                 "cache": self.ON,  # Per-module compiler cache (CMake defaults ON)
                 "cache_type": "none",  # Default cache backend is none
                 "parallel_backend": "std",  # Default SMP backend
-                "lto": self.OFF,
+                "lto": "",     # empty = not specified; CMake picks the smart default per compiler
                 "gtest": self.ON,  # *_ENABLE_GTEST CMake defaults are ON
                 "benchmark": self.ON,  # *_ENABLE_BENCHMARK CMake defaults are ON
                 "magic_enum": self.ON,
@@ -796,6 +796,20 @@ class QuarismaFlags:
                 self.__value["sanitizer"] = self.ON
                 self.__value["sanitizer_enum"] = arg
                 self.builder_suffix += f"_{arg}"
+            elif arg.startswith("lto."):
+                lto_modes = ["off", "thin", "full", "ipo", "auto"]
+                lto_mode = arg.split(".", 1)[1].lower()
+                if lto_mode in lto_modes:
+                    self.__value["lto"] = lto_mode
+                    if lto_mode != "off":
+                        self.builder_suffix += f"_lto_{lto_mode}"
+                    print_status(f"LTO mode: {lto_mode}", "INFO")
+                else:
+                    print_status(
+                        f"Unknown LTO mode '{lto_mode}'. Valid options: {', '.join(lto_modes)}",
+                        "ERROR",
+                    )
+                    sys.exit(1)
             elif arg.startswith("linker."):
                 linker_value = arg.split(".", 1)[1].lower()
                 if linker_value in linker_list and linker_value != "default":
@@ -917,6 +931,10 @@ class QuarismaFlags:
                 if arg in ["gtest", "magic_enum", "mimalloc", "cache"]:
                     # These have CMake default ON, so providing the arg turns them OFF
                     self.__value[arg] = self.OFF
+                elif arg == "lto":
+                    # bare 'lto' token → auto mode (compiler picks thin on Clang, ipo on GCC/MSVC)
+                    self.__value["lto"] = "auto"
+                    self.builder_suffix += "_lto_auto"
                 else:
                     # These have CMake default OFF, so providing the arg turns them ON
                     self.__value[arg] = self.ON
@@ -1082,7 +1100,16 @@ class QuarismaFlags:
 
         _fan_bool("benchmark", "ENABLE_BENCHMARK")
         _fan_bool("coverage", "ENABLE_COVERAGE")
-        _fan_bool("lto", "ENABLE_LTO")
+
+        # Fan LTO mode to all modules only when the user explicitly set it.
+        # When unset (empty string), CMake uses quarisma_lto_compute_default() — which
+        # picks thin/ipo/off based on compiler and build type — so we don't override it.
+        _lto_val = (self.__value.get("lto") or "").strip().lower()
+        if _lto_val in ("on",):
+            _lto_val = "auto"  # normalise legacy ON from __set_all_flags
+        if _lto_val:
+            for _mod in ALL_MODULES:
+                cmake_cmd_flags.append(f"-D{_mod}_LTO_MODE={_lto_val}")
         _fan_bool("gtest", "ENABLE_GTEST")
         _fan_bool("clangtidy", "ENABLE_CLANGTIDY")
         _fan_bool("iwyu", "ENABLE_IWYU")
@@ -1107,10 +1134,6 @@ class QuarismaFlags:
         if self.__value.get("parallel_backend") == "tbb":
             cmake_cmd_flags.append("-DPARALLEL_ENABLE_TBB=ON")
             cmake_cmd_flags.append("-DMEMORY_ENABLE_TBB=ON")
-
-        # Add CMAKE_INTERPROCEDURAL_OPTIMIZATION flag when LTO is enabled.
-        if self.__value.get("lto") == self.ON:
-            cmake_cmd_flags.append("-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON")
 
         # Tune generated code for the host CPU (Clang/GCC; see Library/Vectorization/Cmake/utils.cmake).
         if self.__value.get("native") == self.ON:
@@ -1139,6 +1162,8 @@ class QuarismaFlags:
                 key = "sanitizer (or --sanitizer.TYPE)"
             elif key == "sanitizer_enum":
                 key = "address, undefined, thread, memory, leak"
+            elif key == "lto":
+                key = "lto | --lto.thin | --lto.full | --lto.ipo | --lto.auto"
             elif key == "linker":
                 key = "linker.mold | linker.lld | linker.gold | linker.lld-link"
             elif key == "native":
@@ -1798,6 +1823,18 @@ def parse_args(args):
                 f"Library scope: {proj} (pass-through as project.{proj})",
                 "INFO",
             )
+        elif arg.startswith("--lto."):
+            lto_mode = arg.split(".", 1)[1].lower()
+            valid_lto_modes = ["off", "thin", "full", "ipo", "auto"]
+            if lto_mode in valid_lto_modes:
+                processed_args.append(f"lto.{lto_mode}")
+                print_status(f"LTO mode set to {lto_mode}", "INFO")
+            else:
+                print_status(
+                    f"Invalid LTO mode '{lto_mode}'. Valid options: {', '.join(valid_lto_modes)}",
+                    "ERROR",
+                )
+                sys.exit(1)
         elif arg.startswith("--parallel."):
             # Parse SMP backend selection flag (--parallel.std, --parallel.openmp, --parallel.tbb)
             # This is the first stage of argument parsing that converts command-line flags
@@ -1938,6 +1975,10 @@ def main():
         )
         print("  python setup.py config.build.ninja.clang.release.benchmark")
         print("  python setup.py config.build.ninja.clang.release.lto.benchmark")
+        print("  # Explicit ThinLTO (Clang) or IPO fallback (GCC/MSVC):")
+        print("  python setup.py config.build.ninja.clang.release --lto.thin")
+        print("  python setup.py config.build.ninja.clang.release --lto.full")
+        print("  python setup.py config.build.ninja.gcc.release --lto.ipo")
         print()
         print(
             "  # Note: To disable, pass CMake defines such as -DCORE_ENABLE_BENCHMARK=OFF"

@@ -51,7 +51,11 @@ if(VECTORIZATION_PACKET_SIZE GREATER 256)
   )
 endif()
 
-option(VECTORIZATION_ENABLE_LTO "Enable Link Time Optimization for Vectorization" OFF)
+include(lto)
+quarisma_lto_compute_default(_lto_default PROFILE PERFORMANCE)
+set(VECTORIZATION_LTO_MODE "${_lto_default}"
+    CACHE STRING "LTO mode for Vectorization: off | thin | full | ipo | auto")
+set_property(CACHE VECTORIZATION_LTO_MODE PROPERTY STRINGS off thin full ipo auto)
 option(VECTORIZATION_ENABLE_COVERAGE "Enable coverage instrumentation for Vectorization" OFF)
 option(VECTORIZATION_ENABLE_TESTING "Build Vectorization test suite" ON)
 option(VECTORIZATION_ENABLE_EXAMPLES "Build Vectorization example programs" OFF)
@@ -125,14 +129,21 @@ set_property(CACHE VECTORIZATION_CXX_STANDARD PROPERTY STRINGS 11 14 17 20 23)
 if(NOT VECTORIZATION_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
   message(FATAL_ERROR "VECTORIZATION_CXX_STANDARD must be one of: 11 14 17 20 23")
 endif()
+
+# SVE vector register width. The current backend/sve/ implementation only supports 128 bits.
+# Set to 256 or 512 once those backends are extended to support scalable widths.
+set(VECTORIZATION_SVE_VECTOR_BITS "128"
+    CACHE STRING "SVE vector register width in bits: 128, 256, 512"
+)
+set_property(CACHE VECTORIZATION_SVE_VECTOR_BITS PROPERTY STRINGS 128 256 512)
+if(NOT VECTORIZATION_SVE_VECTOR_BITS MATCHES "^(128|256|512)$")
+  message(FATAL_ERROR "VECTORIZATION_SVE_VECTOR_BITS must be 128, 256, or 512")
+endif()
+
 # =============================================================================
 # SECTION 3 — CMake
 # module includes
 # =============================================================================
-if(VECTORIZATION_ENABLE_COVERAGE OR VECTORIZATION_ENABLE_SANITIZER)
-  set(VECTORIZATION_ENABLE_LTO OFF)
-endif()
-
 include(CheckCXXSourceCompiles)
 include(CheckCXXSourceRuns)
 include(CheckSymbolExists)
@@ -206,17 +217,6 @@ if(VECTORIZATION_ENABLE_COVERAGE)
 elseif(MSVC)
   string(APPEND CMAKE_EXE_LINKER_FLAGS " /DEBUG:FULL")
   string(APPEND CMAKE_SHARED_LINKER_FLAGS " /DEBUG:FULL")
-endif()
-
-if(VECTORIZATION_ENABLE_LTO AND NOT VECTORIZATION_ENABLE_COVERAGE
-   AND NOT VECTORIZATION_ENABLE_SANITIZER
-)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
-  message(STATUS "Link Time Optimization (LTO) enabled for Vectorization")
-else()
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE OFF)
 endif()
 
 include(linker)
@@ -332,10 +332,11 @@ endif()
 # definition
 # =============================================================================
 add_library(Vectorization ${sources} ${headers} ${templates})
+quarisma_target_apply_lto(Vectorization VECTORIZATION)
 if(VECTORIZATION_ENABLE_SANITIZER)
   quarisma_configure_sanitizer(VECTORIZATION)
 endif()
-quarisma_find_linker(${VECTORIZATION_LINKER_CHOICE} Vectorization)
+quarisma_find_linker(${VECTORIZATION_LINKER_CHOICE} Vectorization VECTORIZATION_LTO_MODE)
 quarisma_target_apply_cache(Vectorization VECTORIZATION_ENABLE_CACHE VECTORIZATION_CACHE_BACKEND)
 quarisma_target_optional_icecc(Vectorization VECTORIZATION_ENABLE_ICECC)
 
@@ -376,11 +377,11 @@ else()
 endif()
 
 # Apply SIMD flags as PUBLIC target options so all consumers inherit the correct ISA.
-if(_vec_simd_flags)
+if(VECTORIZATION_COMPILER_FLAGS)
   if(MSVC)
-    separate_arguments(_vec_simd_flags_list WINDOWS_COMMAND "${_vec_simd_flags}")
+    separate_arguments(_vec_simd_flags_list WINDOWS_COMMAND "${VECTORIZATION_COMPILER_FLAGS}")
   else()
-    separate_arguments(_vec_simd_flags_list UNIX_COMMAND "${_vec_simd_flags}")
+    separate_arguments(_vec_simd_flags_list UNIX_COMMAND "${VECTORIZATION_COMPILER_FLAGS}")
   endif()
   target_compile_options(Vectorization PUBLIC ${_vec_simd_flags_list})
 endif()
@@ -506,7 +507,7 @@ message("  Cache                : ${VECTORIZATION_ENABLE_CACHE}")
 message("  Cache backend        : ${VECTORIZATION_CACHE_BACKEND}")
 message("  Icecc                : ${VECTORIZATION_ENABLE_ICECC}")
 message("  Linker               : ${VECTORIZATION_LINKER_CHOICE}")
-message("  Lto                  : ${VECTORIZATION_ENABLE_LTO}")
+message("  Lto mode             : ${VECTORIZATION_LTO_MODE}")
 message("  Coverage             : ${VECTORIZATION_ENABLE_COVERAGE}")
 message("  Testing              : ${VECTORIZATION_ENABLE_TESTING}")
 message("  Gtest                : ${VECTORIZATION_ENABLE_GTEST}")
@@ -525,5 +526,4 @@ message("  C++ standard             : ${CMAKE_CXX_STANDARD}")
 message("  C flags                  : ${CMAKE_C_FLAGS}")
 message("  CXX flags                : ${CMAKE_CXX_FLAGS}")
 message("  Shared linker flags      : ${CMAKE_SHARED_LINKER_FLAGS}")
-message("  IPO / LTO (CMake)        : ${CMAKE_INTERPROCEDURAL_OPTIMIZATION}")
 message("")

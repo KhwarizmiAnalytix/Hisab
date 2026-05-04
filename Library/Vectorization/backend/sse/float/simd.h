@@ -34,8 +34,8 @@
 #endif
 #endif
 
-#include "common/vectorization_macros.h"
 #include "backend/sse/intrinsics.h"
+#include "common/vectorization_macros.h"
 
 template <>
 struct simd<float>
@@ -44,7 +44,8 @@ struct simd<float>
     using mask_t = __m128;
 
     // Distinct from simd_t so overloads (gather/add/scatter on half width) are not redeclarations.
-    struct simd_half_t {
+    struct simd_half_t
+    {
         __m128 v;
 
         simd_half_t() = default;
@@ -53,8 +54,8 @@ struct simd<float>
     };
 
     using simd_int_t = __m128i;
-    using value_t     = float;
-    using int_t       = uint32_t;
+    using value_t    = float;
+    using int_t      = uint32_t;
 
     static constexpr int size      = 4;
     static constexpr int half_size = 2;
@@ -66,13 +67,25 @@ struct simd<float>
         _mm_prefetch(PREFETCH_PTR_TYPE(addr), _MM_HINT_T0);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE load(const value_t* addr, simd_t& ret) { ret = _mm_load_ps(addr); }
+    VECTORIZATION_SIMD_RETURN_TYPE load(const value_t* addr, simd_t& ret)
+    {
+        ret = _mm_load_ps(addr);
+    }
 
-    VECTORIZATION_SIMD_RETURN_TYPE loadu(const value_t* addr, simd_t& ret) { ret = _mm_loadu_ps(addr); }
+    VECTORIZATION_SIMD_RETURN_TYPE loadu(const value_t* addr, simd_t& ret)
+    {
+        ret = _mm_loadu_ps(addr);
+    }
 
-    VECTORIZATION_SIMD_RETURN_TYPE store(const simd_t& from, value_t* to) { _mm_store_ps(to, from); }
+    VECTORIZATION_SIMD_RETURN_TYPE store(const simd_t& from, value_t* to)
+    {
+        _mm_store_ps(to, from);
+    }
 
-    VECTORIZATION_SIMD_RETURN_TYPE storeu(const simd_t& from, value_t* to) { _mm_storeu_ps(to, from); }
+    VECTORIZATION_SIMD_RETURN_TYPE storeu(const simd_t& from, value_t* to)
+    {
+        _mm_storeu_ps(to, from);
+    }
 
     template <
         typename scalar_t,
@@ -124,7 +137,8 @@ struct simd<float>
         ret = _mm_max_ps(x, y);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE fma(const simd_t& x, const simd_t& y, const simd_t& z, simd_t& ret)
+    VECTORIZATION_SIMD_RETURN_TYPE fma(
+        const simd_t& x, const simd_t& y, const simd_t& z, simd_t& ret)
     {
 #ifdef __FMA__
         ret = _mm_fmadd_ps(x, y, z);
@@ -175,33 +189,44 @@ struct simd<float>
     VECTORIZATION_SIMD_RETURN_TYPE cbrt(const simd_t& x, simd_t& ret) { ret = _mm_cbrt_ps(x); }
 
     VECTORIZATION_SIMD_RETURN_TYPE cdf(const simd_t& x, simd_t& ret) { ret = _mm_cdfnorm_ps(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE inv_cdf(const simd_t& x, simd_t& ret) { ret = _mm_cdfnorminv_ps(x); }
+    VECTORIZATION_SIMD_RETURN_TYPE inv_cdf(const simd_t& x, simd_t& ret)
+    {
+        ret = _mm_cdfnorminv_ps(x);
+    }
 
     VECTORIZATION_SIMD_RETURN_TYPE trunc(const simd_t& x, simd_t& ret) { ret = _mm_trunc_ps(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE invsqrt(const simd_t& x, simd_t& ret) { ret = _mm_invsqrt_ps(x); }
+    VECTORIZATION_SIMD_RETURN_TYPE invsqrt(const simd_t& x, simd_t& ret)
+    {
+#if VECTORIZATION_HAS_SVML
+        ret = _mm_invsqrt_ps(x);
+#else
+        // rsqrt_ps gives ~12-bit accuracy; one Newton-Raphson step reaches ~24 bits (full float).
+        // r_new = (r / 2) * (3 - x * r^2)
+        __m128 r   = _mm_rsqrt_ps(x);
+        __m128 xr2 = _mm_mul_ps(x, _mm_mul_ps(r, r));
+        ret = _mm_mul_ps(_mm_mul_ps(r, _mm_set1_ps(0.5f)), _mm_sub_ps(_mm_set1_ps(3.0f), xr2));
+#endif
+    }
 
     VECTORIZATION_SIMD_RETURN_TYPE fabs(const simd_t& x, simd_t& ret)
     {
         ret = _mm_andnot_ps(sign_mask, x);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE neg(const simd_t& x, simd_t& ret) { ret = _mm_xor_ps(x, sign_mask); }
+    VECTORIZATION_SIMD_RETURN_TYPE neg(const simd_t& x, simd_t& ret)
+    {
+        ret = _mm_xor_ps(x, sign_mask);
+    }
 
     VECTORIZATION_FORCE_INLINE static double accumulate(const simd_t& x)
     {
         return _mm_accumulate_ps(x);
     }
 
-    VECTORIZATION_FORCE_INLINE static value_t hmax(const simd_t& x)
-    {
-        return _mm_hmax_ps(x);
-    }
+    VECTORIZATION_FORCE_INLINE static value_t hmax(const simd_t& x) { return _mm_hmax_ps(x); }
 
-    VECTORIZATION_FORCE_INLINE static value_t hmin(const simd_t& x)
-    {
-        return _mm_hmin_ps(x);
-    }
+    VECTORIZATION_FORCE_INLINE static value_t hmin(const simd_t& x) { return _mm_hmin_ps(x); }
 
     VECTORIZATION_SIMD_RETURN_TYPE gather(value_t const* from, int stride, simd_t& to)
     {
@@ -223,7 +248,8 @@ struct simd<float>
         _mm_scatter_ps(from, to, stride);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE if_else(const mask_t& x, const simd_t& y, const simd_t& z, simd_t& ret)
+    VECTORIZATION_SIMD_RETURN_TYPE if_else(
+        const mask_t& x, const simd_t& y, const simd_t& z, simd_t& ret)
     {
 #ifdef __SSE4_1__
         ret = _mm_blendv_ps(z, y, x);

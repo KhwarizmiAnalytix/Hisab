@@ -17,10 +17,14 @@ cmake_minimum_required(VERSION 3.16)
 
 # Link-Time Optimization — disabled when PARALLEL_ENABLE_COVERAGE or PARALLEL_ENABLE_SANITIZER is ON
 # (LTO conflicts with instrumentation / sanitizers).
-option(PARALLEL_ENABLE_LTO "Enable Link Time Optimization for Parallel" OFF)
+include(lto)
+quarisma_lto_compute_default(_lto_default PROFILE PERFORMANCE)
+set(PARALLEL_LTO_MODE "${_lto_default}"
+    CACHE STRING "LTO mode for Parallel: off | thin | full | ipo | auto")
+set_property(CACHE PARALLEL_LTO_MODE PROPERTY STRINGS off thin full ipo auto)
 
-# Coverage instrumentation — forces PARALLEL_ENABLE_LTO=OFF and activates -fprofile-instr-generate /
-# --coverage compiler flags for this module only.
+# Coverage instrumentation — activates -fprofile-instr-generate / --coverage compiler flags for
+# this module only. LTO is automatically skipped when coverage is enabled.
 option(PARALLEL_ENABLE_COVERAGE "Enable coverage instrumentation for Parallel tests" OFF)
 
 # Testing — gates add_subdirectory(Testing/Cxx).
@@ -89,11 +93,6 @@ set(PARALLEL_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINIT
 # --- Section 3: CMake module includes --- Order: introspection → toolchain helpers → Parallel-owned
 # finders → coverage/sanitizer → LTO/linker.
 
-# LTO is incompatible with coverage/sanitizer — clear before any include().
-if(PARALLEL_ENABLE_COVERAGE OR PARALLEL_ENABLE_SANITIZER)
-  set(PARALLEL_ENABLE_LTO OFF)
-endif()
-
 # a) Standard CMake introspection
 include(CheckCXXSourceCompiles)
 include(CheckCXXSourceRuns)
@@ -130,22 +129,6 @@ if(PARALLEL_ENABLE_COVERAGE)
 elseif(MSVC)
   string(APPEND CMAKE_EXE_LINKER_FLAGS " /DEBUG:FULL")
   string(APPEND CMAKE_SHARED_LINKER_FLAGS " /DEBUG:FULL")
-endif()
-
-if(PARALLEL_ENABLE_LTO AND NOT PARALLEL_ENABLE_COVERAGE AND NOT PARALLEL_ENABLE_SANITIZER)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
-  message(STATUS "Link Time Optimization (LTO) enabled via CMAKE_INTERPROCEDURAL_OPTIMIZATION")
-else()
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE OFF)
-  if(PARALLEL_ENABLE_LTO AND (PARALLEL_ENABLE_COVERAGE OR PARALLEL_ENABLE_SANITIZER))
-    message(
-      STATUS "Link Time Optimization (LTO) disabled (incompatible with coverage and/or sanitizer)"
-    )
-  else()
-    message(STATUS "Link Time Optimization (LTO) disabled")
-  endif()
 endif()
 
 include(linker)
@@ -225,10 +208,11 @@ endif()
 
 # --- Target definition ---
 add_library(Parallel ${parallel_sources} ${parallel_headers})
+quarisma_target_apply_lto(Parallel PARALLEL)
 if(PARALLEL_ENABLE_SANITIZER)
   quarisma_configure_sanitizer(PARALLEL)
 endif()
-quarisma_find_linker(${PARALLEL_LINKER_CHOICE} Parallel)
+quarisma_find_linker(${PARALLEL_LINKER_CHOICE} Parallel PARALLEL_LTO_MODE)
 quarisma_target_apply_cache(Parallel PARALLEL_ENABLE_CACHE PARALLEL_CACHE_BACKEND)
 quarisma_target_optional_icecc(Parallel PARALLEL_ENABLE_ICECC)
 
@@ -332,7 +316,7 @@ message("  Cache            : ${PARALLEL_ENABLE_CACHE}")
 message("  Cache backend    : ${PARALLEL_CACHE_BACKEND}")
 message("  Icecc            : ${PARALLEL_ENABLE_ICECC}")
 message("  Linker           : ${PARALLEL_LINKER_CHOICE}")
-message("  Lto              : ${PARALLEL_ENABLE_LTO}")
+message("  Lto mode         : ${PARALLEL_LTO_MODE}")
 message("  Coverage         : ${PARALLEL_ENABLE_COVERAGE}")
 message("  Testing          : ${PARALLEL_ENABLE_TESTING}")
 message("  Examples         : ${PARALLEL_ENABLE_EXAMPLES}")
@@ -353,7 +337,6 @@ message("  CXX flags                : ${CMAKE_CXX_FLAGS}")
 message("  Shared linker flags      : ${CMAKE_SHARED_LINKER_FLAGS}")
 message("  Static linker flags      : ${CMAKE_STATIC_LINKER_FLAGS}")
 message("  Module linker flags      : ${CMAKE_MODULE_LINKER_FLAGS}")
-message("  IPO / LTO (CMake)        : ${CMAKE_INTERPROCEDURAL_OPTIMIZATION}")
 get_directory_property(_summary_compile_defs DIRECTORY ${PROJECT_SOURCE_DIR} COMPILE_DEFINITIONS)
 message("  Top-level compile defs   : ${_summary_compile_defs}")
 message("")

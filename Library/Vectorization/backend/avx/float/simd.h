@@ -56,13 +56,25 @@ struct simd<float>
     // load, store, set functions
     //======================================================================================
 
-    VECTORIZATION_SIMD_RETURN_TYPE load(const value_t* addr, simd_t& ret) { ret = _mm256_load_ps(addr); }
+    VECTORIZATION_SIMD_RETURN_TYPE load(const value_t* addr, simd_t& ret)
+    {
+        ret = _mm256_load_ps(addr);
+    }
 
-    VECTORIZATION_SIMD_RETURN_TYPE loadu(const value_t* addr, simd_t& ret) { ret = _mm256_loadu_ps(addr); }
+    VECTORIZATION_SIMD_RETURN_TYPE loadu(const value_t* addr, simd_t& ret)
+    {
+        ret = _mm256_loadu_ps(addr);
+    }
 
-    VECTORIZATION_SIMD_RETURN_TYPE store(const simd_t& from, value_t* to) { _mm256_store_ps(to, from); }
+    VECTORIZATION_SIMD_RETURN_TYPE store(const simd_t& from, value_t* to)
+    {
+        _mm256_store_ps(to, from);
+    }
 
-    VECTORIZATION_SIMD_RETURN_TYPE storeu(const simd_t& from, value_t* to) { _mm256_storeu_ps(to, from); }
+    VECTORIZATION_SIMD_RETURN_TYPE storeu(const simd_t& from, value_t* to)
+    {
+        _mm256_storeu_ps(to, from);
+    }
 
     template <
         typename scalar_t,
@@ -116,7 +128,8 @@ struct simd<float>
         ret = _mm256_max_ps(x, y);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE fma(const simd_t& x, const simd_t& y, const simd_t& z, simd_t& ret)
+    VECTORIZATION_SIMD_RETURN_TYPE fma(
+        const simd_t& x, const simd_t& y, const simd_t& z, simd_t& ret)
     {
 #ifdef __FMA__
         ret = _mm256_fmadd_ps(x, y, z);
@@ -168,18 +181,36 @@ struct simd<float>
     VECTORIZATION_SIMD_RETURN_TYPE cbrt(const simd_t& x, simd_t& ret) { ret = _mm256_cbrt_ps(x); }
 
     VECTORIZATION_SIMD_RETURN_TYPE cdf(const simd_t& x, simd_t& ret) { ret = _mm256_cdfnorm_ps(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE inv_cdf(const simd_t& x, simd_t& ret) { ret = _mm256_cdfnorminv_ps(x); }
+    VECTORIZATION_SIMD_RETURN_TYPE inv_cdf(const simd_t& x, simd_t& ret)
+    {
+        ret = _mm256_cdfnorminv_ps(x);
+    }
 
     VECTORIZATION_SIMD_RETURN_TYPE trunc(const simd_t& x, simd_t& ret) { ret = _mm256_trunc_ps(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE invsqrt(const simd_t& x, simd_t& ret) { ret = _mm256_invsqrt_ps(x); }
+    VECTORIZATION_SIMD_RETURN_TYPE invsqrt(const simd_t& x, simd_t& ret)
+    {
+#if VECTORIZATION_HAS_SVML
+        ret = _mm256_invsqrt_ps(x);
+#else
+        // rsqrt_ps gives ~12-bit accuracy; one Newton-Raphson step reaches ~24 bits (full float).
+        // r_new = (r / 2) * (3 - x * r^2)
+        __m256 r   = _mm256_rsqrt_ps(x);
+        __m256 xr2 = _mm256_mul_ps(x, _mm256_mul_ps(r, r));
+        ret        = _mm256_mul_ps(
+            _mm256_mul_ps(r, _mm256_set1_ps(0.5f)), _mm256_sub_ps(_mm256_set1_ps(3.0f), xr2));
+#endif
+    }
 
     VECTORIZATION_SIMD_RETURN_TYPE fabs(const simd_t& x, simd_t& ret)
     {
         ret = _mm256_andnot_ps(sign_mask, x);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE neg(const simd_t& x, simd_t& ret) { ret = _mm256_xor_ps(x, sign_mask); }
+    VECTORIZATION_SIMD_RETURN_TYPE neg(const simd_t& x, simd_t& ret)
+    {
+        ret = _mm256_xor_ps(x, sign_mask);
+    }
 
     //======================================================================================
     // horizantal functions
@@ -275,7 +306,8 @@ struct simd<float>
     //======================================================================================
     // comparaison function
     //======================================================================================
-    VECTORIZATION_SIMD_RETURN_TYPE if_else(const mask_t& x, const simd_t& y, const simd_t& z, simd_t& ret)
+    VECTORIZATION_SIMD_RETURN_TYPE if_else(
+        const mask_t& x, const simd_t& y, const simd_t& z, simd_t& ret)
     {
         ret = _mm256_blendv_ps(z, y, x);
     }
@@ -435,7 +467,10 @@ struct simd<float>
         return _mm_loadu_ps(from);
     }
 
-    VECTORIZATION_FORCE_INLINE static simd_half_t set(const value_t* from) { return _mm_set1_ps(*from); }
+    VECTORIZATION_FORCE_INLINE static simd_half_t set(const value_t* from)
+    {
+        return _mm_set1_ps(*from);
+    }
 
     VECTORIZATION_SIMD_RETURN_TYPE fma(const simd_half_t& x, const simd_half_t& y, simd_half_t& ret)
     {

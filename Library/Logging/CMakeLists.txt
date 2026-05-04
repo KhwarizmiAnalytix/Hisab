@@ -17,10 +17,14 @@ set_property(CACHE LOGGING_BACKEND PROPERTY STRINGS NATIVE LOGURU GLOG SPDLOG)
 
 # Link-Time Optimization — disabled when LOGGING_ENABLE_COVERAGE or LOGGING_ENABLE_SANITIZER is ON
 # (LTO conflicts with instrumentation / sanitizers).
-option(LOGGING_ENABLE_LTO "Enable Link Time Optimization for Logging" OFF)
+include(lto)
+quarisma_lto_compute_default(_lto_default PROFILE SUPPORT)
+set(LOGGING_LTO_MODE "${_lto_default}"
+    CACHE STRING "LTO mode for Logging: off | thin | full | ipo | auto")
+set_property(CACHE LOGGING_LTO_MODE PROPERTY STRINGS off thin full ipo auto)
 
-# Coverage instrumentation — forces LOGGING_ENABLE_LTO=OFF and activates -fprofile-instr-generate /
-# --coverage compiler flags for this module only.
+# Coverage instrumentation — activates -fprofile-instr-generate / --coverage compiler flags for
+# this module only. LTO is automatically skipped when coverage is enabled.
 option(LOGGING_ENABLE_COVERAGE "Enable coverage instrumentation for Logging" OFF)
 
 # Testing — gates add_subdirectory(Testing/Cxx).
@@ -111,11 +115,6 @@ list(APPEND LOGGING_DEPENDENCY_COMPILE_DEFINITIONS ${LOGGING_COMPILE_DEFINITIONS
 # --- Section 3: CMake module includes --- Order: introspection → toolchain helpers →
 # coverage/sanitizer → LTO/linker.
 
-# LTO is incompatible with coverage/sanitizer — clear before any include().
-if(LOGGING_ENABLE_COVERAGE OR LOGGING_ENABLE_SANITIZER)
-  set(LOGGING_ENABLE_LTO OFF)
-endif()
-
 # a) Standard CMake introspection
 include(CheckCXXSourceCompiles)
 include(CheckCXXSourceRuns)
@@ -145,22 +144,6 @@ if(LOGGING_ENABLE_COVERAGE)
 elseif(MSVC)
   string(APPEND CMAKE_EXE_LINKER_FLAGS " /DEBUG:FULL")
   string(APPEND CMAKE_SHARED_LINKER_FLAGS " /DEBUG:FULL")
-endif()
-
-if(LOGGING_ENABLE_LTO AND NOT LOGGING_ENABLE_COVERAGE AND NOT LOGGING_ENABLE_SANITIZER)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
-  message(STATUS "Link Time Optimization (LTO) enabled via CMAKE_INTERPROCEDURAL_OPTIMIZATION")
-else()
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE OFF)
-  if(LOGGING_ENABLE_LTO AND (LOGGING_ENABLE_COVERAGE OR LOGGING_ENABLE_SANITIZER))
-    message(
-      STATUS "Link Time Optimization (LTO) disabled (incompatible with coverage and/or sanitizer)"
-    )
-  else()
-    message(STATUS "Link Time Optimization (LTO) disabled")
-  endif()
 endif()
 
 include(linker)
@@ -289,10 +272,11 @@ list(FILTER logging_headers EXCLUDE REGEX ".*/Testing/.*")
 set(CMAKE_CXX_STANDARD ${LOGGING_CXX_STANDARD})
 
 add_library(Logging ${logging_sources} ${logging_headers})
+quarisma_target_apply_lto(Logging LOGGING)
 if(LOGGING_ENABLE_SANITIZER)
   quarisma_configure_sanitizer(LOGGING)
 endif()
-quarisma_find_linker(${LOGGING_LINKER_CHOICE} Logging)
+quarisma_find_linker(${LOGGING_LINKER_CHOICE} Logging LOGGING_LTO_MODE)
 quarisma_target_apply_cache(Logging LOGGING_ENABLE_CACHE LOGGING_CACHE_BACKEND)
 quarisma_target_optional_icecc(Logging LOGGING_ENABLE_ICECC)
 
@@ -420,7 +404,7 @@ message("  Cache            : ${LOGGING_ENABLE_CACHE}")
 message("  Cache backend    : ${LOGGING_CACHE_BACKEND}")
 message("  Icecc            : ${LOGGING_ENABLE_ICECC}")
 message("  Linker           : ${LOGGING_LINKER_CHOICE}")
-message("  Lto              : ${LOGGING_ENABLE_LTO}")
+message("  Lto mode         : ${LOGGING_LTO_MODE}")
 message("  Coverage         : ${LOGGING_ENABLE_COVERAGE}")
 message("  Testing          : ${LOGGING_ENABLE_TESTING}")
 message("  Examples         : ${LOGGING_ENABLE_EXAMPLES}")
@@ -441,7 +425,6 @@ message("  CXX flags                : ${CMAKE_CXX_FLAGS}")
 message("  Shared linker flags      : ${CMAKE_SHARED_LINKER_FLAGS}")
 message("  Static linker flags      : ${CMAKE_STATIC_LINKER_FLAGS}")
 message("  Module linker flags      : ${CMAKE_MODULE_LINKER_FLAGS}")
-message("  IPO / LTO (CMake)        : ${CMAKE_INTERPROCEDURAL_OPTIMIZATION}")
 get_directory_property(_summary_compile_defs DIRECTORY ${PROJECT_SOURCE_DIR} COMPILE_DEFINITIONS)
 message("  Top-level compile defs   : ${_summary_compile_defs}")
 message("")
