@@ -113,7 +113,11 @@ def vectorization_svml_deps():
     })
 
 def vectorization_svml_hdrs_extra(svml_hdr):
-    """Extra hdrs entry for backend/avx/svml.h when SVML is in use."""
+    """Extra hdr for backend/avx/svml.h when it is excluded from the hdrs glob but SVML is used.
+
+    SSE and AVX-512 ship their own backend/*/svml.h via the backend glob; only AVX / AVX2 need a
+    re-added header when it was excluded from the glob.
+    """
     return selects.with_or({
         ("//bazel:enable_svml",): [svml_hdr],
         "//conditions:default": select({
@@ -121,10 +125,10 @@ def vectorization_svml_hdrs_extra(svml_hdr):
             "//bazel:vectorization_type_no": [],
             "//bazel:vectorization_type_neon": [],
             "//bazel:vectorization_type_sve": [],
-            "//bazel:vectorization_type_sse": [svml_hdr] if SVML_NEEDED_SSE else [],
+            "//bazel:vectorization_type_sse": [],
+            "//bazel:vectorization_type_avx512": [],
             "//bazel:vectorization_type_avx": [svml_hdr] if SVML_NEEDED_AVX else [],
             "//bazel:vectorization_type_avx2": [svml_hdr] if SVML_NEEDED_AVX2 else [],
-            "//bazel:vectorization_type_avx512": [svml_hdr] if SVML_NEEDED_AVX512 else [],
             "//conditions:default": [svml_hdr] if SVML_NEEDED_AVX2 else [],
         }),
     })

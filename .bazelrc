@@ -326,6 +326,7 @@ build:llvm_coverage --experimental_use_llvm_covmap
 build:logging_glog --define=logging_backend=glog
 build:logging_loguru --define=logging_backend=loguru
 build:logging_native --define=logging_backend=native
+build:logging_spdlog --define=logging_backend=spdlog
 
 # =============================================================================
 # GPU Allocation Strategy

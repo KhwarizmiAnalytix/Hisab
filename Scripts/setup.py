@@ -653,7 +653,7 @@ class QuarismaFlags:
             "enable google benchmark",
             "enable google test",
             "enable testing",
-            "logging backend: NATIVE, LOGURU, or GLOG",
+            "logging backend: NATIVE, LOGURU, GLOG, or SPDLOG",
             "enable Link Time Optimization",
             "enable magic_enum static reflection for enums",
             "enable Microsoft mimalloc high-performance memory allocator",
@@ -733,6 +733,7 @@ class QuarismaFlags:
                 "profiler_type": "KINETO",
                 "cache": self.ON,
                 "cache_type": "ccache",
+                "library_project": "",
             }
         )
 
@@ -765,6 +766,7 @@ class QuarismaFlags:
                 "native": self.OFF,
                 "examples": self.OFF,
                 "linker": "default",  # *_LINKER_CHOICE default is "default" (auto-detect)
+                "library_project": "",
             }
         )
 
@@ -772,7 +774,7 @@ class QuarismaFlags:
         sanitizer_list = ["address", "undefined", "thread", "memory", "leak"]
         vectorisation_list = ["no", "sse", "avx", "avx2", "avx512", "neon", "sve"]
         cxx_std_list = ["cxx17", "cxx20", "cxx23"]
-        logging_backend_list = ["native", "loguru", "glog"]
+        logging_backend_list = ["native", "loguru", "glog", "spdlog"]
         profiler_choices = {"kineto": "KINETO", "native": "NATIVE", "itt": "ITT"}
         cache_type_list = ["none", "ccache", "sccache", "buildcache"]
         parallel_backend_list = ["std", "openmp", "tbb"]
@@ -841,8 +843,31 @@ class QuarismaFlags:
                         "WARNING",
                     )
                 # Skip other processing for profiler flags
+            elif arg.startswith("project."):
+                proj_key = arg.split(".", 1)[1].lower()
+                valid_projects = (
+                    "logging",
+                    "memory",
+                    "vectorization",
+                    "core",
+                    "parallel",
+                    "profiler",
+                )
+                if proj_key not in valid_projects:
+                    print_status(
+                        f"Invalid --project value '{proj_key}'. "
+                        f"Valid options: {', '.join(valid_projects)}",
+                        "ERROR",
+                    )
+                    sys.exit(1)
+                self.__value["library_project"] = proj_key.title()
+                self.builder_suffix += f"_project_{proj_key}"
+                print_status(
+                    f"Limiting build to Library/{self.__value['library_project']} (and CMake deps)",
+                    "INFO",
+                )
             elif arg in logging_backend_list:
-                # Set logging backend (NATIVE, LOGURU, or GLOG)
+                # Set logging backend (NATIVE, LOGURU, GLOG, or SPDLOG)
                 self.__value["logging_backend"] = arg.upper()
                 self.builder_suffix += f"_logging_{arg}"
                 print_status(f"Setting logging backend to {arg.upper()}", "INFO")
@@ -1012,6 +1037,11 @@ class QuarismaFlags:
                 if flag_value and flag_value != "":
                     cmake_cmd_flags.append(f"-D{flag_name}={flag_value}")
 
+        # Always set library scope so omitting --project.* clears a stale QUARISMA_LIBRARY_PROJECT
+        # from an earlier configure (empty = full Library/* tree).
+        _lp = self.__value.get("library_project") or ""
+        cmake_cmd_flags.append(f"-DQUARISMA_LIBRARY_PROJECT={_lp}")
+
         # Fan C++ standard out to every module
         if self.__value.get("cxxstd"):
             std_value = self.__value["cxxstd"]
@@ -1102,7 +1132,7 @@ class QuarismaFlags:
             elif key == "cxxstd":
                 key = "cxx11, cxx14, cxx17, cxx20, cxx23"
             elif key == "logging_backend":
-                key = "NATIVE, LOGURU, or GLOG"
+                key = "NATIVE, LOGURU, GLOG, or SPDLOG"
             elif key == "cache_type":
                 key = "none, ccache, sccache, or buildcache"
             elif key == "sanitizer":
@@ -1694,9 +1724,21 @@ def parse_args(args):
                 )
                 sys.exit(1)
         # Handle individual sanitizer enable flags
+        elif arg.startswith("--logging="):
+            backend_type = arg.split("=", 1)[1].upper()
+            valid_backends = ["NATIVE", "LOGURU", "GLOG", "SPDLOG"]
+            if backend_type in valid_backends:
+                processed_args.append(backend_type.lower())
+                print_status(f"Logging backend set to {backend_type}", "INFO")
+            else:
+                print_status(
+                    f"Invalid logging backend: {backend_type}. Valid options: {', '.join(valid_backends)}",
+                    "ERROR",
+                )
+                sys.exit(1)
         elif arg.startswith("--logging."):
             backend_type = arg.split(".", 1)[1].upper()
-            valid_backends = ["NATIVE", "LOGURU", "GLOG"]
+            valid_backends = ["NATIVE", "LOGURU", "GLOG", "SPDLOG"]
             if backend_type in valid_backends:
                 processed_args.append(backend_type.lower())
                 print_status(f"Logging backend set to {backend_type}", "INFO")
@@ -1734,6 +1776,28 @@ def parse_args(args):
                 sys.exit(1)
             processed_args.append(f"psize{size_part}")
             print_status(f"Packet size set to {size_part}", "INFO")
+        elif arg.startswith("--project."):
+            proj = arg.split(".", 1)[1].lower()
+            valid_projects = (
+                "logging",
+                "memory",
+                "vectorization",
+                "core",
+                "parallel",
+                "profiler",
+            )
+            if proj not in valid_projects:
+                print_status(
+                    f"Invalid --project value '{proj}'. "
+                    f"Valid options: {', '.join(valid_projects)}",
+                    "ERROR",
+                )
+                sys.exit(1)
+            processed_args.append(f"project.{proj}")
+            print_status(
+                f"Library scope: {proj} (pass-through as project.{proj})",
+                "INFO",
+            )
         elif arg.startswith("--parallel."):
             # Parse SMP backend selection flag (--parallel.std, --parallel.openmp, --parallel.tbb)
             # This is the first stage of argument parsing that converts command-line flags
@@ -1820,12 +1884,17 @@ def main():
         print(
             "  fix                        Enable clang-tidy fix-errors and fix options"
         )
+        print("\nSingle-library build (CMake):")
+        print("  --project.NAME             Only add_subdirectory Library/NAME (+ deps where needed).")
+        print("                             memory = Memory only (Logging disabled).")
+        print("                             vectorization/core include their normal dependency chain.")
+        print("                             Example: python setup.py config.build.test --project.memory")
         print("\nVectorization packet size:")
         print("  --packet-size=N    SIMD lane count (CMake VECTORIZATION_PACKET_SIZE; default 4)")
         print("  psizeN             Same as --packet-size=N (e.g. psize8)")
         print("\nLogging backend flags:")
         print("  --logging=BACKEND  Set logging backend")
-        print("                             Options: NATIVE, LOGURU, GLOG")
+        print("                             Options: NATIVE, LOGURU, GLOG, SPDLOG")
         print("                             Default: LOGURU")
         print("\nSanitizer flags:")
         print("  --sanitizer.address        Enable AddressSanitizer")
@@ -1842,6 +1911,8 @@ def main():
         print("  python setup.py config.build.test.ninja.clang --logging=GLOG")
         print("  # Use NATIVE backend")
         print("  python setup.py config.build.test.ninja.clang --logging=NATIVE")
+        print("  # Use SPDLOG backend")
+        print("  python setup.py config.build.test.ninja.clang --logging=SPDLOG")
         print("  # Use LOGURU backend (default, no flag needed)")
         print("  python setup.py config.build.test.ninja.clang")
         print("\nSanitizer examples:")

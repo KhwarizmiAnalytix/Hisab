@@ -266,10 +266,6 @@ if(NOT INTERN_BUILD_MOBILE)
       "--Current compiler does not supports SVML functoins. Turn ON VECTORIZATION_ENABLE_SVML"
     )
     set(VECTORIZATION_ENABLE_SVML ON CACHE BOOL "Enable Intel SVML short vector math library" FORCE)
-  else()
-    message(
-      "--Current compiler supports SVML functoins. Turn OFF VECTORIZATION_ENABLE_SVML")
-    set(VECTORIZATION_ENABLE_SVML OFF CACHE BOOL "Enable Intel SVML short vector math library" FORCE)
   endif()
   cmake_pop_check_state()
 

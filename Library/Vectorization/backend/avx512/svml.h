@@ -23,6 +23,8 @@
 
 #define svml_ps(op) __svml_##op##f16
 #define svml_pd(op) __svml_##op##8
+#define svml_ps_ha(op) __svml_##op##f16_ha
+#define svml_pd_ha(op) __svml_##op##8_ha
 #define svml_ps_mask(op) __svml_##op##f16_mask
 #define svml_pd_mask(op) __svml_##op##8_mask
 
@@ -56,6 +58,21 @@
         return reinterpret_cast<__m512d(VECTORIZATION_VECTORCALL*)(__m512d, __m512d)>(svml_pd(op))(x, y); \
     }
 
+#define SVML_FUNCTION_TWO_ARGS_HA(op)                                                                \
+    extern "C" __m512 svml_ps_ha(op)(__m512, __m512);                                                 \
+                                                                                                     \
+    VECTORIZATION_FORCE_INLINE __m512 VECTORIZATION_VECTORCALL _mm512_##op##_ps(__m512 x, __m512 y)              \
+    {                                                                                                \
+        return reinterpret_cast<__m512(VECTORIZATION_VECTORCALL*)(__m512, __m512)>(svml_ps_ha(op))(x, y);    \
+    }                                                                                                \
+                                                                                                     \
+    extern "C" __m512d svml_pd_ha(op)(__m512d, __m512d);                                              \
+                                                                                                     \
+    VECTORIZATION_FORCE_INLINE __m512d VECTORIZATION_VECTORCALL _mm512_##op##_pd(__m512d x, __m512d y)           \
+    {                                                                                                \
+        return reinterpret_cast<__m512d(VECTORIZATION_VECTORCALL*)(__m512d, __m512d)>(svml_pd_ha(op))(x, y); \
+    }
+
 SVML_FUNCTION_ONE_ARG(exp)
 SVML_FUNCTION_ONE_ARG(expm1)
 SVML_FUNCTION_ONE_ARG(exp2)
@@ -81,18 +98,21 @@ SVML_FUNCTION_ONE_ARG(cdfnorm)
 SVML_FUNCTION_ONE_ARG(cdfnorminv)
 SVML_FUNCTION_ONE_ARG(trunc)
 SVML_FUNCTION_ONE_ARG(invsqrt)
-SVML_FUNCTION_TWO_ARGS(pow)
-SVML_FUNCTION_TWO_ARGS(hypot)
+SVML_FUNCTION_TWO_ARGS_HA(pow)
+SVML_FUNCTION_TWO_ARGS_HA(hypot)
 
 #if defined(__VECTORIZATION_COMPILER_MSVC__) && _MSC_VER <= 1920
 SVML_FUNCTION_ONE_ARG(ceil)
 SVML_FUNCTION_ONE_ARG(floor)
 #endif
 
+#undef SVML_FUNCTION_TWO_ARGS_HA
 #undef SVML_FUNCTION_TWO_ARGS
 #undef SVML_FUNCTION_ONE_ARG
 #undef svml_ps
 #undef svml_pd
+#undef svml_ps_ha
+#undef svml_pd_ha
 #undef svml_ps_mask
 #undef svml_pd_mask
 

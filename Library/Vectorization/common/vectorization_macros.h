@@ -22,12 +22,14 @@
 #include <cassert>
 #include <cstddef>
 
+#ifndef VECTORIZATION_FORCE_INLINE
 #if defined(_MSC_VER)
 #define VECTORIZATION_FORCE_INLINE __forceinline
 #elif defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
 #define VECTORIZATION_FORCE_INLINE __attribute__((always_inline)) inline
 #else
 #define VECTORIZATION_FORCE_INLINE inline
+#endif
 #endif
 
 #if defined(_MSC_VER) && !defined(__clang__)

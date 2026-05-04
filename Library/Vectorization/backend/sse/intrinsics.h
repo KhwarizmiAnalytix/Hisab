@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include "common/vectorization_macros.h"
+
 #define _mm_mask_and_ps(a, b) _mm_and_ps((a), (b))
 #define _mm_mask_and_pd(a, b) _mm_and_pd((a), (b))
 #define _mm_mask_or_ps(a, b) _mm_or_ps((a), (b))
@@ -168,7 +170,6 @@ _mm_scatter_pd(__m128d from, double* to, int const* stride) noexcept
     to[stride[1]] = _mm_cvtsd_f64(_mm_shuffle_pd(from, from, 1));
 }
 
-// comparaison function
 VECTORIZATION_FORCE_INLINE auto VECTORIZATION_VECTORCALL _mm_eq_ps(__m128 a, __m128 b) noexcept
 {
     return _mm_cmpeq_ps(a, b);
@@ -219,14 +220,12 @@ VECTORIZATION_FORCE_INLINE auto VECTORIZATION_VECTORCALL _mm_le_pd(__m128d a, __
     return _mm_cmple_pd(a, b);
 }
 
-template <int N>
-VECTORIZATION_FORCE_INLINE void transpose(__m128 simd[N])  // NOLINT
+VECTORIZATION_FORCE_INLINE void transpose_4x4_ps(__m128* simd) noexcept
 {
     _MM_TRANSPOSE4_PS(simd[0], simd[1], simd[2], simd[3]);  // NOLINT
 }
 
-template <int N>
-VECTORIZATION_FORCE_INLINE void transpose(__m128d simd[N])  // NOLINT
+VECTORIZATION_FORCE_INLINE void transpose_2x2_pd(__m128d* simd) noexcept
 {
     __m128d tmp = _mm_unpackhi_pd(simd[0], simd[1]);
     simd[0]     = _mm_unpacklo_pd(simd[0], simd[1]);
@@ -240,7 +239,8 @@ VECTORIZATION_FORCE_INLINE auto _mm_loadu_mask_ps(uint32_t const* from)
 
 VECTORIZATION_FORCE_INLINE auto _mm_loadu_mask_pd(uint32_t const* from)
 {
-    return _mm_cvtepi32_pd(_mm_loadu_si128(reinterpret_cast<const __m128i*>(from)));
+    alignas(16) uint32_t buf[4] = {from[0], from[1], 0u, 0u};
+    return _mm_cvtepi32_pd(_mm_load_si128(reinterpret_cast<const __m128i*>(buf)));
 }
 
 VECTORIZATION_FORCE_INLINE auto _mm_load_mask_ps(uint32_t const* from)
@@ -250,17 +250,17 @@ VECTORIZATION_FORCE_INLINE auto _mm_load_mask_ps(uint32_t const* from)
 
 VECTORIZATION_FORCE_INLINE auto _mm_load_mask_pd(uint32_t const* from)
 {
-    return _mm_cvtepi32_pd(_mm_load_si128(reinterpret_cast<const __m128i*>(from)));
+    return _mm_cvtepi32_pd(_mm_loadl_epi64(reinterpret_cast<const __m128i*>(from)));
 }
 
 VECTORIZATION_FORCE_INLINE void _mm_storeu_mask_ps(__m128 from, uint32_t* to)
 {
-    _mm_store_si128(reinterpret_cast<__m128i*>(to), _mm_castps_si128(from));
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(to), _mm_castps_si128(from));
 }
 
 VECTORIZATION_FORCE_INLINE void _mm_storeu_mask_pd(__m128d from, uint32_t* to)
 {
-    _mm_storeu_si128(reinterpret_cast<__m128i*>(to), _mm_cvtpd_epi32(from));
+    _mm_storel_epi64(reinterpret_cast<__m128i*>(to), _mm_cvtpd_epi32(from));
 }
 
 VECTORIZATION_FORCE_INLINE void _mm_store_mask_ps(__m128 from, uint32_t* to)
@@ -270,7 +270,7 @@ VECTORIZATION_FORCE_INLINE void _mm_store_mask_ps(__m128 from, uint32_t* to)
 
 VECTORIZATION_FORCE_INLINE void _mm_store_mask_pd(__m128d from, uint32_t* to)
 {
-    _mm_store_si128(reinterpret_cast<__m128i*>(to), _mm_cvtpd_epi32(from));
+    _mm_storel_epi64(reinterpret_cast<__m128i*>(to), _mm_cvtpd_epi32(from));
 }
 
 VECTORIZATION_FORCE_INLINE auto _mm_set1_mask_ps(uint32_t const from)
@@ -291,81 +291,3 @@ VECTORIZATION_FORCE_INLINE auto _mm_mask_not_pd(__m128d a)
 {
     return _mm_andnot_pd(a, _mm_cmpeq_pd(a, a));
 }
-
-#if VECTORIZATION_HAS_SVML && VECTORIZATION_HAS_SSE
-
-#define svml_ps(op) __svml_##op##f4
-#define svml_pd(op) __svml_##op##2
-#define svml_ps_mask(op) __svml_##op##f4_mask
-#define svml_pd_mask(op) __svml_##op##2_mask
-
-#define SVML_FUNCTION_ONE_ARG(op)                                                               \
-    extern "C" __m128                            svml_ps(op)(__m128);                           \
-    VECTORIZATION_FORCE_INLINE __m128 VECTORIZATION_VECTORCALL MACRO_SIMD_FUNCTION_NAME(op, ps, )(__m128 x)   \
-    {                                                                                           \
-        return reinterpret_cast<__m128(VECTORIZATION_VECTORCALL*)(__m128)>(svml_ps(op))(x);            \
-    }                                                                                           \
-                                                                                                \
-    extern "C" __m128d                            svml_pd(op)(__m128d);                         \
-    VECTORIZATION_FORCE_INLINE __m128d VECTORIZATION_VECTORCALL MACRO_SIMD_FUNCTION_NAME(op, pd, )(__m128d x) \
-    {                                                                                           \
-        return reinterpret_cast<__m128d(VECTORIZATION_VECTORCALL*)(__m128d)>(svml_pd(op))(x);          \
-    }
-
-#define SVML_FUNCTION_TWO_ARGS(op)                                                                 \
-    extern "C" __m128                            svml_ps(op)(__m128, __m128);                      \
-    VECTORIZATION_FORCE_INLINE __m128 VECTORIZATION_VECTORCALL MACRO_SIMD_FUNCTION_NAME(op, ps, )(               \
-        __m128 x, __m128 y)                                                                        \
-    {                                                                                              \
-        return reinterpret_cast<__m128(VECTORIZATION_VECTORCALL*)(__m128, __m128)>(svml_ps(op))(x, y);    \
-    }                                                                                              \
-                                                                                                   \
-    extern "C" __m128d                            svml_pd(op)(__m128d, __m128d);                   \
-    VECTORIZATION_FORCE_INLINE __m128d VECTORIZATION_VECTORCALL MACRO_SIMD_FUNCTION_NAME(op, pd, )(              \
-        __m128d x, __m128d y)                                                                      \
-    {                                                                                              \
-        return reinterpret_cast<__m128d(VECTORIZATION_VECTORCALL*)(__m128d, __m128d)>(svml_pd(op))(x, y); \
-    }
-
-SVML_FUNCTION_ONE_ARG(exp)
-SVML_FUNCTION_ONE_ARG(expm1)
-SVML_FUNCTION_ONE_ARG(exp2)
-SVML_FUNCTION_ONE_ARG(exp10)
-SVML_FUNCTION_ONE_ARG(log)
-SVML_FUNCTION_ONE_ARG(log1p)
-SVML_FUNCTION_ONE_ARG(log2)
-SVML_FUNCTION_ONE_ARG(log10)
-SVML_FUNCTION_ONE_ARG(sin)
-SVML_FUNCTION_ONE_ARG(cos)
-SVML_FUNCTION_ONE_ARG(tan)
-SVML_FUNCTION_ONE_ARG(asin)
-SVML_FUNCTION_ONE_ARG(acos)
-SVML_FUNCTION_ONE_ARG(atan)
-SVML_FUNCTION_ONE_ARG(sinh)
-SVML_FUNCTION_ONE_ARG(cosh)
-SVML_FUNCTION_ONE_ARG(tanh)
-SVML_FUNCTION_ONE_ARG(asinh)
-SVML_FUNCTION_ONE_ARG(acosh)
-SVML_FUNCTION_ONE_ARG(atanh)
-SVML_FUNCTION_ONE_ARG(cbrt)
-SVML_FUNCTION_ONE_ARG(cdfnorm)
-SVML_FUNCTION_ONE_ARG(cdfnorminv)
-SVML_FUNCTION_ONE_ARG(trunc)
-SVML_FUNCTION_ONE_ARG(invsqrt)
-
-#ifdef VECTORIZATION_CLANG_CL
-SVML_FUNCTION_ONE_ARG(ceil)
-SVML_FUNCTION_ONE_ARG(floor)
-#endif
-
-SVML_FUNCTION_TWO_ARGS(pow)
-SVML_FUNCTION_TWO_ARGS(hypot)
-
-#undef SVML_FUNCTION_TWO_ARGS
-#undef SVML_FUNCTION_ONE_ARG
-#undef svml_ps
-#undef svml_pd
-#undef svml_ps_mask
-#undef svml_pd_mask
-
-#endif

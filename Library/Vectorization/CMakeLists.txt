@@ -63,7 +63,6 @@ option(VECTORIZATION_ENABLE_BENCHMARK "Enable Google Benchmark for Vectorization
 # added).
 option(USE_NATIVE_ARCH "Prefer host CPU instruction tuning (-march=native, Clang/GCC only)" OFF)
 
-# Intel SVML — short vector math library for fast sin/cos/exp/log on SIMD lanes.
 option(VECTORIZATION_ENABLE_SVML "Enable Intel SVML short vector math library" OFF)
 mark_as_advanced(VECTORIZATION_ENABLE_SVML)
 
@@ -512,15 +511,7 @@ message("  Coverage             : ${VECTORIZATION_ENABLE_COVERAGE}")
 message("  Testing              : ${VECTORIZATION_ENABLE_TESTING}")
 message("  Gtest                : ${VECTORIZATION_ENABLE_GTEST}")
 message("  Benchmark            : ${VECTORIZATION_ENABLE_BENCHMARK}")
-if(VECTORIZATION_ENABLE_BENCHMARK)
-  if(VECTORIZATION_TYPE STREQUAL "no")
-    message("  BenchmarkSimd.cpp    : excluded (VECTORIZATION_TYPE=no)")
-  else()
-    message(
-      "  BenchmarkSimd.cpp    : included → benchmark_simd (VECTORIZATION_TYPE=${VECTORIZATION_TYPE})"
-    )
-  endif()
-endif()
+
 message("  Clang-tidy           : ${VECTORIZATION_ENABLE_CLANGTIDY}")
 message("  Fix                  : ${VECTORIZATION_ENABLE_FIX}")
 message("  Iwyu                 : ${VECTORIZATION_ENABLE_IWYU}")

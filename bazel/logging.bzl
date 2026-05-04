@@ -21,16 +21,32 @@ def logging_defines():
             "LOGGING_HAS_LOGURU=0",
             "LOGGING_HAS_GLOG=1",
             "LOGGING_HAS_NATIVE=0",
+            "LOGGING_HAS_SPDLOG=0",
         ],
         "//bazel:logging_native": [
             "LOGGING_HAS_LOGURU=0",
             "LOGGING_HAS_GLOG=0",
             "LOGGING_HAS_NATIVE=1",
+            "LOGGING_HAS_SPDLOG=0",
         ],
-        "//conditions:default": [  # LOGURU is the default
+        "//bazel:logging_spdlog": [
+            "LOGGING_HAS_LOGURU=0",
+            "LOGGING_HAS_GLOG=0",
+            "LOGGING_HAS_NATIVE=0",
+            "LOGGING_HAS_SPDLOG=1",
+            "SPDLOG_FMT_EXTERNAL=1",
+        ],
+        "//bazel:logging_loguru": [
             "LOGGING_HAS_LOGURU=1",
             "LOGGING_HAS_GLOG=0",
             "LOGGING_HAS_NATIVE=0",
+            "LOGGING_HAS_SPDLOG=0",
+        ],
+        "//conditions:default": [  # LOGURU when no --define=logging_backend (matches CMake default)
+            "LOGGING_HAS_LOGURU=1",
+            "LOGGING_HAS_GLOG=0",
+            "LOGGING_HAS_NATIVE=0",
+            "LOGGING_HAS_SPDLOG=0",
         ],
     })
 

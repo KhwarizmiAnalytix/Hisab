@@ -35,19 +35,12 @@ svml_configure(name = "vectorization_svml_autodetect")
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# fmt - Modern formatting library (header-only mode)
+# fmt — vendored ThirdParty/fmt (must match CMake / spdlog; same tree as Library/Logging)
 # -----------------------------------------------------------------------------
-# Note: Using fmt 9.1.0 instead of 10.x due to C++20 consteval compatibility issues
-# fmt 10.x uses FMT_STRING macro with consteval in its implementation files
-# (format-inl.h) which causes compilation errors with C++20's stricter requirements
-http_archive(
+new_local_repository(
     name = "fmt",
+    path = "ThirdParty/fmt",
     build_file = "//ThirdParty:fmt.BUILD",
-    sha256 = "5dea48d1fcddc3ec571ce2058e13910a0d4a6bab4cc09a809d8b1dd1c88ae6f2",
-    strip_prefix = "fmt-9.1.0",
-    urls = [
-        "https://github.com/fmtlib/fmt/archive/refs/tags/9.1.0.tar.gz",
-    ],
 )
 
 # -----------------------------------------------------------------------------
@@ -123,6 +116,15 @@ new_local_repository(
     name = "loguru",
     path = "ThirdParty/loguru",
     build_file = "//ThirdParty:loguru.BUILD",
+)
+
+# -----------------------------------------------------------------------------
+# spdlog — fast header-only logging (git submodule ThirdParty/spdlog)
+# -----------------------------------------------------------------------------
+new_local_repository(
+    name = "spdlog",
+    path = "ThirdParty/spdlog",
+    build_file = "//ThirdParty:spdlog.BUILD",
 )
 
 # -----------------------------------------------------------------------------

@@ -4,6 +4,7 @@ exports_files([
     "fmt.BUILD",
     "kineto.BUILD",
     "loguru.BUILD",
+    "spdlog.BUILD",
     "magic_enum.BUILD",
     "mimalloc.BUILD",
     "tbb.BUILD",

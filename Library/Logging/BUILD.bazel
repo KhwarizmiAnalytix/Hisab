@@ -57,6 +57,8 @@ cc_library(
         "//conditions:default": ["@magic_enum//:magic_enum"],
     }) + select({
         "//bazel:logging_glog": ["@glog//:glog"],
+        "//bazel:logging_spdlog": ["@spdlog//:spdlog"],
+        "//bazel:logging_native": [],
         "//bazel:logging_loguru": ["@loguru//:loguru"],
         "//conditions:default": ["@loguru//:loguru"],
     }),

@@ -142,6 +142,25 @@ _CMAKE_SAN_TO_BAZEL = {
     "leak": "lsan",
 }
 
+# Library/* scope for --project.NAME / dotted project.NAME (matches CMake QUARISMA_LIBRARY_PROJECT)
+_BAZEL_LIBRARY_PROJECTS = (
+    "logging",
+    "memory",
+    "vectorization",
+    "core",
+    "parallel",
+    "profiler",
+)
+
+_BAZEL_LIBRARY_PACKAGE_DIR = {
+    "logging": "Logging",
+    "memory": "Memory",
+    "vectorization": "Vectorization",
+    "core": "Core",
+    "parallel": "Parallel",
+    "profiler": "Profiler",
+}
+
 
 def _merge_dotted_segments(parts: List[str]) -> List[str]:
     """Merge split segments like parallel.openmp, sanitizer.address into single tokens."""
@@ -158,8 +177,16 @@ def _merge_dotted_segments(parts: List[str]) -> List[str]:
         elif pl[i] == "profiler" and i + 1 < len(pl) and pl[i + 1] in ("kineto", "itt", "native"):
             out.append(f"profiler_{pl[i + 1]}")
             i += 2
-        elif pl[i] == "logging" and i + 1 < len(pl) and pl[i + 1] in ("native", "loguru", "glog"):
+        elif pl[i] == "logging" and i + 1 < len(pl) and pl[i + 1] in (
+            "native",
+            "loguru",
+            "glog",
+            "spdlog",
+        ):
             out.append(f"logging_{pl[i + 1]}")
+            i += 2
+        elif pl[i] == "project" and i + 1 < len(pl) and pl[i + 1] in _BAZEL_LIBRARY_PROJECTS:
+            out.append(f"project.{pl[i + 1]}")
             i += 2
         else:
             out.append(pl[i])
@@ -209,6 +236,8 @@ class BazelConfiguration:
         self.disable_gtest: bool = False
         # CMake: token `static` sets BUILD_SHARED_LIBS=ON (shared DLLs).
         self.shared_libs: bool = False
+        # Limit Bazel build/test to //Library/<Name>/... (--project.NAME / project.NAME).
+        self.library_project: Optional[str] = None
 
         # CMake-only flags — not executed in Bazel but tracked so the summary is accurate.
         self.spell:      bool = False
@@ -221,6 +250,7 @@ class BazelConfiguration:
         self.cppcheck:   bool = False
 
         self._parse_arguments()
+        self._apply_library_project_targets()
         self._finalize_parallel_configs()
         self._apply_defaults()
 
@@ -244,6 +274,19 @@ class BazelConfiguration:
     def _is_gcc_compiler(self, arg: str) -> bool:
         """Check if argument is a GCC compiler specification."""
         return ("gcc" in arg.lower() or "g++" in arg.lower()) and arg.lower() not in ["cppcheck"]
+
+    def _apply_library_project_targets(self) -> None:
+        """Narrow self.targets to one Library/* tree when project.NAME was set."""
+        if not self.library_project:
+            return
+        pkg = _BAZEL_LIBRARY_PACKAGE_DIR.get(self.library_project)
+        if not pkg:
+            return
+        self.targets = [f"//Library/{pkg}/..."]
+        print_status(
+            f"Library scope: targets = //Library/{pkg}/... (Bazel does not trim transitive deps)",
+            "INFO",
+        )
 
     def _parse_arguments(self) -> None:
         """Parse command-line arguments to extract build configuration."""
@@ -315,6 +358,17 @@ class BazelConfiguration:
                     )
                     sys.exit(1)
 
+            elif arg_lower.startswith("project."):
+                proj = arg_lower.split(".", 1)[1]
+                if proj not in _BAZEL_LIBRARY_PROJECTS:
+                    print_status(
+                        f"Invalid --project / project.* value '{proj}'. "
+                        f"Valid: {', '.join(_BAZEL_LIBRARY_PROJECTS)}",
+                        "ERROR",
+                    )
+                    sys.exit(1)
+                self.library_project = proj
+
             # Sanitizer shorthand (matches help text and CMake names via parse_args)
             elif arg_lower in ("asan", "tsan", "ubsan", "msan", "lsan"):
                 self.configs.append(arg_lower)
@@ -373,7 +427,7 @@ class BazelConfiguration:
             # Logging backends (with logging_ prefix)
             elif arg_lower.startswith("logging_"):
                 backend = arg_lower[8:]  # Remove "logging_" prefix
-                if backend in ["glog", "loguru", "native"]:
+                if backend in ["glog", "loguru", "native", "spdlog"]:
                     self.logging_backend = backend
                     self.configs.append(arg_lower)
 
@@ -742,6 +796,10 @@ class BazelConfiguration:
         else:
             print("  Vectorization:     None")
 
+        if self.library_project:
+            pkg = _BAZEL_LIBRARY_PACKAGE_DIR.get(self.library_project, self.library_project)
+            print(f"  Library scope:     //Library/{pkg}/...")
+
         # Feature flags — computed from the same state as per-module summaries
         mimalloc_on = True  # Bazel default ON (see .bazelrc memory_enable_mimalloc)
         gtest_on    = not self.disable_gtest     # ON by default (mirrors CMake option(... ON))
@@ -982,6 +1040,18 @@ def parse_args(args: list[str]) -> list[str]:
     processed: List[str] = []
 
     for arg in args:
+        if arg.startswith("--project."):
+            proj = arg.split(".", 1)[1].lower()
+            if proj not in _BAZEL_LIBRARY_PROJECTS:
+                print_status(
+                    f"Invalid --project value '{proj}'. Valid: {', '.join(_BAZEL_LIBRARY_PROJECTS)}",
+                    "ERROR",
+                )
+                sys.exit(1)
+            processed.append(f"project.{proj}")
+            print_status(f"Library scope: //Library/{_BAZEL_LIBRARY_PACKAGE_DIR[proj]}/...", "INFO")
+            continue
+
         if arg.startswith("--sanitizer."):
             st = arg.split(".", 1)[1].lower()
             if st in _CMAKE_SAN_TO_BAZEL:
@@ -994,14 +1064,27 @@ def parse_args(args: list[str]) -> list[str]:
                 sys.exit(1)
             continue
 
-        if arg.startswith("--logging."):
-            bt = arg.split(".", 1)[1].lower()
-            if bt in ("native", "loguru", "glog"):
+        if arg.startswith("--logging="):
+            bt = arg.split("=", 1)[1].lower()
+            if bt in ("native", "loguru", "glog", "spdlog"):
                 processed.append(f"logging_{bt}")
                 print_status(f"Logging backend set to {bt.upper()}", "INFO")
             else:
                 print_status(
-                    f"Invalid logging backend: {bt}. Valid: native, loguru, glog",
+                    f"Invalid logging backend: {bt}. Valid: native, loguru, glog, spdlog",
+                    "ERROR",
+                )
+                sys.exit(1)
+            continue
+
+        if arg.startswith("--logging."):
+            bt = arg.split(".", 1)[1].lower()
+            if bt in ("native", "loguru", "glog", "spdlog"):
+                processed.append(f"logging_{bt}")
+                print_status(f"Logging backend set to {bt.upper()}", "INFO")
+            else:
+                print_status(
+                    f"Invalid logging backend: {bt}. Valid: native, loguru, glog, spdlog",
                     "ERROR",
                 )
                 sys.exit(1)
@@ -1116,6 +1199,7 @@ def print_help() -> None:
     print("  gtest         - Disables GTest defines (CMake inverse; default is ON in both systems)")
     print("  static        - Shared libraries (CMake: BUILD_SHARED_LIBS=ON)")
     print("  parallel.std | parallel.openmp | parallel.tbb  — exclusive SMP backend")
+    print("  project.NAME | --project.NAME  — only //Library/<Name>/... (logging, memory, …)")
     print("  --parallel.* / --logging.* / --profiler.*  — same long flags as setup.py")
     print("  vv            - Verbose Bazel test output (--test_output=all)")
     print("  batch         - Pass --batch to Bazel; script runs `bazel shutdown` first to avoid")
@@ -1126,6 +1210,7 @@ def print_help() -> None:
     print("  glog          - Google glog")
     print("  loguru        - Loguru logging")
     print("  native        - Native logging")
+    print("  spdlog        - spdlog (header-only, external fmt)")
     print("\nSanitizers (Bazel --config; CMake names accepted via dotted args or --sanitizer.*):")
     print("  asan          - AddressSanitizer (CMake: address)")
     print("  tsan          - ThreadSanitizer (CMake: thread)")

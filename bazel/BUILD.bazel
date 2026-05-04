@@ -142,6 +142,11 @@ config_setting(
     define_values = {"logging_backend": "native"},
 )
 
+config_setting(
+    name = "logging_spdlog",
+    define_values = {"logging_backend": "spdlog"},
+)
+
 # Compiler-wrapper caching (ccache/sccache/buildcache) is CMake-only.
 # Configure Bazel caching via remote execution or toolchains instead.
 

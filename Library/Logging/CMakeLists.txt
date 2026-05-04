@@ -254,20 +254,16 @@ if(LOGGING_BACKEND STREQUAL "GLOG")
   list(APPEND LOGGING_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/glog/src")
 endif()
 if(LOGGING_BACKEND STREQUAL "SPDLOG")
-  # spdlog is header-only — no compiled library needed; just expose the include directory.
-  set(SPDLOG_BUILD_SHARED OFF CACHE BOOL "Disable spdlog shared build" FORCE)
-  set(SPDLOG_BUILD_EXAMPLE OFF CACHE BOOL "Disable spdlog examples" FORCE)
-  set(SPDLOG_BUILD_TESTS OFF CACHE BOOL "Disable spdlog tests" FORCE)
-  set(SPDLOG_BUILD_BENCH OFF CACHE BOOL "Disable spdlog benchmarks" FORCE)
-  set(SPDLOG_FMT_EXTERNAL_HO ON CACHE BOOL "Use external header-only fmt in spdlog" FORCE)
+  # spdlog as HEADER_ONLY: add_third_party_library only skips compilation for LIBRARY_TYPE
+  # HEADER_ONLY (INTERFACE is treated as "default" and would add_subdirectory + build spdlog).
   add_third_party_library(
     spdlog
     LIBRARY_TYPE
-    INTERFACE
+    HEADER_ONLY
     SOURCE_DIR
     "${_tpdir}/spdlog"
     QUARISMA_TARGETS
-    "Spdlog::spdlog=spdlog::spdlog_header_only|spdlog_header_only"
+    "Spdlog::spdlog=spdlog::spdlog|spdlog"
     INCLUDE_DIR
     "${_tpdir}/spdlog/include"
     AUTO_ADD_TO_DEPENDENCIES
@@ -322,6 +318,19 @@ if(MSVC)
   target_compile_options(Logging PRIVATE /WX)
 else()
   target_compile_options(Logging PRIVATE -include cstdlib)
+endif()
+
+# Clang-on-Windows (GNU driver + CodeView) can ICE in codegen when instantiating spdlog at -O3.
+if(WIN32
+   AND NOT MSVC
+   AND CMAKE_CXX_COMPILER_ID MATCHES "Clang"
+   AND LOGGING_BACKEND STREQUAL "SPDLOG"
+)
+  target_compile_options(
+    Logging
+    PRIVATE
+      $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>,$<CONFIG:MinSizeRel>>:-O1>
+  )
 endif()
 
 configure_file(

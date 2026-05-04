@@ -169,6 +169,36 @@ function(_set_third_party_folder_properties name binary_dir)
 endfunction()
 
 # -----------------------------------------------------------------------------
+# quarisma_clang_windows_gtest_workaround
+# -----------------------------------------------------------------------------
+# Clang 22+ can crash (frontend ICE) compiling gtest-all.cc with global -gcodeview and -O3 on
+# Windows. -g0 on the gtest targets only overrides -gcodeview for those TUs (same approach as
+# optional per-TU workarounds for heavy test translation units). Call once after all Library/* trees that
+# may add googletest have been processed (root CMakeLists.txt).
+function(quarisma_clang_windows_gtest_workaround)
+  if(NOT WIN32)
+    return()
+  endif()
+  if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    return()
+  endif()
+  if(MSVC)
+    return()
+  endif()
+
+  foreach(_t IN ITEMS gtest gtest_main)
+    if(NOT TARGET ${_t})
+      continue()
+    endif()
+    get_target_property(_imp ${_t} IMPORTED)
+    if(_imp)
+      continue()
+    endif()
+    target_compile_options(${_t} PRIVATE -g0)
+  endforeach()
+endfunction()
+
+# -----------------------------------------------------------------------------
 # _create_third_party_aliases: Create library aliases
 # -----------------------------------------------------------------------------
 # Creates alias targets for a third-party library to provide consistent
@@ -761,7 +791,7 @@ endfunction()
 #
 # Project → third-party mapping:
 #   Library/Core       → fmt, cpuinfo, magic_enum
-#   Library/Logging    → loguru, glog
+#   Library/Logging    → fmt, loguru, glog, spdlog
 #   Library/Memory     → mimalloc
 #   Library/Profiler   → kineto, ITT
 #   */Testing/Cxx      → googletest, google-benchmark

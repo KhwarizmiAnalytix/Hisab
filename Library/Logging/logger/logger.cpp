@@ -183,6 +183,12 @@ static logging_map<std::string, CallbackEntry> g_callback_sinks;
 
 static thread_local char ThreadName[128] = {};
 
+// Buffers for AddCallback's spdlog sink (file scope: MSVC/Clang reject thread_local statics
+// inside lambdas when the TU is built as a DLL with exported symbols).
+static thread_local std::string g_callback_bridge_filename;
+static thread_local std::string g_callback_bridge_message;
+static thread_local std::string g_callback_bridge_preamble;
+
 // Maps our verbosity (used as a cutoff/min) to the spdlog minimum level.
 // Lower our-verbosity number = higher severity = spdlog should only show severe messages.
 static spdlog::level::level_enum to_spdlog_min_level(logger_verbosity_enum v)
@@ -778,27 +784,24 @@ void logger::AddCallback(
         auto cb_sink = std::make_shared<spdlog::sinks::callback_sink_mt>(
             [callback, user_data](const spdlog::details::log_msg& msg)
             {
-                // Thread-local buffers so the const char* in Message stay valid for the call.
-                static thread_local std::string tl_filename;
-                static thread_local std::string tl_message;
-                static thread_local std::string tl_preamble;
-
-                tl_filename = msg.source.filename ? msg.source.filename : "";
-                tl_message  = std::string(msg.payload.data(), msg.payload.size());
-                tl_preamble = fmt::format(
+                spdlog_backend::g_callback_bridge_filename =
+                    msg.source.filename ? msg.source.filename : "";
+                spdlog_backend::g_callback_bridge_message =
+                    std::string(msg.payload.data(), msg.payload.size());
+                spdlog_backend::g_callback_bridge_preamble = fmt::format(
                     "[{}] {}:{}",
                     spdlog::level::to_string_view(msg.level),
-                    tl_filename,
+                    spdlog_backend::g_callback_bridge_filename,
                     msg.source.line);
 
                 logger::Message logging_msg{
                     spdlog_backend::from_spdlog_level(msg.level),
-                    tl_filename.c_str(),
+                    spdlog_backend::g_callback_bridge_filename.c_str(),
                     static_cast<unsigned>(msg.source.line),
-                    tl_preamble.c_str(),
+                    spdlog_backend::g_callback_bridge_preamble.c_str(),
                     "",
                     "",
-                    tl_message.c_str(),
+                    spdlog_backend::g_callback_bridge_message.c_str(),
                 };
                 callback(user_data, logging_msg);
             });

@@ -244,10 +244,25 @@ cc_test(
     ],
 )
 
-# CMake: benchmark_simd from BenchmarkSimd.cpp when VECTORIZATION_ENABLE_BENCHMARK and type != no.
+# CMake: BenchmarkSimd*.cpp → benchmark_simd* when VECTORIZATION_ENABLE_BENCHMARK and type != no.
+
+_SIMD_BENCH_DEPS = [
+    ":Vectorization",
+    "@com_google_benchmark//:benchmark",
+    "@com_google_benchmark//:benchmark_main",
+]
+
+_SIMD_BENCH_COMPATIBLE = selects.with_or({
+    (
+        "//bazel:vectorization_disable_benchmark",
+        "//bazel:vectorization_type_no",
+    ): ["@platforms//:incompatible"],
+    "//conditions:default": [],
+})
+
 cc_binary(
-    name = "benchmark_simd",
-    srcs = ["Testing/Cxx/BenchmarkSimd.cpp"],
+    name = "benchmark_simdunary",
+    srcs = ["Testing/Cxx/BenchmarkSimdUnary.cpp"],
     copts = vectorization_copts(),
     defines = vectorization_defines(),
     includes = [
@@ -256,16 +271,51 @@ cc_binary(
         "Testing",
     ],
     linkopts = vectorization_linkopts(),
-    target_compatible_with = selects.with_or({
-        (
-            "//bazel:vectorization_disable_benchmark",
-            "//bazel:vectorization_type_no",
-        ): ["@platforms//:incompatible"],
-        "//conditions:default": [],
-    }),
-    deps = [
-        ":Vectorization",
-        "@com_google_benchmark//:benchmark",
-        "@com_google_benchmark//:benchmark_main",
+    target_compatible_with = _SIMD_BENCH_COMPATIBLE,
+    deps = _SIMD_BENCH_DEPS,
+)
+
+cc_binary(
+    name = "benchmark_simdbinaryfn",
+    srcs = ["Testing/Cxx/BenchmarkSimdBinaryFn.cpp"],
+    copts = vectorization_copts(),
+    defines = vectorization_defines(),
+    includes = [
+        "Testing/Cxx",
+        ".",
+        "Testing",
     ],
+    linkopts = vectorization_linkopts(),
+    target_compatible_with = _SIMD_BENCH_COMPATIBLE,
+    deps = _SIMD_BENCH_DEPS,
+)
+
+cc_binary(
+    name = "benchmark_simdbinaryop",
+    srcs = ["Testing/Cxx/BenchmarkSimdBinaryOp.cpp"],
+    copts = vectorization_copts(),
+    defines = vectorization_defines(),
+    includes = [
+        "Testing/Cxx",
+        ".",
+        "Testing",
+    ],
+    linkopts = vectorization_linkopts(),
+    target_compatible_with = _SIMD_BENCH_COMPATIBLE,
+    deps = _SIMD_BENCH_DEPS,
+)
+
+cc_binary(
+    name = "benchmark_simdternaryhorizontal",
+    srcs = ["Testing/Cxx/BenchmarkSimdTernaryHorizontal.cpp"],
+    copts = vectorization_copts(),
+    defines = vectorization_defines(),
+    includes = [
+        "Testing/Cxx",
+        ".",
+        "Testing",
+    ],
+    linkopts = vectorization_linkopts(),
+    target_compatible_with = _SIMD_BENCH_COMPATIBLE,
+    deps = _SIMD_BENCH_DEPS,
 )
