@@ -287,7 +287,7 @@ void test_all_simd_binary(value_t tolerance)
     test_max(tolerance);
     test_signcopy(tolerance);
 
-#if !VECORIZATION_HAS_SVML
+#if !VECTORIZATION_HAS_SVML || !defined(MSVC)
     test_pow(tolerance);
     test_hypot(tolerance);
 #endif
