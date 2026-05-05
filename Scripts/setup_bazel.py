@@ -246,6 +246,9 @@ class BazelConfiguration:
         # All non-"off" values map to --config=lto in Bazel; the mode label is surfaced in summaries.
         self.lto_mode: str = "off"
 
+        # SLEEF SIMD math library for NEON/SVE (AArch64; maps to --config=sleef in .bazelrc)
+        self.enable_sleef: bool = False
+
         # CMake-only flags — not executed in Bazel but tracked so the summary is accurate.
         self.spell:      bool = False
         self.clangtidy:  bool = False
@@ -328,6 +331,11 @@ class BazelConfiguration:
             elif arg_lower in ["sse", "avx", "avx2", "avx512", "neon", "sve"]:
                 self.vectorization = arg_lower
                 self.configs.append(arg_lower)
+
+            # SLEEF SIMD math library (NEON/SVE — maps to --config=sleef in .bazelrc)
+            elif arg_lower == "sleef":
+                self.enable_sleef = True
+                self.configs.append("sleef")
 
             # LTO — bare token or dotted mode (lto.thin, lto.full, lto.ipo, lto.auto)
             elif arg_lower == "lto" or arg_lower.startswith("lto."):
@@ -742,9 +750,10 @@ class BazelConfiguration:
 
         # ── Core ──────────────────────────────────────────────────────────────
         print(f"\n{Fore.CYAN}******** Core module (Bazel flags) ********{Style.RESET_ALL}")
-        self._pf("Vectorization type", vec,                                   W)
-        self._pf("Mkl",               self._on_off("mkl" in self.configs),    W)
-        self._pf("Svml",              na,                                      W)
+        self._pf("Vectorization type", vec,                                        W)
+        self._pf("Sleef",              self._on_off(self.enable_sleef),            W)
+        self._pf("Mkl",                self._on_off("mkl" in self.configs),        W)
+        self._pf("Svml",               na,                                          W)
         self._pf("Rocm",              na,                                      W)
         self._pf("Experimental",      na,                                      W)
         self._pf("Magic enum",        self._on_off(True),                      W)
@@ -834,6 +843,7 @@ class BazelConfiguration:
             ("MEMORY_HAS_HIP",            "hip"    in self.configs),
             ("LTO_MODE",                  self.lto_mode),
             ("CORE_HAS_ENZYME",           "enzyme" in self.configs),
+            ("VECTORIZATION_ENABLE_SLEEF", self.enable_sleef),
             ("QUARISMA_ENABLE_GTEST",     gtest_on),
             ("BUILD_SHARED_LIBS",         self.shared_libs),
             ("ENABLE_SPELL",              self.spell),
@@ -1223,6 +1233,7 @@ def print_help() -> None:
     print("  avx512        - AVX512 vectorization")
     print("  neon          - AArch64 NEON (128-bit SIMD)")
     print("  sve           - AArch64 SVE fixed 128-bit (-msve-vector-bits=128)")
+    print("  sleef         - SLEEF SIMD math for NEON/SVE (maps to --config=sleef in .bazelrc)")
     print("\nOptional features:")
     print("  lto           - Link-time optimization (auto mode; maps to --config=lto)")
     print("  --lto.thin    - ThinLTO (Clang; Bazel maps to --config=lto)")

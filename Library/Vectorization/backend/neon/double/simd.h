@@ -16,7 +16,7 @@
 #include "common/intrin.h"
 #include "common/normal_cdf.h"
 #include "common/vectorization_macros.h"
-#include "backend/neon/sleef.h"
+#include "backend/neon/svml.h"
 
 namespace vectorization
 {
@@ -106,17 +106,7 @@ struct simd<double>
 
     VECTORIZATION_SIMD_RETURN_TYPE pow(const simd_t& x, const simd_t& y, simd_t& ret)
     {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_powd(x, y);
-#else
-        alignas(16) double bx[2];
-        alignas(16) double by[2];
-        vst1q_f64(bx, x);
-        vst1q_f64(by, y);
-        bx[0] = std::pow(bx[0], by[0]);
-        bx[1] = std::pow(bx[1], by[1]);
-        ret   = vld1q_f64(bx);
-#endif
+        ret = vpowq_f64(x, y);
     }
 
     VECTORIZATION_SIMD_RETURN_TYPE hypot(const simd_t& x, const simd_t& y, simd_t& ret)
@@ -149,198 +139,27 @@ struct simd<double>
 
     VECTORIZATION_SIMD_RETURN_TYPE floor(const simd_t& x, simd_t& ret) { ret = vrndmq_f64(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE exp(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_expd(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::exp));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE expm1(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_expm1d(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::expm1));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE exp2(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_exp2d(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::exp2));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE exp10(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_exp10d(x);
-#else
-        alignas(16) double b[2];
-        vst1q_f64(b, x);
-        b[0] = std::pow(10., b[0]);
-        b[1] = std::pow(10., b[1]);
-        ret  = vld1q_f64(b);
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE log(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_logd(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::log));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE log1p(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_log1pd(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::log1p));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE log2(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_log2d(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::log2));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE log10(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_log10d(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::log10));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE sin(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_sind(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::sin));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE cos(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_cosd(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::cos));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE tan(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_tand(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::tan));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE asin(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_asind(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::asin));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE acos(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_acosd(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::acos));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE atan(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_atand(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::atan));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE sinh(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_sinhd(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::sinh));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE cosh(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_coshd(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::cosh));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE tanh(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_tanhd(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::tanh));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE asinh(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_asinhd(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::asinh));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE acosh(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_acoshd(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::acosh));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE atanh(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_atanhd(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::atanh));
-#endif
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE cbrt(const simd_t& x, simd_t& ret)
-    {
-#if VECTORIZATION_HAS_SLEEF
-        ret = sleef_cbrtd(x);
-#else
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::cbrt));
-#endif
-    }
+    VECTORIZATION_SIMD_RETURN_TYPE exp(const simd_t& x, simd_t& ret)   { ret = vexpq_f64(x);   }
+    VECTORIZATION_SIMD_RETURN_TYPE expm1(const simd_t& x, simd_t& ret) { ret = vexpm1q_f64(x); }
+    VECTORIZATION_SIMD_RETURN_TYPE exp2(const simd_t& x, simd_t& ret)  { ret = vexp2q_f64(x);  }
+    VECTORIZATION_SIMD_RETURN_TYPE exp10(const simd_t& x, simd_t& ret) { ret = vexp10q_f64(x); }
+    VECTORIZATION_SIMD_RETURN_TYPE log(const simd_t& x, simd_t& ret)   { ret = vlogq_f64(x);   }
+    VECTORIZATION_SIMD_RETURN_TYPE log1p(const simd_t& x, simd_t& ret) { ret = vlog1pq_f64(x); }
+    VECTORIZATION_SIMD_RETURN_TYPE log2(const simd_t& x, simd_t& ret)  { ret = vlog2q_f64(x);  }
+    VECTORIZATION_SIMD_RETURN_TYPE log10(const simd_t& x, simd_t& ret) { ret = vlog10q_f64(x); }
+    VECTORIZATION_SIMD_RETURN_TYPE sin(const simd_t& x, simd_t& ret)   { ret = vsinq_f64(x);   }
+    VECTORIZATION_SIMD_RETURN_TYPE cos(const simd_t& x, simd_t& ret)   { ret = vcosq_f64(x);   }
+    VECTORIZATION_SIMD_RETURN_TYPE tan(const simd_t& x, simd_t& ret)   { ret = vtanq_f64(x);   }
+    VECTORIZATION_SIMD_RETURN_TYPE asin(const simd_t& x, simd_t& ret)  { ret = vasinq_f64(x);  }
+    VECTORIZATION_SIMD_RETURN_TYPE acos(const simd_t& x, simd_t& ret)  { ret = vacosq_f64(x);  }
+    VECTORIZATION_SIMD_RETURN_TYPE atan(const simd_t& x, simd_t& ret)  { ret = vatanq_f64(x);  }
+    VECTORIZATION_SIMD_RETURN_TYPE sinh(const simd_t& x, simd_t& ret)  { ret = vsinhq_f64(x);  }
+    VECTORIZATION_SIMD_RETURN_TYPE cosh(const simd_t& x, simd_t& ret)  { ret = vcoshq_f64(x);  }
+    VECTORIZATION_SIMD_RETURN_TYPE tanh(const simd_t& x, simd_t& ret)  { ret = vtanhq_f64(x);  }
+    VECTORIZATION_SIMD_RETURN_TYPE asinh(const simd_t& x, simd_t& ret) { ret = vasinhq_f64(x); }
+    VECTORIZATION_SIMD_RETURN_TYPE acosh(const simd_t& x, simd_t& ret) { ret = vacoshq_f64(x); }
+    VECTORIZATION_SIMD_RETURN_TYPE atanh(const simd_t& x, simd_t& ret) { ret = vatanhq_f64(x); }
+    VECTORIZATION_SIMD_RETURN_TYPE cbrt(const simd_t& x, simd_t& ret)  { ret = vcbrtq_f64(x);  }
 
     VECTORIZATION_SIMD_RETURN_TYPE cdf(const simd_t& x, simd_t& ret)
     {

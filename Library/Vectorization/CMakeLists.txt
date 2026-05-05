@@ -73,6 +73,9 @@ mark_as_advanced(VECTORIZATION_ENABLE_SVML)
 option(VECTORIZATION_ENABLE_SLEEF "Enable SLEEF SIMD math library for NEON" OFF)
 mark_as_advanced(VECTORIZATION_ENABLE_SLEEF)
 
+option(VECTORIZATION_ENABLE_ACCELERATE "Enable Apple Accelerate vForce on AArch64 NEON" OFF)
+mark_as_advanced(VECTORIZATION_ENABLE_ACCELERATE)
+
 # Memory presence — detected from the CMake target; not a user option.
 if(TARGET Memory::Memory)
   set(_vec_has_memory 1)
@@ -264,6 +267,7 @@ endif()
 
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_SVML)
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_SLEEF)
+compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_ACCELERATE)
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_GTEST)
 list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_MEMORY=${_vec_has_memory})
 list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_LOGGING=${_vec_has_logging})
@@ -329,8 +333,8 @@ if(NOT VECTORIZATION_ENABLE_SVML)
   list(FILTER headers EXCLUDE REGEX ".*/svml\\.h$")
 endif()
 
-if(NOT VECTORIZATION_ENABLE_SLEEF)
-  list(FILTER headers EXCLUDE REGEX ".*/backend/neon/sleef\\.h$")
+if(NOT VECTORIZATION_TYPE STREQUAL "neon")
+  list(FILTER headers EXCLUDE REGEX ".*/backend/neon/svml\\.h$")
 endif()
 
 # =============================================================================
@@ -424,6 +428,12 @@ if(VECTORIZATION_DEPENDENCY_LIBS)
   message(STATUS "Vectorization: linked dependencies: ${VECTORIZATION_DEPENDENCY_LIBS}")
 endif()
 
+# Link Apple Accelerate framework when vForce is enabled.
+if(VECTORIZATION_ENABLE_ACCELERATE AND APPLE)
+  target_link_libraries(Vectorization PUBLIC "-framework Accelerate")
+  message(STATUS "Vectorization: linked Apple Accelerate framework (vForce).")
+endif()
+
 # Link ThirdParty SVML and stage its runtime binaries next to the output library.
 if(VECTORIZATION_ENABLE_SVML AND TARGET SVML::SVML)
   target_link_libraries(Vectorization PUBLIC SVML::SVML)
@@ -507,6 +517,7 @@ message("  Vectorization type   : ${VECTORIZATION_TYPE}")
 message("  Packet size          : ${VECTORIZATION_PACKET_SIZE}")
 message("  Svml                 : ${VECTORIZATION_ENABLE_SVML}")
 message("  Sleef                : ${VECTORIZATION_ENABLE_SLEEF}")
+message("  Accelerate (vForce)  : ${VECTORIZATION_ENABLE_ACCELERATE}")
 message("  Memory (HAS)         : ${_vec_has_memory}")
 message("  Logging (HAS)        : ${_vec_has_logging}")
 message("  Cxx standard         : ${VECTORIZATION_CXX_STANDARD}")

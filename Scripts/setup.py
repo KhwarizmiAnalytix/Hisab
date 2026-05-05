@@ -633,6 +633,7 @@ class QuarismaFlags:
             "enzyme",
             "parallel_backend",
             "native",
+            "sleef",
         ]
         self.__description = [
             # Valid CMake options
@@ -670,6 +671,7 @@ class QuarismaFlags:
             "enable Enzyme automatic differentiation support",
             "SMP backend: std, openmp, or tbb",
             "Clang/GCC: -march=native for max CPU tuning (binary may not run on older CPUs)",
+            "enable SLEEF SIMD math library for NEON/SVE (AArch64; auto-enabled when Accelerate vForce is unavailable)",
         ]
 
     def __build_cmake_flag(self):
@@ -693,6 +695,7 @@ class QuarismaFlags:
             "profiler_type": "PROFILER_BACKEND",
             "enzyme": "CORE_ENABLE_ENZYME",
             "parallel_backend": "PARALLEL_BACKEND",
+            "sleef": "VECTORIZATION_ENABLE_SLEEF",
             # Non-CMake flags (for internal use, not passed to CMake)
             "mkl_threading": "MKL_THREADING",
             "mkl_link": "MKL_LINK",
@@ -1926,6 +1929,10 @@ def main():
         print("                             memory = Memory only (Logging disabled).")
         print("                             vectorization/core include their normal dependency chain.")
         print("                             Example: python setup.py config.build.test --project.memory")
+        print("\nVectorization options:")
+        print("  sleef              Enable SLEEF math library for NEON/SVE transcendentals")
+        print("                             (auto-enabled by CMake when Apple Accelerate vForce is unavailable)")
+        print("                             Example: python setup.py config.build.test.neon.sleef")
         print("\nVectorization packet size:")
         print("  --packet-size=N    SIMD lane count (CMake VECTORIZATION_PACKET_SIZE; default 4)")
         print("  psizeN             Same as --packet-size=N (e.g. psize8)")

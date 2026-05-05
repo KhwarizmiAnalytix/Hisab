@@ -348,6 +348,49 @@ if(NOT INTERN_BUILD_MOBILE)
     endif()
     cmake_pop_check_state()
 
+    # ---[ Probe Apple Accelerate vForce (vvexpf/vvsinf/vvcosf/vvlogf).
+    # These symbols live in <Accelerate/Accelerate.h> and require -framework Accelerate.
+    # If they are absent (Linux/Android AArch64, old SDK, non-Apple toolchain) we
+    # automatically switch on SLEEF so the caller never has to set the flag manually.
+    if(APPLE AND HAS_NEON AND NOT VECTORIZATION_ENABLE_SLEEF)
+      cmake_push_check_state(RESET)
+      set(CMAKE_REQUIRED_LIBRARIES "-framework Accelerate")
+      check_cxx_source_compiles(
+        "#include <Accelerate/Accelerate.h>
+         int main() {
+           const int n = 4;
+           float x[4] = {1.f, 2.f, 3.f, 4.f};
+           float y[4];
+           vvexpf(y, x, &n);
+           vvsinf(y, x, &n);
+           vvcosf(y, x, &n);
+           vvlogf(y, x, &n);
+           return 0;
+         }"
+        TMP_ACCELERATE_VFORCE_SUPPORTED
+      )
+      cmake_pop_check_state()
+      if(TMP_ACCELERATE_VFORCE_SUPPORTED)
+        message(STATUS "Accelerate vForce (vvexpf/vvsinf/vvcosf/vvlogf): supported -- "
+                       "auto-enabling VECTORIZATION_ENABLE_ACCELERATE.")
+        set(VECTORIZATION_ENABLE_ACCELERATE ON
+            CACHE BOOL "Enable Apple Accelerate vForce (auto-enabled)" FORCE)
+      else()
+        message(STATUS
+          "Accelerate vForce (vvexpf/vvsinf/vvcosf/vvlogf): NOT supported -- "
+          "auto-enabling VECTORIZATION_ENABLE_SLEEF.")
+        set(VECTORIZATION_ENABLE_SLEEF ON
+            CACHE BOOL "Enable SLEEF (auto-enabled: Accelerate vForce unavailable)" FORCE)
+      endif()
+    elseif(NOT APPLE AND HAS_NEON AND NOT VECTORIZATION_ENABLE_SLEEF)
+      # Non-Apple AArch64 never has Accelerate; enable SLEEF automatically.
+      message(STATUS
+        "Non-Apple AArch64 detected: Accelerate vForce unavailable -- "
+        "auto-enabling VECTORIZATION_ENABLE_SLEEF.")
+      set(VECTORIZATION_ENABLE_SLEEF ON
+          CACHE BOOL "Enable SLEEF (auto-enabled: Accelerate unavailable on non-Apple)" FORCE)
+    endif()
+
     # ---[ SLEEF for AArch64 NEON — build from ThirdParty/sleef submodule when requested.
     if(VECTORIZATION_ENABLE_SLEEF AND HAS_NEON)
       if(DEFINED QUARISMA_THIRDPARTY_DIR AND
