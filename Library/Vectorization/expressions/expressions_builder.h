@@ -164,91 +164,9 @@ MACRO_EXPRESSION_OPERATOR_2_ARG(cmpeq, ==);
 MACRO_EXPRESSION_OPERATOR_2_ARG(cmpne, !=);
 MACRO_EXPRESSION_OPERATOR_2_ARG(add, +);
 MACRO_EXPRESSION_OPERATOR_2_ARG(sub, -);
-// MACRO_EXPRESSION_OPERATOR_2_ARG(mul, *);
+MACRO_EXPRESSION_OPERATOR_2_ARG(mul, *);
 MACRO_EXPRESSION_OPERATOR_2_ARG(div, /);
 
-}  // namespace vectorization
-
-//================================================================================================
-namespace vectorization
-{
-template <
-    typename LHS,
-    typename RHS,
-    std::enable_if_t<vectorization::is_expression<LHS>::value || vectorization::is_expression<RHS>::value, bool> =
-        true>
-VECTORIZATION_FUNCTION_ATTRIBUTE auto operator*(LHS const& lhs, RHS const& rhs) noexcept
-{
-    if constexpr ((!vectorization::is_matrix_operation<LHS>::value &&
-                   !vectorization::is_matrix_operation<RHS>::value))
-    {
-        return vectorization::binary_expression<LHS, RHS, vectorization::MACRO_EVALUATOR_SUFIX(mul)>(lhs, rhs);
-    }
-    else if constexpr (
-        vectorization::is_matrix_operation<LHS>::value && !vectorization::is_matrix_operation<RHS>::value)
-    {
-        return vectorization::matrix_vector_multiplication_expression<LHS, RHS>(lhs, rhs);
-    }
-    else if constexpr (
-        !vectorization::is_matrix_operation<LHS>::value && vectorization::is_matrix_operation<RHS>::value)
-    {
-        if constexpr (std::is_fundamental<LHS>::value)
-        {
-            return vectorization::binary_expression<LHS, RHS, vectorization::MACRO_EVALUATOR_SUFIX(mul)>(
-                lhs, rhs);
-        }
-        else
-        {
-            return vectorization::vector_matrix_multiplication_expression<LHS, RHS>(lhs, rhs);
-        }
-    }
-    else if constexpr (
-        vectorization::is_matrix_operation<LHS>::value && vectorization::is_matrix_operation<RHS>::value)
-    {
-        return vectorization::matrix_multiplication_expression<LHS, RHS>(lhs, rhs);
-    }
-}
-
-template <
-    typename LHS,
-    typename RHS,
-    std::enable_if_t<vectorization::is_expression<LHS>::value || vectorization::is_expression<RHS>::value, bool> =
-        true>
-VECTORIZATION_FUNCTION_ATTRIBUTE auto operator*(LHS&& lhs, RHS&& rhs) noexcept
-{
-    using rmv_lhs = vectorization::remove_cvref_t<LHS>;
-    using rmv_rhs = vectorization::remove_cvref_t<RHS>;
-    if constexpr (
-        !vectorization::is_matrix_operation<rmv_lhs>::value &&
-        !vectorization::is_matrix_operation<rmv_rhs>::value)
-    {
-        return vectorization::binary_expression<rmv_lhs, rmv_rhs, vectorization::MACRO_EVALUATOR_SUFIX(mul)>(
-            lhs, rhs);
-    }
-    else if constexpr (
-        vectorization::is_matrix_operation<rmv_lhs>::value && !vectorization::is_matrix_operation<rmv_rhs>::value)
-    {
-        return vectorization::matrix_vector_multiplication_expression<rmv_lhs, rmv_rhs>(lhs, rhs);
-    }
-    else if constexpr (
-        !vectorization::is_matrix_operation<rmv_lhs>::value && vectorization::is_matrix_operation<rmv_rhs>::value)
-    {
-        if constexpr (std::is_fundamental<rmv_lhs>::value)
-        {
-            return vectorization::binary_expression<rmv_lhs, rmv_rhs, vectorization::MACRO_EVALUATOR_SUFIX(mul)>(
-                lhs, rhs);
-        }
-        else
-        {
-            return vectorization::vector_matrix_multiplication_expression<rmv_lhs, rmv_rhs>(lhs, rhs);
-        }
-    }
-    else if constexpr (
-        vectorization::is_matrix_operation<rmv_lhs>::value && vectorization::is_matrix_operation<rmv_rhs>::value)
-    {
-        return vectorization::matrix_multiplication_expression<rmv_lhs, rmv_rhs>(lhs, rhs);
-    }
-}
 }  // namespace vectorization
 
 //================================================================================================
@@ -274,34 +192,4 @@ MACRO_EXPRESSION_MOPERATOR_2_ARG(msub, -=);
 MACRO_EXPRESSION_MOPERATOR_2_ARG(mmul, *=);
 MACRO_EXPRESSION_MOPERATOR_2_ARG(mdiv, /=);
 }  // namespace vectorization
-
-//================================================================================================
-// matmul(A, B) — explicit matrix multiply.
-// tensor * tensor is element-wise; use matmul() to request matrix multiplication.
-// The result is a matrix_multiplication_expression which must be directly assigned
-// to an output tensor (it cannot be nested inside a further element-wise expression).
-//================================================================================================
-namespace vectorization
-{
-template <typename LHS, typename RHS,
-          std::enable_if_t<vectorization::is_expression<LHS>::value &&
-                               vectorization::is_expression<RHS>::value,
-                           bool> = true>
-VECTORIZATION_FUNCTION_ATTRIBUTE auto matmul(LHS const& lhs, RHS const& rhs) noexcept
-{
-    return vectorization::matrix_multiplication_expression<LHS, RHS>(lhs, rhs);
-}
-
-template <typename LHS, typename RHS,
-          std::enable_if_t<vectorization::is_expression<LHS>::value &&
-                               vectorization::is_expression<RHS>::value,
-                           bool> = true>
-VECTORIZATION_FUNCTION_ATTRIBUTE auto matmul(LHS&& lhs, RHS&& rhs) noexcept
-{
-    using rmv_lhs = vectorization::remove_cvref_t<LHS>;
-    using rmv_rhs = vectorization::remove_cvref_t<RHS>;
-    return vectorization::matrix_multiplication_expression<rmv_lhs, rmv_rhs>(lhs, rhs);
-}
-}  // namespace vectorization
-
 #endif

@@ -35,8 +35,6 @@
 
 #include "common/packet.h"
 #include "expressions/expressions.h"
-#include "terminals/matrix_operation/matrix_multiplication.h"
-#include "terminals/matrix_operation/matrix_transpose.h"
 
 namespace vectorization
 {
@@ -482,7 +480,7 @@ public:
             static_cast<size_type>(dimensions_[n - 2]),
             static_cast<size_type>(dimensions_[n - 1]));
     }
-
+#if 0
     // -----------------------------------------------------------------------
     // Matrix operations (2-D)
     // -----------------------------------------------------------------------
@@ -524,6 +522,7 @@ public:
     {
         return matrix_transpose_expression<tensor>(rhs);
     }
+#endif
 
     // -----------------------------------------------------------------------
     // Comparison / predicates
