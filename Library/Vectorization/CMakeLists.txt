@@ -22,7 +22,14 @@ cmake_minimum_required(VERSION 3.16)
 # CACHE for Core (VECTORIZATION_COMPILER_FLAGS, PROJECT_*). VECTORIZATION_TYPE drives
 # backend source filters and VECTORIZATION_HAS_* one-to-one.
 # =============================================================================
-set(VECTORIZATION_TYPE "avx2"
+# Host-aware default SIMD: x86_64 -> avx2, aarch64 -> neon.
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _quarisma_vec_proc_default)
+set(_quarisma_vectorization_default "avx2")
+if(_quarisma_vec_proc_default MATCHES "^(aarch64|arm64)$")
+  set(_quarisma_vectorization_default "neon")
+endif()
+
+set(VECTORIZATION_TYPE "${_quarisma_vectorization_default}"
     CACHE STRING
         "vectorization implementation to use. Options are no, sse, avx, avx2, avx512, neon, sve"
 )
@@ -283,6 +290,59 @@ list(APPEND VECTORIZATION_COMPILE_DEFINITIONS
 
 set(VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS "")
 list(APPEND VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS ${VECTORIZATION_COMPILE_DEFINITIONS})
+set(VECTORIZATION_DEPENDENCY_LINK_DIRS "")
+
+
+# Build/link ThirdParty SLEEF for AArch64 NEON when requested.
+if(VECTORIZATION_ENABLE_SLEEF)
+  set(_tpdir "${CMAKE_SOURCE_DIR}/ThirdParty")
+  set(_sleef_build_dir "${CMAKE_BINARY_DIR}/ThirdParty/sleef_build")
+  set(_sleef_install_prefix "${CMAKE_BINARY_DIR}/ThirdParty/install")
+
+  # SLEEF requires a non-default install prefix even for subdirectory builds.
+  if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${_sleef_install_prefix}" CACHE PATH
+        "Install path prefix, prepended onto install directories." FORCE)
+    set(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT FALSE)
+  endif()
+
+  set(SLEEF_BUILD_TESTS OFF CACHE BOOL "Disable SLEEF tests" FORCE)
+  set(SLEEF_BUILD_DFT OFF CACHE BOOL "Disable SLEEF DFT library" FORCE)
+  set(SLEEF_BUILD_SCALAR_LIB OFF CACHE BOOL "Disable SLEEF scalar library" FORCE)
+  set(SLEEF_BUILD_QUAD OFF CACHE BOOL "Disable SLEEF quad library" FORCE)
+  set(SLEEF_BUILD_GNUABI_LIBS OFF CACHE BOOL "Disable SLEEF GNU ABI variants" FORCE)
+  set(SLEEF_DISABLE_OPENMP ON CACHE BOOL "Disable SLEEF OpenMP usage" FORCE)
+  set(SLEEF_BUILD_INLINE_HEADERS OFF CACHE BOOL "Disable SLEEF inline headers" FORCE)
+  set(SLEEF_ENABLE_TESTER OFF CACHE BOOL "Disable SLEEF tester binaries" FORCE)
+  set(SLEEF_ENABLE_TESTER4 OFF CACHE BOOL "Disable SLEEF tester4 binaries" FORCE)
+  set(SLEEF_ENABLE_SSL OFF CACHE BOOL "Disable SLEEF SSL-backed tester checks" FORCE)
+  set(SLEEF_SHOW_CONFIG OFF CACHE BOOL "Suppress SLEEF config output" FORCE)
+  set(SLEEF_BUILD_SHARED_LIBS OFF CACHE BOOL "Build SLEEF as static library" FORCE)
+
+  add_third_party_library(
+    sleef
+    LIBRARY_TYPE
+    STATIC
+    SOURCE_DIR
+    "${_tpdir}/sleef"
+    BINARY_DIR
+    "${_sleef_build_dir}"
+    QUARISMA_TARGETS
+    "Sleef::sleef=sleef"
+    INCLUDE_DIR
+    "${CMAKE_BINARY_DIR}/include"
+    EXCLUDE_FROM_ALL
+    AUTO_ADD_TO_DEPENDENCIES
+    OFF
+  )
+
+  list(APPEND VECTORIZATION_DEPENDENCY_INCLUDE_DIRS "${CMAKE_BINARY_DIR}/include")
+  list(APPEND VECTORIZATION_DEPENDENCY_INCLUDE_DIRS "${_sleef_build_dir}/include")
+  if(TARGET sleef)
+    list(APPEND VECTORIZATION_DEPENDENCY_LIBS sleef)
+  endif()
+  list(APPEND VECTORIZATION_DEPENDENCY_LINK_DIRS "${_sleef_install_prefix}/lib")
+endif()
 
 # =============================================================================
 # SECTION 4 — Source
@@ -428,10 +488,19 @@ if(VECTORIZATION_DEPENDENCY_LIBS)
   message(STATUS "Vectorization: linked dependencies: ${VECTORIZATION_DEPENDENCY_LIBS}")
 endif()
 
+if(VECTORIZATION_DEPENDENCY_LINK_DIRS)
+  target_link_directories(Vectorization PUBLIC ${VECTORIZATION_DEPENDENCY_LINK_DIRS})
+  message(STATUS "Vectorization: dependency link dirs: ${VECTORIZATION_DEPENDENCY_LINK_DIRS}")
+endif()
+
 # Link Apple Accelerate framework when vForce is enabled.
 if(VECTORIZATION_ENABLE_ACCELERATE AND APPLE)
   target_link_libraries(Vectorization PUBLIC "-framework Accelerate")
   message(STATUS "Vectorization: linked Apple Accelerate framework (vForce).")
+endif()
+
+if(VECTORIZATION_ENABLE_SLEEF AND TARGET Sleef::sleef)
+  target_link_libraries(Vectorization PUBLIC Sleef::sleef)
 endif()
 
 # Link ThirdParty SVML and stage its runtime binaries next to the output library.

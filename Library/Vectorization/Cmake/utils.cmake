@@ -318,6 +318,10 @@ if(NOT INTERN_BUILD_MOBILE)
       if(NOT MSVC)
         set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
       endif()
+    else()
+      set(VECTORIZATION_ENABLE_SLEEF OFF
+          CACHE BOOL "Enable SLEEF (auto-enabled: Accelerate unavailable on non-Apple)" FORCE)
+
     endif()
     cmake_pop_check_state()
 
@@ -391,32 +395,6 @@ if(NOT INTERN_BUILD_MOBILE)
           CACHE BOOL "Enable SLEEF (auto-enabled: Accelerate unavailable on non-Apple)" FORCE)
     endif()
 
-    # ---[ SLEEF for AArch64 NEON — build from ThirdParty/sleef submodule when requested.
-    if(VECTORIZATION_ENABLE_SLEEF AND HAS_NEON)
-      if(DEFINED QUARISMA_THIRDPARTY_DIR AND
-         EXISTS "${QUARISMA_THIRDPARTY_DIR}/sleef/CMakeLists.txt")
-        set(SLEEF_BUILD_TESTS        OFF CACHE BOOL "Disable SLEEF tests"             FORCE)
-        set(SLEEF_BUILD_DFT          OFF CACHE BOOL "Disable SLEEF DFT library"       FORCE)
-        set(SLEEF_BUILD_QUAD         OFF CACHE BOOL "Disable SLEEF quad library"      FORCE)
-        set(SLEEF_BUILD_GNUABI_LIBS  OFF CACHE BOOL "Disable SLEEF GNU ABI variants"  FORCE)
-        set(SLEEF_BUILD_INLINE_HEADERS OFF CACHE BOOL "Disable SLEEF inline headers"  FORCE)
-        set(SLEEF_SHOW_CONFIG        OFF CACHE BOOL "Suppress SLEEF config output"    FORCE)
-        set(SLEEF_BUILD_SHARED_LIBS  OFF CACHE BOOL "Build SLEEF as static library"   FORCE)
-        set(_sleef_bin_dir "${CMAKE_BINARY_DIR}/ThirdParty/sleef_build")
-        add_subdirectory(
-          "${QUARISMA_THIRDPARTY_DIR}/sleef"
-          "${_sleef_bin_dir}"
-          EXCLUDE_FROM_ALL
-        )
-        list(APPEND VECTORIZATION_DEPENDENCY_INCLUDE_DIRS "${_sleef_bin_dir}/include")
-        list(APPEND VECTORIZATION_DEPENDENCY_LIBS sleef)
-        message(STATUS "SLEEF: built from ThirdParty/sleef (static).")
-      else()
-        message(WARNING
-          "VECTORIZATION_ENABLE_SLEEF=ON but ThirdParty/sleef submodule not found. "
-          "Run: git submodule update --init ThirdParty/sleef")
-      endif()
-    endif()
   endif()
 
 endif()

@@ -68,6 +68,8 @@ def vectorization_simd_copts():
     for os_suffix in ("linux_aarch64", "macos_aarch64", "windows_aarch64"):
         d["//bazel:vec_neon_%s" % os_suffix] = arm_neon
         d["//bazel:vec_sve_%s" % os_suffix] = arm_sve
+    d["//bazel:cpu_x86_64"] = unix["avx2"]
+    d["//bazel:cpu_aarch64"] = arm_neon
     d["//conditions:default"] = unix["avx2"]
     return select(d)
 
@@ -76,15 +78,14 @@ def _svml_macro(needed):
     return ["VECTORIZATION_HAS_SVML=1"] if needed else ["VECTORIZATION_HAS_SVML=0"]
 
 def _svml_autodetect_defines():
-    return select({
-        "//bazel:disable_svml": ["VECTORIZATION_HAS_SVML=0"],
-        "//bazel:vectorization_type_no": ["VECTORIZATION_HAS_SVML=0"],
-        "//bazel:vectorization_type_neon": ["VECTORIZATION_HAS_SVML=0"],
-        "//bazel:vectorization_type_sve": ["VECTORIZATION_HAS_SVML=0"],
+    return selects.with_or({
+        ("//bazel:disable_svml", "//bazel:vectorization_type_no", "//bazel:vectorization_type_neon", "//bazel:vectorization_type_sve"): ["VECTORIZATION_HAS_SVML=0"],
         "//bazel:vectorization_type_sse": _svml_macro(SVML_NEEDED_SSE),
         "//bazel:vectorization_type_avx": _svml_macro(SVML_NEEDED_AVX),
         "//bazel:vectorization_type_avx2": _svml_macro(SVML_NEEDED_AVX2),
         "//bazel:vectorization_type_avx512": _svml_macro(SVML_NEEDED_AVX512),
+        "//bazel:cpu_aarch64": ["VECTORIZATION_HAS_SVML=0"],
+        "//bazel:cpu_x86_64": _svml_macro(SVML_NEEDED_AVX2),
         "//conditions:default": _svml_macro(SVML_NEEDED_AVX2),
     })
 
@@ -92,24 +93,26 @@ def vectorization_svml_defines():
     """SVML define: force on/off via --define, else autodetect (utils.cmake parity)."""
     return selects.with_or({
         ("//bazel:enable_svml",): ["VECTORIZATION_HAS_SVML=1"],
-        "//conditions:default": _svml_autodetect_defines(),
+        ("//bazel:disable_svml", "//bazel:vectorization_type_no", "//bazel:vectorization_type_neon", "//bazel:vectorization_type_sve"): ["VECTORIZATION_HAS_SVML=0"],
+        "//bazel:vectorization_type_sse": _svml_macro(SVML_NEEDED_SSE),
+        "//bazel:vectorization_type_avx": _svml_macro(SVML_NEEDED_AVX),
+        "//bazel:vectorization_type_avx2": _svml_macro(SVML_NEEDED_AVX2),
+        "//bazel:vectorization_type_avx512": _svml_macro(SVML_NEEDED_AVX512),
+        "//conditions:default": _svml_macro(SVML_NEEDED_AVX2),
     })
 
 def vectorization_svml_deps():
     """Link @svml when HAS_SVML=1 for the active configuration."""
     return selects.with_or({
         ("//bazel:enable_svml",): ["@svml//:SVML"],
-        "//conditions:default": select({
-            "//bazel:disable_svml": [],
-            "//bazel:vectorization_type_no": [],
-            "//bazel:vectorization_type_neon": [],
-            "//bazel:vectorization_type_sve": [],
-            "//bazel:vectorization_type_sse": ["@svml//:SVML"] if SVML_NEEDED_SSE else [],
-            "//bazel:vectorization_type_avx": ["@svml//:SVML"] if SVML_NEEDED_AVX else [],
-            "//bazel:vectorization_type_avx2": ["@svml//:SVML"] if SVML_NEEDED_AVX2 else [],
-            "//bazel:vectorization_type_avx512": ["@svml//:SVML"] if SVML_NEEDED_AVX512 else [],
-            "//conditions:default": ["@svml//:SVML"] if SVML_NEEDED_AVX2 else [],
-        }),
+        ("//bazel:disable_svml", "//bazel:vectorization_type_no", "//bazel:vectorization_type_neon", "//bazel:vectorization_type_sve"): [],
+        "//bazel:vectorization_type_sse": ["@svml//:SVML"] if SVML_NEEDED_SSE else [],
+        "//bazel:vectorization_type_avx": ["@svml//:SVML"] if SVML_NEEDED_AVX else [],
+        "//bazel:vectorization_type_avx2": ["@svml//:SVML"] if SVML_NEEDED_AVX2 else [],
+        "//bazel:vectorization_type_avx512": ["@svml//:SVML"] if SVML_NEEDED_AVX512 else [],
+        "//bazel:cpu_aarch64": [],
+        "//bazel:cpu_x86_64": ["@svml//:SVML"] if SVML_NEEDED_AVX2 else [],
+        "//conditions:default": ["@svml//:SVML"] if SVML_NEEDED_AVX2 else [],
     })
 
 def vectorization_svml_hdrs_extra(svml_hdr):
@@ -120,17 +123,12 @@ def vectorization_svml_hdrs_extra(svml_hdr):
     """
     return selects.with_or({
         ("//bazel:enable_svml",): [svml_hdr],
-        "//conditions:default": select({
-            "//bazel:disable_svml": [],
-            "//bazel:vectorization_type_no": [],
-            "//bazel:vectorization_type_neon": [],
-            "//bazel:vectorization_type_sve": [],
-            "//bazel:vectorization_type_sse": [],
-            "//bazel:vectorization_type_avx512": [],
-            "//bazel:vectorization_type_avx": [svml_hdr] if SVML_NEEDED_AVX else [],
-            "//bazel:vectorization_type_avx2": [svml_hdr] if SVML_NEEDED_AVX2 else [],
-            "//conditions:default": [svml_hdr] if SVML_NEEDED_AVX2 else [],
-        }),
+        ("//bazel:disable_svml", "//bazel:vectorization_type_no", "//bazel:vectorization_type_neon", "//bazel:vectorization_type_sve", "//bazel:vectorization_type_sse", "//bazel:vectorization_type_avx512"): [],
+        "//bazel:vectorization_type_avx": [svml_hdr] if SVML_NEEDED_AVX else [],
+        "//bazel:vectorization_type_avx2": [svml_hdr] if SVML_NEEDED_AVX2 else [],
+        "//bazel:cpu_aarch64": [],
+        "//bazel:cpu_x86_64": [svml_hdr] if SVML_NEEDED_AVX2 else [],
+        "//conditions:default": [svml_hdr] if SVML_NEEDED_AVX2 else [],
     })
 
 def vectorization_defines():
@@ -211,8 +209,27 @@ def vectorization_defines():
                 "VECTORIZATION_HAS_SVE=0",
                 "VECTORIZATION_VECTORIZED=1",
             ],
+            "//bazel:cpu_aarch64": [
+                "VECTORIZATION_HAS_SSE=0",
+                "VECTORIZATION_HAS_AVX=0",
+                "VECTORIZATION_HAS_AVX2=0",
+                "VECTORIZATION_HAS_AVX512=0",
+                "VECTORIZATION_HAS_NEON=1",
+                "VECTORIZATION_HAS_SVE=0",
+                "VECTORIZATION_VECTORIZED=1",
+            ],
+            "//bazel:cpu_x86_64": [
+                "VECTORIZATION_HAS_SSE=0",
+                "VECTORIZATION_HAS_AVX=0",
+                "VECTORIZATION_HAS_AVX2=1",
+                "VECTORIZATION_HAS_AVX512=0",
+                "VECTORIZATION_HAS_NEON=0",
+                "VECTORIZATION_HAS_SVE=0",
+                "VECTORIZATION_VECTORIZED=1",
+            ],
         })
         + vectorization_svml_defines()
+        + vectorization_sleef_defines()
         + select({
             "//bazel:disable_gtest": ["VECTORIZATION_HAS_GTEST=0"],
             "//conditions:default": ["VECTORIZATION_HAS_GTEST=1"],
@@ -226,3 +243,17 @@ def vectorization_defines():
 
 def vectorization_linkopts():
     return quarisma_linkopts()
+
+def vectorization_sleef_defines():
+    """Expose VECTORIZATION_HAS_SLEEF consistently with CMake flags."""
+    return select({
+        "//bazel:enable_sleef": ["VECTORIZATION_HAS_SLEEF=1"],
+        "//conditions:default": ["VECTORIZATION_HAS_SLEEF=0"],
+    })
+
+def vectorization_sleef_deps():
+    """Prebuilt SLEEF dependency used when --config=sleef is enabled."""
+    return select({
+        "//bazel:enable_sleef": ["//:sleef"],
+        "//conditions:default": [],
+    })

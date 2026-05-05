@@ -90,6 +90,7 @@ build:lto --linkopt=-flto=thin
 # =============================================================================
 
 # SSE vectorization
+build:sse --define=vectorization_type=sse
 build:sse --copt=-msse
 build:sse --copt=-msse2
 build:sse --copt=-msse3
@@ -98,21 +99,28 @@ build:sse --copt=-msse4.1
 build:sse --copt=-msse4.2
 
 # AVX vectorization
+build:avx --define=vectorization_type=avx
 build:avx --copt=-mavx
 build:avx --copt=-msse4.2
 
 # AVX2 vectorization (default)
+build:avx2 --define=vectorization_type=avx2
 build:avx2 --copt=-mavx2
 build:avx2 --copt=-mfma
 build:avx2 --copt=-mavx
 build:avx2 --copt=-msse4.2
 
 # AVX512 vectorization
+build:avx512 --define=vectorization_type=avx512
 build:avx512 --copt=-mavx512f
 build:avx512 --copt=-mavx512cd
 build:avx512 --copt=-mavx512bw
 build:avx512 --copt=-mavx512dq
 build:avx512 --copt=-mavx512vl
+
+# AArch64 vectorization tiers
+build:neon --define=vectorization_type=neon
+build:sve --define=vectorization_type=sve
 
 # =============================================================================
 # Compiler-Specific Configurations
@@ -311,6 +319,9 @@ build:gtest --define=enable_gtest=true
 # Google Benchmark — per-module flags match CMake *ENABLE_BENCHMARK=ON (also set globally below)
 build:benchmark --define=enable_benchmark=true --define=core_enable_benchmark=true --define=memory_enable_benchmark=true --define=parallel_enable_benchmark=true --define=logging_enable_benchmark=true --define=profiler_enable_benchmark=true --define=vectorization_enable_benchmark=true
 
+# SLEEF for Vectorization NEON/SVE (mirrors CMake VECTORIZATION_ENABLE_SLEEF)
+build:sleef --define=vectorization_enable_sleef=true
+
 # =============================================================================
 # Code Coverage
 # =============================================================================
@@ -346,8 +357,9 @@ build:gpu_alloc_pool_async --define=memory_gpu_alloc=pool_async
 # =============================================================================
 # CMake-equivalent defaults
 # =============================================================================
-# Defaults: VECTORIZATION_TYPE=avx2; every library’s *ENABLE_BENCHMARK=ON (Core/Memory/Parallel/Logging/Profiler/Vectorization + umbrella enable_benchmark).
-build --define=parallel_backend=std --define=vectorization_type=avx2 --define=memory_enable_mimalloc=true --define=core_enable_benchmark=true --define=memory_enable_benchmark=true --define=parallel_enable_benchmark=true --define=logging_enable_benchmark=true --define=profiler_enable_benchmark=true --define=vectorization_enable_benchmark=true --define=enable_benchmark=true
+# Defaults: SIMD auto by host CPU (x86_64 -> avx2, aarch64 -> neon); every library’s
+# *ENABLE_BENCHMARK=ON (Core/Memory/Parallel/Logging/Profiler/Vectorization + umbrella enable_benchmark).
+build --define=parallel_backend=std --define=memory_enable_mimalloc=true --define=core_enable_benchmark=true --define=memory_enable_benchmark=true --define=parallel_enable_benchmark=true --define=logging_enable_benchmark=true --define=profiler_enable_benchmark=true --define=vectorization_enable_benchmark=true --define=enable_benchmark=true
 #
 # Feature defaults (mimalloc, magic_enum, KINETO profiler, LOGURU, Sobol 1111, POOL_ASYNC GPU
 # alloc) are applied in //bazel:*.bzl — plain `bazel build //...` matches root CMakeLists.txt

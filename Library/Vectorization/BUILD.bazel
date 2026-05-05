@@ -7,6 +7,7 @@ load(
     "vectorization_defines",
     "vectorization_library_copts",
     "vectorization_linkopts",
+    "vectorization_sleef_deps",
     "vectorization_svml_deps",
     "vectorization_svml_hdrs_extra",
 )
@@ -201,7 +202,7 @@ cc_library(
     deps = [
         "//Library/Logging:Logging",
         "//Library/Memory:Memory",
-    ] + vectorization_svml_deps(),
+    ] + vectorization_svml_deps() + vectorization_sleef_deps(),
     visibility = ["//Library/Vectorization:__pkg__"],
 )
 
