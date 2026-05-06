@@ -82,10 +82,8 @@ void unary_random_vs_std(
         SCOPED_TRACE(::testing::Message()
                      << "failing_function=" << case_tag << " trial=" << trial << " (unary vs std)");
         fill_xs(xs, gen);
-        simd_t a;
-        simd_t c;
-        simd<value_t>::loadu(xs.data(), a);
-        simd<value_t>::setzero(c);
+        simd_t a = simd<value_t>::loadu(xs.data());
+        simd_t c = simd<value_t>::setzero();
         simd_op(a, c);
         simd<value_t>::storeu(c, out.data());
         for (std::size_t i = 0; i < n; ++i)
@@ -131,7 +129,7 @@ void test_exp(value_t tolerance)
         tolerance,
         static_cast<value_t>(-8),
         static_cast<value_t>(8),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::exp(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::exp(a); },
         [](value_t x) { return std::exp(x); });
 }
 
@@ -144,7 +142,7 @@ void test_expm1(value_t tolerance)
         tolerance,
         static_cast<value_t>(-8),
         static_cast<value_t>(8),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::expm1(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::expm1(a); },
         [](value_t x) { return std::expm1(x); });
 }
 
@@ -157,7 +155,7 @@ void test_exp2(value_t tolerance)
         tolerance,
         static_cast<value_t>(-12),
         static_cast<value_t>(12),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::exp2(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::exp2(a); },
         [](value_t x) { return std::exp2(x); });
 }
 
@@ -170,7 +168,7 @@ void test_log(value_t tolerance)
         tolerance,
         static_cast<value_t>(1e-18),
         static_cast<value_t>(500),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::log(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::log(a); },
         [](value_t x) { return std::log(x); });
 }
 
@@ -183,7 +181,7 @@ void test_log1p(value_t tolerance)
         tolerance,
         static_cast<value_t>(-0.95),
         static_cast<value_t>(500),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::log1p(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::log1p(a); },
         [](value_t x) { return std::log1p(x); });
 }
 
@@ -196,7 +194,7 @@ void test_log2(value_t tolerance)
         tolerance,
         static_cast<value_t>(1e-18),
         static_cast<value_t>(500),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::log2(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::log2(a); },
         [](value_t x) { return std::log2(x); });
 }
 
@@ -209,7 +207,7 @@ void test_sin(value_t tolerance)
         tolerance,
         static_cast<value_t>(-25),
         static_cast<value_t>(25),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::sin(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::sin(a); },
         [](value_t x) { return std::sin(x); });
 }
 
@@ -222,7 +220,7 @@ void test_cos(value_t tolerance)
         tolerance,
         static_cast<value_t>(-25),
         static_cast<value_t>(25),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::cos(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::cos(a); },
         [](value_t x) { return std::cos(x); });
 }
 
@@ -235,7 +233,7 @@ void test_tan(value_t tolerance)
         tolerance,
         static_cast<value_t>(-1.2),
         static_cast<value_t>(1.2),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::tan(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::tan(a); },
         [](value_t x) { return std::tan(x); });
 }
 
@@ -248,7 +246,7 @@ void test_asin(value_t tolerance)
         tolerance,
         static_cast<value_t>(-0.999),
         static_cast<value_t>(0.999),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::asin(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::asin(a); },
         [](value_t x) { return std::asin(x); });
 }
 
@@ -261,7 +259,7 @@ void test_acos(value_t tolerance)
         tolerance,
         static_cast<value_t>(-0.999),
         static_cast<value_t>(0.999),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::acos(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::acos(a); },
         [](value_t x) { return std::acos(x); });
 }
 
@@ -274,7 +272,7 @@ void test_atan(value_t tolerance)
         tolerance,
         static_cast<value_t>(-25),
         static_cast<value_t>(25),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::atan(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::atan(a); },
         [](value_t x) { return std::atan(x); });
 }
 
@@ -287,7 +285,7 @@ void test_sinh(value_t tolerance)
         tolerance,
         static_cast<value_t>(-8),
         static_cast<value_t>(8),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::sinh(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::sinh(a); },
         [](value_t x) { return std::sinh(x); });
 }
 
@@ -300,7 +298,7 @@ void test_cosh(value_t tolerance)
         tolerance,
         static_cast<value_t>(-8),
         static_cast<value_t>(8),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::cosh(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::cosh(a); },
         [](value_t x) { return std::cosh(x); });
 }
 
@@ -313,7 +311,7 @@ void test_tanh(value_t tolerance)
         tolerance,
         static_cast<value_t>(-8),
         static_cast<value_t>(8),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::tanh(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::tanh(a); },
         [](value_t x) { return std::tanh(x); });
 }
 
@@ -326,7 +324,7 @@ void test_asinh(value_t tolerance)
         tolerance,
         static_cast<value_t>(-80),
         static_cast<value_t>(80),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::asinh(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::asinh(a); },
         [](value_t x) { return std::asinh(x); });
 }
 
@@ -339,7 +337,7 @@ void test_acosh(value_t tolerance)
         tolerance,
         static_cast<value_t>(1),
         static_cast<value_t>(80),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::acosh(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::acosh(a); },
         [](value_t x) { return std::acosh(x); });
 }
 
@@ -352,7 +350,7 @@ void test_atanh(value_t tolerance)
         tolerance,
         static_cast<value_t>(-0.99),
         static_cast<value_t>(0.99),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::atanh(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::atanh(a); },
         [](value_t x) { return std::atanh(x); });
 }
 
@@ -365,7 +363,7 @@ void test_cbrt(value_t tolerance)
         tolerance,
         static_cast<value_t>(-125),
         static_cast<value_t>(125),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::cbrt(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::cbrt(a); },
         [](value_t x) { return std::cbrt(x); });
 }
 
@@ -378,7 +376,7 @@ void test_cdf(value_t tolerance)
         tolerance,
         static_cast<value_t>(-8),
         static_cast<value_t>(8),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::cdf(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::cdf(a); },
         [](value_t x) { return std::cdf(x); });
 }
 
@@ -392,7 +390,7 @@ void test_inv_cdf(value_t tolerance)
         [](std::array<value_t, simd<value_t>::size>& xs, std::mt19937& gen) {
             fill_open_unit_interval(xs, gen);
         },
-        [](simd_t const& a, simd_t& c) { simd<value_t>::inv_cdf(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::inv_cdf(a); },
         [](value_t x) { return std::inv_cdf(x); });
 }
 

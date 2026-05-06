@@ -88,12 +88,9 @@ void binary_random_vs_std(
     {
         SCOPED_TRACE(::testing::Message() << case_tag << " trial=" << trial << " (binary vs std)");
         fill_xy(xs, ys, gen);
-        simd_t a;
-        simd_t b;
-        simd_t c;
-        simd<value_t>::loadu(xs.data(), a);
-        simd<value_t>::loadu(ys.data(), b);
-        simd<value_t>::setzero(c);
+        simd_t a = simd<value_t>::loadu(xs.data());
+        simd_t b = simd<value_t>::loadu(ys.data());
+        simd_t c = simd<value_t>::setzero();
         simd_op(a, b, c);
         simd<value_t>::storeu(c, out.data());
         for (std::size_t i = 0; i < n; ++i)
@@ -147,7 +144,7 @@ void test_add(value_t tolerance)
         static_cast<value_t>(40),
         static_cast<value_t>(-40),
         static_cast<value_t>(40),
-        [](simd_t const& a, simd_t const& b, simd_t& c) { simd<value_t>::add(a, b, c); },
+        [](simd_t a, simd_t b, simd_t& c) { c = simd<value_t>::add(a, b); },
         [](value_t x, value_t y) { return std::add(x, y); });
 }
 
@@ -162,7 +159,7 @@ void test_sub(value_t tolerance)
         static_cast<value_t>(40),
         static_cast<value_t>(-40),
         static_cast<value_t>(40),
-        [](simd_t const& a, simd_t const& b, simd_t& c) { simd<value_t>::sub(a, b, c); },
+        [](simd_t a, simd_t b, simd_t& c) { c = simd<value_t>::sub(a, b); },
         [](value_t x, value_t y) { return std::sub(x, y); });
 }
 
@@ -177,7 +174,7 @@ void test_mul(value_t tolerance)
         static_cast<value_t>(25),
         static_cast<value_t>(-25),
         static_cast<value_t>(25),
-        [](simd_t const& a, simd_t const& b, simd_t& c) { simd<value_t>::mul(a, b, c); },
+        [](simd_t a, simd_t b, simd_t& c) { c = simd<value_t>::mul(a, b); },
         [](value_t x, value_t y) { return std::mul(x, y); });
 }
 
@@ -192,7 +189,7 @@ void test_min(value_t tolerance)
         static_cast<value_t>(40),
         static_cast<value_t>(-40),
         static_cast<value_t>(40),
-        [](simd_t const& a, simd_t const& b, simd_t& c) { simd<value_t>::min(a, b, c); },
+        [](simd_t a, simd_t b, simd_t& c) { c = simd<value_t>::min(a, b); },
         [](value_t x, value_t y) { return std::min(x, y); });
 }
 
@@ -207,7 +204,7 @@ void test_max(value_t tolerance)
         static_cast<value_t>(40),
         static_cast<value_t>(-40),
         static_cast<value_t>(40),
-        [](simd_t const& a, simd_t const& b, simd_t& c) { simd<value_t>::max(a, b, c); },
+        [](simd_t a, simd_t b, simd_t& c) { c = simd<value_t>::max(a, b); },
         [](value_t x, value_t y) { return std::max(x, y); });
 }
 
@@ -222,7 +219,7 @@ void test_hypot(value_t tolerance)
         static_cast<value_t>(80),
         static_cast<value_t>(-80),
         static_cast<value_t>(80),
-        [](simd_t const& a, simd_t const& b, simd_t& c) { simd<value_t>::hypot(a, b, c); },
+        [](simd_t a, simd_t b, simd_t& c) { c = simd<value_t>::hypot(a, b); },
         [](value_t x, value_t y) { return std::hypot(x, y); });
 }
 
@@ -237,7 +234,7 @@ void test_signcopy(value_t tolerance)
         static_cast<value_t>(80),
         static_cast<value_t>(-80),
         static_cast<value_t>(80),
-        [](simd_t const& a, simd_t const& b, simd_t& c) { simd<value_t>::signcopy(a, b, c); },
+        [](simd_t a, simd_t b, simd_t& c) { c = simd<value_t>::signcopy(a, b); },
         [](value_t x, value_t y) { return std::signcopy(x, y); });
 }
 
@@ -253,7 +250,7 @@ void test_div(value_t tolerance)
         [](std::array<value_t, simd<value_t>::size>& xs,
            std::array<value_t, simd<value_t>::size>& ys,
            std::mt19937& gen) { fill_binary_div_safe(xs, ys, gen); },
-        [](simd_t const& a, simd_t const& b, simd_t& c) { simd<value_t>::div(a, b, c); },
+        [](simd_t a, simd_t b, simd_t& c) { c = simd<value_t>::div(a, b); },
         [](value_t x, value_t y) { return std::div(x, y); });
 }
 
@@ -272,7 +269,7 @@ void test_pow(value_t tolerance)
             fill_uniform(xs, gen, static_cast<value_t>(0.05), static_cast<value_t>(12));
             fill_uniform(ys, gen, static_cast<value_t>(-4), static_cast<value_t>(4));
         },
-        [](simd_t const& a, simd_t const& b, simd_t& c) { simd<value_t>::pow(a, b, c); },
+        [](simd_t a, simd_t b, simd_t& c) { c = simd<value_t>::pow(a, b); },
         [](value_t x, value_t y) { return std::pow(x, y); });
 }
 

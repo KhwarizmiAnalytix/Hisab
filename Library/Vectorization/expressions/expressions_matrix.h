@@ -233,7 +233,7 @@ private:
                     packet<value_t>::loadu(ptr, tmp);
                     packet<value_t>::mul(tmp, t, tmp);
 
-                    simd<value_t>::setzero(sum_t);
+                    sum_t = simd<value_t>::setzero();
                     packet<value_t>::accumulate(tmp, sum_t);
 
                     data_tmp.data_[r] = static_cast<value_t>(simd<value_t>::accumulate(sum_t));
@@ -245,7 +245,7 @@ private:
                 const auto* ptr = rhs.data() + row * rhs.columns() + column;
                 packet<value_t>::gather(ptr, static_cast<int>(rhs.columns()), tmp);
                 simd_t temp;
-                simd<value_t>::set(t, temp);
+                temp = simd<value_t>::set(t);
                 packet<value_t>::mul(tmp, temp, tmp);
             }
             packet<value_t>::add(ret, tmp, ret);
@@ -378,7 +378,7 @@ private:
                         tmp);
                     packet<value_t>::mul(tmp, t, tmp);
 
-                    simd<value_t>::setzero(sum_t);
+                    sum_t = simd<value_t>::setzero();
                     packet<value_t>::accumulate(tmp, sum_t);
 
                     data_tmp.data_[c] = static_cast<value_t>(simd<value_t>::accumulate(sum_t));
@@ -389,7 +389,7 @@ private:
             {
                 packet<value_t>::loadu(rhs.data() + row * rhs.columns() + column, tmp);
                 simd_t temp;
-                simd<value_t>::set(t, temp);
+                temp = simd<value_t>::set(t);
                 packet<value_t>::mul(tmp, temp, tmp);
             }
             packet<value_t>::add(ret, tmp, ret);

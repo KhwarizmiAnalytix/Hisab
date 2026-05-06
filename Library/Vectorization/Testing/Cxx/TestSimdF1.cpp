@@ -68,10 +68,8 @@ void unary_random_vs_std(
         SCOPED_TRACE(::testing::Message()
                      << "failing_function=" << case_tag << " trial=" << trial << " (unary vs std)");
         fill_xs(xs, gen);
-        simd_t a;
-        simd_t c;
-        simd<value_t>::loadu(xs.data(), a);
-        simd<value_t>::setzero(c);
+        simd_t a = simd<value_t>::loadu(xs.data());
+        simd_t c = simd<value_t>::setzero();
         simd_op(a, c);
         simd<value_t>::storeu(c, out.data());
         for (std::size_t i = 0; i < n; ++i)
@@ -117,7 +115,7 @@ void test_sqrt(value_t tolerance)
         tolerance,
         static_cast<value_t>(1e-18),
         static_cast<value_t>(500),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::sqrt(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::sqrt(a); },
         [](value_t x) { return std::sqrt(x); });
 }
 
@@ -130,7 +128,7 @@ void test_sqr(value_t tolerance)
         tolerance,
         static_cast<value_t>(-25),
         static_cast<value_t>(25),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::sqr(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::sqr(a); },
         [](value_t x) { return std::sqr(x); });
 }
 
@@ -143,7 +141,7 @@ void test_ceil(value_t tolerance)
         tolerance,
         static_cast<value_t>(-75),
         static_cast<value_t>(75),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::ceil(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::ceil(a); },
         [](value_t x) { return std::ceil(x); });
 }
 
@@ -156,7 +154,7 @@ void test_floor(value_t tolerance)
         tolerance,
         static_cast<value_t>(-75),
         static_cast<value_t>(75),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::floor(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::floor(a); },
         [](value_t x) { return std::floor(x); });
 }
 
@@ -169,7 +167,7 @@ void test_trunc(value_t tolerance)
         tolerance,
         static_cast<value_t>(-75),
         static_cast<value_t>(75),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::trunc(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::trunc(a); },
         [](value_t x) { return std::trunc(x); });
 }
 
@@ -182,7 +180,7 @@ void test_invsqrt(value_t tolerance)
         15.*tolerance,
         static_cast<value_t>(1e-18),
         static_cast<value_t>(500),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::invsqrt(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::invsqrt(a); },
         [](value_t x) { return std::invsqrt(x); });
 }
 
@@ -195,7 +193,7 @@ void test_fabs(value_t tolerance)
         tolerance,
         static_cast<value_t>(-120),
         static_cast<value_t>(120),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::fabs(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::fabs(a); },
         [](value_t x) { return std::fabs(x); });
 }
 
@@ -208,7 +206,7 @@ void test_neg(value_t tolerance)
         tolerance,
         static_cast<value_t>(-120),
         static_cast<value_t>(120),
-        [](simd_t const& a, simd_t& c) { simd<value_t>::neg(a, c); },
+        [](simd_t a, simd_t& c) { c = simd<value_t>::neg(a); },
         [](value_t x) { return std::neg(x); });
 }
 

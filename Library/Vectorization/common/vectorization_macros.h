@@ -52,7 +52,10 @@
 #define VECTORIZATION_CUDA_FUNCTION_TYPE
 #endif
 //------------------------------------------------------------------------
-// VECTORIZATION_SIMD_RETURN_TYPE marks packet<> static methods.
+// VECTORIZATION_SIMD_RETURN_TYPE — static methods on packet<> (and simd
+// helpers) that do not return a value (stores, prefetch, transpose, etc.).
+// VECTORIZATION_SIMD_METHOD — prefix for simd<> ops that return the same
+// type as the underlying intrinsic (simd_t, mask_t, simd_half_t, …).
 // The CUDA_FUNCTION_TYPE qualifier makes them __host__ __device__ when
 // compiling with NVCC/HIPCC so the methods are callable from both host
 // and device contexts (needed when the packet type is instantiated inside
@@ -62,6 +65,13 @@
     VECTORIZATION_FORCE_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static void VECTORIZATION_VECTORCALL
 #else
 #define VECTORIZATION_SIMD_RETURN_TYPE VECTORIZATION_CUDA_FUNCTION_TYPE static void
+#endif
+
+#ifdef NDEBUG
+#define VECTORIZATION_SIMD_METHOD \
+    VECTORIZATION_FORCE_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static VECTORIZATION_VECTORCALL
+#else
+#define VECTORIZATION_SIMD_METHOD VECTORIZATION_CUDA_FUNCTION_TYPE static
 #endif
 
 
@@ -86,6 +96,13 @@
 #else
 #define VECTORIZATION_SIMD_RETURN_TYPE_NON_INLINE \
     VECTORIZATION_SIMD_NON_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static void
+#endif
+
+#ifdef NDEBUG
+#define VECTORIZATION_SIMD_METHOD_NON_INLINE \
+    VECTORIZATION_SIMD_NON_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static VECTORIZATION_VECTORCALL
+#else
+#define VECTORIZATION_SIMD_METHOD_NON_INLINE VECTORIZATION_SIMD_NON_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static
 #endif
 
 #ifdef NDEBUG

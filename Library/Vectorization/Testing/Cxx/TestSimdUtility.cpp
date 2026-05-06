@@ -86,10 +86,8 @@ void unary_random_vs_std(
     for (int trial = 0; trial < kRandomTrials; ++trial)
     {
         fill_xs(xs, gen);
-        simd_t a;
-        simd_t c;
-        simd<value_t>::loadu(xs.data(), a);
-        simd<value_t>::setzero(c);
+        simd_t a = simd<value_t>::loadu(xs.data());
+        simd_t c = simd<value_t>::setzero();
         simd_op(a, c);
         simd<value_t>::storeu(c, out.data());
         for (std::size_t i = 0; i < n; ++i)
@@ -115,12 +113,9 @@ void binary_random_vs_std(
     for (int trial = 0; trial < kRandomTrials; ++trial)
     {
         fill_xy(xs, ys, gen);
-        simd_t a;
-        simd_t b;
-        simd_t c;
-        simd<value_t>::loadu(xs.data(), a);
-        simd<value_t>::loadu(ys.data(), b);
-        simd<value_t>::setzero(c);
+        simd_t a = simd<value_t>::loadu(xs.data());
+        simd_t b = simd<value_t>::loadu(ys.data());
+        simd_t c = simd<value_t>::setzero();
         simd_op(a, b, c);
         simd<value_t>::storeu(c, out.data());
         for (std::size_t i = 0; i < n; ++i)
@@ -144,7 +139,7 @@ struct simd_has_half_fma<
     std::void_t<decltype(simd<V>::fma(
         std::declval<typename simd<V>::simd_half_t const&>(),
         std::declval<typename simd<V>::simd_half_t const&>(),
-        std::declval<typename simd<V>::simd_half_t&>()))>> : std::true_type
+        std::declval<typename simd<V>::simd_half_t const&>()))>> : std::true_type
 {
 };
 
@@ -168,7 +163,7 @@ struct simd_has_predux_downto4 : std::false_type
 template <typename V>
 struct simd_has_predux_downto4<
     V,
-    std::void_t<decltype(simd<V>::predux_downto4(std::declval<typename simd<V>::simd_t const&>()))>> :
+    std::void_t<decltype(simd<V>::predux_downto4(std::declval<typename simd<V>::simd_t>()))>> :
     std::true_type
 {
 };
@@ -181,8 +176,7 @@ struct simd_has_ploadquad : std::false_type
 template <typename V>
 struct simd_has_ploadquad<
     V,
-    std::void_t<decltype(simd<V>::ploadquad(
-        std::declval<V const*>(), std::declval<typename simd<V>::simd_t&>()))>> : std::true_type
+    std::void_t<decltype(simd<V>::ploadquad(std::declval<V const*>()))>> : std::true_type
 {
 };
 
@@ -194,10 +188,7 @@ struct simd_has_half_gather : std::false_type
 template <typename V>
 struct simd_has_half_gather<
     V,
-    std::void_t<decltype(simd<V>::gather(
-        std::declval<V const*>(),
-        int{},
-        std::declval<typename simd<V>::simd_half_t&>()))>> : std::true_type
+    std::void_t<decltype(simd<V>::gather_half(std::declval<V const*>(), int{}))>> : std::true_type
 {
 };
 }  // namespace detail
@@ -218,13 +209,10 @@ void ternary_random_vs_std(
     for (int trial = 0; trial < kRandomTrials; ++trial)
     {
         fill_xyz(xs, ys, zs, gen);
-        simd_t a;
-        simd_t b;
-        simd_t c;
+        simd_t a = simd<value_t>::loadu(xs.data());
+        simd_t b = simd<value_t>::loadu(ys.data());
+        simd_t c = simd<value_t>::loadu(zs.data());
         simd_t r;
-        simd<value_t>::loadu(xs.data(), a);
-        simd<value_t>::loadu(ys.data(), b);
-        simd<value_t>::loadu(zs.data(), c);
         simd_fma(a, b, c, r);
         simd<value_t>::storeu(r, out.data());
         for (std::size_t i = 0; i < n; ++i)
@@ -305,8 +293,8 @@ void test_fma(value_t tolerance)
             fill_uniform(ys, gen, static_cast<value_t>(-4), static_cast<value_t>(4));
             fill_uniform(zs, gen, static_cast<value_t>(-4), static_cast<value_t>(4));
         },
-        [](simd_t const& a, simd_t const& b, simd_t const& c, simd_t& r) {
-            simd<value_t>::fma(a, b, c, r);
+        [](simd_t a, simd_t b, simd_t c, simd_t& r) {
+            r = simd<value_t>::fma(a, b, c);
         },
         [](value_t x, value_t y, value_t z) { return std::fma(x, y, z); });
 }
@@ -332,19 +320,13 @@ void test_if_else(value_t tolerance)
         fill_uniform(zs, gen, static_cast<value_t>(-30), static_cast<value_t>(30));
         fill_uniform(ws, gen, static_cast<value_t>(-30), static_cast<value_t>(30));
 
-        simd_t vx;
-        simd_t vy;
-        simd_t vz;
-        simd_t vw;
-        simd<value_t>::loadu(xs.data(), vx);
-        simd<value_t>::loadu(ys.data(), vy);
-        simd<value_t>::loadu(zs.data(), vz);
-        simd<value_t>::loadu(ws.data(), vw);
+        simd_t vx = simd<value_t>::loadu(xs.data());
+        simd_t vy = simd<value_t>::loadu(ys.data());
+        simd_t vz = simd<value_t>::loadu(zs.data());
+        simd_t vw = simd<value_t>::loadu(ws.data());
 
-        mask_t m;
-        simd<value_t>::gt(vx, vy, m);
-        simd_t r;
-        simd<value_t>::if_else(m, vz, vw, r);
+        mask_t m = simd<value_t>::gt(vx, vy);
+        simd_t r = simd<value_t>::if_else(m, vz, vw);
         simd<value_t>::storeu(r, out.data());
 
         for (std::size_t i = 0; i < n; ++i)
@@ -375,8 +357,7 @@ void test_prefetch_copy_ploadquad_broadcast(value_t /* tolerance */)
 
     if constexpr (detail::simd_has_ploadquad<value_t>::value)
     {
-        simd_t q{};
-        simd<value_t>::ploadquad(block, q);
+        simd_t q = simd<value_t>::ploadquad(block);
         std::array<value_t, n> qout{};
         simd<value_t>::storeu(q, qout.data());
         if constexpr (sizeof(value_t) == sizeof(float) && n == 8)
@@ -428,8 +409,7 @@ void test_prefetch_copy_ploadquad_broadcast(value_t /* tolerance */)
         EXPECT_EQ(lane3[i], four[3]);
     }
 
-    simd_t s;
-    simd<value_t>::set(static_cast<value_t>(1.375), s);
+    simd_t s = simd<value_t>::set(static_cast<value_t>(1.375));
     std::array<value_t, n> sbuf{};
     simd<value_t>::storeu(s, sbuf.data());
     for (std::size_t i = 0; i < n; ++i)
@@ -448,7 +428,7 @@ void test_ptranspose_square(value_t tolerance)
     {
         for (int j = 0; j < N; ++j)
             before[i][j] = static_cast<value_t>(i * 19 - j * 7 + 3);
-        simd<value_t>::loadu(before[i], rows[i]);
+        rows[i] = simd<value_t>::loadu(before[i]);
     }
 
     simd<value_t>::template ptranspose<N>(rows);
@@ -483,7 +463,7 @@ void test_simd_half_fma_and_add(value_t tolerance)
             auto vx  = simd<value_t>::loadu_half(xs.data());
             auto vy  = simd<value_t>::loadu_half(ys.data());
             auto acc = simd<value_t>::loadu_half(zs.data());
-            simd<value_t>::fma(vx, vy, acc);
+            acc = simd<value_t>::fma(vx, vy, acc);
 
             std::fill(buf.begin(), buf.end(), static_cast<value_t>(0));
             simd<value_t>::scatter(acc, 1, buf.data());
@@ -495,8 +475,7 @@ void test_simd_half_fma_and_add(value_t tolerance)
 
             auto sx = simd<value_t>::loadu_half(xs.data());
             auto sy = simd<value_t>::loadu_half(ys.data());
-            typename simd<value_t>::simd_half_t sum{};
-            simd<value_t>::add(sx, sy, sum);
+            typename simd<value_t>::simd_half_t sum = simd<value_t>::add(sx, sy);
             std::fill(buf.begin(), buf.end(), static_cast<value_t>(0));
             simd<value_t>::scatter(sum, 1, buf.data());
             for (int i = 0; i < nh; ++i)
@@ -521,8 +500,7 @@ void test_predux_downto4_maybe(value_t tolerance)
         for (int trial = 0; trial < kRandomTrials; ++trial)
         {
             fill_uniform(xs, gen, static_cast<value_t>(-5), static_cast<value_t>(5));
-            simd_t a;
-            simd<value_t>::loadu(xs.data(), a);
+            simd_t a = simd<value_t>::loadu(xs.data());
             auto h = simd<value_t>::predux_downto4(a);
 
             std::vector<value_t> buf(32, static_cast<value_t>(0));
@@ -565,8 +543,7 @@ void test_gather_half_stride(value_t /* tolerance */)
 
         for (int stride = 1; stride <= 3; ++stride)
         {
-            typename simd<value_t>::simd_half_t h{};
-            simd<value_t>::gather(mem.data(), stride, h);
+            typename simd<value_t>::simd_half_t h = simd<value_t>::gather_half(mem.data(), stride);
             std::fill(buf.begin(), buf.end(), static_cast<value_t>(0));
             simd<value_t>::scatter(h, 1, buf.data());
             for (int i = 0; i < nh; ++i)
@@ -610,17 +587,15 @@ void test_gather_scatter_and_masks(value_t)
     auto const aligned_end =
         allocator_t::last_aligned(aligned_start, n, simd<value_t>::size);
 
-    simd_t tmp_load;
     for (std::size_t i = aligned_start; i < aligned_end; i += simd<value_t>::size)
     {
-        simd<value_t>::load(&x[i], tmp_load);
+        simd_t tmp_load = simd<value_t>::load(&x[i]);
         simd<value_t>::store(tmp_load, &x[i]);
     }
 
     int const offset = static_cast<int>(n / simd<value_t>::size);
 
-    simd_t ret;
-    simd<value_t>::gather(x, offset, ret);
+    simd_t ret = simd<value_t>::gather(x, offset);
     simd<value_t>::scatter(ret, offset, y);
     for (std::size_t i = 0; i < simd<value_t>::size; ++i)
         EXPECT_EQ(x[i * static_cast<std::size_t>(offset)], y[i * static_cast<std::size_t>(offset)]);
@@ -629,7 +604,7 @@ void test_gather_scatter_and_masks(value_t)
     for (std::size_t i = 0; i < simd<value_t>::size; ++i)
         indices[i] = static_cast<int>(i * (n / simd<value_t>::size));
 
-    simd<value_t>::gather(x, indices, ret);
+    ret = simd<value_t>::gather(x, indices);
     simd<value_t>::scatter(ret, indices, y);
 
     for (std::size_t i = 0; i < simd<value_t>::size; ++i)
@@ -638,49 +613,43 @@ void test_gather_scatter_and_masks(value_t)
         EXPECT_EQ(x[k], y[k]);
     }
 
-    simd_t a;
-    simd<value_t>::set(static_cast<value_t>(0.1), a);
-    simd_t b;
-    simd<value_t>::set(static_cast<value_t>(0.1), b);
+    simd_t a = simd<value_t>::set(static_cast<value_t>(0.1));
+    simd_t b = simd<value_t>::set(static_cast<value_t>(0.1));
 
     VECTORIZATION_ALIGN(VECTORIZATION_ALIGNMENT) vec_int_t tmp[simd<value_t>::size];
 
-    mask_t m;
-    simd<value_t>::set(0, m);
-    simd<value_t>::eq(a, b, m);
+    mask_t m = simd<value_t>::eq(a, b);
     simd<value_t>::storeu(m, &tmp[0]);
-    simd<value_t>::loadu(&tmp[0], m);
+    m = simd<value_t>::loadu(&tmp[0]);
 
-    simd<value_t>::load(&tmp[0], m);
+    m = simd<value_t>::load(&tmp[0]);
     simd<value_t>::store(m, &tmp[0]);
 
-    simd<value_t>::neq(a, b, m);
+    m = simd<value_t>::neq(a, b);
     simd<value_t>::storeu(m, &tmp[0]);
 
-    simd<value_t>::gt(a, b, m);
+    m = simd<value_t>::gt(a, b);
     simd<value_t>::storeu(m, &tmp[0]);
 
-    simd<value_t>::lt(a, b, m);
+    m = simd<value_t>::lt(a, b);
     simd<value_t>::storeu(m, &tmp[0]);
 
-    simd<value_t>::ge(a, b, m);
+    m = simd<value_t>::ge(a, b);
     simd<value_t>::storeu(m, &tmp[0]);
 
-    mask_t l;
-    simd<value_t>::le(a, b, l);
+    mask_t l = simd<value_t>::le(a, b);
     simd<value_t>::storeu(l, &tmp[0]);
 
-    mask_t o;
-    simd<value_t>::and_mask(m, l, o);
+    mask_t o = simd<value_t>::and_mask(m, l);
     simd<value_t>::storeu(o, &tmp[0]);
 
-    simd<value_t>::or_mask(m, l, o);
+    o = simd<value_t>::or_mask(m, l);
     simd<value_t>::storeu(o, &tmp[0]);
 
-    simd<value_t>::xor_mask(m, l, o);
+    o = simd<value_t>::xor_mask(m, l);
     simd<value_t>::storeu(o, &tmp[0]);
 
-    simd<value_t>::not_mask(m, o);
+    o = simd<value_t>::not_mask(m);
     simd<value_t>::storeu(o, &tmp[0]);
 
     allocator_t::free(y);

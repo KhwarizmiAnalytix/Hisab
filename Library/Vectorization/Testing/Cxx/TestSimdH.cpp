@@ -50,8 +50,7 @@ void test_accumulate(value_t tolerance)
     for (int trial = 0; trial < kRandomTrials; ++trial)
     {
         fill_uniform(xs, gen, static_cast<value_t>(-6), static_cast<value_t>(6));
-        simd_t a;
-        simd<value_t>::loadu(xs.data(), a);
+        simd_t a = simd<value_t>::loadu(xs.data());
         auto const e = simd<value_t>::accumulate(a);
         value_t sum = 0;
         for (std::size_t i = 0; i < n; ++i)
@@ -72,8 +71,7 @@ void test_hmin(value_t tolerance)
     for (int trial = 0; trial < kRandomTrials; ++trial)
     {
         fill_uniform(xs, gen, static_cast<value_t>(-40), static_cast<value_t>(40));
-        simd_t a;
-        simd<value_t>::loadu(xs.data(), a);
+        simd_t a = simd<value_t>::loadu(xs.data());
         auto const e = simd<value_t>::hmin(a);
         value_t ref  = xs[0];
         for (std::size_t i = 1; i < n; ++i)
@@ -94,8 +92,7 @@ void test_hmax(value_t tolerance)
     for (int trial = 0; trial < kRandomTrials; ++trial)
     {
         fill_uniform(xs, gen, static_cast<value_t>(-40), static_cast<value_t>(40));
-        simd_t a;
-        simd<value_t>::loadu(xs.data(), a);
+        simd_t a = simd<value_t>::loadu(xs.data());
         auto const e = simd<value_t>::hmax(a);
         value_t ref  = xs[0];
         for (std::size_t i = 1; i < n; ++i)

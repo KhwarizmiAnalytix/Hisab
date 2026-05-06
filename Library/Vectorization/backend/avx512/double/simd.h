@@ -32,6 +32,8 @@
 #endif
 #endif
 
+#include "common/vectorization_macros.h"
+
 template <>
 struct simd<double>
 {
@@ -56,171 +58,145 @@ struct simd<double>
     //======================================================================================
     // load, store, set functions
     //======================================================================================
-    VECTORIZATION_SIMD_RETURN_TYPE load(const value_t* addr, simd_t& ret) { ret = _mm512_load_pd(addr); }
+    VECTORIZATION_SIMD_METHOD simd_t load(const value_t* addr) { return _mm512_load_pd(addr); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE loadu(const value_t* addr, simd_t& ret) { ret = _mm512_loadu_pd(addr); }
+    VECTORIZATION_SIMD_METHOD simd_t loadu(const value_t* addr) { return _mm512_loadu_pd(addr); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE store(const simd_t& from, value_t* to) { _mm512_store_pd(to, from); }
+    VECTORIZATION_SIMD_RETURN_TYPE store(simd_t from, value_t* to) { _mm512_store_pd(to, from); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE storeu(const simd_t& from, value_t* to) { _mm512_storeu_pd(to, from); }
+    VECTORIZATION_SIMD_RETURN_TYPE storeu(simd_t from, value_t* to) { _mm512_storeu_pd(to, from); }
 
     template <
         typename scalar_t,
         typename std::enable_if<std::is_fundamental<scalar_t>::value, bool>::type = true>
-    VECTORIZATION_SIMD_RETURN_TYPE set(scalar_t alpha, simd_t& ret)
+    VECTORIZATION_SIMD_METHOD simd_t set(scalar_t alpha)
     {
-        ret = _mm512_set1_pd(static_cast<value_t>(alpha));
+        return _mm512_set1_pd(static_cast<value_t>(alpha));
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE setzero(simd_t& ret) { ret = _mm512_setzero_pd(); }
+    VECTORIZATION_SIMD_METHOD simd_t setzero() { return _mm512_setzero_pd(); }
     //======================================================================================
     // +, -, *, /, min, max, hypo functions
     //======================================================================================
-    VECTORIZATION_SIMD_RETURN_TYPE add(const simd_t& x, const simd_t& y, simd_t& ret)
-    {
-        ret = _mm512_add_pd(x, y);
-    }
+    VECTORIZATION_SIMD_METHOD simd_t add(simd_t x, simd_t y) { return _mm512_add_pd(x, y); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE sub(const simd_t& x, const simd_t& y, simd_t& ret)
-    {
-        ret = _mm512_sub_pd(x, y);
-    }
+    VECTORIZATION_SIMD_METHOD simd_t sub(simd_t x, simd_t y) { return _mm512_sub_pd(x, y); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE mul(const simd_t& x, const simd_t& y, simd_t& ret)
-    {
-        ret = _mm512_mul_pd(x, y);
-    }
+    VECTORIZATION_SIMD_METHOD simd_t mul(simd_t x, simd_t y) { return _mm512_mul_pd(x, y); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE div(const simd_t& x, const simd_t& y, simd_t& ret)
-    {
-        ret = _mm512_div_pd(x, y);
-    }
+    VECTORIZATION_SIMD_METHOD simd_t div(simd_t x, simd_t y) { return _mm512_div_pd(x, y); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE fma(const simd_t& x, const simd_t& y, const simd_t& z, simd_t& ret)
+    VECTORIZATION_SIMD_METHOD simd_t fma(simd_t x, simd_t y, simd_t z)
     {
 #ifdef __FMA__
-        ret = _mm512_fmadd_pd(x, y, z);
+        return _mm512_fmadd_pd(x, y, z);
 #else
-        ret = _mm512_add_pd(_mm512_mul_pd(x, y), z);
+        return _mm512_add_pd(_mm512_mul_pd(x, y), z);
 #endif  // __FMA__
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE pow(const simd_t& x, const simd_t& y, simd_t& ret)
-    {
-        ret = _mm512_pow_pd(x, y);
-    }
+    VECTORIZATION_SIMD_METHOD simd_t pow(simd_t x, simd_t y) { return _mm512_pow_pd(x, y); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE hypot(const simd_t& x, const simd_t& y, simd_t& ret)
-    {
-        ret = _mm512_hypot_pd(x, y);
-    }
+    VECTORIZATION_SIMD_METHOD simd_t hypot(simd_t x, simd_t y) { return _mm512_hypot_pd(x, y); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE min(const simd_t& x, const simd_t& y, simd_t& ret)
-    {
-        ret = _mm512_min_pd(x, y);
-    }
+    VECTORIZATION_SIMD_METHOD simd_t min(simd_t x, simd_t y) { return _mm512_min_pd(x, y); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE max(const simd_t& x, const simd_t& y, simd_t& ret)
-    {
-        ret = _mm512_max_pd(x, y);
-    }
+    VECTORIZATION_SIMD_METHOD simd_t max(simd_t x, simd_t y) { return _mm512_max_pd(x, y); }
 
     //======================================================================================
     // one arg function
     //======================================================================================
-    VECTORIZATION_SIMD_RETURN_TYPE sqrt(const simd_t& x, simd_t& ret) { ret = _mm512_sqrt_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t sqrt(simd_t x) { return _mm512_sqrt_pd(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE sqr(const simd_t& x, simd_t& ret) { ret = _mm512_mul_pd(x, x); }
-    VECTORIZATION_SIMD_RETURN_TYPE ceil(const simd_t& x, simd_t& ret) { ret = _mm512_ceil_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t sqr(simd_t x) { return _mm512_mul_pd(x, x); }
+    VECTORIZATION_SIMD_METHOD simd_t ceil(simd_t x) { return _mm512_ceil_pd(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE floor(const simd_t& x, simd_t& ret) { ret = _mm512_floor_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t floor(simd_t x) { return _mm512_floor_pd(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE exp(const simd_t& x, simd_t& ret) { ret = _mm512_exp_pd(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE expm1(const simd_t& x, simd_t& ret) { ret = _mm512_expm1_pd(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE exp2(const simd_t& x, simd_t& ret) { ret = _mm512_exp2_pd(x); }
-    // VECTORIZATION_SIMD_RETURN_TYPE exp10(const simd_t& x, simd_t& ret) { ret = _mm512_exp10_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t exp(simd_t x) { return _mm512_exp_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t expm1(simd_t x) { return _mm512_expm1_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t exp2(simd_t x) { return _mm512_exp2_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t exp10(simd_t x) { return _mm512_exp10_pd(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE log(const simd_t& x, simd_t& ret) { ret = _mm512_log_pd(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE log1p(const simd_t& x, simd_t& ret) { ret = _mm512_log1p_pd(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE log2(const simd_t& x, simd_t& ret) { ret = _mm512_log2_pd(x); }
-    // VECTORIZATION_SIMD_RETURN_TYPE log10(const simd_t& x, simd_t& ret) { ret = _mm512_log10_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t log(simd_t x) { return _mm512_log_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t log1p(simd_t x) { return _mm512_log1p_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t log2(simd_t x) { return _mm512_log2_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t log10(simd_t x) { return _mm512_log10_pd(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE sin(const simd_t& x, simd_t& ret) { ret = _mm512_sin_pd(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE cos(const simd_t& x, simd_t& ret) { ret = _mm512_cos_pd(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE tan(const simd_t& x, simd_t& ret) { ret = _mm512_tan_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t sin(simd_t x) { return _mm512_sin_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t cos(simd_t x) { return _mm512_cos_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t tan(simd_t x) { return _mm512_tan_pd(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE asin(const simd_t& x, simd_t& ret) { ret = _mm512_asin_pd(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE acos(const simd_t& x, simd_t& ret) { ret = _mm512_acos_pd(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE atan(const simd_t& x, simd_t& ret) { ret = _mm512_atan_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t asin(simd_t x) { return _mm512_asin_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t acos(simd_t x) { return _mm512_acos_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t atan(simd_t x) { return _mm512_atan_pd(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE sinh(const simd_t& x, simd_t& ret) { ret = _mm512_sinh_pd(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE cosh(const simd_t& x, simd_t& ret) { ret = _mm512_cosh_pd(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE tanh(const simd_t& x, simd_t& ret) { ret = _mm512_tanh_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t sinh(simd_t x) { return _mm512_sinh_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t cosh(simd_t x) { return _mm512_cosh_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t tanh(simd_t x) { return _mm512_tanh_pd(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE asinh(const simd_t& x, simd_t& ret) { ret = _mm512_asinh_pd(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE acosh(const simd_t& x, simd_t& ret) { ret = _mm512_acosh_pd(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE atanh(const simd_t& x, simd_t& ret) { ret = _mm512_atanh_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t asinh(simd_t x) { return _mm512_asinh_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t acosh(simd_t x) { return _mm512_acosh_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t atanh(simd_t x) { return _mm512_atanh_pd(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE cbrt(const simd_t& x, simd_t& ret) { ret = _mm512_cbrt_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t cbrt(simd_t x) { return _mm512_cbrt_pd(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE cdf(const simd_t& x, simd_t& ret) { ret = _mm512_cdfnorm_pd(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE inv_cdf(const simd_t& x, simd_t& ret) { ret = _mm512_cdfnorminv_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t cdf(simd_t x) { return _mm512_cdfnorm_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t inv_cdf(simd_t x) { return _mm512_cdfnorminv_pd(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE trunc(const simd_t& x, simd_t& ret) { ret = _mm512_trunc_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t trunc(simd_t x) { return _mm512_trunc_pd(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE invsqrt(const simd_t& x, simd_t& ret) { ret = _mm512_invsqrt_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t invsqrt(simd_t x) { return _mm512_invsqrt_pd(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE fabs(const simd_t& x, simd_t& ret) { ret = _mm512_abs_pd(x); }
+    VECTORIZATION_SIMD_METHOD simd_t fabs(simd_t x) { return _mm512_abs_pd(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE neg(const simd_t& x, simd_t& ret) { ret = _mm512_xor_pd(x, sign_mask); }
+    VECTORIZATION_SIMD_METHOD simd_t neg(simd_t x) { return _mm512_xor_pd(x, sign_mask); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE signcopy(simd_t x, simd_t sign, simd_t& ret)
+    VECTORIZATION_SIMD_METHOD simd_t signcopy(simd_t x, simd_t sign)
     {
         const auto& sign_z = _mm512_and_pd(sign_mask, sign);
         const auto& fabs_x = _mm512_andnot_pd(sign_mask, x);
-        ret                = _mm512_xor_pd(sign_z, fabs_x);
+        return _mm512_xor_pd(sign_z, fabs_x);
     }
 
     //======================================================================================
     // horizantal functions
     //======================================================================================
-    VECTORIZATION_FORCE_INLINE static double accumulate(const simd_t& x)
+    VECTORIZATION_FORCE_INLINE static double accumulate(simd_t x)
     {
         return _mm512_reduce_add_pd(x);
     }
 
-    VECTORIZATION_FORCE_INLINE static value_t hmax(const simd_t& x) { return _mm512_reduce_max_pd(x); }
+    VECTORIZATION_FORCE_INLINE static value_t hmax(simd_t x) { return _mm512_reduce_max_pd(x); }
 
-    VECTORIZATION_FORCE_INLINE static value_t hmin(const simd_t& x) { return _mm512_reduce_min_pd(x); }
+    VECTORIZATION_FORCE_INLINE static value_t hmin(simd_t x) { return _mm512_reduce_min_pd(x); }
 
     //======================================================================================
     // gather/scatter function
     //======================================================================================
-    VECTORIZATION_SIMD_RETURN_TYPE
-    gather(value_t const* from, int stride, simd_t& to)
+    VECTORIZATION_SIMD_METHOD simd_t gather(value_t const* from, int stride)
     {
         const auto stride_vector = _mm256_set1_epi32(stride);
         const auto indices       = _mm256_mullo_epi32(stride_vector, stride_multiplier);
-        to                       = _mm512_i32gather_pd(indices, from, 8);
+        return _mm512_i32gather_pd(indices, from, 8);
     }
 
     VECTORIZATION_SIMD_RETURN_TYPE
-    scatter(const simd_t& from, int stride, value_t* to)
+    scatter(simd_t from, int stride, value_t* to)
     {
         const auto stride_vector = _mm256_set1_epi32(stride);
         const auto indices       = _mm256_mullo_epi32(stride_vector, stride_multiplier);
         _mm512_i32scatter_pd(to, indices, from, 8);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE
-    gather(value_t const* from, const int* strides, simd_t& to)
+    VECTORIZATION_SIMD_METHOD simd_t gather(value_t const* from, const int* strides)
     {
         auto indices = _mm256_loadu_si256(reinterpret_cast<const simd_int_t*>(strides));
-        to           = _mm512_i32gather_pd(indices, from, 8);
+        return _mm512_i32gather_pd(indices, from, 8);
     }
 
     VECTORIZATION_SIMD_RETURN_TYPE
-    scatter(const simd_t& from, const int* strides, value_t* to)
+    scatter(simd_t from, const int* strides, value_t* to)
     {
         auto indices = _mm256_loadu_si256(reinterpret_cast<const simd_int_t*>(strides));
         _mm512_i32scatter_pd(to, indices, from, 8);
@@ -229,47 +205,47 @@ struct simd<double>
     //======================================================================================
     // comparaison function
     //======================================================================================
-    VECTORIZATION_SIMD_RETURN_TYPE if_else(const mask_t& x, const simd_t& y, const simd_t& z, simd_t& ret)
+    VECTORIZATION_SIMD_METHOD simd_t if_else(const mask_t& x, simd_t y, simd_t z)
     {
-        ret = _mm512_mask_mov_pd(z, x, y);
+        return _mm512_mask_mov_pd(z, x, y);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE eq(const simd_t& x, const simd_t& y, mask_t& ret)
+    VECTORIZATION_SIMD_METHOD mask_t eq(simd_t x, simd_t y)
     {
-        ret = _mm512_cmp_pd_mask(x, y, _CMP_EQ_OQ);
+        return _mm512_cmp_pd_mask(x, y, _CMP_EQ_OQ);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE neq(const simd_t& x, const simd_t& y, mask_t& ret)
+    VECTORIZATION_SIMD_METHOD mask_t neq(simd_t x, simd_t y)
     {
-        ret = _mm512_cmp_pd_mask(x, y, _CMP_NEQ_UQ);
+        return _mm512_cmp_pd_mask(x, y, _CMP_NEQ_UQ);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE gt(const simd_t& x, const simd_t& y, mask_t& ret)
+    VECTORIZATION_SIMD_METHOD mask_t gt(simd_t x, simd_t y)
     {
-        ret = _mm512_cmp_pd_mask(x, y, _CMP_GT_OS);
+        return _mm512_cmp_pd_mask(x, y, _CMP_GT_OS);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE lt(const simd_t& x, const simd_t& y, mask_t& ret)
+    VECTORIZATION_SIMD_METHOD mask_t lt(simd_t x, simd_t y)
     {
-        ret = _mm512_cmp_pd_mask(x, y, _CMP_LT_OS);
+        return _mm512_cmp_pd_mask(x, y, _CMP_LT_OS);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE ge(const simd_t& x, const simd_t& y, mask_t& ret)
+    VECTORIZATION_SIMD_METHOD mask_t ge(simd_t x, simd_t y)
     {
-        ret = _mm512_cmp_pd_mask(x, y, _CMP_GE_OS);
+        return _mm512_cmp_pd_mask(x, y, _CMP_GE_OS);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE le(const simd_t& x, const simd_t& y, mask_t& ret)
+    VECTORIZATION_SIMD_METHOD mask_t le(simd_t x, simd_t y)
     {
-        ret = _mm512_cmp_pd_mask(x, y, _CMP_LE_OS);
+        return _mm512_cmp_pd_mask(x, y, _CMP_LE_OS);
     }
 
     //======================================================================================
     // comparaison function
     //======================================================================================
-    VECTORIZATION_SIMD_RETURN_TYPE loadu(int_t const* from, mask_t& ret)
+    VECTORIZATION_SIMD_METHOD mask_t loadu(int_t const* from)
     {
-        ret = 0x00;
+        mask_t ret = 0x00;
         if (from[0] != 0)
             ret |= 0x01;
         if (from[1] != 0)
@@ -286,11 +262,12 @@ struct simd<double>
             ret |= 0x40;
         if (from[7] != 0)
             ret |= 0x80;
-    };
+        return ret;
+    }
 
-    VECTORIZATION_SIMD_RETURN_TYPE load(int_t const* from, mask_t& ret)
+    VECTORIZATION_SIMD_METHOD mask_t load(int_t const* from)
     {
-        ret = 0x00;
+        mask_t ret = 0x00;
         if (from[0] != 0)
             ret |= 0x01;
         if (from[1] != 0)
@@ -307,7 +284,8 @@ struct simd<double>
             ret |= 0x40;
         if (from[7] != 0)
             ret |= 0x80;
-    };
+        return ret;
+    }
 
     VECTORIZATION_SIMD_RETURN_TYPE storeu(const mask_t& from, int_t* to)
     {
@@ -319,7 +297,7 @@ struct simd<double>
         to[5] = (from & 0x20);
         to[6] = (from & 0x40);
         to[7] = (from & 0x80);
-    };
+    }
 
     VECTORIZATION_SIMD_RETURN_TYPE store(const mask_t& from, int_t* to)
     {
@@ -331,20 +309,29 @@ struct simd<double>
         to[5] = (from & 0x20);
         to[6] = (from & 0x40);
         to[7] = (from & 0x80);
-    };
+    }
 
-    VECTORIZATION_SIMD_RETURN_TYPE set(int_t const from, mask_t& ret) { ret = (from != 0 ? 0xFF : 0X00); };
+    VECTORIZATION_SIMD_METHOD mask_t set(int_t const from)
+    {
+        return static_cast<mask_t>(from != 0 ? 0xFF : 0X00);
+    }
 
-    VECTORIZATION_SIMD_RETURN_TYPE not_mask(const mask_t& x, mask_t& ret) { ret = _knot_mask8(x); }
+    VECTORIZATION_SIMD_METHOD mask_t not_mask(const mask_t& x) { return _knot_mask8(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE
-    and_mask(const mask_t& x, const mask_t& y, mask_t& ret) { ret = _kand_mask8(x, y); }
+    VECTORIZATION_SIMD_METHOD mask_t and_mask(const mask_t& x, const mask_t& y)
+    {
+        return _kand_mask8(x, y);
+    }
 
-    VECTORIZATION_SIMD_RETURN_TYPE
-    or_mask(const mask_t& x, const mask_t& y, mask_t& ret) { ret = _kor_mask8(x, y); }
+    VECTORIZATION_SIMD_METHOD mask_t or_mask(const mask_t& x, const mask_t& y)
+    {
+        return _kor_mask8(x, y);
+    }
 
-    VECTORIZATION_SIMD_RETURN_TYPE
-    xor_mask(const mask_t& x, const mask_t& y, mask_t& ret) { ret = _kxor_mask8(x, y); }
+    VECTORIZATION_SIMD_METHOD mask_t xor_mask(const mask_t& x, const mask_t& y)
+    {
+        return _kxor_mask8(x, y);
+    }
 
     //-----------------------------------------------------------------------------
     VECTORIZATION_SIMD_RETURN_TYPE
@@ -361,7 +348,7 @@ struct simd<double>
         _mm512_store_pd(to, _mm512_loadu_pd(from));
     }
 
-    VECTORIZATION_FORCE_INLINE static simd_half_t predux_downto4(const simd_t& a)
+    VECTORIZATION_FORCE_INLINE static simd_half_t predux_downto4(simd_t a)
     {
         auto lane0 = _mm512_extractf64x4_pd(a, 0);
         auto lane1 = _mm512_extractf64x4_pd(a, 1);
@@ -370,9 +357,9 @@ struct simd<double>
 
     // Loads 2 doubles from memory a returns the simd
     // {a0, a0  a0, a0, a1, a1, a1, a1}
-    VECTORIZATION_FORCE_INLINE static void ploadquad(const double* from, simd_t& to)
+    VECTORIZATION_FORCE_INLINE static simd_t ploadquad(const double* from)
     {
-        to = _mm512_set_pd(from[1], from[1], from[1], from[1], from[0], from[0], from[0], from[0]);
+        return _mm512_set_pd(from[1], from[1], from[1], from[1], from[0], from[0], from[0], from[0]);
     }
 
     VECTORIZATION_FORCE_INLINE static simd_half_t loadu_half(const value_t* from)
@@ -385,23 +372,24 @@ struct simd<double>
         return _mm256_set1_pd(*from);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE add(const simd_half_t& x, const simd_half_t& y, simd_half_t& ret)
+    VECTORIZATION_SIMD_METHOD simd_half_t add(const simd_half_t& x, const simd_half_t& y)
     {
-        ret = _mm256_add_pd(x, y);
+        return _mm256_add_pd(x, y);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE fma(const simd_half_t& x, const simd_half_t& y, simd_half_t& ret)
+    VECTORIZATION_SIMD_METHOD simd_half_t fma(
+        const simd_half_t& x, const simd_half_t& y, const simd_half_t& z)
     {
 #ifdef __FMA__
-        ret = _mm256_fmadd_pd(x, y, ret);
+        return _mm256_fmadd_pd(x, y, z);
 #else
-        ret = _mm256_add_pd(_mm_mul_pd(x, y), ret);
+        return _mm256_add_pd(_mm256_mul_pd(x, y), z);
 #endif
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE gather(value_t const* from, int stride, simd_half_t& ret)
+    VECTORIZATION_SIMD_METHOD simd_half_t gather_half(value_t const* from, int stride)
     {
-        ret = _mm256_set_pd(from[3 * stride], from[2 * stride], from[stride], from[0]);
+        return _mm256_set_pd(from[3 * stride], from[2 * stride], from[stride], from[0]);
     }
 
     VECTORIZATION_SIMD_RETURN_TYPE scatter(const simd_half_t& from, int stride, value_t* to)

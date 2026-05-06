@@ -53,177 +53,150 @@ struct simd<double>
         __builtin_prefetch(addr, 0, 3);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE load(const value_t* addr, simd_t& ret) { ret = vld1q_f64(addr); }
+    VECTORIZATION_SIMD_METHOD simd_t load(const value_t* addr) { return vld1q_f64(addr); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE loadu(const value_t* addr, simd_t& ret) { ret = vld1q_f64(addr); }
+    VECTORIZATION_SIMD_METHOD simd_t loadu(const value_t* addr) { return vld1q_f64(addr); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE store(const simd_t& from, value_t* to) { vst1q_f64(to, from); }
+    VECTORIZATION_SIMD_RETURN_TYPE store(simd_t from, value_t* to) { vst1q_f64(to, from); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE storeu(const simd_t& from, value_t* to) { vst1q_f64(to, from); }
-
-    template <
-        typename scalar_t,
-        typename std::enable_if<std::is_fundamental<scalar_t>::value, bool>::type = true>
-    VECTORIZATION_SIMD_RETURN_TYPE set(const scalar_t alpha, simd_t& ret)
-    {
-        ret = vdupq_n_f64(static_cast<value_t>(alpha));
-    }
+    VECTORIZATION_SIMD_RETURN_TYPE storeu(simd_t from, value_t* to) { vst1q_f64(to, from); }
 
     template <
         typename scalar_t,
         typename std::enable_if<std::is_fundamental<scalar_t>::value, bool>::type = true>
-    VECTORIZATION_SIMD_RETURN_TYPE set(const scalar_t alpha, mask_t& ret)
+    VECTORIZATION_SIMD_METHOD simd_t set(const scalar_t alpha)
     {
-        ret = vdupq_n_u64(static_cast<uint64_t>(alpha));
+        return vdupq_n_f64(static_cast<value_t>(alpha));
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE setzero(simd_t& ret) { ret = vdupq_n_f64(0.); }
-
-    VECTORIZATION_SIMD_RETURN_TYPE add(const simd_t& x, const simd_t& y, simd_t& ret)
+    VECTORIZATION_SIMD_METHOD mask_t set(int_t const from)
     {
-        ret = vaddq_f64(x, y);
+        return vdupq_n_u64(from != 0 ? ~0ULL : 0ULL);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE sub(const simd_t& x, const simd_t& y, simd_t& ret)
+    VECTORIZATION_SIMD_METHOD simd_t setzero() { return vdupq_n_f64(0.); }
+
+    VECTORIZATION_SIMD_METHOD simd_t add(simd_t x, simd_t y) { return vaddq_f64(x, y); }
+
+    VECTORIZATION_SIMD_METHOD simd_t sub(simd_t x, simd_t y) { return vsubq_f64(x, y); }
+
+    VECTORIZATION_SIMD_METHOD simd_t mul(simd_t x, simd_t y) { return vmulq_f64(x, y); }
+
+    VECTORIZATION_SIMD_METHOD simd_t div(simd_t x, simd_t y) { return vdivq_f64(x, y); }
+
+    VECTORIZATION_SIMD_METHOD simd_t fma(simd_t x, simd_t y, simd_t z) { return vfmaq_f64(z, x, y); }
+
+    VECTORIZATION_SIMD_METHOD simd_t pow(simd_t x, simd_t y) { return vpowq_f64(x, y); }
+
+    VECTORIZATION_SIMD_METHOD simd_t hypot(simd_t x, simd_t y)
     {
-        ret = vsubq_f64(x, y);
+        return vsqrtq_f64(vaddq_f64(vmulq_f64(x, x), vmulq_f64(y, y)));
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE mul(const simd_t& x, const simd_t& y, simd_t& ret)
-    {
-        ret = vmulq_f64(x, y);
-    }
+    VECTORIZATION_SIMD_METHOD simd_t min(simd_t x, simd_t y) { return vminq_f64(x, y); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE div(const simd_t& x, const simd_t& y, simd_t& ret)
-    {
-        ret = vdivq_f64(x, y);
-    }
+    VECTORIZATION_SIMD_METHOD simd_t max(simd_t x, simd_t y) { return vmaxq_f64(x, y); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE fma(const simd_t& x, const simd_t& y, const simd_t& z, simd_t& ret)
-    {
-        ret = vfmaq_f64(z, x, y);
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE pow(const simd_t& x, const simd_t& y, simd_t& ret)
-    {
-        ret = vpowq_f64(x, y);
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE hypot(const simd_t& x, const simd_t& y, simd_t& ret)
-    {
-        ret = vsqrtq_f64(vaddq_f64(vmulq_f64(x, x), vmulq_f64(y, y)));
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE min(const simd_t& x, const simd_t& y, simd_t& ret)
-    {
-        ret = vminq_f64(x, y);
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE max(const simd_t& x, const simd_t& y, simd_t& ret)
-    {
-        ret = vmaxq_f64(x, y);
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE signcopy(simd_t x, simd_t sign, simd_t& ret)
+    VECTORIZATION_SIMD_METHOD simd_t signcopy(simd_t x, simd_t sign)
     {
         uint64x2_t xs = vreinterpretq_u64_f64(x);
         uint64x2_t ss = vreinterpretq_u64_f64(sign);
-        ret           = vreinterpretq_f64_u64(vorrq_u64(vandq_u64(sign_mask, ss), vbicq_u64(xs, sign_mask)));
+        return vreinterpretq_f64_u64(vorrq_u64(vandq_u64(sign_mask, ss), vbicq_u64(xs, sign_mask)));
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE sqrt(const simd_t& x, simd_t& ret) { ret = vsqrtq_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t sqrt(simd_t x) { return vsqrtq_f64(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE sqr(const simd_t& x, simd_t& ret) { ret = vmulq_f64(x, x); }
+    VECTORIZATION_SIMD_METHOD simd_t sqr(simd_t x) { return vmulq_f64(x, x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE ceil(const simd_t& x, simd_t& ret) { ret = vrndpq_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t ceil(simd_t x) { return vrndpq_f64(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE floor(const simd_t& x, simd_t& ret) { ret = vrndmq_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t floor(simd_t x) { return vrndmq_f64(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE exp(const simd_t& x, simd_t& ret)   { ret = vexpq_f64(x);   }
-    VECTORIZATION_SIMD_RETURN_TYPE expm1(const simd_t& x, simd_t& ret) { ret = vexpm1q_f64(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE exp2(const simd_t& x, simd_t& ret)  { ret = vexp2q_f64(x);  }
-    VECTORIZATION_SIMD_RETURN_TYPE exp10(const simd_t& x, simd_t& ret) { ret = vexp10q_f64(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE log(const simd_t& x, simd_t& ret)   { ret = vlogq_f64(x);   }
-    VECTORIZATION_SIMD_RETURN_TYPE log1p(const simd_t& x, simd_t& ret) { ret = vlog1pq_f64(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE log2(const simd_t& x, simd_t& ret)  { ret = vlog2q_f64(x);  }
-    VECTORIZATION_SIMD_RETURN_TYPE log10(const simd_t& x, simd_t& ret) { ret = vlog10q_f64(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE sin(const simd_t& x, simd_t& ret)   { ret = vsinq_f64(x);   }
-    VECTORIZATION_SIMD_RETURN_TYPE cos(const simd_t& x, simd_t& ret)   { ret = vcosq_f64(x);   }
-    VECTORIZATION_SIMD_RETURN_TYPE tan(const simd_t& x, simd_t& ret)   { ret = vtanq_f64(x);   }
-    VECTORIZATION_SIMD_RETURN_TYPE asin(const simd_t& x, simd_t& ret)  { ret = vasinq_f64(x);  }
-    VECTORIZATION_SIMD_RETURN_TYPE acos(const simd_t& x, simd_t& ret)  { ret = vacosq_f64(x);  }
-    VECTORIZATION_SIMD_RETURN_TYPE atan(const simd_t& x, simd_t& ret)  { ret = vatanq_f64(x);  }
-    VECTORIZATION_SIMD_RETURN_TYPE sinh(const simd_t& x, simd_t& ret)  { ret = vsinhq_f64(x);  }
-    VECTORIZATION_SIMD_RETURN_TYPE cosh(const simd_t& x, simd_t& ret)  { ret = vcoshq_f64(x);  }
-    VECTORIZATION_SIMD_RETURN_TYPE tanh(const simd_t& x, simd_t& ret)  { ret = vtanhq_f64(x);  }
-    VECTORIZATION_SIMD_RETURN_TYPE asinh(const simd_t& x, simd_t& ret) { ret = vasinhq_f64(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE acosh(const simd_t& x, simd_t& ret) { ret = vacoshq_f64(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE atanh(const simd_t& x, simd_t& ret) { ret = vatanhq_f64(x); }
-    VECTORIZATION_SIMD_RETURN_TYPE cbrt(const simd_t& x, simd_t& ret)  { ret = vcbrtq_f64(x);  }
+    VECTORIZATION_SIMD_METHOD simd_t exp(simd_t x) { return vexpq_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t expm1(simd_t x) { return vexpm1q_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t exp2(simd_t x) { return vexp2q_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t exp10(simd_t x) { return vexp10q_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t log(simd_t x) { return vlogq_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t log1p(simd_t x) { return vlog1pq_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t log2(simd_t x) { return vlog2q_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t log10(simd_t x) { return vlog10q_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t sin(simd_t x) { return vsinq_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t cos(simd_t x) { return vcosq_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t tan(simd_t x) { return vtanq_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t asin(simd_t x) { return vasinq_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t acos(simd_t x) { return vacosq_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t atan(simd_t x) { return vatanq_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t sinh(simd_t x) { return vsinhq_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t cosh(simd_t x) { return vcoshq_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t tanh(simd_t x) { return vtanhq_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t asinh(simd_t x) { return vasinhq_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t acosh(simd_t x) { return vacoshq_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t atanh(simd_t x) { return vatanhq_f64(x); }
+    VECTORIZATION_SIMD_METHOD simd_t cbrt(simd_t x) { return vcbrtq_f64(x); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE cdf(const simd_t& x, simd_t& ret)
+    VECTORIZATION_SIMD_METHOD simd_t cdf(simd_t x)
     {
         alignas(16) double b[2];
         vst1q_f64(b, x);
         b[0] = vectorization::normalcdf(b[0]);
         b[1] = vectorization::normalcdf(b[1]);
-        ret  = vld1q_f64(b);
+        return vld1q_f64(b);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE inv_cdf(const simd_t& x, simd_t& ret)
+    VECTORIZATION_SIMD_METHOD simd_t inv_cdf(simd_t x)
     {
         alignas(16) double b[2];
         vst1q_f64(b, x);
         b[0] = vectorization::inv_normalcdf(b[0]);
         b[1] = vectorization::inv_normalcdf(b[1]);
-        ret  = vld1q_f64(b);
+        return vld1q_f64(b);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE trunc(const simd_t& x, simd_t& ret)
+    VECTORIZATION_SIMD_METHOD simd_t trunc(simd_t x)
     {
-        ret = vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::trunc));
+        return vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::trunc));
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE invsqrt(const simd_t& x, simd_t& ret)
+    VECTORIZATION_SIMD_METHOD simd_t invsqrt(simd_t x)
     {
         float64x2_t est = vrsqrteq_f64(x);
         est             = vmulq_f64(vrsqrtsq_f64(vmulq_f64(x, est), est), est);
         est             = vmulq_f64(vrsqrtsq_f64(vmulq_f64(x, est), est), est);
-        ret             = est;
+        return est;
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE fabs(const simd_t& x, simd_t& ret)
+    VECTORIZATION_SIMD_METHOD simd_t fabs(simd_t x)
     {
-        ret = vreinterpretq_f64_u64(vbicq_u64(vreinterpretq_u64_f64(x), sign_mask));
+        return vreinterpretq_f64_u64(vbicq_u64(vreinterpretq_u64_f64(x), sign_mask));
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE neg(const simd_t& x, simd_t& ret)
+    VECTORIZATION_SIMD_METHOD simd_t neg(simd_t x)
     {
-        ret = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(x), sign_mask));
+        return vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(x), sign_mask));
     }
 
-    VECTORIZATION_FORCE_INLINE static double accumulate(const simd_t& x)
+    VECTORIZATION_FORCE_INLINE static double accumulate(simd_t x)
     {
         return vgetq_lane_f64(x, 0) + vgetq_lane_f64(x, 1);
     }
 
-    VECTORIZATION_FORCE_INLINE static value_t hmax(const simd_t& x)
+    VECTORIZATION_FORCE_INLINE static value_t hmax(simd_t x)
     {
         return (std::max)(vgetq_lane_f64(x, 0), vgetq_lane_f64(x, 1));
     }
 
-    VECTORIZATION_FORCE_INLINE static value_t hmin(const simd_t& x)
+    VECTORIZATION_FORCE_INLINE static value_t hmin(simd_t x)
     {
         return (std::min)(vgetq_lane_f64(x, 0), vgetq_lane_f64(x, 1));
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE gather(value_t const* from, int stride, simd_t& to)
+    VECTORIZATION_SIMD_METHOD simd_t gather(value_t const* from, int stride)
     {
         alignas(16) value_t tmp[2] = {from[0], from[stride]};
-        to                         = vld1q_f64(tmp);
+        return vld1q_f64(tmp);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE scatter(const simd_t& from, int stride, value_t* to)
+    VECTORIZATION_SIMD_RETURN_TYPE scatter(simd_t from, int stride, value_t* to)
     {
         alignas(16) value_t b[2];
         vst1q_f64(b, from);
@@ -231,13 +204,13 @@ struct simd<double>
         to[stride] = b[1];
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE gather(value_t const* from, const int* strides, simd_t& to)
+    VECTORIZATION_SIMD_METHOD simd_t gather(value_t const* from, const int* strides)
     {
         alignas(16) value_t tmp[2] = {from[strides[0]], from[strides[1]]};
-        to                         = vld1q_f64(tmp);
+        return vld1q_f64(tmp);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE scatter(const simd_t& from, const int* stride, value_t* to)
+    VECTORIZATION_SIMD_RETURN_TYPE scatter(simd_t from, const int* stride, value_t* to)
     {
         alignas(16) value_t b[2];
         vst1q_f64(b, from);
@@ -245,40 +218,25 @@ struct simd<double>
         to[stride[1]] = b[1];
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE if_else(const mask_t& x, const simd_t& y, const simd_t& z, simd_t& ret)
+    VECTORIZATION_SIMD_METHOD simd_t if_else(const mask_t& x, simd_t y, simd_t z)
     {
-        ret = vbslq_f64(x, y, z);
+        return vbslq_f64(x, y, z);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE eq(const simd_t& x, const simd_t& y, mask_t& ret)
+    VECTORIZATION_SIMD_METHOD mask_t eq(simd_t x, simd_t y) { return vceqq_f64(x, y); }
+
+    VECTORIZATION_SIMD_METHOD mask_t neq(simd_t x, simd_t y)
     {
-        ret = vceqq_f64(x, y);
+        return veorq_u64(vceqq_f64(x, y), vdupq_n_u64(~0ULL));
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE neq(const simd_t& x, const simd_t& y, mask_t& ret)
-    {
-        ret = veorq_u64(vceqq_f64(x, y), vdupq_n_u64(~0ULL));
-    }
+    VECTORIZATION_SIMD_METHOD mask_t gt(simd_t x, simd_t y) { return vcgtq_f64(x, y); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE gt(const simd_t& x, const simd_t& y, mask_t& ret)
-    {
-        ret = vcgtq_f64(x, y);
-    }
+    VECTORIZATION_SIMD_METHOD mask_t lt(simd_t x, simd_t y) { return vcltq_f64(x, y); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE lt(const simd_t& x, const simd_t& y, mask_t& ret)
-    {
-        ret = vcltq_f64(x, y);
-    }
+    VECTORIZATION_SIMD_METHOD mask_t ge(simd_t x, simd_t y) { return vcgeq_f64(x, y); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE ge(const simd_t& x, const simd_t& y, mask_t& ret)
-    {
-        ret = vcgeq_f64(x, y);
-    }
-
-    VECTORIZATION_SIMD_RETURN_TYPE le(const simd_t& x, const simd_t& y, mask_t& ret)
-    {
-        ret = vcleq_f64(x, y);
-    }
+    VECTORIZATION_SIMD_METHOD mask_t le(simd_t x, simd_t y) { return vcleq_f64(x, y); }
 
     VECTORIZATION_FORCE_INLINE static uint64x2_t u32_mask_to_u64(uint32_t a, uint32_t b)
     {
@@ -290,14 +248,14 @@ struct simd<double>
         return r;
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE loadu(int_t const* from, mask_t& ret)
+    VECTORIZATION_SIMD_METHOD mask_t loadu(int_t const* from)
     {
-        ret = u32_mask_to_u64(from[0], from[1]);
+        return u32_mask_to_u64(from[0], from[1]);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE load(int_t const* from, mask_t& ret)
+    VECTORIZATION_SIMD_METHOD mask_t load(int_t const* from)
     {
-        ret = u32_mask_to_u64(from[0], from[1]);
+        return u32_mask_to_u64(from[0], from[1]);
     }
 
     VECTORIZATION_SIMD_RETURN_TYPE storeu(const mask_t& from, int_t* to)
@@ -311,24 +269,24 @@ struct simd<double>
         storeu(from, to);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE not_mask(const mask_t& x, mask_t& ret)
+    VECTORIZATION_SIMD_METHOD mask_t not_mask(const mask_t& x)
     {
-        ret = veorq_u64(x, vdupq_n_u64(~0ULL));
+        return veorq_u64(x, vdupq_n_u64(~0ULL));
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE and_mask(const mask_t& x, const mask_t& y, mask_t& ret)
+    VECTORIZATION_SIMD_METHOD mask_t and_mask(const mask_t& x, const mask_t& y)
     {
-        ret = vandq_u64(x, y);
+        return vandq_u64(x, y);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE or_mask(const mask_t& x, const mask_t& y, mask_t& ret)
+    VECTORIZATION_SIMD_METHOD mask_t or_mask(const mask_t& x, const mask_t& y)
     {
-        ret = vorrq_u64(x, y);
+        return vorrq_u64(x, y);
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE xor_mask(const mask_t& x, const mask_t& y, mask_t& ret)
+    VECTORIZATION_SIMD_METHOD mask_t xor_mask(const mask_t& x, const mask_t& y)
     {
-        ret = veorq_u64(x, y);
+        return veorq_u64(x, y);
     }
 
     VECTORIZATION_SIMD_RETURN_TYPE broadcast(
@@ -428,8 +386,8 @@ struct simd<double>
         vst1q_f64(to, vld1q_f64(from));
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE ploadquad(const double* from, simd_t& to)
+    VECTORIZATION_FORCE_INLINE static simd_t ploadquad(const double* from)
     {
-        to = vdupq_n_f64(from[0]);
+        return vdupq_n_f64(from[0]);
     }
 };

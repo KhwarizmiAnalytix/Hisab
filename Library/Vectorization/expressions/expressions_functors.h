@@ -142,7 +142,7 @@ MACRO_FUNCTION_EVALUATOR(invsqrt);
                 using array_simd_t = typename packet<value_t>::array_simd_t;                      \
                 using simd_t       = typename packet<value_t>::simd_t;                            \
                 simd_t temp;                                                                      \
-                simd<value_t>::set(lhs, temp);                                                    \
+                temp = simd<value_t>::set(lhs);                                                    \
                 array_simd_t ret{};                                                               \
                 packet<value_t>::f(temp, rhs, ret);                                               \
                 return ret;                                                                       \
@@ -155,7 +155,7 @@ MACRO_FUNCTION_EVALUATOR(invsqrt);
                 using array_simd_t = typename packet<value_t>::array_simd_t;                      \
                 using simd_t       = typename packet<value_t>::simd_t;                            \
                 simd_t temp;                                                                      \
-                simd<value_t>::set(rhs, temp);                                                    \
+                temp = simd<value_t>::set(rhs);                                                    \
                 array_simd_t ret{};                                                               \
                 packet<value_t>::f(lhs, temp, ret);                                               \
                 return ret;                                                                       \
@@ -213,7 +213,7 @@ MACRO_OPERATION_EVALUATOR(copysign, signcopy);
                 using array_mask_t = typename packet<value_t>::array_mask_t;                      \
                 using mask_t       = typename packet<value_t>::mask_t;                            \
                 mask_t temp;                                                                      \
-                simd<value_t>::set(lhs, temp);                                                    \
+                temp = detail::simd_broadcast_mask<value_t>(lhs);                                                    \
                 array_mask_t ret{};                                                               \
                 packet<value_t>::f(temp, rhs, ret);                                               \
                 return ret;                                                                       \
@@ -226,7 +226,7 @@ MACRO_OPERATION_EVALUATOR(copysign, signcopy);
                 using array_mask_t = typename packet<value_t>::array_mask_t;                      \
                 using mask_t       = typename packet<value_t>::mask_t;                            \
                 mask_t temp;                                                                      \
-                simd<value_t>::set(rhs, temp);                                                    \
+                temp = detail::simd_broadcast_mask<value_t>(rhs);                                                    \
                 array_mask_t ret{};                                                               \
                 packet<value_t>::f(lhs, temp, ret);                                               \
                 return ret;                                                                       \
@@ -278,7 +278,7 @@ MACRO_OPERATION_EVALUATOR_MASK(lxor, lxor);
                 using array_mask_t = typename packet<value_t>::array_mask_t;                      \
                 using simd_t       = typename packet<value_t>::simd_t;                            \
                 simd_t temp;                                                                      \
-                simd<value_t>::set(lhs, temp);                                                    \
+                temp = simd<value_t>::set(lhs);                                                    \
                 array_mask_t ret{};                                                               \
                 packet<value_t>::f(temp, rhs, ret);                                               \
                 return ret;                                                                       \
@@ -291,7 +291,7 @@ MACRO_OPERATION_EVALUATOR_MASK(lxor, lxor);
                 using array_mask_t = typename packet<value_t>::array_mask_t;                      \
                 using simd_t       = typename packet<value_t>::simd_t;                            \
                 simd_t temp;                                                                      \
-                simd<value_t>::set(rhs, temp);                                                    \
+                temp = simd<value_t>::set(rhs);                                                    \
                 array_mask_t ret{};                                                               \
                 packet<value_t>::f(lhs, temp, ret);                                               \
                 return ret;                                                                       \
@@ -366,7 +366,7 @@ struct if_else_evaluator
             {
                 // mask SIMD, true-branch scalar, false-branch SIMD
                 simd_t temp;
-                simd<value_t>::set(mhs, temp);
+                temp = simd<value_t>::set(mhs);
                 array_simd_t ret{};
                 packet<value_t>::if_else(lhs, temp, rhs, ret);
                 return ret;
@@ -375,7 +375,7 @@ struct if_else_evaluator
             {
                 // mask SIMD, true-branch SIMD, false-branch scalar
                 simd_t temp;
-                simd<value_t>::set(rhs, temp);
+                temp = simd<value_t>::set(rhs);
                 array_simd_t ret{};
                 packet<value_t>::if_else(lhs, mhs, temp, ret);
                 return ret;
@@ -384,8 +384,8 @@ struct if_else_evaluator
             {
                 // mask SIMD, both branches scalar — broadcast both
                 simd_t temp_t, temp_f;
-                simd<value_t>::set(mhs, temp_t);
-                simd<value_t>::set(rhs, temp_f);
+                temp_t = simd<value_t>::set(mhs);
+                temp_f = simd<value_t>::set(rhs);
                 array_simd_t ret{};
                 packet<value_t>::if_else(lhs, temp_t, temp_f, ret);
                 return ret;
@@ -438,7 +438,7 @@ struct fma_evaluator
             else if constexpr (is_packet<rmv_rhs>::value)
             {
                 simd_t temp;
-                simd<value_t>::set(mhs, temp);
+                temp = simd<value_t>::set(mhs);
                 array_simd_t ret{};
                 packet<value_t>::fma(lhs, temp, rhs, ret);
                 return ret;
@@ -446,7 +446,7 @@ struct fma_evaluator
             else if constexpr (is_packet<rmv_mhs>::value)
             {
                 simd_t temp;
-                simd<value_t>::set(rhs, temp);
+                temp = simd<value_t>::set(rhs);
                 array_simd_t ret{};
                 packet<value_t>::fma(lhs, mhs, temp, ret);
                 return ret;
@@ -455,8 +455,8 @@ struct fma_evaluator
             {
                 // lhs SIMD, mhs and rhs both scalar — broadcast both
                 simd_t temp_mhs, temp_rhs;
-                simd<value_t>::set(mhs, temp_mhs);
-                simd<value_t>::set(rhs, temp_rhs);
+                temp_mhs = simd<value_t>::set(mhs);
+                temp_rhs = simd<value_t>::set(rhs);
                 array_simd_t ret{};
                 packet<value_t>::fma(lhs, temp_mhs, temp_rhs, ret);
                 return ret;
@@ -470,7 +470,7 @@ struct fma_evaluator
             using array_simd_t = typename packet<value_t>::array_simd_t;
             using simd_t       = typename packet<value_t>::simd_t;
             simd_t temp;
-            simd<value_t>::set(lhs, temp);
+            temp = simd<value_t>::set(lhs);
             array_simd_t ret{};
             packet<value_t>::fma(temp, mhs, rhs, ret);
             return ret;
@@ -482,7 +482,7 @@ struct fma_evaluator
             using array_simd_t = typename packet<value_t>::array_simd_t;
             using simd_t       = typename packet<value_t>::simd_t;
             simd_t temp;
-            simd<value_t>::set(lhs * mhs, temp);
+            temp = simd<value_t>::set(lhs * mhs);
             array_simd_t ret{};
             packet<value_t>::add(temp, rhs, ret);
             return ret;
@@ -494,8 +494,8 @@ struct fma_evaluator
             using array_simd_t = typename packet<value_t>::array_simd_t;
             using simd_t       = typename packet<value_t>::simd_t;
             simd_t temp_lhs, temp_rhs;
-            simd<value_t>::set(lhs, temp_lhs);
-            simd<value_t>::set(rhs, temp_rhs);
+            temp_lhs = simd<value_t>::set(lhs);
+            temp_rhs = simd<value_t>::set(rhs);
             array_simd_t ret{};
             packet<value_t>::fma(temp_lhs, mhs, temp_rhs, ret);
             return ret;

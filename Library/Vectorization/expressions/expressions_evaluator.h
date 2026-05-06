@@ -180,7 +180,7 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto accumulate(EXPR&& expression) noexcept
         using simd_t = typename simd<value_t>::simd_t;
         simd_t sum_packet;
 
-        simd<value_t>::set(static_cast<value_t>(0.), sum_packet);
+        sum_packet = simd<value_t>::set(static_cast<value_t>(0.));
 
         for (size_t size = loop_peel; i < size; i += length)
         {
@@ -216,7 +216,7 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto hmin(EXPR&& expression) noexcept
         using simd_t = typename simd<value_t>::simd_t;
         simd_t sum_packet;
 
-        simd<value_t>::set(std::numeric_limits<value_t>::max(), sum_packet);
+        sum_packet = simd<value_t>::set(std::numeric_limits<value_t>::max());
 
         for (size_t size = loop_peel; i < size; i += length)
         {
@@ -255,7 +255,7 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto hmax(EXPR&& expression) noexcept
         using simd_t = typename simd<value_t>::simd_t;
         simd_t sum_packet;
 
-        simd<value_t>::set(-std::numeric_limits<value_t>::max(), sum_packet);
+        sum_packet = simd<value_t>::set(-std::numeric_limits<value_t>::max());
 
         for (size_t size = loop_peel; i < size; i += length)
         {
