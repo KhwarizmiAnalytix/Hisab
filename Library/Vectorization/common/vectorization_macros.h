@@ -32,12 +32,25 @@
 #endif
 #endif
 
+#if defined(_MSC_VER)
+#define VECTORIZATION_NOINLINE __declspec(noinline)
+#elif defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
+#define VECTORIZATION_NOINLINE __attribute__((noinline))
+#else
+#define VECTORIZATION_NOINLINE
+#endif
+
 #if defined(_MSC_VER) && !defined(__clang__)
 #define VECTORIZATION_VECTORCALL __vectorcall
 #else
 #define VECTORIZATION_VECTORCALL
 #endif
 
+#if defined(__CUDACC__) || defined(__HIPCC__)
+#define VECTORIZATION_CUDA_FUNCTION_TYPE __host__ __device__
+#else
+#define VECTORIZATION_CUDA_FUNCTION_TYPE
+#endif
 //------------------------------------------------------------------------
 // VECTORIZATION_SIMD_RETURN_TYPE marks packet<> static methods.
 // The CUDA_FUNCTION_TYPE qualifier makes them __host__ __device__ when
@@ -51,11 +64,6 @@
 #define VECTORIZATION_SIMD_RETURN_TYPE VECTORIZATION_CUDA_FUNCTION_TYPE static void
 #endif
 
-#if defined(__CUDACC__) || defined(__HIPCC__)
-#define VECTORIZATION_CUDA_FUNCTION_TYPE __host__ __device__
-#else
-#define VECTORIZATION_CUDA_FUNCTION_TYPE
-#endif
 
 // True when compiling the device-side pass (GPU kernel body).
 // Safe to use inside __host__ __device__ functions to select device-only paths.
@@ -63,6 +71,21 @@
 #define VECTORIZATION_ON_GPU_DEVICE 1
 #else
 #define VECTORIZATION_ON_GPU_DEVICE 0
+#endif
+
+// packet::pow: force noinline on host; omit on GPU device pass (noinline + __device__ is ill-formed).
+#if VECTORIZATION_ON_GPU_DEVICE
+#define VECTORIZATION_SIMD_NON_INLINE
+#else
+#define VECTORIZATION_SIMD_NON_INLINE VECTORIZATION_NOINLINE
+#endif
+
+#ifdef NDEBUG
+#define VECTORIZATION_SIMD_RETURN_TYPE_NON_INLINE \
+    VECTORIZATION_SIMD_NON_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static void VECTORIZATION_VECTORCALL
+#else
+#define VECTORIZATION_SIMD_RETURN_TYPE_NON_INLINE \
+    VECTORIZATION_SIMD_NON_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static void
 #endif
 
 #ifdef NDEBUG
@@ -77,17 +100,35 @@
 #else
 #define VECTORIZATION_NODISCARD
 #define VECTORIZATION_UNUSED
+#endif  // __cplusplus >= 201703L
+
+#if defined(_MSC_VER)
+#if (_MSC_VER < 1900)
+// Visual studio until 2015 is not supporting standard 'alignas' keyword
+#ifdef alignas
+// This check can be removed when verified that for all other versions alignas
+// works as requested
+#error "VECTORIZATION error: alignas already defined"
+#else
+#define alignas(alignment) __declspec(align(alignment))
+#endif
 #endif
 
-#define VECTORIZATION_ALIGN(n) alignas(n)
+#ifdef alignas
+#define VECTORIZATION_ALIGN(alignment) alignas(alignment)
+#else
+#define VECTORIZATION_ALIGN(alignment) __declspec(align(alignment))
+#endif
+#elif defined(__GNUC__)
+#define VECTORIZATION_ALIGN(alignment) __attribute__((aligned(alignment)))
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+#endif
 
 #ifdef VECTORIZATION_MOBILE
 inline constexpr std::size_t VECTORIZATION_ALIGNMENT = 16;
 #else
 inline constexpr std::size_t VECTORIZATION_ALIGNMENT = 64;
 #endif
-
-
 
 // Logging uses fmt-style placeholders ({}) in format strings. Include logger.h first (unique to
 // Logging) so LOGGING_LOG is always defined. Include Logging's exception header explicitly:

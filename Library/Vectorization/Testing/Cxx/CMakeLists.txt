@@ -132,19 +132,6 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
 
     add_executable(${target_name} "${_bench_source}")
 
-    # Clang 22 ICE: LiveDebugValues and GVN crash on heavy template instantiation TUs when
-    # -gcodeview + AVX2 (+ SVML) are active.  -O1 reduces IR complexity (avoids GVN);
-    # -g0 disables CodeView debug-info emission (avoids LiveDebugValues).
-    # Coverage builds: skip -g0 here; combining -fcoverage-mapping
-    # with -O1 -g0 can ICE fmt-heavy TUs.
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND WIN32)
-      get_filename_component(_vectorization_bench_file "${_bench_source}" NAME)
-      if(_vectorization_bench_file MATCHES "^BenchmarkSimd.*\\.cpp$"
-         AND NOT VECTORIZATION_ENABLE_COVERAGE)
-        set_source_files_properties("${_bench_source}" PROPERTIES COMPILE_FLAGS "-O1 -g0")
-      endif()
-    endif()
-
     target_link_libraries(
       ${target_name} PRIVATE Vectorization::benchmark Vectorization::benchmark_main
                              Vectorization::Vectorization
