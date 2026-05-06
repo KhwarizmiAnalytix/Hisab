@@ -34,9 +34,7 @@ inline constexpr int kRandomTrials = 8;
 
 template <typename value_t>
 double scalar_as_double(value_t x)
-{
-    return static_cast<double>(x);
-}
+{ return static_cast<double>(x); }
 
 template <typename value_t, std::size_t N>
 void fill_uniform(std::array<value_t, N>& xs, std::mt19937& gen, value_t lo, value_t hi)
@@ -94,7 +92,7 @@ void binary_random_vs_std(
         for (std::size_t i = 0; i < n; ++i)
         {
             value_t const ref = ref_op(xs[i], ys[i]);
-            err = std::max<double>(err, std::fabs(out[i] - ref));
+            err               = std::max<double>(err, std::fabs(out[i] - ref));
         }
         EXPECT_LE(err, tolerance);
     }
@@ -291,7 +289,7 @@ void test_all_packet_binary(value_t tolerance)
     test_div(tolerance);
     test_min(tolerance);
     test_max(tolerance);
-    //test_pow(tolerance);
+    test_pow(tolerance);
     test_hypot(tolerance);
     test_signcopy(tolerance);
 }
@@ -312,8 +310,6 @@ VECTORIZATIONTEST(Math, PacketF2)
 }
 #else
 VECTORIZATIONTEST(Math, PacketF2)
-{
-    END_TEST();
-}
+{ END_TEST(); }
 
 #endif  // VECTORIZATION_VECTORIZED

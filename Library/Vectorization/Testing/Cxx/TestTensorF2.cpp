@@ -66,9 +66,7 @@ void fill_uniform(std::vector<T>& v, std::mt19937& gen, T lo, T hi)
 
 template <typename value_t>
 double scalar_as_double(value_t x)
-{
-    return static_cast<double>(x);
-}
+{ return static_cast<double>(x); }
 
 template <typename T>
 void test_tensor_binary_vs_std()
@@ -137,23 +135,6 @@ void test_tensor_binary_vs_std()
             ref[i] = std::pow(px[i], py[i]);
         }
         EXPECT_LE(expect_tensor_near_elementwise(out, ref), tol_pow);
-#if 0
-
-        for (std::size_t i = 0; i < n; ++i)
-        {
-            T const err = std::fabs(out.data()[i] - ref[i]);
-
-            EXPECT_LE(err, tol_pow)
-                << "\n  lane=" << i
-                << "\n  x     = " << std::setprecision(21) << scalar_as_double(px[i])
-                << "\n  y     = " << std::setprecision(21) << scalar_as_double(py[i])
-                << "\n  simd  = " << std::setprecision(21) << scalar_as_double(out.data()[i])
-                << "\n  ref   = " << std::setprecision(21) << scalar_as_double(ref[i])
-                << "\n  |err| = " << std::setprecision(21) << scalar_as_double(err) << "   tol = " << std::setprecision(21)
-                << scalar_as_double(tol_pow);
-        }
-
-#endif  // 0
     }
 }
 
@@ -169,8 +150,6 @@ VECTORIZATIONTEST(Math, TensorBinary)
 }
 #else
 VECTORIZATIONTEST(Math, TensorBinary)
-{
-    END_TEST();
-}
+{ END_TEST(); }
 
 #endif  // VECTORIZATION_VECTORIZED

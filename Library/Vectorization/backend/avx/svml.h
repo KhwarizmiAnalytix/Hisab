@@ -23,6 +23,8 @@
 
 #define svml_ps(op) __svml_##op##f8
 #define svml_pd(op) __svml_##op##4
+#define svml_ps_ha(op) __svml_##op##f8_ha
+#define svml_pd_ha(op) __svml_##op##4_ha
 #define svml_ps_mask(op) __svml_##op##f8_mask
 #define svml_pd_mask(op) __svml_##op##4_mask
 extern "C"
@@ -79,23 +81,25 @@ extern "C"
     __m256d __svml_invsqrt4(__m256d);
     __m256  __svml_powf8(__m256, __m256);
     __m256d __svml_pow4(__m256d, __m256d);
+    __m256  __svml_powf8_ha(__m256, __m256);
+    __m256d __svml_pow4_ha(__m256d, __m256d);
     __m256  __svml_hypotf8(__m256, __m256);
     __m256d __svml_hypot4(__m256d, __m256d);
+    __m256  __svml_hypotf8_ha(__m256, __m256);
+    __m256d __svml_hypot4_ha(__m256d, __m256d);
 }
 
-#define SVML_FUNCTION_ONE_ARG(op)                                                             \
-    VECTORIZATION_FORCE_INLINE __m256 VECTORIZATION_VECTORCALL _mm256_##op##_ps(__m256 x)     \
-    {                                                                                         \
-        return reinterpret_cast<__m256(VECTORIZATION_VECTORCALL*)(__m256)>(svml_ps(op))(x);   \
-    }                                                                                         \
-                                                                                              \
-    VECTORIZATION_FORCE_INLINE __m256d VECTORIZATION_VECTORCALL _mm256_##op##_pd(__m256d x)   \
-    {                                                                                         \
-        return reinterpret_cast<__m256d(VECTORIZATION_VECTORCALL*)(__m256d)>(svml_pd(op))(x); \
-    }
+#if defined(_MSC_VER) && !defined(__clang__)
+
+#define SVML_FUNCTION_ONE_ARG(op)                                                           \
+    VECTORIZATION_FORCE_INLINE __m256 VECTORIZATION_VECTORCALL _mm256_##op##_ps(__m256 x)   \
+    { return reinterpret_cast<__m256(VECTORIZATION_VECTORCALL*)(__m256)>(svml_ps(op))(x); } \
+                                                                                            \
+    VECTORIZATION_FORCE_INLINE __m256d VECTORIZATION_VECTORCALL _mm256_##op##_pd(__m256d x) \
+    { return reinterpret_cast<__m256d(VECTORIZATION_VECTORCALL*)(__m256d)>(svml_pd(op))(x); }
 
 #define SVML_FUNCTION_TWO_ARGS(op)                                                               \
-   VECTORIZATION_FORCE_INLINE __m256 VECTORIZATION_VECTORCALL _mm256_##op##_ps(                 \
+    VECTORIZATION_FORCE_INLINE __m256 VECTORIZATION_VECTORCALL _mm256_##op##_ps(                 \
         __m256 x, __m256 y)                                                                      \
     {                                                                                            \
         return reinterpret_cast<__m256(VECTORIZATION_VECTORCALL*)(__m256, __m256)>(svml_ps(op))( \
@@ -108,6 +112,24 @@ extern "C"
         return reinterpret_cast<__m256d(VECTORIZATION_VECTORCALL*)(__m256d, __m256d)>(           \
             svml_pd(op))(x, y);                                                                  \
     }
+
+#else  // !(_MSC_VER && !__clang__)
+
+#define SVML_FUNCTION_ONE_ARG(op)                                  \
+    VECTORIZATION_FORCE_INLINE __m256 _mm256_##op##_ps(__m256 x)   \
+    { return svml_ps(op)(x); }                                     \
+                                                                   \
+    VECTORIZATION_FORCE_INLINE __m256d _mm256_##op##_pd(__m256d x) \
+    { return svml_pd(op)(x); }
+
+#define SVML_FUNCTION_TWO_ARGS(op)                                            \
+    VECTORIZATION_FORCE_INLINE __m256 _mm256_##op##_ps(__m256 x, __m256 y)    \
+    { return svml_ps(op)(x, y); }                                             \
+                                                                              \
+    VECTORIZATION_FORCE_INLINE __m256d _mm256_##op##_pd(__m256d x, __m256d y) \
+    { return svml_pd(op)(x, y); }
+
+#endif  // defined(_MSC_VER) && !defined(__clang__)
 
 SVML_FUNCTION_ONE_ARG(exp)
 SVML_FUNCTION_ONE_ARG(expm1)
@@ -137,10 +159,13 @@ SVML_FUNCTION_ONE_ARG(invsqrt)
 SVML_FUNCTION_TWO_ARGS(pow)
 SVML_FUNCTION_TWO_ARGS(hypot)
 
+#undef SVML_FUNCTION_TWO_ARGS_HA
 #undef SVML_FUNCTION_TWO_ARGS
 #undef SVML_FUNCTION_ONE_ARG
 #undef svml_ps
 #undef svml_pd
+#undef svml_ps_ha
+#undef svml_pd_ha
 #undef svml_ps_mask
 #undef svml_pd_mask
 
