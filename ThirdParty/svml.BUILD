@@ -32,7 +32,7 @@ cc_import(
 
 cc_import(
     name = "intlc",
-    shared_library = "unix/lib/libintlc.so",
+    shared_library = "unix/lib/libintlc.so.5",
 )
 
 # ---------------------------------------------------------------------------
