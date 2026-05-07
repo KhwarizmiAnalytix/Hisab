@@ -308,7 +308,6 @@ if(UNIX AND NOT APPLE)
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     _quarisma_add_compile_flag("-fPIC")
     _quarisma_add_compile_flag("-pipe")
-    _quarisma_add_compile_flag("-mfma")
   endif()
 
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")

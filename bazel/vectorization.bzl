@@ -200,15 +200,6 @@ def vectorization_defines():
                 "VECTORIZATION_HAS_SVE=1",
                 "VECTORIZATION_VECTORIZED=1",
             ],
-            "//conditions:default": [
-                "VECTORIZATION_HAS_SSE=0",
-                "VECTORIZATION_HAS_AVX=0",
-                "VECTORIZATION_HAS_AVX2=1",
-                "VECTORIZATION_HAS_AVX512=0",
-                "VECTORIZATION_HAS_NEON=0",
-                "VECTORIZATION_HAS_SVE=0",
-                "VECTORIZATION_VECTORIZED=1",
-            ],
             "//bazel:cpu_aarch64": [
                 "VECTORIZATION_HAS_SSE=0",
                 "VECTORIZATION_HAS_AVX=0",
@@ -218,7 +209,7 @@ def vectorization_defines():
                 "VECTORIZATION_HAS_SVE=0",
                 "VECTORIZATION_VECTORIZED=1",
             ],
-            "//bazel:cpu_x86_64": [
+            "//conditions:default": [
                 "VECTORIZATION_HAS_SSE=0",
                 "VECTORIZATION_HAS_AVX=0",
                 "VECTORIZATION_HAS_AVX2=1",
