@@ -68,12 +68,10 @@
 #endif
 
 #ifdef NDEBUG
-#define VECTORIZATION_SIMD_METHOD \
-    VECTORIZATION_FORCE_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static 
+#define VECTORIZATION_SIMD_METHOD VECTORIZATION_FORCE_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static
 #else
 #define VECTORIZATION_SIMD_METHOD VECTORIZATION_CUDA_FUNCTION_TYPE static
 #endif
-
 
 // True when compiling the device-side pass (GPU kernel body).
 // Safe to use inside __host__ __device__ functions to select device-only paths.
@@ -91,8 +89,9 @@
 #endif
 
 #ifdef NDEBUG
-#define VECTORIZATION_SIMD_RETURN_TYPE_NON_INLINE \
-    VECTORIZATION_SIMD_NON_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static void VECTORIZATION_VECTORCALL
+#define VECTORIZATION_SIMD_RETURN_TYPE_NON_INLINE                              \
+    VECTORIZATION_SIMD_NON_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static void \
+        VECTORIZATION_VECTORCALL
 #else
 #define VECTORIZATION_SIMD_RETURN_TYPE_NON_INLINE \
     VECTORIZATION_SIMD_NON_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static void
@@ -102,7 +101,8 @@
 #define VECTORIZATION_SIMD_METHOD_NON_INLINE \
     VECTORIZATION_SIMD_NON_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static VECTORIZATION_VECTORCALL
 #else
-#define VECTORIZATION_SIMD_METHOD_NON_INLINE VECTORIZATION_SIMD_NON_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static
+#define VECTORIZATION_SIMD_METHOD_NON_INLINE \
+    VECTORIZATION_SIMD_NON_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static
 #endif
 
 #ifdef NDEBUG
@@ -151,70 +151,72 @@ inline constexpr std::size_t VECTORIZATION_ALIGNMENT = 64;
 // Logging) so LOGGING_LOG is always defined. Include Logging's exception header explicitly:
 // link Logging::Logging before Memory::Memory on the Vectorization target (see CMakeLists.txt).
 #if VECTORIZATION_HAS_LOGGING
-#  include "logger/logger.h"
-#  include "util/logging_exception.h"
+#include "logger/logger.h"
+#include "util/logging_exception.h"
 
-#  define VECTORIZATION_LOGF(verbosity_name, format_string, ...) \
-      LOGGING_LOG(verbosity_name, format_string, ##__VA_ARGS__)
-#  define VECTORIZATION_LOG_DEBUG(format_string, ...) LOGGING_LOG_INFO_DEBUG(format_string, ##__VA_ARGS__)
-#  define VECTORIZATION_WARNING(format_string, ...)   LOGGING_LOG_WARNING(format_string, ##__VA_ARGS__)
-#  define VECTORIZATION_ERROR(format_string, ...)     LOGGING_LOG_ERROR(format_string, ##__VA_ARGS__)
-#  define VECTORIZATION_FATAL(format_string, ...)     LOGGING_LOG_FATAL(format_string, ##__VA_ARGS__)
+#define VECTORIZATION_LOGF(verbosity_name, format_string, ...) \
+    LOGGING_LOG(verbosity_name, format_string, ##__VA_ARGS__)
+#define VECTORIZATION_LOG_DEBUG(format_string, ...) \
+    LOGGING_LOG_INFO_DEBUG(format_string, ##__VA_ARGS__)
+#define VECTORIZATION_WARNING(format_string, ...) LOGGING_LOG_WARNING(format_string, ##__VA_ARGS__)
+#define VECTORIZATION_ERROR(format_string, ...) LOGGING_LOG_ERROR(format_string, ##__VA_ARGS__)
+#define VECTORIZATION_FATAL(format_string, ...) LOGGING_LOG_FATAL(format_string, ##__VA_ARGS__)
 
-#  define VECTORIZATION_CHECK(cond, ...)         LOGGING_CHECK(cond, __VA_ARGS__)
-#  ifndef NDEBUG
-#    define VECTORIZATION_CHECK_DEBUG(cond, ...) LOGGING_CHECK_DEBUG(cond, __VA_ARGS__)
-#  else
-#    define VECTORIZATION_CHECK_DEBUG(cond, ...) ((void)0)
-#  endif
-#  define VECTORIZATION_THROW(format_str, ...)          LOGGING_THROW(format_str, ##__VA_ARGS__)
-#  define VECTORIZATION_NOT_IMPLEMENTED(format_str, ...) LOGGING_NOT_IMPLEMENTED(format_str, ##__VA_ARGS__)
+#define VECTORIZATION_CHECK(cond, ...) LOGGING_CHECK(cond, __VA_ARGS__)
+#ifndef NDEBUG
+#define VECTORIZATION_CHECK_DEBUG(cond, ...) LOGGING_CHECK_DEBUG(cond, __VA_ARGS__)
+#else
+#define VECTORIZATION_CHECK_DEBUG(cond, ...) ((void)0)
+#endif
+#define VECTORIZATION_THROW(format_str, ...) LOGGING_THROW(format_str, ##__VA_ARGS__)
+#define VECTORIZATION_NOT_IMPLEMENTED(format_str, ...) \
+    LOGGING_NOT_IMPLEMENTED(format_str, ##__VA_ARGS__)
 
 #else
 
-#  include <stdexcept>
-#  include <string>
+#include <stdexcept>
+#include <string>
 
-#  define VECTORIZATION_CHECK(cond, ...) assert((cond))
-#  ifndef NDEBUG
-#    define VECTORIZATION_CHECK_DEBUG(cond, ...) assert((cond))
-#  else
-#    define VECTORIZATION_CHECK_DEBUG(cond, ...) ((void)0)
-#  endif
+#define VECTORIZATION_CHECK(cond, ...) assert((cond))
+#ifndef NDEBUG
+#define VECTORIZATION_CHECK_DEBUG(cond, ...) assert((cond))
+#else
+#define VECTORIZATION_CHECK_DEBUG(cond, ...) ((void)0)
+#endif
 
-#  ifdef NDEBUG
-#    define VECTORIZATION_LOGF(verbosity_name, format_string, ...)         ((void)0)
-#    define VECTORIZATION_LOG_DEBUG(format_string, ...)                   ((void)0)
-#    define VECTORIZATION_WARNING(format_string, ...)                     ((void)0)
-#    define VECTORIZATION_ERROR(format_string, ...)                       ((void)0)
-#    define VECTORIZATION_FATAL(format_string, ...)                       ((void)0)
-#  else
-#    include <cstdio>
-#    define VECTORIZATION_LOGF(verbosity_name, format_string, ...)                          \
-      std::printf("[VECTORIZATION][" #verbosity_name "] " format_string "\n", ##__VA_ARGS__)
-#    define VECTORIZATION_LOG_DEBUG(format_string, ...)                                     \
-      std::printf("[VECTORIZATION][DEBUG] " format_string "\n", ##__VA_ARGS__)
-#    define VECTORIZATION_WARNING(format_string, ...)                                       \
-      std::fprintf(stderr, "[VECTORIZATION][WARNING] " format_string "\n", ##__VA_ARGS__)
-#    define VECTORIZATION_ERROR(format_string, ...)                                         \
-      std::fprintf(stderr, "[VECTORIZATION][ERROR] " format_string "\n", ##__VA_ARGS__)
-#    define VECTORIZATION_FATAL(format_string, ...)                                         \
-      std::fprintf(stderr, "[VECTORIZATION][FATAL] " format_string "\n", ##__VA_ARGS__)
-#  endif
+#ifdef NDEBUG
+#define VECTORIZATION_LOGF(verbosity_name, format_string, ...) ((void)0)
+#define VECTORIZATION_LOG_DEBUG(format_string, ...) ((void)0)
+#define VECTORIZATION_WARNING(format_string, ...) ((void)0)
+#define VECTORIZATION_ERROR(format_string, ...) ((void)0)
+#define VECTORIZATION_FATAL(format_string, ...) ((void)0)
+#else
+#include <cstdio>
+#define VECTORIZATION_LOGF(verbosity_name, format_string, ...) \
+    std::printf("[VECTORIZATION][" #verbosity_name "] " format_string "\n", ##__VA_ARGS__)
+#define VECTORIZATION_LOG_DEBUG(format_string, ...) \
+    std::printf("[VECTORIZATION][DEBUG] " format_string "\n", ##__VA_ARGS__)
+#define VECTORIZATION_WARNING(format_string, ...) \
+    std::fprintf(stderr, "[VECTORIZATION][WARNING] " format_string "\n", ##__VA_ARGS__)
+#define VECTORIZATION_ERROR(format_string, ...) \
+    std::fprintf(stderr, "[VECTORIZATION][ERROR] " format_string "\n", ##__VA_ARGS__)
+#define VECTORIZATION_FATAL(format_string, ...) \
+    std::fprintf(stderr, "[VECTORIZATION][FATAL] " format_string "\n", ##__VA_ARGS__)
+#endif
 
-#  define VECTORIZATION_THROW(format_str, ...) \
-      throw std::runtime_error(std::string("vectorization: ") + (format_str))
-#  define VECTORIZATION_NOT_IMPLEMENTED(format_str, ...) \
-      throw std::logic_error(std::string("vectorization not implemented: ") + (format_str))
+#define VECTORIZATION_THROW(format_str, ...) \
+    throw std::runtime_error(std::string("vectorization: ") + (format_str))
+#define VECTORIZATION_NOT_IMPLEMENTED(format_str, ...) \
+    throw std::logic_error(std::string("vectorization not implemented: ") + (format_str))
 
 #endif
 
 // Memory integration — pulls in allocator, data_ptr, and device_enum when the Memory library is
 // present, and aliases them into namespace vectorization so terminal headers can use them unqualified.
 #if VECTORIZATION_HAS_MEMORY
-#  include "allocator.h"
-#  include "common/data_ptr.h"
-#  include "common/device.h"
+#include "allocator.h"
+#include "common/data_ptr.h"
+#include "common/device.h"
 namespace vectorization
 {
 using memory::allocator;
