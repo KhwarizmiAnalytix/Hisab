@@ -34,11 +34,16 @@ def vectorization_simd_copts():
     """
     msvc = {
         "no": [],
-        "sse": [],
+        # CMake: /arch:SSE2
+        "sse": ["/arch:SSE2"],
         "avx": ["/arch:AVX", "/D__F16C__"],
         "avx2": ["/arch:AVX2", "/D__F16C__", "/D__FMA__"],
         "avx512": [
+            # CMake: /arch:AVX512 implies the feature macros; keep explicit defines for parity.
+            "/arch:AVX512",
             "/D__AVX512F__",
+            "/D__AVX512CD__",
+            "/D__AVX512BW__",
             "/D__AVX512DQ__",
             "/D__AVX512VL__",
             "/D__F16C__",
@@ -68,7 +73,6 @@ def vectorization_simd_copts():
     for os_suffix in ("linux_aarch64", "macos_aarch64", "windows_aarch64"):
         d["//bazel:vec_neon_%s" % os_suffix] = arm_neon
         d["//bazel:vec_sve_%s" % os_suffix] = arm_sve
-    d["//bazel:cpu_x86_64"] = unix["avx2"]
     d["//bazel:cpu_aarch64"] = arm_neon
     d["//conditions:default"] = unix["avx2"]
     return select(d)
@@ -85,19 +89,32 @@ def _svml_autodetect_defines():
         "//bazel:vectorization_type_avx2": _svml_macro(SVML_NEEDED_AVX2),
         "//bazel:vectorization_type_avx512": _svml_macro(SVML_NEEDED_AVX512),
         "//bazel:cpu_aarch64": ["VECTORIZATION_HAS_SVML=0"],
-        "//bazel:cpu_x86_64": _svml_macro(SVML_NEEDED_AVX2),
         "//conditions:default": _svml_macro(SVML_NEEDED_AVX2),
     })
 
 def vectorization_svml_defines():
     """SVML define: force on/off via --define, else autodetect (utils.cmake parity)."""
+    # Use the (vectorization_type × OS) config_setting_groups so matches are unambiguous
+    # (Bazel requires exactly one matching key in a select()).
     return selects.with_or({
         ("//bazel:enable_svml",): ["VECTORIZATION_HAS_SVML=1"],
         ("//bazel:disable_svml", "//bazel:vectorization_type_no", "//bazel:vectorization_type_neon", "//bazel:vectorization_type_sve"): ["VECTORIZATION_HAS_SVML=0"],
-        "//bazel:vectorization_type_sse": _svml_macro(SVML_NEEDED_SSE),
-        "//bazel:vectorization_type_avx": _svml_macro(SVML_NEEDED_AVX),
-        "//bazel:vectorization_type_avx2": _svml_macro(SVML_NEEDED_AVX2),
-        "//bazel:vectorization_type_avx512": _svml_macro(SVML_NEEDED_AVX512),
+        # Windows toolchains provide vector-math intrinsics in headers; do not require SVML.
+        "//bazel:vec_no_win": ["VECTORIZATION_HAS_SVML=0"],
+        "//bazel:vec_sse_win": ["VECTORIZATION_HAS_SVML=0"],
+        "//bazel:vec_avx_win": ["VECTORIZATION_HAS_SVML=0"],
+        "//bazel:vec_avx2_win": ["VECTORIZATION_HAS_SVML=0"],
+        "//bazel:vec_avx512_win": ["VECTORIZATION_HAS_SVML=0"],
+        "//bazel:vec_no_linux": ["VECTORIZATION_HAS_SVML=0"],
+        "//bazel:vec_sse_linux": _svml_macro(SVML_NEEDED_SSE),
+        "//bazel:vec_avx_linux": _svml_macro(SVML_NEEDED_AVX),
+        "//bazel:vec_avx2_linux": _svml_macro(SVML_NEEDED_AVX2),
+        "//bazel:vec_avx512_linux": _svml_macro(SVML_NEEDED_AVX512),
+        "//bazel:vec_no_macos": ["VECTORIZATION_HAS_SVML=0"],
+        "//bazel:vec_sse_macos": _svml_macro(SVML_NEEDED_SSE),
+        "//bazel:vec_avx_macos": _svml_macro(SVML_NEEDED_AVX),
+        "//bazel:vec_avx2_macos": _svml_macro(SVML_NEEDED_AVX2),
+        "//bazel:vec_avx512_macos": _svml_macro(SVML_NEEDED_AVX512),
         "//conditions:default": _svml_macro(SVML_NEEDED_AVX2),
     })
 
@@ -106,12 +123,22 @@ def vectorization_svml_deps():
     return selects.with_or({
         ("//bazel:enable_svml",): ["@svml//:SVML"],
         ("//bazel:disable_svml", "//bazel:vectorization_type_no", "//bazel:vectorization_type_neon", "//bazel:vectorization_type_sve"): [],
-        "//bazel:vectorization_type_sse": ["@svml//:SVML"] if SVML_NEEDED_SSE else [],
-        "//bazel:vectorization_type_avx": ["@svml//:SVML"] if SVML_NEEDED_AVX else [],
-        "//bazel:vectorization_type_avx2": ["@svml//:SVML"] if SVML_NEEDED_AVX2 else [],
-        "//bazel:vectorization_type_avx512": ["@svml//:SVML"] if SVML_NEEDED_AVX512 else [],
+        "//bazel:vec_no_win": [],
+        "//bazel:vec_sse_win": [],
+        "//bazel:vec_avx_win": [],
+        "//bazel:vec_avx2_win": [],
+        "//bazel:vec_avx512_win": [],
+        "//bazel:vec_no_linux": [],
+        "//bazel:vec_sse_linux": ["@svml//:SVML"] if SVML_NEEDED_SSE else [],
+        "//bazel:vec_avx_linux": ["@svml//:SVML"] if SVML_NEEDED_AVX else [],
+        "//bazel:vec_avx2_linux": ["@svml//:SVML"] if SVML_NEEDED_AVX2 else [],
+        "//bazel:vec_avx512_linux": ["@svml//:SVML"] if SVML_NEEDED_AVX512 else [],
+        "//bazel:vec_no_macos": [],
+        "//bazel:vec_sse_macos": ["@svml//:SVML"] if SVML_NEEDED_SSE else [],
+        "//bazel:vec_avx_macos": ["@svml//:SVML"] if SVML_NEEDED_AVX else [],
+        "//bazel:vec_avx2_macos": ["@svml//:SVML"] if SVML_NEEDED_AVX2 else [],
+        "//bazel:vec_avx512_macos": ["@svml//:SVML"] if SVML_NEEDED_AVX512 else [],
         "//bazel:cpu_aarch64": [],
-        "//bazel:cpu_x86_64": ["@svml//:SVML"] if SVML_NEEDED_AVX2 else [],
         "//conditions:default": ["@svml//:SVML"] if SVML_NEEDED_AVX2 else [],
     })
 
@@ -127,7 +154,6 @@ def vectorization_svml_hdrs_extra(svml_hdr):
         "//bazel:vectorization_type_avx": [svml_hdr] if SVML_NEEDED_AVX else [],
         "//bazel:vectorization_type_avx2": [svml_hdr] if SVML_NEEDED_AVX2 else [],
         "//bazel:cpu_aarch64": [],
-        "//bazel:cpu_x86_64": [svml_hdr] if SVML_NEEDED_AVX2 else [],
         "//conditions:default": [svml_hdr] if SVML_NEEDED_AVX2 else [],
     })
 
@@ -215,15 +241,6 @@ def vectorization_defines():
                 "VECTORIZATION_HAS_AVX2=0",
                 "VECTORIZATION_HAS_AVX512=0",
                 "VECTORIZATION_HAS_NEON=1",
-                "VECTORIZATION_HAS_SVE=0",
-                "VECTORIZATION_VECTORIZED=1",
-            ],
-            "//bazel:cpu_x86_64": [
-                "VECTORIZATION_HAS_SSE=0",
-                "VECTORIZATION_HAS_AVX=0",
-                "VECTORIZATION_HAS_AVX2=1",
-                "VECTORIZATION_HAS_AVX512=0",
-                "VECTORIZATION_HAS_NEON=0",
                 "VECTORIZATION_HAS_SVE=0",
                 "VECTORIZATION_VECTORIZED=1",
             ],

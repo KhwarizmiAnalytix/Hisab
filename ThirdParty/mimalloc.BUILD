@@ -25,18 +25,23 @@ cc_library(
         ],
         "//conditions:default": [
             "-w",  # Disable warnings
-            "-DMI_MALLOC_OVERRIDE=0",
         ],
     }),
-    defines = [
-        "MI_MALLOC_OVERRIDE=0",
-    ],
+    # Mirrors CMake MI_OVERRIDE=OFF: do not define MI_MALLOC_OVERRIDE at all.
+    defines = [],
     includes = [
         "include",
         "src",  # Include src directory for internal includes
     ],
     linkopts = select({
-        "@platforms//os:windows": [],
+        # Mirrors mimalloc's Windows system library dependencies (see CMake logic).
+        "@platforms//os:windows": [
+            "psapi.lib",
+            "shell32.lib",
+            "user32.lib",
+            "advapi32.lib",
+            "bcrypt.lib",
+        ],
         "@platforms//os:macos": [],
         "//conditions:default": ["-lpthread"],
     }),
