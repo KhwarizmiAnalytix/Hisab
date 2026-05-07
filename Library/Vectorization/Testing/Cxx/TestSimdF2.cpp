@@ -19,8 +19,8 @@
 #include <type_traits>
 #include <utility>
 
-#include "common/vectorization_macros.h"
 #include "common/packet.h"
+#include "common/vectorization_macros.h"
 
 namespace vectorization
 {
@@ -39,8 +39,7 @@ double scalar_as_double(value_t x)
 }
 
 template <typename value_t, std::size_t N>
-void fill_uniform(
-    std::array<value_t, N>& xs, std::mt19937& gen, value_t lo, value_t hi)
+void fill_uniform(std::array<value_t, N>& xs, std::mt19937& gen, value_t lo, value_t hi)
 {
     std::uniform_real_distribution<value_t> dist(lo, hi);
     for (auto& x : xs)
@@ -48,8 +47,7 @@ void fill_uniform(
 }
 
 template <typename value_t, std::size_t N>
-void fill_binary_div_safe(
-    std::array<value_t, N>& xs, std::array<value_t, N>& ys, std::mt19937& gen)
+void fill_binary_div_safe(std::array<value_t, N>& xs, std::array<value_t, N>& ys, std::mt19937& gen)
 {
     std::uniform_real_distribution<value_t> wide(
         static_cast<value_t>(-50), static_cast<value_t>(50));
@@ -60,7 +58,7 @@ void fill_binary_div_safe(
         std::numeric_limits<value_t>::epsilon() * static_cast<value_t>(1024));
     for (std::size_t i = 0; i < N; ++i)
     {
-        xs[i] = wide(gen);
+        xs[i]     = wide(gen);
         value_t y = wide(gen);
         while (std::fabs(y) < guard)
             y = wide(gen);
@@ -70,11 +68,7 @@ void fill_binary_div_safe(
 
 template <typename value_t, typename FillXY, typename SimdOp, typename RefOp>
 void binary_random_vs_std(
-    char const* case_tag,
-    value_t tolerance,
-    FillXY&& fill_xy,
-    SimdOp&& simd_op,
-    RefOp&& ref_op)
+    char const* case_tag, value_t tolerance, FillXY&& fill_xy, SimdOp&& simd_op, RefOp&& ref_op)
 {
     constexpr std::size_t n = simd<value_t>::size;
     using simd_t            = typename simd<value_t>::simd_t;
@@ -82,8 +76,9 @@ void binary_random_vs_std(
     std::array<value_t, n> xs{};
     std::array<value_t, n> ys{};
     std::array<value_t, n> out{};
-    std::mt19937 gen(5489u);
+    std::mt19937           gen(5489u);
 
+    value_t err_max = 0;
     for (int trial = 0; trial < kRandomTrials; ++trial)
     {
         SCOPED_TRACE(::testing::Message() << case_tag << " trial=" << trial << " (binary vs std)");
@@ -97,6 +92,8 @@ void binary_random_vs_std(
         {
             value_t const ref = ref_op(xs[i], ys[i]);
             value_t const err = std::fabs(out[i] - ref);
+            err_max           = err_max > err ? err_max : err;
+#if 0
             EXPECT_LE(err, tolerance)
                 << "\n  case: " << case_tag << "  lane=" << i << "  trial=" << trial
                 << "\n  x     = " << std::setprecision(21) << scalar_as_double(xs[i])
@@ -105,27 +102,30 @@ void binary_random_vs_std(
                 << "\n  ref   = " << std::setprecision(21) << scalar_as_double(ref)
                 << "\n  |err| = " << std::setprecision(21) << scalar_as_double(err)
                 << "   tol = " << std::setprecision(21) << scalar_as_double(tolerance);
+#endif
         }
     }
+    EXPECT_LE(err_max, tolerance);
 }
 
 template <typename value_t, typename SimdBinary, typename RefBinary>
 void binary_uniform_boxes_vs_std(
-    char const* case_tag,
-    value_t tolerance,
-    value_t lo1,
-    value_t hi1,
-    value_t lo2,
-    value_t hi2,
+    char const*  case_tag,
+    value_t      tolerance,
+    value_t      lo1,
+    value_t      hi1,
+    value_t      lo2,
+    value_t      hi2,
     SimdBinary&& simd_op,
-    RefBinary&& ref_op)
+    RefBinary&&  ref_op)
 {
     binary_random_vs_std<value_t>(
         case_tag,
         tolerance,
         [=](std::array<value_t, simd<value_t>::size>& xs,
             std::array<value_t, simd<value_t>::size>& ys,
-            std::mt19937& gen) {
+            std::mt19937&                             gen)
+        {
             fill_uniform(xs, gen, lo1, hi1);
             fill_uniform(ys, gen, lo2, hi2);
         },
@@ -249,7 +249,7 @@ void test_div(value_t tolerance)
         div_tol,
         [](std::array<value_t, simd<value_t>::size>& xs,
            std::array<value_t, simd<value_t>::size>& ys,
-           std::mt19937& gen) { fill_binary_div_safe(xs, ys, gen); },
+           std::mt19937&                             gen) { fill_binary_div_safe(xs, ys, gen); },
         [](simd_t a, simd_t b, simd_t& c) { c = simd<value_t>::div(a, b); },
         [](value_t x, value_t y) { return std::div(x, y); });
 }
@@ -265,7 +265,8 @@ void test_pow(value_t tolerance)
         pow_tol,
         [](std::array<value_t, simd<value_t>::size>& xs,
            std::array<value_t, simd<value_t>::size>& ys,
-           std::mt19937& gen) {
+           std::mt19937&                             gen)
+        {
             fill_uniform(xs, gen, static_cast<value_t>(0.05), static_cast<value_t>(12));
             fill_uniform(ys, gen, static_cast<value_t>(-4), static_cast<value_t>(4));
         },
@@ -295,8 +296,8 @@ void test_all_simd_binary(value_t tolerance)
 VECTORIZATIONTEST(Math, SimdF2)
 {
     using namespace vectorization::simd_tests;
-    constexpr float kSimdTolF    = 0.0007f;
-    constexpr double kSimdTolD   = 5.e-12;
+    constexpr float  kSimdTolF = 0.0007f;
+    constexpr double kSimdTolD = 5.e-12;
     test_all_simd_binary<float>(kSimdTolF);
     test_all_simd_binary<double>(kSimdTolD);
     END_TEST();

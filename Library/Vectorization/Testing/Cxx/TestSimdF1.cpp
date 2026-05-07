@@ -20,8 +20,8 @@
 #include <type_traits>
 #include <utility>
 
-#include "common/vectorization_macros.h"
 #include "common/packet.h"
+#include "common/vectorization_macros.h"
 
 namespace vectorization
 {
@@ -40,8 +40,7 @@ double scalar_as_double(value_t x)
 }
 
 template <typename value_t, std::size_t N>
-void fill_uniform(
-    std::array<value_t, N>& xs, std::mt19937& gen, value_t lo, value_t hi)
+void fill_uniform(std::array<value_t, N>& xs, std::mt19937& gen, value_t lo, value_t hi)
 {
     std::uniform_real_distribution<value_t> dist(lo, hi);
     for (auto& x : xs)
@@ -50,23 +49,20 @@ void fill_uniform(
 
 template <typename value_t, typename FillXs, typename SimdOp, typename RefOp>
 void unary_random_vs_std(
-    char const* case_tag,
-    value_t tolerance,
-    FillXs&& fill_xs,
-    SimdOp&& simd_op,
-    RefOp&& ref_op)
+    char const* case_tag, value_t tolerance, FillXs&& fill_xs, SimdOp&& simd_op, RefOp&& ref_op)
 {
     constexpr std::size_t n = simd<value_t>::size;
     using simd_t            = typename simd<value_t>::simd_t;
 
     std::array<value_t, n> xs{};
     std::array<value_t, n> out{};
-    std::mt19937 gen(5489u);
-
+    std::mt19937           gen(5489u);
+    double                 max_d = 0.;
     for (int trial = 0; trial < kRandomTrials; ++trial)
     {
-        SCOPED_TRACE(::testing::Message()
-                     << "failing_function=" << case_tag << " trial=" << trial << " (unary vs std)");
+        SCOPED_TRACE(
+            ::testing::Message() << "failing_function=" << case_tag << " trial=" << trial
+                                 << " (unary vs std)");
         fill_xs(xs, gen);
         simd_t a = simd<value_t>::loadu(xs.data());
         simd_t c = simd<value_t>::setzero();
@@ -76,6 +72,8 @@ void unary_random_vs_std(
         {
             value_t const ref = ref_op(xs[i]);
             value_t const err = std::fabs(out[i] - ref);
+            max_d             = std::max<double>(max_d, static_cast<double>(err));
+#if 0
             EXPECT_LE(err, tolerance)
                 << "\n  failing_function: " << case_tag << "  lane=" << i << "  trial=" << trial
                 << "\n  x     = " << std::setprecision(21) << scalar_as_double(xs[i])
@@ -83,25 +81,26 @@ void unary_random_vs_std(
                 << "\n  ref   = " << std::setprecision(21) << scalar_as_double(ref)
                 << "\n  |err| = " << std::setprecision(21) << scalar_as_double(err)
                 << "   tol = " << std::setprecision(21) << scalar_as_double(tolerance);
+#endif
         }
     }
+    EXPECT_LE(max_d, tolerance);
 }
 
 template <typename value_t, typename SimdUnary, typename RefUnary>
 void unary_uniform_vs_std(
     char const* case_tag,
-    value_t tolerance,
-    value_t lo,
-    value_t hi,
+    value_t     tolerance,
+    value_t     lo,
+    value_t     hi,
     SimdUnary&& simd_op,
-    RefUnary&& ref_op)
+    RefUnary&&  ref_op)
 {
     unary_random_vs_std<value_t>(
         case_tag,
         tolerance,
-        [=](std::array<value_t, simd<value_t>::size>& xs, std::mt19937& gen) {
-            fill_uniform(xs, gen, lo, hi);
-        },
+        [=](std::array<value_t, simd<value_t>::size>& xs, std::mt19937& gen)
+        { fill_uniform(xs, gen, lo, hi); },
         std::forward<SimdUnary>(simd_op),
         std::forward<RefUnary>(ref_op));
 }
@@ -177,7 +176,7 @@ void test_invsqrt(value_t tolerance)
     using simd_t = typename simd<value_t>::simd_t;
     unary_uniform_vs_std<value_t>(
         XSIGMA_SIMD_UNARY_TAG(value_t, invsqrt),
-        15.*tolerance,
+        15. * tolerance,
         static_cast<value_t>(1e-18),
         static_cast<value_t>(500),
         [](simd_t a, simd_t& c) { c = simd<value_t>::invsqrt(a); },
@@ -231,7 +230,7 @@ void test_all_simd_f1_native(value_t tolerance)
 VECTORIZATIONTEST(Math, SimdF1)
 {
     using namespace vectorization::simd_tests;
-    constexpr float kSimdTolF  = 0.0007f;
+    constexpr float  kSimdTolF = 0.0007f;
     constexpr double kSimdTolD = 5.e-12;
     test_all_simd_f1_native<float>(kSimdTolF);
     test_all_simd_f1_native<double>(kSimdTolD);

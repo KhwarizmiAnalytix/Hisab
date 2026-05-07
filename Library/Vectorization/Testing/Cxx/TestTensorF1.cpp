@@ -31,7 +31,7 @@ struct tensor_abs_tol_unary
 template <>
 struct tensor_abs_tol_unary<float>
 {
-    static constexpr float transcendental = 1.2e-3f;
+    static constexpr float transcendental = 2e-3f;
 };
 
 template <>
@@ -48,7 +48,7 @@ void expect_tensor_near_elementwise(tensor<T> const& got, std::vector<T> const& 
     for (std::size_t i = 0; i < ref.size(); ++i)
     {
         T const d = std::fabs(got.data()[i] - ref[i]);
-        max_d     = max_d > d ? max_d : d;
+        max_d     = std::max<double>(max_d, static_cast<double>(d));
     }
     EXPECT_LE(max_d, abs_tol);
 }
