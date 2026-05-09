@@ -71,6 +71,7 @@ public:
     using evaluator                           = expressions_evaluator;
     using packet_t                            = packet<value_t, packet_size<value_t>::value>;
     using array_simd_t                        = typename packet_t::array_simd_t;
+    using simd_t                              = typename simd<value_t>::simd_t;
     using data_t                              = data_ptr<value_t, false>;
     using iterator                            = value_t*;
     using const_iterator                      = const value_t*;
@@ -79,6 +80,14 @@ public:
 
     VECTORIZATION_FORCE_INLINE static size_type first_aligned(const value_t* array, size_type size)
     {
+        if constexpr (alignment_size <= 1)
+        {
+            return 0;
+        }
+        if constexpr (alignment > alignof(simd_t))
+        {
+            return 0;
+        }
         if constexpr ((alignment % scalar_size) != 0)
         {
             return size;
@@ -240,7 +249,7 @@ public:
     VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
         std::initializer_list<std::initializer_list<value_t>> list,
         device_enum                                           type = device_enum::CPU)
-        : tensor(list.size(), list.begin() -> size(), type)
+        : tensor(list.size(), list.begin()->size(), type)
     {
         size_t i = 0;
         for (auto const& row : list)

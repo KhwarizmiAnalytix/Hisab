@@ -65,11 +65,11 @@ public:
 
     VECTORIZATION_FUNCTION_ATTRIBUTE const auto& rhs() const { return lhs_; }
 
-    template <bool vectorize>
+    template <bool vectorize, bool aligned>
     VECTORIZATION_FUNCTION_ATTRIBUTE static auto evaluate(
         unary_expression const& expr, size_t index) noexcept
     {
-        const auto& rhs = expression_loader<rmv_lhs, vectorize>::evaluate(expr.rhs(), index);
+        const auto& rhs = expression_loader<rmv_lhs, vectorize, aligned>::evaluate(expr.rhs(), index);
         return EVALUATOR::functor(rhs);
     }
 };
@@ -150,12 +150,12 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE const auto& lhs() const { return lhs_; }
     VECTORIZATION_FUNCTION_ATTRIBUTE const auto& rhs() const { return rhs_; }
 
-    template <bool vectorize>
+    template <bool vectorize, bool aligned>
     VECTORIZATION_FUNCTION_ATTRIBUTE static auto evaluate(
         binary_expression const& expr, size_t index) noexcept
     {
-        const auto& lhs = expression_loader<rmv_lhs, vectorize>::evaluate(expr.lhs(), index);
-        const auto& rhs = expression_loader<rmv_rhs, vectorize>::evaluate(expr.rhs(), index);
+        const auto& lhs = expression_loader<rmv_lhs, vectorize, aligned>::evaluate(expr.lhs(), index);
+        const auto& rhs = expression_loader<rmv_rhs, vectorize, aligned>::evaluate(expr.rhs(), index);
         return EVALUATOR::functor(lhs, rhs);
     }
 };
@@ -240,13 +240,13 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE const auto& mhs() const { return mhs_; };
     VECTORIZATION_FUNCTION_ATTRIBUTE const auto& rhs() const { return rhs_; }
 
-    template <bool vectorize>
+    template <bool vectorize, bool aligned>
     VECTORIZATION_FUNCTION_ATTRIBUTE static auto evaluate(
         trinary_expression const& expr, size_t index) noexcept
     {
-        const auto& lhs = expression_loader<rmv_lhs, vectorize>::evaluate(expr.lhs(), index);
-        const auto& mhs = expression_loader<rmv_mhs, vectorize>::evaluate(expr.mhs(), index);
-        const auto& rhs = expression_loader<rmv_rhs, vectorize>::evaluate(expr.rhs(), index);
+        const auto& lhs = expression_loader<rmv_lhs, vectorize, aligned>::evaluate(expr.lhs(), index);
+        const auto& mhs = expression_loader<rmv_mhs, vectorize, aligned>::evaluate(expr.mhs(), index);
+        const auto& rhs = expression_loader<rmv_rhs, vectorize, aligned>::evaluate(expr.rhs(), index);
         return EVALUATOR::functor(lhs, mhs, rhs);
     }
 };

@@ -50,6 +50,7 @@ struct expressions_evaluator
 
             auto*  data = rhs.begin();
             size_t n    = rhs.size();
+            size_t i    = 0;
 
 #if VECTORIZATION_VECTORIZED
             using value_t  = typename vectorization::scalar_type<T, T>::value;
@@ -59,41 +60,35 @@ struct expressions_evaluator
                 "expressions_evaluator::run (vectorized) requires a tensor destination");
 
             constexpr auto length = T::length();
-            size_t         i      = 0;
 
-            const size_t astart = rhs.align_start();
-            const size_t cap    = (astart < n) ? astart : n;
+            const size_t cap = rhs.align_start();
             for (; i < cap; ++i)
-                data[i] = vectorization::expression_loader<E, false>::evaluate(expr, i);
+                data[i] = vectorization::expression_loader<E, false, false>::evaluate(expr, i);
 
             if (i >= n)
                 return;
 
+            //aligned loop
             const size_t loop_peel = rhs.align_end();
-            const size_t peel2     = i + ((loop_peel - i) / (2 * length)) * (2 * length);
-
-            for (; i < peel2; i += 2 * length)
-            {
-                const auto temp0 = vectorization::expression_loader<E, true>::evaluate(expr, i);
-                const auto temp1 =
-                    vectorization::expression_loader<E, true>::evaluate(expr, i + length);
-                packet<value_t>::store(temp0, &data[i]);
-                packet<value_t>::store(temp1, &data[i + length]);
-            }
             for (; i < loop_peel; i += length)
             {
-                const auto temp = vectorization::expression_loader<E, true>::evaluate(expr, i);
-                packet<value_t>::store(temp, &data[i]);
+                const auto temp0 =
+                    vectorization::expression_loader<E, true, true>::evaluate(expr, i);
+                packet<value_t>::store(temp0, &data[i]);
             }
 
-            // Epilogue: scalar tail.
-            for (; i < n; ++i)
-                data[i] = vectorization::expression_loader<E, false>::evaluate(expr, i);
-            return;
+            //unaligned loop
+            const size_t loop_peel2 = i + ((n - i) / (length)) * (length);
+            for (; i < loop_peel2; i += length)
+            {
+                const auto temp =
+                    vectorization::expression_loader<E, true, false>::evaluate(expr, i);
+                packet<value_t>::storeu(temp, &data[i]);
+            }
 #endif
 
-            for (size_t i = 0; i < n; ++i)
-                data[i] = vectorization::expression_loader<E, false>::evaluate(expr, i);
+            for (; i < n; ++i)
+                data[i] = vectorization::expression_loader<E, false, false>::evaluate(expr, i);
         }
     }
 
@@ -137,23 +132,31 @@ struct expressions_evaluator
     template <typename S, typename T>
     VECTORIZATION_FUNCTION_ATTRIBUTE static void fill(S value, T& rhs) noexcept
     {
-        size_t loop_peel = 0;
-        auto*  data      = rhs.begin();
+        auto*  data = rhs.begin();
+        size_t i    = 0;
 
 #if VECTORIZATION_VECTORIZED
         using value_t      = typename vectorization::scalar_type<T, T>::value;
         using array_simd_t = typename packet<value_t>::array_simd_t;
 
         constexpr auto length = T::length();
-        loop_peel             = length * (rhs.size() / length);
 
         array_simd_t temp{};
         packet<value_t>::set(static_cast<value_t>(value), temp);
 
-        for (size_t i = 0, size = loop_peel; i < size; i += length)
+        const size_t cap = rhs.align_start();
+        for (; i < cap; ++i)
+            data[i] = value;
+
+        const size_t loop_peel = rhs.align_end();
+        for (; i < loop_peel; i += length)
+            packet<value_t>::store(temp, &data[i]);
+
+        const size_t loop_peel2 = i + ((rhs.size() - i) / length) * length;
+        for (; i < loop_peel2; i += length)
             packet<value_t>::storeu(temp, &data[i]);
 #endif
-        for (size_t i = loop_peel; i < rhs.size(); i++)
+        for (; i < rhs.size(); ++i)
             data[i] = value;
     }
 };
@@ -173,29 +176,64 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto accumulate(EXPR&& expression) noexcept
 
     value_t sum = 0;
     size_t  i   = 0;
+    size_t  n   = expression.size();
 
 #if VECTORIZATION_VECTORIZED
-    constexpr auto length    = E::length();
-    size_t         loop_peel = length * (expression.size() / length);
+    constexpr auto length = E::length();
 
-    if (loop_peel > 0)
+    if constexpr (vectorization::is_base_expression<E>::value)
     {
-        using simd_t = typename simd<value_t>::simd_t;
-        simd_t sum_packet;
-
-        sum_packet = simd<value_t>::set(static_cast<value_t>(0.));
-
-        for (size_t size = loop_peel; i < size; i += length)
-        {
-            const auto& temp = vectorization::expression_loader<E, true>::evaluate(
+        const size_t cap = expression.align_start();
+        for (; i < cap; ++i)
+            sum += vectorization::expression_loader<E, false, false>::evaluate(
                 static_cast<E const&>(expression), i);
-            packet<value_t>::accumulate(temp, sum_packet);
+
+        if (i < n)
+        {
+            using simd_t = typename simd<value_t>::simd_t;
+            simd_t sum_packet;
+            sum_packet = simd<value_t>::set(static_cast<value_t>(0.));
+
+            const size_t loop_peel = expression.align_end();
+            for (; i < loop_peel; i += length)
+            {
+                const auto& temp = vectorization::expression_loader<E, true, true>::evaluate(
+                    static_cast<E const&>(expression), i);
+                packet<value_t>::accumulate(temp, sum_packet);
+            }
+
+            const size_t loop_peel2 = i + ((n - i) / length) * length;
+            for (; i < loop_peel2; i += length)
+            {
+                const auto& temp = vectorization::expression_loader<E, true, false>::evaluate(
+                    static_cast<E const&>(expression), i);
+                packet<value_t>::accumulate(temp, sum_packet);
+            }
+
+            sum += simd<value_t>::accumulate(sum_packet);
         }
-        sum += simd<value_t>::accumulate(sum_packet);
+    }
+    else
+    {
+        const size_t loop_peel = length * (n / length);
+        if (loop_peel > 0)
+        {
+            using simd_t = typename simd<value_t>::simd_t;
+            simd_t sum_packet;
+            sum_packet = simd<value_t>::set(static_cast<value_t>(0.));
+
+            for (; i < loop_peel; i += length)
+            {
+                const auto& temp = vectorization::expression_loader<E, true, false>::evaluate(
+                    static_cast<E const&>(expression), i);
+                packet<value_t>::accumulate(temp, sum_packet);
+            }
+            sum += simd<value_t>::accumulate(sum_packet);
+        }
     }
 #endif
-    for (size_t size = expression.size(); i < size; i++)
-        sum += vectorization::expression_loader<E, false>::evaluate(
+    for (; i < n; ++i)
+        sum += vectorization::expression_loader<E, false, false>::evaluate(
             static_cast<E const&>(expression), i);
 
     return sum;
@@ -210,31 +248,68 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto hmin(EXPR&& expression) noexcept
 
     value_t ret = std::numeric_limits<value_t>::max();
     size_t  i   = 0;
+    size_t  n   = expression.size();
 
 #if VECTORIZATION_VECTORIZED
-    constexpr auto length    = E::length();
-    size_t         loop_peel = length * (expression.size() / length);
+    constexpr auto length = E::length();
 
-    if (loop_peel > 0)
+    if constexpr (vectorization::is_base_expression<E>::value)
     {
-        using simd_t = typename simd<value_t>::simd_t;
-        simd_t sum_packet;
+        const size_t cap = expression.align_start();
+        for (; i < cap; ++i)
+            ret = std::fmin(
+                ret,
+                vectorization::expression_loader<E, false, false>::evaluate(
+                    static_cast<E const&>(expression), i));
 
-        sum_packet = simd<value_t>::set(std::numeric_limits<value_t>::max());
-
-        for (size_t size = loop_peel; i < size; i += length)
+        if (i < n)
         {
-            const auto& temp = vectorization::expression_loader<E, true>::evaluate(
-                static_cast<E const&>(expression), i);
-            packet<value_t>::hmin(temp, sum_packet);
+            using simd_t = typename simd<value_t>::simd_t;
+            simd_t min_packet;
+            min_packet = simd<value_t>::set(std::numeric_limits<value_t>::max());
+
+            const size_t loop_peel = expression.align_end();
+            for (; i < loop_peel; i += length)
+            {
+                const auto& temp = vectorization::expression_loader<E, true, true>::evaluate(
+                    static_cast<E const&>(expression), i);
+                packet<value_t>::hmin(temp, min_packet);
+            }
+
+            const size_t loop_peel2 = i + ((n - i) / length) * length;
+            for (; i < loop_peel2; i += length)
+            {
+                const auto& temp = vectorization::expression_loader<E, true, false>::evaluate(
+                    static_cast<E const&>(expression), i);
+                packet<value_t>::hmin(temp, min_packet);
+            }
+
+            ret = std::fmin(ret, simd<value_t>::hmin(min_packet));
         }
-        ret = simd<value_t>::hmin(sum_packet);
+    }
+    else
+    {
+        const size_t loop_peel = length * (n / length);
+        if (loop_peel > 0)
+        {
+            using simd_t = typename simd<value_t>::simd_t;
+            simd_t min_packet;
+            min_packet = simd<value_t>::set(std::numeric_limits<value_t>::max());
+
+            for (; i < loop_peel; i += length)
+            {
+                const auto& temp = vectorization::expression_loader<E, true, false>::evaluate(
+                    static_cast<E const&>(expression), i);
+                packet<value_t>::hmin(temp, min_packet);
+            }
+            ret = std::fmin(ret, simd<value_t>::hmin(min_packet));
+        }
     }
 #endif
-    for (size_t size = expression.size(); i < size; i++)
+    for (; i < n; ++i)
         ret = std::fmin(
             ret,
-            vectorization::expression_loader<E, false>::evaluate(
+            vectorization::expression_loader<E, false, false>::evaluate(
                 static_cast<E const&>(expression), i));
 
     return ret;
@@ -251,29 +326,69 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto hmax(EXPR&& expression) noexcept
     // smallest *positive* value (~1.2e-38), not the most negative one.
     value_t ret = -std::numeric_limits<value_t>::max();
     size_t  i   = 0;
+    size_t  n   = expression.size();
 
 #if VECTORIZATION_VECTORIZED
-    constexpr auto length    = E::length();
-    size_t         loop_peel = length * (expression.size() / length);
+    constexpr auto length = E::length();
 
-    if (loop_peel > 0)
+    if constexpr (vectorization::is_base_expression<E>::value)
     {
-        using simd_t = typename simd<value_t>::simd_t;
-        simd_t sum_packet;
+        const size_t cap = expression.align_start();
+        for (; i < cap; ++i)
+            ret = std::fmax(
+                ret,
+                vectorization::expression_loader<E, false, false>::evaluate(
+                    static_cast<E const&>(expression), i));
 
-        sum_packet = simd<value_t>::set(-std::numeric_limits<value_t>::max());
-
-        for (size_t size = loop_peel; i < size; i += length)
+        if (i < n)
         {
-            const auto& temp = vectorization::expression_loader<E, true>::evaluate(
-                static_cast<E const&>(expression), i);
-            packet<value_t>::hmax(temp, sum_packet);
+            using simd_t = typename simd<value_t>::simd_t;
+            simd_t max_packet;
+            max_packet = simd<value_t>::set(-std::numeric_limits<value_t>::max());
+
+            const size_t loop_peel = expression.align_end();
+            for (; i < loop_peel; i += length)
+            {
+                const auto& temp = vectorization::expression_loader<E, true, true>::evaluate(
+                    static_cast<E const&>(expression), i);
+                packet<value_t>::hmax(temp, max_packet);
+            }
+
+            const size_t loop_peel2 = i + ((n - i) / length) * length;
+            for (; i < loop_peel2; i += length)
+            {
+                const auto& temp = vectorization::expression_loader<E, true, false>::evaluate(
+                    static_cast<E const&>(expression), i);
+                packet<value_t>::hmax(temp, max_packet);
+            }
+
+            ret = std::fmax(ret, simd<value_t>::hmax(max_packet));
         }
-        ret = simd<value_t>::hmax(sum_packet);
+    }
+    else
+    {
+        const size_t loop_peel = length * (n / length);
+        if (loop_peel > 0)
+        {
+            using simd_t = typename simd<value_t>::simd_t;
+            simd_t max_packet;
+            max_packet = simd<value_t>::set(-std::numeric_limits<value_t>::max());
+
+            for (; i < loop_peel; i += length)
+            {
+                const auto& temp = vectorization::expression_loader<E, true, false>::evaluate(
+                    static_cast<E const&>(expression), i);
+                packet<value_t>::hmax(temp, max_packet);
+            }
+            ret = std::fmax(ret, simd<value_t>::hmax(max_packet));
+        }
     }
 #endif
-    for (size_t size = expression.size(); i < size; i++)
-        ret = std::fmax(ret, vectorization::expression_loader<E, false>::evaluate(expression, i));
+    for (; i < n; ++i)
+        ret = std::fmax(
+            ret,
+            vectorization::expression_loader<E, false, false>::evaluate(
+                static_cast<E const&>(expression), i));
 
     return ret;
 }

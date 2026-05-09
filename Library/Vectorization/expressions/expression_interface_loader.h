@@ -31,17 +31,7 @@ namespace vectorization
 template <typename value_t>
 class tensor;
 
-/// \c true when \p index is in this tensor's aligned SIMD lane range (see \c tensor::align_start / align_end).
-template <typename T>
-VECTORIZATION_FUNCTION_ATTRIBUTE constexpr bool expr_cpu_simd_lane_aligned_at(
-    T const&, std::size_t) noexcept
-{ return false; }
-
-template <typename V>
-VECTORIZATION_FUNCTION_ATTRIBUTE bool expr_cpu_simd_lane_aligned_at(
-    tensor<V> const& t, std::size_t index) noexcept;
-
-template <typename LHS, bool vectorize>
+template <typename LHS, bool vectorize, bool aligned>
 class expression_loader final
 {
 public:
@@ -64,15 +54,11 @@ public:
 
                 // Prefetch is a CPU-only hint; look ahead of the upcoming load.
 #if !VECTORIZATION_ON_GPU_DEVICE
-                constexpr std::ptrdiff_t prefetch_packets = 4;  // heuristic; tuned by benchmarks
-                constexpr std::ptrdiff_t prefetch_elems =
-                    static_cast<std::ptrdiff_t>(packet_t::length()) * prefetch_packets;
-                if (static_cast<size_t>(prefetch_elems) + index < expr.size())
-                    packet<value_t>::prefetch(ptr + prefetch_elems);
+                packet<value_t>::prefetch(ptr + packet_t::length());
 #endif
-                // Avoid per-index pointer checks: tensor caches [align_start, align_end) for aligned load/store.
+
 #if VECTORIZATION_VECTORIZED
-                if (expr_cpu_simd_lane_aligned_at(expr, index))
+                if constexpr (aligned)
                     packet<value_t>::load(ptr, t);
                 else
                     packet<value_t>::loadu(ptr, t);
@@ -89,7 +75,7 @@ public:
         }
         else if constexpr (vectorization::is_pure_expression<rmv_lhs>::value)
         {
-            return rmv_lhs::template evaluate<vectorize>(expr, index);
+            return rmv_lhs::template evaluate<vectorize,aligned>(expr, index);
         }
         else if constexpr (std::is_fundamental<rmv_lhs>::value)
         {

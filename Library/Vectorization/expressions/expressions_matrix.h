@@ -174,7 +174,7 @@ public:
 
     VECTORIZATION_FUNCTION_ATTRIBUTE const auto& rhs() const { return rhs_; };
 
-    template <bool vectorize>
+    template <bool vectorize, bool aligned>
     VECTORIZATION_FUNCTION_ATTRIBUTE static auto evaluate(
         matrix_vector_multiplication_expression const& expr, size_t index) noexcept
     {
@@ -317,7 +317,7 @@ public:
 
     VECTORIZATION_FUNCTION_ATTRIBUTE size_t size() const noexcept { return rhs_.columns(); }
 
-    template <bool vectorize>
+    template <bool vectorize, bool aligned>
     VECTORIZATION_FUNCTION_ATTRIBUTE static auto evaluate(
         vector_matrix_multiplication_expression const& expr, size_t column) noexcept
     {
