@@ -188,12 +188,12 @@ public:
             for (size_t column = 0; column < peel; column += length())
             {
                 const auto& t1 =
-                    expression_loader<rmv_rhs, vectorize>::evaluate(expr.rhs(), column);
+                    expression_loader<rmv_rhs, vectorize, false>::evaluate(expr.rhs(), column);
                 matrix_vector_multiplication(expr.lhs(), index, column, t1, t);
             }
             for (size_t column = peel; column < expr.lhs().columns(); column++)
             {
-                auto t1 = expression_loader<rmv_rhs, false>::evaluate(expr.rhs(), column);
+                auto t1 = expression_loader<rmv_rhs, false, false>::evaluate(expr.rhs(), column);
                 matrix_vector_multiplication(expr.lhs(), index, column, t1, t);
             }
 
@@ -204,7 +204,7 @@ public:
             value_t t = 0;
             for (size_t column = 0; column < expr.lhs().columns(); column++)
             {
-                auto t1 = expression_loader<rmv_rhs, false>::evaluate(expr.rhs(), column);
+                auto t1 = expression_loader<rmv_rhs, false, false>::evaluate(expr.rhs(), column);
                 matrix_vector_multiplication(expr.lhs(), index, column, t1, t);
             }
             return t;
@@ -332,12 +332,12 @@ public:
             size_t row = 0;
             for (; row < peel; row += length())
             {
-                const auto& t1 = expression_loader<rmv_lhs, vectorize>::evaluate(expr.lhs(), row);
+                const auto& t1 = expression_loader<rmv_lhs, vectorize, false>::evaluate(expr.lhs(), row);
                 vector_matrix_multiplication(expr.rhs(), row, column, t1, t);
             }
             for (; row < rows; row++)
             {
-                auto t1 = expression_loader<rmv_lhs, false>::evaluate(expr.lhs(), row);
+                auto t1 = expression_loader<rmv_lhs, false, false>::evaluate(expr.lhs(), row);
                 vector_matrix_multiplication(expr.rhs(), row, column, t1, t);
             }
             return t;
@@ -348,7 +348,7 @@ public:
             value_t    t    = 0;
             for (size_t row = 0; row < rows; row++)
             {
-                auto t1 = expression_loader<rmv_lhs, false>::evaluate(expr.lhs(), row);
+                auto t1 = expression_loader<rmv_lhs, false, false>::evaluate(expr.lhs(), row);
                 vector_matrix_multiplication(expr.rhs(), row, column, t1, t);
             }
             return t;

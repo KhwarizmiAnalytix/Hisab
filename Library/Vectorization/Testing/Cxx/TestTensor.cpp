@@ -26,7 +26,6 @@
 
 #include "common/vectorization_macros.h"
 #include "terminals/tensor.h"
-#include "terminals/tensor.h"
 #include "VectorizationTest.h"
 
 namespace
