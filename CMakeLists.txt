@@ -39,7 +39,21 @@ set(PROJECT_VERSION_FULL
 
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
-enable_testing()
+# CTest sets up dashboard/memcheck infrastructure (DartConfiguration.tcl, MemoryCheckCommand, etc.)
+# which is required for `ctest -T memcheck` (used by Scripts/valgrind_ctest.sh).
+#
+# Important: `include(CTest)` *generates* DartConfiguration.tcl at configure time. To make sure
+# custom Valgrind options (from `Cmake/tools/valgrind.cmake`) are reflected there, we need to
+# include valgrind (when enabled) BEFORE we include CTest.
+if((DEFINED CORE_ENABLE_VALGRIND AND CORE_ENABLE_VALGRIND)
+   OR (DEFINED LOGGING_ENABLE_VALGRIND AND LOGGING_ENABLE_VALGRIND)
+   OR (DEFINED MEMORY_ENABLE_VALGRIND AND MEMORY_ENABLE_VALGRIND)
+   OR (DEFINED PARALLEL_ENABLE_VALGRIND AND PARALLEL_ENABLE_VALGRIND)
+   OR (DEFINED PROFILER_ENABLE_VALGRIND AND PROFILER_ENABLE_VALGRIND)
+   OR (DEFINED VECTORIZATION_ENABLE_VALGRIND AND VECTORIZATION_ENABLE_VALGRIND))
+  include(valgrind)
+endif()
+include(CTest)
 
 # Always use bundled googletest — external shared gtest (e.g. from conda) causes rpath failures at
 # runtime because its dylib install path is not in our test executables' rpath.

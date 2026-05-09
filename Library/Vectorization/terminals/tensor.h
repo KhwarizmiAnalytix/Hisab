@@ -42,7 +42,9 @@ namespace vectorization
 
 template <typename T>
 inline constexpr bool is_almost_zero(T x, T epsilon = std::numeric_limits<T>::epsilon()) noexcept
-{ return (std::fabs(x) < epsilon); }
+{
+    return (std::fabs(x) < epsilon);
+}
 
 // ---------------------------------------------------------------------------
 // tensor<T> — unified N-dimensional container
@@ -59,30 +61,50 @@ template <typename value_t>
 class tensor
 {
 public:
-    using value_type             = value_t;
-    using size_type              = std::size_t;
-    using dimensions_type        = std::vector<size_t>;
-    using evaluator              = expressions_evaluator;
-    using packet_t               = packet<value_t, packet_size<value_t>::value>;
-    using array_simd_t           = typename packet_t::array_simd_t;
-    using data_t                 = data_ptr<value_t, false>;
-    using iterator               = value_t*;
-    using const_iterator         = const value_t*;
-    using reverse_iterator       = std::reverse_iterator<iterator>;
-    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+    using value_type                          = value_t;
+    using size_type                           = std::size_t;
+    static constexpr size_type alignment      = VECTORIZATION_ALIGNMENT;
+    static constexpr size_type scalar_size    = sizeof(value_type);
+    static constexpr size_type alignment_size = alignment / scalar_size;
+    static constexpr size_type alignment_mask = alignment_size - 1;
+    using dimensions_type                     = std::vector<size_t>;
+    using evaluator                           = expressions_evaluator;
+    using packet_t                            = packet<value_t, packet_size<value_t>::value>;
+    using array_simd_t                        = typename packet_t::array_simd_t;
+    using data_t                              = data_ptr<value_t, false>;
+    using iterator                            = value_t*;
+    using const_iterator                      = const value_t*;
+    using reverse_iterator                    = std::reverse_iterator<iterator>;
+    using const_reverse_iterator              = std::reverse_iterator<const_iterator>;
+
+    VECTORIZATION_FORCE_INLINE static size_type first_aligned(const value_t* array, size_type size)
+    {
+        if constexpr ((alignment % scalar_size) != 0)
+        {
+            return size;
+        }
+
+        if (reinterpret_cast<std::uintptr_t>(array) & (scalar_size - 1))
+        {
+            return size;
+        }
+
+        size_type first = (alignment_size - (reinterpret_cast<std::uintptr_t>(array) / scalar_size &
+                                             alignment_mask)) &
+                          alignment_mask;
+        return (first < size) ? first : size;
+    }
+
+    VECTORIZATION_FORCE_INLINE static size_type last_aligned(
+        size_type aligned_start, size_type size, size_type packet_size)
+    {
+        return aligned_start + ((size - aligned_start) / packet_size) * packet_size;
+    }
 
     // SIMD stride — identical for every rank; used by expression_loader
     VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr size_t length() noexcept
-    { return packet_t::length(); }
-
-    /// Byte alignment required for aligned SIMD load/store of \p value_t on CPU (matches packet/simd).
-    VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr std::size_t cpu_simd_byte_alignment() noexcept
     {
-#if VECTORIZATION_VECTORIZED && !VECTORIZATION_ON_GPU_DEVICE
-        return alignof(typename simd<value_t>::simd_t);
-#else
-        return alignof(value_t);
-#endif
+        return packet_t::length();
     }
 
     /// Byte offset of \c data() modulo \ref cpu_simd_byte_alignment (0 on GPU / non-vectorized).
@@ -90,7 +112,9 @@ public:
 
     /// First element index where CPU SIMD lanes are memory-aligned (scalar prologue is \c [0, align_start) ).
     VECTORIZATION_FUNCTION_ATTRIBUTE std::size_t align_start() const noexcept
-    { return align_start_; }
+    {
+        return align_start_;
+    }
 
     /// Exclusive end index: for \c i in <tt>[align_start, align_end)</tt> at stride \ref length(), use \c load / \c store.
     VECTORIZATION_FUNCTION_ATTRIBUTE std::size_t align_end() const noexcept { return align_end_; }
@@ -102,7 +126,8 @@ public:
         (void)index;
         return false;
 #else
-        return index >= align_start_ && index < align_end_;
+        return index >= align_start_ && index < align_end_ &&
+               ((index - align_start_) % packet_t::length() == 0);
 #endif
     }
 
@@ -122,7 +147,9 @@ public:
     VECTORIZATION_CUDA_FUNCTION_TYPE explicit tensor(
         size_type n, device_enum type = device_enum::CPU) noexcept
         : dimensions_({n}), sizes_({n}), storage_(n, type)
-    { recompute_cpu_simd_alignment_state(); }
+    {
+        recompute_cpu_simd_alignment_state();
+    }
 
     VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
         value_t start, value_t end, size_type n, device_enum type = device_enum::CPU) noexcept
@@ -138,10 +165,14 @@ public:
     // when device_enum is an unscoped enum implicitly convertible from int.
     VECTORIZATION_CUDA_FUNCTION_TYPE tensor(value_t* ptr, size_type n) noexcept
         : dimensions_({n}), sizes_({n}), storage_(ptr, n, device_enum::CPU)
-    { recompute_cpu_simd_alignment_state(); }
+    {
+        recompute_cpu_simd_alignment_state();
+    }
     VECTORIZATION_CUDA_FUNCTION_TYPE tensor(value_t* ptr, size_type n, device_enum type) noexcept
         : dimensions_({n}), sizes_({n}), storage_(ptr, n, type)
-    { recompute_cpu_simd_alignment_state(); }
+    {
+        recompute_cpu_simd_alignment_state();
+    }
 
     VECTORIZATION_CUDA_FUNCTION_TYPE tensor(const value_t* ptr, size_type n) noexcept
         : tensor(const_cast<value_t*>(ptr), n)
@@ -171,19 +202,25 @@ public:
     VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
         std::initializer_list<value_t> list, device_enum type = device_enum::CPU) noexcept
         : tensor(list.size(), type)
-    { std::copy(list.begin(), list.end(), data()); }
+    {
+        std::copy(list.begin(), list.end(), data());
+    }
 
     // --- 2-D constructors (matrix-like) ------------------------------------
 
     VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
         size_type rows, size_type cols, device_enum type = device_enum::CPU) noexcept
         : dimensions_({rows, cols}), sizes_({rows * cols, cols}), storage_(rows * cols, type)
-    { recompute_cpu_simd_alignment_state(); }
+    {
+        recompute_cpu_simd_alignment_state();
+    }
 
     VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
         value_t* ptr, size_type rows, size_type cols, device_enum type = device_enum::CPU) noexcept
         : dimensions_({rows, cols}), sizes_({rows * cols, cols}), storage_(ptr, rows * cols, type)
-    { recompute_cpu_simd_alignment_state(); }
+    {
+        recompute_cpu_simd_alignment_state();
+    }
 
     VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
         const value_t* ptr,
@@ -203,7 +240,7 @@ public:
     VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
         std::initializer_list<std::initializer_list<value_t>> list,
         device_enum                                           type = device_enum::CPU)
-        : tensor(list.size(), list.begin()->size(), type)
+        : tensor(list.size(), list.begin() -> size(), type)
     {
         size_t i = 0;
         for (auto const& row : list)
@@ -220,19 +257,25 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(
         const dimensions_type& dims, device_enum type = device_enum::CPU)
         : dimensions_(dims), sizes_(compute_sizes(dims)), storage_(sizes_.front(), type)
-    { recompute_cpu_simd_alignment_state(); }
+    {
+        recompute_cpu_simd_alignment_state();
+    }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(
         dimensions_type&& dims, device_enum type = device_enum::CPU)
         : dimensions_(std::move(dims)),
           sizes_(compute_sizes(dimensions_)),
           storage_(sizes_.front(), type)
-    { recompute_cpu_simd_alignment_state(); }
+    {
+        recompute_cpu_simd_alignment_state();
+    }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(
         value_t* ptr, const dimensions_type& dims, device_enum type = device_enum::CPU)
         : dimensions_(dims), sizes_(compute_sizes(dims)), storage_(ptr, sizes_.front(), type)
-    { recompute_cpu_simd_alignment_state(); }
+    {
+        recompute_cpu_simd_alignment_state();
+    }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(
         void* ptr, const dimensions_type& dims, device_enum type = device_enum::CPU)
@@ -267,7 +310,9 @@ public:
           misalign_(rhs.misalign_),
           align_start_(rhs.align_start_),
           align_end_(rhs.align_end_)
-    { rhs.misalign_ = rhs.align_start_ = rhs.align_end_ = 0; }
+    {
+        rhs.misalign_ = rhs.align_start_ = rhs.align_end_ = 0;
+    }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor& operator=(tensor const& rhs)
     {
@@ -362,7 +407,9 @@ public:
     // -----------------------------------------------------------------------
 
     VECTORIZATION_FUNCTION_ATTRIBUTE const value_t* data() const noexcept
-    { return storage_.data(); }
+    {
+        return storage_.data();
+    }
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t* data() noexcept { return storage_.data(); }
     VECTORIZATION_FUNCTION_ATTRIBUTE size_t   size() const noexcept { return storage_.size(); }
     VECTORIZATION_FUNCTION_ATTRIBUTE bool     empty() const noexcept { return size() == 0; }
@@ -370,15 +417,21 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE iterator       begin() noexcept { return storage_.begin(); }
     VECTORIZATION_FUNCTION_ATTRIBUTE iterator       end() noexcept { return storage_.end(); }
     VECTORIZATION_FUNCTION_ATTRIBUTE const_iterator begin() const noexcept
-    { return storage_.begin(); }
+    {
+        return storage_.begin();
+    }
     VECTORIZATION_FUNCTION_ATTRIBUTE const_iterator end() const noexcept { return storage_.end(); }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE reverse_iterator rbegin() { return reverse_iterator(end()); }
     VECTORIZATION_FUNCTION_ATTRIBUTE reverse_iterator rend() { return reverse_iterator(begin()); }
     VECTORIZATION_FUNCTION_ATTRIBUTE const_reverse_iterator crbegin() const
-    { return const_reverse_iterator(end()); }
+    {
+        return const_reverse_iterator(end());
+    }
     VECTORIZATION_FUNCTION_ATTRIBUTE const_reverse_iterator crend() const
-    { return const_reverse_iterator(begin()); }
+    {
+        return const_reverse_iterator(begin());
+    }
 
     // -----------------------------------------------------------------------
     // Shape / rank
@@ -386,15 +439,23 @@ public:
 
     VECTORIZATION_FUNCTION_ATTRIBUTE size_t rank() const noexcept { return dimensions_.size(); }
     VECTORIZATION_FUNCTION_ATTRIBUTE const dimensions_type& dimensions() const noexcept
-    { return dimensions_; }
+    {
+        return dimensions_;
+    }
     VECTORIZATION_FUNCTION_ATTRIBUTE size_t dimension(size_t n) const noexcept
-    { return dimensions_[n]; }
+    {
+        return dimensions_[n];
+    }
 
     // 1-D / 2-D convenience (mirrors former vector<T>::rows() and matrix<T>::rows/columns())
     VECTORIZATION_FUNCTION_ATTRIBUTE size_t rows() const noexcept
-    { return dimensions_.empty() ? 0 : dimensions_[0]; }
+    {
+        return dimensions_.empty() ? 0 : dimensions_[0];
+    }
     VECTORIZATION_FUNCTION_ATTRIBUTE size_t columns() const noexcept
-    { return dimensions_.size() < 2 ? 1 : dimensions_[1]; }
+    {
+        return dimensions_.size() < 2 ? 1 : dimensions_[1];
+    }
 
     // -----------------------------------------------------------------------
     // Element access
@@ -402,7 +463,9 @@ public:
 
     // Flat indexed access (1-D semantic, element by element)
     VECTORIZATION_FUNCTION_ATTRIBUTE const value_t& operator[](size_type i) const noexcept
-    { return data()[i]; }
+    {
+        return data()[i];
+    }
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t& operator[](size_type i) noexcept { return data()[i]; }
 
     // 1-D scalar element
@@ -425,9 +488,13 @@ public:
 
     // N-D element by multi-index
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t at(const dimensions_type& indices) const
-    { return data()[linearized_index(indices)]; }
+    {
+        return data()[linearized_index(indices)];
+    }
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t& at(const dimensions_type& indices)
-    { return data()[linearized_index(indices)]; }
+    {
+        return data()[linearized_index(indices)];
+    }
 
     // Row view as sub-tensor (for rank-2: returns a rank-1 row; for rank-N: reduces outer dim)
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor row(size_type i) const
@@ -445,7 +512,9 @@ public:
 
     // data() by row index (raw pointer, for internal use by expressions_matrix)
     VECTORIZATION_FUNCTION_ATTRIBUTE const value_t* data(size_type row_idx) const noexcept
-    { return data() + columns() * row_idx; }
+    {
+        return data() + columns() * row_idx;
+    }
 
     // get_matrix() — returns a rank-2 sub-tensor (matrix slice) from a rank≥3
     // tensor.  For a rank-3 tensor with shape [K, R, C], get_matrix(k) returns
@@ -721,25 +790,16 @@ private:
             align_end_   = 0;
             return;
         }
-        const size_t          n                = storage_.size();
-        value_t const*        base             = storage_.data();
-        const auto            data_addr        = reinterpret_cast<std::uintptr_t>(base);
-        constexpr std::size_t dest_align_bytes = cpu_simd_byte_alignment();
+        const size_t   n         = storage_.size();
+        value_t const* base      = storage_.data();
+        const auto     data_addr = reinterpret_cast<std::uintptr_t>(base);
+
         static_assert(
-            (dest_align_bytes & (dest_align_bytes - 1)) == 0,
-            "SIMD alignment must be a power of two");
-        misalign_            = static_cast<std::size_t>(data_addr % dest_align_bytes);
-        std::size_t prologue = 0;
-        if (misalign_ != 0)
-        {
-            const auto bytes_to_align = dest_align_bytes - misalign_;
-            prologue                  = bytes_to_align / sizeof(value_t);
-            if (prologue > n)
-                prologue = n;
-        }
-        align_start_              = prologue;
-        constexpr std::size_t len = packet_t::length();
-        align_end_                = align_start_ + len * ((n - align_start_) / len);
+            (scalar_size & (scalar_size - 1)) == 0, "SIMD alignment must be a power of two");
+        misalign_ = static_cast<std::size_t>(data_addr % alignment);
+
+        align_start_ = first_aligned(base, n);
+        align_end_   = last_aligned(align_start_, n, packet_t::length());
 #endif
     }
 
@@ -756,7 +816,9 @@ private:
 template <typename V>
 VECTORIZATION_FUNCTION_ATTRIBUTE bool expr_cpu_simd_lane_aligned_at(
     tensor<V> const& t, std::size_t index) noexcept
-{ return t.cpu_simd_lane_aligned_at(index); }
+{
+    return t.cpu_simd_lane_aligned_at(index);
+}
 
 // ---------------------------------------------------------------------------
 // Stream output

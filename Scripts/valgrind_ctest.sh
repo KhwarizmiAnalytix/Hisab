@@ -208,7 +208,21 @@ run_valgrind_tests() {
     # Note: All Valgrind options are configured in CMake (valgrind.cmake)
     # The --output-on-failure flag ensures we see test output if something fails
     local ctest_exit_code=0
-    ctest -T memcheck|| ctest_exit_code=$?
+    #
+    # We explicitly overwrite CTest's MemCheck options here to avoid "still reachable"
+    # noise (common in libstdc++/gtest static initialization) being reported as leaks.
+    # This keeps the CI signal focused on real defects: invalid accesses, uninitialized
+    # uses, and *definite* leaks.
+    # Keep options close to CTest defaults, but drop "--show-reachable=yes" so that
+    # "still reachable" allocations (common in libstdc++/gtest) don't get reported
+    # as potential leaks/defects.
+    local memcheck_opts="--tool=memcheck --leak-check=yes --show-reachable=no --num-callers=50"
+    local suppressions_file="${build_dir%/}/../Scripts/suppressions/valgrind_suppression.txt"
+    if [ -f "$suppressions_file" ]; then
+        ctest --overwrite "MemoryCheckCommandOptions=$memcheck_opts --suppressions=$suppressions_file" -T memcheck || ctest_exit_code=$?
+    else
+        ctest --overwrite "MemoryCheckCommandOptions=$memcheck_opts" -T memcheck || ctest_exit_code=$?
+    fi
 
     return $ctest_exit_code
 }

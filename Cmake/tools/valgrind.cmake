@@ -66,13 +66,31 @@ message(STATUS "Global CTest timeout: ${CTEST_TEST_TIMEOUT} seconds")
 # Valgrind Command
 # Options
 
+# CTest's MemCheck driver writes its own per-test log file (MemoryChecker.<N>.log),
+# so we deliberately do NOT set Valgrind --log-file/--xml-file here.
+#
+# Also: treat only *definite* leaks as defects, to avoid "still reachable" noise
+# (common in libstdc++/gtest/static initialization) being reported as leaks.
 set(CMAKE_MEMORYCHECK_COMMAND_OPTIONS
-    "--tool=memcheck" "--leak-check=full" "--show-leak-kinds=all" "--show-reachable=yes"
-    "--track-origins=yes" "--track-fds=yes" "--verbose" "--num-callers=50" "--trace-children=yes"
-    "--error-exitcode=1" "--gen-suppressions=all"
-    "--log-file=${CMAKE_BINARY_DIR}/Testing/Temporary/valgrind_%p.log" "--xml=yes"
-    "--xml-file=${CMAKE_BINARY_DIR}/Testing/Temporary/valgrind_%p.xml"
+    "--tool=memcheck"
+    "--leak-check=full"
+    "--show-leak-kinds=definite"
+    "--errors-for-leak-kinds=definite"
+    "--track-origins=yes"
+    "--track-fds=yes"
+    "--num-callers=50"
+    "--trace-children=yes"
+    "--error-exitcode=1"
+    "--gen-suppressions=all"
 )
+
+# Wire options into CTest/DartConfiguration.tcl (used by `ctest -T memcheck`).
+# These must be CACHE entries for CTest to pick them up during `include(CTest)`.
+set(CTEST_MEMORYCHECK_COMMAND "${CMAKE_MEMORYCHECK_COMMAND}"
+    CACHE FILEPATH "CTest memcheck command" FORCE)
+string(JOIN " " _ctest_memcheck_opts ${CMAKE_MEMORYCHECK_COMMAND_OPTIONS})
+set(CTEST_MEMORYCHECK_COMMAND_OPTIONS "${_ctest_memcheck_opts}"
+    CACHE STRING "CTest memcheck command options" FORCE)
 
 # =============================================================================
 # Suppression File
@@ -84,9 +102,10 @@ set(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE
 
 if(EXISTS "${CTEST_MEMORYCHECK_SUPPRESSIONS_FILE}")
   message(STATUS "Using Valgrind suppression file: ${CTEST_MEMORYCHECK_SUPPRESSIONS_FILE}")
-  list(APPEND CMAKE_MEMORYCHECK_COMMAND_OPTIONS
-       "--suppressions=${CTEST_MEMORYCHECK_SUPPRESSIONS_FILE}"
-  )
+  list(APPEND CMAKE_MEMORYCHECK_COMMAND_OPTIONS "--suppressions=${CTEST_MEMORYCHECK_SUPPRESSIONS_FILE}")
+  set(CTEST_MEMORYCHECK_COMMAND_OPTIONS
+      "${CTEST_MEMORYCHECK_COMMAND_OPTIONS} --suppressions=${CTEST_MEMORYCHECK_SUPPRESSIONS_FILE}"
+      CACHE STRING "CTest memcheck command options" FORCE)
 else()
   message(WARNING "Valgrind suppression file not found: ${CTEST_MEMORYCHECK_SUPPRESSIONS_FILE}")
   message(WARNING "Consider creating a suppression file to filter known false positives")
