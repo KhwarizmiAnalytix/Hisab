@@ -19,20 +19,36 @@
 
 #pragma once
 
-#include "common/vectorization_macros.h"
+#include <cstdint>
+
 #include "common/packet.h"
 #include "common/scalar_helper_functions.h"
+#include "common/vectorization_macros.h"
 #include "common/vectorization_type_traits.h"
 
 namespace vectorization
 {
+template <typename value_t>
+class tensor;
+
+/// \c true when \p index is in this tensor's aligned SIMD lane range (see \c tensor::align_start / align_end).
+template <typename T>
+VECTORIZATION_FUNCTION_ATTRIBUTE constexpr bool expr_cpu_simd_lane_aligned_at(
+    T const&, std::size_t) noexcept
+{ return false; }
+
+template <typename V>
+VECTORIZATION_FUNCTION_ATTRIBUTE bool expr_cpu_simd_lane_aligned_at(
+    tensor<V> const& t, std::size_t index) noexcept;
+
 template <typename LHS, bool vectorize>
 class expression_loader final
 {
 public:
     using rmv_lhs = vectorization::remove_cvref_t<LHS>;
 
-    VECTORIZATION_FUNCTION_ATTRIBUTE static auto evaluate(rmv_lhs const& expr, size_t index) noexcept
+    VECTORIZATION_FUNCTION_ATTRIBUTE static auto evaluate(
+        rmv_lhs const& expr, size_t index) noexcept
     {
         if constexpr (vectorization::is_base_expression<rmv_lhs>::value)
         {
@@ -44,14 +60,25 @@ public:
 
                 array_simd_t t{};
 
-                auto const* ptr = &expr.data()[index];
+                auto const* ptr = expr.data() + index;
 
-                // Prefetch is a CPU-only hint; it must look ahead, not at the
-                // address about to be loaded (that data is already in flight).
+                // Prefetch is a CPU-only hint; look ahead of the upcoming load.
 #if !VECTORIZATION_ON_GPU_DEVICE
-                packet<value_t>::prefetch(ptr + packet_t::length() * 8);
+                constexpr std::ptrdiff_t prefetch_packets = 4;  // heuristic; tuned by benchmarks
+                constexpr std::ptrdiff_t prefetch_elems =
+                    static_cast<std::ptrdiff_t>(packet_t::length()) * prefetch_packets;
+                if (static_cast<size_t>(prefetch_elems) + index < expr.size())
+                    packet<value_t>::prefetch(ptr + prefetch_elems);
 #endif
+                // Avoid per-index pointer checks: tensor caches [align_start, align_end) for aligned load/store.
+#if VECTORIZATION_VECTORIZED
+                if (expr_cpu_simd_lane_aligned_at(expr, index))
+                    packet<value_t>::load(ptr, t);
+                else
+                    packet<value_t>::loadu(ptr, t);
+#else
                 packet<value_t>::loadu(ptr, t);
+#endif
 
                 return t;
             }

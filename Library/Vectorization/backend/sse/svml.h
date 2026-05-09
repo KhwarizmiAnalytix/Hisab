@@ -96,7 +96,7 @@ extern "C"
 #endif
 }
 
-#if defined(_MSC_VER) && !defined(__clang__)
+#if defined(_MSC_VER)
 
 #define SVML_FUNCTION_ONE_ARG(op)                                                           \
     VECTORIZATION_FORCE_INLINE __m128 VECTORIZATION_VECTORCALL _mm_##op##_ps(__m128 x)      \
@@ -119,13 +119,13 @@ extern "C"
             svml_pd(op))(x, y);                                                                  \
     }
 
-#else  // !(_MSC_VER && !__clang__)
+#else  // !_MSC_VER
 
-#define SVML_FUNCTION_ONE_ARG(op)                                                           \
-    VECTORIZATION_FORCE_INLINE __m128 VECTORIZATION_VECTORCALL _mm_##op##_ps(__m128 x)      \
-    { return svml_ps(op)(x); }                                                              \
-                                                                                            \
-    VECTORIZATION_FORCE_INLINE __m128d VECTORIZATION_VECTORCALL _mm_##op##_pd(__m128d x)    \
+#define SVML_FUNCTION_ONE_ARG(op)                                                        \
+    VECTORIZATION_FORCE_INLINE __m128 VECTORIZATION_VECTORCALL _mm_##op##_ps(__m128 x)   \
+    { return svml_ps(op)(x); }                                                           \
+                                                                                         \
+    VECTORIZATION_FORCE_INLINE __m128d VECTORIZATION_VECTORCALL _mm_##op##_pd(__m128d x) \
     { return svml_pd(op)(x); }
 
 #define SVML_FUNCTION_TWO_ARGS(op)                                                               \
@@ -136,7 +136,7 @@ extern "C"
         __m128d x, __m128d y)                                                                    \
     { return svml_pd(op)(x, y); }
 
-#endif  // defined(_MSC_VER) && !defined(__clang__)
+#endif  // defined(_MSC_VER)
 
 SVML_FUNCTION_ONE_ARG(exp)
 SVML_FUNCTION_ONE_ARG(expm1)

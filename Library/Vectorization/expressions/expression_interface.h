@@ -19,9 +19,9 @@
 
 #pragma once
 
-#include "common/vectorization_macros.h"
 #include "common/packet.h"
 #include "common/scalar_helper_functions.h"
+#include "common/vectorization_macros.h"
 #include "common/vectorization_type_traits.h"
 #include "expressions/expression_interface_loader.h"
 
@@ -35,29 +35,33 @@ namespace vectorization
 template <typename LHS, typename EVALUATOR>
 class unary_expression final
 {
-    LHS lhs_;
     using rmv_lhs = vectorization::remove_cvref_t<LHS>;
+    rmv_lhs lhs_;
 
 public:
     VECTORIZATION_FUNCTION_ATTRIBUTE size_t size() const noexcept { return lhs_.size(); }
 
     static constexpr size_t length() { return rmv_lhs::length(); }
 
-    VECTORIZATION_FUNCTION_ATTRIBUTE explicit unary_expression(LHS const& lhs) noexcept
-        : lhs_(lhs) {}  // NOLINT
+    VECTORIZATION_FUNCTION_ATTRIBUTE explicit unary_expression(rmv_lhs const& lhs) noexcept
+        : lhs_(lhs)
+    {
+    }  // NOLINT
 
-    VECTORIZATION_FUNCTION_ATTRIBUTE explicit unary_expression(LHS&& lhs) noexcept : lhs_(std::move(lhs))
+    VECTORIZATION_FUNCTION_ATTRIBUTE explicit unary_expression(rmv_lhs&& lhs) noexcept
+        : lhs_(std::move(lhs))
     {
     }
 
     // Defaulted copy/move must carry __host__ __device__ for CUDA/HIP device
     // code to be able to copy expression nodes (e.g. when capturing in a kernel).
-    VECTORIZATION_FUNCTION_ATTRIBUTE unary_expression(unary_expression const& e) = default;
+    VECTORIZATION_FUNCTION_ATTRIBUTE unary_expression(unary_expression const& e)     = default;
     VECTORIZATION_FUNCTION_ATTRIBUTE unary_expression(unary_expression&& e) noexcept = default;
 
     // Expressions are invariant
-    VECTORIZATION_FUNCTION_ATTRIBUTE unary_expression& operator=(unary_expression const& e) = delete;
-    VECTORIZATION_FUNCTION_ATTRIBUTE unary_expression& operator=(unary_expression&& e)      = delete;
+    VECTORIZATION_FUNCTION_ATTRIBUTE unary_expression& operator=(unary_expression const& e) =
+        delete;
+    VECTORIZATION_FUNCTION_ATTRIBUTE unary_expression& operator=(unary_expression&& e) = delete;
 
     VECTORIZATION_FUNCTION_ATTRIBUTE const auto& rhs() const { return lhs_; }
 
@@ -65,7 +69,7 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE static auto evaluate(
         unary_expression const& expr, size_t index) noexcept
     {
-        const auto rhs = expression_loader<rmv_lhs, vectorize>::evaluate(expr.rhs(), index);
+        const auto& rhs = expression_loader<rmv_lhs, vectorize>::evaluate(expr.rhs(), index);
         return EVALUATOR::functor(rhs);
     }
 };
@@ -99,7 +103,8 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr size_t length()
     {
         if constexpr (
-            vectorization::is_expression<rmv_rhs>::value && vectorization::is_expression<rmv_lhs>::value)
+            vectorization::is_expression<rmv_rhs>::value &&
+            vectorization::is_expression<rmv_lhs>::value)
         {
             static_assert(
                 rmv_rhs::length() == rmv_lhs::length(), "expresions have different strides!");
@@ -134,12 +139,13 @@ public:
     {
     }
 
-    VECTORIZATION_FUNCTION_ATTRIBUTE binary_expression(binary_expression const& e) = default;
+    VECTORIZATION_FUNCTION_ATTRIBUTE binary_expression(binary_expression const& e)     = default;
     VECTORIZATION_FUNCTION_ATTRIBUTE binary_expression(binary_expression&& e) noexcept = default;
 
     // Expressions are invariant
-    VECTORIZATION_FUNCTION_ATTRIBUTE binary_expression& operator=(binary_expression const& e) = delete;
-    VECTORIZATION_FUNCTION_ATTRIBUTE binary_expression& operator=(binary_expression&& e)      = delete;
+    VECTORIZATION_FUNCTION_ATTRIBUTE binary_expression& operator=(binary_expression const& e) =
+        delete;
+    VECTORIZATION_FUNCTION_ATTRIBUTE binary_expression& operator=(binary_expression&& e) = delete;
 
     VECTORIZATION_FUNCTION_ATTRIBUTE const auto& lhs() const { return lhs_; }
     VECTORIZATION_FUNCTION_ATTRIBUTE const auto& rhs() const { return rhs_; }
@@ -148,8 +154,8 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE static auto evaluate(
         binary_expression const& expr, size_t index) noexcept
     {
-        const auto lhs = expression_loader<rmv_lhs, vectorize>::evaluate(expr.lhs(), index);
-        const auto rhs = expression_loader<rmv_rhs, vectorize>::evaluate(expr.rhs(), index);
+        const auto& lhs = expression_loader<rmv_lhs, vectorize>::evaluate(expr.lhs(), index);
+        const auto& rhs = expression_loader<rmv_rhs, vectorize>::evaluate(expr.rhs(), index);
         return EVALUATOR::functor(lhs, rhs);
     }
 };
@@ -222,12 +228,13 @@ public:
     {
     }
 
-    VECTORIZATION_FUNCTION_ATTRIBUTE trinary_expression(trinary_expression const& e) = default;
+    VECTORIZATION_FUNCTION_ATTRIBUTE trinary_expression(trinary_expression const& e)     = default;
     VECTORIZATION_FUNCTION_ATTRIBUTE trinary_expression(trinary_expression&& e) noexcept = default;
 
     // Expressions are invariant
-    VECTORIZATION_FUNCTION_ATTRIBUTE trinary_expression& operator=(trinary_expression const& e) = delete;
-    VECTORIZATION_FUNCTION_ATTRIBUTE trinary_expression& operator=(trinary_expression&& e)      = delete;
+    VECTORIZATION_FUNCTION_ATTRIBUTE trinary_expression& operator=(trinary_expression const& e) =
+        delete;
+    VECTORIZATION_FUNCTION_ATTRIBUTE trinary_expression& operator=(trinary_expression&& e) = delete;
 
     VECTORIZATION_FUNCTION_ATTRIBUTE const auto& lhs() const { return lhs_; }
     VECTORIZATION_FUNCTION_ATTRIBUTE const auto& mhs() const { return mhs_; };
@@ -237,9 +244,9 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE static auto evaluate(
         trinary_expression const& expr, size_t index) noexcept
     {
-        const auto lhs = expression_loader<rmv_lhs, vectorize>::evaluate(expr.lhs(), index);
-        const auto mhs = expression_loader<rmv_mhs, vectorize>::evaluate(expr.mhs(), index);
-        const auto rhs = expression_loader<rmv_rhs, vectorize>::evaluate(expr.rhs(), index);
+        const auto& lhs = expression_loader<rmv_lhs, vectorize>::evaluate(expr.lhs(), index);
+        const auto& mhs = expression_loader<rmv_mhs, vectorize>::evaluate(expr.mhs(), index);
+        const auto& rhs = expression_loader<rmv_rhs, vectorize>::evaluate(expr.rhs(), index);
         return EVALUATOR::functor(lhs, mhs, rhs);
     }
 };

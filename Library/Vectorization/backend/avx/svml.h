@@ -89,7 +89,7 @@ extern "C"
     __m256d __svml_hypot4_ha(__m256d, __m256d);
 }
 
-#if defined(_MSC_VER) && !defined(__clang__)
+#if defined(_MSC_VER)
 
 #define SVML_FUNCTION_ONE_ARG(op)                                                           \
     VECTORIZATION_FORCE_INLINE __m256 VECTORIZATION_VECTORCALL _mm256_##op##_ps(__m256 x)   \
@@ -113,7 +113,7 @@ extern "C"
             svml_pd(op))(x, y);                                                                  \
     }
 
-#else  // !(_MSC_VER && !__clang__)
+#else  // !_MSC_VER
 
 #define SVML_FUNCTION_ONE_ARG(op)                                  \
     VECTORIZATION_FORCE_INLINE __m256 _mm256_##op##_ps(__m256 x)   \
@@ -129,7 +129,7 @@ extern "C"
     VECTORIZATION_FORCE_INLINE __m256d _mm256_##op##_pd(__m256d x, __m256d y) \
     { return svml_pd(op)(x, y); }
 
-#endif  // defined(_MSC_VER) && !defined(__clang__)
+#endif  // defined(_MSC_VER)
 
 SVML_FUNCTION_ONE_ARG(exp)
 SVML_FUNCTION_ONE_ARG(expm1)

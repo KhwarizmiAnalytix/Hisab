@@ -96,7 +96,7 @@ extern "C"
 #endif
 }
 
-#if defined(_MSC_VER) && !defined(__clang__)
+#if defined(_MSC_VER)
 
 #define SVML_FUNCTION_ONE_ARG(op)                                                           \
     VECTORIZATION_FORCE_INLINE __m512 VECTORIZATION_VECTORCALL _mm512_##op##_ps(__m512 x)   \
@@ -120,7 +120,7 @@ extern "C"
             svml_pd(op))(x, y);                                                                  \
     }
 
-#else  // !(_MSC_VER && !__clang__)
+#else  // !_MSC_VER
 
 #define SVML_FUNCTION_ONE_ARG(op)                                                           \
     VECTORIZATION_FORCE_INLINE __m512 VECTORIZATION_VECTORCALL _mm512_##op##_ps(__m512 x)   \
@@ -129,16 +129,16 @@ extern "C"
     VECTORIZATION_FORCE_INLINE __m512d VECTORIZATION_VECTORCALL _mm512_##op##_pd(__m512d x) \
     { return svml_pd(op)(x); }
 
-#define SVML_FUNCTION_TWO_ARGS(op)                                                               \
-    VECTORIZATION_FORCE_INLINE __m512 VECTORIZATION_VECTORCALL _mm512_##op##_ps(                 \
-        __m512 x, __m512 y)                                                                      \
-    { return svml_ps(op)(x, y); }                                                               \
-                                                                                                 \
-    VECTORIZATION_FORCE_INLINE __m512d VECTORIZATION_VECTORCALL _mm512_##op##_pd(                \
-        __m512d x, __m512d y)                                                                    \
+#define SVML_FUNCTION_TWO_ARGS(op)                                                \
+    VECTORIZATION_FORCE_INLINE __m512 VECTORIZATION_VECTORCALL _mm512_##op##_ps(  \
+        __m512 x, __m512 y)                                                       \
+    { return svml_ps(op)(x, y); }                                                 \
+                                                                                  \
+    VECTORIZATION_FORCE_INLINE __m512d VECTORIZATION_VECTORCALL _mm512_##op##_pd( \
+        __m512d x, __m512d y)                                                     \
     { return svml_pd(op)(x, y); }
 
-#endif  // defined(_MSC_VER) && !defined(__clang__)
+#endif  // defined(_MSC_VER)
 
 SVML_FUNCTION_ONE_ARG(exp)
 SVML_FUNCTION_ONE_ARG(expm1)
