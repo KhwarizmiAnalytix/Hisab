@@ -116,9 +116,6 @@ public:
         return packet_t::length();
     }
 
-    /// Byte offset of \c data() modulo \ref cpu_simd_byte_alignment (0 on GPU / non-vectorized).
-    VECTORIZATION_FUNCTION_ATTRIBUTE std::size_t misalign() const noexcept { return misalign_; }
-
     /// First element index where CPU SIMD lanes are memory-aligned (scalar prologue is \c [0, align_start) ).
     VECTORIZATION_FUNCTION_ATTRIBUTE std::size_t align_start() const noexcept
     {
@@ -127,23 +124,6 @@ public:
 
     /// Exclusive end index: for \c i in <tt>[align_start, align_end)</tt> at stride \ref length(), use \c load / \c store.
     VECTORIZATION_FUNCTION_ATTRIBUTE std::size_t align_end() const noexcept { return align_end_; }
-
-    /// True when \p index lies in <tt>[align_start_, align_end_)</tt> (vectorized builds only).
-    VECTORIZATION_FUNCTION_ATTRIBUTE bool cpu_simd_lane_aligned_at(std::size_t index) const noexcept
-    {
-#if !VECTORIZATION_VECTORIZED || VECTORIZATION_ON_GPU_DEVICE
-        (void)index;
-        return false;
-#else
-        return index >= align_start_ && index < align_end_ &&
-               ((index - align_start_) % packet_t::length() == 0);
-#endif
-    }
-
-    // Static rank is 0 for tensor (rank is a runtime property).
-    // Provided so that generic code that tested vector<T>::dimensions()==1 or
-    // matrix<T>::dimensions()==2 can migrate to tensor<T>::static_rank()==0.
-    VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr size_t static_rank() noexcept { return 0; }
 
     // -----------------------------------------------------------------------
     // Constructors
@@ -249,7 +229,7 @@ public:
     VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
         std::initializer_list<std::initializer_list<value_t>> list,
         device_enum                                           type = device_enum::CPU)
-        : tensor(list.size(), list.begin()->size(), type)
+        : tensor(list.size(), list.begin() -> size(), type)
     {
         size_t i = 0;
         for (auto const& row : list)
