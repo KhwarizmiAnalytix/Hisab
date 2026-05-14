@@ -21,6 +21,33 @@ target_link_libraries(
   VectorizationCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Vectorization::Vectorization
 )
 
+# ---------------------------------------------------------------------------
+# LibTorch (PyTorch C++ frontend) — auto-detected via CMAKE_PREFIX_PATH
+# ---------------------------------------------------------------------------
+# Isolate from our project's custom find-modules so LibTorch's own Caffe2
+# dependencies (e.g. FindMKL) use CMake's built-ins, not ours.
+set(_saved_module_path "${CMAKE_MODULE_PATH}")
+set(CMAKE_MODULE_PATH "")
+find_package(Torch QUIET)
+set(CMAKE_MODULE_PATH "${_saved_module_path}")
+if(Torch_FOUND)
+  message(STATUS "LibTorch found: ${TORCH_INSTALL_PREFIX} (${Torch_VERSION})")
+else()
+  message(STATUS "LibTorch not found — LibTorch tests skipped (add install dir to CMAKE_PREFIX_PATH to enable)")
+endif()
+
+if(Torch_FOUND)
+  target_link_libraries(VectorizationCxxTests PRIVATE torch)
+  target_compile_definitions(VectorizationCxxTests PRIVATE VECTORIZATION_HAS_LIBTORCH=1)
+  target_compile_options(VectorizationCxxTests PRIVATE
+    $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-deprecated-declarations -Wno-unused-parameter>
+    $<$<CXX_COMPILER_ID:GNU>:-Wno-deprecated-declarations -Wno-unused-parameter>
+  )
+  message(STATUS "VectorizationCxxTests: LibTorch comparison tests ENABLED")
+else()
+  target_compile_definitions(VectorizationCxxTests PRIVATE VECTORIZATION_HAS_LIBTORCH=0)
+endif()
+
 set_target_properties(
   VectorizationCxxTests
   PROPERTIES FOLDER "Tests"
@@ -169,4 +196,22 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
 
   list(LENGTH bench_sources bench_count)
   message(STATUS "✓ Individual benchmark executables configured (${bench_count} total)")
+
+  # ---------------------------------------------------------------------------
+  # BenchmarkTensorLibTorch: link LibTorch when available, otherwise stub out.
+  # ---------------------------------------------------------------------------
+  if(TARGET benchmark_tensorlibtorch)
+    if(Torch_FOUND)
+      target_link_libraries(benchmark_tensorlibtorch PRIVATE torch)
+      target_compile_definitions(benchmark_tensorlibtorch PRIVATE VECTORIZATION_HAS_LIBTORCH=1)
+      target_compile_options(benchmark_tensorlibtorch PRIVATE
+        $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-deprecated-declarations -Wno-unused-parameter>
+        $<$<CXX_COMPILER_ID:GNU>:-Wno-deprecated-declarations -Wno-unused-parameter>
+      )
+      message(STATUS "benchmark_tensorlibtorch: LibTorch comparison benchmarks ENABLED")
+    else()
+      target_compile_definitions(benchmark_tensorlibtorch PRIVATE VECTORIZATION_HAS_LIBTORCH=0)
+      message(STATUS "benchmark_tensorlibtorch: LibTorch not found — benchmark stubs only")
+    endif()
+  endif()
 endif()
