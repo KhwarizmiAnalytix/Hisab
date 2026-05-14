@@ -119,6 +119,14 @@
 #define VECTORIZATION_UNUSED
 #endif  // __cplusplus >= 201703L
 
+#if defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
+#define VECTORIZATION_LIKELY(expr) (__builtin_expect(static_cast<bool>(expr), 1))
+#define VECTORIZATION_UNLIKELY(expr) (__builtin_expect(static_cast<bool>(expr), 0))
+#else
+#define VECTORIZATION_LIKELY(expr) (expr)
+#define VECTORIZATION_UNLIKELY(expr) (expr)
+#endif
+
 #if defined(_MSC_VER)
 #if (_MSC_VER < 1900)
 // Visual studio until 2015 is not supporting standard 'alignas' keyword

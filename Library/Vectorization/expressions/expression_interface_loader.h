@@ -28,7 +28,7 @@
 
 namespace vectorization
 {
-template <typename value_t>
+template <typename value_t, bool clone>
 class tensor;
 
 template <typename LHS, bool vectorize, bool aligned>
@@ -75,7 +75,7 @@ public:
         }
         else if constexpr (vectorization::is_pure_expression<rmv_lhs>::value)
         {
-            return rmv_lhs::template evaluate<vectorize,aligned>(expr, index);
+            return rmv_lhs::template evaluate<vectorize, aligned>(expr, index);
         }
         else if constexpr (std::is_fundamental<rmv_lhs>::value)
         {

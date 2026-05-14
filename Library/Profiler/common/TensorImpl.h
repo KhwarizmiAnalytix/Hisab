@@ -17,7 +17,7 @@
 #include <profiler/core/WrapDimMinimal.h>
 #include <profiler/core/device_option.h>
 #include <profiler/core/impl/PyObjectSlot.h>
-#include <profiler/core/impl/SizesAndStrides.h>
+#include <profiler/core/impl/sizes_and_strides.h>
 #include <profiler/macros/Export.h>
 #include <profiler/macros/Macros.h>
 #include <profiler/util/DimVector.h>
@@ -2112,7 +2112,7 @@ public:
         empty_tensor_restride(MemoryFormat::Contiguous);  // calls refresh_contiguous()
     }
 
-    /*PROFILER_FORCE_INLINE*/ const impl::SizesAndStrides& sizes_and_strides()
+    /*PROFILER_FORCE_INLINE*/ const impl::sizes_and_strides& sizes_and_strides()
     {
         return sizes_and_strides_;
     }
@@ -3175,7 +3175,7 @@ protected:
 
     impl::PyObjectSlot pyobj_slot_;
 
-    profiler::impl::SizesAndStrides sizes_and_strides_;
+    profiler::impl::sizes_and_strides sizes_and_strides_;
 
     int64_t storage_offset_ = 0;
     // If sizes and strides are empty, the numel is 1!!  However, most of the
@@ -3373,17 +3373,17 @@ private:
 //    named tensor metadata pointer
 //    version counter pointer
 //    PyObjectSlot
-//    SizesAndStrides size/pointer
-//    SizesAndStrides sizes (pre-allocated 0)
-//    SizesAndStrides sizes (pre-allocated 1)
-//    SizesAndStrides sizes (pre-allocated 2)
-//    SizesAndStrides sizes (pre-allocated 3)
-//    SizesAndStrides sizes (pre-allocated 4)
-//    SizesAndStrides strides (pre-allocated 0)
-//    SizesAndStrides strides (pre-allocated 1)
-//    SizesAndStrides strides (pre-allocated 2)
-//    SizesAndStrides strides (pre-allocated 3)
-//    SizesAndStrides strides (pre-allocated 4)
+//    sizes_and_strides size/pointer
+//    sizes_and_strides sizes (pre-allocated 0)
+//    sizes_and_strides sizes (pre-allocated 1)
+//    sizes_and_strides sizes (pre-allocated 2)
+//    sizes_and_strides sizes (pre-allocated 3)
+//    sizes_and_strides sizes (pre-allocated 4)
+//    sizes_and_strides strides (pre-allocated 0)
+//    sizes_and_strides strides (pre-allocated 1)
+//    sizes_and_strides strides (pre-allocated 2)
+//    sizes_and_strides strides (pre-allocated 3)
+//    sizes_and_strides strides (pre-allocated 4)
 //    storage offset
 //    numel
 //    data type, device, is_contiguous, storage_access_should_throw_, bitfields

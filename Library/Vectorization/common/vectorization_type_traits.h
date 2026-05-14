@@ -112,7 +112,7 @@ struct is_fundamental
 namespace vectorization
 {
 
-template <typename value_t>
+template <typename value_t, bool clone = false>
 class tensor;
 
 // Deprecated aliases — prefer tensor<T> directly.
@@ -298,16 +298,16 @@ struct scalar_type<
     typename std::enable_if_t<vectorization::is_fundamental<T>::value>>
 {
     using value =
-        typename scalar_type<vectorization::remove_cvref_t<E>,
-                             vectorization::remove_cvref_t<E>>::value;
+        typename scalar_type<vectorization::remove_cvref_t<E>, vectorization::remove_cvref_t<E>>::
+            value;
 };
 
 template <typename LHS, typename RHS, typename EVALUATOR, typename T>
 struct scalar_type<binary_expression<LHS, RHS, EVALUATOR>, T>
 {
-    using value =
-        typename scalar_type<vectorization::remove_cvref_t<LHS>,
-                             vectorization::remove_cvref_t<RHS>>::value;
+    using value = typename scalar_type<
+        vectorization::remove_cvref_t<LHS>,
+        vectorization::remove_cvref_t<RHS>>::value;
 };
 
 template <typename T, typename LHS, typename RHS, typename EVALUATOR>
@@ -316,17 +316,17 @@ struct scalar_type<
     binary_expression<LHS, RHS, EVALUATOR>,
     typename std::enable_if_t<vectorization::is_fundamental<T>::value>>
 {
-    using value =
-        typename scalar_type<vectorization::remove_cvref_t<LHS>,
-                             vectorization::remove_cvref_t<RHS>>::value;
+    using value = typename scalar_type<
+        vectorization::remove_cvref_t<LHS>,
+        vectorization::remove_cvref_t<RHS>>::value;
 };
 
 template <typename LHS, typename MHS, typename RHS, typename EVALUATOR, typename T>
 struct scalar_type<trinary_expression<LHS, MHS, RHS, EVALUATOR>, T>
 {
-    using value =
-        typename scalar_type<vectorization::remove_cvref_t<MHS>,
-                             vectorization::remove_cvref_t<RHS>>::value;
+    using value = typename scalar_type<
+        vectorization::remove_cvref_t<MHS>,
+        vectorization::remove_cvref_t<RHS>>::value;
 };
 
 template <typename T, typename LHS, typename MHS, typename RHS, typename EVALUATOR>
@@ -335,9 +335,9 @@ struct scalar_type<
     trinary_expression<LHS, MHS, RHS, EVALUATOR>,
     typename std::enable_if_t<vectorization::is_fundamental<T>::value>>
 {
-    using value =
-        typename scalar_type<vectorization::remove_cvref_t<MHS>,
-                             vectorization::remove_cvref_t<RHS>>::value;
+    using value = typename scalar_type<
+        vectorization::remove_cvref_t<MHS>,
+        vectorization::remove_cvref_t<RHS>>::value;
 };
 
 }  // namespace vectorization

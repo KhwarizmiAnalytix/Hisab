@@ -168,7 +168,7 @@ public:
         return rmv_rhs::length();
     }
 
-    VECTORIZATION_FUNCTION_ATTRIBUTE size_t size() const noexcept { return lhs_.rows(); }
+    VECTORIZATION_FUNCTION_ATTRIBUTE size_t size() const noexcept { return lhs_.dimension(0); }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE const auto& lhs() const { return lhs_; }
 
@@ -180,7 +180,7 @@ public:
     {
         if constexpr (vectorize)
         {
-            const auto peel = length() * (expr.lhs().columns() / length());
+            const auto peel = length() * (expr.lhs().dimension(1) / length());
 
             array_simd_t t{};
             packet<value_t>::setzero(t);
@@ -191,7 +191,7 @@ public:
                     expression_loader<rmv_rhs, vectorize, false>::evaluate(expr.rhs(), column);
                 matrix_vector_multiplication(expr.lhs(), index, column, t1, t);
             }
-            for (size_t column = peel; column < expr.lhs().columns(); column++)
+            for (size_t column = peel; column < expr.lhs().dimension(1); column++)
             {
                 auto t1 = expression_loader<rmv_rhs, false, false>::evaluate(expr.rhs(), column);
                 matrix_vector_multiplication(expr.lhs(), index, column, t1, t);
@@ -202,7 +202,7 @@ public:
         else
         {
             value_t t = 0;
-            for (size_t column = 0; column < expr.lhs().columns(); column++)
+            for (size_t column = 0; column < expr.lhs().dimension(1); column++)
             {
                 auto t1 = expression_loader<rmv_rhs, false, false>::evaluate(expr.rhs(), column);
                 matrix_vector_multiplication(expr.lhs(), index, column, t1, t);
@@ -229,7 +229,7 @@ private:
 
                 for (size_t r = 0; r < n; ++r)
                 {
-                    const auto* ptr = rhs.data() + (row + r) * rhs.columns() + column;
+                    const auto* ptr = rhs.data() + (row + r) * rhs.dimension(1) + column;
                     packet<value_t>::loadu(ptr, tmp);
                     packet<value_t>::mul(tmp, t, tmp);
 
@@ -242,8 +242,8 @@ private:
             }
             else
             {
-                const auto* ptr = rhs.data() + row * rhs.columns() + column;
-                packet<value_t>::gather(ptr, static_cast<int>(rhs.columns()), tmp);
+                const auto* ptr = rhs.data() + row * rhs.dimension(1) + column;
+                packet<value_t>::gather(ptr, static_cast<int>(rhs.dimension(1)), tmp);
                 simd_t temp;
                 temp = simd<value_t>::set(t);
                 packet<value_t>::mul(tmp, temp, tmp);
@@ -259,14 +259,16 @@ private:
     void validate() const
     {
         static_assert(
-            vectorization::is_expression<rmv_rhs>::value && vectorization::is_expression<rmv_lhs>::value,
+            vectorization::is_expression<rmv_rhs>::value &&
+                vectorization::is_expression<rmv_lhs>::value,
             "are not expresions!");
 
         VECTORIZATION_CHECK_DEBUG(
-            lhs_.columns() == rhs_.size(),
-            "matrix_vector_multiplication vector size {} is different from matrix number of columns {}",
+            lhs_.dimension(1) == rhs_.size(),
+            "matrix_vector_multiplication vector size {} is different from matrix number of "
+            "columns {}",
             rhs_.size(),
-            lhs_.columns());
+            lhs_.dimension(1));
     }
 
     LHS lhs_;
@@ -315,7 +317,7 @@ public:
 
     VECTORIZATION_FUNCTION_ATTRIBUTE const auto& rhs() const { return rhs_; };
 
-    VECTORIZATION_FUNCTION_ATTRIBUTE size_t size() const noexcept { return rhs_.columns(); }
+    VECTORIZATION_FUNCTION_ATTRIBUTE size_t size() const noexcept { return rhs_.dimension(1); }
 
     template <bool vectorize, bool aligned>
     VECTORIZATION_FUNCTION_ATTRIBUTE static auto evaluate(
@@ -323,7 +325,7 @@ public:
     {
         if constexpr (vectorize)
         {
-            const auto rows = expr.rhs().rows();
+            const auto rows = expr.rhs().dimension(0);
             auto       peel = length() * (rows / length());
 
             array_simd_t t{};
@@ -332,7 +334,8 @@ public:
             size_t row = 0;
             for (; row < peel; row += length())
             {
-                const auto& t1 = expression_loader<rmv_lhs, vectorize, false>::evaluate(expr.lhs(), row);
+                const auto& t1 =
+                    expression_loader<rmv_lhs, vectorize, false>::evaluate(expr.lhs(), row);
                 vector_matrix_multiplication(expr.rhs(), row, column, t1, t);
             }
             for (; row < rows; row++)
@@ -344,7 +347,7 @@ public:
         }
         else
         {
-            const auto rows = expr.rhs().rows();
+            const auto rows = expr.rhs().dimension(0);
             value_t    t    = 0;
             for (size_t row = 0; row < rows; row++)
             {
@@ -373,8 +376,8 @@ private:
                 for (size_t c = 0; c < packet_t::length(); ++c)
                 {
                     packet<value_t>::gather(
-                        rhs.data() + row * rhs.columns() + column + c,
-                        static_cast<int>(rhs.columns()),
+                        rhs.data() + row * rhs.dimension(1) + column + c,
+                        static_cast<int>(rhs.dimension(1)),
                         tmp);
                     packet<value_t>::mul(tmp, t, tmp);
 
@@ -387,7 +390,7 @@ private:
             }
             else
             {
-                packet<value_t>::loadu(rhs.data() + row * rhs.columns() + column, tmp);
+                packet<value_t>::loadu(rhs.data() + row * rhs.dimension(1) + column, tmp);
                 simd_t temp;
                 temp = simd<value_t>::set(t);
                 packet<value_t>::mul(tmp, temp, tmp);
@@ -407,14 +410,14 @@ private:
             " LHS or RHS is not expression");
 
         VECTORIZATION_CHECK_DEBUG(
-            rhs_.rows() == lhs_.size(),
-            "vector_matrix_multiplication_expression vector size {} is different from matrix number of rows {}",
+            rhs_.dimension(0) == lhs_.size(),
+            "vector_matrix_multiplication_expression vector size {} is different from matrix "
+            "number of rows {}",
             lhs_.size(),
-            rhs_.rows());
+            rhs_.dimension(0));
     }
 
     LHS lhs_;
     RHS rhs_;
 };
 }  // namespace vectorization
-

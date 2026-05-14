@@ -1293,8 +1293,8 @@ public:
     // TODO: There are several places that recurse over IValue. This is fragile.
     // This visitor should be used to recurse over ivalues.
     void   visit(const std::function<bool(const IValue&)>& visitor) const;
-    IValue deepcopy(std::optional<at::device_option> device = std::nullopt) const;
-    IValue deepcopy(
+    IValue clone(std::optional<at::device_option> device = std::nullopt) const;
+    IValue clone(
         HashIdentityIValueMap& memo, std::optional<at::device_option> device = std::nullopt) const;
 
 private:

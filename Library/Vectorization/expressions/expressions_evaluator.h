@@ -68,12 +68,12 @@ struct expressions_evaluator
             if (i >= n)
                 return;
 
-            //aligned loop
+            //aligned loop (destination is aligned; source may not be, use unaligned load)
             const size_t loop_peel = rhs.align_end();
             for (; i < loop_peel; i += length)
             {
                 const auto temp0 =
-                    vectorization::expression_loader<E, true, true>::evaluate(expr, i);
+                    vectorization::expression_loader<E, true, false>::evaluate(expr, i);
                 packet<value_t>::store(temp0, &data[i]);
             }
 

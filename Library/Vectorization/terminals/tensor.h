@@ -36,6 +36,7 @@
 
 #include "common/packet.h"
 #include "expressions/expressions.h"
+#include "sizes_and_strides.h"
 
 namespace vectorization
 {
@@ -57,7 +58,7 @@ inline constexpr bool is_almost_zero(T x, T epsilon = std::numeric_limits<T>::ep
 // matrix algebra is preserved for rank-2 operands.  Element-wise multiply
 // is available via mul(a, b) or fma().
 // ---------------------------------------------------------------------------
-template <typename value_t>
+template <typename value_t, bool deep_copy>
 class tensor
 {
 public:
@@ -67,12 +68,12 @@ public:
     static constexpr size_type scalar_size    = sizeof(value_type);
     static constexpr size_type alignment_size = alignment / scalar_size;
     static constexpr size_type alignment_mask = alignment_size - 1;
-    using dimensions_type                     = std::vector<size_t>;
+    using dimensions_type                     = std::vector<int64_t>;
     using evaluator                           = expressions_evaluator;
     using packet_t                            = packet<value_t, packet_size<value_t>::value>;
     using array_simd_t                        = typename packet_t::array_simd_t;
     using simd_t                              = typename simd<value_t>::simd_t;
-    using data_t                              = data_ptr<value_t, false>;
+    using data_t                              = data_ptr<value_t, deep_copy>;
     using iterator                            = value_t*;
     using const_iterator                      = const value_t*;
     using reverse_iterator                    = std::reverse_iterator<iterator>;
@@ -135,8 +136,35 @@ public:
 
     VECTORIZATION_CUDA_FUNCTION_TYPE explicit tensor(
         size_type n, device_enum type = device_enum::CPU) noexcept
-        : dimensions_({n}), sizes_({n}), storage_(n, type)
+        : storage_(n, type)
     {
+        sizes_and_strides_.size_at_unchecked(0)   = static_cast<int64_t>(n);
+        sizes_and_strides_.stride_at_unchecked(0) = 1;
+        recompute_cpu_simd_alignment_state();
+    }
+
+    // 1D view constructor — wraps an existing contiguous buffer without owning it
+    VECTORIZATION_FUNCTION_ATTRIBUTE tensor(
+        value_t* ptr, size_type n, device_enum type = device_enum::CPU) noexcept
+        : storage_(ptr, n, type)
+    {
+        static_assert(!deep_copy, "1D view constructor requires tensor<T, false>");
+        sizes_and_strides_.size_at_unchecked(0)   = static_cast<int64_t>(n);
+        sizes_and_strides_.stride_at_unchecked(0) = 1;
+        recompute_cpu_simd_alignment_state();
+    }
+
+    // 2D view constructor — wraps an existing contiguous buffer as a rows×cols matrix
+    VECTORIZATION_FUNCTION_ATTRIBUTE tensor(
+        value_t* ptr, size_type rows, size_type cols, device_enum type = device_enum::CPU) noexcept
+        : storage_(ptr, rows * cols, type)
+    {
+        static_assert(!deep_copy, "2D view constructor requires tensor<T, false>");
+        sizes_and_strides_.resize(2);
+        sizes_and_strides_.size_at_unchecked(0)   = static_cast<int64_t>(rows);
+        sizes_and_strides_.size_at_unchecked(1)   = static_cast<int64_t>(cols);
+        sizes_and_strides_.stride_at_unchecked(0) = static_cast<int64_t>(cols);
+        sizes_and_strides_.stride_at_unchecked(1) = 1;
         recompute_cpu_simd_alignment_state();
     }
 
@@ -147,45 +175,6 @@ public:
         const auto dx = (end - start) / static_cast<value_t>(n - 1);
         for (size_t i = 0; i < n; ++i)
             data()[i] = static_cast<value_t>(i) * dx + start;
-    }
-
-    // 1-D pointer views.  The device_enum overload is split from the 2-arg form
-    // so that (ptr, rows, cols) never ambiguously matches (ptr, n, device_enum)
-    // when device_enum is an unscoped enum implicitly convertible from int.
-    VECTORIZATION_CUDA_FUNCTION_TYPE tensor(value_t* ptr, size_type n) noexcept
-        : dimensions_({n}), sizes_({n}), storage_(ptr, n, device_enum::CPU)
-    {
-        recompute_cpu_simd_alignment_state();
-    }
-    VECTORIZATION_CUDA_FUNCTION_TYPE tensor(value_t* ptr, size_type n, device_enum type) noexcept
-        : dimensions_({n}), sizes_({n}), storage_(ptr, n, type)
-    {
-        recompute_cpu_simd_alignment_state();
-    }
-
-    VECTORIZATION_CUDA_FUNCTION_TYPE tensor(const value_t* ptr, size_type n) noexcept
-        : tensor(const_cast<value_t*>(ptr), n)
-    {
-    }
-    VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
-        const value_t* ptr, size_type n, device_enum type) noexcept
-        : tensor(const_cast<value_t*>(ptr), n, type)
-    {
-    }
-
-    VECTORIZATION_CUDA_FUNCTION_TYPE tensor(void* ptr, size_type n) noexcept
-        : tensor(static_cast<value_t*>(ptr), n)
-    {
-    }
-    VECTORIZATION_CUDA_FUNCTION_TYPE tensor(void* ptr, size_type n, device_enum type) noexcept
-        : tensor(static_cast<value_t*>(ptr), n, type)
-    {
-    }
-
-    VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
-        std::vector<value_t> const& v, device_enum type = device_enum::CPU) noexcept
-        : tensor(const_cast<value_t*>(v.data()), v.size(), type)
-    {
     }
 
     VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
@@ -199,31 +188,14 @@ public:
 
     VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
         size_type rows, size_type cols, device_enum type = device_enum::CPU) noexcept
-        : dimensions_({rows, cols}), sizes_({rows * cols, cols}), storage_(rows * cols, type)
+        : storage_(rows * cols, type)
     {
+        sizes_and_strides_.resize(2);
+        sizes_and_strides_.size_at_unchecked(0)   = static_cast<int64_t>(rows);
+        sizes_and_strides_.size_at_unchecked(1)   = static_cast<int64_t>(cols);
+        sizes_and_strides_.stride_at_unchecked(0) = static_cast<int64_t>(cols);
+        sizes_and_strides_.stride_at_unchecked(1) = 1;
         recompute_cpu_simd_alignment_state();
-    }
-
-    VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
-        value_t* ptr, size_type rows, size_type cols, device_enum type = device_enum::CPU) noexcept
-        : dimensions_({rows, cols}), sizes_({rows * cols, cols}), storage_(ptr, rows * cols, type)
-    {
-        recompute_cpu_simd_alignment_state();
-    }
-
-    VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
-        const value_t* ptr,
-        size_type      rows,
-        size_type      cols,
-        device_enum    type = device_enum::CPU) noexcept
-        : tensor(const_cast<value_t*>(ptr), rows, cols, type)
-    {
-    }
-
-    VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
-        void* ptr, size_type rows, size_type cols, device_enum type = device_enum::CPU) noexcept
-        : tensor(static_cast<value_t*>(ptr), rows, cols, type)
-    {
     }
 
     VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
@@ -245,37 +217,27 @@ public:
 
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(
         const dimensions_type& dims, device_enum type = device_enum::CPU)
-        : dimensions_(dims), sizes_(compute_sizes(dims)), storage_(sizes_.front(), type)
+        : storage_(compute_total(dims), type)
     {
+        set_shape(dims);
         recompute_cpu_simd_alignment_state();
     }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(
         dimensions_type&& dims, device_enum type = device_enum::CPU)
-        : dimensions_(std::move(dims)),
-          sizes_(compute_sizes(dimensions_)),
-          storage_(sizes_.front(), type)
+        : storage_(compute_total(dims), type)
     {
+        set_shape(dims);
         recompute_cpu_simd_alignment_state();
     }
 
+    // Wrap external memory. clone=false: non-owning view. clone=true: copies data.
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(
-        value_t* ptr, const dimensions_type& dims, device_enum type = device_enum::CPU)
-        : dimensions_(dims), sizes_(compute_sizes(dims)), storage_(ptr, sizes_.front(), type)
+        value_t* data, const dimensions_type& dims, device_enum type = device_enum::CPU)
+        : storage_(data, compute_total(dims), type)
     {
+        set_shape(dims);
         recompute_cpu_simd_alignment_state();
-    }
-
-    VECTORIZATION_FUNCTION_ATTRIBUTE tensor(
-        void* ptr, const dimensions_type& dims, device_enum type = device_enum::CPU)
-        : tensor(static_cast<value_t*>(ptr), dims, type)
-    {
-    }
-
-    VECTORIZATION_FUNCTION_ATTRIBUTE tensor(
-        const value_t* ptr, const dimensions_type& dims, device_enum type = device_enum::CPU)
-        : tensor(const_cast<value_t*>(ptr), dims, type)
-    {
     }
 
     // -----------------------------------------------------------------------
@@ -283,8 +245,7 @@ public:
     // -----------------------------------------------------------------------
 
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(tensor const& rhs)
-        : dimensions_(rhs.dimensions_),
-          sizes_(rhs.sizes_),
+        : sizes_and_strides_(rhs.sizes_and_strides_),
           storage_(rhs.storage_),
           misalign_(rhs.misalign_),
           align_start_(rhs.align_start_),
@@ -293,8 +254,7 @@ public:
     }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(tensor&& rhs) noexcept
-        : dimensions_(std::move(rhs.dimensions_)),
-          sizes_(std::move(rhs.sizes_)),
+        : sizes_and_strides_(std::move(rhs.sizes_and_strides_)),
           storage_(std::move(rhs.storage_)),
           misalign_(rhs.misalign_),
           align_start_(rhs.align_start_),
@@ -307,12 +267,11 @@ public:
     {
         if (this != &rhs)
         {
-            dimensions_  = rhs.dimensions_;
-            sizes_       = rhs.sizes_;
-            storage_     = rhs.storage_;
-            misalign_    = rhs.misalign_;
-            align_start_ = rhs.align_start_;
-            align_end_   = rhs.align_end_;
+            sizes_and_strides_ = rhs.sizes_and_strides_;
+            storage_           = rhs.storage_;
+            misalign_          = rhs.misalign_;
+            align_start_       = rhs.align_start_;
+            align_end_         = rhs.align_end_;
         }
         return *this;
     }
@@ -321,21 +280,19 @@ public:
     {
         if (this != &rhs)
         {
-            dimensions_   = std::move(rhs.dimensions_);
-            sizes_        = std::move(rhs.sizes_);
-            storage_      = std::move(rhs.storage_);
-            misalign_     = rhs.misalign_;
-            align_start_  = rhs.align_start_;
-            align_end_    = rhs.align_end_;
+            sizes_and_strides_ = std::move(rhs.sizes_and_strides_);
+            storage_           = std::move(rhs.storage_);
+            misalign_          = rhs.misalign_;
+            align_start_       = rhs.align_start_;
+            align_end_         = rhs.align_end_;
             rhs.misalign_ = rhs.align_start_ = rhs.align_end_ = 0;
         }
         return *this;
     }
 
-    VECTORIZATION_CUDA_FUNCTION_TYPE void deepcopy(tensor const& rhs) noexcept
+    VECTORIZATION_CUDA_FUNCTION_TYPE void clone(tensor const& rhs) noexcept
     {
-        dimensions_ = rhs.dimensions_;
-        sizes_      = rhs.sizes_;
+        sizes_and_strides_ = rhs.sizes_and_strides_;
         storage_.copy(rhs.storage_);
         recompute_cpu_simd_alignment_state();
     }
@@ -349,9 +306,10 @@ public:
     template <
         typename E,
         std::enable_if_t<vectorization::is_pure_expression<E>::value, bool> = true>
-    VECTORIZATION_FUNCTION_ATTRIBUTE tensor(E const& expr)
-        : dimensions_({expr.size()}), sizes_({expr.size()}), storage_(expr.size(), device_enum::CPU)
+    VECTORIZATION_FUNCTION_ATTRIBUTE tensor(E const& expr) : storage_(expr.size(), device_enum::CPU)
     {
+        sizes_and_strides_.size_at_unchecked(0)   = static_cast<int64_t>(expr.size());
+        sizes_and_strides_.stride_at_unchecked(0) = 1;
         recompute_cpu_simd_alignment_state();
         evaluator::template run<E, tensor>(expr, *this);
     }
@@ -360,8 +318,10 @@ public:
         typename E,
         std::enable_if_t<vectorization::is_pure_expression<E>::value, bool> = true>
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(E&& expr)  // NOLINT
-        : dimensions_({expr.size()}), sizes_({expr.size()}), storage_(expr.size(), device_enum::CPU)
+        : storage_(expr.size(), device_enum::CPU)
     {
+        sizes_and_strides_.size_at_unchecked(0)   = static_cast<int64_t>(expr.size());
+        sizes_and_strides_.stride_at_unchecked(0) = 1;
         recompute_cpu_simd_alignment_state();
         evaluator::template run<E, tensor>(expr, *this);
     }
@@ -400,8 +360,17 @@ public:
         return storage_.data();
     }
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t* data() noexcept { return storage_.data(); }
-    VECTORIZATION_FUNCTION_ATTRIBUTE size_t   size() const noexcept { return storage_.size(); }
-    VECTORIZATION_FUNCTION_ATTRIBUTE bool     empty() const noexcept { return size() == 0; }
+    VECTORIZATION_FUNCTION_ATTRIBUTE size_t   size() const noexcept
+    {
+        const size_t ndim = sizes_and_strides_.size();
+        if (ndim == 0)
+            return 0;
+        size_t total = 1;
+        for (size_t i = 0; i < ndim; ++i)
+            total *= static_cast<size_t>(sizes_and_strides_.size_at_unchecked(i));
+        return total;
+    }
+    VECTORIZATION_FUNCTION_ATTRIBUTE bool empty() const noexcept { return size() == 0; }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE iterator       begin() noexcept { return storage_.begin(); }
     VECTORIZATION_FUNCTION_ATTRIBUTE iterator       end() noexcept { return storage_.end(); }
@@ -426,24 +395,49 @@ public:
     // Shape / rank
     // -----------------------------------------------------------------------
 
-    VECTORIZATION_FUNCTION_ATTRIBUTE size_t rank() const noexcept { return dimensions_.size(); }
-    VECTORIZATION_FUNCTION_ATTRIBUTE const dimensions_type& dimensions() const noexcept
+    VECTORIZATION_FUNCTION_ATTRIBUTE size_t rank() const noexcept
     {
-        return dimensions_;
-    }
-    VECTORIZATION_FUNCTION_ATTRIBUTE size_t dimension(size_t n) const noexcept
-    {
-        return dimensions_[n];
+        return sizes_and_strides_.size();
     }
 
-    // 1-D / 2-D convenience (mirrors former vector<T>::rows() and matrix<T>::rows/columns())
-    VECTORIZATION_FUNCTION_ATTRIBUTE size_t rows() const noexcept
+    VECTORIZATION_FUNCTION_ATTRIBUTE std::span<const int64_t> dimensions() const noexcept
     {
-        return dimensions_.empty() ? 0 : dimensions_[0];
+        return sizes_and_strides_.sizes_arrayref();
     }
-    VECTORIZATION_FUNCTION_ATTRIBUTE size_t columns() const noexcept
+
+    VECTORIZATION_FUNCTION_ATTRIBUTE size_t dimension(size_t n) const noexcept
     {
-        return dimensions_.size() < 2 ? 1 : dimensions_[1];
+        return static_cast<size_t>(sizes_and_strides_.size_at_unchecked(n));
+    }
+
+    // Per-dimension size and stride
+    VECTORIZATION_FUNCTION_ATTRIBUTE int64_t size(size_t dim) const noexcept
+    {
+        return sizes_and_strides_.size_at_unchecked(dim);
+    }
+    VECTORIZATION_FUNCTION_ATTRIBUTE int64_t stride(size_t dim) const noexcept
+    {
+        return sizes_and_strides_.stride_at_unchecked(dim);
+    }
+    VECTORIZATION_FUNCTION_ATTRIBUTE std::span<const int64_t> strides() const noexcept
+    {
+        return sizes_and_strides_.strides_arrayref();
+    }
+
+    // C-order contiguity check: strides[n-1]==1 and strides[i]==strides[i+1]*sizes[i+1].
+    VECTORIZATION_FUNCTION_ATTRIBUTE bool is_contiguous() const noexcept
+    {
+        const size_t n = rank();
+        if (n == 0)
+            return true;
+        if (sizes_and_strides_.stride_at_unchecked(n - 1) != 1)
+            return false;
+        for (int i = static_cast<int>(n) - 2; i >= 0; --i)
+            if (sizes_and_strides_.stride_at_unchecked(i) !=
+                sizes_and_strides_.stride_at_unchecked(i + 1) *
+                    sizes_and_strides_.size_at_unchecked(i + 1))
+                return false;
+        return true;
     }
 
     // -----------------------------------------------------------------------
@@ -464,15 +458,15 @@ public:
     // 2-D scalar element (row-major). Not noexcept: debug bounds checks may throw (like std::vector::at).
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t at(size_type i, size_type j) const
     {
-        VECTORIZATION_CHECK_DEBUG(i < rows(), "row index out of range");
-        VECTORIZATION_CHECK_DEBUG(j < columns(), "column index out of range");
-        return data()[i * columns() + j];
+        VECTORIZATION_CHECK_DEBUG(i < dimension(0), "row index out of range");
+        VECTORIZATION_CHECK_DEBUG(j < dimension(1), "column index out of range");
+        return data()[i * dimension(1) + j];
     }
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t& at(size_type i, size_type j)
     {
-        VECTORIZATION_CHECK_DEBUG(i < rows(), "row index out of range");
-        VECTORIZATION_CHECK_DEBUG(j < columns(), "column index out of range");
-        return data()[i * columns() + j];
+        VECTORIZATION_CHECK_DEBUG(i < dimension(0), "row index out of range");
+        VECTORIZATION_CHECK_DEBUG(j < dimension(1), "column index out of range");
+        return data()[i * dimension(1) + j];
     }
 
     // N-D element by multi-index
@@ -485,55 +479,95 @@ public:
         return data()[linearized_index(indices)];
     }
 
-    // Row view as sub-tensor (for rank-2: returns a rank-1 row; for rank-N: reduces outer dim)
-    VECTORIZATION_FUNCTION_ATTRIBUTE tensor row(size_type i) const
+    // -----------------------------------------------------------------------
+    // Views — metadata-only transforms (no data copy)
+    //
+    // All return tensor<value_t, false> — a non-owning view sharing the same
+    // backing buffer.  The caller must ensure the source outlives the view.
+    // -----------------------------------------------------------------------
+
+    // Transpose (rank-2): swap the two axes and their strides.
+    VECTORIZATION_FUNCTION_ATTRIBUTE tensor<value_t, false> t() const
     {
-        VECTORIZATION_CHECK_DEBUG(rank() >= 2, "row() requires rank >= 2");
-        VECTORIZATION_CHECK_DEBUG(i < rows(), "row index out of range");
-        return tensor(data() + i * columns(), columns());
-    }
-    VECTORIZATION_FUNCTION_ATTRIBUTE tensor row(size_type i)
-    {
-        VECTORIZATION_CHECK_DEBUG(rank() >= 2, "row() requires rank >= 2");
-        VECTORIZATION_CHECK_DEBUG(i < rows(), "row index out of range");
-        return tensor(data() + i * columns(), columns());
+        VECTORIZATION_CHECK(rank() == 2, "t() requires a rank-2 tensor");
+        sizes_and_strides sas = sizes_and_strides_;
+        std::swap(sas.size_at_unchecked(0), sas.size_at_unchecked(1));
+        std::swap(sas.stride_at_unchecked(0), sas.stride_at_unchecked(1));
+        return tensor<value_t, false>(
+            const_cast<value_t*>(data()), storage_.size(), sas, storage_.type_);
     }
 
-    // data() by row index (raw pointer, for internal use by expressions_matrix)
-    VECTORIZATION_FUNCTION_ATTRIBUTE const value_t* data(size_type row_idx) const noexcept
+    // Permute: reorder all axes by the given index list (no repeats, length == rank).
+    VECTORIZATION_FUNCTION_ATTRIBUTE tensor<value_t, false> permute(
+        const dimensions_type& order) const
     {
-        return data() + columns() * row_idx;
-    }
-
-    // get_matrix() — returns a rank-2 sub-tensor (matrix slice) from a rank≥3
-    // tensor.  For a rank-3 tensor with shape [K, R, C], get_matrix(k) returns
-    // the [R, C] matrix at index k.  For higher-rank tensors, provide all but
-    // the last two indices in the multi-index form.
-    VECTORIZATION_FUNCTION_ATTRIBUTE tensor get_matrix(size_type indice) const
-    {
-        VECTORIZATION_CHECK(dimensions_.size() >= 3, "get_matrix(i) requires rank >= 3");
-        return tensor(
-            data() + indice * sizes_[1],
-            static_cast<size_type>(dimensions_[1]),
-            static_cast<size_type>(dimensions_[2]));
-    }
-
-    VECTORIZATION_FUNCTION_ATTRIBUTE tensor get_matrix(const dimensions_type& indices) const
-    {
-        const size_t n = dimensions_.size();
-        VECTORIZATION_CHECK(indices.size() + 2 == n, "index count must be rank - 2");
-        if (n == 3)
+        const size_t n = rank();
+        VECTORIZATION_CHECK(order.size() == n, "permute: order length must equal rank");
+        sizes_and_strides sas;
+        sas.resize(n);
+        for (size_t i = 0; i < n; ++i)
         {
-            return tensor(
-                data() + indices[0] * sizes_[1],
-                static_cast<size_type>(dimensions_[1]),
-                static_cast<size_type>(dimensions_[2]));
+            const size_t src           = static_cast<size_t>(order[i]);
+            sas.size_at_unchecked(i)   = sizes_and_strides_.size_at_unchecked(src);
+            sas.stride_at_unchecked(i) = sizes_and_strides_.stride_at_unchecked(src);
         }
-        return tensor(
-            data() + linearized_index(indices),
-            static_cast<size_type>(dimensions_[n - 2]),
-            static_cast<size_type>(dimensions_[n - 1]));
+        return tensor<value_t, false>(
+            const_cast<value_t*>(data()), storage_.size(), sas, storage_.type_);
     }
+
+    // View: reinterpret shape with new contiguous strides.  Total element count
+    // must be preserved and the source tensor must be contiguous.
+    VECTORIZATION_FUNCTION_ATTRIBUTE tensor<value_t, false> view(
+        const dimensions_type& new_dims) const
+    {
+        VECTORIZATION_CHECK(is_contiguous(), "view() requires a contiguous tensor");
+        VECTORIZATION_CHECK(
+            compute_total(new_dims) == size(), "view: element count must not change");
+        sizes_and_strides sas;
+        make_contiguous_sas(sas, new_dims);
+        return tensor<value_t, false>(
+            const_cast<value_t*>(data()), storage_.size(), sas, storage_.type_);
+    }
+
+    // Reshape: same as view (contiguous source required; for non-contiguous call
+    // contiguous() first, then reshape).
+    VECTORIZATION_FUNCTION_ATTRIBUTE tensor<value_t, false> reshape(
+        const dimensions_type& new_dims) const
+    {
+        VECTORIZATION_CHECK(
+            is_contiguous(), "reshape: call contiguous() first for non-contiguous tensors");
+        VECTORIZATION_CHECK(
+            compute_total(new_dims) == size(), "reshape: element count must not change");
+        sizes_and_strides sas;
+        make_contiguous_sas(sas, new_dims);
+        return tensor<value_t, false>(
+            const_cast<value_t*>(data()), storage_.size(), sas, storage_.type_);
+    }
+
+    // Slice along one dimension.  stop==-1 means "to end".  step may be negative
+    // only when start > stop (reverse slice); step==0 is invalid.
+    VECTORIZATION_FUNCTION_ATTRIBUTE tensor<value_t, false> slice(
+        size_t dim, int64_t start, int64_t stop = -1, int64_t step = 1) const
+    {
+        VECTORIZATION_CHECK(dim < rank(), "slice: dim out of range");
+        VECTORIZATION_CHECK(step != 0, "slice: step must not be zero");
+        const int64_t dim_size = sizes_and_strides_.size_at_unchecked(dim);
+        if (stop < 0)
+            stop = dim_size;
+        stop                         = std::min(stop, dim_size);
+        start                        = std::min(start, dim_size);
+        const int64_t     span       = stop - start;
+        const int64_t     new_size   = (span > 0 && step > 0) || (span < 0 && step < 0)
+                                           ? (std::abs(span) + std::abs(step) - 1) / std::abs(step)
+                                           : 0;
+        sizes_and_strides sas        = sizes_and_strides_;
+        sas.size_at_unchecked(dim)   = new_size;
+        sas.stride_at_unchecked(dim) = sizes_and_strides_.stride_at_unchecked(dim) * step;
+        value_t* new_ptr =
+            const_cast<value_t*>(data()) + start * sizes_and_strides_.stride_at_unchecked(dim);
+        return tensor<value_t, false>(new_ptr, storage_.size(), sas, storage_.type_);
+    }
+
 #if 0
     // -----------------------------------------------------------------------
     // Matrix operations (2-D)
@@ -546,29 +580,33 @@ public:
         tensor const& A,
         tensor const& B) noexcept
     {
-        const size_t colsA = A.rank() >= 2 ? A.columns() : 1;
-        const size_t colsB = B.rank() >= 2 ? B.columns() : 1;
+        const size_t colsA = A.rank() >= 2 ? A.dimension(1) : 1;
+        const size_t colsB = B.rank() >= 2 ? B.dimension(1) : 1;
         const size_t ldA   = trA ? 1 : colsA;
         const size_t ldB   = trB ? 1 : colsB;
 
         vectorization::matrix_multiplication(
             trA, trB,
-            rows(), columns(),
-            trA ? A.rows() : colsA,
+            dimension(0), dimension(1),
+            trA ? A.dimension(0) : colsA,
             A.data(), ldA,
             B.data(), ldB,
-            data(), columns());
+            data(), dimension(1));
     }
 
     // Called by matrix_transpose_expression::evaluate()
     VECTORIZATION_FUNCTION_ATTRIBUTE void matrix_transpose(tensor const& A)
     {
-        deepcopy(A);
-        vectorization::matrix_transpose(A.rows(), A.columns(), data());
-        if (dimensions_.size() >= 2)
+        clone(A);
+        vectorization::matrix_transpose(A.dimension(0), A.dimension(1), data());
+        if (sizes_and_strides_.size() >= 2)
         {
-            std::swap(dimensions_[0], dimensions_[1]);
-            sizes_ = compute_sizes(dimensions_);
+            // Swap shape dims 0 and 1, then recompute strides.
+            const int64_t tmp = sizes_and_strides_.size_at_unchecked(0);
+            sizes_and_strides_.size_at_unchecked(0) = sizes_and_strides_.size_at_unchecked(1);
+            sizes_and_strides_.size_at_unchecked(1) = tmp;
+            dimensions_type dims(sizes_and_strides_.sizes_begin(), sizes_and_strides_.sizes_end());
+            set_shape(dims);
         }
     }
 
@@ -584,13 +622,14 @@ public:
 
     bool operator==(tensor const& rhs) const noexcept
     {
-        if (dimensions_ != rhs.dimensions_)
+        if (sizes_and_strides_ != rhs.sizes_and_strides_)
             return false;
         for (size_t i = 0; i < size(); ++i)
             if (data()[i] != rhs.data()[i])
                 return false;
         return true;
     }
+
     bool operator!=(tensor const& rhs) const noexcept { return !(*this == rhs); }
 
     bool is_zero() const noexcept
@@ -619,37 +658,46 @@ public:
 
     bool symmetric() const
     {
-        if (rank() < 2 || rows() != columns())
+        if (rank() < 2 || dimension(0) != dimension(1))
             return false;
-        for (size_t i = 0; i < rows(); ++i)
+        const size_t   r = dimension(0), c = dimension(1);
+        const value_t* p = data();
+        for (size_t i = 0; i < r; ++i)
             for (size_t j = 0; j < i; ++j)
-                if (!is_almost_zero(at(i, j) - at(j, i)))
+                if (!is_almost_zero(p[i * c + j] - p[j * c + i]))
                     return false;
         return true;
     }
 
     bool identity() const
     {
-        if (rank() < 2 || rows() != columns())
+        if (rank() < 2 || dimension(0) != dimension(1))
             return false;
-        for (size_t i = 0; i < rows(); ++i)
-            for (size_t j = 0; j < columns(); ++j)
-                if (at(i, j) != static_cast<value_t>(i == j))
+        const size_t   r = dimension(0), c = dimension(1);
+        const value_t* p = data();
+        for (size_t i = 0; i < r; ++i)
+            for (size_t j = 0; j < c; ++j)
+                if (p[i * c + j] != static_cast<value_t>(i == j))
                     return false;
         return true;
     }
 
     bool is_correlation() const
     {
-        if (!symmetric())
+        if (rank() < 2 || dimension(0) != dimension(1))
             return false;
-        for (size_t i = 0; i < rows(); ++i)
+        const size_t   r = dimension(0), c = dimension(1);
+        const value_t* p = data();
+        for (size_t i = 0; i < r; ++i)
         {
-            if (!is_almost_zero(at(i, i) - value_t(1)))
+            if (!is_almost_zero(p[i * c + i] - value_t(1)))
                 return false;
             for (size_t j = 0; j < i; ++j)
-                if (std::fabs(at(i, j)) > value_t(1))
+            {
+                const value_t v = p[i * c + j];
+                if (std::fabs(v) > value_t(1) || !is_almost_zero(v - p[j * c + i]))
                     return false;
+            }
         }
         return true;
     }
@@ -657,10 +705,12 @@ public:
     value_t trace() const
     {
         VECTORIZATION_CHECK_DEBUG(
-            rank() >= 2 && rows() == columns(), "trace requires square rank-2 tensor");
-        value_t t = 0;
-        for (size_t i = 0; i < columns(); ++i)
-            t += at(i, i);
+            rank() >= 2 && dimension(0) == dimension(1), "trace requires square rank-2 tensor");
+        const size_t   c = dimension(1);
+        const value_t* p = data();
+        value_t        t = 0;
+        for (size_t i = 0; i < c; ++i)
+            t += p[i * c + i];
         return t;
     }
 
@@ -673,13 +723,16 @@ public:
         if (empty())
             return "[]";
 
-        // Compute field width for alignment
+        // Compute field width for alignment — reuse a single stream to avoid per-element alloc.
         size_t width = 0;
-        for (size_t i = 0; i < size(); ++i)
         {
             std::ostringstream tmp;
-            tmp << data()[i];
-            width = std::max(width, tmp.str().size());
+            for (size_t i = 0; i < size(); ++i)
+            {
+                tmp.str(std::string{});
+                tmp << data()[i];
+                width = std::max(width, tmp.str().size());
+            }
         }
 
         std::ostringstream s;
@@ -700,7 +753,7 @@ public:
         else
         {
             // 2-D (and higher — print as matrix of last two dims)
-            const size_t r = rows(), c = columns();
+            const size_t r = dimension(0), c = dimension(1);
             s << "[";
             for (size_t i = 0; i < r; ++i)
             {
@@ -723,46 +776,62 @@ public:
     }
 
 private:
+    template <typename V, bool c>
+    friend class tensor;
+
+    // View constructor — creates a non-owning tensor over an existing buffer
+    // with explicit shape/strides.  Only valid for clone=false instantiations.
+    tensor(
+        value_t*          ptr,
+        size_t            storage_size,
+        sizes_and_strides sas,
+        device_enum       type = device_enum::CPU)
+        : sizes_and_strides_(std::move(sas)), storage_(ptr, storage_size, type)
+    {
+        static_assert(!deep_copy, "view constructor is only valid for tensor<T, false>");
+        recompute_cpu_simd_alignment_state();
+    }
+
     // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------
 
-    static dimensions_type compute_sizes(const dimensions_type& dims)
+    // Populate sizes_and_strides_ with the given shape and derived C-order strides.
+    void set_shape(const dimensions_type& dims) { make_contiguous_sas(sizes_and_strides_, dims); }
+
+    static size_type compute_total(const dimensions_type& dims) noexcept
     {
-        if (dims.empty())
-            return {};
-        const size_t    n = dims.size();
-        dimensions_type ret(n);
-        size_t          prod = dims.back();
-        ret.back()           = prod;
+        size_type total = 1;
+        for (auto d : dims)
+            total *= static_cast<size_type>(d);
+        return total;
+    }
+
+    // Build a sizes_and_strides with the given shape and C-order strides.
+    static void make_contiguous_sas(sizes_and_strides& sas, const dimensions_type& dims)
+    {
+        const size_t n = dims.size();
+        sas.resize(n);
+        if (n == 0)
+            return;
+        sas.stride_at_unchecked(n - 1) = 1;
         for (int i = static_cast<int>(n) - 2; i >= 0; --i)
-        {
-            prod *= dims[i];
-            ret[i] = prod;
-        }
-        return ret;
+            sas.stride_at_unchecked(i) = sas.stride_at_unchecked(i + 1) * dims[i + 1];
+        for (size_t i = 0; i < n; ++i)
+            sas.size_at_unchecked(i) = dims[i];
     }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE size_t linearized_index(const dimensions_type& indices) const
     {
-        const size_t n = dimensions_.size();
+        const size_t n = sizes_and_strides_.size();
         const size_t m = indices.size();
         VECTORIZATION_CHECK(m <= n, "number of indices exceeds tensor rank");
 
-        if (n == m)
-        {
-            size_t ret = indices.back();
-            for (int i = static_cast<int>(n) - 2; i >= 0; --i)
-                ret += sizes_[i + 1] * indices[i];
-            return ret;
-        }
-        else
-        {
-            size_t ret = 0;
-            for (size_t i = 0; i < m; ++i)
-                ret += sizes_[i + 1] * indices[i];
-            return ret;
-        }
+        size_t ret = 0;
+        for (size_t i = 0; i < m; ++i)
+            ret += static_cast<size_t>(sizes_and_strides_.stride_at_unchecked(i)) *
+                   static_cast<size_t>(indices[i]);
+        return ret;
     }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE void recompute_cpu_simd_alignment_state() noexcept
@@ -772,7 +841,7 @@ private:
         align_start_ = 0;
         align_end_   = 0;
 #else
-        if (storage_.type_ != device_enum::CPU || storage_.size() == 0)
+        if (storage_.type_ != device_enum::CPU || storage_.size() == 0 || !is_contiguous())
         {
             misalign_    = 0;
             align_start_ = 0;
@@ -797,9 +866,8 @@ private:
     /// Exclusive end index for the aligned SIMD body (matches \c expressions_evaluator::run peeling).
     std::size_t align_end_{0};
 
-    dimensions_type dimensions_;
-    dimensions_type sizes_;
-    data_t          storage_{};
+    sizes_and_strides sizes_and_strides_;
+    data_t            storage_{};
 };
 
 template <typename V>
