@@ -50,9 +50,16 @@ if(Torch_FOUND)
               $<TARGET_FILE_DIR:VectorizationCxxTests>
     )
   endif()
+  if(MEMORY_ENABLE_CUDA)
+    target_compile_definitions(VectorizationCxxTests PRIVATE VECTORIZATION_LIBTORCH_CUDA_REQUIRED=1)
+    message(STATUS "VectorizationCxxTests: LibTorch CUDA tests REQUIRED (MEMORY_ENABLE_CUDA=ON)")
+  else()
+    target_compile_definitions(VectorizationCxxTests PRIVATE VECTORIZATION_LIBTORCH_CUDA_REQUIRED=0)
+  endif()
   message(STATUS "VectorizationCxxTests: LibTorch comparison tests ENABLED")
 else()
-  target_compile_definitions(VectorizationCxxTests PRIVATE VECTORIZATION_HAS_LIBTORCH=0)
+  target_compile_definitions(VectorizationCxxTests PRIVATE VECTORIZATION_HAS_LIBTORCH=0
+                                                           VECTORIZATION_LIBTORCH_CUDA_REQUIRED=0)
 endif()
 
 set_target_properties(
