@@ -938,13 +938,6 @@ private:
     data_t            storage_{};
 };
 
-template <typename V>
-VECTORIZATION_FUNCTION_ATTRIBUTE bool expr_cpu_simd_lane_aligned_at(
-    tensor<V> const& t, std::size_t index) noexcept
-{
-    return t.cpu_simd_lane_aligned_at(index);
-}
-
 // ---------------------------------------------------------------------------
 // Stream output
 // ---------------------------------------------------------------------------
