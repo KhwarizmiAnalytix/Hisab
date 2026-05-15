@@ -1380,6 +1380,7 @@ class QuarismaConfiguration:
             print(f"build enum: {self.__value['build_enum']}")
             cmake_flags.append(f"-DCMAKE_BUILD_TYPE={self.__value['build_enum']}")
 
+            generator_toolset = self.__value.get("generator_toolset")
             exit_code = config_helper.configure_build(
                 source_path,
                 build_path,
@@ -1389,6 +1390,7 @@ class QuarismaConfiguration:
                 cmake_flags,
                 self.__value["arg_cmake_verbose"],
                 self.__shell_flag(),
+                generator_toolset=generator_toolset,
             )
 
             if exit_code == 0:

@@ -246,9 +246,8 @@ void test_tensor()
     // -----------------------------------------------------------------------
     {
         tensor_t orig(3u);
-        orig = T(7);
-        tensor_t dst;
-        dst.clone(orig);
+        orig     = T(7);
+        auto dst = orig.clone();
         EXPECT_EQ(dst.size(), orig.size());
         EXPECT_TRUE(dst == orig);
         // Verify independence: modifying orig doesn't affect dst

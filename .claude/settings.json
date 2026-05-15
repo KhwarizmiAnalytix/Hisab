@@ -1,10 +1,25 @@
 {
+  "defaultMode": "bypassPermissions",
+  "skipDangerousModePermissionPrompt": true,
+
   "permissions": {
     "allow": [
       "Read(//usr/bin/**)",
       "Read(//usr/local/bin/**)",
       "Bash(wait)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+
+      "Bash(ls \"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.0/extras/visual_studio_integration/\" 2>&1)",
+      "Read(//c/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.0/extras/visual_studio_integration/**)",
+
+      "Bash(ls \"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.0/extras/visual_studio_integration/MSBuildExtensions/\" 2>&1)",
+      "Read(//c/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.0/extras/visual_studio_integration/MSBuildExtensions/**)",
+
+      "Bash(ls \"C:/Program Files/Microsoft Visual Studio/18/Enterprise/\" 2>&1)",
+      "Read(//c/Program Files/Microsoft Visual Studio/18/Enterprise/**)",
+
+      "Read(//c/Program Files/Microsoft Visual Studio/18/Enterprise/MSBuild/Microsoft/VC/v170/**)",
+      "Read(//c/Program Files/Microsoft Visual Studio/18/Enterprise/MSBuild/Microsoft/VC/**)"
     ]
   }
 }

@@ -12,8 +12,8 @@
  *   XSigma_<Op><Type>   — our SIMD expression-template path
  *   LibTorch_<Op><Type> — equivalent LibTorch _out kernel
  *
- * Guard: compiled only when VECTORIZATION_HAS_LIBTORCH=1 (set by CMake when
- *        find_package(Torch) succeeds).
+ * Guard: compiled only when VECTORIZATION_HAS_LIBTORCH=1 (CMake finds LibTorch under
+ *        VECTORIZATION_LIBTORCH_ROOT / ThirdParty/libtorch).
  *
  * Target: benchmark_tensorlibtorch
  */

@@ -43,6 +43,13 @@ if(Torch_FOUND)
     $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-deprecated-declarations -Wno-unused-parameter>
     $<$<CXX_COMPILER_ID:GNU>:-Wno-deprecated-declarations -Wno-unused-parameter>
   )
+  if(WIN32)
+    file(GLOB _torch_dlls "${TORCH_INSTALL_PREFIX}/lib/*.dll")
+    add_custom_command(TARGET VectorizationCxxTests POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_torch_dlls}
+              $<TARGET_FILE_DIR:VectorizationCxxTests>
+    )
+  endif()
   message(STATUS "VectorizationCxxTests: LibTorch comparison tests ENABLED")
 else()
   target_compile_definitions(VectorizationCxxTests PRIVATE VECTORIZATION_HAS_LIBTORCH=0)
@@ -208,6 +215,13 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
         $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-deprecated-declarations -Wno-unused-parameter>
         $<$<CXX_COMPILER_ID:GNU>:-Wno-deprecated-declarations -Wno-unused-parameter>
       )
+      if(WIN32)
+        file(GLOB _torch_dlls "${TORCH_INSTALL_PREFIX}/lib/*.dll")
+        add_custom_command(TARGET benchmark_tensorlibtorch POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_torch_dlls}
+                  $<TARGET_FILE_DIR:benchmark_tensorlibtorch>
+        )
+      endif()
       message(STATUS "benchmark_tensorlibtorch: LibTorch comparison benchmarks ENABLED")
     else()
       target_compile_definitions(benchmark_tensorlibtorch PRIVATE VECTORIZATION_HAS_LIBTORCH=0)

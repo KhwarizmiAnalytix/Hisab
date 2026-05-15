@@ -20,6 +20,7 @@ def configure_build(
     cmake_flags: list[str],
     arg_cmake_verbose: str,
     shell_flag: bool,
+    generator_toolset: str | None = None,
 ) -> int:
     """
     Configure the build system using CMake.
@@ -33,6 +34,7 @@ def configure_build(
         cmake_flags: Additional CMake flags
         arg_cmake_verbose: Verbosity level
         shell_flag: Whether to use shell execution
+        generator_toolset: Optional VS toolset passed via -T (e.g. "v143")
 
     Returns:
         Exit code (0 for success, non-zero for failure)
@@ -49,6 +51,9 @@ def configure_build(
             cmake_generator,
             arg_cmake_verbose,
         ]
+
+        if generator_toolset:
+            cmake_cmd.extend(["-T", generator_toolset])
 
         if cmake_cxx_compiler:
             cmake_cmd.append(cmake_cxx_compiler)

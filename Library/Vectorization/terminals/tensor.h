@@ -201,7 +201,7 @@ public:
     VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
         std::initializer_list<std::initializer_list<value_t>> list,
         device_enum                                           type = device_enum::CPU)
-        : tensor(list.size(), list.begin() -> size(), type)
+        : tensor(list.size(), list.begin()->size(), type)
     {
         size_t i = 0;
         for (auto const& row : list)
@@ -290,11 +290,67 @@ public:
         return *this;
     }
 
-    VECTORIZATION_CUDA_FUNCTION_TYPE void clone(tensor const& rhs) noexcept
+    // Returns a new tensor that is a deep, contiguous copy of *this.
+    // Non-contiguous sources (transpose views, strided slices, …) have their
+    // logical elements gathered in C-order so the result is always contiguous.
+    // Mirrors torch::Tensor::clone() semantics.
+    VECTORIZATION_CUDA_FUNCTION_TYPE tensor clone() const noexcept
     {
-        sizes_and_strides_ = rhs.sizes_and_strides_;
-        storage_.copy(rhs.storage_);
-        recompute_cpu_simd_alignment_state();
+        const size_t total = size();
+        const size_t n     = rank();
+
+        // Allocate fresh 1-D storage, then reshape below.
+        tensor result(total, storage_.type_);
+
+        if (is_contiguous())
+        {
+            std::copy_n(data(), total, result.data());
+        }
+        else
+        {
+#if !VECTORIZATION_ON_GPU_DEVICE
+            const value_t*  src = data();
+            value_t*        dst = result.data();
+            dimensions_type idx(n, 0);
+            for (size_t flat = 0; flat < total; ++flat)
+            {
+                size_t off = 0;
+                for (size_t k = 0; k < n; ++k)
+                {
+                    off += static_cast<size_t>(idx[k]) *
+                           static_cast<size_t>(sizes_and_strides_.stride_at_unchecked(k));
+                }
+                dst[flat] = src[off];
+                for (int k = static_cast<int>(n) - 1; k >= 0; --k)
+                {
+                    if (++idx[k] < sizes_and_strides_.size_at_unchecked(k))
+                        break;
+                    idx[k] = 0;
+                }
+            }
+#else
+            // Non-contiguous GPU tensor clone falls back to flat copy.
+            std::copy_n(data(), total, result.data());
+#endif
+        }
+
+        // Stamp the shape onto the result with contiguous C-order strides.
+        result.sizes_and_strides_.resize(n);
+        for (size_t i = 0; i < n; ++i)
+        {
+            result.sizes_and_strides_.size_at_unchecked(i) =
+                sizes_and_strides_.size_at_unchecked(i);
+        }
+        if (n > 0)
+        {
+            result.sizes_and_strides_.stride_at_unchecked(n - 1) = 1;
+            for (int i = static_cast<int>(n) - 2; i >= 0; --i)
+                result.sizes_and_strides_.stride_at_unchecked(i) =
+                    result.sizes_and_strides_.stride_at_unchecked(i + 1) *
+                    result.sizes_and_strides_.size_at_unchecked(i + 1);
+        }
+        result.recompute_cpu_simd_alignment_state();
+        return result;
     }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE ~tensor() = default;
@@ -362,13 +418,7 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t* data() noexcept { return storage_.data(); }
     VECTORIZATION_FUNCTION_ATTRIBUTE size_t   size() const noexcept
     {
-        const size_t ndim = sizes_and_strides_.size();
-        if (ndim == 0)
-            return 0;
-        size_t total = 1;
-        for (size_t i = 0; i < ndim; ++i)
-            total *= static_cast<size_t>(sizes_and_strides_.size_at_unchecked(i));
-        return total;
+        return size_ == 0 ? storage_.size() : size_;
     }
     VECTORIZATION_FUNCTION_ATTRIBUTE bool empty() const noexcept { return size() == 0; }
 
@@ -429,14 +479,22 @@ public:
     {
         const size_t n = rank();
         if (n == 0)
+        {
             return true;
+        }
         if (sizes_and_strides_.stride_at_unchecked(n - 1) != 1)
+        {
             return false;
+        }
         for (int i = static_cast<int>(n) - 2; i >= 0; --i)
+        {
             if (sizes_and_strides_.stride_at_unchecked(i) !=
                 sizes_and_strides_.stride_at_unchecked(i + 1) *
                     sizes_and_strides_.size_at_unchecked(i + 1))
+            {
                 return false;
+            }
+        }
         return true;
     }
 
@@ -489,7 +547,7 @@ public:
     // Transpose (rank-2): swap the two axes and their strides.
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor<value_t, false> t() const
     {
-        VECTORIZATION_CHECK(rank() == 2, "t() requires a rank-2 tensor");
+        VECTORIZATION_CHECK_DEBUG(rank() == 2, "t() requires a rank-2 tensor");
         sizes_and_strides sas = sizes_and_strides_;
         std::swap(sas.size_at_unchecked(0), sas.size_at_unchecked(1));
         std::swap(sas.stride_at_unchecked(0), sas.stride_at_unchecked(1));
@@ -502,7 +560,7 @@ public:
         const dimensions_type& order) const
     {
         const size_t n = rank();
-        VECTORIZATION_CHECK(order.size() == n, "permute: order length must equal rank");
+        VECTORIZATION_CHECK_DEBUG(order.size() == n, "permute: order length must equal rank");
         sizes_and_strides sas;
         sas.resize(n);
         for (size_t i = 0; i < n; ++i)
@@ -520,8 +578,8 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor<value_t, false> view(
         const dimensions_type& new_dims) const
     {
-        VECTORIZATION_CHECK(is_contiguous(), "view() requires a contiguous tensor");
-        VECTORIZATION_CHECK(
+        VECTORIZATION_CHECK_DEBUG(is_contiguous(), "view() requires a contiguous tensor");
+        VECTORIZATION_CHECK_DEBUG(
             compute_total(new_dims) == size(), "view: element count must not change");
         sizes_and_strides sas;
         make_contiguous_sas(sas, new_dims);
@@ -534,9 +592,9 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor<value_t, false> reshape(
         const dimensions_type& new_dims) const
     {
-        VECTORIZATION_CHECK(
+        VECTORIZATION_CHECK_DEBUG(
             is_contiguous(), "reshape: call contiguous() first for non-contiguous tensors");
-        VECTORIZATION_CHECK(
+        VECTORIZATION_CHECK_DEBUG(
             compute_total(new_dims) == size(), "reshape: element count must not change");
         sizes_and_strides sas;
         make_contiguous_sas(sas, new_dims);
@@ -546,26 +604,35 @@ public:
 
     // Slice along one dimension.  stop==-1 means "to end".  step may be negative
     // only when start > stop (reverse slice); step==0 is invalid.
-    VECTORIZATION_FUNCTION_ATTRIBUTE tensor<value_t, false> slice(
-        size_t dim, int64_t start, int64_t stop = -1, int64_t step = 1) const
+    VECTORIZATION_FUNCTION_ATTRIBUTE tensor
+    slice(size_t dim, int64_t start, int64_t stop = -1, int64_t step = 1) const
     {
-        VECTORIZATION_CHECK(dim < rank(), "slice: dim out of range");
-        VECTORIZATION_CHECK(step != 0, "slice: step must not be zero");
+        VECTORIZATION_CHECK_DEBUG(dim < rank(), "slice: dim out of range");
+        VECTORIZATION_CHECK_DEBUG(step != 0, "slice: step must not be zero");
         const int64_t dim_size = sizes_and_strides_.size_at_unchecked(dim);
         if (stop < 0)
+        {
             stop = dim_size;
+        }
         stop                         = std::min(stop, dim_size);
         start                        = std::min(start, dim_size);
         const int64_t     span       = stop - start;
-        const int64_t     new_size   = (span > 0 && step > 0) || (span < 0 && step < 0)
+        auto              new_size   = (span > 0 && step > 0) || (span < 0 && step < 0)
                                            ? (std::abs(span) + std::abs(step) - 1) / std::abs(step)
                                            : 0;
         sizes_and_strides sas        = sizes_and_strides_;
         sas.size_at_unchecked(dim)   = new_size;
         sas.stride_at_unchecked(dim) = sizes_and_strides_.stride_at_unchecked(dim) * step;
-        value_t* new_ptr =
-            const_cast<value_t*>(data()) + start * sizes_and_strides_.stride_at_unchecked(dim);
-        return tensor<value_t, false>(new_ptr, storage_.size(), sas, storage_.type_);
+        const size_t offset          = static_cast<size_t>(start) *
+                              static_cast<size_t>(sizes_and_strides_.stride_at_unchecked(dim));
+        value_t* new_ptr = const_cast<value_t*>(data()) + offset;
+        // Storage accessible from new_ptr is the original buffer minus the prefix we skipped.
+        const size_t storage_size = storage_.size() > offset ? storage_.size() - offset : 0;
+
+        auto t = tensor(new_ptr, storage_size, sas, storage_.type_);
+
+        t.size_ = new_size;
+        return t;
     }
 
 #if 0
@@ -825,7 +892,7 @@ private:
     {
         const size_t n = sizes_and_strides_.size();
         const size_t m = indices.size();
-        VECTORIZATION_CHECK(m <= n, "number of indices exceeds tensor rank");
+        VECTORIZATION_CHECK_DEBUG(m <= n, "number of indices exceeds tensor rank");
 
         size_t ret = 0;
         for (size_t i = 0; i < m; ++i)
@@ -867,6 +934,7 @@ private:
     std::size_t align_end_{0};
 
     sizes_and_strides sizes_and_strides_;
+    size_t            size_ = 0;
     data_t            storage_{};
 };
 
