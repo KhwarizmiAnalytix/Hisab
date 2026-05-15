@@ -282,7 +282,7 @@ void test_reductions_vs_libtorch()
         auto     data = rand_vec<T>(9, T(-4), T(4), 52);
         tensor_t m(data.data(), 3u, 3u);
         auto     th = to_torch_2d(data.data(), 3, 3);
-        EXPECT_NEAR(static_cast<double>(m.trace()), torch::trace(th).item<double>(), tol)
+        EXPECT_NEAR(static_cast<double>(m.trace()), torch::trace(th).template item<double>(), tol)
             << "trace 3×3";
     }
     // 5×5
@@ -290,7 +290,7 @@ void test_reductions_vs_libtorch()
         auto     data = rand_vec<T>(25, T(-4), T(4), 53);
         tensor_t m(data.data(), 5u, 5u);
         auto     th = to_torch_2d(data.data(), 5, 5);
-        EXPECT_NEAR(static_cast<double>(m.trace()), torch::trace(th).item<double>(), tol)
+        EXPECT_NEAR(static_cast<double>(m.trace()), torch::trace(th).template item<double>(), tol)
             << "trace 5×5";
     }
 }
@@ -379,24 +379,44 @@ VECTORIZATIONTEST(LibTorch, TensorCloneDouble)
 #else
 
 VECTORIZATIONTEST(LibTorch, TensorShapeFloat)
-{ END_TEST(); }
+{
+    END_TEST();
+}
 VECTORIZATIONTEST(LibTorch, TensorShapeDouble)
-{ END_TEST(); }
+{
+    END_TEST();
+}
 VECTORIZATIONTEST(LibTorch, TensorAccessFloat)
-{ END_TEST(); }
+{
+    END_TEST();
+}
 VECTORIZATIONTEST(LibTorch, TensorAccessDouble)
-{ END_TEST(); }
+{
+    END_TEST();
+}
 VECTORIZATIONTEST(LibTorch, TensorViewsFloat)
-{ END_TEST(); }
+{
+    END_TEST();
+}
 VECTORIZATIONTEST(LibTorch, TensorViewsDouble)
-{ END_TEST(); }
+{
+    END_TEST();
+}
 VECTORIZATIONTEST(LibTorch, TensorReductionsFloat)
-{ END_TEST(); }
+{
+    END_TEST();
+}
 VECTORIZATIONTEST(LibTorch, TensorReductionsDouble)
-{ END_TEST(); }
+{
+    END_TEST();
+}
 VECTORIZATIONTEST(LibTorch, TensorCloneFloat)
-{ END_TEST(); }
+{
+    END_TEST();
+}
 VECTORIZATIONTEST(LibTorch, TensorCloneDouble)
-{ END_TEST(); }
+{
+    END_TEST();
+}
 
 #endif  // VECTORIZATION_HAS_LIBTORCH
