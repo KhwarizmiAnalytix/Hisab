@@ -40,6 +40,11 @@ void fill_tensor_uniform(vectorization::vector<T>& a, double lo, double hi, unsi
         fill_tensor_uniform(a, (lo), (hi));                                                  \
         for (auto _ : state)                                                                 \
             benchmark::DoNotOptimize(out = ::OP(a));                                         \
+        state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) *                   \
+                                static_cast<int64_t>(n));                                    \
+        state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *                   \
+                                static_cast<int64_t>(n) * 2 *                               \
+                                static_cast<int64_t>(sizeof(T)));                            \
     }                                                                                        \
     template <typename T>                                                                    \
     static void Scalar_loop_##OP(benchmark::State& state)                                     \
@@ -53,6 +58,11 @@ void fill_tensor_uniform(vectorization::vector<T>& a, double lo, double hi, unsi
             for (std::size_t i = 0; i < n; ++i)                                              \
                 benchmark::DoNotOptimize(out[i] = std::OP(a[i]));                            \
         }                                                                                    \
+        state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) *                   \
+                                static_cast<int64_t>(n));                                    \
+        state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *                   \
+                                static_cast<int64_t>(n) * 2 *                               \
+                                static_cast<int64_t>(sizeof(T)));                            \
     }                                                                                        \
     BENCHMARK_TEMPLATE(Vectorized_##OP, float)->MeasureProcessCPUTime();                     \
     BENCHMARK_TEMPLATE(Scalar_loop_##OP, float)->MeasureProcessCPUTime();                     \

@@ -297,6 +297,9 @@ void test_libtorch_all_functions()
 
 VECTORIZATIONTEST(LibTorch, AllFunctionsFloat)
 {
+    // --- Full build info (includes vectorization backend) ---
+    std::cout << "\n=== Build Config ===" << std::endl;
+    std::cout << torch::show_config() << std::endl;
     test_libtorch_all_functions<float>();
     END_TEST();
 }
