@@ -169,4 +169,87 @@ SVML_FUNCTION_TWO_ARGS(hypot)
 #undef svml_ps_mask
 #undef svml_pd_mask
 
-#endif  // VECTORIZATION_HAS_SVML && (VECTORIZATION_HAS_AVX2 || VECTORIZATION_HAS_AVX)
+#elif VECTORIZATION_HAS_SLEEF && (VECTORIZATION_HAS_AVX2 || VECTORIZATION_HAS_AVX)
+
+#include <sleef.h>
+
+// clang-format off
+
+// AVX2 SLEEF wrappers: float=8 lanes (f8), double=4 lanes (d4), accuracy=1 ULP (u10).
+// SLEEF uses architecture-specific suffixes for 256-bit functions — no generic aliases exist.
+
+#define SVML_FUNCTION_ONE_ARG(op)                                    \
+    VECTORIZATION_FORCE_INLINE __m256 _mm256_##op##_ps(__m256 x)     \
+    { return Sleef_##op##f8_u10avx2(x); }                            \
+                                                                     \
+    VECTORIZATION_FORCE_INLINE __m256d _mm256_##op##_pd(__m256d x)   \
+    { return Sleef_##op##d4_u10avx2(x); }
+
+#define SVML_FUNCTION_TWO_ARGS(op)                                             \
+    VECTORIZATION_FORCE_INLINE __m256 _mm256_##op##_ps(__m256 x, __m256 y)    \
+    { return Sleef_##op##f8_u10avx2(x, y); }                                  \
+                                                                               \
+    VECTORIZATION_FORCE_INLINE __m256d _mm256_##op##_pd(__m256d x, __m256d y) \
+    { return Sleef_##op##d4_u10avx2(x, y); }
+
+SVML_FUNCTION_ONE_ARG(exp)
+SVML_FUNCTION_ONE_ARG(expm1)
+SVML_FUNCTION_ONE_ARG(exp2)
+SVML_FUNCTION_ONE_ARG(exp10)
+SVML_FUNCTION_ONE_ARG(log)
+SVML_FUNCTION_ONE_ARG(log1p)
+SVML_FUNCTION_ONE_ARG(log2)
+SVML_FUNCTION_ONE_ARG(log10)
+SVML_FUNCTION_ONE_ARG(sin)
+SVML_FUNCTION_ONE_ARG(cos)
+SVML_FUNCTION_ONE_ARG(tan)
+SVML_FUNCTION_ONE_ARG(asin)
+SVML_FUNCTION_ONE_ARG(acos)
+SVML_FUNCTION_ONE_ARG(atan)
+SVML_FUNCTION_ONE_ARG(sinh)
+SVML_FUNCTION_ONE_ARG(cosh)
+SVML_FUNCTION_ONE_ARG(tanh)
+SVML_FUNCTION_ONE_ARG(asinh)
+SVML_FUNCTION_ONE_ARG(acosh)
+SVML_FUNCTION_ONE_ARG(atanh)
+SVML_FUNCTION_ONE_ARG(cbrt)
+SVML_FUNCTION_TWO_ARGS(pow)
+
+// hypot uses 0.5 ULP accuracy in SLEEF (no u10 variant exists for 256-bit).
+VECTORIZATION_FORCE_INLINE __m256  _mm256_hypot_ps(__m256  x, __m256  y) { return Sleef_hypotf8_u05avx2(x, y); }
+VECTORIZATION_FORCE_INLINE __m256d _mm256_hypot_pd(__m256d x, __m256d y) { return Sleef_hypotd4_u05avx2(x, y); }
+
+// trunc is mathematically exact — SLEEF uses no ULP suffix.
+VECTORIZATION_FORCE_INLINE __m256  _mm256_trunc_ps(__m256  x) { return Sleef_truncf8_avx2(x); }
+VECTORIZATION_FORCE_INLINE __m256d _mm256_trunc_pd(__m256d x) { return Sleef_truncd4_avx2(x); }
+
+// invsqrt: no direct SLEEF equivalent — derived from high-precision sqrt (0.5 ULP).
+VECTORIZATION_FORCE_INLINE __m256  _mm256_invsqrt_ps(__m256  x) { return _mm256_div_ps(_mm256_set1_ps(1.0f), Sleef_sqrtf8_u05avx2(x)); }
+VECTORIZATION_FORCE_INLINE __m256d _mm256_invsqrt_pd(__m256d x) { return _mm256_div_pd(_mm256_set1_pd(1.0),  Sleef_sqrtd4_u05avx2(x)); }
+
+// cdfnorm: Φ(x) = 0.5 * erfc(-x / sqrt(2)) — derived from SLEEF erfc (1.5 ULP).
+VECTORIZATION_FORCE_INLINE __m256  _mm256_cdfnorm_ps(__m256  x) { return _mm256_mul_ps(_mm256_set1_ps(0.5f), Sleef_erfcf8_u15avx2(_mm256_mul_ps(_mm256_set1_ps(-0.7071067811865475f), x))); }
+VECTORIZATION_FORCE_INLINE __m256d _mm256_cdfnorm_pd(__m256d x) { return _mm256_mul_pd(_mm256_set1_pd(0.5),  Sleef_erfcd4_u15avx2(_mm256_mul_pd(_mm256_set1_pd(-0.7071067811865475244), x))); }
+
+// cdfnorminv: no SLEEF equivalent — scalar loop via vectorization::inv_normalcdf.
+VECTORIZATION_FORCE_INLINE __m256 _mm256_cdfnorminv_ps(__m256 x)
+{
+    alignas(32) float tmp[8];
+    _mm256_store_ps(tmp, x);
+    for (int i = 0; i < 8; ++i) tmp[i] = static_cast<float>(vectorization::inv_normalcdf(static_cast<double>(tmp[i])));
+    return _mm256_load_ps(tmp);
+}
+VECTORIZATION_FORCE_INLINE __m256d _mm256_cdfnorminv_pd(__m256d x)
+{
+    alignas(32) double tmp[4];
+    _mm256_store_pd(tmp, x);
+    for (int i = 0; i < 4; ++i) tmp[i] = vectorization::inv_normalcdf(tmp[i]);
+    return _mm256_load_pd(tmp);
+}
+
+#undef SVML_FUNCTION_TWO_ARGS
+#undef SVML_FUNCTION_ONE_ARG
+
+// clang-format on
+
+#endif  // VECTORIZATION_HAS_SVML || VECTORIZATION_HAS_SLEEF && (VECTORIZATION_HAS_AVX2 || VECTORIZATION_HAS_AVX)

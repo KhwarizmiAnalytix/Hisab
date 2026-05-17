@@ -181,4 +181,84 @@ SVML_FUNCTION_ONE_ARG(floor)
 #undef svml_ps_mask
 #undef svml_pd_mask
 
-#endif  // VECTORIZATION_HAS_SVML && VECTORIZATION_HAS_SSE
+#elif VECTORIZATION_HAS_SLEEF && VECTORIZATION_HAS_SSE
+
+#include <sleef.h>
+
+// clang-format off
+
+// SSE SLEEF wrappers: float=4 lanes (f4), double=2 lanes (d2), accuracy=1 ULP (u10).
+// SLEEF uses standard C calling conventions — no MSVC/GCC split required.
+
+#define SVML_FUNCTION_ONE_ARG(op)                                  \
+    VECTORIZATION_FORCE_INLINE __m128 _mm_##op##_ps(__m128 x)      \
+    { return Sleef_##op##f4_u10(x); }                              \
+                                                                   \
+    VECTORIZATION_FORCE_INLINE __m128d _mm_##op##_pd(__m128d x)    \
+    { return Sleef_##op##d2_u10(x); }
+
+#define SVML_FUNCTION_TWO_ARGS(op)                                           \
+    VECTORIZATION_FORCE_INLINE __m128 _mm_##op##_ps(__m128 x, __m128 y)      \
+    { return Sleef_##op##f4_u10(x, y); }                                      \
+                                                                             \
+    VECTORIZATION_FORCE_INLINE __m128d _mm_##op##_pd(__m128d x, __m128d y)   \
+    { return Sleef_##op##d2_u10(x, y); }
+
+SVML_FUNCTION_ONE_ARG(exp)
+SVML_FUNCTION_ONE_ARG(expm1)
+SVML_FUNCTION_ONE_ARG(exp2)
+SVML_FUNCTION_ONE_ARG(exp10)
+SVML_FUNCTION_ONE_ARG(log)
+SVML_FUNCTION_ONE_ARG(log1p)
+SVML_FUNCTION_ONE_ARG(log2)
+SVML_FUNCTION_ONE_ARG(log10)
+SVML_FUNCTION_ONE_ARG(sin)
+SVML_FUNCTION_ONE_ARG(cos)
+SVML_FUNCTION_ONE_ARG(tan)
+SVML_FUNCTION_ONE_ARG(asin)
+SVML_FUNCTION_ONE_ARG(acos)
+SVML_FUNCTION_ONE_ARG(atan)
+SVML_FUNCTION_ONE_ARG(sinh)
+SVML_FUNCTION_ONE_ARG(cosh)
+SVML_FUNCTION_ONE_ARG(tanh)
+SVML_FUNCTION_ONE_ARG(asinh)
+SVML_FUNCTION_ONE_ARG(acosh)
+SVML_FUNCTION_ONE_ARG(atanh)
+SVML_FUNCTION_ONE_ARG(cbrt)
+SVML_FUNCTION_TWO_ARGS(pow)
+SVML_FUNCTION_TWO_ARGS(hypot)
+
+// trunc is mathematically exact — SLEEF uses no ULP suffix.
+VECTORIZATION_FORCE_INLINE __m128  _mm_trunc_ps(__m128  x) { return Sleef_truncf4(x); }
+VECTORIZATION_FORCE_INLINE __m128d _mm_trunc_pd(__m128d x) { return Sleef_truncd2(x); }
+
+// invsqrt: no direct SLEEF equivalent — derived from high-precision sqrt (0.5 ULP).
+VECTORIZATION_FORCE_INLINE __m128  _mm_invsqrt_ps(__m128  x) { return _mm_div_ps(_mm_set1_ps(1.0f), Sleef_sqrtf4_u05(x)); }
+VECTORIZATION_FORCE_INLINE __m128d _mm_invsqrt_pd(__m128d x) { return _mm_div_pd(_mm_set1_pd(1.0),  Sleef_sqrtd2_u05(x)); }
+
+// cdfnorm: Φ(x) = 0.5 * erfc(-x / sqrt(2)) — derived from SLEEF erfc (1.5 ULP).
+VECTORIZATION_FORCE_INLINE __m128  _mm_cdfnorm_ps(__m128  x) { return _mm_mul_ps(_mm_set1_ps(0.5f), Sleef_erfcf4_u15(_mm_mul_ps(_mm_set1_ps(-0.7071067811865475f), x))); }
+VECTORIZATION_FORCE_INLINE __m128d _mm_cdfnorm_pd(__m128d x) { return _mm_mul_pd(_mm_set1_pd(0.5),  Sleef_erfcd2_u15(_mm_mul_pd(_mm_set1_pd(-0.7071067811865475244), x))); }
+
+// cdfnorminv: no SLEEF equivalent — scalar loop via vectorization::inv_normalcdf.
+VECTORIZATION_FORCE_INLINE __m128 _mm_cdfnorminv_ps(__m128 x)
+{
+    alignas(16) float tmp[4];
+    _mm_store_ps(tmp, x);
+    for (int i = 0; i < 4; ++i) tmp[i] = static_cast<float>(vectorization::inv_normalcdf(static_cast<double>(tmp[i])));
+    return _mm_load_ps(tmp);
+}
+VECTORIZATION_FORCE_INLINE __m128d _mm_cdfnorminv_pd(__m128d x)
+{
+    alignas(16) double tmp[2];
+    _mm_store_pd(tmp, x);
+    for (int i = 0; i < 2; ++i) tmp[i] = vectorization::inv_normalcdf(tmp[i]);
+    return _mm_load_pd(tmp);
+}
+
+#undef SVML_FUNCTION_TWO_ARGS
+#undef SVML_FUNCTION_ONE_ARG
+
+// clang-format on
+
+#endif  // VECTORIZATION_HAS_SVML || VECTORIZATION_HAS_SLEEF && VECTORIZATION_HAS_SSE

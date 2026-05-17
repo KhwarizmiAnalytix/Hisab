@@ -21,7 +21,7 @@
 
 #include <type_traits>
 
-#if VECTORIZATION_HAS_SVML
+#if VECTORIZATION_HAS_SVML || VECTORIZATION_HAS_SLEEF
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcast-calling-convention"
@@ -182,7 +182,7 @@ struct simd<float>
 
     VECTORIZATION_SIMD_METHOD simd_t invsqrt(simd_t x)
     {
-#if VECTORIZATION_HAS_SVML
+#if VECTORIZATION_HAS_SVML || VECTORIZATION_HAS_SLEEF
         return _mm_invsqrt_ps(x);
 #else
         // rsqrt_ps gives ~12-bit accuracy; one Newton-Raphson step reaches ~24 bits (full float).

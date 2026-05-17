@@ -19,7 +19,7 @@
 
 #pragma once
 
-#if VECTORIZATION_HAS_SVML
+#if VECTORIZATION_HAS_SVML || VECTORIZATION_HAS_SLEEF
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcast-calling-convention"

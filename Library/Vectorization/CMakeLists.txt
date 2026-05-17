@@ -77,7 +77,7 @@ option(USE_NATIVE_ARCH "Prefer host CPU instruction tuning (-march=native, Clang
 option(VECTORIZATION_ENABLE_SVML "Enable Intel SVML short vector math library" OFF)
 mark_as_advanced(VECTORIZATION_ENABLE_SVML)
 
-option(VECTORIZATION_ENABLE_SLEEF "Enable SLEEF SIMD math library for NEON" OFF)
+option(VECTORIZATION_ENABLE_SLEEF "Enable SLEEF SIMD math library (SSE/AVX/AVX2/AVX512/NEON); mutually exclusive with SVML" OFF)
 mark_as_advanced(VECTORIZATION_ENABLE_SLEEF)
 
 option(VECTORIZATION_ENABLE_ACCELERATE "Enable Apple Accelerate vForce on AArch64 NEON" OFF)
@@ -342,6 +342,11 @@ if(VECTORIZATION_ENABLE_SLEEF)
     list(APPEND VECTORIZATION_DEPENDENCY_LIBS sleef)
   endif()
   list(APPEND VECTORIZATION_DEPENDENCY_LINK_DIRS "${_sleef_install_prefix}/lib")
+  # sleef.h uses SLEEF_STATIC_LIBS to suppress __declspec(dllimport) on Windows.
+  # The generated sleef-config.h defines it, but sleef.h does not include that header,
+  # so we propagate the definition explicitly to all consumers.
+  list(APPEND VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS SLEEF_STATIC_LIBS)
+
 endif()
 
 # =============================================================================
@@ -389,10 +394,13 @@ if(NOT VECTORIZATION_TYPE STREQUAL "sve")
   list(FILTER templates EXCLUDE REGEX ".*/backend/sve/.*")
 endif()
 
-if(NOT VECTORIZATION_ENABLE_SVML)
-  list(FILTER headers EXCLUDE REGEX ".*/svml\\.h$")
+# Exclude x86 svml.h when neither SVML nor SLEEF is active.
+# NEON svml.h is handled separately — it always compiles for NEON (has scalar fallbacks).
+if(NOT VECTORIZATION_ENABLE_SVML AND NOT VECTORIZATION_ENABLE_SLEEF)
+  list(FILTER headers EXCLUDE REGEX ".*/backend/(sse|avx|avx512)/svml\\.h$")
 endif()
 
+# Always exclude NEON svml.h when not targeting NEON.
 if(NOT VECTORIZATION_TYPE STREQUAL "neon")
   list(FILTER headers EXCLUDE REGEX ".*/backend/neon/svml\\.h$")
 endif()
