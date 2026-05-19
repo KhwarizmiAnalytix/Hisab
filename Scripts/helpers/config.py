@@ -7,8 +7,42 @@ Extracted from setup.py for better modularity and maintainability.
 
 import os
 import subprocess
+import sys
+from pathlib import Path
 
 from helpers.cuda_env import augment_env_for_cuda_toolkit
+
+
+def _find_libtorch() -> str | None:
+    """Return the first libtorch install directory that contains TorchConfig.cmake, or None.
+
+    Only active on macOS (darwin). Returns None immediately on other platforms.
+    """
+    if sys.platform != "darwin":
+        return None
+
+    candidates = []
+
+    # 1. Explicit env var wins
+    env_val = os.environ.get("LIBTORCH_DIR") or os.environ.get("Torch_DIR")
+    if env_val:
+        candidates.append(Path(env_val))
+
+    # 2. Well-known home-directory installs (macOS paths)
+    home = Path.home()
+    candidates += [
+        home / "libtorch",
+        home / "local" / "libtorch",
+        Path("/usr/local/libtorch"),
+        Path("/opt/libtorch"),
+        Path("/opt/homebrew/opt/libtorch"),   # Homebrew ARM
+        Path("/usr/local/opt/libtorch"),       # Homebrew Intel
+    ]
+
+    for base in candidates:
+        if (base / "share" / "cmake" / "Torch" / "TorchConfig.cmake").is_file():
+            return str(base)
+    return None
 
 
 def configure_build(
@@ -62,6 +96,19 @@ def configure_build(
 
         # Add additional CMake flags
         cmake_cmd.extend(cmake_flags)
+
+        # Auto-inject LibTorch path into CMAKE_PREFIX_PATH when found
+        libtorch_dir = _find_libtorch()
+        if libtorch_dir:
+            existing = next(
+                (f for f in cmake_cmd if f.startswith("-DCMAKE_PREFIX_PATH=")), None
+            )
+            if existing:
+                cmake_cmd[cmake_cmd.index(existing)] = (
+                    existing.rstrip(";") + ";" + libtorch_dir
+                )
+            else:
+                cmake_cmd.append(f"-DCMAKE_PREFIX_PATH={libtorch_dir}")
 
         env = augment_env_for_cuda_toolkit()
         subprocess.check_call(
