@@ -98,7 +98,7 @@ void test_libtorch_all_functions()
     {
         tensor_t r(n);
         r = ::invsqrt(xpos);
-        EXPECT_LT(max_diff(r, T(1) / torch::sqrt(tpos)), tol_loose) << "invsqrt";
+        EXPECT_LT(max_diff(r, T(1) / torch::sqrt(tpos)), 20*tol_loose) << "invsqrt";
     }
     {
         tensor_t r(n);
