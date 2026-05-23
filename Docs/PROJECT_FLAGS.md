@@ -35,7 +35,7 @@ These survive between `cmake` invocations and can be overridden with `-DFLAG=val
 | `CORE_ENABLE_MAGICENUM` | `ON` | [CMakeLists.txt](../CMakeLists.txt) | Pull in `magic_enum` for static enum reflection. |
 | `CORE_ENABLE_EXPERIMENTAL` | `OFF` | [tools/experimental.cmake](tools/experimental.cmake) | Enable features under active development. Sets `PROJECT_EXPERIMENTAL_FOUND=TRUE` when `ON`. |
 | `ENABLE_BENCHMARK` | `OFF` | [CMakeLists.txt](../CMakeLists.txt) | Pull in Google Benchmark. |
-| `CORE_ENABLE_STATIC_MKL` | `OFF` | [tools/mkl.cmake](tools/mkl.cmake) | Prefer static MKL linkage on Unix. Has no effect when `CORE_ENABLE_MKL=OFF`. |
+| `ENABLE_STATIC_MKL` | `OFF` | [tools/mkl.cmake](tools/mkl.cmake) | Prefer static MKL linkage on Unix. Has no effect when `CORE_ENABLE_MKL=OFF`. |
 | `CORE_ENABLE_COMPRESSION` | `OFF` | [tools/compression.cmake](tools/compression.cmake) | Enable data compression support. |
 | `CORE_COMPRESSION_TYPE` | `none` | [tools/compression.cmake](tools/compression.cmake) | Compression backend. One of: `none`, `snappy`. |
 

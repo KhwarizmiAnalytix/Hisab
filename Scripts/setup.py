@@ -1138,6 +1138,20 @@ class QuarismaFlags:
             cmake_cmd_flags.append("-DPARALLEL_ENABLE_TBB=ON")
             cmake_cmd_flags.append("-DMEMORY_ENABLE_TBB=ON")
 
+        # MKL VML backend for the Vectorization expression evaluator.
+        # CORE_ENABLE_MKL controls BLAS/LAPACK usage in Core; VECTORIZATION_ENABLE_MKL
+        # controls the VML batch math path in the Vectorization expression evaluator.
+        # Both are enabled together when the user passes the 'mkl' flag.
+        # Forward INTEL_MKL_DIR / MKLROOT from the environment so FindMKL.cmake can
+        # locate the installation without requiring a manual -DINTEL_MKL_DIR= flag.
+        if self.__value.get("mkl") == self.ON:
+            cmake_cmd_flags.append("-DVECTORIZATION_ENABLE_MKL=ON")
+            mkl_root = os.environ.get("INTEL_MKL_DIR") or os.environ.get("MKLROOT")
+            if mkl_root:
+                cmake_cmd_flags.append(f"-DINTEL_MKL_DIR={mkl_root}")
+        else:
+            cmake_cmd_flags.append("-DVECTORIZATION_ENABLE_MKL=OFF")
+
         # Tune generated code for the host CPU (Clang/GCC; see Library/Vectorization/Cmake/utils.cmake).
         if self.__value.get("native") == self.ON:
             cmake_cmd_flags.append("-DUSE_NATIVE_ARCH=ON")

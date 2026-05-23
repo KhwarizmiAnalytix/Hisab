@@ -11,8 +11,8 @@ cmake_minimum_required(VERSION 3.16)
 # Include guard to prevent multiple inclusions
 include_guard(GLOBAL)
 
-option(CORE_ENABLE_STATIC_MKL "Prefer to link with MKL statically (Unix only)" OFF)
-mark_as_advanced(CORE_ENABLE_STATIC_MKL)
+option(ENABLE_STATIC_MKL "Prefer to link with MKL statically (Unix only)" OFF)
+mark_as_advanced(ENABLE_STATIC_MKL)
 
 if(NOT CORE_ENABLE_MKL)
   return()
@@ -49,7 +49,7 @@ set_property(
 )
 
 if(UNIX)
-  if(CORE_ENABLE_STATIC_MKL)
+  if(ENABLE_STATIC_MKL)
     foreach(MKL_LIB_PATH IN LISTS MKL_LIBRARIES)
       if(NOT EXISTS "${MKL_LIB_PATH}")
         continue()

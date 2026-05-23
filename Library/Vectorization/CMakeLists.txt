@@ -77,6 +77,12 @@ option(USE_NATIVE_ARCH "Prefer host CPU instruction tuning (-march=native, Clang
 option(VECTORIZATION_ENABLE_SVML "Enable Intel SVML short vector math library" OFF)
 mark_as_advanced(VECTORIZATION_ENABLE_SVML)
 
+# MKL VML backend — statically linked Intel MKL; mutually exclusive with SVML/SLEEF math paths.
+# Enable by setting VECTORIZATION_ENABLE_MKL=ON and ensuring MKLROOT is set or MKL is
+# discoverable via find_package(MKL CONFIG).
+option(VECTORIZATION_ENABLE_MKL "Enable Intel MKL VML vector math backend (x86 only, static link)" OFF)
+mark_as_advanced(VECTORIZATION_ENABLE_MKL)
+
 option(VECTORIZATION_ENABLE_SLEEF "Enable SLEEF SIMD math library (SSE/AVX/AVX2/AVX512/NEON); mutually exclusive with SVML" OFF)
 mark_as_advanced(VECTORIZATION_ENABLE_SLEEF)
 
@@ -275,6 +281,7 @@ endif()
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_SVML)
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_SLEEF)
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_ACCELERATE)
+compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_MKL)
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_GTEST)
 list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_MEMORY=${_vec_has_memory})
 list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_LOGGING=${_vec_has_logging})
@@ -349,6 +356,67 @@ if(VECTORIZATION_ENABLE_SLEEF)
 
 endif()
 
+# Detect and configure Intel MKL VML (x86 only, statically linked) when requested.
+if(VECTORIZATION_ENABLE_MKL)
+  string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _mkl_proc)
+  if(NOT _mkl_proc MATCHES "^(x86_64|amd64|i686|i386)$")
+    message(WARNING
+      "VECTORIZATION_ENABLE_MKL=ON is only supported on x86_64; disabling."
+    )
+    set(VECTORIZATION_ENABLE_MKL OFF
+        CACHE BOOL "Enable Intel MKL VML vector math backend (x86 only, static link)" FORCE)
+  else()
+    # Sequential (single-threaded) VML — no mandatory OpenMP runtime dependency.
+    set(MKL_THREADING "SEQ"
+        CACHE STRING "MKL threading flavour used by Vectorization" FORCE)
+    # Use shared MKL libraries (pip-installed MKL ships .so only, no .a archives).
+    # Set ENABLE_STATIC_MKL=ON manually if you have static archives available.
+    set(ENABLE_STATIC_MKL OFF
+        CACHE BOOL "Link MKL statically for Vectorization" FORCE)
+
+    find_package(MKL QUIET)
+
+    if(MKL_FOUND)
+      message(STATUS "Vectorization: MKL VML found (version ${MKL_VERSION}). Include: ${MKL_INCLUDE_DIR}")
+
+      # Umbrella INTERFACE target — wraps include dir, library list, and the
+      # --start-group / --end-group pair needed on Linux to resolve circular
+      # references between the three static MKL archives.
+      if(NOT TARGET MKL::MKL)
+        add_library(MKL::MKL INTERFACE IMPORTED GLOBAL)
+        target_include_directories(MKL::MKL INTERFACE "${MKL_INCLUDE_DIR}")
+        # --start-group / --end-group is only needed for static archives to resolve
+        # circular references.  With shared libraries it is harmless but unnecessary.
+        if(UNIX AND NOT APPLE AND ENABLE_STATIC_MKL)
+          target_link_libraries(MKL::MKL INTERFACE
+            -Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group
+            ${CMAKE_DL_LIBS}
+          )
+        else()
+          target_link_libraries(MKL::MKL INTERFACE
+            ${MKL_LIBRARIES}
+            ${CMAKE_DL_LIBS}
+          )
+        endif()
+      endif()
+    else()
+      message(WARNING
+        "VECTORIZATION_ENABLE_MKL=ON but MKL was not found — disabling MKL VML backend. "
+        "Set MKLROOT or INTEL_MKL_DIR to your MKL installation root "
+        "(e.g. /opt/intel/oneapi/mkl/latest)."
+      )
+      set(VECTORIZATION_ENABLE_MKL OFF
+          CACHE BOOL "Enable Intel MKL VML vector math backend (x86 only, static link)" FORCE)
+      # Patch the compile-definition lists that were populated before this detection block.
+      list(REMOVE_ITEM VECTORIZATION_COMPILE_DEFINITIONS "VECTORIZATION_HAS_MKL=1")
+      list(APPEND VECTORIZATION_COMPILE_DEFINITIONS "VECTORIZATION_HAS_MKL=0")
+      list(REMOVE_ITEM VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS "VECTORIZATION_HAS_MKL=1")
+      list(APPEND VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS "VECTORIZATION_HAS_MKL=0")
+    endif()
+  endif()
+  unset(_mkl_proc)
+endif()
+
 # =============================================================================
 # SECTION 4 — Source
 # discovery with SIMD-tier filtering
@@ -404,6 +472,16 @@ endif()
 if(NOT VECTORIZATION_TYPE STREQUAL "neon")
   list(FILTER headers EXCLUDE REGEX ".*/backend/neon/svml\\.h$")
 endif()
+
+# Exclude the MKL backend tree when MKL is not enabled.
+if(NOT VECTORIZATION_ENABLE_MKL)
+  list(FILTER headers EXCLUDE REGEX ".*/backend/mkl/.*")
+  list(FILTER sources EXCLUDE REGEX ".*/backend/mkl/.*")
+endif()
+
+# expressions_functors_mkl.h is a stub (content merged into expressions_functors.h).
+# Exclude it from the build unconditionally to keep the source list clean.
+list(FILTER headers EXCLUDE REGEX ".*/expressions_functors_mkl\\.h$")
 
 # =============================================================================
 # SECTION 5 — Target
@@ -535,6 +613,20 @@ if(VECTORIZATION_ENABLE_SVML AND TARGET SVML::SVML)
   message(STATUS "Vectorization: linked SVML::SVML (ThirdParty); runtime files: ${SVML_RUNTIME_LIBRARIES}")
 endif()
 
+# Link Intel MKL VML when VECTORIZATION_ENABLE_MKL=ON.
+# The MKL::MKL umbrella target was created above (find_package + target setup).
+if(VECTORIZATION_ENABLE_MKL)
+  if(MKL_FOUND AND TARGET MKL::MKL)
+    target_link_libraries(Vectorization PUBLIC MKL::MKL)
+    message(STATUS "Vectorization: linked MKL VML via MKL::MKL.")
+  else()
+    message(FATAL_ERROR
+      "VECTORIZATION_ENABLE_MKL=ON but the MKL::MKL target is not available. "
+      "Set MKLROOT or INTEL_MKL_DIR to your MKL installation root."
+    )
+  endif()
+endif()
+
 if(VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS)
   target_compile_definitions(Vectorization PUBLIC ${VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS})
   message(
@@ -595,6 +687,7 @@ message("  Packet size          : ${VECTORIZATION_PACKET_SIZE}")
 message("  Svml                 : ${VECTORIZATION_ENABLE_SVML}")
 message("  Sleef                : ${VECTORIZATION_ENABLE_SLEEF}")
 message("  Accelerate (vForce)  : ${VECTORIZATION_ENABLE_ACCELERATE}")
+message("  Mkl VML              : ${VECTORIZATION_ENABLE_MKL}")
 message("  Memory (HAS)         : ${_vec_has_memory}")
 message("  Logging (HAS)        : ${_vec_has_logging}")
 message("  Cxx standard         : ${VECTORIZATION_CXX_STANDARD}")
