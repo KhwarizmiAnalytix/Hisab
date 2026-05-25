@@ -422,6 +422,11 @@ public:
     }
     VECTORIZATION_FUNCTION_ATTRIBUTE bool empty() const noexcept { return size() == 0; }
 
+    VECTORIZATION_FUNCTION_ATTRIBUTE device_enum device() const noexcept
+    {
+        return storage_.type_;
+    }
+
     VECTORIZATION_FUNCTION_ATTRIBUTE iterator       begin() noexcept { return storage_.begin(); }
     VECTORIZATION_FUNCTION_ATTRIBUTE iterator       end() noexcept { return storage_.end(); }
     VECTORIZATION_FUNCTION_ATTRIBUTE const_iterator begin() const noexcept

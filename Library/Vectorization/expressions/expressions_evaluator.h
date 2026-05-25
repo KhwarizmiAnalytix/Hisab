@@ -28,6 +28,10 @@ Do_not_include_expression_evaluator_directly_use_expression_it;
 #include "common/vectorization_type_traits.h"
 #include "expressions/expression_interface_loader.h"
 
+#if VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP
+#include "expressions/expressions_evaluator_gpu.h"
+#endif
+
 namespace vectorization
 {
 struct expressions_evaluator
@@ -47,6 +51,19 @@ struct expressions_evaluator
                 "expression has different size {} than destination {}",
                 expr.size(),
                 rhs.size());
+
+#if (VECTORIZATION_HAS_CUDA && defined(__CUDACC__)) || \
+    (VECTORIZATION_HAS_HIP  && defined(__HIPCC__))
+            if (rhs.device() == device_enum::CUDA)
+            {
+                using value_t = typename vectorization::scalar_type<T, T>::value;
+                vectorization::run_gpu(
+                    static_cast<vectorization::remove_cvref_t<E> const&>(expr),
+                    static_cast<value_t*>(rhs.begin()),
+                    rhs.size());
+                return;
+            }
+#endif
 
             auto*  data = rhs.begin();
             size_t n    = rhs.size();
@@ -132,6 +149,19 @@ struct expressions_evaluator
     template <typename S, typename T>
     VECTORIZATION_FUNCTION_ATTRIBUTE static void fill(S value, T& rhs) noexcept
     {
+#if (VECTORIZATION_HAS_CUDA && defined(__CUDACC__)) || \
+    (VECTORIZATION_HAS_HIP  && defined(__HIPCC__))
+        if (rhs.device() == device_enum::CUDA)
+        {
+            using value_t = typename vectorization::scalar_type<T, T>::value;
+            vectorization::fill_gpu(
+                static_cast<value_t*>(rhs.begin()),
+                static_cast<value_t>(value),
+                rhs.size());
+            return;
+        }
+#endif
+
         auto*  data = rhs.begin();
         size_t i    = 0;
 

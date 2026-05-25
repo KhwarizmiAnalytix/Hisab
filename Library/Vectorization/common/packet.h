@@ -29,22 +29,55 @@
 #include "common/vectorization_macros.h"
 #include "common/scalar_helper_functions.h"
 
-#if VECTORIZATION_HAS_AVX512
-#include "backend/avx512/double/simd.h"
-#include "backend/avx512/float/simd.h"
-#elif VECTORIZATION_HAS_AVX2 || VECTORIZATION_HAS_AVX
-#include "backend/avx/double/simd.h"
-#include "backend/avx/float/simd.h"
-#elif VECTORIZATION_HAS_SSE
-#include "backend/sse/double/simd.h"
-#include "backend/sse/float/simd.h"
-#elif VECTORIZATION_HAS_SVE
-#include "backend/sve/double/simd.h"
-#include "backend/sve/float/simd.h"
-#elif VECTORIZATION_HAS_NEON
-#include "backend/neon/double/simd.h"
-#include "backend/neon/float/simd.h"
-#endif
+// Backend selection strategy:
+//
+//  GPU device pass (nvcc/hipcc compiling __device__ code):
+//    Always use the scalar GPU backend so AVX intrinsics (unavailable on device)
+//    are never included in device translation units.
+//
+//  CPU host pass:
+//    Use the selected CPU SIMD backend when VECTORIZATION_VECTORIZED=1.
+//    Fall back to the GPU scalar backend as a host-side shim when CPU_TYPE=no
+//    but a GPU backend is active (keeps simd<T> well-defined for tensor members).
+
+#if VECTORIZATION_ON_GPU_DEVICE
+  // --- GPU device code: scalar simd<T> ---
+#  if VECTORIZATION_HAS_CUDA
+#    include "backend/cuda/double/simd.h"
+#    include "backend/cuda/float/simd.h"
+#  elif VECTORIZATION_HAS_HIP
+#    include "backend/hip/double/simd.h"
+#    include "backend/hip/float/simd.h"
+#  endif
+
+#else
+  // --- CPU host code: SIMD or scalar fallback ---
+#  if VECTORIZATION_HAS_AVX512
+#    include "backend/avx512/double/simd.h"
+#    include "backend/avx512/float/simd.h"
+#  elif VECTORIZATION_HAS_AVX2 || VECTORIZATION_HAS_AVX
+#    include "backend/avx/double/simd.h"
+#    include "backend/avx/float/simd.h"
+#  elif VECTORIZATION_HAS_SSE
+#    include "backend/sse/double/simd.h"
+#    include "backend/sse/float/simd.h"
+#  elif VECTORIZATION_HAS_SVE
+#    include "backend/sve/double/simd.h"
+#    include "backend/sve/float/simd.h"
+#  elif VECTORIZATION_HAS_NEON
+#    include "backend/neon/double/simd.h"
+#    include "backend/neon/float/simd.h"
+#  elif VECTORIZATION_HAS_CUDA
+  // CPU_TYPE=no + GPU_TYPE=cuda: use GPU scalar simd as host-side shim
+#    include "backend/cuda/double/simd.h"
+#    include "backend/cuda/float/simd.h"
+#  elif VECTORIZATION_HAS_HIP
+  // CPU_TYPE=no + GPU_TYPE=hip: use GPU scalar simd as host-side shim
+#    include "backend/hip/double/simd.h"
+#    include "backend/hip/float/simd.h"
+#  endif
+
+#endif  // VECTORIZATION_ON_GPU_DEVICE
 
 
 namespace vectorization

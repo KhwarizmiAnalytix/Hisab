@@ -147,7 +147,7 @@ class LOGGING_VISIBILITY exception : public std::exception
 
 public:
     // Virtual destructor
-    LOGGING_API virtual ~exception();
+    LOGGING_API ~exception() override;
 
     // logging-style exception constructor.
     // NB: the implementation of this is actually in exception.cpp

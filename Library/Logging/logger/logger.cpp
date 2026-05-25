@@ -183,7 +183,7 @@ static logging_map<std::string, CallbackEntry> g_callback_sinks;
 
 static thread_local char ThreadName[128] = {};
 
-// Buffers for AddCallback's spdlog sink (file scope: MSVC/Clang reject thread_local statics
+// Buffers for AddCallback's spdlog sink (file scope: MSVC/Clang reject thread_local statistics
 // inside lambdas when the TU is built as a DLL with exported symbols).
 static thread_local std::string g_callback_bridge_filename;
 static thread_local std::string g_callback_bridge_message;

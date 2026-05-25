@@ -4,40 +4,57 @@
 # Provides the Vectorization library: SIMD packet abstractions, expression templates, and
 # architecture-specific kernels for SSE, AVX, AVX2, and AVX-512.
 #
-# VECTORIZATION_TYPE (cache: no | sse | avx | avx2 | avx512 | neon | sve) selects which backend/ source trees are
-# compiled in. Optional VECTORIZATION_ENABLE_SVML adds SVML headers.
+# VECTORIZATION_CPU_TYPE (cache: no|sse|avx|avx2|avx512|neon|sve) selects the CPU SIMD backend.
+# VECTORIZATION_GPU_TYPE (cache: none|cuda|hip) selects the GPU backend (independent of CPU type).
+# Both can be active simultaneously — e.g. CPU_TYPE=avx2 + GPU_TYPE=cuda.
+# Optional VECTORIZATION_ENABLE_SVML adds SVML headers.
 #
-# C++ preprocessor defines when vectorized: sse → HAS_SSE=1; avx → HAS_AVX=1; avx2 → HAS_AVX=1 and
-# HAS_AVX2=1 (AVX2 extends AVX; same backend/avx/ tree); avx512 → HAS_AVX512=1 (HAS_AVX may be 0).
-# VECTORIZATION_HAS_SVML=1/0   — SVML active in C++ code VECTORIZATION_HAS_GTEST=1/0  — Google Test
-# available to Vectorization tests
+# C++ preprocessor defines: sse → HAS_SSE=1; avx/avx2 → HAS_AVX=1; avx2 → HAS_AVX2=1;
+# avx512 → HAS_AVX512=1; cuda → HAS_CUDA=1; hip → HAS_HIP=1.
+# VECTORIZATION_HAS_SVML=1/0   — SVML active in C++ code
+# VECTORIZATION_HAS_GTEST=1/0  — Google Test available to Vectorization tests
 # =============================================================================
 cmake_minimum_required(VERSION 3.16)
 
 # =============================================================================
 # SECTION 1 — Cache
-# options (VECTORIZATION_TYPE, tooling) and backend selectors
+# options (VECTORIZATION_CPU_TYPE, VECTORIZATION_GPU_TYPE, tooling) and backend selectors
 #
 # include(utils) runs compiler feature checks (SIMD flags, exception_ptr); results are published to
-# CACHE for Core (VECTORIZATION_COMPILER_FLAGS, PROJECT_*). VECTORIZATION_TYPE drives
-# backend source filters and VECTORIZATION_HAS_* one-to-one.
+# CACHE for Core (VECTORIZATION_COMPILER_FLAGS, PROJECT_*).
+#
+# VECTORIZATION_CPU_TYPE selects the CPU SIMD backend (one of: no, sse, avx, avx2, avx512, neon, sve).
+# VECTORIZATION_GPU_TYPE selects the GPU backend  (one of: none, cuda, hip).
+# Both flags are independent — you can combine any CPU backend with any GPU backend.
 # =============================================================================
-# Host-aware default SIMD: x86_64 -> avx2, aarch64 -> neon.
+# Host-aware default CPU SIMD: x86_64 -> avx2, aarch64 -> neon.
 string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _quarisma_vec_proc_default)
-set(_quarisma_vectorization_default "avx2")
+set(_quarisma_vectorization_cpu_default "avx2")
 if(_quarisma_vec_proc_default MATCHES "^(aarch64|arm64)$")
-  set(_quarisma_vectorization_default "neon")
+  set(_quarisma_vectorization_cpu_default "neon")
 endif()
 
-set(VECTORIZATION_TYPE "${_quarisma_vectorization_default}"
+set(VECTORIZATION_CPU_TYPE "${_quarisma_vectorization_cpu_default}"
     CACHE STRING
-        "vectorization implementation to use. Options are no, sse, avx, avx2, avx512, neon, sve"
+        "CPU SIMD backend. Options: no, sse, avx, avx2, avx512, neon, sve"
 )
-set_property(CACHE VECTORIZATION_TYPE PROPERTY STRINGS no sse avx avx2 avx512 neon sve)
-if(NOT VECTORIZATION_TYPE MATCHES "^(no|sse|avx|avx2|avx512|neon|sve)$")
+set_property(CACHE VECTORIZATION_CPU_TYPE PROPERTY STRINGS no sse avx avx2 avx512 neon sve)
+if(NOT VECTORIZATION_CPU_TYPE MATCHES "^(no|sse|avx|avx2|avx512|neon|sve)$")
   message(
     FATAL_ERROR
-      "VECTORIZATION_TYPE must be one of: no, sse, avx, avx2, avx512, neon, sve (got '${VECTORIZATION_TYPE}')"
+      "VECTORIZATION_CPU_TYPE must be one of: no, sse, avx, avx2, avx512, neon, sve (got '${VECTORIZATION_CPU_TYPE}')"
+  )
+endif()
+
+set(VECTORIZATION_GPU_TYPE "none"
+    CACHE STRING
+        "GPU backend. Options: none, cuda, hip"
+)
+set_property(CACHE VECTORIZATION_GPU_TYPE PROPERTY STRINGS none cuda hip)
+if(NOT VECTORIZATION_GPU_TYPE MATCHES "^(none|cuda|hip)$")
+  message(
+    FATAL_ERROR
+      "VECTORIZATION_GPU_TYPE must be one of: none, cuda, hip (got '${VECTORIZATION_GPU_TYPE}')"
   )
 endif()
 
@@ -176,17 +193,16 @@ include(CMakeDependentOption)
 include(cache)
 include(utils)
 
-# Auto-downgrade to "no" if the requested SIMD tier is unsupported (e.g. ARM64 has no x86 SSE/AVX).
-if(NOT VECTORIZATION_TYPE STREQUAL "no" AND NOT VECTORIZATION)
+# Auto-downgrade to "no" if the requested CPU SIMD tier is unsupported
+# (e.g. ARM64 has no x86 SSE/AVX).  HIP/CUDA are GPU backends — skip this check for them.
+if(NOT VECTORIZATION_CPU_TYPE STREQUAL "no" AND NOT VECTORIZATION)
   message(
     WARNING
-      "VECTORIZATION_TYPE '${VECTORIZATION_TYPE}' is not supported by this compiler/architecture. "
-      "Falling back to VECTORIZATION_TYPE=no."
+      "VECTORIZATION_CPU_TYPE '${VECTORIZATION_CPU_TYPE}' is not supported by this compiler/architecture. "
+      "Falling back to VECTORIZATION_CPU_TYPE=no."
   )
-  set(VECTORIZATION_TYPE "no"
-      CACHE STRING
-          "vectorization implementation to use. Options are no, sse, avx, avx2, avx512, neon, sve"
-      FORCE
+  set(VECTORIZATION_CPU_TYPE "no"
+      CACHE STRING "CPU SIMD backend. Options: no, sse, avx, avx2, avx512, neon, sve" FORCE
   )
 endif()
 
@@ -218,7 +234,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
 
 # =============================================================================
 # SECTION 2 —
-# VECTORIZATION_TYPE ↔ exactly one VECTORIZATION_HAS_* and backend trees
+# VECTORIZATION_CPU_TYPE / VECTORIZATION_GPU_TYPE → VECTORIZATION_HAS_* defines and backend trees
 # =============================================================================
 if(VECTORIZATION_ENABLE_SANITIZER)
   include(sanitize)
@@ -238,44 +254,57 @@ elseif(MSVC)
   string(APPEND CMAKE_SHARED_LINKER_FLAGS " /DEBUG:FULL")
 endif()
 
-# --- VECTORIZATION_TYPE → VECTORIZATION_HAS_* (one hot) ---
+# --- CPU backend → VECTORIZATION_HAS_* (one-hot, driven by VECTORIZATION_CPU_TYPE) ---
 set(VECTORIZATION_COMPILE_DEFINITIONS "")
 
-if(VECTORIZATION_TYPE STREQUAL "sse")
+if(VECTORIZATION_CPU_TYPE STREQUAL "sse")
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_SSE=1)
 else()
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_SSE=0)
 endif()
 
 # AVX2 implies AVX; set once to avoid duplicate -DVECTORIZATION_HAS_AVX on the command line.
-if(VECTORIZATION_TYPE STREQUAL "avx" OR VECTORIZATION_TYPE STREQUAL "avx2")
+if(VECTORIZATION_CPU_TYPE STREQUAL "avx" OR VECTORIZATION_CPU_TYPE STREQUAL "avx2")
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_AVX=1)
 else()
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_AVX=0)
 endif()
 
-if(VECTORIZATION_TYPE STREQUAL "avx2")
+if(VECTORIZATION_CPU_TYPE STREQUAL "avx2")
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_AVX2=1)
 else()
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_AVX2=0)
 endif()
 
-if(VECTORIZATION_TYPE STREQUAL "avx512")
+if(VECTORIZATION_CPU_TYPE STREQUAL "avx512")
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_AVX512=1)
 else()
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_AVX512=0)
 endif()
 
-if(VECTORIZATION_TYPE STREQUAL "neon")
+if(VECTORIZATION_CPU_TYPE STREQUAL "neon")
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_NEON=1)
 else()
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_NEON=0)
 endif()
 
-if(VECTORIZATION_TYPE STREQUAL "sve")
+if(VECTORIZATION_CPU_TYPE STREQUAL "sve")
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_SVE=1)
 else()
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_SVE=0)
+endif()
+
+# --- GPU backend → VECTORIZATION_HAS_* (driven by VECTORIZATION_GPU_TYPE) ---
+if(VECTORIZATION_GPU_TYPE STREQUAL "hip")
+  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_HIP=1)
+else()
+  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_HIP=0)
+endif()
+
+if(VECTORIZATION_GPU_TYPE STREQUAL "cuda")
+  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_CUDA=1)
+else()
+  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_CUDA=0)
 endif()
 
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_SVML)
@@ -285,7 +314,8 @@ compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_MKL)
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_GTEST)
 list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_MEMORY=${_vec_has_memory})
 list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_LOGGING=${_vec_has_logging})
-if(VECTORIZATION_TYPE MATCHES "^(sse|avx|avx2|avx512|neon|sve)$")
+# VECTORIZATION_VECTORIZED: 1 when any CPU SIMD backend is active (GPU does not affect this).
+if(VECTORIZATION_CPU_TYPE MATCHES "^(sse|avx|avx2|avx512|neon|sve)$")
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_VECTORIZED=1)
 else()
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_VECTORIZED=0)
@@ -439,31 +469,43 @@ list(FILTER sources EXCLUDE REGEX ".*/Testing/.*")
 list(FILTER headers EXCLUDE REGEX ".*/Testing/.*")
 list(FILTER templates EXCLUDE REGEX ".*/Testing/.*")
 
-# Exclude SIMD backend trees not selected by VECTORIZATION_TYPE.
-if(NOT VECTORIZATION_TYPE STREQUAL "sse")
+# Exclude CPU SIMD backend trees not selected by VECTORIZATION_CPU_TYPE.
+if(NOT VECTORIZATION_CPU_TYPE STREQUAL "sse")
   list(FILTER headers EXCLUDE REGEX ".*/backend/sse/.*")
   list(FILTER sources EXCLUDE REGEX ".*/backend/sse/.*")
   list(FILTER templates EXCLUDE REGEX ".*/backend/sse/.*")
 endif()
-if(NOT VECTORIZATION_TYPE MATCHES "^(avx|avx2)$")
+if(NOT VECTORIZATION_CPU_TYPE MATCHES "^(avx|avx2)$")
   list(FILTER headers EXCLUDE REGEX ".*/backend/avx/.*")
   list(FILTER sources EXCLUDE REGEX ".*/backend/avx/.*")
   list(FILTER templates EXCLUDE REGEX ".*/backend/avx/.*")
 endif()
-if(NOT VECTORIZATION_TYPE STREQUAL "avx512")
+if(NOT VECTORIZATION_CPU_TYPE STREQUAL "avx512")
   list(FILTER headers EXCLUDE REGEX ".*/backend/avx512/.*")
   list(FILTER sources EXCLUDE REGEX ".*/backend/avx512/.*")
   list(FILTER templates EXCLUDE REGEX ".*/backend/avx512/.*")
 endif()
-if(NOT VECTORIZATION_TYPE STREQUAL "neon" AND NOT VECTORIZATION_TYPE STREQUAL "sve")
+if(NOT VECTORIZATION_CPU_TYPE STREQUAL "neon" AND NOT VECTORIZATION_CPU_TYPE STREQUAL "sve")
   list(FILTER headers EXCLUDE REGEX ".*/backend/neon/.*")
   list(FILTER sources EXCLUDE REGEX ".*/backend/neon/.*")
   list(FILTER templates EXCLUDE REGEX ".*/backend/neon/.*")
 endif()
-if(NOT VECTORIZATION_TYPE STREQUAL "sve")
+if(NOT VECTORIZATION_CPU_TYPE STREQUAL "sve")
   list(FILTER headers EXCLUDE REGEX ".*/backend/sve/.*")
   list(FILTER sources EXCLUDE REGEX ".*/backend/sve/.*")
   list(FILTER templates EXCLUDE REGEX ".*/backend/sve/.*")
+endif()
+
+# Exclude GPU backend trees not selected by VECTORIZATION_GPU_TYPE.
+if(NOT VECTORIZATION_GPU_TYPE STREQUAL "hip")
+  list(FILTER headers EXCLUDE REGEX ".*/backend/hip/.*")
+  list(FILTER sources EXCLUDE REGEX ".*/backend/hip/.*")
+  list(FILTER templates EXCLUDE REGEX ".*/backend/hip/.*")
+endif()
+if(NOT VECTORIZATION_GPU_TYPE STREQUAL "cuda")
+  list(FILTER headers EXCLUDE REGEX ".*/backend/cuda/.*")
+  list(FILTER sources EXCLUDE REGEX ".*/backend/cuda/.*")
+  list(FILTER templates EXCLUDE REGEX ".*/backend/cuda/.*")
 endif()
 
 # Exclude x86 svml.h when neither SVML nor SLEEF is active.
@@ -473,7 +515,7 @@ if(NOT VECTORIZATION_ENABLE_SVML AND NOT VECTORIZATION_ENABLE_SLEEF)
 endif()
 
 # Always exclude NEON svml.h when not targeting NEON.
-if(NOT VECTORIZATION_TYPE STREQUAL "neon")
+if(NOT VECTORIZATION_CPU_TYPE STREQUAL "neon")
   list(FILTER headers EXCLUDE REGEX ".*/backend/neon/svml\\.h$")
 endif()
 
@@ -524,12 +566,50 @@ set_target_properties(
                            CXX_EXTENSIONS OFF
 )
 
+# ---- HIP GPU backend -------------------------------------------------------
+if(VECTORIZATION_GPU_TYPE STREQUAL "hip")
+  # Prefer ROCm HIP; fall back to CUDA when ROCM_PATH is absent.
+  if(NOT DEFINED CMAKE_HIP_COMPILER AND DEFINED ENV{ROCM_PATH})
+    set(CMAKE_HIP_COMPILER "$ENV{ROCM_PATH}/bin/hipcc" CACHE FILEPATH "HIP compiler")
+  endif()
+  enable_language(HIP)
+
+  set(VECTORIZATION_GPU_ARCHITECTURES "gfx900;gfx906;gfx908;gfx90a;gfx1030;gfx1100"
+      CACHE STRING "HIP GPU architectures (gfxXXX for AMD, smXX for CUDA offload via hipcc)")
+  set_target_properties(Vectorization PROPERTIES
+    HIP_STANDARD    ${VECTORIZATION_CXX_STANDARD}
+    HIP_ARCHITECTURES "${VECTORIZATION_GPU_ARCHITECTURES}"
+  )
+  target_compile_options(Vectorization PRIVATE
+    $<$<COMPILE_LANGUAGE:HIP>:-ffast-math>
+  )
+  message(STATUS "Vectorization: HIP GPU backend enabled (archs: ${VECTORIZATION_GPU_ARCHITECTURES})")
+endif()
+
+# ---- CUDA GPU backend -------------------------------------------------------
+if(VECTORIZATION_GPU_TYPE STREQUAL "cuda")
+  enable_language(CUDA)
+
+  set(VECTORIZATION_CUDA_ARCHITECTURES "70;75;80;86;89;90"
+      CACHE STRING "CUDA compute capability list (e.g. 70;80;86 for Volta/Ampere/Ada)")
+  set_target_properties(Vectorization PROPERTIES
+    CUDA_STANDARD              ${VECTORIZATION_CXX_STANDARD}
+    CUDA_STANDARD_REQUIRED     ON
+    CUDA_ARCHITECTURES         "${VECTORIZATION_CUDA_ARCHITECTURES}"
+    CUDA_SEPARABLE_COMPILATION OFF
+  )
+  target_compile_options(Vectorization PRIVATE
+    $<$<COMPILE_LANGUAGE:CUDA>:--use_fast_math -Xcompiler=-fPIC>
+  )
+  message(STATUS "Vectorization: CUDA GPU backend enabled (archs: ${VECTORIZATION_CUDA_ARCHITECTURES})")
+endif()
+
 if(MSVC)
   target_compile_options(Vectorization PRIVATE /WX)
   if(EXISTS "${PROJECT_SOURCE_DIR}/PRETORIAN.natvis")
     target_sources(Vectorization PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/PRETORIAN.natvis>)
   endif()
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND VECTORIZATION_TYPE STREQUAL "sse")
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND VECTORIZATION_CPU_TYPE STREQUAL "sse")
     target_compile_definitions(Vectorization PUBLIC VECTORIZATION_CLANG_CL)
   endif()
 else()
@@ -686,7 +766,8 @@ endif()
 # =============================================================================
 message("")
 message("******** Vectorization module (CMake flags) ********")
-message("  Vectorization type   : ${VECTORIZATION_TYPE}")
+message("  CPU backend          : ${VECTORIZATION_CPU_TYPE}")
+message("  GPU backend          : ${VECTORIZATION_GPU_TYPE}")
 message("  Packet size          : ${VECTORIZATION_PACKET_SIZE}")
 message("  Svml                 : ${VECTORIZATION_ENABLE_SVML}")
 message("  Sleef                : ${VECTORIZATION_ENABLE_SLEEF}")
