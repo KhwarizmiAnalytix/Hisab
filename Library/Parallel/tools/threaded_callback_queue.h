@@ -351,7 +351,7 @@ struct threaded_callback_queue::return_value_wrapper<ReturnT, false /* IsLValueR
 
     return_value_wrapper() = default;
     template <class ReturnTT>
-    return_value_wrapper(ReturnTT&& value) : value_(std::forward<ReturnTT>(value))
+    return_value_wrapper(ReturnTT&& value) : value_(std::forward<ReturnTT>(value))//NOLINT
     {
     }
 
@@ -731,6 +731,8 @@ void threaded_callback_queue::wait(SharedFutureContainerT&& prior_shared_futures
         case ENQUEUED:
             must_wait_flag |= !this->try_invoke(prior);
             break;
+        default:
+            break;
         }
     }
 
@@ -800,7 +802,7 @@ void threaded_callback_queue::push_control(FT&& f, ArgsT&&... args)
         void operator()(threaded_callback_queue* self, FT&& _f, ArgsT&&... _args)
         {
             _f(std::forward<ArgsT>(_args)...);
-            std::lock_guard<std::mutex> lock(self->control_mutex_);
+            std::scoped_lock lock(self->control_mutex_);
             self->control_futures_.erase(future_);
         }
 
@@ -816,7 +818,7 @@ void threaded_callback_queue::push_control(FT&& f, ArgsT&&... args)
 
     auto local_control_futures = [this, &invoker_ptr]
     {
-        std::lock_guard<std::mutex> lock(control_mutex_);
+        std::scoped_lock lock(control_mutex_);
         auto                        result = control_futures_;
         control_futures_.emplace(invoker_ptr);
         return result;
@@ -832,10 +834,10 @@ void threaded_callback_queue::push_control(FT&& f, ArgsT&&... args)
         }
 
         {
-            std::lock_guard<std::mutex> invoker_lock(invoker_ptr->mutex_);
+            std::scoped_lock invoker_lock(invoker_ptr->mutex_);
             invoker_ptr->status_.store(ENQUEUED, std::memory_order_release);
 
-            std::lock_guard<std::mutex> lock(mutex_);
+            std::scoped_lock lock(mutex_);
             invoker_ptr->invoker_index_ =
                 invoker_queue_.empty() ? 0 : invoker_queue_.front()->invoker_index_ - 1;
             invoker_queue_.emplace_front(invoker_ptr);
@@ -858,7 +860,7 @@ threaded_callback_queue::push(FT&& f, ArgsT&&... args)
     invoker_ptr->status_.store(ENQUEUED, std::memory_order_release);
 
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::scoped_lock lock(mutex_);
         invoker_ptr->invoker_index_ =
             invoker_queue_.empty() ? 0 : invoker_queue_.back()->invoker_index_ + 1;
         invoker_queue_.emplace_back(invoker_ptr);

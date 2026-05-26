@@ -20,12 +20,12 @@
 #define PARALLEL_MAX_THREADS 64
 #endif
 
-typedef void (*thread_function_type)(void*);
+using thread_function_type = void (*)(void*);
 
 #if PARALLEL_HAS_PTHREADS
 #include <pthread.h>
-typedef pthread_t thread_process_id_type;
-typedef pthread_t multi_threader_id_type;
+using thread_process_id_type = pthread_t;
+using multi_threader_id_type = pthread_t;
 #elif PARALLEL_HAS_WIN32_THREADS
 #include <windows.h>
 typedef HANDLE thread_process_id_type;

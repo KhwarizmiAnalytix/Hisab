@@ -61,7 +61,7 @@ void parallel_tools_impl<backend_type::std_thread>::parallel_for(
 
         if (grain <= 0)
         {
-            size_t estimate_grain = (last - first) / (thread_number * 4);
+            size_t estimate_grain = (last - first) / static_cast<size_t>(static_cast<long>(thread_number) * 4);
             grain                 = (estimate_grain > 0) ? estimate_grain : 1;
         }
 

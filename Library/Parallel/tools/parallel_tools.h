@@ -37,6 +37,7 @@
 #include <functional>   // For std::function
 #include <string>       // For std::string
 #include <type_traits>  // For std::enable_if
+#include <utility>
 
 #include "common/parallel_export.h"
 #include "common/parallel_tools_api.h"
@@ -288,9 +289,9 @@ public:
         config(int max_num_threads) : max_number_of_threads_(max_num_threads) {}
         config(bool nested) : nested_parallelism_(nested) {}
         config(std::string backend) : backend_(std::move(backend)) {}
-        config(int max_num_threads, const std::string& backend, bool nested)
+        config(int max_num_threads, std::string  backend, bool nested)
             : max_number_of_threads_(max_num_threads),
-              backend_(backend),
+              backend_(std::move(backend)),
               nested_parallelism_(nested)
         {
         }
