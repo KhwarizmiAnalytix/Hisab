@@ -343,58 +343,6 @@ struct scalar_type<
 }  // namespace vectorization
 
 // ---------------------------------------------------------------------------
-// is_matrix_operation
-//
-// True for tensor<T> (covers all ranks — runtime rank dispatch happens inside
-// tensor::matrix_multiplication()).  Also true for expressions derived from
-// tensor (transpose, matrix-multiply chains).
-// ---------------------------------------------------------------------------
-namespace vectorization
-{
-
-template <typename T>
-struct is_matrix_operation
-{
-    static constexpr bool value = false;
-};
-
-// tensor<T> is NOT a matrix operation — tensor * tensor is element-wise.
-// Matrix multiply is performed explicitly via matmul(A, B) which creates
-// matrix_multiplication_expression.  is_matrix_operation remains false for
-// tensor so that all arithmetic operators on tensors are element-wise.
-
-template <typename T>
-struct is_matrix_operation<matrix_transpose_expression<T>>
-{
-    static constexpr bool value = is_matrix_operation<T>::value;
-};
-
-template <typename LHS, typename RHS>
-struct is_matrix_operation<matrix_multiplication_expression<LHS, RHS>>
-{
-    static constexpr bool value =
-        is_matrix_operation<LHS>::value && is_matrix_operation<RHS>::value;
-};
-
-// is_matrix_evalute — kept for expression system compatibility
-template <typename T>
-struct is_matrix_evalute
-{
-    static constexpr bool value = false;
-};
-
-template <typename T1, typename T2>
-struct is_matrix_evalute<matrix_vector_multiplication_expression<T1, T2>>
-{
-    static constexpr bool value = true;
-};
-
-template <typename T1, typename T2>
-struct is_matrix_evalute<vector_matrix_multiplication_expression<T1, T2>>
-{
-    static constexpr bool value = true;
-};
-
 // is_matrix_compute — true for expression types that write their result into an
 // output container in a single call (evaluate(output)), rather than producing
 // one element at a time.  expressions_evaluator::run dispatches on this trait.
@@ -447,39 +395,6 @@ struct is_transpose_expression
 
 template <typename T>
 struct is_transpose_expression<matrix_transpose_expression<T>>
-{
-    static constexpr bool value = true;
-};
-
-}  // namespace vectorization
-
-// ---------------------------------------------------------------------------
-// is_matrix / is_vector
-// Both are true for tensor<T> since a tensor can act as either.
-// ---------------------------------------------------------------------------
-namespace vectorization
-{
-
-template <typename M>
-struct is_matrix
-{
-    static constexpr bool value = false;
-};
-
-template <typename T>
-struct is_matrix<tensor<T>>
-{
-    static constexpr bool value = true;
-};
-
-template <typename M>
-struct is_vector
-{
-    static constexpr bool value = false;
-};
-
-template <typename T>
-struct is_vector<tensor<T>>
 {
     static constexpr bool value = true;
 };
