@@ -25,7 +25,7 @@ These survive between `cmake` invocations and can be overridden with `-DFLAG=val
 
 | Flag | Default | Declared in | Description |
 |---|---|---|---|
-| `VECTORIZATION_TYPE` | `avx2` | [CMakeLists.txt](../CMakeLists.txt) | SIMD target. One of: `no`, `sse`, `avx`, `avx2`, `avx512`. Gates which `PROJECT_SSE/AVX/AVX2/AVX512` local flag is set by [utils.cmake](tools/utils.cmake). |
+| `VECTORIZATION_CPU_BACKEND` | `avx2` | [CMakeLists.txt](../CMakeLists.txt) | SIMD target. One of: `no`, `sse`, `avx`, `avx2`, `avx512`. Gates which `PROJECT_SSE/AVX/AVX2/AVX512` local flag is set by [utils.cmake](tools/utils.cmake). |
 
 ### Features / optional libraries
 
@@ -120,10 +120,10 @@ These are set with plain `set()` (no CACHE). They are derived from detection pro
 | `PROJECT_COMPILER_SUPPORTS_AVX512_EXTENSIONS` | [tools/utils.cmake](tools/utils.cmake) | Raw probe result: compiler accepts AVX512F/DQ/VL intrinsics. |
 | `PROJECT_COMPILER_SUPPORTS_FMA_EXTENSIONS` | [tools/utils.cmake](tools/utils.cmake) | Raw probe result: compiler accepts FMA intrinsics. Extends `VECTORIZATION_COMPILER_FLAGS` when true. |
 | `PROJECT_COMPILER_SUPPORTS_SVML_EXTENSIONS` | [tools/utils.cmake](tools/utils.cmake) | Raw probe result: compiler has native SVML (`_mm256_exp_ps` etc.). When absent and vectorization is active, `VECTORIZATION_ENABLE_SVML` is forced to `ON` (see [Library/Vectorization/Cmake/utils.cmake](../Library/Vectorization/Cmake/utils.cmake)). |
-| `PROJECT_SSE` | [tools/utils.cmake](tools/utils.cmake) | Set to `1` when `VECTORIZATION_TYPE=sse` and SSE is supported. Consumed by [flags/compile_definitions.cmake](flags/compile_definitions.cmake). |
-| `PROJECT_AVX` | [tools/utils.cmake](tools/utils.cmake) | Set to `1` when `VECTORIZATION_TYPE=avx` and AVX is supported. |
-| `PROJECT_AVX2` | [tools/utils.cmake](tools/utils.cmake) | Set to `1` when `VECTORIZATION_TYPE=avx2` and AVX2 is supported. |
-| `PROJECT_AVX512` | [tools/utils.cmake](tools/utils.cmake) | Set to `1` when `VECTORIZATION_TYPE=avx512` and AVX512 is supported. |
+| `PROJECT_SSE` | [tools/utils.cmake](tools/utils.cmake) | Set to `1` when `VECTORIZATION_CPU_BACKEND=sse` and SSE is supported. Consumed by [flags/compile_definitions.cmake](flags/compile_definitions.cmake). |
+| `PROJECT_AVX` | [tools/utils.cmake](tools/utils.cmake) | Set to `1` when `VECTORIZATION_CPU_BACKEND=avx` and AVX is supported. |
+| `PROJECT_AVX2` | [tools/utils.cmake](tools/utils.cmake) | Set to `1` when `VECTORIZATION_CPU_BACKEND=avx2` and AVX2 is supported. |
+| `PROJECT_AVX512` | [tools/utils.cmake](tools/utils.cmake) | Set to `1` when `VECTORIZATION_CPU_BACKEND=avx512` and AVX512 is supported. |
 | `VECTORIZATION` | [tools/utils.cmake](tools/utils.cmake) | `ON` when any of `PROJECT_SSE/AVX/AVX2/AVX512` is set. Used as a guard for SVML detection. |
 | `VECTORIZATION_COMPILER_FLAGS` | [tools/utils.cmake](tools/utils.cmake) | The actual compiler flags for the active SIMD level (e.g. `-mavx2 -mf16c -mfma`). Applied to `CMAKE_C/CXX_FLAGS` in [flags/platform.cmake](flags/platform.cmake). |
 
@@ -154,7 +154,7 @@ These are set with plain `set()` (no CACHE). They are derived from detection pro
 ## Flag data-flow summary
 
 ```
-CMakeLists.txt  ─── VECTORIZATION_TYPE ──►  utils.cmake
+CMakeLists.txt  ─── VECTORIZATION_CPU_BACKEND ──►  utils.cmake
                                                       │
                                               probes SSE/AVX/AVX2/AVX512
                                                       │

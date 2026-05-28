@@ -25,7 +25,7 @@
 #include <utility>
 #include <cstddef>
 
-#include "common/intrin.h"
+#include "backend/simd.h"
 #include "common/vectorization_macros.h"
 #include "common/scalar_helper_functions.h"
 
@@ -67,14 +67,6 @@
 #  elif VECTORIZATION_HAS_NEON
 #    include "backend/neon/double/simd.h"
 #    include "backend/neon/float/simd.h"
-#  elif VECTORIZATION_HAS_CUDA
-  // CPU_TYPE=no + GPU_TYPE=cuda: use GPU scalar simd as host-side shim
-#    include "backend/cuda/double/simd.h"
-#    include "backend/cuda/float/simd.h"
-#  elif VECTORIZATION_HAS_HIP
-  // CPU_TYPE=no + GPU_TYPE=hip: use GPU scalar simd as host-side shim
-#    include "backend/hip/double/simd.h"
-#    include "backend/hip/float/simd.h"
 #  endif
 
 #endif  // VECTORIZATION_ON_GPU_DEVICE
@@ -82,6 +74,12 @@
 
 namespace vectorization
 {
+template <typename value_t>
+struct packet_size
+{
+    static constexpr uint32_t value = VECTORIZATION_PACKET_SIZE;
+};
+
 template <typename simd_t, uint32_t N>
 struct array
 {

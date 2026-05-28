@@ -83,9 +83,9 @@ if(Torch_FOUND)
               $<TARGET_FILE_DIR:VectorizationCxxTests>
     )
   endif()
-  if(MEMORY_ENABLE_CUDA)
+  if(MEMORY_GPU_BACKEND STREQUAL "cuda")
     target_compile_definitions(VectorizationCxxTests PRIVATE VECTORIZATION_LIBTORCH_CUDA_REQUIRED=1)
-    message(STATUS "VectorizationCxxTests: LibTorch CUDA tests REQUIRED (MEMORY_ENABLE_CUDA=ON)")
+    message(STATUS "VectorizationCxxTests: LibTorch CUDA tests REQUIRED (MEMORY_GPU_BACKEND=cuda)")
   else()
     target_compile_definitions(VectorizationCxxTests PRIVATE VECTORIZATION_LIBTORCH_CUDA_REQUIRED=0)
   endif()
@@ -189,11 +189,11 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
        "${CMAKE_CURRENT_SOURCE_DIR}/Benchmark*.cpp"
   )
 
-  if(VECTORIZATION_TYPE STREQUAL "no")
+  if(VECTORIZATION_CPU_BACKEND STREQUAL "no")
     list(FILTER bench_sources EXCLUDE REGEX ".*BenchmarkSimd.*\\.cpp$")
     message(
       STATUS
-        "Vectorization: VECTORIZATION_TYPE=no — BenchmarkSimd*.cpp excluded (no SIMD backend active)"
+        "Vectorization: VECTORIZATION_CPU_BACKEND=no — BenchmarkSimd*.cpp excluded (no SIMD backend active)"
     )
   endif()
 

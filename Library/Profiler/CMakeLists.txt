@@ -194,7 +194,7 @@ set(BUILD_BENCHMARKS OFF CACHE BOOL "Disable benchmarks for third-party librarie
 # Kineto: configure GPU-backend knobs before building the library.
 if(PROFILER_ENABLE_KINETO)
   set(LIBKINETO_NOAIUPTI ON CACHE STRING "" FORCE)
-  if(NOT MEMORY_ENABLE_CUDA)
+  if(NOT MEMORY_GPU_BACKEND STREQUAL "cuda")
     set(LIBKINETO_NOCUPTI ON CACHE STRING "" FORCE)
   else()
     set(LIBKINETO_NOCUPTI OFF CACHE STRING "" FORCE)

@@ -4,7 +4,7 @@
 
 ## Layout
 
-- `CMakeLists.txt` — `VECTORIZATION_TYPE`, packet size, SVML, testing/benchmark/tooling.
+- `CMakeLists.txt` — `VECTORIZATION_CPU_BACKEND`, packet size, SVML, testing/benchmark/tooling.
 - `BUILD.bazel` — `//Library/Vectorization:Vectorization`, `VectorizationCxxTests`, `benchmark_simdunary`, `benchmark_simdbinaryfn`, `benchmark_simdbinaryop`, `benchmark_simdternaryhorizontal`.
 - `Cmake/` — SIMD capability checks (`utils.cmake`, etc.).
 - `Testing/` — generated test headers and C++ tests.
@@ -17,7 +17,7 @@
 
 | CMake variable | Default | Summary |
 |----------------|---------|---------|
-| `VECTORIZATION_TYPE` | `avx2` | `no`, `sse`, `avx`, `avx2`, `avx512` — which backend tree is compiled |
+| `VECTORIZATION_CPU_BACKEND` | `avx2` | `no`, `sse`, `avx`, `avx2`, `avx512` — which backend tree is compiled |
 | `VECTORIZATION_PACKET_SIZE` | `4` | Lane count; must match ISA / kernels (max 256) |
 | `VECTORIZATION_CXX_STANDARD` | `20` | `11`, `14`, `17`, `20`, `23` |
 

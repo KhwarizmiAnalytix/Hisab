@@ -23,7 +23,7 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "common/intrin.h"
+#include "backend/simd.h"
 #include "common/packet.h"
 
 // ---------------------------------------------------------------------------

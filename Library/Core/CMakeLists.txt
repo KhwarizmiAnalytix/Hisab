@@ -540,7 +540,7 @@ endif()
 
 message("")
 message("******** Core module (CMake flags) ********")
-message("  Vectorization type   : ${VECTORIZATION_TYPE}")
+message("  Vectorization type   : ${VECTORIZATION_CPU_BACKEND}")
 message("  Mkl                  : ${CORE_ENABLE_MKL}")
 message("  Rocm                 : ${CORE_ENABLE_ROCM}")
 message("  Experimental         : ${CORE_ENABLE_EXPERIMENTAL}")

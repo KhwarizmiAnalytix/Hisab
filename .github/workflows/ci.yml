@@ -953,7 +953,7 @@ jobs:
   # Vectorization SIMD backend matrix (SSE, AVX-512, NEON, SVE)
   # x86 jobs: ubuntu-latest. AArch64 jobs: ubuntu-24.04-arm (requires public repo
   # or appropriate org plan for hosted ARM runners). CMake may fall back to
-  # VECTORIZATION_TYPE=no if the requested ISA is unsupported on the runner.
+  # VECTORIZATION_CPU_BACKEND=no if the requested ISA is unsupported on the runner.
   # ============================================================================
   vectorization-simd-backend-tests:
     name: "Vectorization ${{ matrix.vectorization_type }} — ${{ matrix.os }}"
@@ -1837,7 +1837,7 @@ jobs:
 # 3. compiler-version-tests-gcc: GCC version testing (GCC 8-13 with C++17/20/23)
 # 4. tbb-specific-tests: TBB functionality testing (Unix/macOS only)
 # 4. sanitizer-tests: Memory/thread safety testing (Unix/macOS only)
-# 5. vectorization-simd-backend-tests: VECTORIZATION_TYPE sse/avx512 on ubuntu-latest; neon/sve on ubuntu-24.04-arm
+# 5. vectorization-simd-backend-tests: VECTORIZATION_CPU_BACKEND sse/avx512 on ubuntu-latest; neon/sve on ubuntu-24.04-arm
 # 6. optimization-flags-test: Compiler optimization testing
 # 7. benchmark-tests: Performance regression testing (non-blocking)
 # 8. sccache-baseline-tests: Build performance baseline without sccache (all platforms)

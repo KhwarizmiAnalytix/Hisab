@@ -599,13 +599,13 @@ class QuarismaFlags:
     def __initialize_flags(self):
         self.__key = [
             # Valid CMake options
-            "vectorisation",
+            "cpu_backend",
+            "gpu_backend",
             "tbb",
             "openmp",
             "mkl",
             "numa",
             "memkind",
-            "cuda",
             "static",
             "clangtidy",
             "iwyu",
@@ -637,13 +637,13 @@ class QuarismaFlags:
         ]
         self.__description = [
             # Valid CMake options
-            "vectorisation type: no, sse, avx, avx2, avx512, neon, or sve",
+            "cpu backend: no, sse, avx, avx2, avx512, neon, or sve",
+            "GPU backend: none, hip, cuda",
             "enable Intel TBB (Threading Building Blocks) support",
             "enable OpenMP",
             "enable MKL",
             "enable NUMA node support",
             "enable memkind extended memory support",
-            "enable CUDA compilation",
             "build shared or static libraries",
             "enable clang-tidy checks",
             "enable include-what-you-use (iwyu) checks",
@@ -678,13 +678,12 @@ class QuarismaFlags:
         debug_print("Build cmake flag")
         self.__name = {
             # Valid CMake options that exist in CMakeLists.txt
-            "cuda": "MEMORY_ENABLE_CUDA",
             "tbb": "MEMORY_ENABLE_TBB",
             "openmp": "PARALLEL_ENABLE_OPENMP",
             "mkl": "CORE_ENABLE_MKL",
             "numa": "MEMORY_ENABLE_NUMA",
             "memkind": "MEMORY_ENABLE_MEMKIND",
-            "vectorisation": "VECTORIZATION_TYPE",
+            "cpu_backend": "VECTORIZATION_CPU_BACKEND",
             "packet_size": "VECTORIZATION_PACKET_SIZE",
             "static": "BUILD_SHARED_LIBS",
             "test": "BUILD_TESTING",
@@ -719,13 +718,13 @@ class QuarismaFlags:
         self.__value = dict.fromkeys(self.__key, self.ON)
         self.__value.update(
             {
-                "vectorisation": "avx2",
+                "cpu_backend": "avx2",
                 "parallel_backend": "std",
                 "javasourceversion": 1.8,
                 "javatargetversion": 1.8,
                 "cxxstd": "cxx20",
                 # Keep some flags OFF even in "all" mode for safety/compatibility
-                "cuda": self.OFF,  # CUDA requires special hardware
+                "gpu_backend": "none",  # GPU backend off by default in "all" mode
                 "sanitizer": self.OFF,  # Can conflict with other tools
                 "valgrind": self.OFF,  # Can conflict with sanitizer
                 "coverage": self.OFF,  # Coverage analysis is optional
@@ -749,7 +748,8 @@ class QuarismaFlags:
         # When CMake default is OFF, setup.py default should be OFF (no arg = OFF)
         self.__value.update(
             {
-                "vectorisation": "",  # Special case: string value
+                "cpu_backend": "",  # Special case: string value
+                "gpu_backend": "",   # Special case: empty = let CMake use its default (none)
                 "static": self.ON,  # BUILD_SHARED_LIBS default is OFF, so static=ON
                 "test": self.ON,  # BUILD_TESTING default is ON
                 "javasourceversion": 1.8,  # Special case: numeric value
@@ -775,7 +775,8 @@ class QuarismaFlags:
 
     def __process_arg_list(self, arg_list):
         sanitizer_list = ["address", "undefined", "thread", "memory", "leak"]
-        vectorisation_list = ["no", "sse", "avx", "avx2", "avx512", "neon", "sve"]
+        cpu_backend_list = ["no", "sse", "avx", "avx2", "avx512", "neon", "sve"]
+        gpu_backend_list = ["none", "hip", "cuda"]
         cxx_std_list = ["cxx17", "cxx20", "cxx23"]
         logging_backend_list = ["native", "loguru", "glog", "spdlog"]
         profiler_choices = {"kineto": "KINETO", "native": "NATIVE", "itt": "ITT"}
@@ -829,9 +830,24 @@ class QuarismaFlags:
                 self.__value["python"] = self.ON
                 self.__value["pythondebug"] = self.ON
                 self.builder_suffix += "_pythondebug"
-            elif arg in vectorisation_list:
-                self.__value["vectorisation"] = arg
+            elif arg in cpu_backend_list:
+                self.__value["cpu_backend"] = arg
                 self.builder_suffix += f"_{arg}"
+            elif arg in ("cuda", "hip"):
+                self.__value["gpu_backend"] = arg
+                self.builder_suffix += f"_{arg}"
+            elif arg.startswith("gpu_backend."):
+                backend = arg.split(".", 1)[1]
+                if backend in gpu_backend_list:
+                    self.__value["gpu_backend"] = backend
+                    if backend != "none":
+                        self.builder_suffix += f"_{backend}"
+                else:
+                    print_status(
+                        f"Invalid GPU backend '{backend}'. Valid options: {', '.join(gpu_backend_list)}",
+                        "ERROR",
+                    )
+                    sys.exit(1)
             elif re.match(r"^psize([1-9][0-9]*)$", arg.lower()):
                 n = int(
                     re.match(r"^psize([1-9][0-9]*)$", arg.lower()).group(1)
@@ -1152,6 +1168,12 @@ class QuarismaFlags:
         else:
             cmake_cmd_flags.append("-DVECTORIZATION_ENABLE_MKL=OFF")
 
+        # GPU backend — project-specific flags for the two GPU-aware modules.
+        gpu_val = self.__value.get("gpu_backend")
+        if gpu_val and gpu_val != "":
+            cmake_cmd_flags.append(f"-DVECTORIZATION_GPU_BACKEND={gpu_val}")
+            cmake_cmd_flags.append(f"-DMEMORY_GPU_BACKEND={gpu_val}")
+
         # Tune generated code for the host CPU (Clang/GCC; see Library/Vectorization/Cmake/utils.cmake).
         if self.__value.get("native") == self.ON:
             cmake_cmd_flags.append("-DUSE_NATIVE_ARCH=ON")
@@ -1167,7 +1189,7 @@ class QuarismaFlags:
                 key = "std, openmp or tbb"
             elif key == "parallel_backend":
                 key = "parallel.std, parallel.openmp, or parallel.tbb"
-            elif key == "vectorisation":
+            elif key == "cpu_backend":
                 key = "sse, avx, avx2, avx512, neon, or sve"
             elif key == "cxxstd":
                 key = "cxx11, cxx14, cxx17, cxx20, cxx23"
@@ -1878,6 +1900,18 @@ def parse_args(args):
             else:
                 print_status(
                     f"Invalid SMP backend: {backend_value}. Valid options: {', '.join(valid_backends)}",
+                    "ERROR",
+                )
+                sys.exit(1)
+
+        elif arg.startswith("--gpu_backend.") or arg.startswith("--gpu-backend."):
+            backend_value = arg.split(".", 1)[1].lower()
+            valid_backends = ["none", "cuda", "hip"]
+            if backend_value in valid_backends:
+                processed_args.append(f"gpu_backend.{backend_value}")
+            else:
+                print_status(
+                    f"Invalid GPU backend: {backend_value}. Valid options: {', '.join(valid_backends)}",
                     "ERROR",
                 )
                 sys.exit(1)

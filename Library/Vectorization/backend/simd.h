@@ -60,12 +60,3 @@ template <typename T>
 struct simd
 {
 };
-
-namespace vectorization
-{
-template <typename value_t>
-struct packet_size
-{
-    static constexpr uint32_t value = VECTORIZATION_PACKET_SIZE;
-};
-}  // namespace vectorization

@@ -13,7 +13,7 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "common/intrin.h"
+#include "backend/simd.h"
 #include "common/normal_cdf.h"
 #include "common/vectorization_macros.h"
 #include "backend/neon/svml.h"

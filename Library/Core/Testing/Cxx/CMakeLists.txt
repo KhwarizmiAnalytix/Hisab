@@ -22,25 +22,24 @@ foreach(_test_source IN ITEMS ${test_sources})
     continue()
   endif()
 
-  # Exclude GPU-related test files based on compile flags When both CUDA and HIP are disabled,
-  # exclude all GPU tests
-  if(NOT MEMORY_ENABLE_CUDA AND NOT MEMORY_ENABLE_HIP)
+  # Exclude GPU-related test files based on compile flags
+  if(MEMORY_GPU_BACKEND STREQUAL "none")
     if(file_name MATCHES "TestGpu" OR file_name MATCHES "TestGPU")
       message(STATUS "Excluding GPU test (no GPU support): ${file_name}")
       continue()
     endif()
   endif()
 
-  # When CUDA is disabled, exclude CUDA-specific tests
-  if(NOT MEMORY_ENABLE_CUDA)
+  # When CUDA is not the backend, exclude CUDA-specific tests
+  if(NOT MEMORY_GPU_BACKEND STREQUAL "cuda")
     if(file_name MATCHES "TestCuda")
       message(STATUS "Excluding CUDA test (CUDA disabled): ${file_name}")
       continue()
     endif()
   endif()
 
-  # When HIP is disabled, exclude HIP-specific tests
-  if(NOT MEMORY_ENABLE_HIP)
+  # When HIP is not the backend, exclude HIP-specific tests
+  if(NOT MEMORY_GPU_BACKEND STREQUAL "hip")
     if(file_name MATCHES "TestHip")
       message(STATUS "Excluding HIP test (HIP disabled): ${file_name}")
       continue()
@@ -126,7 +125,7 @@ if(CORE_ENABLE_ENZYME)
   target_link_libraries(CoreCxxTests PRIVATE Enzyme::enzyme)
 endif()
 
-if(MEMORY_ENABLE_CUDA)
+if(MEMORY_GPU_BACKEND STREQUAL "cuda")
   target_link_libraries(CoreCxxTests PRIVATE ${PROJECT_CUDA_LIBRARIES})
 endif()
 
@@ -136,7 +135,7 @@ endif()
 # On Windows with the MinGW toolchain, compiling CUDA (.cu) with clang++ regularly fails due to host
 # header / CUDA wrapper incompatibilities (e.g. math_functions.hpp redefinitions and missing
 # texture_fetch_functions.h). Keep the rest of the suite buildable by skipping this CUDA TU.
-if(MEMORY_ENABLE_CUDA AND CORE_ENABLE_ENZYME)
+if(MEMORY_GPU_BACKEND STREQUAL "cuda" AND CORE_ENABLE_ENZYME)
   if(WIN32 AND (MINGW OR CMAKE_CXX_COMPILER MATCHES "msys64"))
     message(
       WARNING
@@ -236,8 +235,8 @@ if(CORE_ENABLE_BENCHMARK)
   foreach(_bench_source IN ITEMS ${bench_sources})
     get_filename_component(file_name "${_bench_source}" NAME)
 
-    # Exclude CUDA-related benchmarks when GPU support is disabled or CUDA compiler unavailable
-    if(NOT MEMORY_ENABLE_CUDA AND NOT MEMORY_ENABLE_HIP)
+    # Exclude CUDA-related benchmarks when no GPU backend is active
+    if(MEMORY_GPU_BACKEND STREQUAL "none")
       if(file_name MATCHES ".*[Cc]uda.*" OR _bench_source MATCHES "\\.cu$")
         message(STATUS "Excluding CUDA benchmark (no GPU support): ${file_name}")
         continue()

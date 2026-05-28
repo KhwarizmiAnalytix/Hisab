@@ -191,6 +191,12 @@ def _merge_dotted_segments(parts: List[str]) -> List[str]:
         elif pl[i] == "project" and i + 1 < len(pl) and pl[i + 1] in _BAZEL_LIBRARY_PROJECTS:
             out.append(f"project.{pl[i + 1]}")
             i += 2
+        elif pl[i] == "cpu_backend" and i + 1 < len(pl) and pl[i + 1] in ("no", "sse", "avx", "avx2", "avx512", "neon", "sve"):
+            out.append(f"cpu_backend.{pl[i + 1]}")
+            i += 2
+        elif pl[i] == "gpu_backend" and i + 1 < len(pl) and pl[i + 1] in ("none", "cuda", "hip"):
+            out.append(f"gpu_backend.{pl[i + 1]}")
+            i += 2
         else:
             out.append(pl[i])
             i += 1
@@ -233,6 +239,10 @@ class BazelConfiguration:
         self.visual_studio_version: Optional[str] = None  # VS version: "vs17", "vs19", "vs22", "vs26"
         self.system = platform.system()
 
+        # CPU SIMD backend: mirrors CMake VECTORIZATION_CPU_BACKEND (no|sse|avx|avx2|avx512|neon|sve).
+        self.cpu_backend: str = ""
+        # GPU backend: mirrors CMake MEMORY_GPU_BACKEND / VECTORIZATION_GPU_BACKEND.
+        self.gpu_backend: str = "none"
         # Mirrors CMake PARALLEL_BACKEND (std | openmp | tbb). None = infer only from tbb/openmp tokens.
         self.parallel_backend: Optional[str] = None
         # CMake: passing `gtest` disables per-module ENABLE_GTEST (default ON).
@@ -354,8 +364,42 @@ class BazelConfiguration:
                 if _mode != "off":
                     self.configs.append("lto")
 
+            # CPU SIMD backend
+            elif arg_lower.startswith("cpu_backend."):
+                _cpu = arg_lower.split(".", 1)[1]
+                _valid_cpu = ("no", "sse", "avx", "avx2", "avx512", "neon", "sve")
+                if _cpu in _valid_cpu:
+                    self.cpu_backend = _cpu
+                else:
+                    print_status(
+                        f"Invalid CPU backend '{_cpu}'. Valid options: {', '.join(_valid_cpu)}",
+                        "ERROR",
+                    )
+                    sys.exit(1)
+
+            # Bare SIMD tokens (e.g. neon, avx2 as a dotted-chain segment)
+            elif arg_lower in ("no", "sse", "avx", "avx2", "avx512", "neon", "sve"):
+                self.cpu_backend = arg_lower
+
             # Optional features
-            elif arg_lower in ["mimalloc", "magic_enum", "tbb", "mkl", "openmp", "cuda", "hip"]:
+            elif arg_lower in ("cuda", "hip"):
+                self.gpu_backend = arg_lower
+                self.configs.append(arg_lower)
+
+            elif arg_lower.startswith("gpu_backend."):
+                backend = arg_lower.split(".", 1)[1]
+                if backend in ("none", "cuda", "hip"):
+                    self.gpu_backend = backend
+                    if backend != "none":
+                        self.configs.append(backend)
+                else:
+                    print_status(
+                        f"Invalid GPU backend '{backend}'. Valid options: none, cuda, hip",
+                        "ERROR",
+                    )
+                    sys.exit(1)
+
+            elif arg_lower in ["mimalloc", "magic_enum", "tbb", "mkl", "openmp"]:
                 self.configs.append(arg_lower)
 
             # NUMA / memkind (see .bazelrc build:numa / build:memkind)
@@ -605,6 +649,14 @@ class BazelConfiguration:
         # Add all config flags
         for config in cfg_list:
             cmd.append(f"--config={config}")
+
+        # CPU SIMD backend define — mirrors CMake -DVECTORIZATION_CPU.
+        if self.cpu_backend:
+            cmd.append(f"--define=vectorization_cpu={self.cpu_backend}")
+
+        # GPU backend defines — mirrors CMake -DMEMORY_GPU_BACKEND / -DVECTORIZATION_GPU_BACKEND.
+        cmd.append(f"--define=memory_gpu_backend={self.gpu_backend}")
+        cmd.append(f"--define=vectorization_gpu_backend={self.gpu_backend}")
 
         # Enzyme: CMake applies -fpass-plugin at compile and link for Enzyme::enzyme.
         # Bazel only toggles QUARISMA_HAS_ENZYME; without the plugin, __enzyme_* calls are
@@ -1159,6 +1211,30 @@ def parse_args(args: list[str]) -> list[str]:
             else:
                 print_status(
                     f"Invalid SMP backend: {bt}. Valid: std, openmp, tbb",
+                    "ERROR",
+                )
+                sys.exit(1)
+            continue
+
+        if arg.startswith("--cpu_backend.") or arg.startswith("--cpu-backend."):
+            bt = arg.split(".", 1)[1].lower()
+            if bt in ("no", "sse", "avx", "avx2", "avx512", "neon", "sve"):
+                processed.append(f"cpu_backend.{bt}")
+            else:
+                print_status(
+                    f"Invalid CPU backend: {bt}. Valid options: no, sse, avx, avx2, avx512, neon, sve",
+                    "ERROR",
+                )
+                sys.exit(1)
+            continue
+
+        if arg.startswith("--gpu_backend.") or arg.startswith("--gpu-backend."):
+            bt = arg.split(".", 1)[1].lower()
+            if bt in ("none", "cuda", "hip"):
+                processed.append(f"gpu_backend.{bt}")
+            else:
+                print_status(
+                    f"Invalid GPU backend: {bt}. Valid options: none, cuda, hip",
                     "ERROR",
                 )
                 sys.exit(1)
