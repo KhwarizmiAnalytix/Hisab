@@ -24,7 +24,6 @@
 
 #include "expressions/expression_interface.h"
 #include "expressions/expressions_functors.h"
-#include "expressions/expressions_matrix.h"
 
 #define OPERATOR(s) operator s
 

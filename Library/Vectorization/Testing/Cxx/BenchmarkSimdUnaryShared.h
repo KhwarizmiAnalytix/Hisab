@@ -20,7 +20,7 @@
 #include "terminals/tensor.h"
 
 template <typename T>
-void fill_tensor_uniform(vectorization::vector<T>& a, double lo, double hi, unsigned seed = 5489u)
+void fill_tensor_uniform(vectorization::tensor<T>& a, double lo, double hi, unsigned seed = 5489u)
 {
     std::mt19937                       gen(seed);
     std::uniform_real_distribution<double> dist(lo, hi);
@@ -35,8 +35,8 @@ void fill_tensor_uniform(vectorization::vector<T>& a, double lo, double hi, unsi
     static void Vectorized_##OP(benchmark::State& state)                                     \
     {                                                                                        \
         constexpr std::size_t n = (2u << 16) + 3;                                            \
-        vectorization::vector<T> a(n);                                                       \
-        vectorization::vector<T> out(n);                                                     \
+        vectorization::tensor<T> a(n);                                                       \
+        vectorization::tensor<T> out(n);                                                     \
         fill_tensor_uniform(a, (lo), (hi));                                                  \
         for (auto _ : state)                                                                 \
             benchmark::DoNotOptimize(out = ::OP(a));                                         \
@@ -50,8 +50,8 @@ void fill_tensor_uniform(vectorization::vector<T>& a, double lo, double hi, unsi
     static void Scalar_loop_##OP(benchmark::State& state)                                     \
     {                                                                                        \
         constexpr std::size_t n = (2u << 16) + 3;                                            \
-        vectorization::vector<T> a(n);                                                       \
-        vectorization::vector<T> out(n);                                                     \
+        vectorization::tensor<T> a(n);                                                       \
+        vectorization::tensor<T> out(n);                                                     \
         fill_tensor_uniform(a, (lo), (hi));                                                  \
         for (auto _ : state)                                                                 \
         {                                                                                    \

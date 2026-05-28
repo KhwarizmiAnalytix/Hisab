@@ -32,7 +32,6 @@
 #define __VECTORIZATION_EXPRESSIONS_INCLUDES_INSIDE__
 #include "expressions/expression_interface.h"
 #include "expressions/expressions_functors.h"
-#include "expressions/expressions_matrix.h"
 #undef __VECTORIZATION_EXPRESSIONS_INCLUDES_INSIDE__
 
 #define __VECTORIZATION_EXPRESSIONS_INCLUDES_INSIDE__

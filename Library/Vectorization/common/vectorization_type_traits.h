@@ -115,13 +115,6 @@ namespace vectorization
 template <typename value_t, bool clone = false>
 class tensor;
 
-// Deprecated aliases — prefer tensor<T> directly.
-template <typename value_t>
-using vector [[deprecated("use tensor<value_t> directly")]] = tensor<value_t>;
-
-template <typename value_t>
-using matrix [[deprecated("use tensor<value_t> directly")]] = tensor<value_t>;
-
 // Expression node types
 template <typename LHS, typename EVALUATOR>
 class unary_expression;
@@ -131,18 +124,6 @@ class binary_expression;
 
 template <typename LHS, typename MHS, typename RHS, typename EVALUATOR>
 class trinary_expression;
-
-template <typename MAT>
-class matrix_transpose_expression;
-
-template <typename LHS, typename RHS>
-class matrix_multiplication_expression;
-
-template <typename LHS, typename RHS>
-class matrix_vector_multiplication_expression;
-
-template <typename LHS, typename RHS>
-class vector_matrix_multiplication_expression;
 
 }  // namespace vectorization
 
@@ -187,31 +168,6 @@ struct is_pure_expression<trinary_expression<T1, T2, T3, E>>
 {
     static constexpr bool value = true;
 };
-
-template <typename T1>
-struct is_pure_expression<matrix_transpose_expression<T1>>
-{
-    static constexpr bool value = true;
-};
-
-template <typename T1, typename T2>
-struct is_pure_expression<matrix_multiplication_expression<T1, T2>>
-{
-    static constexpr bool value = true;
-};
-
-template <typename T1, typename T2>
-struct is_pure_expression<matrix_vector_multiplication_expression<T1, T2>>
-{
-    static constexpr bool value = true;
-};
-
-template <typename T1, typename T2>
-struct is_pure_expression<vector_matrix_multiplication_expression<T1, T2>>
-{
-    static constexpr bool value = true;
-};
-
 template <typename T>
 struct is_expression
 {
@@ -338,65 +294,6 @@ struct scalar_type<
     using value = typename scalar_type<
         vectorization::remove_cvref_t<MHS>,
         vectorization::remove_cvref_t<RHS>>::value;
-};
-
-}  // namespace vectorization
-
-// ---------------------------------------------------------------------------
-// is_matrix_compute — true for expression types that write their result into an
-// output container in a single call (evaluate(output)), rather than producing
-// one element at a time.  expressions_evaluator::run dispatches on this trait.
-// This is SEPARATE from is_matrix_operation: tensor<T> is not a matrix_operation
-// (so tensor*tensor is element-wise), but matrix_multiplication_expression and
-// matrix_transpose_expression always use the bulk-output evaluate protocol.
-template <typename T>
-struct is_matrix_compute
-{
-    static constexpr bool value = false;
-};
-
-template <typename LHS, typename RHS>
-struct is_matrix_compute<matrix_multiplication_expression<LHS, RHS>>
-{
-    static constexpr bool value = true;
-};
-
-template <typename T>
-struct is_matrix_compute<matrix_transpose_expression<T>>
-{
-    static constexpr bool value = true;
-};
-
-template <typename T1, typename T2>
-struct is_matrix_compute<matrix_vector_multiplication_expression<T1, T2>>
-{
-    static constexpr bool value = true;
-};
-
-template <typename T1, typename T2>
-struct is_matrix_compute<vector_matrix_multiplication_expression<T1, T2>>
-{
-    static constexpr bool value = true;
-};
-
-}  // namespace vectorization
-
-// ---------------------------------------------------------------------------
-// is_transpose_expression
-// ---------------------------------------------------------------------------
-namespace vectorization
-{
-
-template <typename T>
-struct is_transpose_expression
-{
-    static constexpr bool value = false;
-};
-
-template <typename T>
-struct is_transpose_expression<matrix_transpose_expression<T>>
-{
-    static constexpr bool value = true;
 };
 
 }  // namespace vectorization

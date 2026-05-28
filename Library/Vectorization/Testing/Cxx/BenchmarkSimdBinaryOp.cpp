@@ -62,9 +62,9 @@ public:
     {                                                                               \
         const size_t n = (2 << 16) + 3;                                             \
                                                                                     \
-        vectorization::vector<scalar_t> a(n);                                       \
-        vectorization::vector<scalar_t> b(n);                                       \
-        vectorization::vector<scalar_t> c(n);                                       \
+        vectorization::tensor<scalar_t> a(n);                                       \
+        vectorization::tensor<scalar_t> b(n);                                       \
+        vectorization::tensor<scalar_t> c(n);                                       \
         std::default_random_engine      generator;                                  \
                                                                                     \
         std::uniform_real_distribution<scalar_t> distribution(-5., 5.);             \
@@ -90,9 +90,9 @@ public:
     {                                                                               \
         const size_t n = (2 << 16) + 3;                                             \
                                                                                     \
-        vectorization::vector<scalar_t> a(n);                                       \
-        vectorization::vector<scalar_t> b(n);                                       \
-        vectorization::vector<scalar_t> c(n);                                       \
+        vectorization::tensor<scalar_t> a(n);                                       \
+        vectorization::tensor<scalar_t> b(n);                                       \
+        vectorization::tensor<scalar_t> c(n);                                       \
         std::default_random_engine      generator;                                  \
                                                                                     \
         std::uniform_real_distribution<scalar_t> distribution(-5., 5.);             \

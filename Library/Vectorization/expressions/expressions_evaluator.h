@@ -39,12 +39,7 @@ struct expressions_evaluator
     //================================================================================================
     template <typename E, typename T>
     VECTORIZATION_FUNCTION_ATTRIBUTE static void run(E const& expr, T& rhs)
-    {
-        if constexpr (is_matrix_compute<E>::value)
-        {
-            expr.template evaluate<T>(rhs);
-        }
-        else
+    
         {
             VECTORIZATION_CHECK(
                 expr.size() == rhs.size(),
@@ -107,7 +102,7 @@ struct expressions_evaluator
             for (; i < n; ++i)
                 data[i] = vectorization::expression_loader<E, false, false>::evaluate(expr, i);
         }
-    }
+    
 
     //================================================================================================
     template <typename E, typename T>
