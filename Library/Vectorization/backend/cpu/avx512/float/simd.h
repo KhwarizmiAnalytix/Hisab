@@ -24,7 +24,7 @@
 #pragma clang diagnostic ignored "-Wcast-calling-convention"
 #endif
 
-#include "backend/avx512/svml.h"
+#include "backend/cpu/avx512/svml.h"
 
 #ifdef __clang__
 #pragma clang diagnostic pop
@@ -232,7 +232,7 @@ struct simd<float>
     }
 
     //======================================================================================
-    // comparaison function
+    // comparison function
     //======================================================================================
     VECTORIZATION_SIMD_METHOD simd_t if_else(const mask_t& x, simd_t y, simd_t z)
     {
@@ -270,7 +270,7 @@ struct simd<float>
     }
 
     //======================================================================================
-    // comparaison function
+    // comparison function
     //======================================================================================
     VECTORIZATION_SIMD_METHOD mask_t loadu(int_t const* from)
     {

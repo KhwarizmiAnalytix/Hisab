@@ -18,7 +18,7 @@
 #include <utility>
 
 #include "common/vectorization_macros.h"
-#include "common/packet.h"
+#include "backend/packet.h"
 
 namespace vectorization
 {

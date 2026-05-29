@@ -24,7 +24,7 @@
 #include <type_traits>
 
 #include "backend/simd.h"
-#include "common/packet.h"
+#include "backend/packet.h"
 
 // ---------------------------------------------------------------------------
 // is_packet

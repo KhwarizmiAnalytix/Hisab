@@ -27,7 +27,7 @@
 #pragma clang diagnostic ignored "-Wcast-calling-convention"
 #endif
 
-#include "backend/sse/svml.h"
+#include "backend/cpu/sse/svml.h"
 
 #ifdef __clang__
 #pragma clang diagnostic pop
@@ -35,7 +35,7 @@
 #endif
 
 #include "common/vectorization_macros.h"
-#include "backend/sse/intrinsics.h"
+#include "backend/cpu/sse/intrinsics.h"
 
 template <>
 struct simd<double>

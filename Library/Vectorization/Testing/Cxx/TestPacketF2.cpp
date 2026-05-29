@@ -19,7 +19,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "common/packet.h"
+#include "backend/packet.h"
 #include "common/vectorization_macros.h"
 
 namespace vectorization

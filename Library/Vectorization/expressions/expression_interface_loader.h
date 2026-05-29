@@ -21,7 +21,7 @@
 
 #include <cstdint>
 
-#include "common/packet.h"
+#include "backend/packet.h"
 #include "common/scalar_helper_functions.h"
 #include "common/vectorization_macros.h"
 #include "common/vectorization_type_traits.h"

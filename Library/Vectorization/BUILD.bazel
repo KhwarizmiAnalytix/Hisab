@@ -1,5 +1,5 @@
 # Library/Vectorization — SIMD packet layer (headers under ., backends under backend/).
-# Include roots match CMake: "common/packet.h", "backend/avx/float/simd.h", etc.
+# Include roots match CMake: "common/packet.h", "backend/cpu/avx/float/simd.h", etc.
 load("@bazel_skylib//lib:selects.bzl", "selects")
 load(
     "//bazel:vectorization.bzl",
@@ -16,7 +16,7 @@ package(default_visibility = ["//visibility:public"])
 
 _VEC_TEST = ["Testing/**"]
 # CMake: exclude svml.h from the target when VECTORIZATION_ENABLE_SVML is OFF; re-add via hdrs select when ON.
-_VEC_SVML_H = "backend/avx/svml.h"
+_VEC_SVML_H = "backend/cpu/avx/svml.h"
 
 cc_library(
     name = "vectorization_lib",
@@ -29,51 +29,51 @@ cc_library(
         "//bazel:vectorization_type_sse": glob(
             ["**/*.cpp", "**/*.cxx"],
             exclude = _VEC_TEST + [
-                "backend/avx/**",
-                "backend/avx512/**",
+                "backend/cpu/avx/**",
+                "backend/cpu/avx512/**",
             ],
             allow_empty = True,
         ),
         "//bazel:vectorization_type_avx": glob(
             ["**/*.cpp", "**/*.cxx"],
             exclude = _VEC_TEST + [
-                "backend/sse/**",
-                "backend/avx512/**",
+                "backend/cpu/sse/**",
+                "backend/cpu/avx512/**",
             ],
             allow_empty = True,
         ),
         "//bazel:vectorization_type_avx512": glob(
             ["**/*.cpp", "**/*.cxx"],
             exclude = _VEC_TEST + [
-                "backend/sse/**",
-                "backend/avx/**",
+                "backend/cpu/sse/**",
+                "backend/cpu/avx/**",
             ],
             allow_empty = True,
         ),
         "//bazel:vectorization_type_neon": glob(
             ["**/*.cpp", "**/*.cxx"],
             exclude = _VEC_TEST + [
-                "backend/sse/**",
-                "backend/avx/**",
-                "backend/avx512/**",
-                "backend/sve/**",
+                "backend/cpu/sse/**",
+                "backend/cpu/avx/**",
+                "backend/cpu/avx512/**",
+                "backend/cpu/sve/**",
             ],
             allow_empty = True,
         ),
         "//bazel:vectorization_type_sve": glob(
             ["**/*.cpp", "**/*.cxx"],
             exclude = _VEC_TEST + [
-                "backend/sse/**",
-                "backend/avx/**",
-                "backend/avx512/**",
+                "backend/cpu/sse/**",
+                "backend/cpu/avx/**",
+                "backend/cpu/avx512/**",
             ],
             allow_empty = True,
         ),
         "//conditions:default": glob(
             ["**/*.cpp", "**/*.cxx"],
             exclude = _VEC_TEST + [
-                "backend/sse/**",
-                "backend/avx512/**",
+                "backend/cpu/sse/**",
+                "backend/cpu/avx512/**",
             ],
             allow_empty = True,
         ),
@@ -96,8 +96,8 @@ cc_library(
                     "**/*.hxx",
                 ],
                 exclude = _VEC_TEST + [
-                    "backend/avx/**",
-                    "backend/avx512/**",
+                    "backend/cpu/avx/**",
+                    "backend/cpu/avx512/**",
                 ],
                 allow_empty = True,
             ),
@@ -108,8 +108,8 @@ cc_library(
                     "**/*.hxx",
                 ],
                 exclude = _VEC_TEST + [
-                    "backend/sse/**",
-                    "backend/avx512/**",
+                    "backend/cpu/sse/**",
+                    "backend/cpu/avx512/**",
                     _VEC_SVML_H,
                 ],
                 allow_empty = True,
@@ -121,8 +121,8 @@ cc_library(
                     "**/*.hxx",
                 ],
                 exclude = _VEC_TEST + [
-                    "backend/sse/**",
-                    "backend/avx512/**",
+                    "backend/cpu/sse/**",
+                    "backend/cpu/avx512/**",
                     _VEC_SVML_H,
                 ],
                 allow_empty = True,
@@ -134,8 +134,8 @@ cc_library(
                     "**/*.hxx",
                 ],
                 exclude = _VEC_TEST + [
-                    "backend/sse/**",
-                    "backend/avx/**",
+                    "backend/cpu/sse/**",
+                    "backend/cpu/avx/**",
                 ],
                 allow_empty = True,
             ),
@@ -146,10 +146,10 @@ cc_library(
                     "**/*.hxx",
                 ],
                 exclude = _VEC_TEST + [
-                    "backend/sse/**",
-                    "backend/avx/**",
-                    "backend/avx512/**",
-                    "backend/sve/**",
+                    "backend/cpu/sse/**",
+                    "backend/cpu/avx/**",
+                    "backend/cpu/avx512/**",
+                    "backend/cpu/sve/**",
                     _VEC_SVML_H,
                 ],
                 allow_empty = True,
@@ -161,9 +161,9 @@ cc_library(
                     "**/*.hxx",
                 ],
                 exclude = _VEC_TEST + [
-                    "backend/sse/**",
-                    "backend/avx/**",
-                    "backend/avx512/**",
+                    "backend/cpu/sse/**",
+                    "backend/cpu/avx/**",
+                    "backend/cpu/avx512/**",
                     _VEC_SVML_H,
                 ],
                 allow_empty = True,
@@ -175,8 +175,8 @@ cc_library(
                     "**/*.hxx",
                 ],
                 exclude = _VEC_TEST + [
-                    "backend/sse/**",
-                    "backend/avx512/**",
+                    "backend/cpu/sse/**",
+                    "backend/cpu/avx512/**",
                     _VEC_SVML_H,
                 ],
                 allow_empty = True,

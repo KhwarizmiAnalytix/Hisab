@@ -14,4 +14,4 @@
 // expose the same __host__ __device__ device-math builtins (sinf, expf,
 // erfinvf, ...).  Reuse the HIP header rather than duplicating it.
 
-#include "backend/hip/float/simd.h"
+#include "backend/gpu/hip/float/simd.h"

@@ -43,30 +43,30 @@
 #if VECTORIZATION_ON_GPU_DEVICE
   // --- GPU device code: scalar simd<T> ---
 #  if VECTORIZATION_HAS_CUDA
-#    include "backend/cuda/double/simd.h"
-#    include "backend/cuda/float/simd.h"
+#    include "backend/gpu/cuda/double/simd.h"
+#    include "backend/gpu/cuda/float/simd.h"
 #  elif VECTORIZATION_HAS_HIP
-#    include "backend/hip/double/simd.h"
-#    include "backend/hip/float/simd.h"
+#    include "backend/gpu/hip/double/simd.h"
+#    include "backend/gpu/hip/float/simd.h"
 #  endif
 
 #else
   // --- CPU host code: SIMD or scalar fallback ---
 #  if VECTORIZATION_HAS_AVX512
-#    include "backend/avx512/double/simd.h"
-#    include "backend/avx512/float/simd.h"
+#    include "backend/cpu/avx512/double/simd.h"
+#    include "backend/cpu/avx512/float/simd.h"
 #  elif VECTORIZATION_HAS_AVX2 || VECTORIZATION_HAS_AVX
-#    include "backend/avx/double/simd.h"
-#    include "backend/avx/float/simd.h"
+#    include "backend/cpu/avx/double/simd.h"
+#    include "backend/cpu/avx/float/simd.h"
 #  elif VECTORIZATION_HAS_SSE
-#    include "backend/sse/double/simd.h"
-#    include "backend/sse/float/simd.h"
+#    include "backend/cpu/sse/double/simd.h"
+#    include "backend/cpu/sse/float/simd.h"
 #  elif VECTORIZATION_HAS_SVE
-#    include "backend/sve/double/simd.h"
-#    include "backend/sve/float/simd.h"
+#    include "backend/cpu/sve/double/simd.h"
+#    include "backend/cpu/sve/float/simd.h"
 #  elif VECTORIZATION_HAS_NEON
-#    include "backend/neon/double/simd.h"
-#    include "backend/neon/float/simd.h"
+#    include "backend/cpu/neon/double/simd.h"
+#    include "backend/cpu/neon/float/simd.h"
 #  endif
 
 #endif  // VECTORIZATION_ON_GPU_DEVICE

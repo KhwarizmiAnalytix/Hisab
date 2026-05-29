@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "common/packet.h"
+#include "backend/packet.h"
 #include "common/scalar_helper_functions.h"
 #include "common/vectorization_macros.h"
 #include "common/vectorization_type_traits.h"
@@ -78,7 +78,7 @@ public:
  * \brief A binary expression
  *
  * A binary expression has a left hand side expression and a right hand side expression and for each
- * element applies a binary opeartor to both expressions.
+ * element applies a binary operator to both expressions.
  */
 template <typename LHS, typename RHS, typename EVALUATOR>
 class binary_expression final
@@ -107,7 +107,7 @@ public:
             vectorization::is_expression<rmv_lhs>::value)
         {
             static_assert(
-                rmv_rhs::length() == rmv_lhs::length(), "expresions have different strides!");
+                rmv_rhs::length() == rmv_lhs::length(), "expressions have different strides!");
             return rmv_rhs::length();
         }
         else if constexpr (vectorization::is_expression<rmv_rhs>::value)
@@ -164,7 +164,7 @@ public:
  * \brief A trinary expression
  *
  * A trinary expression has a left hand side expression, middle hand side and a right hand side
- * expression and for each element applies a trinary opeartor to all expressions.
+ * expression and for each element applies a trinary operator to all expressions.
  */
 template <typename LHS, typename MHS, typename RHS, typename EVALUATOR>
 class trinary_expression final

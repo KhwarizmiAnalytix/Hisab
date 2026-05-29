@@ -12,4 +12,4 @@
 // CUDA GPU scalar backend for double.
 // See backend/cuda/float/simd.h for rationale.
 
-#include "backend/hip/double/simd.h"
+#include "backend/gpu/hip/double/simd.h"

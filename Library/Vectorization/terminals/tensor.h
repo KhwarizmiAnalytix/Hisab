@@ -34,7 +34,7 @@
 #include <sstream>
 #include <vector>
 
-#include "common/packet.h"
+#include "backend/packet.h"
 #include "expressions/expressions.h"
 #include "sizes_and_strides.h"
 

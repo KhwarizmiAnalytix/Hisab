@@ -16,7 +16,7 @@
 #include "backend/simd.h"
 #include "common/normal_cdf.h"
 #include "common/vectorization_macros.h"
-#include "backend/neon/svml.h"
+#include "backend/cpu/neon/svml.h"
 
 namespace vectorization
 {
