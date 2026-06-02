@@ -147,6 +147,7 @@
 #elif defined(__GNUC__)
 #define VECTORIZATION_ALIGN(alignment) __attribute__((aligned(alignment)))
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
+#define VECTORIZATION_ALIGN(alignment) __attribute__((aligned(alignment)))
 #endif
 
 #ifdef VECTORIZATION_MOBILE

@@ -29,8 +29,17 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "common/scalar_helper_functions.h"
+#if defined(__HIPCC__)
+#include <hip/hip_runtime.h>
+#elif defined(__CUDACC__)
+#include <cuda_runtime.h>
+#endif
+
 #include "common/vectorization_macros.h"
+
+// Primary template forward declaration required before the explicit specialization.
+template <typename T>
+struct simd;
 
 template <>
 struct simd<float>
@@ -83,8 +92,8 @@ struct simd<float>
         return ::hypotf(x, y);
     }
 
-    VECTORIZATION_SIMD_METHOD simd_t min(simd_t x, simd_t y) { return x < y ? x : y; }
-    VECTORIZATION_SIMD_METHOD simd_t max(simd_t x, simd_t y) { return x > y ? x : y; }
+    VECTORIZATION_SIMD_METHOD simd_t min(simd_t x, simd_t y) { return ::fminf(x, y); }
+    VECTORIZATION_SIMD_METHOD simd_t max(simd_t x, simd_t y) { return ::fmaxf(x, y); }
 
     VECTORIZATION_SIMD_METHOD simd_t signcopy(simd_t x, simd_t y) { return ::copysignf(x, y); }
 
@@ -93,7 +102,7 @@ struct simd<float>
     // -------------------------------------------------------------------------
 
     VECTORIZATION_SIMD_METHOD simd_t sqrt(simd_t x)    { return ::sqrtf(x); }
-    VECTORIZATION_SIMD_METHOD simd_t invsqrt(simd_t x) { return 1.0f / ::sqrtf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t invsqrt(simd_t x) { return ::rsqrtf(x); }
     VECTORIZATION_SIMD_METHOD simd_t sqr(simd_t x)     { return x * x; }
     VECTORIZATION_SIMD_METHOD simd_t fabs(simd_t x)    { return ::fabsf(x); }
     VECTORIZATION_SIMD_METHOD simd_t neg(simd_t x)     { return -x; }
@@ -104,7 +113,7 @@ struct simd<float>
     VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t exp(simd_t x)   { return ::expf(x); }
     VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t expm1(simd_t x) { return ::expm1f(x); }
     VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t exp2(simd_t x)  { return ::exp2f(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t exp10(simd_t x) { return ::powf(10.0f, x); }
+    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t exp10(simd_t x) { return ::exp10f(x); }
     VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t log(simd_t x)   { return ::logf(x); }
     VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t log1p(simd_t x) { return ::log1pf(x); }
     VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t log2(simd_t x)  { return ::log2f(x); }
@@ -124,16 +133,16 @@ struct simd<float>
     VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t acosh(simd_t x) { return ::acoshf(x); }
     VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t atanh(simd_t x) { return ::atanhf(x); }
 
-    // Normal CDF/inverse CDF — dispatch to device math on GPU, host math on CPU.
-    // scalar_helper_functions.h uses VECTORIZATION_ON_GPU_DEVICE to pick the right path.
+    // N(x) = 0.5 * erfc(-x / sqrt(2))
     VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t cdf(simd_t x)
     {
-        return vectorization::cdf<value_t>(x);
+        return 0.5f * ::erfcf(-x * 0.7071067811865475244f);
     }
 
+    // N^{-1}(p) = -sqrt(2) * erfinv(1 - 2p)
     VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t inv_cdf(simd_t x)
     {
-        return vectorization::inv_cdf<value_t>(x);
+        return -1.4142135623730950488f * ::erfinvf(1.0f - 2.0f * x);
     }
 
     // -------------------------------------------------------------------------
@@ -145,6 +154,7 @@ struct simd<float>
         return base[offsets[0]];
     }
 
+    // On GPU, stride is the pre-computed absolute element index for this thread.
     VECTORIZATION_SIMD_METHOD simd_t gather(const value_t* base, int stride)
     {
         return base[stride];
@@ -155,6 +165,7 @@ struct simd<float>
         to[offsets[0]] = val;
     }
 
+    // On GPU, stride is the pre-computed absolute element index for this thread.
     VECTORIZATION_SIMD_RETURN_TYPE scatter(simd_t val, int stride, value_t* to)
     {
         to[stride] = val;
