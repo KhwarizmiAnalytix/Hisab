@@ -77,9 +77,9 @@ struct simd<double>
 
     VECTORIZATION_SIMD_METHOD simd_t fma(simd_t x, simd_t y, simd_t z) { return ::fma(x, y, z); }
 
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t pow(simd_t x, simd_t y) { return ::pow(x, y); }
+    VECTORIZATION_SIMD_METHOD simd_t pow(simd_t x, simd_t y) { return ::pow(x, y); }
 
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t hypot(simd_t x, simd_t y)
+    VECTORIZATION_SIMD_METHOD simd_t hypot(simd_t x, simd_t y)
     {
         return ::hypot(x, y);
     }
@@ -103,37 +103,37 @@ struct simd<double>
     VECTORIZATION_SIMD_METHOD simd_t floor(simd_t x)   { return ::floor(x); }
     VECTORIZATION_SIMD_METHOD simd_t trunc(simd_t x)   { return ::trunc(x); }
 
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t exp(simd_t x)   { return ::exp(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t expm1(simd_t x) { return ::expm1(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t exp2(simd_t x)  { return ::exp2(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t exp10(simd_t x) { return ::exp10(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t log(simd_t x)   { return ::log(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t log1p(simd_t x) { return ::log1p(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t log2(simd_t x)  { return ::log2(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t log10(simd_t x) { return ::log10(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t cbrt(simd_t x)  { return ::cbrt(x); }
+    VECTORIZATION_SIMD_METHOD simd_t exp(simd_t x)   { return ::exp(x); }
+    VECTORIZATION_SIMD_METHOD simd_t expm1(simd_t x) { return ::expm1(x); }
+    VECTORIZATION_SIMD_METHOD simd_t exp2(simd_t x)  { return ::exp2(x); }
+    VECTORIZATION_SIMD_METHOD simd_t exp10(simd_t x) { return ::exp10(x); }
+    VECTORIZATION_SIMD_METHOD simd_t log(simd_t x)   { return ::log(x); }
+    VECTORIZATION_SIMD_METHOD simd_t log1p(simd_t x) { return ::log1p(x); }
+    VECTORIZATION_SIMD_METHOD simd_t log2(simd_t x)  { return ::log2(x); }
+    VECTORIZATION_SIMD_METHOD simd_t log10(simd_t x) { return ::log10(x); }
+    VECTORIZATION_SIMD_METHOD simd_t cbrt(simd_t x)  { return ::cbrt(x); }
 
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t sin(simd_t x)   { return ::sin(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t cos(simd_t x)   { return ::cos(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t tan(simd_t x)   { return ::tan(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t asin(simd_t x)  { return ::asin(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t acos(simd_t x)  { return ::acos(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t atan(simd_t x)  { return ::atan(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t sinh(simd_t x)  { return ::sinh(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t cosh(simd_t x)  { return ::cosh(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t tanh(simd_t x)  { return ::tanh(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t asinh(simd_t x) { return ::asinh(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t acosh(simd_t x) { return ::acosh(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t atanh(simd_t x) { return ::atanh(x); }
+    VECTORIZATION_SIMD_METHOD simd_t sin(simd_t x)   { return ::sin(x); }
+    VECTORIZATION_SIMD_METHOD simd_t cos(simd_t x)   { return ::cos(x); }
+    VECTORIZATION_SIMD_METHOD simd_t tan(simd_t x)   { return ::tan(x); }
+    VECTORIZATION_SIMD_METHOD simd_t asin(simd_t x)  { return ::asin(x); }
+    VECTORIZATION_SIMD_METHOD simd_t acos(simd_t x)  { return ::acos(x); }
+    VECTORIZATION_SIMD_METHOD simd_t atan(simd_t x)  { return ::atan(x); }
+    VECTORIZATION_SIMD_METHOD simd_t sinh(simd_t x)  { return ::sinh(x); }
+    VECTORIZATION_SIMD_METHOD simd_t cosh(simd_t x)  { return ::cosh(x); }
+    VECTORIZATION_SIMD_METHOD simd_t tanh(simd_t x)  { return ::tanh(x); }
+    VECTORIZATION_SIMD_METHOD simd_t asinh(simd_t x) { return ::asinh(x); }
+    VECTORIZATION_SIMD_METHOD simd_t acosh(simd_t x) { return ::acosh(x); }
+    VECTORIZATION_SIMD_METHOD simd_t atanh(simd_t x) { return ::atanh(x); }
 
     // N(x) = 0.5 * erfc(-x / sqrt(2))
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t cdf(simd_t x)
+    VECTORIZATION_SIMD_METHOD simd_t cdf(simd_t x)
     {
         return 0.5 * ::erfc(-x * 0.7071067811865475244);
     }
 
     // N^{-1}(p) = -sqrt(2) * erfinv(1 - 2p)
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t inv_cdf(simd_t x)
+    VECTORIZATION_SIMD_METHOD simd_t inv_cdf(simd_t x)
     {
         return -1.4142135623730950488 * ::erfinv(1.0 - 2.0 * x);
     }

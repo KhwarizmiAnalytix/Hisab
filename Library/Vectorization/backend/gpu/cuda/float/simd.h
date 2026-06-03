@@ -85,9 +85,9 @@ struct simd<float>
         return ::fmaf(x, y, z);
     }
 
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t pow(simd_t x, simd_t y) { return ::powf(x, y); }
+    VECTORIZATION_SIMD_METHOD simd_t pow(simd_t x, simd_t y) { return ::powf(x, y); }
 
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t hypot(simd_t x, simd_t y)
+    VECTORIZATION_SIMD_METHOD simd_t hypot(simd_t x, simd_t y)
     {
         return ::hypotf(x, y);
     }
@@ -110,39 +110,39 @@ struct simd<float>
     VECTORIZATION_SIMD_METHOD simd_t floor(simd_t x)   { return ::floorf(x); }
     VECTORIZATION_SIMD_METHOD simd_t trunc(simd_t x)   { return ::truncf(x); }
 
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t exp(simd_t x)   { return ::expf(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t expm1(simd_t x) { return ::expm1f(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t exp2(simd_t x)  { return ::exp2f(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t exp10(simd_t x) { return ::exp10f(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t log(simd_t x)   { return ::logf(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t log1p(simd_t x) { return ::log1pf(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t log2(simd_t x)  { return ::log2f(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t log10(simd_t x) { return ::log10f(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t cbrt(simd_t x)  { return ::cbrtf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t exp(simd_t x)   { return ::expf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t expm1(simd_t x) { return ::expm1f(x); }
+    VECTORIZATION_SIMD_METHOD simd_t exp2(simd_t x)  { return ::exp2f(x); }
+    VECTORIZATION_SIMD_METHOD simd_t exp10(simd_t x) { return ::exp10f(x); }
+    VECTORIZATION_SIMD_METHOD simd_t log(simd_t x)   { return ::logf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t log1p(simd_t x) { return ::log1pf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t log2(simd_t x)  { return ::log2f(x); }
+    VECTORIZATION_SIMD_METHOD simd_t log10(simd_t x) { return ::log10f(x); }
+    VECTORIZATION_SIMD_METHOD simd_t cbrt(simd_t x)  { return ::cbrtf(x); }
 
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t sin(simd_t x)   { return ::sinf(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t cos(simd_t x)   { return ::cosf(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t tan(simd_t x)   { return ::tanf(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t asin(simd_t x)  { return ::asinf(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t acos(simd_t x)  { return ::acosf(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t atan(simd_t x)  { return ::atanf(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t sinh(simd_t x)  { return ::sinhf(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t cosh(simd_t x)  { return ::coshf(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t tanh(simd_t x)  { return ::tanhf(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t asinh(simd_t x) { return ::asinhf(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t acosh(simd_t x) { return ::acoshf(x); }
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t atanh(simd_t x) { return ::atanhf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t sin(simd_t x)   { return ::sinf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t cos(simd_t x)   { return ::cosf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t tan(simd_t x)   { return ::tanf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t asin(simd_t x)  { return ::asinf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t acos(simd_t x)  { return ::acosf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t atan(simd_t x)  { return ::atanf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t sinh(simd_t x)  { return ::sinhf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t cosh(simd_t x)  { return ::coshf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t tanh(simd_t x)  { return ::tanhf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t asinh(simd_t x) { return ::asinhf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t acosh(simd_t x) { return ::acoshf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t atanh(simd_t x) { return ::atanhf(x); }
 
     // Normal CDF/inverse CDF — dispatch to device math on GPU, host math on CPU.
     // scalar_helper_functions.h uses VECTORIZATION_ON_GPU_DEVICE to pick the right path.
     // N(x) = 0.5 * erfc(-x / sqrt(2))
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t cdf(simd_t x)
+    VECTORIZATION_SIMD_METHOD simd_t cdf(simd_t x)
     {
         return 0.5f * ::erfcf(-x * 0.7071067811865475244f);
     }
 
     // N^{-1}(p) = -sqrt(2) * erfinv(1 - 2p)
-    VECTORIZATION_SIMD_METHOD_NON_INLINE simd_t inv_cdf(simd_t x)
+    VECTORIZATION_SIMD_METHOD simd_t inv_cdf(simd_t x)
     {
         return -1.4142135623730950488f * ::erfinvf(1.0f - 2.0f * x);
     }
