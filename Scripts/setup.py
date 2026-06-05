@@ -761,7 +761,7 @@ class QuarismaFlags:
                 "parallel_backend": "std",  # Default SMP backend
                 "lto": "",     # empty = not specified; CMake picks the smart default per compiler
                 "gtest": self.ON,  # *_ENABLE_GTEST CMake defaults are ON
-                "benchmark": self.ON,  # *_ENABLE_BENCHMARK CMake defaults are ON
+                "benchmark": self.OFF,  # *_ENABLE_BENCHMARK CMake defaults are ON
                 "magic_enum": self.ON,
                 "mimalloc": self.ON,
                 "profiler_type": "KINETO",
