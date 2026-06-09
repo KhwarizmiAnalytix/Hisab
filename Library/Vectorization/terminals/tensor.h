@@ -362,7 +362,7 @@ public:
     template <
         typename E,
         std::enable_if_t<vectorization::is_pure_expression<E>::value, bool> = true>
-    VECTORIZATION_FUNCTION_ATTRIBUTE tensor(E const& expr) : storage_(expr.size(), device_enum::CPU)
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor(E const& expr) : storage_(expr.size(), device_enum::CPU)
     {
         sizes_and_strides_.size_at_unchecked(0)   = static_cast<int64_t>(expr.size());
         sizes_and_strides_.stride_at_unchecked(0) = 1;
@@ -373,7 +373,7 @@ public:
     template <
         typename E,
         std::enable_if_t<vectorization::is_pure_expression<E>::value, bool> = true>
-    VECTORIZATION_FUNCTION_ATTRIBUTE tensor(E&& expr)  // NOLINT
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor(E&& expr)  // NOLINT
         : storage_(expr.size(), device_enum::CPU)
     {
         sizes_and_strides_.size_at_unchecked(0)   = static_cast<int64_t>(expr.size());
@@ -385,7 +385,7 @@ public:
     template <
         typename E,
         std::enable_if_t<vectorization::is_pure_expression<E>::value, bool> = true>
-    VECTORIZATION_FUNCTION_ATTRIBUTE tensor& operator=(E const& expr)
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor& operator=(E const& expr)
     {
         evaluator::template run<E, tensor>(expr, *this);
         return *this;
@@ -394,14 +394,14 @@ public:
     template <
         typename E,
         std::enable_if_t<vectorization::is_pure_expression<E>::value, bool> = true>
-    VECTORIZATION_FUNCTION_ATTRIBUTE tensor& operator=(E&& expr)
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor& operator=(E&& expr)
     {
         evaluator::template run<E, tensor>(static_cast<E const&>(expr), *this);
         return *this;
     }
 
     template <typename T2, std::enable_if_t<std::is_fundamental<T2>::value, bool> = true>
-    VECTORIZATION_FUNCTION_ATTRIBUTE tensor& operator=(T2 value) noexcept
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor& operator=(T2 value) noexcept
     {
         evaluator::template fill<value_t, tensor>(static_cast<value_t>(value), *this);
         return *this;
@@ -425,6 +425,32 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE device_enum device() const noexcept
     {
         return storage_.type_;
+    }
+
+    // -----------------------------------------------------------------------
+    // Host ↔ device transfer helpers
+    // -----------------------------------------------------------------------
+
+    // Upload count elements from a host pointer into this tensor.
+    // Works for CPU (memcpy) and CUDA/HIP (cudaMemcpy / hipMemcpy) tensors.
+    void copy_from_host(const value_t* ptr, size_type count)
+    {
+        VECTORIZATION_CHECK_DEBUG(count == size(), "copy_from_host: element count mismatch");
+        data_t::allocator_t::copy(ptr, count, data(), device_enum::CPU, device());
+    }
+
+    // Convenience overload — uploads from a std::vector.
+    void copy_from_host(const std::vector<value_t>& src)
+    {
+        copy_from_host(src.data(), src.size());
+    }
+
+    // Download all elements to a host std::vector.  Blocks until complete.
+    std::vector<value_t> to_host_vector() const
+    {
+        std::vector<value_t> h(size());
+        data_t::allocator_t::copy(data(), size(), h.data(), device(), device_enum::CPU);
+        return h;
     }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE iterator       begin() noexcept { return storage_.begin(); }

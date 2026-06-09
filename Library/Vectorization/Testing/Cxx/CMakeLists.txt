@@ -10,6 +10,23 @@ quarisma_add_googletest()
 
 file(GLOB_RECURSE test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cpp")
 
+# Include CUDA simd unit tests when the CUDA GPU backend is active.
+if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
+  file(GLOB_RECURSE cuda_test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cu")
+  list(APPEND test_sources ${cuda_test_sources})
+
+  # TestTensorGpu.cpp exercises GPU expression evaluation through the tensor
+  # abstraction.  The file stays .cpp but must be processed by nvcc so that
+  # the GPU expression-template kernels (__global__) are instantiated in a
+  # CUDA translation unit.
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
+    set_source_files_properties(
+      "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp"
+      PROPERTIES LANGUAGE CUDA
+    )
+  endif()
+endif()
+
 add_executable(VectorizationCxxTests ${test_sources})
 
 target_compile_definitions(
@@ -26,15 +43,22 @@ target_link_libraries(
 # ---------------------------------------------------------------------------
 # Isolate from our project's custom find-modules so LibTorch's own Caffe2
 # dependencies (e.g. FindMKL) use CMake's built-ins, not ours.
-set(_saved_module_path "${CMAKE_MODULE_PATH}")
-set(CMAKE_MODULE_PATH "")
-# Force MKL single-dynamic-library mode so MKLConfig.cmake emits only
-# -lmkl_rt instead of the full component set (ScaLAPACK/BLACS/CDFT), which
-# would pull in MPI symbols that may not be installed on this machine.
-set(MKL_LINK "sdl")
-find_package(Torch QUIET)
-unset(MKL_LINK)
-set(CMAKE_MODULE_PATH "${_saved_module_path}")
+# LibTorch's bundled Caffe2/FindCUDA requires the nvcc-only CMake internal
+# _CMAKE_CUDA_WHOLE_FLAG which is not set when Clang is the CUDA compiler.
+# Skip the probe entirely in that configuration to avoid a fatal CMake error.
+if(NOT (VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND CMAKE_CUDA_COMPILER_ID STREQUAL "Clang"))
+  set(_saved_module_path "${CMAKE_MODULE_PATH}")
+  set(CMAKE_MODULE_PATH "")
+  # Force MKL single-dynamic-library mode so MKLConfig.cmake emits only
+  # -lmkl_rt instead of the full component set (ScaLAPACK/BLACS/CDFT), which
+  # would pull in MPI symbols that may not be installed on this machine.
+  set(MKL_LINK "sdl")
+  find_package(Torch QUIET)
+  unset(MKL_LINK)
+  set(CMAKE_MODULE_PATH "${_saved_module_path}")
+else()
+  message(STATUS "LibTorch not probed — Clang CUDA compiler is incompatible with LibTorch's legacy FindCUDA scripts")
+endif()
 if(Torch_FOUND)
   message(STATUS "LibTorch found: ${TORCH_INSTALL_PREFIX} (${Torch_VERSION})")
   # pip-installed MKL ships versioned .so.N files without the unversioned .so
@@ -102,6 +126,44 @@ set_target_properties(
              CXX_STANDARD_REQUIRED ON
              VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
 )
+
+# CUDA-specific properties for the test executable when any CUDA source is present
+# (.cu files or .cpp files compiled as CUDA via LANGUAGE CUDA).
+if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND
+   (cuda_test_sources OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp"))
+  set_target_properties(VectorizationCxxTests PROPERTIES
+    CUDA_ARCHITECTURES "${VECTORIZATION_CUDA_ARCHITECTURES}"
+  )
+  # Clang CUDA + MSVC C++20: std::lerp is constexpr, so Clang implicitly marks it
+  # __host__ __device__, making the internal std::fma call ambiguous (both host and
+  # device versions are in std:: via __clang_cuda_math_forward_declares.h).
+  # -fno-cuda-host-device-constexpr disables the implicit annotation.
+  if(CMAKE_CUDA_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(VectorizationCxxTests PRIVATE
+      $<$<COMPILE_LANGUAGE:CUDA>:-Xclang -fno-cuda-host-device-constexpr>
+    )
+    # Clang 22 + -O3 crashes in the always-inline pass when compiling
+    # TestTensorGpu.cpp (heavy tensor.h expression templates).  -O1 is sufficient
+    # for integration tests and avoids the ICE.
+    set_source_files_properties(
+      "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp"
+      PROPERTIES COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:CUDA>:-O1>"
+    )
+    # Clang on Windows does not populate CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES,
+    # so lld-link cannot find cudadevrt.lib / cudart_static.lib that Clang
+    # adds automatically via -l flags. Point the linker at the CUDA lib dir.
+    if(WIN32)
+      target_link_directories(VectorizationCxxTests PRIVATE
+        "${CMAKE_CUDA_COMPILER_TOOLKIT_LIBRARY_ROOT}/lib/x64"
+      )
+    else()
+      target_link_directories(VectorizationCxxTests PRIVATE
+        "${CMAKE_CUDA_COMPILER_TOOLKIT_LIBRARY_ROOT}/lib64"
+      )
+    endif()
+  endif()
+  message(STATUS "VectorizationCxxTests: CUDA simd tests enabled (archs: ${VECTORIZATION_CUDA_ARCHITECTURES})")
+endif()
 
 add_test(NAME VectorizationCxxTests COMMAND VectorizationCxxTests
          WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"

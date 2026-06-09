@@ -583,18 +583,26 @@ endif()
 if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
   enable_language(CUDA)
 
-  set(VECTORIZATION_CUDA_ARCHITECTURES "70;75;80;86;89;90"
-      CACHE STRING "CUDA compute capability list (e.g. 70;80;86 for Volta/Ampere/Ada)")
+  # sm_70 (Volta) was removed in CUDA 12.8; CUDA 13.x starts at sm_75.
+  # Force-update to evict any stale cached value that contains sm_70.
+  set(VECTORIZATION_CUDA_ARCHITECTURES "75;80;86;89;90"
+      CACHE STRING "CUDA compute capability list (e.g. 75;80;86 for Turing/Ampere/Ada)" FORCE)
   set_target_properties(Vectorization PROPERTIES
     CUDA_STANDARD              ${VECTORIZATION_CXX_STANDARD}
     CUDA_STANDARD_REQUIRED     ON
     CUDA_ARCHITECTURES         "${VECTORIZATION_CUDA_ARCHITECTURES}"
     CUDA_SEPARABLE_COMPILATION OFF
   )
-  target_compile_options(Vectorization PRIVATE
-    $<$<COMPILE_LANGUAGE:CUDA>:--use_fast_math -Xcompiler=-fPIC>
-  )
-  message(STATUS "Vectorization: CUDA GPU backend enabled (archs: ${VECTORIZATION_CUDA_ARCHITECTURES})")
+  if(CMAKE_CUDA_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(Vectorization PRIVATE
+      $<$<COMPILE_LANGUAGE:CUDA>:-ffast-math>
+    )
+  else()
+    target_compile_options(Vectorization PRIVATE
+      $<$<COMPILE_LANGUAGE:CUDA>:--use_fast_math -Xcompiler=-fPIC>
+    )
+  endif()
+  message(STATUS "Vectorization: CUDA GPU backend enabled (archs: ${VECTORIZATION_CUDA_ARCHITECTURES}, compiler: ${CMAKE_CUDA_COMPILER_ID})")
 endif()
 
 if(MSVC)

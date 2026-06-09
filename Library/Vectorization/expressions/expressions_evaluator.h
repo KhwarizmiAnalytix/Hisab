@@ -38,7 +38,7 @@ struct expressions_evaluator
 {
     //================================================================================================
     template <typename E, typename T>
-    VECTORIZATION_FUNCTION_ATTRIBUTE static void run(E const& expr, T& rhs)
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE static void run(E const& expr, T& rhs)
     
         {
             VECTORIZATION_CHECK(
@@ -106,7 +106,7 @@ struct expressions_evaluator
 
     //================================================================================================
     template <typename E, typename T>
-    VECTORIZATION_FUNCTION_ATTRIBUTE static void run(E&& expr, T& rhs)
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE static void run(E&& expr, T& rhs)
     {
         // Forwarding overload: avoid duplicating the hot loop implementation.
         run(static_cast<vectorization::remove_cvref_t<E> const&>(expr), rhs);
@@ -114,7 +114,7 @@ struct expressions_evaluator
 
     //================================================================================================
     template <typename T>
-    VECTORIZATION_FUNCTION_ATTRIBUTE static void scatter(
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE static void scatter(
         T const& from, T& to, size_t k, size_t index)
     {
         size_t loop_peel = 0;
@@ -142,7 +142,7 @@ struct expressions_evaluator
 
     //================================================================================================
     template <typename S, typename T>
-    VECTORIZATION_FUNCTION_ATTRIBUTE static void fill(S value, T& rhs) noexcept
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE static void fill(S value, T& rhs) noexcept
     {
 #if (VECTORIZATION_HAS_CUDA && defined(__CUDACC__)) || \
     (VECTORIZATION_HAS_HIP  && defined(__HIPCC__))

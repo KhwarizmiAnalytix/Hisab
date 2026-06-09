@@ -51,6 +51,15 @@
 #else
 #define VECTORIZATION_CUDA_FUNCTION_TYPE
 #endif
+
+// Host-only entry points (CUDA kernel launchers, CPU SIMD loops).  Must not be
+// __device__: the device instantiation would either call host APIs illegally or
+// fall through to scalar stores against GPU pointers.
+#if defined(__CUDACC__) || defined(__HIPCC__)
+#define VECTORIZATION_HOST_ONLY __host__
+#else
+#define VECTORIZATION_HOST_ONLY
+#endif
 //------------------------------------------------------------------------
 // VECTORIZATION_SIMD_RETURN_TYPE — static methods on packet<> (and simd
 // helpers) that do not return a value (stores, prefetch, transpose, etc.).
@@ -109,6 +118,12 @@
 #define VECTORIZATION_FUNCTION_ATTRIBUTE VECTORIZATION_FORCE_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE
 #else
 #define VECTORIZATION_FUNCTION_ATTRIBUTE VECTORIZATION_CUDA_FUNCTION_TYPE
+#endif
+
+#ifdef NDEBUG
+#define VECTORIZATION_HOST_FUNCTION_ATTRIBUTE VECTORIZATION_FORCE_INLINE VECTORIZATION_HOST_ONLY
+#else
+#define VECTORIZATION_HOST_FUNCTION_ATTRIBUTE VECTORIZATION_HOST_ONLY
 #endif
 
 #if __cplusplus >= 201703L
