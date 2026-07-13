@@ -58,7 +58,20 @@ target_link_libraries(
 # LibTorch's bundled Caffe2/FindCUDA requires the nvcc-only CMake internal
 # _CMAKE_CUDA_WHOLE_FLAG which is not set when Clang is the CUDA compiler.
 # Skip the probe entirely in that configuration to avoid a fatal CMake error.
-if(NOT (VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND CMAKE_CUDA_COMPILER_ID STREQUAL "Clang"))
+#
+# Also skip when CMAKE_PREFIX_PATH resolves to a CUDA-enabled LibTorch build
+# on Windows with a GNU-frontend Clang host compiler (plain clang.exe, not
+# clang-cl): Caffe2Config.cmake unconditionally calls enable_language(CUDA)
+# in that case, which drives CMake to nvcc. nvcc only accepts MSVC cl.exe or
+# clang-cl.exe as a Windows host compiler — with plain clang.exe it fails
+# with "nvcc fatal : Host compiler targets unsupported OS" — regardless of
+# our own VECTORIZATION_GPU_BACKEND selection.
+if((VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND CMAKE_CUDA_COMPILER_ID STREQUAL "Clang")
+   OR (WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
+       AND NOT CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC"))
+  message(STATUS "LibTorch not probed — GNU-frontend Clang is incompatible with "
+                 "LibTorch's CUDA detection (nvcc requires MSVC cl.exe or clang-cl on Windows)")
+else()
   set(_saved_module_path "${CMAKE_MODULE_PATH}")
   set(CMAKE_MODULE_PATH "")
   # Force MKL single-dynamic-library mode so MKLConfig.cmake emits only
@@ -68,8 +81,6 @@ if(NOT (VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND CMAKE_CUDA_COMPILER_ID STR
   find_package(Torch QUIET)
   unset(MKL_LINK)
   set(CMAKE_MODULE_PATH "${_saved_module_path}")
-else()
-  message(STATUS "LibTorch not probed — Clang CUDA compiler is incompatible with LibTorch's legacy FindCUDA scripts")
 endif()
 if(Torch_FOUND)
   message(STATUS "LibTorch found: ${TORCH_INSTALL_PREFIX} (${Torch_VERSION})")
