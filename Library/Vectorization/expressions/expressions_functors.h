@@ -45,29 +45,31 @@ Do_not_include_expression_functor_directly_use_expression_it;
 // Packet path : packet<value_t>::op(lhs, ret)
 // Scalar path : std::op(lhs)   — helpers injected in scalar_helper_functions.h
 //================================================================================================
-#define MACRO_FUNCTION_EVALUATOR(op)                                                              \
-    struct MACRO_EVALUATOR_SUFIX(op)                                                              \
-    {                                                                                             \
-        template <typename T, std::enable_if_t<vectorization::is_fundamental<T>::value, bool> = true> \
-        VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(T const& lhs) noexcept    \
-        {                                                                                         \
-            if constexpr (                                                                        \
-                \
-                vectorization::is_packet<vectorization::remove_cvref_t<T>>::value)                \
-            {                                                                                     \
-                using value_t =                                                                   \
-                    typename scalar_type<vectorization::remove_cvref_t<T>,                        \
-                                        vectorization::remove_cvref_t<T>>::value;                 \
-                using array_simd_t = typename packet<value_t>::array_simd_t;                      \
-                array_simd_t ret{};                                                               \
-                packet<value_t>::op(lhs, ret);                                                    \
-                return ret;                                                                       \
-            }                                                                                     \
-            else                                                                                  \
-            {                                                                                     \
-                return std::op(lhs);                                                              \
-            }                                                                                     \
-        }                                                                                         \
+#define MACRO_FUNCTION_EVALUATOR(op)                                                          \
+    struct MACRO_EVALUATOR_SUFIX(op)                                                          \
+    {                                                                                         \
+        template <                                                                            \
+            typename T,                                                                       \
+            std::enable_if_t<vectorization::is_fundamental<T>::value, bool> = true>           \
+        VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(T const& lhs) noexcept \
+        {                                                                                     \
+            if constexpr (                                                                    \
+                                                                                              \
+                vectorization::is_packet<vectorization::remove_cvref_t<T>>::value)            \
+            {                                                                                 \
+                using value_t = typename scalar_type<                                         \
+                    vectorization::remove_cvref_t<T>,                                         \
+                    vectorization::remove_cvref_t<T>>::value;                                 \
+                using array_simd_t = typename packet<value_t>::array_simd_t;                  \
+                array_simd_t ret{};                                                           \
+                packet<value_t>::op(lhs, ret);                                                \
+                return ret;                                                                   \
+            }                                                                                 \
+            else                                                                              \
+            {                                                                                 \
+                return std::op(lhs);                                                          \
+            }                                                                                 \
+        }                                                                                     \
     };
 
 namespace vectorization
@@ -110,59 +112,59 @@ MACRO_FUNCTION_EVALUATOR(invsqrt);
 // Covers: arithmetic (+,-,*,/), max, min, pow, hypot, copysign
 // and compound-assignment helpers (madd, msub, mmul, mdiv).
 //================================================================================================
-#define MACRO_OPERATION_EVALUATOR(op, f)                                                          \
-    struct MACRO_EVALUATOR_SUFIX(op)                                                              \
-    {                                                                                             \
-        template <                                                                                 \
-            typename LHS,                                                                         \
-            typename RHS,                                                                         \
-            std::enable_if_t<                                                                     \
-                vectorization::is_fundamental<LHS>::value &&                                      \
-                    vectorization::is_fundamental<RHS>::value,                                    \
-                bool> = true>                                                                     \
-        VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(                           \
-            LHS const& lhs, RHS const& rhs) noexcept                                             \
-        {                                                                                         \
-            if constexpr (                                                                        \
-                \
-                is_packet<vectorization::remove_cvref_t<LHS>>::value &&                           \
-                is_packet<vectorization::remove_cvref_t<RHS>>::value)                             \
-            {                                                                                     \
-                using value_t      = typename scalar_type<LHS, RHS>::value;                       \
-                using array_simd_t = typename packet<value_t>::array_simd_t;                      \
-                array_simd_t ret{};                                                               \
-                packet<value_t>::f(lhs, rhs, ret);                                               \
-                return ret;                                                                       \
-            }                                                                                     \
-            else if constexpr (                                                                   \
-                \
-                is_packet<vectorization::remove_cvref_t<RHS>>::value)                             \
-            {                                                                                     \
-                using value_t      = typename scalar_type<RHS, RHS>::value;                       \
-                using array_simd_t = typename packet<value_t>::array_simd_t;                      \
-                using simd_t       = typename packet<value_t>::simd_t;                            \
-                simd_t temp;                                                                      \
-                temp = simd<value_t>::set(lhs);                                                    \
-                array_simd_t ret{};                                                               \
-                packet<value_t>::f(temp, rhs, ret);                                               \
-                return ret;                                                                       \
-            }                                                                                     \
-            else if constexpr (                                                                   \
-                \
-                is_packet<vectorization::remove_cvref_t<LHS>>::value)                             \
-            {                                                                                     \
-                using value_t      = typename scalar_type<LHS, LHS>::value;                       \
-                using array_simd_t = typename packet<value_t>::array_simd_t;                      \
-                using simd_t       = typename packet<value_t>::simd_t;                            \
-                simd_t temp;                                                                      \
-                temp = simd<value_t>::set(rhs);                                                    \
-                array_simd_t ret{};                                                               \
-                packet<value_t>::f(lhs, temp, ret);                                               \
-                return ret;                                                                       \
-            }                                                                                     \
-            else                                                                                  \
-                return std::f(lhs, rhs);                                                          \
-        }                                                                                         \
+#define MACRO_OPERATION_EVALUATOR(op, f)                                     \
+    struct MACRO_EVALUATOR_SUFIX(op)                                         \
+    {                                                                        \
+        template <                                                           \
+            typename LHS,                                                    \
+            typename RHS,                                                    \
+            std::enable_if_t<                                                \
+                vectorization::is_fundamental<LHS>::value &&                 \
+                    vectorization::is_fundamental<RHS>::value,               \
+                bool> = true>                                                \
+        VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(      \
+            LHS const& lhs, RHS const& rhs) noexcept                         \
+        {                                                                    \
+            if constexpr (                                                   \
+                                                                             \
+                is_packet<vectorization::remove_cvref_t<LHS>>::value &&      \
+                is_packet<vectorization::remove_cvref_t<RHS>>::value)        \
+            {                                                                \
+                using value_t      = typename scalar_type<LHS, RHS>::value;  \
+                using array_simd_t = typename packet<value_t>::array_simd_t; \
+                array_simd_t ret{};                                          \
+                packet<value_t>::f(lhs, rhs, ret);                           \
+                return ret;                                                  \
+            }                                                                \
+            else if constexpr (                                              \
+                                                                             \
+                is_packet<vectorization::remove_cvref_t<RHS>>::value)        \
+            {                                                                \
+                using value_t      = typename scalar_type<RHS, RHS>::value;  \
+                using array_simd_t = typename packet<value_t>::array_simd_t; \
+                using simd_t       = typename packet<value_t>::simd_t;       \
+                simd_t temp;                                                 \
+                temp = simd<value_t>::set(lhs);                              \
+                array_simd_t ret{};                                          \
+                packet<value_t>::f(temp, rhs, ret);                          \
+                return ret;                                                  \
+            }                                                                \
+            else if constexpr (                                              \
+                                                                             \
+                is_packet<vectorization::remove_cvref_t<LHS>>::value)        \
+            {                                                                \
+                using value_t      = typename scalar_type<LHS, LHS>::value;  \
+                using array_simd_t = typename packet<value_t>::array_simd_t; \
+                using simd_t       = typename packet<value_t>::simd_t;       \
+                simd_t temp;                                                 \
+                temp = simd<value_t>::set(rhs);                              \
+                array_simd_t ret{};                                          \
+                packet<value_t>::f(lhs, temp, ret);                          \
+                return ret;                                                  \
+            }                                                                \
+            else                                                             \
+                return std::f(lhs, rhs);                                     \
+        }                                                                    \
     };
 
 namespace vectorization
@@ -181,124 +183,130 @@ MACRO_OPERATION_EVALUATOR(copysign, signcopy);
 //================================================================================================
 // Binary evaluators — result is array_mask_t: logical ops (&&, ||, ^)
 //================================================================================================
-#define MACRO_OPERATION_EVALUATOR_MASK(op, f)                                                     \
-    struct MACRO_EVALUATOR_SUFIX(op)                                                              \
-    {                                                                                             \
-        template <                                                                                 \
-            typename LHS,                                                                         \
-            typename RHS,                                                                         \
-            std::enable_if_t<                                                                     \
-                vectorization::is_fundamental<LHS>::value &&                                      \
-                    vectorization::is_fundamental<RHS>::value,                                    \
-                bool> = true>                                                                     \
-        VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(                           \
-            LHS const& lhs, RHS const& rhs) noexcept                                             \
-        {                                                                                         \
-            if constexpr (                                                                        \
-                \
-                is_packet<vectorization::remove_cvref_t<LHS>>::value &&                           \
-                is_packet<vectorization::remove_cvref_t<RHS>>::value)                             \
-            {                                                                                     \
-                using value_t      = typename scalar_type<LHS, RHS>::value;                       \
-                using array_mask_t = typename packet<value_t>::array_mask_t;                      \
-                array_mask_t ret{};                                                               \
-                packet<value_t>::f(lhs, rhs, ret);                                               \
-                return ret;                                                                       \
-            }                                                                                     \
-            else if constexpr (                                                                   \
-                \
-                is_packet<vectorization::remove_cvref_t<RHS>>::value)                             \
-            {                                                                                     \
-                using value_t      = typename scalar_type<RHS, RHS>::value;                       \
-                using array_mask_t = typename packet<value_t>::array_mask_t;                      \
-                using mask_t       = typename packet<value_t>::mask_t;                            \
-                mask_t temp;                                                                      \
-                temp = detail::simd_broadcast_mask<value_t>(lhs);                                                    \
-                array_mask_t ret{};                                                               \
-                packet<value_t>::f(temp, rhs, ret);                                               \
-                return ret;                                                                       \
-            }                                                                                     \
-            else if constexpr (                                                                   \
-                \
-                is_packet<vectorization::remove_cvref_t<LHS>>::value)                             \
-            {                                                                                     \
-                using value_t      = typename scalar_type<LHS, LHS>::value;                       \
-                using array_mask_t = typename packet<value_t>::array_mask_t;                      \
-                using mask_t       = typename packet<value_t>::mask_t;                            \
-                mask_t temp;                                                                      \
-                temp = detail::simd_broadcast_mask<value_t>(rhs);                                                    \
-                array_mask_t ret{};                                                               \
-                packet<value_t>::f(lhs, temp, ret);                                               \
-                return ret;                                                                       \
-            }                                                                                     \
-            else                                                                                  \
-                return std::f(lhs, rhs);                                                          \
-        }                                                                                         \
+#define MACRO_OPERATION_EVALUATOR_MASK(op, f)                                \
+    struct MACRO_EVALUATOR_SUFIX(op)                                         \
+    {                                                                        \
+        template <                                                           \
+            typename LHS,                                                    \
+            typename RHS,                                                    \
+            std::enable_if_t<                                                \
+                vectorization::is_fundamental<LHS>::value &&                 \
+                    vectorization::is_fundamental<RHS>::value,               \
+                bool> = true>                                                \
+        VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(      \
+            LHS const& lhs, RHS const& rhs) noexcept                         \
+        {                                                                    \
+            if constexpr (                                                   \
+                                                                             \
+                is_packet<vectorization::remove_cvref_t<LHS>>::value &&      \
+                is_packet<vectorization::remove_cvref_t<RHS>>::value)        \
+            {                                                                \
+                using value_t      = typename scalar_type<LHS, RHS>::value;  \
+                using array_mask_t = typename packet<value_t>::array_mask_t; \
+                array_mask_t ret{};                                          \
+                packet<value_t>::f(lhs, rhs, ret);                           \
+                return ret;                                                  \
+            }                                                                \
+            else if constexpr (                                              \
+                                                                             \
+                is_packet<vectorization::remove_cvref_t<RHS>>::value)        \
+            {                                                                \
+                using value_t      = typename scalar_type<RHS, RHS>::value;  \
+                using array_mask_t = typename packet<value_t>::array_mask_t; \
+                using mask_t       = typename packet<value_t>::mask_t;       \
+                mask_t temp;                                                 \
+                temp = detail::simd_broadcast_mask<value_t>(lhs);            \
+                array_mask_t ret{};                                          \
+                packet<value_t>::f(temp, rhs, ret);                          \
+                return ret;                                                  \
+            }                                                                \
+            else if constexpr (                                              \
+                                                                             \
+                is_packet<vectorization::remove_cvref_t<LHS>>::value)        \
+            {                                                                \
+                using value_t      = typename scalar_type<LHS, LHS>::value;  \
+                using array_mask_t = typename packet<value_t>::array_mask_t; \
+                using mask_t       = typename packet<value_t>::mask_t;       \
+                mask_t temp;                                                 \
+                temp = detail::simd_broadcast_mask<value_t>(rhs);            \
+                array_mask_t ret{};                                          \
+                packet<value_t>::f(lhs, temp, ret);                          \
+                return ret;                                                  \
+            }                                                                \
+            else                                                             \
+                return std::f(lhs, rhs);                                     \
+        }                                                                    \
     };
 
+// land/lor/lxor evaluators call vectorization::detail::simd_broadcast_mask, which is only
+// defined when VECTORIZATION_VECTORIZED=1. Guard the struct definitions so that
+// non-SIMD translation units (VECTORIZATION_VECTORIZED=0) do not fail at name-lookup time
+// for the non-dependent identifier 'detail'.
+#if VECTORIZATION_VECTORIZED
 namespace vectorization
 {
 MACRO_OPERATION_EVALUATOR_MASK(land, land);
 MACRO_OPERATION_EVALUATOR_MASK(lor, lor);
 MACRO_OPERATION_EVALUATOR_MASK(lxor, lxor);
 }  // namespace vectorization
+#endif  // VECTORIZATION_VECTORIZED
 
 //================================================================================================
 // Binary evaluators — result is array_mask_t: comparisons (>, <, >=, <=, ==, !=)
 //================================================================================================
-#define MACRO_OPERATION_EVALUATOR_COMP(op, f)                                                     \
-    struct MACRO_EVALUATOR_SUFIX(op)                                                              \
-    {                                                                                             \
-        template <                                                                                 \
-            typename LHS,                                                                         \
-            typename RHS,                                                                         \
-            std::enable_if_t<                                                                     \
-                vectorization::is_fundamental<LHS>::value &&                                      \
-                    vectorization::is_fundamental<RHS>::value,                                    \
-                bool> = true>                                                                     \
-        VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(                           \
-            LHS const& lhs, RHS const& rhs) noexcept                                             \
-        {                                                                                         \
-            if constexpr (                                                                        \
-                \
-                is_packet<vectorization::remove_cvref_t<LHS>>::value &&                           \
-                is_packet<vectorization::remove_cvref_t<RHS>>::value)                             \
-            {                                                                                     \
-                using value_t      = typename scalar_type<LHS, RHS>::value;                       \
-                using array_mask_t = typename packet<value_t>::array_mask_t;                      \
-                array_mask_t ret{};                                                               \
-                packet<value_t>::f(lhs, rhs, ret);                                               \
-                return ret;                                                                       \
-            }                                                                                     \
-            else if constexpr (                                                                   \
-                \
-                is_packet<vectorization::remove_cvref_t<RHS>>::value)                             \
-            {                                                                                     \
-                using value_t      = typename scalar_type<RHS, RHS>::value;                       \
-                using array_mask_t = typename packet<value_t>::array_mask_t;                      \
-                using simd_t       = typename packet<value_t>::simd_t;                            \
-                simd_t temp;                                                                      \
-                temp = simd<value_t>::set(lhs);                                                    \
-                array_mask_t ret{};                                                               \
-                packet<value_t>::f(temp, rhs, ret);                                               \
-                return ret;                                                                       \
-            }                                                                                     \
-            else if constexpr (                                                                   \
-                \
-                is_packet<vectorization::remove_cvref_t<LHS>>::value)                             \
-            {                                                                                     \
-                using value_t      = typename scalar_type<LHS, LHS>::value;                       \
-                using array_mask_t = typename packet<value_t>::array_mask_t;                      \
-                using simd_t       = typename packet<value_t>::simd_t;                            \
-                simd_t temp;                                                                      \
-                temp = simd<value_t>::set(rhs);                                                    \
-                array_mask_t ret{};                                                               \
-                packet<value_t>::f(lhs, temp, ret);                                               \
-                return ret;                                                                       \
-            }                                                                                     \
-            else                                                                                  \
-                return std::f(lhs, rhs);                                                          \
-        }                                                                                         \
+#define MACRO_OPERATION_EVALUATOR_COMP(op, f)                                \
+    struct MACRO_EVALUATOR_SUFIX(op)                                         \
+    {                                                                        \
+        template <                                                           \
+            typename LHS,                                                    \
+            typename RHS,                                                    \
+            std::enable_if_t<                                                \
+                vectorization::is_fundamental<LHS>::value &&                 \
+                    vectorization::is_fundamental<RHS>::value,               \
+                bool> = true>                                                \
+        VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(      \
+            LHS const& lhs, RHS const& rhs) noexcept                         \
+        {                                                                    \
+            if constexpr (                                                   \
+                                                                             \
+                is_packet<vectorization::remove_cvref_t<LHS>>::value &&      \
+                is_packet<vectorization::remove_cvref_t<RHS>>::value)        \
+            {                                                                \
+                using value_t      = typename scalar_type<LHS, RHS>::value;  \
+                using array_mask_t = typename packet<value_t>::array_mask_t; \
+                array_mask_t ret{};                                          \
+                packet<value_t>::f(lhs, rhs, ret);                           \
+                return ret;                                                  \
+            }                                                                \
+            else if constexpr (                                              \
+                                                                             \
+                is_packet<vectorization::remove_cvref_t<RHS>>::value)        \
+            {                                                                \
+                using value_t      = typename scalar_type<RHS, RHS>::value;  \
+                using array_mask_t = typename packet<value_t>::array_mask_t; \
+                using simd_t       = typename packet<value_t>::simd_t;       \
+                simd_t temp;                                                 \
+                temp = simd<value_t>::set(lhs);                              \
+                array_mask_t ret{};                                          \
+                packet<value_t>::f(temp, rhs, ret);                          \
+                return ret;                                                  \
+            }                                                                \
+            else if constexpr (                                              \
+                                                                             \
+                is_packet<vectorization::remove_cvref_t<LHS>>::value)        \
+            {                                                                \
+                using value_t      = typename scalar_type<LHS, LHS>::value;  \
+                using array_mask_t = typename packet<value_t>::array_mask_t; \
+                using simd_t       = typename packet<value_t>::simd_t;       \
+                simd_t temp;                                                 \
+                temp = simd<value_t>::set(rhs);                              \
+                array_mask_t ret{};                                          \
+                packet<value_t>::f(lhs, temp, ret);                          \
+                return ret;                                                  \
+            }                                                                \
+            else                                                             \
+                return std::f(lhs, rhs);                                     \
+        }                                                                    \
     };
 
 namespace vectorization
@@ -340,7 +348,8 @@ struct if_else_evaluator
         typename MHS,
         typename RHS,
         std::enable_if_t<
-            vectorization::is_fundamental<LHS>::value && vectorization::is_fundamental<MHS>::value &&
+            vectorization::is_fundamental<LHS>::value &&
+                vectorization::is_fundamental<MHS>::value &&
                 vectorization::is_fundamental<RHS>::value,
             bool> = true>
     VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(
@@ -412,7 +421,8 @@ struct fma_evaluator
         typename MHS,
         typename RHS,
         std::enable_if_t<
-            vectorization::is_fundamental<LHS>::value && vectorization::is_fundamental<MHS>::value &&
+            vectorization::is_fundamental<LHS>::value &&
+                vectorization::is_fundamental<MHS>::value &&
                 vectorization::is_fundamental<RHS>::value,
             bool> = true>
     VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr auto functor(
@@ -462,8 +472,7 @@ struct fma_evaluator
                 return ret;
             }
         }
-        else if constexpr (
-            is_packet<rmv_mhs>::value && is_packet<rmv_rhs>::value)
+        else if constexpr (is_packet<rmv_mhs>::value && is_packet<rmv_rhs>::value)
         {
             // lhs scalar, mhs SIMD, rhs SIMD
             using value_t      = typename scalar_type<rmv_mhs, rmv_rhs>::value;

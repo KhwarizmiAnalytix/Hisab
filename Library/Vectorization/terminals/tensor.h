@@ -73,35 +73,60 @@ public:
     using packet_t                            = packet<value_t, packet_size<value_t>::value>;
     using array_simd_t                        = typename packet_t::array_simd_t;
     using simd_t                              = typename simd<value_t>::simd_t;
-    using data_t                              = data_ptr<value_t, deep_copy>;
-    using iterator                            = value_t*;
-    using const_iterator                      = const value_t*;
-    using reverse_iterator                    = std::reverse_iterator<iterator>;
-    using const_reverse_iterator              = std::reverse_iterator<const_iterator>;
+    // SIMD-type alignment constants — precomputed at class scope so first_aligned()
+    // references simple members rather than local constexpr variables. This avoids a
+    // Clang 20 CFG-optimizer crash that fires when the constexpr locals are inlined
+    // three levels deep (first_aligned → recompute_cpu_simd_alignment_state → caller).
+    // Guarded by VECTORIZATION_VECTORIZED because simd<T>::simd_t does not exist when
+    // SIMD is disabled (simd<T> is an empty struct), so alignof(simd_t) would fail at
+    // class-instantiation time even in a non-taken if constexpr branch.
+#if VECTORIZATION_VECTORIZED
+    static constexpr size_type simd_align      = alignof(simd_t);
+    static constexpr size_type simd_align_size = simd_align / scalar_size;
+    static constexpr size_type simd_align_mask = simd_align_size - 1;
+#else
+    static constexpr size_type simd_align      = scalar_size;
+    static constexpr size_type simd_align_size = 1;
+    static constexpr size_type simd_align_mask = 0;
+#endif
+    using data_t                 = data_ptr<value_t, deep_copy>;
+    using iterator               = value_t*;
+    using const_iterator         = const value_t*;
+    using reverse_iterator       = std::reverse_iterator<iterator>;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-    VECTORIZATION_FORCE_INLINE static size_type first_aligned(const value_t* array, size_type size)
+    // NOINLINE: called only at construction time (not on the hot SIMD compute path).
+    // Force-inlining + reinterpret_cast in the body triggers a Clang 20 optimizer/code-gen crash
+    // when inlined two levels deep (here → recompute_cpu_simd_alignment_state → ctor): the
+    // accumulation of ptrtoint casts across many constructor call-sites causes ComputeValueVTs
+    // infinite recursion in the instruction selector. noinline breaks the inlining chain.
+    VECTORIZATION_NOINLINE static size_type first_aligned(const value_t* array, size_type size)
     {
         if constexpr (alignment_size <= 1)
         {
             return 0;
         }
-        if constexpr (alignment > alignof(simd_t))
-        {
-            return 0;
-        }
-        if constexpr ((alignment % scalar_size) != 0)
-        {
-            return size;
-        }
+
+        // Use the SIMD type's alignment requirement, not the tensor allocator's alignment.
+        // VECTORIZATION_ALIGNMENT (e.g. 64) can exceed alignof(simd_t) (e.g. 32 for AVX2), so
+        // owned allocations are always SIMD-aligned, but view tensors wrapping external buffers
+        // (e.g. std::vector data, which is only 16-byte aligned) may not be. Computing the
+        // prologue length against alignof(simd_t) keeps vmovaps stores correctly aligned for both.
+        // simd_align / simd_align_size / simd_align_mask are class-level static constexpr to avoid
+        // a Clang 20 CFG-optimizer crash triggered by local constexpr vars in always_inline code.
+        static_assert(
+            simd_align_size >= 1 && (simd_align % scalar_size) == 0,
+            "SIMD alignment must be a positive multiple of scalar_size");
 
         if (reinterpret_cast<std::uintptr_t>(array) & (scalar_size - 1))
         {
             return size;
         }
 
-        size_type first = (alignment_size - (reinterpret_cast<std::uintptr_t>(array) / scalar_size &
-                                             alignment_mask)) &
-                          alignment_mask;
+        size_type first =
+            (simd_align_size -
+             (reinterpret_cast<std::uintptr_t>(array) / scalar_size & simd_align_mask)) &
+            simd_align_mask;
         return (first < size) ? first : size;
     }
 
@@ -201,7 +226,7 @@ public:
     VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
         std::initializer_list<std::initializer_list<value_t>> list,
         device_enum                                           type = device_enum::CPU)
-        : tensor(list.size(), list.begin()->size(), type)
+        : tensor(list.size(), list.begin() -> size(), type)
     {
         size_t i = 0;
         for (auto const& row : list)
@@ -362,7 +387,8 @@ public:
     template <
         typename E,
         std::enable_if_t<vectorization::is_pure_expression<E>::value, bool> = true>
-    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor(E const& expr) : storage_(expr.size(), device_enum::CPU)
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor(E const& expr)
+        : storage_(expr.size(), device_enum::CPU)
     {
         sizes_and_strides_.size_at_unchecked(0)   = static_cast<int64_t>(expr.size());
         sizes_and_strides_.stride_at_unchecked(0) = 1;
@@ -422,10 +448,7 @@ public:
     }
     VECTORIZATION_FUNCTION_ATTRIBUTE bool empty() const noexcept { return size() == 0; }
 
-    VECTORIZATION_FUNCTION_ATTRIBUTE device_enum device() const noexcept
-    {
-        return storage_.type_;
-    }
+    VECTORIZATION_FUNCTION_ATTRIBUTE device_enum device() const noexcept { return storage_.type_; }
 
     // -----------------------------------------------------------------------
     // Host ↔ device transfer helpers
@@ -440,10 +463,7 @@ public:
     }
 
     // Convenience overload — uploads from a std::vector.
-    void copy_from_host(const std::vector<value_t>& src)
-    {
-        copy_from_host(src.data(), src.size());
-    }
+    void copy_from_host(const std::vector<value_t>& src) { copy_from_host(src.data(), src.size()); }
 
     // Download all elements to a host std::vector.  Blocks until complete.
     std::vector<value_t> to_host_vector() const

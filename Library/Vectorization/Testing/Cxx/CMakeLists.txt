@@ -12,18 +12,30 @@ file(GLOB_RECURSE test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DI
 
 # Include CUDA simd unit tests when the CUDA GPU backend is active.
 if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
-  file(GLOB_RECURSE cuda_test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cu")
-  list(APPEND test_sources ${cuda_test_sources})
+  # Clang as CUDA compiler: Clang 20 + CUDA 13.x has texture-intrinsics
+  # incompatibilities (missing texture_fetch_functions.h, __tex_op_hash
+  # host-only constexpr called from device code). All Test*.cu files fail.
+  # TestTensorGpu.cpp also fails (tensor<T> uses std::vector in device code).
+  # Exclude all CUDA-specific test sources when using Clang as the compiler.
+  if(CMAKE_CUDA_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # TestTensorGpu.cpp is in the Test*.cpp glob above; remove it so it is not
+    # linked into VectorizationCxxTests. Without LANGUAGE CUDA its GPU kernels
+    # would be absent and any TensorGpu test would segfault at runtime.
+    list(REMOVE_ITEM test_sources "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
+    message(STATUS "VectorizationCxxTests: CUDA-specific tests (Test*.cu, TestTensorGpu.cpp) "
+                   "excluded — Clang ${CMAKE_CXX_COMPILER_VERSION} + CUDA ${CUDAToolkit_VERSION} "
+                   "texture-intrinsics incompatibility")
+  else()
+    file(GLOB_RECURSE cuda_test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cu")
+    list(APPEND test_sources ${cuda_test_sources})
 
-  # TestTensorGpu.cpp exercises GPU expression evaluation through the tensor
-  # abstraction.  The file stays .cpp but must be processed by nvcc so that
-  # the GPU expression-template kernels (__global__) are instantiated in a
-  # CUDA translation unit.
-  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
-    set_source_files_properties(
-      "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp"
-      PROPERTIES LANGUAGE CUDA
-    )
+    # TestTensorGpu.cpp: processed by nvcc to instantiate GPU expression-template kernels.
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
+      set_source_files_properties(
+        "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp"
+        PROPERTIES LANGUAGE CUDA
+      )
+    endif()
   endif()
 endif()
 
@@ -138,7 +150,11 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND
   # __host__ __device__, making the internal std::fma call ambiguous (both host and
   # device versions are in std:: via __clang_cuda_math_forward_declares.h).
   # -fno-cuda-host-device-constexpr disables the implicit annotation.
-  if(CMAKE_CUDA_COMPILER_ID STREQUAL "Clang")
+  # CMAKE_CUDA_COMPILER_ID is "unknown" when CMAKE_CUDA_COMPILER_FORCED=TRUE (the
+  # Clang+CMake 3.28 workaround in cuda.cmake skips the compiler probe). Use
+  # CMAKE_CXX_COMPILER_ID as the reliable fallback: when Clang is the CUDA compiler
+  # it is always also the CXX compiler, so CMAKE_CXX_COMPILER_ID is always "Clang".
+  if(CMAKE_CUDA_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(VectorizationCxxTests PRIVATE
       $<$<COMPILE_LANGUAGE:CUDA>:-Xclang -fno-cuda-host-device-constexpr>
     )
@@ -161,6 +177,13 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND
         "${CMAKE_CUDA_COMPILER_TOOLKIT_LIBRARY_ROOT}/lib64"
       )
     endif()
+  else()
+    # nvcc (cudafe) #3328: fmt 12.x uses unsigned __int128 as carrier_uint for
+    # long double formatting; nvcc rejects ~(inc-1) on __int128 in device-code
+    # parsing even though the fmt path is host-only.  Suppress the diagnostic.
+    target_compile_options(VectorizationCxxTests PRIVATE
+      $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --diag_suppress=3328>
+    )
   endif()
   message(STATUS "VectorizationCxxTests: CUDA simd tests enabled (archs: ${VECTORIZATION_CUDA_ARCHITECTURES})")
 endif()
@@ -168,6 +191,31 @@ endif()
 add_test(NAME VectorizationCxxTests COMMAND VectorizationCxxTests
          WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
 )
+
+# Clang 20 + -O3 crashes (optimizer DSE / copy-propagation / instruction-selector)
+# on large functions in test files that heavily instantiate tensor<T> expression
+# templates: the LLVM inliner expands SIMD constructors into monolithic functions
+# that overflow internal data structures. -O0 avoids the ICE; correctness tests
+# don't need aggressive optimization (matching the TestTensorGpu.cpp precedent).
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  set_source_files_properties(
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensor.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorF2.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorch2D.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchBinaryFns.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchBinaryOps.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchElementwise.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchExpLog.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchGpu.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchHyperbolic.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchMultiDim.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchPowerRoot.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchRounding.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchTensor.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchTrig.cpp"
+    PROPERTIES COMPILE_OPTIONS "-O0"
+  )
+endif()
 set_tests_properties(VectorizationCxxTests PROPERTIES TIMEOUT 120 LABELS "Vectorization;Unit")
 
 # ThinLTO + lld-link OOM: when project-wide IPO is on, INTERPROCEDURAL_OPTIMIZATION=OFF alone is

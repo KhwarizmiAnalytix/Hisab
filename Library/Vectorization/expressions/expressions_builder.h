@@ -28,12 +28,15 @@
 #define OPERATOR(s) operator s
 
 //================================================================================================
-#define MACRO_EXPRESSION_FUNCTION_1_ARG_CONST(op)                                \
-    template <                                                                   \
-        typename LHS,                                                            \
-        std::enable_if_t<vectorization::is_expression<LHS>::value, bool> = true> \
-    VECTORIZATION_FUNCTION_ATTRIBUTE auto op(LHS const& expr)                    \
-    { return vectorization::unary_expression<LHS, vectorization::MACRO_EVALUATOR_SUFIX(op)>(expr); }
+#define MACRO_EXPRESSION_FUNCTION_1_ARG_CONST(op)                                              \
+    template <                                                                                 \
+        typename LHS,                                                                          \
+        std::enable_if_t<vectorization::is_expression<LHS>::value, bool> = true>               \
+    VECTORIZATION_FUNCTION_ATTRIBUTE auto op(LHS const& expr)                                  \
+    {                                                                                          \
+        return vectorization::unary_expression<LHS, vectorization::MACRO_EVALUATOR_SUFIX(op)>( \
+            expr);                                                                             \
+    }
 
 #define MACRO_EXPRESSION_FUNCTION_1_ARG_MOVE(op)                                               \
     template <                                                                                 \
@@ -81,22 +84,25 @@ MACRO_EXPRESSION_FUNCTION_1_ARG(trunc)
 MACRO_EXPRESSION_FUNCTION_1_ARG(invsqrt)
 
 //================================================================================================
-#define MACRO_EXPRESSION_OPERATOR_1_ARG_MOVE(op, symbol, ref)                                 \
+#define MACRO_EXPRESSION_OPERATOR_1_ARG_MOVE(op, symbol, ref)                                  \
     template <                                                                                 \
         typename LHS,                                                                          \
         std::enable_if_t<vectorization::is_expression<LHS>::value, bool> = true>               \
-    VECTORIZATION_FUNCTION_ATTRIBUTE auto OPERATOR(symbol)(LHS && expr)                       \
+    VECTORIZATION_FUNCTION_ATTRIBUTE auto OPERATOR(symbol)(LHS && expr)                        \
     {                                                                                          \
         return vectorization::unary_expression<LHS, vectorization::MACRO_EVALUATOR_SUFIX(op)>( \
             std::forward<LHS>(expr));                                                          \
     }
 
-#define MACRO_EXPRESSION_OPERATOR_1_ARG_COPY(op, symbol, ref)                   \
-    template <                                                                   \
-        typename LHS,                                                            \
-        std::enable_if_t<vectorization::is_expression<LHS>::value, bool> = true> \
-    VECTORIZATION_FUNCTION_ATTRIBUTE auto OPERATOR(symbol)(LHS const& expr)     \
-    { return vectorization::unary_expression<LHS, vectorization::MACRO_EVALUATOR_SUFIX(op)>(expr); }
+#define MACRO_EXPRESSION_OPERATOR_1_ARG_COPY(op, symbol, ref)                                  \
+    template <                                                                                 \
+        typename LHS,                                                                          \
+        std::enable_if_t<vectorization::is_expression<LHS>::value, bool> = true>               \
+    VECTORIZATION_FUNCTION_ATTRIBUTE auto OPERATOR(symbol)(LHS const& expr)                    \
+    {                                                                                          \
+        return vectorization::unary_expression<LHS, vectorization::MACRO_EVALUATOR_SUFIX(op)>( \
+            expr);                                                                             \
+    }
 
 #define MACRO_EXPRESSION_OPERATOR_1_ARG(op, symbol)           \
     MACRO_EXPRESSION_OPERATOR_1_ARG_COPY(op, symbol, const&); \
@@ -168,28 +174,28 @@ MACRO_EXPRESSION_FUNCTION_3_ARG(fma);
 MACRO_EXPRESSION_FUNCTION_3_ARG(if_else);
 
 //================================================================================================
-#define EXPRESSION_ARG2_OPERATOR_HELPER(op, symbol, ref)                                         \
+#define EXPRESSION_ARG2_OPERATOR_HELPER(op, symbol, ref)                                          \
     template <                                                                                    \
         typename LHS,                                                                             \
         typename RHS,                                                                             \
         std::enable_if_t<                                                                         \
             vectorization::is_expression<LHS>::value || vectorization::is_expression<RHS>::value, \
             bool> = true>                                                                         \
-    VECTORIZATION_FUNCTION_ATTRIBUTE auto OPERATOR(symbol)(LHS ref lhs, RHS ref rhs) noexcept    \
+    VECTORIZATION_FUNCTION_ATTRIBUTE auto OPERATOR(symbol)(LHS ref lhs, RHS ref rhs) noexcept     \
     {                                                                                             \
         return vectorization::                                                                    \
             binary_expression<LHS, RHS, vectorization::MACRO_EVALUATOR_SUFIX(op)>(lhs, rhs);      \
     }
 
-#define MACRO_EXPRESSION_OPERATOR_2_ARG(op, symbol)                                              \
-    EXPRESSION_ARG2_OPERATOR_HELPER(op, symbol, const&);                                         \
+#define MACRO_EXPRESSION_OPERATOR_2_ARG(op, symbol)                                               \
+    EXPRESSION_ARG2_OPERATOR_HELPER(op, symbol, const&);                                          \
     template <                                                                                    \
         typename LHS,                                                                             \
         typename RHS,                                                                             \
         std::enable_if_t<                                                                         \
             vectorization::is_expression<LHS>::value || vectorization::is_expression<RHS>::value, \
             bool> = true>                                                                         \
-    VECTORIZATION_FUNCTION_ATTRIBUTE auto OPERATOR(symbol)(LHS && lhs, RHS && rhs) noexcept      \
+    VECTORIZATION_FUNCTION_ATTRIBUTE auto OPERATOR(symbol)(LHS && lhs, RHS && rhs) noexcept       \
     {                                                                                             \
         return vectorization::                                                                    \
             binary_expression<LHS, RHS, vectorization::MACRO_EVALUATOR_SUFIX(op)>(                \
@@ -198,9 +204,13 @@ MACRO_EXPRESSION_FUNCTION_3_ARG(if_else);
 //------------------------------------------------------------------------------------------------
 namespace vectorization
 {
+// land/lor/lxor evaluators (and thus these operators) are only compiled when
+// VECTORIZATION_VECTORIZED=1; see expressions_functors.h for the full rationale.
+#if VECTORIZATION_VECTORIZED
 MACRO_EXPRESSION_OPERATOR_2_ARG(land, &&);
 MACRO_EXPRESSION_OPERATOR_2_ARG(lor, ||);
 MACRO_EXPRESSION_OPERATOR_2_ARG(lxor, ^);
+#endif  // VECTORIZATION_VECTORIZED
 MACRO_EXPRESSION_OPERATOR_2_ARG(cmpgt, >);
 MACRO_EXPRESSION_OPERATOR_2_ARG(cmplt, <);
 MACRO_EXPRESSION_OPERATOR_2_ARG(cmpge, >=);
@@ -215,12 +225,12 @@ MACRO_EXPRESSION_OPERATOR_2_ARG(div, /);
 }  // namespace vectorization
 
 //================================================================================================
-#define EXPRESSION_ARG2_MOPERATOR_HELPER(op, symbol, ref)                                        \
+#define EXPRESSION_ARG2_MOPERATOR_HELPER(op, symbol, ref)                                         \
     template <                                                                                    \
         typename LHS,                                                                             \
         typename RHS,                                                                             \
         std::enable_if_t<vectorization::is_base_expression<LHS>::value, int> = 0>                 \
-    VECTORIZATION_FUNCTION_ATTRIBUTE void OPERATOR(symbol)(LHS ref lhs, RHS const ref rhs)       \
+    VECTORIZATION_FUNCTION_ATTRIBUTE void OPERATOR(symbol)(LHS ref lhs, RHS const ref rhs)        \
     {                                                                                             \
         lhs =                                                                                     \
             vectorization::binary_expression<LHS, RHS, vectorization::MACRO_EVALUATOR_SUFIX(op)>( \
