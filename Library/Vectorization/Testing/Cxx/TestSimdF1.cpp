@@ -20,7 +20,8 @@
 #include <type_traits>
 #include <utility>
 
-#include "backend/packet.h"
+#include "backend/simd.h"
+#include "common/scalar_helper_functions.h"
 #include "common/vectorization_macros.h"
 
 namespace vectorization

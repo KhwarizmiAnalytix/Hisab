@@ -21,7 +21,7 @@
 
 #include <cstdint>
 
-#include "backend/packet.h"
+#include "backend/simd.h"
 #include "common/scalar_helper_functions.h"
 #include "common/vectorization_macros.h"
 #include "common/vectorization_type_traits.h"
@@ -44,29 +44,23 @@ public:
         {
             if constexpr (vectorize)
             {
-                using value_t      = typename scalar_type<rmv_lhs, rmv_lhs>::value;
-                using packet_t     = packet<value_t, packet_size<value_t>::value>;
-                using array_simd_t = typename packet_t::array_simd_t;
-
-                array_simd_t t{};
+                using value_t = typename scalar_type<rmv_lhs, rmv_lhs>::value;
 
                 auto const* ptr = expr.data() + index;
 
-                // Prefetch is a CPU-only hint; look ahead of the upcoming load.
+                // Prefetch is a CPU-only hint; roll one SIMD register ahead of the load.
 #if !VECTORIZATION_ON_GPU_DEVICE
-                packet<value_t>::prefetch(ptr + packet_t::length());
+                simd<value_t>::prefetch(ptr + simd<value_t>::size);
 #endif
 
 #if VECTORIZATION_VECTORIZED
                 if constexpr (aligned)
-                    packet<value_t>::load(ptr, t);
+                    return simd<value_t>::load(ptr);
                 else
-                    packet<value_t>::loadu(ptr, t);
+                    return simd<value_t>::loadu(ptr);
 #else
-                packet<value_t>::loadu(ptr, t);
+                return simd<value_t>::loadu(ptr);
 #endif
-
-                return t;
             }
             else
             {

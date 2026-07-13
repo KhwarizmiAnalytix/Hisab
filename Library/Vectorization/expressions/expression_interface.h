@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "backend/packet.h"
+#include "backend/simd.h"
 #include "common/scalar_helper_functions.h"
 #include "common/vectorization_macros.h"
 #include "common/vectorization_type_traits.h"

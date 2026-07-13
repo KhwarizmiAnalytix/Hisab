@@ -34,7 +34,7 @@
 #include <sstream>
 #include <vector>
 
-#include "backend/packet.h"
+#include "backend/simd.h"
 #include "expressions/expressions.h"
 #include "sizes_and_strides.h"
 
@@ -70,8 +70,6 @@ public:
     static constexpr size_type alignment_mask = alignment_size - 1;
     using dimensions_type                     = std::vector<int64_t>;
     using evaluator                           = expressions_evaluator;
-    using packet_t                            = packet<value_t, packet_size<value_t>::value>;
-    using array_simd_t                        = typename packet_t::array_simd_t;
     using simd_t                              = typename simd<value_t>::simd_t;
     // SIMD-type alignment constants — precomputed at class scope so first_aligned()
     // references simple members rather than local constexpr variables. This avoids a
@@ -136,10 +134,15 @@ public:
         return aligned_start + ((size - aligned_start) / packet_size) * packet_size;
     }
 
-    // SIMD stride — identical for every rank; used by expression_loader
+    // SIMD stride — identical for every rank; used by expression_loader.
+    // One simd<value_t> register per step (no manual unroll).
     VECTORIZATION_FUNCTION_ATTRIBUTE static constexpr size_t length() noexcept
     {
-        return packet_t::length();
+#if VECTORIZATION_VECTORIZED
+        return simd<value_t>::size;
+#else
+        return 1;
+#endif
     }
 
     /// First element index where CPU SIMD lanes are memory-aligned (scalar prologue is \c [0, align_start) ).
@@ -975,7 +978,7 @@ private:
         misalign_ = static_cast<std::size_t>(data_addr % alignment);
 
         align_start_ = first_aligned(base, n);
-        align_end_   = last_aligned(align_start_, n, packet_t::length());
+        align_end_   = last_aligned(align_start_, n, length());
 #endif
     }
 

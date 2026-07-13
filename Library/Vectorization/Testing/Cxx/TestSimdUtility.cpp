@@ -21,7 +21,8 @@
 #include <vector>
 
 #include "common/vectorization_macros.h"
-#include "backend/packet.h"
+#include "backend/simd.h"
+#include "common/scalar_helper_functions.h"
 
 namespace vectorization
 {

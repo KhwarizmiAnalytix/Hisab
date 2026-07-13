@@ -1,7 +1,7 @@
 # =============================================================================
 # Library/Vectorization — CMakeLists.txt
 #
-# Provides the Vectorization library: SIMD packet abstractions, expression templates, and
+# Provides the Vectorization library: simd<T> register abstractions, expression templates, and
 # architecture-specific kernels for SSE, AVX, AVX2, and AVX-512.
 #
 # VECTORIZATION_CPU_BACKEND (cache: no|sse|avx|avx2|avx512|neon|sve) selects the CPU SIMD backend.
@@ -53,23 +53,6 @@ set(VECTORIZATION_GPU_BACKEND "none"
 set_property(CACHE VECTORIZATION_GPU_BACKEND PROPERTY STRINGS none cuda hip)
 if(NOT VECTORIZATION_GPU_BACKEND MATCHES "^(none|cuda|hip)$")
   message(FATAL_ERROR "VECTORIZATION_GPU_BACKEND must be one of: none, cuda, hip (got '${VECTORIZATION_GPU_BACKEND}')")
-endif()
-
-set(VECTORIZATION_PACKET_SIZE "4"
-    CACHE STRING
-        "SIMD packet lane count (vectorization::packet_size<T>::value); must match your ISA and kernels"
-)
-if(NOT VECTORIZATION_PACKET_SIZE MATCHES "^[1-9][0-9]*$")
-  message(
-    FATAL_ERROR
-      "VECTORIZATION_PACKET_SIZE must be a positive decimal integer (got '${VECTORIZATION_PACKET_SIZE}')"
-  )
-endif()
-if(VECTORIZATION_PACKET_SIZE GREATER 256)
-  message(
-    FATAL_ERROR
-      "VECTORIZATION_PACKET_SIZE must be at most 256 (got '${VECTORIZATION_PACKET_SIZE}')"
-  )
 endif()
 
 include(lto)
@@ -313,10 +296,6 @@ if(VECTORIZATION_CPU_BACKEND MATCHES "^(sse|avx|avx2|avx512|neon|sve)$")
 else()
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_VECTORIZED=0)
 endif()
-
-list(APPEND VECTORIZATION_COMPILE_DEFINITIONS
-     VECTORIZATION_PACKET_SIZE=${VECTORIZATION_PACKET_SIZE}
-)
 
 set(VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS "")
 list(APPEND VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS ${VECTORIZATION_COMPILE_DEFINITIONS})
@@ -769,7 +748,6 @@ message("")
 message("******** Vectorization module (CMake flags) ********")
 message("  CPU backend          : ${VECTORIZATION_CPU_BACKEND}")
 message("  GPU backend          : ${VECTORIZATION_GPU_BACKEND}")
-message("  Packet size          : ${VECTORIZATION_PACKET_SIZE}")
 message("  Svml                 : ${VECTORIZATION_ENABLE_SVML}")
 message("  Sleef                : ${VECTORIZATION_ENABLE_SLEEF}")
 message("  Accelerate (vForce)  : ${VECTORIZATION_ENABLE_ACCELERATE}")

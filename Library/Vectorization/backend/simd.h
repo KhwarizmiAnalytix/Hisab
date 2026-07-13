@@ -20,6 +20,8 @@
 #pragma once
 #include <cstdint>
 
+#include "common/vectorization_macros.h"
+
 #if VECTORIZATION_VECTORIZED
 #if defined(_MSC_VER) && (_MSC_VER >= 1400)
 /* Microsoft C/C++-compatible compiler */
@@ -60,3 +62,45 @@ template <typename T>
 struct simd
 {
 };
+
+// Backend selection strategy:
+//
+//  GPU device pass (nvcc/hipcc compiling __device__ code):
+//    Always use the scalar GPU backend so AVX intrinsics (unavailable on device)
+//    are never included in device translation units.
+//
+//  CPU host pass:
+//    Use the selected CPU SIMD backend when VECTORIZATION_VECTORIZED=1.
+//    Fall back to the GPU scalar backend as a host-side shim when CPU_TYPE=no
+//    but a GPU backend is active (keeps simd<T> well-defined for tensor members).
+
+#if VECTORIZATION_ON_GPU_DEVICE
+  // --- GPU device code: scalar simd<T> ---
+#  if VECTORIZATION_HAS_CUDA
+#    include "backend/gpu/cuda/double/simd.h"
+#    include "backend/gpu/cuda/float/simd.h"
+#  elif VECTORIZATION_HAS_HIP
+#    include "backend/gpu/hip/double/simd.h"
+#    include "backend/gpu/hip/float/simd.h"
+#  endif
+
+#else
+  // --- CPU host code: SIMD or scalar fallback ---
+#  if VECTORIZATION_HAS_AVX512
+#    include "backend/cpu/avx512/double/simd.h"
+#    include "backend/cpu/avx512/float/simd.h"
+#  elif VECTORIZATION_HAS_AVX2 || VECTORIZATION_HAS_AVX
+#    include "backend/cpu/avx/double/simd.h"
+#    include "backend/cpu/avx/float/simd.h"
+#  elif VECTORIZATION_HAS_SSE
+#    include "backend/cpu/sse/double/simd.h"
+#    include "backend/cpu/sse/float/simd.h"
+#  elif VECTORIZATION_HAS_SVE
+#    include "backend/cpu/sve/double/simd.h"
+#    include "backend/cpu/sve/float/simd.h"
+#  elif VECTORIZATION_HAS_NEON
+#    include "backend/cpu/neon/double/simd.h"
+#    include "backend/cpu/neon/float/simd.h"
+#  endif
+
+#endif  // VECTORIZATION_ON_GPU_DEVICE

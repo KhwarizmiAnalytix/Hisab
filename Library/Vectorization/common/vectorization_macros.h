@@ -61,13 +61,13 @@
 #define VECTORIZATION_HOST_ONLY
 #endif
 //------------------------------------------------------------------------
-// VECTORIZATION_SIMD_RETURN_TYPE — static methods on packet<> (and simd
-// helpers) that do not return a value (stores, prefetch, transpose, etc.).
+// VECTORIZATION_SIMD_RETURN_TYPE — static methods on simd<> that do not
+// return a value (stores, prefetch, transpose, etc.).
 // VECTORIZATION_SIMD_METHOD — prefix for simd<> ops that return the same
 // type as the underlying intrinsic (simd_t, mask_t, simd_half_t, …).
 // The CUDA_FUNCTION_TYPE qualifier makes them __host__ __device__ when
 // compiling with NVCC/HIPCC so the methods are callable from both host
-// and device contexts (needed when the packet type is instantiated inside
+// and device contexts (needed when the simd<> type is instantiated inside
 // a .cu translation unit even if the SIMD path is inactive on the device).
 #ifdef NDEBUG
 #define VECTORIZATION_SIMD_RETURN_TYPE \
@@ -88,30 +88,6 @@
 #define VECTORIZATION_ON_GPU_DEVICE 1
 #else
 #define VECTORIZATION_ON_GPU_DEVICE 0
-#endif
-
-// packet::pow: force noinline on host; omit on GPU device pass (noinline + __device__ is ill-formed).
-#if VECTORIZATION_ON_GPU_DEVICE
-#define VECTORIZATION_SIMD_NON_INLINE
-#else
-#define VECTORIZATION_SIMD_NON_INLINE VECTORIZATION_NOINLINE
-#endif
-
-#ifdef NDEBUG
-#define VECTORIZATION_SIMD_RETURN_TYPE_NON_INLINE                              \
-    VECTORIZATION_SIMD_NON_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static void \
-        VECTORIZATION_VECTORCALL
-#else
-#define VECTORIZATION_SIMD_RETURN_TYPE_NON_INLINE \
-    VECTORIZATION_SIMD_NON_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static void
-#endif
-
-#if defined(NDEBUG) && !defined(__CUDACC__) && !defined(__HIPCC__)
-#define VECTORIZATION_SIMD_METHOD_NON_INLINE \
-    VECTORIZATION_SIMD_NON_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static VECTORIZATION_VECTORCALL
-#else
-#define VECTORIZATION_SIMD_METHOD_NON_INLINE \
-    VECTORIZATION_SIMD_NON_INLINE VECTORIZATION_CUDA_FUNCTION_TYPE static
 #endif
 
 #ifdef NDEBUG

@@ -1,5 +1,5 @@
-# Library/Vectorization — SIMD packet layer (headers under ., backends under backend/).
-# Include roots match CMake: "common/packet.h", "backend/cpu/avx/float/simd.h", etc.
+# Library/Vectorization — SIMD layer (headers under ., backends under backend/).
+# Include roots match CMake: "backend/simd.h", "backend/cpu/avx/float/simd.h", etc.
 load("@bazel_skylib//lib:selects.bzl", "selects")
 load(
     "//bazel:vectorization.bzl",

@@ -158,7 +158,7 @@ def vectorization_svml_hdrs_extra(svml_hdr):
     })
 
 def vectorization_defines():
-    """Preprocessor defines for SIMD tier, packet size, optional SVML, Memory/Logging."""
+    """Preprocessor defines for SIMD tier, optional SVML, Memory/Logging."""
     # Chain selects + lists (Starlark: cannot .append onto a select).
     return (
         quarisma_defines()
@@ -254,7 +254,6 @@ def vectorization_defines():
         + [
             "VECTORIZATION_HAS_MEMORY=1",
             "VECTORIZATION_HAS_LOGGING=1",
-            "VECTORIZATION_PACKET_SIZE=4",
         ]
     )
 

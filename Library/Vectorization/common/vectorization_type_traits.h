@@ -24,7 +24,6 @@
 #include <type_traits>
 
 #include "backend/simd.h"
-#include "backend/packet.h"
 
 // ---------------------------------------------------------------------------
 // is_packet
@@ -38,8 +37,9 @@ struct is_packet
     static constexpr bool value = false;
 };
 
+#if VECTORIZATION_VECTORIZED
 template <typename value_t>
-using scalar_type_simd_t = typename packet<value_t>::array_simd_t;
+using scalar_type_simd_t = typename simd<value_t>::simd_t;
 
 template <>
 struct is_packet<scalar_type_simd_t<double>>
@@ -55,7 +55,7 @@ struct is_packet<scalar_type_simd_t<float>>
 
 #if VECTORIZATION_HAS_AVX512 || VECTORIZATION_HAS_NEON || VECTORIZATION_HAS_SVE
 template <typename value_t>
-using scalar_type_mask_t = typename packet<value_t>::array_mask_t;
+using scalar_type_mask_t = typename simd<value_t>::mask_t;
 
 template <>
 struct is_packet<scalar_type_mask_t<double>>
@@ -69,6 +69,7 @@ struct is_packet<scalar_type_mask_t<float>>
     static constexpr bool value = true;
 };
 #endif  // AVX512 / NEON / SVE mask packet traits
+#endif  // VECTORIZATION_VECTORIZED
 
 }  // namespace vectorization
 
@@ -199,6 +200,7 @@ struct scalar_type<double, double>
     using value = double;
 };
 
+#if VECTORIZATION_VECTORIZED
 template <typename T>
 struct scalar_type<scalar_type_simd_t<double>, T>
 {
@@ -224,6 +226,7 @@ struct scalar_type<scalar_type_mask_t<float>, T>
     using value = float;
 };
 #endif  // AVX512 / NEON / SVE mask scalar_type
+#endif  // VECTORIZATION_VECTORIZED
 
 // tensor<value_t> — covers former vector<T> and matrix<T> since they alias tensor
 template <typename value_t, typename T>

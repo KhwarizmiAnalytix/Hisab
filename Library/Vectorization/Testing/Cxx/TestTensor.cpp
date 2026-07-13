@@ -40,7 +40,11 @@ void test_tensor()
     // -----------------------------------------------------------------------
     // SIMD metadata
     // -----------------------------------------------------------------------
-    EXPECT_EQ(tensor_t::length(), vectorization::packet<T>::length());
+#if VECTORIZATION_VECTORIZED
+    EXPECT_EQ(tensor_t::length(), static_cast<size_t>(simd<T>::size));
+#else
+    EXPECT_EQ(tensor_t::length(), 1u);
+#endif
 
     // -----------------------------------------------------------------------
     // Constructors

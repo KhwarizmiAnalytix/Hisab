@@ -1,10 +1,10 @@
 # Vectorization (`Library/Vectorization`)
 
-**SIMD** library: fixed-size **packets**, expression templates, and backends for **SSE**, **AVX**, **AVX2**, and **AVX-512** (`backend/sse`, `backend/avx`, `backend/avx512`).
+**SIMD** library: `simd<T>` register wrappers, expression templates, and backends for **SSE**, **AVX**, **AVX2**, and **AVX-512** (`backend/sse`, `backend/avx`, `backend/avx512`).
 
 ## Layout
 
-- `CMakeLists.txt` — `VECTORIZATION_CPU_BACKEND`, packet size, SVML, testing/benchmark/tooling.
+- `CMakeLists.txt` — `VECTORIZATION_CPU_BACKEND`, SVML, testing/benchmark/tooling.
 - `BUILD.bazel` — `//Library/Vectorization:Vectorization`, `VectorizationCxxTests`, `benchmark_simdunary`, `benchmark_simdbinaryfn`, `benchmark_simdbinaryop`, `benchmark_simdternaryhorizontal`.
 - `Cmake/` — SIMD capability checks (`utils.cmake`, etc.).
 - `Testing/` — generated test headers and C++ tests.
@@ -18,7 +18,6 @@
 | CMake variable | Default | Summary |
 |----------------|---------|---------|
 | `VECTORIZATION_CPU_BACKEND` | `avx2` | `no`, `sse`, `avx`, `avx2`, `avx512` — which backend tree is compiled |
-| `VECTORIZATION_PACKET_SIZE` | `4` | Lane count; must match ISA / kernels (max 256) |
 | `VECTORIZATION_CXX_STANDARD` | `20` | `11`, `14`, `17`, `20`, `23` |
 
 ### Feature and tooling
@@ -68,7 +67,7 @@ Compiler ISA flags come from `vectorization_simd_copts()` (MSVC `/arch:*` or GCC
 | `vectorization_enable_testing` | `false` → `//bazel:vectorization_disable_testing` — **skips** `VectorizationCxxTests` (`target_compatible_with`) |
 | `vectorization_enable_benchmark` | `false` → `//bazel:vectorization_disable_benchmark` — **skips** `benchmark_simdunary`, `benchmark_simdbinaryfn`, `benchmark_simdbinaryop`, `benchmark_simdternaryhorizontal` |
 
-Fixed in Starlark today: `VECTORIZATION_PACKET_SIZE=4`, `VECTORIZATION_HAS_MEMORY=1`, `VECTORIZATION_HAS_LOGGING=1` (full monorepo layout).
+Fixed in Starlark today: `VECTORIZATION_HAS_MEMORY=1`, `VECTORIZATION_HAS_LOGGING=1` (full monorepo layout).
 
 ### Library-only copts
 
@@ -76,4 +75,4 @@ Fixed in Starlark today: `VECTORIZATION_PACKET_SIZE=4`, `VECTORIZATION_HAS_MEMOR
 
 ### CMake-only
 
-`VECTORIZATION_PACKET_SIZE` and `VECTORIZATION_CXX_STANDARD` are not Bazel `--define`s (packet size and `c++20` are fixed in `vectorization.bzl`). LTO, coverage, sanitizers, cache/linker/tooling — **CMake only**. SVML autodetect is mirrored under Bazel via `WORKSPACE` + `svml_configure` (re-run when `CXX`/`CC` changes).
+`VECTORIZATION_CXX_STANDARD` is not a Bazel `--define` (`c++20` is fixed in `vectorization.bzl`). LTO, coverage, sanitizers, cache/linker/tooling — **CMake only**. SVML autodetect is mirrored under Bazel via `WORKSPACE` + `svml_configure` (re-run when `CXX`/`CC` changes).
