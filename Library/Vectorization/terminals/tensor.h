@@ -436,6 +436,31 @@ public:
         return *this;
     }
 
+    // Evaluate `expr` into *this on the given CUDA/HIP stream instead of the default
+    // stream, so independent GPU tensor ops (built on different streams) can overlap.
+    // `stream` is ignored for CPU tensors. The caller owns the stream and must
+    // synchronize it (or rely on a subsequent synchronous call such as
+    // to_host_vector(), which implicitly waits for all outstanding device work) before
+    // reading the result.
+    template <
+        typename E,
+        std::enable_if_t<vectorization::is_pure_expression<E>::value, bool> = true>
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor& assign_async(
+        E const& expr, gpu_stream_t stream)
+    {
+        evaluator::template run<E, tensor>(expr, *this, stream);
+        return *this;
+    }
+
+    // Same as operator=(scalar), but on the given CUDA/HIP stream. See assign_async().
+    template <typename T2, std::enable_if_t<std::is_fundamental<T2>::value, bool> = true>
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor& fill_async(
+        T2 value, gpu_stream_t stream) noexcept
+    {
+        evaluator::template fill<value_t, tensor>(static_cast<value_t>(value), *this, stream);
+        return *this;
+    }
+
     // -----------------------------------------------------------------------
     // Raw data / size
     // -----------------------------------------------------------------------
@@ -467,6 +492,31 @@ public:
 
     // Convenience overload — uploads from a std::vector.
     void copy_from_host(const std::vector<value_t>& src) { copy_from_host(src.data(), src.size()); }
+
+    // Same as copy_from_host(ptr, count), but issued on the given CUDA/HIP stream
+    // (cudaMemcpyAsync / hipMemcpyAsync) instead of blocking the calling thread. `ptr` must
+    // stay valid and unmodified until the stream completes; a subsequent synchronous call
+    // such as to_host_vector() (which implicitly waits for all outstanding device work) is
+    // a safe join point.
+    void copy_from_host(const value_t* ptr, size_type count, gpu_stream_t stream)
+    {
+        VECTORIZATION_CHECK_DEBUG(count == size(), "copy_from_host: element count mismatch");
+        data_t::allocator_t::copy(
+            ptr,
+            count,
+            data(),
+            device_enum::CPU,
+            device(),
+            0,
+            0,
+            static_cast<typename data_t::allocator_t::stream_t>(stream));
+    }
+
+    // Convenience overload — uploads from a std::vector on the given stream.
+    void copy_from_host(const std::vector<value_t>& src, gpu_stream_t stream)
+    {
+        copy_from_host(src.data(), src.size(), stream);
+    }
 
     // Download all elements to a host std::vector.  Blocks until complete.
     std::vector<value_t> to_host_vector() const

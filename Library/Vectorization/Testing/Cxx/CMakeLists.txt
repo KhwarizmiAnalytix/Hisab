@@ -203,30 +203,6 @@ add_test(NAME VectorizationCxxTests COMMAND VectorizationCxxTests
          WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
 )
 
-# Clang 20 + -O3 crashes (optimizer DSE / copy-propagation / instruction-selector)
-# on large functions in test files that heavily instantiate tensor<T> expression
-# templates: the LLVM inliner expands SIMD constructors into monolithic functions
-# that overflow internal data structures. -O0 avoids the ICE; correctness tests
-# don't need aggressive optimization (matching the TestTensorGpu.cpp precedent).
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  set_source_files_properties(
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensor.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorF2.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorch2D.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchBinaryFns.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchBinaryOps.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchElementwise.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchExpLog.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchGpu.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchHyperbolic.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchMultiDim.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchPowerRoot.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchRounding.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchTensor.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorLibTorchTrig.cpp"
-    PROPERTIES COMPILE_OPTIONS "-O0"
-  )
-endif()
 set_tests_properties(VectorizationCxxTests PROPERTIES TIMEOUT 120 LABELS "Vectorization;Unit")
 
 # ThinLTO + lld-link OOM: when project-wide IPO is on, INTERPROCEDURAL_OPTIMIZATION=OFF alone is
@@ -318,6 +294,19 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
     )
   endif()
 
+  # BenchmarkTensorGpu.cpp instantiates GPU expression-template kernels the same
+  # way TestTensorGpu.cpp does, so it inherits the same Clang+CUDA13
+  # texture-intrinsics incompatibility (see the TestTensorGpu.cpp exclusion
+  # above). Without LANGUAGE CUDA the tensor<T> device-dispatch branch in
+  # expressions_evaluator.h is silently compiled out (no __CUDACC__), which
+  # would make the benchmark dereference device pointers from host code.
+  if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND
+     (CMAKE_CUDA_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
+    list(FILTER bench_sources EXCLUDE REGEX ".*BenchmarkTensorGpu\\.cpp$")
+    message(STATUS "Vectorization: BenchmarkTensorGpu.cpp excluded — Clang CUDA compiler "
+                   "incompatibility (matches TestTensorGpu.cpp exclusion)")
+  endif()
+
   foreach(_bench_source IN ITEMS ${bench_sources})
     get_filename_component(bench_name "${_bench_source}" NAME_WE)
 
@@ -325,7 +314,30 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
     string(TOLOWER "${bench_suffix}" bench_suffix_lower)
     set(target_name "benchmark_${bench_suffix_lower}")
 
+    set(_bench_is_gpu FALSE)
+    if(bench_name STREQUAL "BenchmarkTensorGpu" AND VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
+      set(_bench_is_gpu TRUE)
+      # Processed by nvcc to instantiate GPU expression-template kernels
+      # (same treatment as TestTensorGpu.cpp in VectorizationCxxTests above).
+      set_source_files_properties("${_bench_source}" PROPERTIES LANGUAGE CUDA)
+    endif()
+
     add_executable(${target_name} "${_bench_source}")
+
+    if(_bench_is_gpu)
+      set_target_properties(${target_name} PROPERTIES
+        CUDA_STANDARD              ${VECTORIZATION_CXX_STANDARD}
+        CUDA_STANDARD_REQUIRED     ON
+        CUDA_ARCHITECTURES         "${VECTORIZATION_CUDA_ARCHITECTURES}"
+        CUDA_SEPARABLE_COMPILATION OFF
+      )
+      # nvcc (cudafe) #3328: fmt 12.x's __int128 carrier_uint path trips a
+      # device-code diagnostic even though it is host-only (same suppression
+      # as VectorizationCxxTests above).
+      target_compile_options(${target_name} PRIVATE
+        $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --diag_suppress=3328>
+      )
+    endif()
 
     target_link_libraries(
       ${target_name} PRIVATE Vectorization::benchmark Vectorization::benchmark_main

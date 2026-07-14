@@ -36,6 +36,14 @@ Do_not_include_expression_evaluator_directly_use_expression_it;
 
 namespace vectorization
 {
+#if !(VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP)
+// No GPU backend selected: expressions_evaluator_gpu.h (which defines gpu_stream_t for
+// CUDA/HIP builds) is not included above. Still declare the alias so the stream
+// parameter on expressions_evaluator::run/fill and the tensor-level *_async API compile
+// uniformly regardless of backend; it is inert (never dereferenced) in this configuration.
+using gpu_stream_t = void*;
+#endif
+
 namespace detail
 {
 // Applies f(integral_constant<size_t, I>) for I in [0, N) via a compile-time fold. Used to
@@ -59,8 +67,13 @@ VECTORIZATION_FUNCTION_ATTRIBUTE void unroll(F&& f) noexcept
 struct expressions_evaluator
 {
     //================================================================================================
+    // `stream` is forwarded to run_gpu when rhs is a CUDA/HIP tensor, launching the fused
+    // expression kernel on that stream instead of the default stream (nullptr = default
+    // stream, i.e. the previous, always-synchronous-with-everything-else behavior). Ignored
+    // for CPU destinations.
     template <typename E, typename T>
-    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE static void run(E const& expr, T& rhs)
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE static void run(
+        E const& expr, T& rhs, gpu_stream_t stream = nullptr)
 
         {
             VECTORIZATION_CHECK(
@@ -77,10 +90,12 @@ struct expressions_evaluator
                 vectorization::run_gpu(
                     static_cast<vectorization::remove_cvref_t<E> const&>(expr),
                     static_cast<value_t*>(rhs.begin()),
-                    rhs.size());
+                    rhs.size(),
+                    stream);
                 return;
             }
 #endif
+            (void)stream;
 
             auto*  data = rhs.begin();
             size_t n    = rhs.size();
@@ -169,10 +184,11 @@ struct expressions_evaluator
 
     //================================================================================================
     template <typename E, typename T>
-    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE static void run(E&& expr, T& rhs)
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE static void run(
+        E&& expr, T& rhs, gpu_stream_t stream = nullptr)
     {
         // Forwarding overload: avoid duplicating the hot loop implementation.
-        run(static_cast<vectorization::remove_cvref_t<E> const&>(expr), rhs);
+        run(static_cast<vectorization::remove_cvref_t<E> const&>(expr), rhs, stream);
     }
 
     //================================================================================================
@@ -202,8 +218,10 @@ struct expressions_evaluator
     }
 
     //================================================================================================
+    // `stream` is forwarded to fill_gpu when rhs is a CUDA/HIP tensor (see run() above).
     template <typename S, typename T>
-    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE static void fill(S value, T& rhs) noexcept
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE static void fill(
+        S value, T& rhs, gpu_stream_t stream = nullptr) noexcept
     {
 #if (VECTORIZATION_HAS_CUDA && defined(__CUDACC__)) || \
     (VECTORIZATION_HAS_HIP  && defined(__HIPCC__))
@@ -213,10 +231,12 @@ struct expressions_evaluator
             vectorization::fill_gpu(
                 static_cast<value_t*>(rhs.begin()),
                 static_cast<value_t>(value),
-                rhs.size());
+                rhs.size(),
+                stream);
             return;
         }
 #endif
+        (void)stream;
 
         auto*  data = rhs.begin();
         size_t i    = 0;

@@ -17,11 +17,20 @@
 #include <vector>
 
 // LibTorch — must come before any header that pulls <cassert> on MSVC
+#if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4996 4100)
+#endif
 #include <torch/torch.h>
+#if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 #include "terminals/tensor.h"
 
