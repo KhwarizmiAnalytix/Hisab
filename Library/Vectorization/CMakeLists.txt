@@ -156,6 +156,29 @@ if(NOT VECTORIZATION_SVE_VECTOR_BITS MATCHES "^(128|256|512)$")
   message(FATAL_ERROR "VECTORIZATION_SVE_VECTOR_BITS must be 128, 256, or 512")
 endif()
 
+# Manual-unroll factor for the vectorized hot loops in expressions_evaluator.h (run/accumulate/
+# hmin/hmax): how many independent simd<T> registers are processed per software loop iteration.
+# 1 (default) reproduces today's single-register-per-step codegen exactly. Values >1 give the
+# compiler N independent accumulator/temp chains per iteration instead of one, which hides the
+# latency of FMA/div/transcendental ops (and, for reductions, breaks the serial dependency chain
+# through the accumulator) at the cost of more registers and code size.
+set(VECTORIZATION_PACKET_SIZE "1"
+    CACHE STRING
+        "SIMD registers processed per unrolled loop iteration in the expression evaluator (1,2,3,...)"
+)
+if(NOT VECTORIZATION_PACKET_SIZE MATCHES "^[1-9][0-9]*$")
+  message(
+    FATAL_ERROR
+      "VECTORIZATION_PACKET_SIZE must be a positive decimal integer (got '${VECTORIZATION_PACKET_SIZE}')"
+  )
+endif()
+if(VECTORIZATION_PACKET_SIZE GREATER 16)
+  message(
+    FATAL_ERROR
+      "VECTORIZATION_PACKET_SIZE must be at most 16 (got '${VECTORIZATION_PACKET_SIZE}')"
+  )
+endif()
+
 # =============================================================================
 # SECTION 3 — CMake
 # module includes
@@ -296,6 +319,7 @@ if(VECTORIZATION_CPU_BACKEND MATCHES "^(sse|avx|avx2|avx512|neon|sve)$")
 else()
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_VECTORIZED=0)
 endif()
+list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_PACKET_SIZE=${VECTORIZATION_PACKET_SIZE})
 
 set(VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS "")
 list(APPEND VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS ${VECTORIZATION_COMPILE_DEFINITIONS})
@@ -748,6 +772,7 @@ message("")
 message("******** Vectorization module (CMake flags) ********")
 message("  CPU backend          : ${VECTORIZATION_CPU_BACKEND}")
 message("  GPU backend          : ${VECTORIZATION_GPU_BACKEND}")
+message("  Packet size          : ${VECTORIZATION_PACKET_SIZE}")
 message("  Svml                 : ${VECTORIZATION_ENABLE_SVML}")
 message("  Sleef                : ${VECTORIZATION_ENABLE_SLEEF}")
 message("  Accelerate (vForce)  : ${VECTORIZATION_ENABLE_ACCELERATE}")

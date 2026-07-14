@@ -72,6 +72,13 @@ public:
         const auto& rhs = expression_loader<rmv_lhs, vectorize, aligned>::evaluate(expr.rhs(), index);
         return EVALUATOR::functor(rhs);
     }
+
+    template <bool vectorize, bool aligned>
+    VECTORIZATION_FUNCTION_ATTRIBUTE static void prefetch(
+        unary_expression const& expr, size_t index) noexcept
+    {
+        expression_loader<rmv_lhs, vectorize, aligned>::prefetch(expr.rhs(), index);
+    }
 };
 
 /*!
@@ -157,6 +164,14 @@ public:
         const auto& lhs = expression_loader<rmv_lhs, vectorize, aligned>::evaluate(expr.lhs(), index);
         const auto& rhs = expression_loader<rmv_rhs, vectorize, aligned>::evaluate(expr.rhs(), index);
         return EVALUATOR::functor(lhs, rhs);
+    }
+
+    template <bool vectorize, bool aligned>
+    VECTORIZATION_FUNCTION_ATTRIBUTE static void prefetch(
+        binary_expression const& expr, size_t index) noexcept
+    {
+        expression_loader<rmv_lhs, vectorize, aligned>::prefetch(expr.lhs(), index);
+        expression_loader<rmv_rhs, vectorize, aligned>::prefetch(expr.rhs(), index);
     }
 };
 
@@ -248,6 +263,15 @@ public:
         const auto& mhs = expression_loader<rmv_mhs, vectorize, aligned>::evaluate(expr.mhs(), index);
         const auto& rhs = expression_loader<rmv_rhs, vectorize, aligned>::evaluate(expr.rhs(), index);
         return EVALUATOR::functor(lhs, mhs, rhs);
+    }
+
+    template <bool vectorize, bool aligned>
+    VECTORIZATION_FUNCTION_ATTRIBUTE static void prefetch(
+        trinary_expression const& expr, size_t index) noexcept
+    {
+        expression_loader<rmv_lhs, vectorize, aligned>::prefetch(expr.lhs(), index);
+        expression_loader<rmv_mhs, vectorize, aligned>::prefetch(expr.mhs(), index);
+        expression_loader<rmv_rhs, vectorize, aligned>::prefetch(expr.rhs(), index);
     }
 };
 }  // namespace vectorization

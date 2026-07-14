@@ -48,11 +48,6 @@ public:
 
                 auto const* ptr = expr.data() + index;
 
-                // Prefetch is a CPU-only hint; roll one SIMD register ahead of the load.
-#if !VECTORIZATION_ON_GPU_DEVICE
-                simd<value_t>::prefetch(ptr + simd<value_t>::size);
-#endif
-
 #if VECTORIZATION_VECTORIZED
                 if constexpr (aligned)
                     return simd<value_t>::load(ptr);
@@ -74,6 +69,28 @@ public:
         else if constexpr (std::is_fundamental<rmv_lhs>::value)
         {
             return expr;
+        }
+    }
+
+    // Prefetch is a CPU-only hint; issued by the caller one SIMD register ahead of the
+    // matching evaluate(expr, index) call instead of being buried inside it, so hot loops
+    // control prefetch distance explicitly (see expressions_evaluator.h). Mirrors evaluate()'s
+    // dispatch so every leaf of a composite expression tree still gets prefetched.
+    VECTORIZATION_FUNCTION_ATTRIBUTE static void prefetch(rmv_lhs const& expr, size_t index) noexcept
+    {
+        if constexpr (vectorization::is_base_expression<rmv_lhs>::value)
+        {
+            if constexpr (vectorize)
+            {
+#if !VECTORIZATION_ON_GPU_DEVICE
+                using value_t = typename scalar_type<rmv_lhs, rmv_lhs>::value;
+                simd<value_t>::prefetch(expr.data() + index + simd<value_t>::size);
+#endif
+            }
+        }
+        else if constexpr (vectorization::is_pure_expression<rmv_lhs>::value)
+        {
+            rmv_lhs::template prefetch<vectorize, aligned>(expr, index);
         }
     }
 };

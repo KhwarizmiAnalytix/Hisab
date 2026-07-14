@@ -147,6 +147,15 @@ inline constexpr std::size_t VECTORIZATION_ALIGNMENT = 16;
 inline constexpr std::size_t VECTORIZATION_ALIGNMENT = 64;
 #endif
 
+// Manual-unroll factor for the vectorized hot loops in expressions_evaluator.h; see
+// VECTORIZATION_PACKET_SIZE in the top-level CMakeLists.txt for the full rationale.
+// Falls back to 1 (no manual unroll — current single-register-per-step behavior) for any
+// translation unit built outside the CMake target that doesn't get the -D from the build system.
+#ifndef VECTORIZATION_PACKET_SIZE
+#define VECTORIZATION_PACKET_SIZE 1
+#endif
+static_assert(VECTORIZATION_PACKET_SIZE >= 1, "VECTORIZATION_PACKET_SIZE must be >= 1");
+
 // Logging uses fmt-style placeholders ({}) in format strings. Include logger.h first (unique to
 // Logging) so LOGGING_LOG is always defined. Include Logging's exception header explicitly:
 // link Logging::Logging before Memory::Memory on the Vectorization target (see CMakeLists.txt).
