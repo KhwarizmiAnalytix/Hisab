@@ -39,6 +39,15 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
   endif()
 endif()
 
+# LibTorch comparison tests require LibTorch; skip compiling them entirely
+# when VECTORIZATION_ENABLE_LIBTORCH is OFF instead of building empty
+# translation units guarded by #if VECTORIZATION_HAS_LIBTORCH.
+if(NOT VECTORIZATION_ENABLE_LIBTORCH)
+  list(FILTER test_sources EXCLUDE REGEX ".*TestTensorLibTorch.*\\.cpp$")
+  message(STATUS "VectorizationCxxTests: TestTensorLibTorch*.cpp excluded — "
+                 "VECTORIZATION_ENABLE_LIBTORCH is OFF")
+endif()
+
 add_executable(VectorizationCxxTests ${test_sources})
 
 target_compile_definitions(
@@ -66,7 +75,9 @@ target_link_libraries(
 # clang-cl.exe as a Windows host compiler — with plain clang.exe it fails
 # with "nvcc fatal : Host compiler targets unsupported OS" — regardless of
 # our own VECTORIZATION_GPU_BACKEND selection.
-if((VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND CMAKE_CUDA_COMPILER_ID STREQUAL "Clang")
+if(NOT VECTORIZATION_ENABLE_LIBTORCH)
+  message(STATUS "LibTorch disabled (pass 'torch' to setup.py, or -DVECTORIZATION_ENABLE_LIBTORCH=ON, to enable)")
+elseif((VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND CMAKE_CUDA_COMPILER_ID STREQUAL "Clang")
    OR (WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
        AND NOT CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC"))
   message(STATUS "LibTorch not probed — GNU-frontend Clang is incompatible with "
@@ -112,7 +123,7 @@ if(Torch_FOUND)
   endforeach()
   unset(_mkl_link_dirs)
   unset(_mkl_ver_libs)
-else()
+elseif(VECTORIZATION_ENABLE_LIBTORCH)
   message(STATUS "LibTorch not found — LibTorch tests skipped (add install dir to CMAKE_PREFIX_PATH to enable)")
 endif()
 
@@ -226,7 +237,7 @@ endif()
 
 message(STATUS "VectorizationCxxTests registered with CTest")
 
-# ============================================================================= 
+# =============================================================================
 # Individual benchmark
 # executables (same pattern as Library/Parallel/Testing/Cxx)
 # =============================================================================
@@ -305,6 +316,15 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
     list(FILTER bench_sources EXCLUDE REGEX ".*BenchmarkTensorGpu\\.cpp$")
     message(STATUS "Vectorization: BenchmarkTensorGpu.cpp excluded — Clang CUDA compiler "
                    "incompatibility (matches TestTensorGpu.cpp exclusion)")
+  endif()
+
+  # LibTorch comparison benchmark requires LibTorch; skip building it entirely
+  # (no benchmark_tensorlibtorch target at all) when disabled, instead of
+  # building a stub linked without torch.
+  if(NOT VECTORIZATION_ENABLE_LIBTORCH)
+    list(FILTER bench_sources EXCLUDE REGEX ".*BenchmarkTensorLibTorch\\.cpp$")
+    message(STATUS "Vectorization: BenchmarkTensorLibTorch.cpp excluded — "
+                   "VECTORIZATION_ENABLE_LIBTORCH is OFF")
   endif()
 
   foreach(_bench_source IN ITEMS ${bench_sources})

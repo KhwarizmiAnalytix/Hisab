@@ -107,8 +107,12 @@ VECTORIZATIONTEST(LibTorch, MultiDimDouble)
 #else
 
 VECTORIZATIONTEST(LibTorch, MultiDimFloat)
-{ END_TEST(); }
+{
+    END_TEST();
+}
 VECTORIZATIONTEST(LibTorch, MultiDimDouble)
-{ END_TEST(); }
+{
+    END_TEST();
+}
 
 #endif  // VECTORIZATION_HAS_LIBTORCH

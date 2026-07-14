@@ -29,6 +29,7 @@
 | `VECTORIZATION_ENABLE_EXAMPLES` | OFF | Examples |
 | `VECTORIZATION_ENABLE_GTEST` | ON | GoogleTest |
 | `VECTORIZATION_ENABLE_BENCHMARK` | ON | `BenchmarkSimd*.cpp` → `benchmark_simdunary`, `benchmark_simdbinaryfn`, `benchmark_simdbinaryop`, `benchmark_simdternaryhorizontal` |
+| `VECTORIZATION_ENABLE_LIBTORCH` | OFF | Probe `find_package(Torch)` (via `CMAKE_PREFIX_PATH`) and build the LibTorch comparison tests/benchmarks (`torch` flag in `setup.py`) |
 | `USE_NATIVE_ARCH` | OFF | `-march=native` (Clang/GCC) |
 | `VECTORIZATION_ENABLE_SVML` | *(probe)* | Set in `Cmake/utils.cmake`: ON if the SVML intrinsic probe **fails** for the active SIMD flags (link ThirdParty `svml`); OFF if the compiler already provides those intrinsics |
 | `VECTORIZATION_ENABLE_ICECC` / `VECTORIZATION_ENABLE_CACHE` / `VECTORIZATION_ENABLE_CLANGTIDY` / `VECTORIZATION_ENABLE_FIX` / `VECTORIZATION_ENABLE_IWYU` / `VECTORIZATION_ENABLE_SANITIZER` / `VECTORIZATION_ENABLE_SPELL` / `VECTORIZATION_ENABLE_VALGRIND` | see `CMakeLists.txt` | Tooling |

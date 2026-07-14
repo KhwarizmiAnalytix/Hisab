@@ -86,6 +86,11 @@ mark_as_advanced(VECTORIZATION_ENABLE_SLEEF)
 option(VECTORIZATION_ENABLE_ACCELERATE "Enable Apple Accelerate vForce on AArch64 NEON" OFF)
 mark_as_advanced(VECTORIZATION_ENABLE_ACCELERATE)
 
+# LibTorch (PyTorch C++ frontend) comparison tests/benchmarks — auto-probed via
+# CMAKE_PREFIX_PATH when enabled. Off by default so a plain configure never pays the
+# find_package(Torch) cost or fails when no LibTorch install is present.
+option(VECTORIZATION_ENABLE_LIBTORCH "Enable LibTorch (PyTorch C++) comparison tests and benchmarks" OFF)
+
 # Memory presence — detected from the CMake target; not a user option.
 if(TARGET Memory::Memory)
   set(_vec_has_memory 1)
@@ -777,6 +782,7 @@ message("  Svml                 : ${VECTORIZATION_ENABLE_SVML}")
 message("  Sleef                : ${VECTORIZATION_ENABLE_SLEEF}")
 message("  Accelerate (vForce)  : ${VECTORIZATION_ENABLE_ACCELERATE}")
 message("  Mkl VML              : ${VECTORIZATION_ENABLE_MKL}")
+message("  LibTorch             : ${VECTORIZATION_ENABLE_LIBTORCH}")
 message("  Memory (HAS)         : ${_vec_has_memory}")
 message("  Logging (HAS)        : ${_vec_has_logging}")
 message("  Cxx standard         : ${VECTORIZATION_CXX_STANDARD}")

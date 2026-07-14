@@ -34,6 +34,7 @@ Tools/code_coverage/package/util/__pycache__/utils.cpython-312.pyc
 Tools/code_coverage/profile/log/log.txt
 */Heavy Function Performance
 .lintbin/
+.venv*/
 
 # Bazel build artifacts
 bazel-*

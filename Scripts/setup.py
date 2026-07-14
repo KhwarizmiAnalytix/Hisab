@@ -634,6 +634,7 @@ class QuarismaFlags:
             "parallel_backend",
             "native",
             "sleef",
+            "torch",
         ]
         self.__description = [
             # Valid CMake options
@@ -672,6 +673,7 @@ class QuarismaFlags:
             "SMP backend: std, openmp, or tbb",
             "Clang/GCC: -march=native for max CPU tuning (binary may not run on older CPUs)",
             "enable SLEEF SIMD math library for NEON/SVE (AArch64; auto-enabled when Accelerate vForce is unavailable)",
+            "enable LibTorch (PyTorch C++) comparison tests/benchmarks in Vectorization (requires LibTorch in CMAKE_PREFIX_PATH)",
         ]
 
     def __build_cmake_flag(self):
@@ -695,6 +697,7 @@ class QuarismaFlags:
             "enzyme": "CORE_ENABLE_ENZYME",
             "parallel_backend": "PARALLEL_BACKEND",
             "sleef": "VECTORIZATION_ENABLE_SLEEF",
+            "torch": "VECTORIZATION_ENABLE_LIBTORCH",
             # Non-CMake flags (for internal use, not passed to CMake)
             "mkl_threading": "MKL_THREADING",
             "mkl_link": "MKL_LINK",
@@ -730,6 +733,7 @@ class QuarismaFlags:
                 "coverage": self.OFF,  # Coverage analysis is optional
                 "icecc": self.OFF,  # Distributed compilation is site-specific
                 "native": self.OFF,  # Portable binaries by default
+                "torch": self.OFF,  # LibTorch install is not guaranteed to be present
                 "examples": self.ON,
                 "linker": "default",  # Keep auto-detect in "all" mode
                 "profiler_type": "KINETO",

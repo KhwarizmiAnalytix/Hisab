@@ -445,8 +445,7 @@ public:
     template <
         typename E,
         std::enable_if_t<vectorization::is_pure_expression<E>::value, bool> = true>
-    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor& assign_async(
-        E const& expr, gpu_stream_t stream)
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor& assign_async(E const& expr, gpu_stream_t stream)
     {
         evaluator::template run<E, tensor>(expr, *this, stream);
         return *this;
@@ -454,8 +453,7 @@ public:
 
     // Same as operator=(scalar), but on the given CUDA/HIP stream. See assign_async().
     template <typename T2, std::enable_if_t<std::is_fundamental<T2>::value, bool> = true>
-    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor& fill_async(
-        T2 value, gpu_stream_t stream) noexcept
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor& fill_async(T2 value, gpu_stream_t stream) noexcept
     {
         evaluator::template fill<value_t, tensor>(static_cast<value_t>(value), *this, stream);
         return *this;

@@ -73,7 +73,8 @@ bool has_cuda_device()
 }  // namespace
 
 // Explicit sizes: 1K (latency-bound), 64K, 1M, 4M (throughput-bound).
-#define BENCH_SIZES ->Arg(1 << 10)->Arg(1 << 16)->Arg(1 << 20)->Arg(1 << 22)->Unit(benchmark::kMicrosecond)
+#define BENCH_SIZES \
+    ->Arg(1 << 10)->Arg(1 << 16)->Arg(1 << 20)->Arg(1 << 22)->Unit(benchmark::kMicrosecond)
 
 // ---------------------------------------------------------------------------
 // Fill: a = scalar
@@ -178,8 +179,8 @@ static void GPU_Add_Transfer(benchmark::State& state)
     {
         a.copy_from_host(ha);
         b.copy_from_host(hb);
-        c            = a + b;
-        auto result  = c.to_host_vector();
+        c           = a + b;
+        auto result = c.to_host_vector();
         benchmark::DoNotOptimize(result);
     }
     state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(n));
