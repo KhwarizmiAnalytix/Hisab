@@ -6,9 +6,9 @@
  * CPU vs GPU tensor throughput benchmarks.
  *
  * Compares vectorization::tensor<T> expression evaluation on the CPU SIMD
- * backend against the CUDA GPU backend (run_gpu / fill_gpu), across problem
- * sizes ranging from latency-bound (1K elements) to throughput-bound (4M
- * elements).
+ * backend against the GPU backend (run_gpu / fill_gpu, CUDA or HIP), across
+ * problem sizes ranging from latency-bound (1K elements) to throughput-bound
+ * (4M elements).
  *
  * Naming / methodology:
  *   CPU_<Op><T>            — host SIMD path (expressions_evaluator::run on CPU)
@@ -30,20 +30,33 @@
  * "time" is the device executing, not the host CPU, so process-CPU time would
  * understate the cost and make CPU/GPU numbers non-comparable.
  *
- * This file is compiled as a CUDA translation unit (CMake sets LANGUAGE CUDA
- * on it, mirroring TestTensorGpu.cpp) so run_gpu/fill_gpu are instantiated.
- * It degrades to a benchmark stub (no registered benchmarks) when
- * VECTORIZATION_HAS_CUDA is off, or when the CUDA compiler is Clang (see the
- * exclusion note in Testing/Cxx/CMakeLists.txt).
+ * This file is compiled as a CUDA or HIP translation unit (CMake sets
+ * LANGUAGE CUDA/HIP on it, mirroring TestTensorGpu.cpp) so run_gpu/fill_gpu
+ * are instantiated. It degrades to a benchmark stub (no registered
+ * benchmarks) when neither VECTORIZATION_HAS_CUDA nor VECTORIZATION_HAS_HIP
+ * is on, or when the CUDA compiler is Clang (see the exclusion note in
+ * Testing/Cxx/CMakeLists.txt).
  *
  * Target: benchmark_tensorgpu
  */
 
 #include <benchmark/benchmark.h>
 
-#if VECTORIZATION_HAS_CUDA
+#if VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP
 
+#if VECTORIZATION_HAS_CUDA
 #include <cuda_runtime.h>
+using gpu_error_t                 = cudaError_t;
+constexpr gpu_error_t kGpuSuccess = cudaSuccess;
+#define gpuGetDeviceCount cudaGetDeviceCount
+#define gpuDeviceSynchronize cudaDeviceSynchronize
+#elif VECTORIZATION_HAS_HIP
+#include <hip/hip_runtime.h>
+using gpu_error_t                 = hipError_t;
+constexpr gpu_error_t kGpuSuccess = hipSuccess;
+#define gpuGetDeviceCount hipGetDeviceCount
+#define gpuDeviceSynchronize hipDeviceSynchronize
+#endif
 
 #include <cstddef>
 #include <random>
@@ -64,10 +77,10 @@ void fill_uniform(std::vector<T>& v, T lo, T hi, unsigned seed)
         x = dist(gen);
 }
 
-bool has_cuda_device()
+bool has_gpu_device()
 {
     int ndev = 0;
-    return cudaGetDeviceCount(&ndev) == cudaSuccess && ndev > 0;
+    return gpuGetDeviceCount(&ndev) == kGpuSuccess && ndev > 0;
 }
 
 }  // namespace
@@ -94,9 +107,9 @@ BENCHMARK_TEMPLATE(CPU_Fill, double) BENCH_SIZES;
 template <typename T>
 static void GPU_Fill(benchmark::State& state)
 {
-    if (!has_cuda_device())
+    if (!has_gpu_device())
     {
-        state.SkipWithError("No CUDA device");
+        state.SkipWithError("No GPU device");
         return;
     }
     const size_t n = static_cast<size_t>(state.range(0));
@@ -104,7 +117,7 @@ static void GPU_Fill(benchmark::State& state)
     for (auto _ : state)
     {
         a = static_cast<T>(3.14159);
-        cudaDeviceSynchronize();
+        gpuDeviceSynchronize();
     }
     state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(n));
 }
@@ -136,9 +149,9 @@ BENCHMARK_TEMPLATE(CPU_Add, double) BENCH_SIZES;
 template <typename T>
 static void GPU_Add(benchmark::State& state)
 {
-    if (!has_cuda_device())
+    if (!has_gpu_device())
     {
-        state.SkipWithError("No CUDA device");
+        state.SkipWithError("No GPU device");
         return;
     }
     const size_t   n = static_cast<size_t>(state.range(0));
@@ -153,7 +166,7 @@ static void GPU_Add(benchmark::State& state)
     for (auto _ : state)
     {
         c = a + b;
-        cudaDeviceSynchronize();
+        gpuDeviceSynchronize();
     }
     state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(n));
 }
@@ -163,9 +176,9 @@ BENCHMARK_TEMPLATE(GPU_Add, double) BENCH_SIZES;
 template <typename T>
 static void GPU_Add_Transfer(benchmark::State& state)
 {
-    if (!has_cuda_device())
+    if (!has_gpu_device())
     {
-        state.SkipWithError("No CUDA device");
+        state.SkipWithError("No GPU device");
         return;
     }
     const size_t   n = static_cast<size_t>(state.range(0));
@@ -213,9 +226,9 @@ BENCHMARK_TEMPLATE(CPU_Compound, double) BENCH_SIZES;
 template <typename T>
 static void GPU_Compound(benchmark::State& state)
 {
-    if (!has_cuda_device())
+    if (!has_gpu_device())
     {
-        state.SkipWithError("No CUDA device");
+        state.SkipWithError("No GPU device");
         return;
     }
     const size_t   n = static_cast<size_t>(state.range(0));
@@ -230,7 +243,7 @@ static void GPU_Compound(benchmark::State& state)
     for (auto _ : state)
     {
         c = ::exp(a) + ::sqrt(b);
-        cudaDeviceSynchronize();
+        gpuDeviceSynchronize();
     }
     state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(n));
 }
@@ -243,9 +256,9 @@ BENCHMARK_TEMPLATE(GPU_Compound, double) BENCH_SIZES;
 template <typename T>
 static void GPU_TensorAllocFree(benchmark::State& state)
 {
-    if (!has_cuda_device())
+    if (!has_gpu_device())
     {
-        state.SkipWithError("No CUDA device");
+        state.SkipWithError("No GPU device");
         return;
     }
     const size_t n = static_cast<size_t>(state.range(0));
@@ -261,6 +274,6 @@ BENCHMARK_TEMPLATE(GPU_TensorAllocFree, double) BENCH_SIZES;
 
 #undef BENCH_SIZES
 
-#endif  // VECTORIZATION_HAS_CUDA
+#endif  // VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP
 
 BENCHMARK_MAIN();

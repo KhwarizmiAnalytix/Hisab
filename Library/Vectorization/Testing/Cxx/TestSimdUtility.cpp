@@ -20,9 +20,9 @@
 #include <utility>
 #include <vector>
 
-#include "common/vectorization_macros.h"
 #include "backend/simd.h"
 #include "common/scalar_helper_functions.h"
+#include "common/vectorization_macros.h"
 
 namespace vectorization
 {
@@ -32,8 +32,7 @@ namespace simd_tests
 inline constexpr int kRandomTrials = 256;
 
 template <typename value_t, std::size_t N>
-void fill_uniform(
-    std::array<value_t, N>& xs, std::mt19937& gen, value_t lo, value_t hi)
+void fill_uniform(std::array<value_t, N>& xs, std::mt19937& gen, value_t lo, value_t hi)
 {
     std::uniform_real_distribution<value_t> dist(lo, hi);
     for (auto& x : xs)
@@ -44,9 +43,8 @@ template <typename value_t, std::size_t N>
 void fill_open_unit_interval(std::array<value_t, N>& xs, std::mt19937& gen)
 {
     std::uniform_real_distribution<value_t> dist(0, 1);
-    value_t const margin = std::max(
-        std::numeric_limits<value_t>::epsilon() * value_t(1000),
-        value_t(1e-7));
+    value_t const                           margin =
+        std::max(std::numeric_limits<value_t>::epsilon() * value_t(1000), value_t(1e-7));
     for (auto& x : xs)
     {
         x = dist(gen);
@@ -55,8 +53,7 @@ void fill_open_unit_interval(std::array<value_t, N>& xs, std::mt19937& gen)
 }
 
 template <typename value_t, std::size_t N>
-void fill_binary_div_safe(
-    std::array<value_t, N>& xs, std::array<value_t, N>& ys, std::mt19937& gen)
+void fill_binary_div_safe(std::array<value_t, N>& xs, std::array<value_t, N>& ys, std::mt19937& gen)
 {
     std::uniform_real_distribution<value_t> wide(
         static_cast<value_t>(-50), static_cast<value_t>(50));
@@ -65,7 +62,7 @@ void fill_binary_div_safe(
         std::numeric_limits<value_t>::epsilon() * static_cast<value_t>(1024));
     for (std::size_t i = 0; i < N; ++i)
     {
-        xs[i] = wide(gen);
+        xs[i]     = wide(gen);
         value_t y = wide(gen);
         while (std::fabs(y) < guard)
             y = wide(gen);
@@ -74,15 +71,14 @@ void fill_binary_div_safe(
 }
 
 template <typename value_t, typename FillXs, typename SimdOp, typename RefOp>
-void unary_random_vs_std(
-    value_t tolerance, FillXs&& fill_xs, SimdOp&& simd_op, RefOp&& ref_op)
+void unary_random_vs_std(value_t tolerance, FillXs&& fill_xs, SimdOp&& simd_op, RefOp&& ref_op)
 {
     constexpr std::size_t n = simd<value_t>::size;
     using simd_t            = typename simd<value_t>::simd_t;
 
     std::array<value_t, n> xs{};
     std::array<value_t, n> out{};
-    std::mt19937 gen(5489u);
+    std::mt19937           gen(5489u);
 
     for (int trial = 0; trial < kRandomTrials; ++trial)
     {
@@ -100,8 +96,7 @@ void unary_random_vs_std(
 }
 
 template <typename value_t, typename FillXY, typename SimdOp, typename RefOp>
-void binary_random_vs_std(
-    value_t tolerance, FillXY&& fill_xy, SimdOp&& simd_op, RefOp&& ref_op)
+void binary_random_vs_std(value_t tolerance, FillXY&& fill_xy, SimdOp&& simd_op, RefOp&& ref_op)
 {
     constexpr std::size_t n = simd<value_t>::size;
     using simd_t            = typename simd<value_t>::simd_t;
@@ -109,7 +104,7 @@ void binary_random_vs_std(
     std::array<value_t, n> xs{};
     std::array<value_t, n> ys{};
     std::array<value_t, n> out{};
-    std::mt19937 gen(5489u);
+    std::mt19937           gen(5489u);
 
     for (int trial = 0; trial < kRandomTrials; ++trial)
     {
@@ -129,6 +124,14 @@ void binary_random_vs_std(
 
 namespace detail
 {
+// These detection idioms key off hardware vector types (__m256/__m128/etc.)
+// via decltype/void_t; GCC/Clang ignore the vector_size attribute for
+// template-argument matching purposes and warn about it, which is expected.
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-attributes"
+#endif
+
 template <typename V, typename = void>
 struct simd_has_half_fma : std::false_type
 {
@@ -150,9 +153,8 @@ struct simd_has_loadu_half : std::false_type
 };
 
 template <typename V>
-struct simd_has_loadu_half<
-    V,
-    std::void_t<decltype(simd<V>::loadu_half(std::declval<V const*>()))>> : std::true_type
+struct simd_has_loadu_half<V, std::void_t<decltype(simd<V>::loadu_half(std::declval<V const*>()))>>
+    : std::true_type
 {
 };
 
@@ -164,8 +166,8 @@ struct simd_has_predux_downto4 : std::false_type
 template <typename V>
 struct simd_has_predux_downto4<
     V,
-    std::void_t<decltype(simd<V>::predux_downto4(std::declval<typename simd<V>::simd_t>()))>> :
-    std::true_type
+    std::void_t<decltype(simd<V>::predux_downto4(std::declval<typename simd<V>::simd_t>()))>>
+    : std::true_type
 {
 };
 
@@ -175,9 +177,8 @@ struct simd_has_ploadquad : std::false_type
 };
 
 template <typename V>
-struct simd_has_ploadquad<
-    V,
-    std::void_t<decltype(simd<V>::ploadquad(std::declval<V const*>()))>> : std::true_type
+struct simd_has_ploadquad<V, std::void_t<decltype(simd<V>::ploadquad(std::declval<V const*>()))>>
+    : std::true_type
 {
 };
 
@@ -192,6 +193,10 @@ struct simd_has_half_gather<
     std::void_t<decltype(simd<V>::gather_half(std::declval<V const*>(), int{}))>> : std::true_type
 {
 };
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 }  // namespace detail
 
 template <typename value_t, typename FillXYZ, typename SimdFma, typename RefFma>
@@ -205,7 +210,7 @@ void ternary_random_vs_std(
     std::array<value_t, n> ys{};
     std::array<value_t, n> zs{};
     std::array<value_t, n> out{};
-    std::mt19937 gen(5489u);
+    std::mt19937           gen(5489u);
 
     for (int trial = 0; trial < kRandomTrials; ++trial)
     {
@@ -226,36 +231,32 @@ void ternary_random_vs_std(
 
 template <typename value_t, typename SimdUnary, typename RefUnary>
 void unary_uniform_vs_std(
-    value_t tolerance,
-    value_t lo,
-    value_t hi,
-    SimdUnary&& simd_op,
-    RefUnary&& ref_op)
+    value_t tolerance, value_t lo, value_t hi, SimdUnary&& simd_op, RefUnary&& ref_op)
 {
     unary_random_vs_std<value_t>(
         tolerance,
-        [=](std::array<value_t, simd<value_t>::size>& xs, std::mt19937& gen) {
-            fill_uniform(xs, gen, lo, hi);
-        },
+        [=](std::array<value_t, simd<value_t>::size>& xs, std::mt19937& gen)
+        { fill_uniform(xs, gen, lo, hi); },
         std::forward<SimdUnary>(simd_op),
         std::forward<RefUnary>(ref_op));
 }
 
 template <typename value_t, typename SimdBinary, typename RefBinary>
 void binary_uniform_boxes_vs_std(
-    value_t tolerance,
-    value_t lo1,
-    value_t hi1,
-    value_t lo2,
-    value_t hi2,
+    value_t      tolerance,
+    value_t      lo1,
+    value_t      hi1,
+    value_t      lo2,
+    value_t      hi2,
     SimdBinary&& simd_op,
-    RefBinary&& ref_op)
+    RefBinary&&  ref_op)
 {
     binary_random_vs_std<value_t>(
         tolerance,
         [=](std::array<value_t, simd<value_t>::size>& xs,
             std::array<value_t, simd<value_t>::size>& ys,
-            std::mt19937& gen) {
+            std::mt19937&                             gen)
+        {
             fill_uniform(xs, gen, lo1, hi1);
             fill_uniform(ys, gen, lo2, hi2);
         },
@@ -289,14 +290,13 @@ void test_fma(value_t tolerance)
         [](std::array<value_t, simd<value_t>::size>& xs,
            std::array<value_t, simd<value_t>::size>& ys,
            std::array<value_t, simd<value_t>::size>& zs,
-           std::mt19937& gen) {
+           std::mt19937&                             gen)
+        {
             fill_uniform(xs, gen, static_cast<value_t>(-4), static_cast<value_t>(4));
             fill_uniform(ys, gen, static_cast<value_t>(-4), static_cast<value_t>(4));
             fill_uniform(zs, gen, static_cast<value_t>(-4), static_cast<value_t>(4));
         },
-        [](simd_t a, simd_t b, simd_t c, simd_t& r) {
-            r = simd<value_t>::fma(a, b, c);
-        },
+        [](simd_t a, simd_t b, simd_t c, simd_t& r) { r = simd<value_t>::fma(a, b, c); },
         [](value_t x, value_t y, value_t z) { return std::fma(x, y, z); });
 }
 
@@ -312,7 +312,7 @@ void test_if_else(value_t tolerance)
     std::array<value_t, n> zs{};
     std::array<value_t, n> ws{};
     std::array<value_t, n> out{};
-    std::mt19937 gen(31415u);
+    std::mt19937           gen(31415u);
 
     for (int trial = 0; trial < kRandomTrials; ++trial)
     {
@@ -358,7 +358,7 @@ void test_prefetch_copy_ploadquad_broadcast(value_t /* tolerance */)
 
     if constexpr (detail::simd_has_ploadquad<value_t>::value)
     {
-        simd_t q = simd<value_t>::ploadquad(block);
+        simd_t                 q = simd<value_t>::ploadquad(block);
         std::array<value_t, n> qout{};
         simd<value_t>::storeu(q, qout.data());
         if constexpr (sizeof(value_t) == sizeof(float) && n == 8)
@@ -410,7 +410,7 @@ void test_prefetch_copy_ploadquad_broadcast(value_t /* tolerance */)
         EXPECT_EQ(lane3[i], four[3]);
     }
 
-    simd_t s = simd<value_t>::set(static_cast<value_t>(1.375));
+    simd_t                 s = simd<value_t>::set(static_cast<value_t>(1.375));
     std::array<value_t, n> sbuf{};
     simd<value_t>::storeu(s, sbuf.data());
     for (std::size_t i = 0; i < n; ++i)
@@ -423,7 +423,7 @@ void test_ptranspose_square(value_t tolerance)
     constexpr int N = static_cast<int>(simd<value_t>::size);
     using simd_t    = typename simd<value_t>::simd_t;
 
-    simd_t rows[N];
+    simd_t  rows[N];
     value_t before[N][N];
     for (int i = 0; i < N; ++i)
     {
@@ -446,14 +446,15 @@ void test_ptranspose_square(value_t tolerance)
 template <typename value_t>
 void test_simd_half_fma_and_add(value_t tolerance)
 {
-    if constexpr (detail::simd_has_half_fma<value_t>::value && detail::simd_has_loadu_half<value_t>::value)
+    if constexpr (
+        detail::simd_has_half_fma<value_t>::value && detail::simd_has_loadu_half<value_t>::value)
     {
-        int const nh = simd<value_t>::half_size;
-        std::vector<value_t> buf(64, static_cast<value_t>(0));
+        int const               nh = simd<value_t>::half_size;
+        std::vector<value_t>    buf(64, static_cast<value_t>(0));
         std::array<value_t, 16> xs{};
         std::array<value_t, 16> ys{};
         std::array<value_t, 16> zs{};
-        std::mt19937 gen(60287u);
+        std::mt19937            gen(60287u);
 
         for (int trial = 0; trial < kRandomTrials; ++trial)
         {
@@ -464,7 +465,7 @@ void test_simd_half_fma_and_add(value_t tolerance)
             auto vx  = simd<value_t>::loadu_half(xs.data());
             auto vy  = simd<value_t>::loadu_half(ys.data());
             auto acc = simd<value_t>::loadu_half(zs.data());
-            acc = simd<value_t>::fma(vx, vy, acc);
+            acc      = simd<value_t>::fma(vx, vy, acc);
 
             std::fill(buf.begin(), buf.end(), static_cast<value_t>(0));
             simd<value_t>::scatter(acc, 1, buf.data());
@@ -474,8 +475,8 @@ void test_simd_half_fma_and_add(value_t tolerance)
                 EXPECT_LE(std::fabs(buf[i] - ref), tolerance);
             }
 
-            auto sx = simd<value_t>::loadu_half(xs.data());
-            auto sy = simd<value_t>::loadu_half(ys.data());
+            auto                                sx  = simd<value_t>::loadu_half(xs.data());
+            auto                                sy  = simd<value_t>::loadu_half(ys.data());
             typename simd<value_t>::simd_half_t sum = simd<value_t>::add(sx, sy);
             std::fill(buf.begin(), buf.end(), static_cast<value_t>(0));
             simd<value_t>::scatter(sum, 1, buf.data());
@@ -497,12 +498,12 @@ void test_predux_downto4_maybe(value_t tolerance)
         using simd_t            = typename simd<value_t>::simd_t;
 
         std::array<value_t, n> xs{};
-        std::mt19937 gen(1618u);
+        std::mt19937           gen(1618u);
         for (int trial = 0; trial < kRandomTrials; ++trial)
         {
             fill_uniform(xs, gen, static_cast<value_t>(-5), static_cast<value_t>(5));
             simd_t a = simd<value_t>::loadu(xs.data());
-            auto h = simd<value_t>::predux_downto4(a);
+            auto   h = simd<value_t>::predux_downto4(a);
 
             std::vector<value_t> buf(32, static_cast<value_t>(0));
             simd<value_t>::scatter(h, 1, buf.data());
@@ -536,7 +537,7 @@ void test_gather_half_stride(value_t /* tolerance */)
 {
     if constexpr (detail::simd_has_half_gather<value_t>::value)
     {
-        int const nh = simd<value_t>::half_size;
+        int const            nh = simd<value_t>::half_size;
         std::vector<value_t> mem(32);
         std::vector<value_t> buf(32, static_cast<value_t>(0));
         for (std::size_t i = 0; i < mem.size(); ++i)
@@ -585,8 +586,7 @@ void test_gather_scatter_and_masks(value_t)
         x[i] = static_cast<value_t>(-5) + static_cast<value_t>(i) * dt;
 
     auto const aligned_start = allocator_t::first_aligned(x, n);
-    auto const aligned_end =
-        allocator_t::last_aligned(aligned_start, n, simd<value_t>::size);
+    auto const aligned_end   = allocator_t::last_aligned(aligned_start, n, simd<value_t>::size);
 
     for (std::size_t i = aligned_start; i < aligned_end; i += simd<value_t>::size)
     {

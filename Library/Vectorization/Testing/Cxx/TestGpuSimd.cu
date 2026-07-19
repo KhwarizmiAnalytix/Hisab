@@ -3,40 +3,87 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * Unit tests for the GPU CUDA simd<T> backend.
+ * Unit tests for the GPU simd<T> backend (CUDA or HIP).
  *
- * Each test group launches a CUDA kernel that exercises a category of simd<T>
+ * Each test group launches a device kernel that exercises a category of simd<T>
  * ops on-device, copies the results back to the host, and compares against
- * std:: math.  Tests are skipped automatically when no CUDA device is present
+ * std:: math.  Tests are skipped automatically when no GPU device is present
  * at runtime.  BackendProperties is a compile-time / host-side check that does
  * not require a GPU.
  */
 
+#if VECTORIZATION_HAS_CUDA
+// nvcc (cicc) forces fmt's FMT_USE_INT128 fallback (fmt::detail::uint128, no
+// operator~) even for host-only formatting of long double. #include-d here
+// (rather than force-included via -include on the nvcc command line) because
+// nvcc reapplies -include when it recompiles its own flattened cudafe1.cpp
+// intermediate, which would duplicate all of <fmt> with no header guards
+// left and corrupt the parser's namespace state. See cuda_fmt_int128_fix.h.
+#include "cuda_fmt_int128_fix.h"
+#endif
+
 #include "VectorizationTest.h"
 
-#if VECTORIZATION_HAS_CUDA
+#if VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP
 
+#if VECTORIZATION_HAS_CUDA
 #include <cuda_runtime.h>
+#elif VECTORIZATION_HAS_HIP
+#include <hip/hip_runtime.h>
+#endif
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
 
+#if VECTORIZATION_HAS_CUDA
 #include "backend/gpu/cuda/double/simd.h"
 #include "backend/gpu/cuda/float/simd.h"
+#elif VECTORIZATION_HAS_HIP
+#include "backend/gpu/hip/double/simd.h"
+#include "backend/gpu/hip/float/simd.h"
+#endif
+
+// ---- CUDA/HIP runtime API aliases -----------------------------------------
+// The two runtimes expose an identical API surface under different names;
+// aliasing lets the kernels/tests below be written once for both backends.
+#if VECTORIZATION_HAS_CUDA
+using gpu_error_t                          = cudaError_t;
+constexpr gpu_error_t          kGpuSuccess = cudaSuccess;
+#define gpuMalloc cudaMalloc
+#define gpuFree cudaFree
+#define gpuMemcpy cudaMemcpy
+#define gpuMemcpyHostToDevice cudaMemcpyHostToDevice
+#define gpuMemcpyDeviceToHost cudaMemcpyDeviceToHost
+#define gpuGetErrorString cudaGetErrorString
+#define gpuDeviceSynchronize cudaDeviceSynchronize
+#define gpuGetDeviceCount cudaGetDeviceCount
+#elif VECTORIZATION_HAS_HIP
+using gpu_error_t                          = hipError_t;
+constexpr gpu_error_t          kGpuSuccess = hipSuccess;
+#define gpuMalloc hipMalloc
+#define gpuFree hipFree
+#define gpuMemcpy hipMemcpy
+#define gpuMemcpyHostToDevice hipMemcpyHostToDevice
+#define gpuMemcpyDeviceToHost hipMemcpyDeviceToHost
+#define gpuGetErrorString hipGetErrorString
+#define gpuDeviceSynchronize hipDeviceSynchronize
+#define gpuGetDeviceCount hipGetDeviceCount
+#endif
 
 namespace
 {
 
-// ---- CUDA error helper ---------------------------------------------------
+// ---- CUDA/HIP error helper -------------------------------------------------
 
 #define GPU_CHECK(expr)                                                    \
     do                                                                     \
     {                                                                      \
-        cudaError_t _e = (expr);                                           \
-        if (_e != cudaSuccess)                                             \
-            ADD_FAILURE() << "CUDA error: " << cudaGetErrorString(_e)     \
+        gpu_error_t _e = (expr);                                           \
+        if (_e != kGpuSuccess)                                             \
+            ADD_FAILURE() << "GPU error: " << gpuGetErrorString(_e)       \
                           << " at " << __FILE__ << ":" << __LINE__;       \
     } while (0)
 
@@ -50,19 +97,19 @@ struct DevBuf
 
     explicit DevBuf(size_t count) : n(count)
     {
-        GPU_CHECK(cudaMalloc(&d, n * sizeof(T)));
+        GPU_CHECK(gpuMalloc(&d, n * sizeof(T)));
     }
-    ~DevBuf() { cudaFree(d); }
+    ~DevBuf() { gpuFree(d); }
 
     void upload(const std::vector<T>& h) const
     {
-        GPU_CHECK(cudaMemcpy(d, h.data(), n * sizeof(T), cudaMemcpyHostToDevice));
+        GPU_CHECK(gpuMemcpy(d, h.data(), n * sizeof(T), gpuMemcpyHostToDevice));
     }
 
     std::vector<T> download() const
     {
         std::vector<T> h(n);
-        GPU_CHECK(cudaMemcpy(h.data(), d, n * sizeof(T), cudaMemcpyDeviceToHost));
+        GPU_CHECK(gpuMemcpy(h.data(), d, n * sizeof(T), gpuMemcpyDeviceToHost));
         return h;
     }
 };
@@ -184,7 +231,7 @@ void run_gpu_simd_test()
         DevBuf<T> r_add(N), r_sub(N), r_mul(N), r_div(N), r_fma(N);
         k_arith<<<kGrid, kBlock>>>(da.d, db.d,
                                     r_add.d, r_sub.d, r_mul.d, r_div.d, r_fma.d, N);
-        GPU_CHECK(cudaDeviceSynchronize());
+        GPU_CHECK(gpuDeviceSynchronize());
 
         auto vadd = r_add.download(), vsub = r_sub.download(),
              vmul = r_mul.download(), vdiv = r_div.download(), vfma = r_fma.download();
@@ -205,7 +252,7 @@ void run_gpu_simd_test()
         DevBuf<T> r_sqrt(N), r_sqr(N), r_fabs(N), r_neg(N), r_ceil(N), r_floor(N), r_trunc(N);
         k_unary<<<kGrid, kBlock>>>(
             da.d, r_sqrt.d, r_sqr.d, r_fabs.d, r_neg.d, r_ceil.d, r_floor.d, r_trunc.d, N);
-        GPU_CHECK(cudaDeviceSynchronize());
+        GPU_CHECK(gpuDeviceSynchronize());
 
         auto vsqrt  = r_sqrt.download(),  vsqr   = r_sqr.download();
         auto vfabs  = r_fabs.download(),  vneg   = r_neg.download();
@@ -230,7 +277,7 @@ void run_gpu_simd_test()
         DevBuf<T> r_exp(N), r_log(N), r_exp2(N), r_log2(N), r_cbrt(N);
         k_explog<<<kGrid, kBlock>>>(
             da.d, r_exp.d, r_log.d, r_exp2.d, r_log2.d, r_cbrt.d, N);
-        GPU_CHECK(cudaDeviceSynchronize());
+        GPU_CHECK(gpuDeviceSynchronize());
 
         auto vexp  = r_exp.download(),  vlog  = r_log.download();
         auto vexp2 = r_exp2.download(), vlog2 = r_log2.download();
@@ -251,7 +298,7 @@ void run_gpu_simd_test()
     {
         DevBuf<T> r_sin(N), r_cos(N), r_tanh(N);
         k_trig<<<kGrid, kBlock>>>(da.d, r_sin.d, r_cos.d, r_tanh.d, N);
-        GPU_CHECK(cudaDeviceSynchronize());
+        GPU_CHECK(gpuDeviceSynchronize());
 
         auto vsin = r_sin.download(), vcos = r_cos.download(), vtanh = r_tanh.download();
 
@@ -269,7 +316,7 @@ void run_gpu_simd_test()
         DevBuf<T> r_lt(N), r_eq(N), r_acc(N), r_hmin(N), r_hmax(N);
         k_cmp_reduce<<<kGrid, kBlock>>>(
             da.d, db.d, r_lt.d, r_eq.d, r_acc.d, r_hmin.d, r_hmax.d, N);
-        GPU_CHECK(cudaDeviceSynchronize());
+        GPU_CHECK(gpuDeviceSynchronize());
 
         auto vlt   = r_lt.download(),   veq   = r_eq.download();
         auto vacc  = r_acc.download(),  vhmin = r_hmin.download(), vhmax = r_hmax.download();
@@ -305,9 +352,9 @@ VECTORIZATIONTEST(GpuSimd, BackendProperties)
 VECTORIZATIONTEST(GpuSimd, ArithmeticAndMathFloat)
 {
     int ndev = 0;
-    cudaGetDeviceCount(&ndev);
+    gpuGetDeviceCount(&ndev);
     if (ndev == 0)
-        GTEST_SKIP() << "No CUDA device — skipping GpuSimd float test";
+        GTEST_SKIP() << "No GPU device — skipping GpuSimd float test";
     run_gpu_simd_test<float>();
     END_TEST();
 }
@@ -315,17 +362,17 @@ VECTORIZATIONTEST(GpuSimd, ArithmeticAndMathFloat)
 VECTORIZATIONTEST(GpuSimd, ArithmeticAndMathDouble)
 {
     int ndev = 0;
-    cudaGetDeviceCount(&ndev);
+    gpuGetDeviceCount(&ndev);
     if (ndev == 0)
-        GTEST_SKIP() << "No CUDA device — skipping GpuSimd double test";
+        GTEST_SKIP() << "No GPU device — skipping GpuSimd double test";
     run_gpu_simd_test<double>();
     END_TEST();
 }
 
-#else  // !VECTORIZATION_HAS_CUDA
+#else  // !(VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP)
 
 VECTORIZATIONTEST(GpuSimd, BackendProperties)       { END_TEST(); }
 VECTORIZATIONTEST(GpuSimd, ArithmeticAndMathFloat)  { END_TEST(); }
 VECTORIZATIONTEST(GpuSimd, ArithmeticAndMathDouble) { END_TEST(); }
 
-#endif  // VECTORIZATION_HAS_CUDA
+#endif  // VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP

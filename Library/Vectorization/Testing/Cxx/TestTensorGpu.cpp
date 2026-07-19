@@ -3,25 +3,47 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * Integration tests for tensor expression evaluation on the GPU backend.
+ * Integration tests for tensor expression evaluation on the GPU backend
+ * (CUDA or HIP).
  *
  * Tensors are allocated with device_enum::CUDA so that
  * expressions_evaluator::run dispatches to run_gpu (a grid of one thread per
- * element).  Results are copied back to the host via tensor::to_host_vector()
- * and compared against std:: math.
+ * element). device_enum::CUDA is used as the generic "active GPU backend" tag
+ * here regardless of whether the build is actually CUDA or HIP — the evaluator
+ * dispatch (expressions_evaluator.h) treats device_enum::CUDA and
+ * device_enum::HIP identically. Results are copied back to the host via
+ * tensor::to_host_vector() and compared against std:: math.
  *
- * Tests are skipped automatically when no CUDA device is present at runtime.
+ * Tests are skipped automatically when no GPU device is present at runtime.
  *
- * This file is compiled as a CUDA translation unit (CMake sets LANGUAGE CUDA
- * on it) so that GPU expression-template kernels are instantiated correctly,
- * while remaining a plain .cpp source that needs no __CUDACC__ guards.
+ * This file is compiled as a CUDA or HIP translation unit (CMake sets
+ * LANGUAGE CUDA/HIP on it) so that GPU expression-template kernels are
+ * instantiated correctly, while remaining a plain .cpp source that needs no
+ * __CUDACC__/__HIPCC__ guards.
  */
+
+#if VECTORIZATION_HAS_CUDA
+// nvcc (cicc) forces fmt's FMT_USE_INT128 fallback (fmt::detail::uint128, no
+// operator~) even for host-only formatting of long double. #include-d here
+// (rather than force-included via -include on the nvcc command line) because
+// nvcc reapplies -include when it recompiles its own flattened cudafe1.cpp
+// intermediate, which would duplicate all of <fmt> with no header guards
+// left and corrupt the parser's namespace state. See cuda_fmt_int128_fix.h.
+#include "cuda_fmt_int128_fix.h"
+#endif
 
 #include "VectorizationTest.h"
 
-#if VECTORIZATION_HAS_CUDA
+#if VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP
 
+#if VECTORIZATION_HAS_CUDA
 #include <cuda_runtime.h>
+#define gpuGetDeviceCount cudaGetDeviceCount
+#elif VECTORIZATION_HAS_HIP
+#include <hip/hip_runtime.h>
+#define gpuGetDeviceCount hipGetDeviceCount
+#endif
+
 #include <cmath>
 #include <cstddef>
 #include <string>
@@ -45,8 +67,7 @@ void expect_near_rel(const std::vector<T>& got, const std::vector<T>& ref, doubl
     {
         double err     = std::fabs(static_cast<double>(got[i]) - static_cast<double>(ref[i]));
         double allowed = tol * std::max(1.0, std::fabs(static_cast<double>(ref[i]))) + tol;
-        EXPECT_LE(err, allowed)
-            << " at i=" << i << "  got=" << got[i] << "  ref=" << ref[i];
+        EXPECT_LE(err, allowed) << " at i=" << i << "  got=" << got[i] << "  ref=" << ref[i];
     }
 }
 
@@ -61,7 +82,7 @@ void make_inputs(std::vector<T>& ha, std::vector<T>& hb, size_t N)
     {
         double t = static_cast<double>(i) / static_cast<double>(N);
         ha[i]    = static_cast<T>(t * 4.0 - 2.0);  // [-2, 2)
-        hb[i]    = static_cast<T>(t + 0.5);          // [0.5, 1.5)
+        hb[i]    = static_cast<T>(t + 0.5);        // [0.5, 1.5)
     }
 }
 
@@ -99,9 +120,9 @@ void test_binary_ops()
 
     // Add
     {
-        tensor<T>      gc(N, device_enum::CUDA);
-        gc = ga + gb;  // → run_gpu(add_expr, gc.data(), N)
-        auto result = gc.to_host_vector();
+        tensor<T> gc(N, device_enum::CUDA);
+        gc                    = ga + gb;  // → run_gpu(add_expr, gc.data(), N)
+        auto           result = gc.to_host_vector();
         std::vector<T> ref(N);
         for (size_t i = 0; i < N; ++i)
             ref[i] = ha[i] + hb[i];
@@ -110,9 +131,9 @@ void test_binary_ops()
 
     // Subtract
     {
-        tensor<T>      gc(N, device_enum::CUDA);
-        gc = ga - gb;
-        auto result = gc.to_host_vector();
+        tensor<T> gc(N, device_enum::CUDA);
+        gc                    = ga - gb;
+        auto           result = gc.to_host_vector();
         std::vector<T> ref(N);
         for (size_t i = 0; i < N; ++i)
             ref[i] = ha[i] - hb[i];
@@ -121,9 +142,9 @@ void test_binary_ops()
 
     // Element-wise multiply (operator* is element-wise for 1-D tensors)
     {
-        tensor<T>      gc(N, device_enum::CUDA);
-        gc = ga * gb;
-        auto result = gc.to_host_vector();
+        tensor<T> gc(N, device_enum::CUDA);
+        gc                    = ga * gb;
+        auto           result = gc.to_host_vector();
         std::vector<T> ref(N);
         for (size_t i = 0; i < N; ++i)
             ref[i] = ha[i] * hb[i];
@@ -132,9 +153,9 @@ void test_binary_ops()
 
     // Scalar + tensor
     {
-        tensor<T>      gc(N, device_enum::CUDA);
-        gc = ga + static_cast<T>(1);
-        auto result = gc.to_host_vector();
+        tensor<T> gc(N, device_enum::CUDA);
+        gc                    = ga + static_cast<T>(1);
+        auto           result = gc.to_host_vector();
         std::vector<T> ref(N);
         for (size_t i = 0; i < N; ++i)
             ref[i] = ha[i] + static_cast<T>(1);
@@ -159,9 +180,9 @@ void test_unary_math()
 
     // exp
     {
-        tensor<T>      gc(N, device_enum::CUDA);
-        gc = ::exp(ga);
-        auto result = gc.to_host_vector();
+        tensor<T> gc(N, device_enum::CUDA);
+        gc                    = ::exp(ga);
+        auto           result = gc.to_host_vector();
         std::vector<T> ref(N);
         for (size_t i = 0; i < N; ++i)
             ref[i] = std::exp(ha[i]);
@@ -170,9 +191,9 @@ void test_unary_math()
 
     // sqrt
     {
-        tensor<T>      gc(N, device_enum::CUDA);
-        gc = ::sqrt(ga);
-        auto result = gc.to_host_vector();
+        tensor<T> gc(N, device_enum::CUDA);
+        gc                    = ::sqrt(ga);
+        auto           result = gc.to_host_vector();
         std::vector<T> ref(N);
         for (size_t i = 0; i < N; ++i)
             ref[i] = std::sqrt(ha[i]);
@@ -181,9 +202,9 @@ void test_unary_math()
 
     // log
     {
-        tensor<T>      gc(N, device_enum::CUDA);
-        gc = ::log(ga);
-        auto result = gc.to_host_vector();
+        tensor<T> gc(N, device_enum::CUDA);
+        gc                    = ::log(ga);
+        auto           result = gc.to_host_vector();
         std::vector<T> ref(N);
         for (size_t i = 0; i < N; ++i)
             ref[i] = std::log(ha[i]);
@@ -199,7 +220,7 @@ void test_unary_math()
         ga_neg.copy_from_host(ha_neg);
 
         tensor<T> gc(N, device_enum::CUDA);
-        gc = ::fabs(ga_neg);
+        gc          = ::fabs(ga_neg);
         auto result = gc.to_host_vector();
         for (size_t i = 0; i < N; ++i)
             EXPECT_NEAR(result[i], ha[i], static_cast<T>(tol)) << " at i=" << i;
@@ -210,7 +231,7 @@ void test_unary_math()
 template <typename T>
 void test_compound()
 {
-    constexpr size_t N   = 1024;
+    constexpr size_t N = 1024;
     // exp amplifies float errors; use a looser tolerance
     constexpr double tol = std::is_same_v<T, float> ? 5e-4 : 1e-10;
 
@@ -219,7 +240,7 @@ void test_compound()
     {
         double t = static_cast<double>(i) / static_cast<double>(N);
         ha[i]    = static_cast<T>(t * 2.0 - 1.0);  // [-1, 1)
-        hb[i]    = static_cast<T>(t + 0.5);          // [0.5, 1.5)
+        hb[i]    = static_cast<T>(t + 0.5);        // [0.5, 1.5)
     }
 
     tensor<T> ga(N, device_enum::CUDA), gb(N, device_enum::CUDA);
@@ -229,8 +250,8 @@ void test_compound()
     // exp(a) + sqrt(b): fused into one run_gpu call
     {
         tensor<T> gc(N, device_enum::CUDA);
-        gc = ::exp(ga) + ::sqrt(gb);
-        auto result = gc.to_host_vector();
+        gc                    = ::exp(ga) + ::sqrt(gb);
+        auto           result = gc.to_host_vector();
         std::vector<T> ref(N);
         for (size_t i = 0; i < N; ++i)
             ref[i] = std::exp(ha[i]) + std::sqrt(hb[i]);
@@ -239,10 +260,10 @@ void test_compound()
 
     // (a + b) * scalar: mixed tensor and scalar operands
     {
-        constexpr T    kAlpha = static_cast<T>(1.5);
-        tensor<T>      gc(N, device_enum::CUDA);
-        gc = (ga + gb) * kAlpha;
-        auto result = gc.to_host_vector();
+        constexpr T kAlpha = static_cast<T>(1.5);
+        tensor<T>   gc(N, device_enum::CUDA);
+        gc                    = (ga + gb) * kAlpha;
+        auto           result = gc.to_host_vector();
         std::vector<T> ref(N);
         for (size_t i = 0; i < N; ++i)
             ref[i] = (ha[i] + hb[i]) * kAlpha;
@@ -258,16 +279,18 @@ void test_compound()
 VECTORIZATIONTEST(TensorGpu, FillFloat)
 {
     int ndev = 0;
-    cudaGetDeviceCount(&ndev);
-    if (ndev == 0) GTEST_SKIP() << "No CUDA device";
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
     test_fill<float>();
     END_TEST();
 }
 VECTORIZATIONTEST(TensorGpu, FillDouble)
 {
     int ndev = 0;
-    cudaGetDeviceCount(&ndev);
-    if (ndev == 0) GTEST_SKIP() << "No CUDA device";
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
     test_fill<double>();
     END_TEST();
 }
@@ -278,16 +301,18 @@ VECTORIZATIONTEST(TensorGpu, FillDouble)
 VECTORIZATIONTEST(TensorGpu, BinaryOpsFloat)
 {
     int ndev = 0;
-    cudaGetDeviceCount(&ndev);
-    if (ndev == 0) GTEST_SKIP() << "No CUDA device";
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
     test_binary_ops<float>();
     END_TEST();
 }
 VECTORIZATIONTEST(TensorGpu, BinaryOpsDouble)
 {
     int ndev = 0;
-    cudaGetDeviceCount(&ndev);
-    if (ndev == 0) GTEST_SKIP() << "No CUDA device";
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
     test_binary_ops<double>();
     END_TEST();
 }
@@ -298,16 +323,18 @@ VECTORIZATIONTEST(TensorGpu, BinaryOpsDouble)
 VECTORIZATIONTEST(TensorGpu, UnaryMathFloat)
 {
     int ndev = 0;
-    cudaGetDeviceCount(&ndev);
-    if (ndev == 0) GTEST_SKIP() << "No CUDA device";
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
     test_unary_math<float>();
     END_TEST();
 }
 VECTORIZATIONTEST(TensorGpu, UnaryMathDouble)
 {
     int ndev = 0;
-    cudaGetDeviceCount(&ndev);
-    if (ndev == 0) GTEST_SKIP() << "No CUDA device";
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
     test_unary_math<double>();
     END_TEST();
 }
@@ -318,29 +345,63 @@ VECTORIZATIONTEST(TensorGpu, UnaryMathDouble)
 VECTORIZATIONTEST(TensorGpu, CompoundFloat)
 {
     int ndev = 0;
-    cudaGetDeviceCount(&ndev);
-    if (ndev == 0) GTEST_SKIP() << "No CUDA device";
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
     test_compound<float>();
     END_TEST();
 }
 VECTORIZATIONTEST(TensorGpu, CompoundDouble)
 {
     int ndev = 0;
-    cudaGetDeviceCount(&ndev);
-    if (ndev == 0) GTEST_SKIP() << "No CUDA device";
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
     test_compound<double>();
     END_TEST();
 }
 
-#else  // !VECTORIZATION_HAS_CUDA
+#else  // !(VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP)
 
-VECTORIZATIONTEST(TensorGpu, FillFloat)               { GTEST_SKIP() << "Test disabled: VECTORIZATION_HAS_CUDA is OFF"; END_TEST(); }
-VECTORIZATIONTEST(TensorGpu, FillDouble)              { GTEST_SKIP() << "Test disabled: VECTORIZATION_HAS_CUDA is OFF"; END_TEST(); }
-VECTORIZATIONTEST(TensorGpu, BinaryOpsFloat)          { GTEST_SKIP() << "Test disabled: VECTORIZATION_HAS_CUDA is OFF"; END_TEST(); }
-VECTORIZATIONTEST(TensorGpu, BinaryOpsDouble)         { GTEST_SKIP() << "Test disabled: VECTORIZATION_HAS_CUDA is OFF"; END_TEST(); }
-VECTORIZATIONTEST(TensorGpu, UnaryMathFloat)          { GTEST_SKIP() << "Test disabled: VECTORIZATION_HAS_CUDA is OFF"; END_TEST(); }
-VECTORIZATIONTEST(TensorGpu, UnaryMathDouble)         { GTEST_SKIP() << "Test disabled: VECTORIZATION_HAS_CUDA is OFF"; END_TEST(); }
-VECTORIZATIONTEST(TensorGpu, CompoundFloat)           { GTEST_SKIP() << "Test disabled: VECTORIZATION_HAS_CUDA is OFF"; END_TEST(); }
-VECTORIZATIONTEST(TensorGpu, CompoundDouble)          { GTEST_SKIP() << "Test disabled: VECTORIZATION_HAS_CUDA is OFF"; END_TEST(); }
+VECTORIZATIONTEST(TensorGpu, FillFloat)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP) is enabled";
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, FillDouble)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP) is enabled";
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, BinaryOpsFloat)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP) is enabled";
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, BinaryOpsDouble)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP) is enabled";
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, UnaryMathFloat)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP) is enabled";
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, UnaryMathDouble)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP) is enabled";
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, CompoundFloat)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP) is enabled";
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, CompoundDouble)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP) is enabled";
+    END_TEST();
+}
 
-#endif  // VECTORIZATION_HAS_CUDA
+#endif  // VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP

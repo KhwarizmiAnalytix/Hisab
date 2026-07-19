@@ -39,6 +39,31 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
   endif()
 endif()
 
+# Include HIP simd unit tests when the HIP GPU backend is active.
+# TestGpuSimd.cu / TestTensorGpu.cpp are shared CUDA+HIP sources (guarded by
+# VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP at the C++ level); here we
+# just need hipcc to actually process them. CMake's HIP language only
+# auto-detects sources by the .hip extension, so LANGUAGE HIP must be set
+# explicitly on both — including the .cu file, whose extension would
+# otherwise route it to the (unloaded) CUDA language rules.
+if(VECTORIZATION_GPU_BACKEND STREQUAL "hip")
+  file(GLOB_RECURSE hip_test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cu")
+  list(APPEND test_sources ${hip_test_sources})
+  foreach(_hip_test_src IN LISTS hip_test_sources)
+    set_source_files_properties("${_hip_test_src}" PROPERTIES LANGUAGE HIP)
+  endforeach()
+  unset(_hip_test_src)
+
+  # TestTensorGpu.cpp: processed by hipcc to instantiate GPU expression-template kernels.
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
+    set_source_files_properties(
+      "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp"
+      PROPERTIES LANGUAGE HIP
+    )
+  endif()
+  message(STATUS "VectorizationCxxTests: HIP-specific tests (Test*.cu, TestTensorGpu.cpp) included")
+endif()
+
 # LibTorch comparison tests require LibTorch; skip compiling them entirely
 # when VECTORIZATION_ENABLE_LIBTORCH is OFF instead of building empty
 # translation units guarded by #if VECTORIZATION_HAS_LIBTORCH.
@@ -200,14 +225,44 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND
       )
     endif()
   else()
-    # nvcc (cudafe) #3328: fmt 12.x uses unsigned __int128 as carrier_uint for
-    # long double formatting; nvcc rejects ~(inc-1) on __int128 in device-code
-    # parsing even though the fmt path is host-only.  Suppress the diagnostic.
-    target_compile_options(VectorizationCxxTests PRIVATE
-      $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --diag_suppress=3328>
+    # nvcc (cicc) forces fmt's FMT_USE_INT128 fallback (fmt::detail::uint128,
+    # no operator~) even for host-only formatting of long double — see
+    # cuda_fmt_int128_fix.h for the full explanation. The ADL shim is
+    # #include-d directly at the top of TestGpuSimd.cu / TestTensorGpu.cpp
+    # rather than force-included via -include here: nvcc reapplies generic
+    # compiler options (including -include) when it recompiles its own
+    # flattened cudafe1.cpp intermediate, which would re-inject all of <fmt>
+    # a second time with no header guards left (they were already consumed
+    # during the first preprocessing pass) and corrupt the parser's
+    # namespace state — see the git history of this file for the resulting
+    # cascade of "conflicting declaration" / "different namespace" errors.
+
+    # GCC 13 + -O3 crashes (internal compiler error in try_forward_edges,
+    # cfgcleanup.cc) while recompiling nvcc's generated host stub for the
+    # heavily-templated gpu_eval_kernel/tensor.h expression-template
+    # instantiations, and cicc (nvcc's device-code frontend) has also been
+    # observed to segfault compiling the same GPU test sources at -O3 —
+    # both are the compiler backends choking on the generated code volume
+    # (the flattened intermediate translation units run 150k+ lines across
+    # 5 GPU architectures), not a source-level bug. -O1 is sufficient for
+    # integration tests and avoids both crashes.
+    set_source_files_properties(
+      "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/TestGpuSimd.cu"
+      PROPERTIES COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:CUDA>:-O1>"
     )
   endif()
   message(STATUS "VectorizationCxxTests: CUDA simd tests enabled (archs: ${VECTORIZATION_CUDA_ARCHITECTURES})")
+endif()
+
+# HIP-specific properties for the test executable when any HIP source is present
+# (.cu files or .cpp files compiled as HIP via LANGUAGE HIP).
+if(VECTORIZATION_GPU_BACKEND STREQUAL "hip" AND
+   (hip_test_sources OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp"))
+  set_target_properties(VectorizationCxxTests PROPERTIES
+    HIP_ARCHITECTURES "${VECTORIZATION_GPU_ARCHITECTURES}"
+  )
+  message(STATUS "VectorizationCxxTests: HIP simd tests enabled (archs: ${VECTORIZATION_GPU_ARCHITECTURES})")
 endif()
 
 add_test(NAME VectorizationCxxTests COMMAND VectorizationCxxTests
@@ -335,27 +390,39 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
     set(target_name "benchmark_${bench_suffix_lower}")
 
     set(_bench_is_gpu FALSE)
+    set(_bench_gpu_lang "")
     if(bench_name STREQUAL "BenchmarkTensorGpu" AND VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
       set(_bench_is_gpu TRUE)
+      set(_bench_gpu_lang "CUDA")
       # Processed by nvcc to instantiate GPU expression-template kernels
       # (same treatment as TestTensorGpu.cpp in VectorizationCxxTests above).
       set_source_files_properties("${_bench_source}" PROPERTIES LANGUAGE CUDA)
+    elseif(bench_name STREQUAL "BenchmarkTensorGpu" AND VECTORIZATION_GPU_BACKEND STREQUAL "hip")
+      set(_bench_is_gpu TRUE)
+      set(_bench_gpu_lang "HIP")
+      # Processed by hipcc to instantiate GPU expression-template kernels
+      # (same treatment as TestTensorGpu.cpp in VectorizationCxxTests above).
+      set_source_files_properties("${_bench_source}" PROPERTIES LANGUAGE HIP)
     endif()
 
     add_executable(${target_name} "${_bench_source}")
 
-    if(_bench_is_gpu)
+    if(_bench_is_gpu AND _bench_gpu_lang STREQUAL "CUDA")
       set_target_properties(${target_name} PROPERTIES
         CUDA_STANDARD              ${VECTORIZATION_CXX_STANDARD}
         CUDA_STANDARD_REQUIRED     ON
         CUDA_ARCHITECTURES         "${VECTORIZATION_CUDA_ARCHITECTURES}"
         CUDA_SEPARABLE_COMPILATION OFF
       )
-      # nvcc (cudafe) #3328: fmt 12.x's __int128 carrier_uint path trips a
-      # device-code diagnostic even though it is host-only (same suppression
-      # as VectorizationCxxTests above).
+      # nvcc (cicc) fmt int128 fallback issue — same ADL shim as
+      # VectorizationCxxTests above (see cuda_fmt_int128_fix.h).
       target_compile_options(${target_name} PRIVATE
-        $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe --diag_suppress=3328>
+        $<$<COMPILE_LANGUAGE:CUDA>:-include${CMAKE_CURRENT_SOURCE_DIR}/cuda_fmt_int128_fix.h>
+      )
+    elseif(_bench_is_gpu AND _bench_gpu_lang STREQUAL "HIP")
+      set_target_properties(${target_name} PROPERTIES
+        HIP_STANDARD      ${VECTORIZATION_CXX_STANDARD}
+        HIP_ARCHITECTURES "${VECTORIZATION_GPU_ARCHITECTURES}"
       )
     endif()
 

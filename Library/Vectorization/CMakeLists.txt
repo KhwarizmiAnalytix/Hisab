@@ -27,11 +27,19 @@ cmake_minimum_required(VERSION 3.16)
 # VECTORIZATION_GPU_BACKEND selects the GPU backend (one of: none, cuda, hip).
 # Both flags are independent — you can combine any CPU backend with any GPU backend.
 # =============================================================================
-# Host-aware default CPU SIMD: x86_64 -> avx2, aarch64 -> neon.
+# Host-aware default CPU SIMD: x86 family -> avx2, aarch64 -> neon, anything else -> no.
+# Matches the _quarisma_vec_is_x86 / _quarisma_vec_is_aarch64 processor regexes in
+# Cmake/utils.cmake, so the default we pick here is exactly what that module will go on to
+# validate. Falling back to "no" (rather than guessing "avx2") on unrecognized processors
+# (ppc64le, riscv64, wasm32, 32-bit arm, s390x, ...) avoids a spurious "unsupported, falling
+# back to no" WARNING later at the auto-downgrade check below.
 string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _quarisma_vec_proc_default)
-set(_quarisma_vectorization_cpu_default "avx2")
-if(_quarisma_vec_proc_default MATCHES "^(aarch64|arm64)$")
+if(_quarisma_vec_proc_default MATCHES "^(x86_64|amd64|i686|i386)$")
+  set(_quarisma_vectorization_cpu_default "avx2")
+elseif(_quarisma_vec_proc_default MATCHES "^(aarch64|arm64)$")
   set(_quarisma_vectorization_cpu_default "neon")
+else()
+  set(_quarisma_vectorization_cpu_default "no")
 endif()
 
 set(VECTORIZATION_CPU_BACKEND "${_quarisma_vectorization_cpu_default}"
@@ -573,6 +581,21 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "hip")
   if(NOT DEFINED CMAKE_HIP_COMPILER AND DEFINED ENV{ROCM_PATH})
     set(CMAKE_HIP_COMPILER "$ENV{ROCM_PATH}/bin/hipcc" CACHE FILEPATH "HIP compiler")
   endif()
+
+  # Locate the HIP package (hip::host / hip::device imported targets) so the
+  # Vectorization target links correctly even when built standalone
+  # (VECTORIZATION_HAS_MEMORY=0), instead of silently depending on
+  # Memory::Memory (Library/Memory/Cmake/hip.cmake) to pull HIP in transitively.
+  find_package(hip QUIET)
+  if(NOT hip_FOUND)
+    message(WARNING
+      "Vectorization: VECTORIZATION_GPU_BACKEND=hip but the HIP package was not found "
+      "via find_package(hip). Set ROCM_PATH or CMAKE_PREFIX_PATH to your ROCm install. "
+      "Falling back to enable_language(HIP) alone; linking may fail unless the HIP "
+      "runtime is otherwise reachable (e.g. transitively via Memory::Memory)."
+    )
+  endif()
+
   enable_language(HIP)
 
   set(VECTORIZATION_GPU_ARCHITECTURES "gfx900;gfx906;gfx908;gfx90a;gfx1030;gfx1100"
@@ -584,6 +607,12 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "hip")
   target_compile_options(Vectorization PRIVATE
     $<$<COMPILE_LANGUAGE:HIP>:-ffast-math>
   )
+  if(TARGET hip::host)
+    target_link_libraries(Vectorization PUBLIC hip::host)
+  endif()
+  if(TARGET hip::device)
+    target_link_libraries(Vectorization PUBLIC hip::device)
+  endif()
   message(STATUS "Vectorization: HIP GPU backend enabled (archs: ${VECTORIZATION_GPU_ARCHITECTURES})")
 endif()
 

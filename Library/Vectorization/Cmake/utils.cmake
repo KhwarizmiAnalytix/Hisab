@@ -238,7 +238,14 @@ if(NOT INTERN_BUILD_MOBILE)
   )
   if(TMP_COMPILER_SUPPORTS_FMA_EXTENSIONS)
     message("--Current compiler supports fma extension.")
-    set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+    # Only apply -mfma when an x86 CPU SIMD backend is actually selected. Unlike the
+    # SSE/AVX/AVX2/AVX512 probes above (each gated on its own VECTORIZATION_CPU_BACKEND
+    # match), this check used to run unconditionally and would set VECTORIZATION_COMPILER_FLAGS
+    # even for VECTORIZATION_CPU_BACKEND=no, leaking -mfma into every consumer (including
+    # CUDA/HIP device-compiler host passes, which don't use CPU SIMD at all).
+    if(NOT VECTORIZATION_CPU_BACKEND STREQUAL "no")
+      set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+    endif()
   endif()
   cmake_pop_check_state()
 

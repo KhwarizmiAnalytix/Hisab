@@ -83,14 +83,17 @@ struct expressions_evaluator
             rhs.size());
 
 #if (VECTORIZATION_HAS_CUDA && defined(__CUDACC__)) || (VECTORIZATION_HAS_HIP && defined(__HIPCC__))
-        if (rhs.device() == device_enum::CUDA)
+        if (rhs.device() == device_enum::CUDA || rhs.device() == device_enum::HIP)
         {
             using value_t = typename vectorization::scalar_type<T, T>::value;
-            vectorization::run_gpu(
-                static_cast<vectorization::remove_cvref_t<E> const&>(expr),
-                static_cast<value_t*>(rhs.begin()),
-                rhs.size(),
-                stream);
+            // `expr` is already `E const&` here (this overload only ever deduces E without
+            // cv/ref — the E&& forwarding overload below strips those before recursing into
+            // this one), so no remove_cvref_t cast is needed. Passing `expr` directly (rather
+            // than through a `static_cast<remove_cvref_t<E> const&>`) avoids an nvcc codegen
+            // bug where the alias-template-sugared cast type leaks into the mangled name of
+            // the gpu_eval_kernel<E, T> instantiation inside run_gpu, producing an
+            // unparseable host stub (`remove_cvref_t<...>` used as a declarator).
+            vectorization::run_gpu(expr, static_cast<value_t*>(rhs.begin()), rhs.size(), stream);
             return;
         }
 #endif
@@ -220,7 +223,7 @@ struct expressions_evaluator
         S value, T& rhs, gpu_stream_t stream = nullptr) noexcept
     {
 #if (VECTORIZATION_HAS_CUDA && defined(__CUDACC__)) || (VECTORIZATION_HAS_HIP && defined(__HIPCC__))
-        if (rhs.device() == device_enum::CUDA)
+        if (rhs.device() == device_enum::CUDA || rhs.device() == device_enum::HIP)
         {
             using value_t = typename vectorization::scalar_type<T, T>::value;
             vectorization::fill_gpu(

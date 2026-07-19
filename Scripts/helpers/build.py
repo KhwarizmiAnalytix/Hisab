@@ -11,6 +11,32 @@ from typing import Optional
 
 from helpers.cuda_env import augment_env_for_cuda_toolkit
 
+try:
+    import resource
+except ImportError:  # resource is POSIX-only; unavailable on Windows.
+    resource = None  # type: ignore[assignment]
+
+
+def _raise_stack_limit() -> None:
+    """Raise the process stack ulimit (soft) to the hard limit.
+
+    Some clang releases (observed: Ubuntu clang 17/20) blow the default 8MB
+    stack during optimization passes (-O1 and above) on large translation
+    units such as ThirdParty/googletest/googletest/src/gtest-all.cc, crashing
+    with an internal "stack smashing detected" / instruction-selection
+    segfault. Raising RLIMIT_STACK before spawning the build (inherited by
+    ninja's clang child processes) avoids the crash without touching
+    vendored sources or dropping optimization flags.
+    """
+    if resource is None:
+        return
+    try:
+        soft, hard = resource.getrlimit(resource.RLIMIT_STACK)
+        if hard == resource.RLIM_INFINITY or hard > soft:
+            resource.setrlimit(resource.RLIMIT_STACK, (hard, hard))
+    except (ValueError, OSError):
+        pass
+
 
 def get_logical_processor_count() -> Optional[int]:
     """Get the number of logical processors available."""
@@ -66,6 +92,7 @@ def build_project(builder: str, build_enum: str, system: str, shell_flag: bool) 
             return 1
 
         env = augment_env_for_cuda_toolkit()
+        _raise_stack_limit()
         subprocess.check_call(
             cmake_cmd_build, stderr=subprocess.STDOUT, shell=shell_flag, env=env
         )

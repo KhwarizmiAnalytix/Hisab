@@ -11,6 +11,7 @@ import subprocess
 from typing import Optional
 
 from helpers.cuda_env import augment_env_for_cuda_toolkit
+from helpers.svml_env import augment_env_for_svml_runtime
 
 
 def _get_compiler_bin_dir_from_cmake_cache() -> Optional[str]:
@@ -82,6 +83,7 @@ def run_ctest(
 
         # Set up sanitizer suppressions if using a sanitizer
         env = augment_env_for_cuda_toolkit()
+        env = augment_env_for_svml_runtime(os.getcwd(), base=env)
 
         # On Windows with a MinGW/non-MSVC compiler, prepend the compiler's bin
         # directory to PATH so runtime DLLs (libwinpthread-1.dll, etc.) are found.
@@ -141,10 +143,12 @@ def run_valgrind_test(source_path: str, build_path: str, shell_flag: bool) -> in
         pass  # Valgrind doesn't support Apple Silicon
 
     try:
+        env = augment_env_for_svml_runtime(build_path)
         return subprocess.call(
             [script_full_path, build_path],
             stdin=subprocess.PIPE,
             shell=shell_flag,
+            env=env,
         )
     except Exception:
         return 1

@@ -38,6 +38,15 @@ struct is_packet
 };
 
 #if VECTORIZATION_VECTORIZED
+// Specializing on hardware vector types (__m256d/__m256/etc.) as template
+// arguments is well-defined but GCC/Clang ignore the vector_size attribute
+// for template-argument matching purposes and warn about it; the attribute
+// isn't needed here since these specializations only key off the type.
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-attributes"
+#endif
+
 template <typename value_t>
 using scalar_type_simd_t = typename simd<value_t>::simd_t;
 
@@ -69,6 +78,10 @@ struct is_packet<scalar_type_mask_t<float>>
     static constexpr bool value = true;
 };
 #endif  // AVX512 / NEON / SVE mask packet traits
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 #endif  // VECTORIZATION_VECTORIZED
 
 }  // namespace vectorization
@@ -201,6 +214,14 @@ struct scalar_type<double, double>
 };
 
 #if VECTORIZATION_VECTORIZED
+// See the matching comment on the is_packet specializations above: these
+// specializations key off hardware vector types, and the vector_size
+// attribute GCC/Clang ignore for template matching isn't needed here.
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-attributes"
+#endif
+
 template <typename T>
 struct scalar_type<scalar_type_simd_t<double>, T>
 {
@@ -226,6 +247,10 @@ struct scalar_type<scalar_type_mask_t<float>, T>
     using value = float;
 };
 #endif  // AVX512 / NEON / SVE mask scalar_type
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 #endif  // VECTORIZATION_VECTORIZED
 
 // tensor<value_t> — covers former vector<T> and matrix<T> since they alias tensor

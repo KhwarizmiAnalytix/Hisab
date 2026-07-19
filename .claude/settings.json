@@ -14,7 +14,10 @@
       "Read(//c/Program Files/Microsoft Visual Studio/18/Enterprise/MSBuild/Microsoft/VC/v170/**)",
       "Read(//c/Program Files/Microsoft Visual Studio/18/Enterprise/MSBuild/Microsoft/VC/**)",
       "Bash(cat /home/toufik/dev/libtorch/share/cmake/Caffe2/public/mkl.cmake)",
-      "Read(//home/toufik/dev/libtorch/share/cmake/Caffe2/public/**)"
+      "Read(//home/toufik/dev/libtorch/share/cmake/Caffe2/public/**)",
+      "Bash(python3 setup.py build.TEST.cuda.avx2.vv --project.vectorization)",
+      "Bash(python3 setup.py config.build.gcc.TEST.native.cuda.avx2.vv --project.vectorization)",
+      "Bash(tee /tmp/claude-1000/-home-toufik-dev-XSigma/0ea7a9b7-8b0a-493c-af36-8b39f9ef0fe2/scratchpad/build_log.txt)"
     ]
   },
   "skipDangerousModePermissionPrompt": true,
