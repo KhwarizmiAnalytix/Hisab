@@ -17,7 +17,14 @@
       "Read(//home/toufik/dev/libtorch/share/cmake/Caffe2/public/**)",
       "Bash(python3 setup.py build.TEST.cuda.avx2.vv --project.vectorization)",
       "Bash(python3 setup.py config.build.gcc.TEST.native.cuda.avx2.vv --project.vectorization)",
-      "Bash(tee /tmp/claude-1000/-home-toufik-dev-XSigma/0ea7a9b7-8b0a-493c-af36-8b39f9ef0fe2/scratchpad/build_log.txt)"
+      "Bash(tee /tmp/claude-1000/-home-toufik-dev-XSigma/0ea7a9b7-8b0a-493c-af36-8b39f9ef0fe2/scratchpad/build_log.txt)",
+      "Bash(python setup.py config.build.TEST.vv.vs26.avx2.cuda.benchmark --project.vectorization --packet-size=8)",
+      "Bash(echo \"EXIT_CODE=$?\")",
+      "Read(//c/dev/**)",
+      "Bash(tasklist)",
+      "Bash(\"/c/Program Files \\(x86\\)/Microsoft Visual Studio/Installer/vswhere.exe\" -all -prerelease -products '*' -format json)",
+      "Bash(python -c ' *)",
+      "Bash(python setup.py config.build.TEST.vv.vs22.avx2.cuda.benchmark --project.vectorization --packet-size=8)"
     ]
   },
   "skipDangerousModePermissionPrompt": true,
