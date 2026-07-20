@@ -76,13 +76,10 @@ struct simd
 
 #if VECTORIZATION_ON_GPU_DEVICE
   // --- GPU device code: scalar simd<T> ---
-#  if VECTORIZATION_HAS_CUDA
-#    include "backend/gpu/cuda/double/simd.h"
-#    include "backend/gpu/cuda/float/simd.h"
-#  elif VECTORIZATION_HAS_HIP
-#    include "backend/gpu/hip/double/simd.h"
-#    include "backend/gpu/hip/float/simd.h"
-#  endif
+  // Shared by CUDA and HIP (identical scalar semantics); VECTORIZATION_ON_GPU_DEVICE
+  // being set already guarantees nvcc or hipcc is doing the device pass.
+#  include "backend/gpu/double/simd.h"
+#  include "backend/gpu/float/simd.h"
 
 #else
   // --- CPU host code: SIMD or scalar fallback ---

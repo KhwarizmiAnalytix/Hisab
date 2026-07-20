@@ -18,12 +18,12 @@
 | CMake variable | Default | Summary |
 |----------------|---------|---------|
 | `VECTORIZATION_CPU_BACKEND` | `avx2` | `no`, `sse`, `avx`, `avx2`, `avx512`, `neon`, `sve` — which CPU backend tree is compiled |
-| `VECTORIZATION_GPU_BACKEND` | `none` | `none`, `cuda`, `hip` — which GPU backend tree is compiled (`backend/gpu/cuda`, `backend/gpu/hip`); independent of `VECTORIZATION_CPU_BACKEND`, both can be active at once |
+| `VECTORIZATION_GPU_BACKEND` | `none` | `none`, `cuda`, `hip` — which GPU runtime (nvcc/hipcc) the shared `backend/gpu/{float,double}/simd.h` is compiled against; independent of `VECTORIZATION_CPU_BACKEND`, both can be active at once |
 | `VECTORIZATION_CXX_STANDARD` | `20` | `11`, `14`, `17`, `20`, `23` |
 
 ### GPU backend (CUDA / HIP)
 
-`VECTORIZATION_GPU_BACKEND` drives a scalar (`size==1`) GPU `simd<T>` specialization (`backend/gpu/{cuda,hip}/{float,double}/simd.h`) plus an expression-template kernel launcher (`expressions/expressions_evaluator_gpu.h`) — one CUDA/HIP thread evaluates one tensor element. `tensor<T>` dispatches to the GPU kernel path when constructed with `device_enum::CUDA` or `device_enum::HIP` (`Library/Memory/common/device.h`); both device tags are treated identically by the evaluator.
+`VECTORIZATION_GPU_BACKEND` drives a scalar (`size==1`) GPU `simd<T>` specialization (`backend/gpu/{float,double}/simd.h`, shared source for both CUDA and HIP) plus an expression-template kernel launcher (`expressions/expressions_evaluator_gpu.h`) — one CUDA/HIP thread evaluates one tensor element. `tensor<T>` dispatches to the GPU kernel path when constructed with `device_enum::CUDA` or `device_enum::HIP` (`Library/Memory/common/device.h`); both device tags are treated identically by the evaluator.
 
 | CMake variable | Default | Notes |
 |----------------|---------|-------|

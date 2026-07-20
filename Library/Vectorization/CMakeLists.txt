@@ -505,17 +505,9 @@ if(NOT VECTORIZATION_CPU_BACKEND STREQUAL "sve")
   list(FILTER templates EXCLUDE REGEX ".*/backend/cpu/sve/.*")
 endif()
 
-# Exclude GPU backend trees not selected by VECTORIZATION_GPU_BACKEND.
-if(NOT VECTORIZATION_GPU_BACKEND STREQUAL "hip")
-  list(FILTER headers EXCLUDE REGEX ".*/backend/gpu/hip/.*")
-  list(FILTER sources EXCLUDE REGEX ".*/backend/gpu/hip/.*")
-  list(FILTER templates EXCLUDE REGEX ".*/backend/gpu/hip/.*")
-endif()
-if(NOT VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
-  list(FILTER headers EXCLUDE REGEX ".*/backend/gpu/cuda/.*")
-  list(FILTER sources EXCLUDE REGEX ".*/backend/gpu/cuda/.*")
-  list(FILTER templates EXCLUDE REGEX ".*/backend/gpu/cuda/.*")
-endif()
+# Note: backend/gpu/{float,double}/simd.h is shared by CUDA and HIP (identical
+# scalar semantics) and is only ever pulled in under VECTORIZATION_ON_GPU_DEVICE
+# (backend/simd.h), so no VECTORIZATION_GPU_BACKEND-based tree exclusion is needed here.
 
 # Exclude x86 svml.h when neither SVML nor SLEEF is active.
 # NEON svml.h is handled separately — it always compiles for NEON (has scalar fallbacks).

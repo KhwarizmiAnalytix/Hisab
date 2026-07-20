@@ -12,6 +12,11 @@
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   string(APPEND CMAKE_C_FLAGS " --coverage -g -O0  -fprofile-arcs -ftest-coverage")
   string(APPEND CMAKE_CXX_FLAGS " --coverage -g -O0  -fprofile-arcs -ftest-coverage")
+  # --coverage must also reach the link step (it pulls in libgcov); CMAKE_CXX_FLAGS alone isn't
+  # enough for generators (e.g. Xcode) that keep compile and link flags separate.
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " --coverage")
+  string(APPEND CMAKE_SHARED_LINKER_FLAGS " --coverage")
+  string(APPEND CMAKE_MODULE_LINKER_FLAGS " --coverage")
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   if("${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}" STREQUAL "MSVC")
     # clang-cl uses MSVC-style flags: /Od instead of -O0, /Zi instead of -g
@@ -21,6 +26,14 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     string(APPEND CMAKE_C_FLAGS " -g -O0  -fprofile-instr-generate -fcoverage-mapping")
     string(APPEND CMAKE_CXX_FLAGS " -g -O0  -fprofile-instr-generate -fcoverage-mapping")
   endif()
+  # -fprofile-instr-generate must also be passed at link time — it's what pulls in the
+  # compiler-rt profile runtime (__llvm_profile_runtime). Compile-only propagation of
+  # CMAKE_CXX_FLAGS breaks under generators (e.g. Xcode) that model compile/link flags as
+  # separate build settings (OTHER_CPLUSPLUSFLAGS vs OTHER_LDFLAGS), causing shared-library
+  # link failures with "undefined symbol ___llvm_profile_runtime".
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " -fprofile-instr-generate")
+  string(APPEND CMAKE_SHARED_LINKER_FLAGS " -fprofile-instr-generate")
+  string(APPEND CMAKE_MODULE_LINKER_FLAGS " -fprofile-instr-generate")
   message("Enabling Clang code coverage ${CMAKE_CXX_FLAGS}")
 elseif(MSVC)
   # OpenCppCoverage reads PDB files at runtime — no compiler instrumentation needed. /Zi  : emit

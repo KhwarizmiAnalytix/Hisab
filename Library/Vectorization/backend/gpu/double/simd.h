@@ -19,8 +19,12 @@
 
 #pragma once
 
-// CUDA GPU scalar backend for double.
-// See backend/gpu/cuda/float/simd.h for design notes.
+// GPU scalar backend for double — shared by CUDA (nvcc) and HIP (hipcc).
+// See backend/gpu/float/simd.h for design notes.
+//
+// The two runtimes expose identical unsuffixed double math (::fma, ::pow,
+// ::erfc, ::erfinv, ...) in the global namespace, so a single implementation
+// serves both; only the runtime header include differs.
 
 #include <cstdint>
 #include <type_traits>

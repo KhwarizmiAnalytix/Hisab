@@ -38,13 +38,8 @@
 #include <cstdint>
 #include <vector>
 
-#if VECTORIZATION_HAS_CUDA
-#include "backend/gpu/cuda/double/simd.h"
-#include "backend/gpu/cuda/float/simd.h"
-#elif VECTORIZATION_HAS_HIP
-#include "backend/gpu/hip/double/simd.h"
-#include "backend/gpu/hip/float/simd.h"
-#endif
+#include "backend/gpu/double/simd.h"
+#include "backend/gpu/float/simd.h"
 
 // ---- CUDA/HIP runtime API aliases -----------------------------------------
 // The two runtimes expose an identical API surface under different names;
