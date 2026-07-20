@@ -171,9 +171,9 @@ static_assert(VECTORIZATION_PACKET_SIZE >= 1, "VECTORIZATION_PACKET_SIZE must be
 #define VECTORIZATION_ERROR(format_string, ...) LOGGING_LOG_ERROR(format_string, ##__VA_ARGS__)
 #define VECTORIZATION_FATAL(format_string, ...) LOGGING_LOG_FATAL(format_string, ##__VA_ARGS__)
 
-#define VECTORIZATION_CHECK(cond, ...) LOGGING_CHECK(cond, __VA_ARGS__)
+#define VECTORIZATION_CHECK(cond, ...) LOGGING_CHECK(cond, ##__VA_ARGS__)
 #ifndef NDEBUG
-#define VECTORIZATION_CHECK_DEBUG(cond, ...) LOGGING_CHECK_DEBUG(cond, __VA_ARGS__)
+#define VECTORIZATION_CHECK_DEBUG(cond, ...) LOGGING_CHECK_DEBUG(cond, ##__VA_ARGS__)
 #else
 #define VECTORIZATION_CHECK_DEBUG(cond, ...) ((void)0)
 #endif
