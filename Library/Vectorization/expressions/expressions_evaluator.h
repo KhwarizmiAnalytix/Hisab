@@ -25,6 +25,7 @@ Do_not_include_expression_evaluator_directly_use_expression_it;
 
 #include <cstddef>
 #include <cstdint>
+#include <type_traits>
 #include <utility>
 
 #include "common/vectorization_type_traits.h"
@@ -32,6 +33,10 @@ Do_not_include_expression_evaluator_directly_use_expression_it;
 
 #if VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP
 #include "expressions/expressions_evaluator_gpu.h"
+#endif
+
+#if VECTORIZATION_HAS_METAL
+#include "expressions/expressions_evaluator_metal.h"
 #endif
 
 namespace vectorization
@@ -95,6 +100,25 @@ struct expressions_evaluator
             // unparseable host stub (`remove_cvref_t<...>` used as a declarator).
             vectorization::run_gpu(expr, static_cast<value_t*>(rhs.begin()), rhs.size(), stream);
             return;
+        }
+#endif
+#if VECTORIZATION_HAS_METAL
+        // No __CUDACC__/__HIPCC__-style device-compiler-pass check needed here: unlike
+        // run_gpu (a __global__ kernel only defined when nvcc/hipcc processes this TU),
+        // run_metal is ordinary host C++, always defined when VECTORIZATION_HAS_METAL=1.
+        // if constexpr (not runtime if): run() is instantiated for every T reachable
+        // from any call site regardless of which device a given tensor uses at runtime,
+        // and run_metal is float-only (MSL has no double) — for T=tensor<double> this
+        // block must not even be instantiated, since a double tensor can never actually
+        // have device()==METAL (memory::allocator<double>::allocate already throws for
+        // device_enum::METAL, so construction fails long before evaluation).
+        if constexpr (std::is_same_v<typename vectorization::scalar_type<T, T>::value, float>)
+        {
+            if (rhs.device() == device_enum::METAL)
+            {
+                vectorization::run_metal(expr, rhs);
+                return;
+            }
         }
 #endif
         (void)stream;
@@ -232,6 +256,17 @@ struct expressions_evaluator
                 rhs.size(),
                 stream);
             return;
+        }
+#endif
+#if VECTORIZATION_HAS_METAL
+        // See the matching if constexpr in run() above: fill_metal is float-only.
+        if constexpr (std::is_same_v<typename vectorization::scalar_type<T, T>::value, float>)
+        {
+            if (rhs.device() == device_enum::METAL)
+            {
+                vectorization::fill_metal(rhs, static_cast<float>(value));
+                return;
+            }
         }
 #endif
         (void)stream;

@@ -4,22 +4,29 @@
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
  * Integration tests for tensor expression evaluation on the GPU backend
- * (CUDA or HIP).
+ * (CUDA, HIP, or Metal).
  *
- * Tensors are allocated with device_enum::CUDA so that
- * expressions_evaluator::run dispatches to run_gpu (a grid of one thread per
- * element). device_enum::CUDA is used as the generic "active GPU backend" tag
- * here regardless of whether the build is actually CUDA or HIP — the evaluator
- * dispatch (expressions_evaluator.h) treats device_enum::CUDA and
- * device_enum::HIP identically. Results are copied back to the host via
+ * Tensors are allocated with kActiveGpuDevice (device_enum::CUDA, ::HIP, or
+ * ::METAL depending on which backend is active) so that
+ * expressions_evaluator::run dispatches to the GPU path. CUDA and HIP are
+ * treated identically by the evaluator dispatch (expressions_evaluator.h);
+ * Metal is a separate dispatch condition (expressions_evaluator_metal.h) but
+ * shares this same test file since the *tensor<T>*-level behavior it verifies
+ * is backend-agnostic. Results are copied back to the host via
  * tensor::to_host_vector() and compared against std:: math.
  *
  * Tests are skipped automatically when no GPU device is present at runtime.
+ * Metal is float-only (MSL has no double type on any Apple GPU) — the
+ * *Double tests skip themselves under Metal rather than attempting a
+ * construction that would throw (see kMetalOnlyBackend below).
  *
  * This file is compiled as a CUDA or HIP translation unit (CMake sets
  * LANGUAGE CUDA/HIP on it) so that GPU expression-template kernels are
  * instantiated correctly, while remaining a plain .cpp source that needs no
- * __CUDACC__/__HIPCC__ guards.
+ * __CUDACC__/__HIPCC__ guards. Metal needs no such CMake language — it's
+ * ordinary host C++, with device-count queries routed through the tiny
+ * Objective-C++ shim in metal_device_probe.mm (xsigma_metal_device_count)
+ * since this file itself must stay plain .cpp.
  */
 
 #if VECTORIZATION_HAS_CUDA
@@ -34,7 +41,7 @@
 
 #include "VectorizationTest.h"
 
-#if VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP
+#if VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP || VECTORIZATION_HAS_METAL
 
 #if VECTORIZATION_HAS_CUDA
 #include <cuda_runtime.h>
@@ -42,6 +49,10 @@
 #elif VECTORIZATION_HAS_HIP
 #include <hip/hip_runtime.h>
 #define gpuGetDeviceCount hipGetDeviceCount
+#elif VECTORIZATION_HAS_METAL
+// Implemented in metal_device_probe.mm (Objective-C++) — this file stays plain .cpp.
+extern "C" int xsigma_metal_device_count();
+#define gpuGetDeviceCount(pn) (*(pn) = xsigma_metal_device_count())
 #endif
 
 #include <cmath>
@@ -55,6 +66,17 @@ namespace
 {
 
 using namespace vectorization;
+
+#if VECTORIZATION_HAS_CUDA
+constexpr device_enum kActiveGpuDevice = device_enum::CUDA;
+constexpr bool         kMetalOnlyBackend = false;
+#elif VECTORIZATION_HAS_HIP
+constexpr device_enum kActiveGpuDevice   = device_enum::HIP;
+constexpr bool         kMetalOnlyBackend = false;
+#elif VECTORIZATION_HAS_METAL
+constexpr device_enum kActiveGpuDevice   = device_enum::METAL;
+constexpr bool         kMetalOnlyBackend = true;
+#endif
 
 // ---- Comparison helper ---------------------------------------------------
 
@@ -96,7 +118,7 @@ void test_fill()
     constexpr T      kVal = static_cast<T>(2.71828);
     constexpr double tol  = std::is_same_v<T, float> ? 5e-6 : 1e-13;
 
-    tensor<T> ga(N, device_enum::CUDA);
+    tensor<T> ga(N, kActiveGpuDevice);
     ga = kVal;  // Dispatches to fill_gpu kernel
 
     auto result = ga.to_host_vector();
@@ -114,13 +136,13 @@ void test_binary_ops()
     std::vector<T> ha, hb;
     make_inputs(ha, hb, N);
 
-    tensor<T> ga(N, device_enum::CUDA), gb(N, device_enum::CUDA);
+    tensor<T> ga(N, kActiveGpuDevice), gb(N, kActiveGpuDevice);
     ga.copy_from_host(ha);
     gb.copy_from_host(hb);
 
     // Add
     {
-        tensor<T> gc(N, device_enum::CUDA);
+        tensor<T> gc(N, kActiveGpuDevice);
         gc                    = ga + gb;  // → run_gpu(add_expr, gc.data(), N)
         auto           result = gc.to_host_vector();
         std::vector<T> ref(N);
@@ -131,7 +153,7 @@ void test_binary_ops()
 
     // Subtract
     {
-        tensor<T> gc(N, device_enum::CUDA);
+        tensor<T> gc(N, kActiveGpuDevice);
         gc                    = ga - gb;
         auto           result = gc.to_host_vector();
         std::vector<T> ref(N);
@@ -142,7 +164,7 @@ void test_binary_ops()
 
     // Element-wise multiply (operator* is element-wise for 1-D tensors)
     {
-        tensor<T> gc(N, device_enum::CUDA);
+        tensor<T> gc(N, kActiveGpuDevice);
         gc                    = ga * gb;
         auto           result = gc.to_host_vector();
         std::vector<T> ref(N);
@@ -153,7 +175,7 @@ void test_binary_ops()
 
     // Scalar + tensor
     {
-        tensor<T> gc(N, device_enum::CUDA);
+        tensor<T> gc(N, kActiveGpuDevice);
         gc                    = ga + static_cast<T>(1);
         auto           result = gc.to_host_vector();
         std::vector<T> ref(N);
@@ -175,12 +197,12 @@ void test_unary_math()
     for (size_t i = 0; i < N; ++i)
         ha[i] = static_cast<T>(static_cast<double>(i + 1) / static_cast<double>(N) * 2.0);
 
-    tensor<T> ga(N, device_enum::CUDA);
+    tensor<T> ga(N, kActiveGpuDevice);
     ga.copy_from_host(ha);
 
     // exp
     {
-        tensor<T> gc(N, device_enum::CUDA);
+        tensor<T> gc(N, kActiveGpuDevice);
         gc                    = ::exp(ga);
         auto           result = gc.to_host_vector();
         std::vector<T> ref(N);
@@ -191,7 +213,7 @@ void test_unary_math()
 
     // sqrt
     {
-        tensor<T> gc(N, device_enum::CUDA);
+        tensor<T> gc(N, kActiveGpuDevice);
         gc                    = ::sqrt(ga);
         auto           result = gc.to_host_vector();
         std::vector<T> ref(N);
@@ -202,7 +224,7 @@ void test_unary_math()
 
     // log
     {
-        tensor<T> gc(N, device_enum::CUDA);
+        tensor<T> gc(N, kActiveGpuDevice);
         gc                    = ::log(ga);
         auto           result = gc.to_host_vector();
         std::vector<T> ref(N);
@@ -216,10 +238,10 @@ void test_unary_math()
         std::vector<T> ha_neg(N);
         for (size_t i = 0; i < N; ++i)
             ha_neg[i] = static_cast<T>(-static_cast<double>(ha[i]));
-        tensor<T> ga_neg(N, device_enum::CUDA);
+        tensor<T> ga_neg(N, kActiveGpuDevice);
         ga_neg.copy_from_host(ha_neg);
 
-        tensor<T> gc(N, device_enum::CUDA);
+        tensor<T> gc(N, kActiveGpuDevice);
         gc          = ::fabs(ga_neg);
         auto result = gc.to_host_vector();
         for (size_t i = 0; i < N; ++i)
@@ -243,13 +265,13 @@ void test_compound()
         hb[i]    = static_cast<T>(t + 0.5);        // [0.5, 1.5)
     }
 
-    tensor<T> ga(N, device_enum::CUDA), gb(N, device_enum::CUDA);
+    tensor<T> ga(N, kActiveGpuDevice), gb(N, kActiveGpuDevice);
     ga.copy_from_host(ha);
     gb.copy_from_host(hb);
 
     // exp(a) + sqrt(b): fused into one run_gpu call
     {
-        tensor<T> gc(N, device_enum::CUDA);
+        tensor<T> gc(N, kActiveGpuDevice);
         gc                    = ::exp(ga) + ::sqrt(gb);
         auto           result = gc.to_host_vector();
         std::vector<T> ref(N);
@@ -261,7 +283,7 @@ void test_compound()
     // (a + b) * scalar: mixed tensor and scalar operands
     {
         constexpr T kAlpha = static_cast<T>(1.5);
-        tensor<T>   gc(N, device_enum::CUDA);
+        tensor<T>   gc(N, kActiveGpuDevice);
         gc                    = (ga + gb) * kAlpha;
         auto           result = gc.to_host_vector();
         std::vector<T> ref(N);
@@ -287,6 +309,8 @@ VECTORIZATIONTEST(TensorGpu, FillFloat)
 }
 VECTORIZATIONTEST(TensorGpu, FillDouble)
 {
+    if (kMetalOnlyBackend)
+        GTEST_SKIP() << "Metal backend is float-only (no fp64 on Apple GPUs)";
     int ndev = 0;
     gpuGetDeviceCount(&ndev);
     if (ndev == 0)
@@ -309,6 +333,8 @@ VECTORIZATIONTEST(TensorGpu, BinaryOpsFloat)
 }
 VECTORIZATIONTEST(TensorGpu, BinaryOpsDouble)
 {
+    if (kMetalOnlyBackend)
+        GTEST_SKIP() << "Metal backend is float-only (no fp64 on Apple GPUs)";
     int ndev = 0;
     gpuGetDeviceCount(&ndev);
     if (ndev == 0)
@@ -331,6 +357,8 @@ VECTORIZATIONTEST(TensorGpu, UnaryMathFloat)
 }
 VECTORIZATIONTEST(TensorGpu, UnaryMathDouble)
 {
+    if (kMetalOnlyBackend)
+        GTEST_SKIP() << "Metal backend is float-only (no fp64 on Apple GPUs)";
     int ndev = 0;
     gpuGetDeviceCount(&ndev);
     if (ndev == 0)
@@ -353,6 +381,8 @@ VECTORIZATIONTEST(TensorGpu, CompoundFloat)
 }
 VECTORIZATIONTEST(TensorGpu, CompoundDouble)
 {
+    if (kMetalOnlyBackend)
+        GTEST_SKIP() << "Metal backend is float-only (no fp64 on Apple GPUs)";
     int ndev = 0;
     gpuGetDeviceCount(&ndev);
     if (ndev == 0)
@@ -361,47 +391,47 @@ VECTORIZATIONTEST(TensorGpu, CompoundDouble)
     END_TEST();
 }
 
-#else  // !(VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP)
+#else  // !(VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP || VECTORIZATION_HAS_METAL)
 
 VECTORIZATIONTEST(TensorGpu, FillFloat)
 {
-    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP) is enabled";
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
     END_TEST();
 }
 VECTORIZATIONTEST(TensorGpu, FillDouble)
 {
-    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP) is enabled";
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
     END_TEST();
 }
 VECTORIZATIONTEST(TensorGpu, BinaryOpsFloat)
 {
-    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP) is enabled";
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
     END_TEST();
 }
 VECTORIZATIONTEST(TensorGpu, BinaryOpsDouble)
 {
-    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP) is enabled";
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
     END_TEST();
 }
 VECTORIZATIONTEST(TensorGpu, UnaryMathFloat)
 {
-    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP) is enabled";
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
     END_TEST();
 }
 VECTORIZATIONTEST(TensorGpu, UnaryMathDouble)
 {
-    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP) is enabled";
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
     END_TEST();
 }
 VECTORIZATIONTEST(TensorGpu, CompoundFloat)
 {
-    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP) is enabled";
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
     END_TEST();
 }
 VECTORIZATIONTEST(TensorGpu, CompoundDouble)
 {
-    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP) is enabled";
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
     END_TEST();
 }
 
-#endif  // VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP
+#endif  // VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP || VECTORIZATION_HAS_METAL

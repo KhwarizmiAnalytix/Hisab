@@ -64,6 +64,20 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "hip")
   message(STATUS "VectorizationCxxTests: HIP-specific tests (Test*.cu, TestTensorGpu.cpp) included")
 endif()
 
+# Include Metal Objective-C++ unit tests when the Metal GPU backend is active. Unlike
+# CUDA/HIP, Metal test sources are ordinary Objective-C++ (no CMake "LANGUAGE Metal" —
+# there is no such thing; OBJCXX is already enabled at the Vectorization target level)
+# and need no special per-file compiler-workaround properties.
+if(VECTORIZATION_GPU_BACKEND STREQUAL "metal")
+  # *.mm (not just Test*.mm): also picks up metal_device_probe.mm, the tiny Objective-C++
+  # shim TestTensorGpu.cpp calls into for a device-count query (that file itself must
+  # stay plain .cpp, shared textually with the CUDA/HIP path).
+  file(GLOB_RECURSE metal_test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/*.mm")
+  list(APPEND test_sources ${metal_test_sources})
+  set_source_files_properties(${metal_test_sources} PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+  message(STATUS "VectorizationCxxTests: Metal-specific tests (*.mm) included")
+endif()
+
 # LibTorch comparison tests require LibTorch; skip compiling them entirely
 # when VECTORIZATION_ENABLE_LIBTORCH is OFF instead of building empty
 # translation units guarded by #if VECTORIZATION_HAS_LIBTORCH.

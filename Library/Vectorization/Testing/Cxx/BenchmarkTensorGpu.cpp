@@ -6,9 +6,11 @@
  * CPU vs GPU tensor throughput benchmarks.
  *
  * Compares vectorization::tensor<T> expression evaluation on the CPU SIMD
- * backend against the GPU backend (run_gpu / fill_gpu, CUDA or HIP), across
- * problem sizes ranging from latency-bound (1K elements) to throughput-bound
- * (4M elements).
+ * backend against the GPU backend (run_gpu / fill_gpu for CUDA/HIP,
+ * run_metal / fill_metal for Metal), across problem sizes ranging from
+ * latency-bound (1K elements) to throughput-bound (4M elements). Metal is
+ * float-only (MSL has no double) — GPU_*<double> benchmarks skip themselves
+ * under Metal (see kMetalOnlyBackend).
  *
  * Naming / methodology:
  *   CPU_<Op><T>            — host SIMD path (expressions_evaluator::run on CPU)
@@ -39,17 +41,18 @@
  *
  * This file is compiled as a CUDA or HIP translation unit (CMake sets
  * LANGUAGE CUDA/HIP on it, mirroring TestTensorGpu.cpp) so run_gpu/fill_gpu
- * are instantiated. It degrades to a benchmark stub (no registered
- * benchmarks) when neither VECTORIZATION_HAS_CUDA nor VECTORIZATION_HAS_HIP
- * is on, or when the CUDA compiler is Clang (see the exclusion note in
- * Testing/Cxx/CMakeLists.txt).
+ * are instantiated; Metal needs no such CMake language (ordinary host C++,
+ * device-count queries routed through the metal_device_probe.mm shim, same
+ * as TestTensorGpu.cpp). It degrades to a benchmark stub (no registered
+ * benchmarks) when none of VECTORIZATION_HAS_CUDA/_HIP/_METAL is on, or when
+ * the CUDA compiler is Clang (see the exclusion note in Testing/Cxx/CMakeLists.txt).
  *
  * Target: benchmark_tensorgpu
  */
 
 #include <benchmark/benchmark.h>
 
-#if VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP
+#if VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP || VECTORIZATION_HAS_METAL
 
 #if VECTORIZATION_HAS_CUDA
 #include <cuda_runtime.h>
@@ -63,10 +66,25 @@ using gpu_error_t                 = hipError_t;
 constexpr gpu_error_t kGpuSuccess = hipSuccess;
 #define gpuGetDeviceCount hipGetDeviceCount
 #define gpuDeviceSynchronize hipDeviceSynchronize
+#elif VECTORIZATION_HAS_METAL
+// metal_dispatch.h is a plain C++ header (no Objective-C types cross its boundary —
+// see its own header comment), so this file can call into it directly without
+// becoming Objective-C++ itself, unlike TestTensorGpu.cpp's device-count query (which
+// needed a separate .mm shim because that file only wants device_enum, not the rest of
+// the Metal backend surface).
+#include "backend/gpu/metal/metal_dispatch.h"
+using gpu_error_t                 = int;
+constexpr gpu_error_t kGpuSuccess = 0;
+#define gpuGetDeviceCount(pn) \
+    (*(pn) = vectorization::metal_backend::device_available() ? 1 : 0, kGpuSuccess)
+// Every metal_backend::dispatch()/dispatch_fill() call already blocks on
+// waitUntilCompleted internally (see metal_dispatch.mm) — no separate device-sync API.
+#define gpuDeviceSynchronize() ((void)0)
 #endif
 
 #include <cstddef>
 #include <random>
+#include <type_traits>
 #include <vector>
 
 #include "terminals/tensor.h"
@@ -74,6 +92,17 @@ constexpr gpu_error_t kGpuSuccess = hipSuccess;
 namespace
 {
 using namespace vectorization;
+
+#if VECTORIZATION_HAS_CUDA
+constexpr device_enum kActiveGpuDevice   = device_enum::CUDA;
+constexpr bool         kMetalOnlyBackend = false;
+#elif VECTORIZATION_HAS_HIP
+constexpr device_enum kActiveGpuDevice   = device_enum::HIP;
+constexpr bool         kMetalOnlyBackend = false;
+#elif VECTORIZATION_HAS_METAL
+constexpr device_enum kActiveGpuDevice   = device_enum::METAL;
+constexpr bool         kMetalOnlyBackend = true;
+#endif
 
 template <typename T>
 void fill_uniform(std::vector<T>& v, T lo, T hi, unsigned seed)
@@ -88,6 +117,25 @@ bool has_gpu_device()
 {
     int ndev = 0;
     return gpuGetDeviceCount(&ndev) == kGpuSuccess && ndev > 0;
+}
+
+// Metal is float-only (MSL has no double); tensor<double> on device_enum::METAL throws
+// at allocation time (Library/Memory/allocator.h). Every GPU_*<double> benchmark checks
+// this before constructing a device tensor so it skips cleanly instead of throwing.
+template <typename T>
+bool skip_if_unsupported(benchmark::State& state)
+{
+    if (kMetalOnlyBackend && std::is_same_v<T, double>)
+    {
+        state.SkipWithError("Metal backend is float-only (no fp64 on Apple GPUs)");
+        return true;
+    }
+    if (!has_gpu_device())
+    {
+        state.SkipWithError("No GPU device");
+        return true;
+    }
+    return false;
 }
 
 }  // namespace
@@ -114,13 +162,10 @@ BENCHMARK_TEMPLATE(CPU_Fill, double) BENCH_SIZES;
 template <typename T>
 static void GPU_Fill(benchmark::State& state)
 {
-    if (!has_gpu_device())
-    {
-        state.SkipWithError("No GPU device");
+    if (skip_if_unsupported<T>(state))
         return;
-    }
     const size_t n = static_cast<size_t>(state.range(0));
-    tensor<T>    a(n, device_enum::CUDA);
+    tensor<T>    a(n, kActiveGpuDevice);
     for (auto _ : state)
     {
         a = static_cast<T>(3.14159);
@@ -156,17 +201,14 @@ BENCHMARK_TEMPLATE(CPU_Add, double) BENCH_SIZES;
 template <typename T>
 static void GPU_Add(benchmark::State& state)
 {
-    if (!has_gpu_device())
-    {
-        state.SkipWithError("No GPU device");
+    if (skip_if_unsupported<T>(state))
         return;
-    }
     const size_t   n = static_cast<size_t>(state.range(0));
     std::vector<T> ha(n), hb(n);
     fill_uniform(ha, static_cast<T>(-2), static_cast<T>(2), 1u);
     fill_uniform(hb, static_cast<T>(0.5), static_cast<T>(1.5), 2u);
 
-    tensor<T> a(n, device_enum::CUDA), b(n, device_enum::CUDA), c(n, device_enum::CUDA);
+    tensor<T> a(n, kActiveGpuDevice), b(n, kActiveGpuDevice), c(n, kActiveGpuDevice);
     a.copy_from_host(ha);
     b.copy_from_host(hb);
 
@@ -183,17 +225,14 @@ BENCHMARK_TEMPLATE(GPU_Add, double) BENCH_SIZES;
 template <typename T>
 static void GPU_Add_Transfer(benchmark::State& state)
 {
-    if (!has_gpu_device())
-    {
-        state.SkipWithError("No GPU device");
+    if (skip_if_unsupported<T>(state))
         return;
-    }
     const size_t   n = static_cast<size_t>(state.range(0));
     std::vector<T> ha(n), hb(n);
     fill_uniform(ha, static_cast<T>(-2), static_cast<T>(2), 1u);
     fill_uniform(hb, static_cast<T>(0.5), static_cast<T>(1.5), 2u);
 
-    tensor<T> a(n, device_enum::CUDA), b(n, device_enum::CUDA), c(n, device_enum::CUDA);
+    tensor<T> a(n, kActiveGpuDevice), b(n, kActiveGpuDevice), c(n, kActiveGpuDevice);
 
     for (auto _ : state)
     {
@@ -233,17 +272,14 @@ BENCHMARK_TEMPLATE(CPU_Compound, double) BENCH_SIZES;
 template <typename T>
 static void GPU_Compound(benchmark::State& state)
 {
-    if (!has_gpu_device())
-    {
-        state.SkipWithError("No GPU device");
+    if (skip_if_unsupported<T>(state))
         return;
-    }
     const size_t   n = static_cast<size_t>(state.range(0));
     std::vector<T> ha(n), hb(n);
     fill_uniform(ha, static_cast<T>(-1), static_cast<T>(1), 3u);
     fill_uniform(hb, static_cast<T>(0.5), static_cast<T>(1.5), 4u);
 
-    tensor<T> a(n, device_enum::CUDA), b(n, device_enum::CUDA), c(n, device_enum::CUDA);
+    tensor<T> a(n, kActiveGpuDevice), b(n, kActiveGpuDevice), c(n, kActiveGpuDevice);
     a.copy_from_host(ha);
     b.copy_from_host(hb);
 
@@ -305,11 +341,8 @@ BENCHMARK_TEMPLATE(CPU_MonteCarloPath, double) BENCH_SIZES;
 template <typename T>
 static void GPU_MonteCarloPath(benchmark::State& state)
 {
-    if (!has_cuda_device())
-    {
-        state.SkipWithError("No CUDA device");
+    if (skip_if_unsupported<T>(state))
         return;
-    }
     const size_t   n = static_cast<size_t>(state.range(0));
     std::vector<T> hz0(n), hz1(n), hz2(n), hz3(n);
     fill_uniform(hz0, static_cast<T>(-1), static_cast<T>(1), 1u);
@@ -317,8 +350,8 @@ static void GPU_MonteCarloPath(benchmark::State& state)
     fill_uniform(hz2, static_cast<T>(-1), static_cast<T>(1), 3u);
     fill_uniform(hz3, static_cast<T>(-1), static_cast<T>(1), 4u);
 
-    tensor<T> x(n, device_enum::CUDA), z0(n, device_enum::CUDA), z1(n, device_enum::CUDA),
-        z2(n, device_enum::CUDA), z3(n, device_enum::CUDA);
+    tensor<T> x(n, kActiveGpuDevice), z0(n, kActiveGpuDevice), z1(n, kActiveGpuDevice),
+        z2(n, kActiveGpuDevice), z3(n, kActiveGpuDevice);
     x = static_cast<T>(0);
     z0.copy_from_host(hz0);
     z1.copy_from_host(hz1);
@@ -334,7 +367,7 @@ static void GPU_MonteCarloPath(benchmark::State& state)
     {
         for (int step = 0; step < kMcSteps; ++step)
             x = x + sigma0 * z0 + sigma1 * z1 + sigma2 * z2 + sigma3 * z3;
-        cudaDeviceSynchronize();
+        gpuDeviceSynchronize();
     }
     state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(n) * kMcSteps);
 }
@@ -347,15 +380,12 @@ BENCHMARK_TEMPLATE(GPU_MonteCarloPath, double) BENCH_SIZES;
 template <typename T>
 static void GPU_TensorAllocFree(benchmark::State& state)
 {
-    if (!has_gpu_device())
-    {
-        state.SkipWithError("No GPU device");
+    if (skip_if_unsupported<T>(state))
         return;
-    }
     const size_t n = static_cast<size_t>(state.range(0));
     for (auto _ : state)
     {
-        tensor<T> a(n, device_enum::CUDA);
+        tensor<T> a(n, kActiveGpuDevice);
         benchmark::DoNotOptimize(a.data());
     }
     state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(n));
@@ -365,6 +395,76 @@ BENCHMARK_TEMPLATE(GPU_TensorAllocFree, double) BENCH_SIZES;
 
 #undef BENCH_SIZES
 
-#endif  // VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP
+// ---------------------------------------------------------------------------
+// Reduction: sum_i (A[i] + B[i] * sin(X[i])) over a fixed, small N=512 — a
+// latency-bound size chosen specifically to make the GPU's fixed per-launch
+// overhead (command buffer encode + commit + wait) visible against the CPU's
+// direct SIMD loop, rather than being amortized away like the throughput-bound
+// BENCH_SIZES cases above.
+//
+// CPU: vectorization::accumulate(a + b * sin(x)) — a single host loop, no
+// device dispatch at all.
+// GPU: three chained elementwise kernels (mul, sin's unary, add — matching
+// the same expression tree run_metal/run_gpu would lower) followed by one
+// single-threadgroup reduction kernel (reduce_sum_float — see kernels.metal;
+// Metal only, CUDA/HIP have no reduction path at all, see the file header).
+// ---------------------------------------------------------------------------
+constexpr size_t kSumN = 512;
+
+template <typename T>
+static void CPU_SumAddMulSin(benchmark::State& state)
+{
+    std::vector<T> ha(kSumN), hb(kSumN), hx(kSumN);
+    fill_uniform(ha, static_cast<T>(-1), static_cast<T>(1), 5u);
+    fill_uniform(hb, static_cast<T>(0.5), static_cast<T>(1.5), 6u);
+    fill_uniform(hx, static_cast<T>(-3.14159), static_cast<T>(3.14159), 7u);
+
+    tensor<T> a(kSumN), b(kSumN), x(kSumN);
+    a.copy_from_host(ha);
+    b.copy_from_host(hb);
+    x.copy_from_host(hx);
+
+    for (auto _ : state)
+        benchmark::DoNotOptimize(vectorization::accumulate(a + b * ::sin(x)));
+    state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(kSumN));
+}
+BENCHMARK_TEMPLATE(CPU_SumAddMulSin, float)->Unit(benchmark::kMicrosecond);
+BENCHMARK_TEMPLATE(CPU_SumAddMulSin, double)->Unit(benchmark::kMicrosecond);
+
+#if VECTORIZATION_HAS_METAL
+// Metal-only: no reduction kernel exists for CUDA/HIP (see file header). Not templated
+// on T since Metal is float-only — a <double> variant would have nothing to instantiate.
+static void GPU_SumAddMulSin_Metal(benchmark::State& state)
+{
+    if (!has_gpu_device())
+    {
+        state.SkipWithError("No GPU device");
+        return;
+    }
+    std::vector<float> ha(kSumN), hb(kSumN), hx(kSumN);
+    fill_uniform(ha, -1.0f, 1.0f, 5u);
+    fill_uniform(hb, 0.5f, 1.5f, 6u);
+    fill_uniform(hx, -3.14159f, 3.14159f, 7u);
+
+    tensor<float> a(kSumN, device_enum::METAL), b(kSumN, device_enum::METAL),
+        x(kSumN, device_enum::METAL), c(kSumN, device_enum::METAL);
+    a.copy_from_host(ha);
+    b.copy_from_host(hb);
+    x.copy_from_host(hx);
+
+    for (auto _ : state)
+    {
+        // Same expression tree as the CPU path — run_metal lowers this into
+        // sin -> mul -> add kernel dispatches (see expressions_evaluator_metal.h).
+        c         = a + b * ::sin(x);
+        float sum = vectorization::metal_backend::reduce_sum(c.data(), kSumN);
+        benchmark::DoNotOptimize(sum);
+    }
+    state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(kSumN));
+}
+BENCHMARK(GPU_SumAddMulSin_Metal)->Unit(benchmark::kMicrosecond);
+#endif  // VECTORIZATION_HAS_METAL
+
+#endif  // VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP || VECTORIZATION_HAS_METAL
 
 BENCHMARK_MAIN();

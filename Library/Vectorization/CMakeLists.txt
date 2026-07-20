@@ -43,10 +43,19 @@ else()
 endif()
 
 set(VECTORIZATION_CPU_BACKEND "${_quarisma_vectorization_cpu_default}"
-    CACHE STRING
-        "CPU SIMD backend. Options: no, sse, avx, avx2, avx512, neon, sve"
+    CACHE STRING "CPU SIMD backend. Options: no, sse, avx, avx2, avx512, neon, sve"
 )
-set_property(CACHE VECTORIZATION_CPU_BACKEND PROPERTY STRINGS no sse avx avx2 avx512 neon sve)
+set_property(
+  CACHE VECTORIZATION_CPU_BACKEND
+  PROPERTY STRINGS
+           no
+           sse
+           avx
+           avx2
+           avx512
+           neon
+           sve
+)
 if(NOT VECTORIZATION_CPU_BACKEND MATCHES "^(no|sse|avx|avx2|avx512|neon|sve)$")
   message(
     FATAL_ERROR
@@ -54,19 +63,26 @@ if(NOT VECTORIZATION_CPU_BACKEND MATCHES "^(no|sse|avx|avx2|avx512|neon|sve)$")
   )
 endif()
 
-# GPU backend. Can be set from the command line: -DVECTORIZATION_GPU_BACKEND=cuda|hip|none
+# GPU backend. Can be set from the command line: -DVECTORIZATION_GPU_BACKEND=cuda|hip|metal|none
 set(VECTORIZATION_GPU_BACKEND "none"
-    CACHE STRING "GPU backend for Vectorization: none, cuda, hip"
+    CACHE STRING "GPU backend for Vectorization: none, cuda, hip, metal"
 )
-set_property(CACHE VECTORIZATION_GPU_BACKEND PROPERTY STRINGS none cuda hip)
-if(NOT VECTORIZATION_GPU_BACKEND MATCHES "^(none|cuda|hip)$")
-  message(FATAL_ERROR "VECTORIZATION_GPU_BACKEND must be one of: none, cuda, hip (got '${VECTORIZATION_GPU_BACKEND}')")
+set_property(CACHE VECTORIZATION_GPU_BACKEND PROPERTY STRINGS none cuda hip metal)
+if(NOT VECTORIZATION_GPU_BACKEND MATCHES "^(none|cuda|hip|metal)$")
+  message(
+    FATAL_ERROR
+      "VECTORIZATION_GPU_BACKEND must be one of: none, cuda, hip, metal (got '${VECTORIZATION_GPU_BACKEND}')"
+  )
+endif()
+if(VECTORIZATION_GPU_BACKEND STREQUAL "metal" AND NOT APPLE)
+  message(FATAL_ERROR "VECTORIZATION_GPU_BACKEND=metal is only supported on Apple platforms.")
 endif()
 
 include(lto)
 quarisma_lto_compute_default(_lto_default PROFILE PERFORMANCE)
 set(VECTORIZATION_LTO_MODE "${_lto_default}"
-    CACHE STRING "LTO mode for Vectorization: off | thin | full | ipo | auto")
+    CACHE STRING "LTO mode for Vectorization: off | thin | full | ipo | auto"
+)
 set_property(CACHE VECTORIZATION_LTO_MODE PROPERTY STRINGS off thin full ipo auto)
 option(VECTORIZATION_ENABLE_COVERAGE "Enable coverage instrumentation for Vectorization" OFF)
 option(VECTORIZATION_ENABLE_TESTING "Build Vectorization test suite" ON)
@@ -85,10 +101,15 @@ mark_as_advanced(VECTORIZATION_ENABLE_SVML)
 # MKL VML backend — statically linked Intel MKL; mutually exclusive with SVML/SLEEF math paths.
 # Enable by setting VECTORIZATION_ENABLE_MKL=ON and ensuring MKLROOT is set or MKL is
 # discoverable via find_package(MKL CONFIG).
-option(VECTORIZATION_ENABLE_MKL "Enable Intel MKL VML vector math backend (x86 only, static link)" OFF)
+option(VECTORIZATION_ENABLE_MKL "Enable Intel MKL VML vector math backend (x86 only, static link)"
+       OFF
+)
 mark_as_advanced(VECTORIZATION_ENABLE_MKL)
 
-option(VECTORIZATION_ENABLE_SLEEF "Enable SLEEF SIMD math library (SSE/AVX/AVX2/AVX512/NEON); mutually exclusive with SVML" OFF)
+option(VECTORIZATION_ENABLE_SLEEF
+       "Enable SLEEF SIMD math library (SSE/AVX/AVX2/AVX512/NEON); mutually exclusive with SVML"
+       OFF
+)
 mark_as_advanced(VECTORIZATION_ENABLE_SLEEF)
 
 option(VECTORIZATION_ENABLE_ACCELERATE "Enable Apple Accelerate vForce on AArch64 NEON" OFF)
@@ -97,7 +118,9 @@ mark_as_advanced(VECTORIZATION_ENABLE_ACCELERATE)
 # LibTorch (PyTorch C++ frontend) comparison tests/benchmarks — auto-probed via
 # CMAKE_PREFIX_PATH when enabled. Off by default so a plain configure never pays the
 # find_package(Torch) cost or fails when no LibTorch install is present.
-option(VECTORIZATION_ENABLE_LIBTORCH "Enable LibTorch (PyTorch C++) comparison tests and benchmarks" OFF)
+option(VECTORIZATION_ENABLE_LIBTORCH
+       "Enable LibTorch (PyTorch C++) comparison tests and benchmarks" OFF
+)
 
 # Memory presence — detected from the CMake target; not a user option.
 if(TARGET Memory::Memory)
@@ -161,8 +184,8 @@ endif()
 
 # SVE vector register width. The current backend/sve/ implementation only supports 128 bits.
 # Set to 256 or 512 once those backends are extended to support scalable widths.
-set(VECTORIZATION_SVE_VECTOR_BITS "128"
-    CACHE STRING "SVE vector register width in bits: 128, 256, 512"
+set(VECTORIZATION_SVE_VECTOR_BITS "128" CACHE STRING
+                                              "SVE vector register width in bits: 128, 256, 512"
 )
 set_property(CACHE VECTORIZATION_SVE_VECTOR_BITS PROPERTY STRINGS 128 256 512)
 if(NOT VECTORIZATION_SVE_VECTOR_BITS MATCHES "^(128|256|512)$")
@@ -175,9 +198,11 @@ endif()
 # compiler N independent accumulator/temp chains per iteration instead of one, which hides the
 # latency of FMA/div/transcendental ops (and, for reductions, breaks the serial dependency chain
 # through the accumulator) at the cost of more registers and code size.
-set(VECTORIZATION_PACKET_SIZE "1"
-    CACHE STRING
-        "SIMD registers processed per unrolled loop iteration in the expression evaluator (1,2,3,...)"
+set(VECTORIZATION_PACKET_SIZE
+    "1"
+    CACHE
+      STRING
+      "SIMD registers processed per unrolled loop iteration in the expression evaluator (1,2,3,...)"
 )
 if(NOT VECTORIZATION_PACKET_SIZE MATCHES "^[1-9][0-9]*$")
   message(
@@ -187,8 +212,7 @@ if(NOT VECTORIZATION_PACKET_SIZE MATCHES "^[1-9][0-9]*$")
 endif()
 if(VECTORIZATION_PACKET_SIZE GREATER 16)
   message(
-    FATAL_ERROR
-      "VECTORIZATION_PACKET_SIZE must be at most 16 (got '${VECTORIZATION_PACKET_SIZE}')"
+    FATAL_ERROR "VECTORIZATION_PACKET_SIZE must be at most 16 (got '${VECTORIZATION_PACKET_SIZE}')"
   )
 endif()
 
@@ -242,7 +266,6 @@ endforeach()
 set(VECTORIZATION_COMPILER_FLAGS "${VECTORIZATION_COMPILER_FLAGS}"
     CACHE INTERNAL "Quarisma: SIMD flags from Vectorization utils" FORCE
 )
-
 
 message("-- SIMD compiler flags: ${VECTORIZATION_COMPILER_FLAGS}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${VECTORIZATION_COMPILER_FLAGS}")
@@ -312,11 +335,21 @@ endif()
 
 # --- GPU backend → VECTORIZATION_HAS_* (driven by VECTORIZATION_GPU_BACKEND) ---
 if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
-  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_CUDA=1 VECTORIZATION_HAS_HIP=0)
+  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS
+       VECTORIZATION_HAS_CUDA=1 VECTORIZATION_HAS_HIP=0 VECTORIZATION_HAS_METAL=0
+  )
 elseif(VECTORIZATION_GPU_BACKEND STREQUAL "hip")
-  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_CUDA=0 VECTORIZATION_HAS_HIP=1)
+  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS
+       VECTORIZATION_HAS_CUDA=0 VECTORIZATION_HAS_HIP=1 VECTORIZATION_HAS_METAL=0
+  )
+elseif(VECTORIZATION_GPU_BACKEND STREQUAL "metal")
+  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS
+       VECTORIZATION_HAS_CUDA=0 VECTORIZATION_HAS_HIP=0 VECTORIZATION_HAS_METAL=1
+  )
 else()
-  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_CUDA=0 VECTORIZATION_HAS_HIP=0)
+  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS
+       VECTORIZATION_HAS_CUDA=0 VECTORIZATION_HAS_HIP=0 VECTORIZATION_HAS_METAL=0
+  )
 endif()
 
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_SVML)
@@ -332,12 +365,13 @@ if(VECTORIZATION_CPU_BACKEND MATCHES "^(sse|avx|avx2|avx512|neon|sve)$")
 else()
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_VECTORIZED=0)
 endif()
-list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_PACKET_SIZE=${VECTORIZATION_PACKET_SIZE})
+list(APPEND VECTORIZATION_COMPILE_DEFINITIONS
+     VECTORIZATION_PACKET_SIZE=${VECTORIZATION_PACKET_SIZE}
+)
 
 set(VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS "")
 list(APPEND VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS ${VECTORIZATION_COMPILE_DEFINITIONS})
 set(VECTORIZATION_DEPENDENCY_LINK_DIRS "")
-
 
 # Build/link ThirdParty SLEEF for AArch64 NEON when requested.
 if(VECTORIZATION_ENABLE_SLEEF)
@@ -347,8 +381,9 @@ if(VECTORIZATION_ENABLE_SLEEF)
 
   # SLEEF requires a non-default install prefix even for subdirectory builds.
   if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX "${_sleef_install_prefix}" CACHE PATH
-        "Install path prefix, prepended onto install directories." FORCE)
+    set(CMAKE_INSTALL_PREFIX "${_sleef_install_prefix}"
+        CACHE PATH "Install path prefix, prepended onto install directories." FORCE
+    )
     set(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT FALSE)
   endif()
 
@@ -399,28 +434,27 @@ endif()
 if(VECTORIZATION_ENABLE_MKL)
   string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _mkl_proc)
   if(NOT _mkl_proc MATCHES "^(x86_64|amd64|i686|i386)$")
-    message(WARNING
-      "VECTORIZATION_ENABLE_MKL=ON is only supported on x86_64; disabling."
-    )
+    message(WARNING "VECTORIZATION_ENABLE_MKL=ON is only supported on x86_64; disabling.")
     set(VECTORIZATION_ENABLE_MKL OFF
-        CACHE BOOL "Enable Intel MKL VML vector math backend (x86 only, static link)" FORCE)
+        CACHE BOOL "Enable Intel MKL VML vector math backend (x86 only, static link)" FORCE
+    )
     list(REMOVE_ITEM VECTORIZATION_COMPILE_DEFINITIONS "VECTORIZATION_HAS_MKL=1")
     list(APPEND VECTORIZATION_COMPILE_DEFINITIONS "VECTORIZATION_HAS_MKL=0")
     list(REMOVE_ITEM VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS "VECTORIZATION_HAS_MKL=1")
     list(APPEND VECTORIZATION_DEPENDENCY_COMPILE_DEFINITIONS "VECTORIZATION_HAS_MKL=0")
   else()
     # Sequential (single-threaded) VML — no mandatory OpenMP runtime dependency.
-    set(MKL_THREADING "SEQ"
-        CACHE STRING "MKL threading flavour used by Vectorization" FORCE)
+    set(MKL_THREADING "SEQ" CACHE STRING "MKL threading flavour used by Vectorization" FORCE)
     # Use shared MKL libraries (pip-installed MKL ships .so only, no .a archives).
     # Set ENABLE_STATIC_MKL=ON manually if you have static archives available.
-    set(ENABLE_STATIC_MKL OFF
-        CACHE BOOL "Link MKL statically for Vectorization" FORCE)
+    set(ENABLE_STATIC_MKL OFF CACHE BOOL "Link MKL statically for Vectorization" FORCE)
 
     find_package(MKL QUIET)
 
     if(MKL_FOUND)
-      message(STATUS "Vectorization: MKL VML found (version ${MKL_VERSION}). Include: ${MKL_INCLUDE_DIR}")
+      message(
+        STATUS "Vectorization: MKL VML found (version ${MKL_VERSION}). Include: ${MKL_INCLUDE_DIR}"
+      )
 
       # Umbrella INTERFACE target — wraps include dir, library list, and the
       # --start-group / --end-group pair needed on Linux to resolve circular
@@ -431,25 +465,22 @@ if(VECTORIZATION_ENABLE_MKL)
         # --start-group / --end-group is only needed for static archives to resolve
         # circular references.  With shared libraries it is harmless but unnecessary.
         if(UNIX AND NOT APPLE AND ENABLE_STATIC_MKL)
-          target_link_libraries(MKL::MKL INTERFACE
-            -Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group
-            ${CMAKE_DL_LIBS}
+          target_link_libraries(
+            MKL::MKL INTERFACE -Wl,--start-group ${MKL_LIBRARIES} -Wl,--end-group ${CMAKE_DL_LIBS}
           )
         else()
-          target_link_libraries(MKL::MKL INTERFACE
-            ${MKL_LIBRARIES}
-            ${CMAKE_DL_LIBS}
-          )
+          target_link_libraries(MKL::MKL INTERFACE ${MKL_LIBRARIES} ${CMAKE_DL_LIBS})
         endif()
       endif()
     else()
-      message(WARNING
-        "VECTORIZATION_ENABLE_MKL=ON but MKL was not found — disabling MKL VML backend. "
-        "Set MKLROOT or INTEL_MKL_DIR to your MKL installation root "
-        "(e.g. /opt/intel/oneapi/mkl/latest)."
+      message(
+        WARNING "VECTORIZATION_ENABLE_MKL=ON but MKL was not found — disabling MKL VML backend. "
+                "Set MKLROOT or INTEL_MKL_DIR to your MKL installation root "
+                "(e.g. /opt/intel/oneapi/mkl/latest)."
       )
       set(VECTORIZATION_ENABLE_MKL OFF
-          CACHE BOOL "Enable Intel MKL VML vector math backend (x86 only, static link)" FORCE)
+          CACHE BOOL "Enable Intel MKL VML vector math backend (x86 only, static link)" FORCE
+      )
       # Patch the compile-definition lists that were populated before this detection block.
       list(REMOVE_ITEM VECTORIZATION_COMPILE_DEFINITIONS "VECTORIZATION_HAS_MKL=1")
       list(APPEND VECTORIZATION_COMPILE_DEFINITIONS "VECTORIZATION_HAS_MKL=0")
@@ -580,32 +611,33 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "hip")
   # Memory::Memory (Library/Memory/Cmake/hip.cmake) to pull HIP in transitively.
   find_package(hip QUIET)
   if(NOT hip_FOUND)
-    message(WARNING
-      "Vectorization: VECTORIZATION_GPU_BACKEND=hip but the HIP package was not found "
-      "via find_package(hip). Set ROCM_PATH or CMAKE_PREFIX_PATH to your ROCm install. "
-      "Falling back to enable_language(HIP) alone; linking may fail unless the HIP "
-      "runtime is otherwise reachable (e.g. transitively via Memory::Memory)."
+    message(
+      WARNING "Vectorization: VECTORIZATION_GPU_BACKEND=hip but the HIP package was not found "
+              "via find_package(hip). Set ROCM_PATH or CMAKE_PREFIX_PATH to your ROCm install. "
+              "Falling back to enable_language(HIP) alone; linking may fail unless the HIP "
+              "runtime is otherwise reachable (e.g. transitively via Memory::Memory)."
     )
   endif()
 
   enable_language(HIP)
 
   set(VECTORIZATION_GPU_ARCHITECTURES "gfx900;gfx906;gfx908;gfx90a;gfx1030;gfx1100"
-      CACHE STRING "HIP GPU architectures (gfxXXX for AMD, smXX for CUDA offload via hipcc)")
-  set_target_properties(Vectorization PROPERTIES
-    HIP_STANDARD    ${VECTORIZATION_CXX_STANDARD}
-    HIP_ARCHITECTURES "${VECTORIZATION_GPU_ARCHITECTURES}"
+      CACHE STRING "HIP GPU architectures (gfxXXX for AMD, smXX for CUDA offload via hipcc)"
   )
-  target_compile_options(Vectorization PRIVATE
-    $<$<COMPILE_LANGUAGE:HIP>:-ffast-math>
+  set_target_properties(
+    Vectorization PROPERTIES HIP_STANDARD ${VECTORIZATION_CXX_STANDARD}
+                             HIP_ARCHITECTURES "${VECTORIZATION_GPU_ARCHITECTURES}"
   )
+  target_compile_options(Vectorization PRIVATE $<$<COMPILE_LANGUAGE:HIP>:-ffast-math>)
   if(TARGET hip::host)
     target_link_libraries(Vectorization PUBLIC hip::host)
   endif()
   if(TARGET hip::device)
     target_link_libraries(Vectorization PUBLIC hip::device)
   endif()
-  message(STATUS "Vectorization: HIP GPU backend enabled (archs: ${VECTORIZATION_GPU_ARCHITECTURES})")
+  message(
+    STATUS "Vectorization: HIP GPU backend enabled (archs: ${VECTORIZATION_GPU_ARCHITECTURES})"
+  )
 endif()
 
 # ---- CUDA GPU backend -------------------------------------------------------
@@ -615,23 +647,67 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
   # sm_70 (Volta) was removed in CUDA 12.8; CUDA 13.x starts at sm_75.
   # Force-update to evict any stale cached value that contains sm_70.
   set(VECTORIZATION_CUDA_ARCHITECTURES "75;80;86;89;90"
-      CACHE STRING "CUDA compute capability list (e.g. 75;80;86 for Turing/Ampere/Ada)" FORCE)
-  set_target_properties(Vectorization PROPERTIES
-    CUDA_STANDARD              ${VECTORIZATION_CXX_STANDARD}
-    CUDA_STANDARD_REQUIRED     ON
-    CUDA_ARCHITECTURES         "${VECTORIZATION_CUDA_ARCHITECTURES}"
-    CUDA_SEPARABLE_COMPILATION OFF
+      CACHE STRING "CUDA compute capability list (e.g. 75;80;86 for Turing/Ampere/Ada)" FORCE
+  )
+  set_target_properties(
+    Vectorization
+    PROPERTIES CUDA_STANDARD ${VECTORIZATION_CXX_STANDARD}
+               CUDA_STANDARD_REQUIRED ON
+               CUDA_ARCHITECTURES "${VECTORIZATION_CUDA_ARCHITECTURES}"
+               CUDA_SEPARABLE_COMPILATION OFF
   )
   if(CMAKE_CUDA_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(Vectorization PRIVATE
-      $<$<COMPILE_LANGUAGE:CUDA>:-ffast-math>
-    )
+    target_compile_options(Vectorization PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-ffast-math>)
   else()
-    target_compile_options(Vectorization PRIVATE
-      $<$<COMPILE_LANGUAGE:CUDA>:--use_fast_math -Xcompiler=-fPIC>
+    target_compile_options(
+      Vectorization PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--use_fast_math -Xcompiler=-fPIC>
     )
   endif()
-  message(STATUS "Vectorization: CUDA GPU backend enabled (archs: ${VECTORIZATION_CUDA_ARCHITECTURES}, compiler: ${CMAKE_CUDA_COMPILER_ID})")
+  message(
+    STATUS
+      "Vectorization: CUDA GPU backend enabled (archs: ${VECTORIZATION_CUDA_ARCHITECTURES}, compiler: ${CMAKE_CUDA_COMPILER_ID})"
+  )
+endif()
+
+# ---- Metal GPU backend ------------------------------------------------------
+# Unlike CUDA/HIP, Metal has no CMake "language"/unified host+device compiler pass — MSL
+# kernel source (backend/gpu/metal/kernels.metal) is embedded as a string at configure
+# time and compiled at runtime via newLibraryWithSource:, so this block only needs
+# Objective-C++ (for the .mm dispatch/allocator glue) plus the Metal/Foundation
+# frameworks. See backend/gpu/metal/metal_dispatch.mm and
+# expressions/expressions_evaluator_metal.h for the rest of the design.
+if(VECTORIZATION_GPU_BACKEND STREQUAL "metal")
+  if(NOT _vec_has_memory)
+    message(
+      FATAL_ERROR
+        "VECTORIZATION_GPU_BACKEND=metal requires VECTORIZATION_HAS_MEMORY=1 — the Metal "
+        "MTLBuffer<->pointer tracking this backend relies on lives in Memory::Memory "
+        "(gpu/metal/metal_buffer_allocator.h), built with MEMORY_GPU_BACKEND=metal."
+    )
+  endif()
+
+  enable_language(OBJCXX)
+  set(CMAKE_OBJCXX_STANDARD ${VECTORIZATION_CXX_STANDARD})
+  set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
+
+  find_library(METAL_FRAMEWORK Metal REQUIRED)
+  find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
+
+  # Embed kernels.metal as a C++ string literal (kMetalKernelSource) — see
+  # metal_kernels_source.h.in for the template this fills in.
+  file(READ "${CMAKE_CURRENT_SOURCE_DIR}/backend/gpu/metal/kernels.metal" METAL_KERNEL_SOURCE)
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/backend/gpu/metal/metal_kernels_source.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/backend/gpu/metal/metal_kernels_source.h" @ONLY
+  )
+
+  target_sources(Vectorization PRIVATE backend/gpu/metal/metal_dispatch.mm)
+  set_source_files_properties(
+    backend/gpu/metal/metal_dispatch.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc"
+  )
+  target_link_libraries(Vectorization PUBLIC ${METAL_FRAMEWORK} ${FOUNDATION_FRAMEWORK})
+
+  message(STATUS "Vectorization: Metal GPU backend enabled (framework: ${METAL_FRAMEWORK})")
 endif()
 
 if(MSVC)
@@ -714,17 +790,20 @@ if(VECTORIZATION_ENABLE_SVML AND TARGET SVML::SVML)
   endif()
   foreach(_svml_rt IN LISTS SVML_RUNTIME_LIBRARIES)
     if(_svml_rt)
-      add_custom_command(TARGET Vectorization POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-          "${_svml_rt}"
-          "$<TARGET_FILE_DIR:Vectorization>"
+      add_custom_command(
+        TARGET Vectorization
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_svml_rt}"
+                "$<TARGET_FILE_DIR:Vectorization>"
         COMMENT "Staging SVML runtime: ${_svml_rt}"
         VERBATIM
       )
     endif()
   endforeach()
   unset(_svml_rt)
-  message(STATUS "Vectorization: linked SVML::SVML (ThirdParty); runtime files: ${SVML_RUNTIME_LIBRARIES}")
+  message(
+    STATUS "Vectorization: linked SVML::SVML (ThirdParty); runtime files: ${SVML_RUNTIME_LIBRARIES}"
+  )
 endif()
 
 # Link Intel MKL VML when VECTORIZATION_ENABLE_MKL=ON.
@@ -734,9 +813,8 @@ if(VECTORIZATION_ENABLE_MKL)
     target_link_libraries(Vectorization PUBLIC MKL::MKL)
     message(STATUS "Vectorization: linked MKL VML via MKL::MKL.")
   else()
-    message(FATAL_ERROR
-      "VECTORIZATION_ENABLE_MKL=ON but the MKL::MKL target is not available. "
-      "Set MKLROOT or INTEL_MKL_DIR to your MKL installation root."
+    message(FATAL_ERROR "VECTORIZATION_ENABLE_MKL=ON but the MKL::MKL target is not available. "
+                        "Set MKLROOT or INTEL_MKL_DIR to your MKL installation root."
     )
   endif()
 endif()

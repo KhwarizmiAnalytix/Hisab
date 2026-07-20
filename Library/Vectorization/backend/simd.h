@@ -75,29 +75,29 @@ struct simd
 //    but a GPU backend is active (keeps simd<T> well-defined for tensor members).
 
 #if VECTORIZATION_ON_GPU_DEVICE
-  // --- GPU device code: scalar simd<T> ---
-  // Shared by CUDA and HIP (identical scalar semantics); VECTORIZATION_ON_GPU_DEVICE
-  // being set already guarantees nvcc or hipcc is doing the device pass.
-#  include "backend/gpu/double/simd.h"
-#  include "backend/gpu/float/simd.h"
+// --- GPU device code: scalar simd<T> ---
+// Shared by CUDA and HIP (identical scalar semantics); VECTORIZATION_ON_GPU_DEVICE
+// being set already guarantees nvcc or hipcc is doing the device pass.
+#include "backend/gpu/double/simd.h"
+#include "backend/gpu/float/simd.h"
 
 #else
-  // --- CPU host code: SIMD or scalar fallback ---
-#  if VECTORIZATION_HAS_AVX512
-#    include "backend/cpu/avx512/double/simd.h"
-#    include "backend/cpu/avx512/float/simd.h"
-#  elif VECTORIZATION_HAS_AVX2 || VECTORIZATION_HAS_AVX
-#    include "backend/cpu/avx/double/simd.h"
-#    include "backend/cpu/avx/float/simd.h"
-#  elif VECTORIZATION_HAS_SSE
-#    include "backend/cpu/sse/double/simd.h"
-#    include "backend/cpu/sse/float/simd.h"
-#  elif VECTORIZATION_HAS_SVE
-#    include "backend/cpu/sve/double/simd.h"
-#    include "backend/cpu/sve/float/simd.h"
-#  elif VECTORIZATION_HAS_NEON
-#    include "backend/cpu/neon/double/simd.h"
-#    include "backend/cpu/neon/float/simd.h"
-#  endif
+// --- CPU host code: SIMD or scalar fallback ---
+#if VECTORIZATION_HAS_AVX512
+#include "backend/cpu/avx512/double/simd.h"
+#include "backend/cpu/avx512/float/simd.h"
+#elif VECTORIZATION_HAS_AVX2 || VECTORIZATION_HAS_AVX
+#include "backend/cpu/avx/double/simd.h"
+#include "backend/cpu/avx/float/simd.h"
+#elif VECTORIZATION_HAS_SSE
+#include "backend/cpu/sse/double/simd.h"
+#include "backend/cpu/sse/float/simd.h"
+#elif VECTORIZATION_HAS_SVE
+#include "backend/cpu/sve/double/simd.h"
+#include "backend/cpu/sve/float/simd.h"
+#elif VECTORIZATION_HAS_NEON
+#include "backend/cpu/neon/double/simd.h"
+#include "backend/cpu/neon/float/simd.h"
+#endif
 
 #endif  // VECTORIZATION_ON_GPU_DEVICE

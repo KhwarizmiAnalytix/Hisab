@@ -62,16 +62,19 @@ struct simd<float>
     // Load / store / set
     // -------------------------------------------------------------------------
 
-    VECTORIZATION_SIMD_METHOD simd_t load(const value_t* addr)  { return *addr; }
+    VECTORIZATION_SIMD_METHOD simd_t load(const value_t* addr) { return *addr; }
     VECTORIZATION_SIMD_METHOD simd_t loadu(const value_t* addr) { return *addr; }
 
-    VECTORIZATION_SIMD_RETURN_TYPE store(simd_t from, value_t* to)  { *to = from; }
+    VECTORIZATION_SIMD_RETURN_TYPE store(simd_t from, value_t* to) { *to = from; }
     VECTORIZATION_SIMD_RETURN_TYPE storeu(simd_t from, value_t* to) { *to = from; }
 
     template <
         typename scalar_t,
         typename std::enable_if<std::is_fundamental<scalar_t>::value, bool>::type = true>
-    VECTORIZATION_SIMD_METHOD simd_t set(scalar_t alpha) { return static_cast<value_t>(alpha); }
+    VECTORIZATION_SIMD_METHOD simd_t set(scalar_t alpha)
+    {
+        return static_cast<value_t>(alpha);
+    }
 
     VECTORIZATION_SIMD_METHOD simd_t setzero() { return 0.0f; }
 
@@ -84,17 +87,11 @@ struct simd<float>
     VECTORIZATION_SIMD_METHOD simd_t mul(simd_t x, simd_t y) { return x * y; }
     VECTORIZATION_SIMD_METHOD simd_t div(simd_t x, simd_t y) { return x / y; }
 
-    VECTORIZATION_SIMD_METHOD simd_t fma(simd_t x, simd_t y, simd_t z)
-    {
-        return ::fmaf(x, y, z);
-    }
+    VECTORIZATION_SIMD_METHOD simd_t fma(simd_t x, simd_t y, simd_t z) { return ::fmaf(x, y, z); }
 
     VECTORIZATION_SIMD_METHOD simd_t pow(simd_t x, simd_t y) { return ::powf(x, y); }
 
-    VECTORIZATION_SIMD_METHOD simd_t hypot(simd_t x, simd_t y)
-    {
-        return ::hypotf(x, y);
-    }
+    VECTORIZATION_SIMD_METHOD simd_t hypot(simd_t x, simd_t y) { return ::hypotf(x, y); }
 
     VECTORIZATION_SIMD_METHOD simd_t min(simd_t x, simd_t y) { return ::fminf(x, y); }
     VECTORIZATION_SIMD_METHOD simd_t max(simd_t x, simd_t y) { return ::fmaxf(x, y); }
@@ -105,34 +102,34 @@ struct simd<float>
     // Unary math
     // -------------------------------------------------------------------------
 
-    VECTORIZATION_SIMD_METHOD simd_t sqrt(simd_t x)    { return ::sqrtf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t sqrt(simd_t x) { return ::sqrtf(x); }
     VECTORIZATION_SIMD_METHOD simd_t invsqrt(simd_t x) { return ::rsqrtf(x); }
-    VECTORIZATION_SIMD_METHOD simd_t sqr(simd_t x)     { return x * x; }
-    VECTORIZATION_SIMD_METHOD simd_t fabs(simd_t x)    { return ::fabsf(x); }
-    VECTORIZATION_SIMD_METHOD simd_t neg(simd_t x)     { return -x; }
-    VECTORIZATION_SIMD_METHOD simd_t ceil(simd_t x)    { return ::ceilf(x); }
-    VECTORIZATION_SIMD_METHOD simd_t floor(simd_t x)   { return ::floorf(x); }
-    VECTORIZATION_SIMD_METHOD simd_t trunc(simd_t x)   { return ::truncf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t sqr(simd_t x) { return x * x; }
+    VECTORIZATION_SIMD_METHOD simd_t fabs(simd_t x) { return ::fabsf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t neg(simd_t x) { return -x; }
+    VECTORIZATION_SIMD_METHOD simd_t ceil(simd_t x) { return ::ceilf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t floor(simd_t x) { return ::floorf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t trunc(simd_t x) { return ::truncf(x); }
 
-    VECTORIZATION_SIMD_METHOD simd_t exp(simd_t x)   { return ::expf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t exp(simd_t x) { return ::expf(x); }
     VECTORIZATION_SIMD_METHOD simd_t expm1(simd_t x) { return ::expm1f(x); }
-    VECTORIZATION_SIMD_METHOD simd_t exp2(simd_t x)  { return ::exp2f(x); }
+    VECTORIZATION_SIMD_METHOD simd_t exp2(simd_t x) { return ::exp2f(x); }
     VECTORIZATION_SIMD_METHOD simd_t exp10(simd_t x) { return ::exp10f(x); }
-    VECTORIZATION_SIMD_METHOD simd_t log(simd_t x)   { return ::logf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t log(simd_t x) { return ::logf(x); }
     VECTORIZATION_SIMD_METHOD simd_t log1p(simd_t x) { return ::log1pf(x); }
-    VECTORIZATION_SIMD_METHOD simd_t log2(simd_t x)  { return ::log2f(x); }
+    VECTORIZATION_SIMD_METHOD simd_t log2(simd_t x) { return ::log2f(x); }
     VECTORIZATION_SIMD_METHOD simd_t log10(simd_t x) { return ::log10f(x); }
-    VECTORIZATION_SIMD_METHOD simd_t cbrt(simd_t x)  { return ::cbrtf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t cbrt(simd_t x) { return ::cbrtf(x); }
 
-    VECTORIZATION_SIMD_METHOD simd_t sin(simd_t x)   { return ::sinf(x); }
-    VECTORIZATION_SIMD_METHOD simd_t cos(simd_t x)   { return ::cosf(x); }
-    VECTORIZATION_SIMD_METHOD simd_t tan(simd_t x)   { return ::tanf(x); }
-    VECTORIZATION_SIMD_METHOD simd_t asin(simd_t x)  { return ::asinf(x); }
-    VECTORIZATION_SIMD_METHOD simd_t acos(simd_t x)  { return ::acosf(x); }
-    VECTORIZATION_SIMD_METHOD simd_t atan(simd_t x)  { return ::atanf(x); }
-    VECTORIZATION_SIMD_METHOD simd_t sinh(simd_t x)  { return ::sinhf(x); }
-    VECTORIZATION_SIMD_METHOD simd_t cosh(simd_t x)  { return ::coshf(x); }
-    VECTORIZATION_SIMD_METHOD simd_t tanh(simd_t x)  { return ::tanhf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t sin(simd_t x) { return ::sinf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t cos(simd_t x) { return ::cosf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t tan(simd_t x) { return ::tanf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t asin(simd_t x) { return ::asinf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t acos(simd_t x) { return ::acosf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t atan(simd_t x) { return ::atanf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t sinh(simd_t x) { return ::sinhf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t cosh(simd_t x) { return ::coshf(x); }
+    VECTORIZATION_SIMD_METHOD simd_t tanh(simd_t x) { return ::tanhf(x); }
     VECTORIZATION_SIMD_METHOD simd_t asinh(simd_t x) { return ::asinhf(x); }
     VECTORIZATION_SIMD_METHOD simd_t acosh(simd_t x) { return ::acoshf(x); }
     VECTORIZATION_SIMD_METHOD simd_t atanh(simd_t x) { return ::atanhf(x); }
@@ -182,24 +179,24 @@ struct simd<float>
     // -------------------------------------------------------------------------
 
     VECTORIZATION_SIMD_METHOD simd_t accumulate(simd_t x) { return x; }
-    VECTORIZATION_SIMD_METHOD simd_t hmin(simd_t x)       { return x; }
-    VECTORIZATION_SIMD_METHOD simd_t hmax(simd_t x)       { return x; }
+    VECTORIZATION_SIMD_METHOD simd_t hmin(simd_t x) { return x; }
+    VECTORIZATION_SIMD_METHOD simd_t hmax(simd_t x) { return x; }
 
     // -------------------------------------------------------------------------
     // Comparisons (all-set = true, all-clear = false, matching CPU lane masks)
     // -------------------------------------------------------------------------
 
-    VECTORIZATION_SIMD_METHOD mask_t eq(simd_t x, simd_t y)  { return x == y ? ~0u : 0u; }
+    VECTORIZATION_SIMD_METHOD mask_t eq(simd_t x, simd_t y) { return x == y ? ~0u : 0u; }
     VECTORIZATION_SIMD_METHOD mask_t neq(simd_t x, simd_t y) { return x != y ? ~0u : 0u; }
-    VECTORIZATION_SIMD_METHOD mask_t lt(simd_t x, simd_t y)  { return x < y  ? ~0u : 0u; }
-    VECTORIZATION_SIMD_METHOD mask_t le(simd_t x, simd_t y)  { return x <= y ? ~0u : 0u; }
-    VECTORIZATION_SIMD_METHOD mask_t gt(simd_t x, simd_t y)  { return x > y  ? ~0u : 0u; }
-    VECTORIZATION_SIMD_METHOD mask_t ge(simd_t x, simd_t y)  { return x >= y ? ~0u : 0u; }
+    VECTORIZATION_SIMD_METHOD mask_t lt(simd_t x, simd_t y) { return x < y ? ~0u : 0u; }
+    VECTORIZATION_SIMD_METHOD mask_t le(simd_t x, simd_t y) { return x <= y ? ~0u : 0u; }
+    VECTORIZATION_SIMD_METHOD mask_t gt(simd_t x, simd_t y) { return x > y ? ~0u : 0u; }
+    VECTORIZATION_SIMD_METHOD mask_t ge(simd_t x, simd_t y) { return x >= y ? ~0u : 0u; }
 
     VECTORIZATION_SIMD_METHOD mask_t and_mask(mask_t x, mask_t y) { return x & y; }
-    VECTORIZATION_SIMD_METHOD mask_t or_mask(mask_t x, mask_t y)  { return x | y; }
+    VECTORIZATION_SIMD_METHOD mask_t or_mask(mask_t x, mask_t y) { return x | y; }
     VECTORIZATION_SIMD_METHOD mask_t xor_mask(mask_t x, mask_t y) { return x ^ y; }
-    VECTORIZATION_SIMD_METHOD mask_t not_mask(mask_t x)            { return ~x; }
+    VECTORIZATION_SIMD_METHOD mask_t not_mask(mask_t x) { return ~x; }
 
     VECTORIZATION_SIMD_METHOD simd_t if_else(mask_t m, simd_t t, simd_t f) { return m ? t : f; }
 };

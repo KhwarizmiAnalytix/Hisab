@@ -162,8 +162,12 @@ public:
 
     // --- 1-D constructors (vector-like) ------------------------------------
 
-    VECTORIZATION_CUDA_FUNCTION_TYPE explicit tensor(
-        size_type n, device_enum type = device_enum::CPU) noexcept
+    // Not noexcept: storage_(n, type) allocates via memory::allocator<T>, which can throw
+    // (e.g. std::bad_alloc, or std::invalid_argument for an unsupported type/device
+    // combination such as tensor<double> on device_enum::METAL — MSL has no double type).
+    // A noexcept constructor that throws internally calls std::terminate() instead of
+    // letting the exception propagate, which would make that rejection uncatchable.
+    VECTORIZATION_CUDA_FUNCTION_TYPE explicit tensor(size_type n, device_enum type = device_enum::CPU)
         : storage_(n, type)
     {
         sizes_and_strides_.size_at_unchecked(0)   = static_cast<int64_t>(n);
@@ -214,8 +218,9 @@ public:
 
     // --- 2-D constructors (matrix-like) ------------------------------------
 
+    // Not noexcept — see the 1-D sized constructor above for why.
     VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
-        size_type rows, size_type cols, device_enum type = device_enum::CPU) noexcept
+        size_type rows, size_type cols, device_enum type = device_enum::CPU)
         : storage_(rows * cols, type)
     {
         sizes_and_strides_.resize(2);

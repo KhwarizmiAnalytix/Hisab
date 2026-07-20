@@ -639,7 +639,7 @@ class QuarismaFlags:
         self.__description = [
             # Valid CMake options
             "cpu backend: no, sse, avx, avx2, avx512, neon, or sve",
-            "GPU backend: none, hip, cuda",
+            "GPU backend: none, hip, cuda, metal",
             "enable Intel TBB (Threading Building Blocks) support",
             "enable OpenMP",
             "enable MKL",
@@ -780,7 +780,7 @@ class QuarismaFlags:
     def __process_arg_list(self, arg_list):
         sanitizer_list = ["address", "undefined", "thread", "memory", "leak"]
         cpu_backend_list = ["no", "sse", "avx", "avx2", "avx512", "neon", "sve"]
-        gpu_backend_list = ["none", "hip", "cuda"]
+        gpu_backend_list = ["none", "hip", "cuda", "metal"]
         cxx_std_list = ["cxx17", "cxx20", "cxx23"]
         logging_backend_list = ["native", "loguru", "glog", "spdlog"]
         profiler_choices = {"kineto": "KINETO", "native": "NATIVE", "itt": "ITT"}
@@ -837,7 +837,7 @@ class QuarismaFlags:
             elif arg in cpu_backend_list:
                 self.__value["cpu_backend"] = arg
                 self.builder_suffix += f"_{arg}"
-            elif arg in ("cuda", "hip"):
+            elif arg in ("cuda", "hip", "metal"):
                 self.__value["gpu_backend"] = arg
                 self.builder_suffix += f"_{arg}"
             elif arg.startswith("gpu_backend."):
@@ -1910,7 +1910,7 @@ def parse_args(args):
 
         elif arg.startswith("--gpu_backend.") or arg.startswith("--gpu-backend."):
             backend_value = arg.split(".", 1)[1].lower()
-            valid_backends = ["none", "cuda", "hip"]
+            valid_backends = ["none", "cuda", "hip", "metal"]
             if backend_value in valid_backends:
                 processed_args.append(f"gpu_backend.{backend_value}")
             else:
