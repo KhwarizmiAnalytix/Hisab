@@ -686,6 +686,11 @@ jobs:
           # LeakSanitizer is not supported on Apple Silicon (ARM64)
           - os: macos-latest
             sanitizer: leak
+          # ThreadSanitizer is disabled on macOS: Homebrew LLVM's tsan runtime
+          # crashes at process startup (SIGSEGV in __tsan::SlotLock) on current
+          # macOS/Apple Silicon runners, before any test code executes.
+          - os: macos-latest
+            sanitizer: thread
         include:
           # Add leak sanitizer only for Ubuntu where it's supported
           - os: ubuntu-latest
