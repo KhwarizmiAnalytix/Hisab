@@ -600,6 +600,17 @@ set_target_properties(
 
 # ---- HIP GPU backend -------------------------------------------------------
 if(VECTORIZATION_GPU_BACKEND STREQUAL "hip")
+  # HIP/ROCm is Unix-only in this project — see Library/Memory/Cmake/hip.cmake and
+  # Docs/CUDA_HIP_REMEDIATION_PLAN.md. Fail fast on Windows rather than attempting an
+  # untested find_package(hip)/enable_language(HIP) path.
+  if(WIN32)
+    message(
+      FATAL_ERROR
+        "VECTORIZATION_GPU_BACKEND=hip is not supported on Windows in this project (HIP/ROCm is "
+        "Unix-only here). Use VECTORIZATION_GPU_BACKEND=cuda on Windows, or build on Linux for HIP."
+    )
+  endif()
+
   # Prefer ROCm HIP; fall back to CUDA when ROCM_PATH is absent.
   if(NOT DEFINED CMAKE_HIP_COMPILER AND DEFINED ENV{ROCM_PATH})
     set(CMAKE_HIP_COMPILER "$ENV{ROCM_PATH}/bin/hipcc" CACHE FILEPATH "HIP compiler")

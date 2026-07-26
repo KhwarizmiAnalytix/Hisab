@@ -1124,7 +1124,7 @@ QUARISMATEST(EnzymeAD, CompileDefinition)
 // The fixture class (SetUp/TearDown/RunForward/RunGrad) is implemented in
 // CudaEnzymeADTest.cu which must be compiled as a CUDA translation unit.
 // ============================================================================
-#if !defined(__MINGW32__) && PROJECT_HAS_CUDA
+#if !defined(__MINGW32__) && MEMORY_HAS_CUDA
 #include "CudaEnzymeADTest.h"
 
 // ----------------------------------------------------------------------------
