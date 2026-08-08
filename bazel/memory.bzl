@@ -49,12 +49,6 @@ def memory_defines():
         "//conditions:default": ["MEMORY_HAS_MEMKIND=0"],
     })
 
-    # Per-allocator call-site tracking — MEMORY_HAS_ALLOCATION_STATS
-    defines += select({
-        "//bazel:enable_allocation_stats": ["MEMORY_HAS_ALLOCATION_STATS=1"],
-        "//conditions:default": ["MEMORY_HAS_ALLOCATION_STATS=0"],
-    })
-
     return defines
 
 def memory_linkopts():

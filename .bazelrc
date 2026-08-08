@@ -323,13 +323,6 @@ build:logging_native --define=logging_backend=native
 build:logging_spdlog --define=logging_backend=spdlog
 
 # =============================================================================
-# GPU Allocation Strategy
-# =============================================================================
-build:gpu_alloc_sync --define=memory_gpu_alloc=sync
-build:gpu_alloc_async --define=memory_gpu_alloc=async
-build:gpu_alloc_pool_async --define=memory_gpu_alloc=pool_async
-
-# =============================================================================
 # Bazel --batch (manual use)
 # =============================================================================
 # `--batch` is a startup option. If a server is already running from a prior `bazel` command

@@ -151,25 +151,6 @@ config_setting(
 # Configure Bazel caching via remote execution or toolchains instead.
 
 # =============================================================================
-# GPU Allocation Strategy (Memory)
-# =============================================================================
-
-config_setting(
-    name = "gpu_alloc_sync",
-    define_values = {"memory_gpu_alloc": "sync"},
-)
-
-config_setting(
-    name = "gpu_alloc_async",
-    define_values = {"memory_gpu_alloc": "async"},
-)
-
-config_setting(
-    name = "gpu_alloc_pool_async",
-    define_values = {"memory_gpu_alloc": "pool_async"},
-)
-
-# =============================================================================
 # Algorithm Configuration (Core)
 # =============================================================================
 
@@ -322,11 +303,6 @@ config_setting(
 config_setting(
     name = "enable_experimental",
     define_values = {"core_enable_experimental": "true"},
-)
-
-config_setting(
-    name = "enable_allocation_stats",
-    define_values = {"memory_enable_allocation_stats": "true"},
 )
 
 # =============================================================================

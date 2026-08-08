@@ -822,15 +822,12 @@ class BazelConfiguration:
 
         # ── Memory ────────────────────────────────────────────────────────────
         print(f"\n{Fore.CYAN}******** Memory module (Bazel flags) ********{Style.RESET_ALL}")
-        gpu_configs = [c for c in self.configs if c.startswith("gpu_alloc_")]
-        gpu_alloc   = gpu_configs[0].replace("gpu_alloc_", "").upper() if gpu_configs else "POOL_ASYNC"
         self._pf("Mimalloc",     self._on_off(mimalloc_on),           W)
         self._pf("Memkind",      na,                                   W)
         self._pf("Numa",         na,                                   W)
         self._pf("Tbb",          self._on_off("tbb"  in self.configs), W)
         self._pf("Cuda",         self._on_off("cuda" in self.configs), W)
         self._pf("Hip",          self._on_off("hip"  in self.configs), W)
-        self._pf("Gpu alloc",    gpu_alloc,                            W)
         self._pf("Cxx standard", cxx,                                  W)
         common()
 

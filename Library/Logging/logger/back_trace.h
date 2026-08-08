@@ -73,8 +73,8 @@ namespace back_trace
      *
      * **Example Output**:
      * ```
-     * frame #0: logging::allocator_bfc::allocate_raw + 0x1a2b (0x7fff8a2b in libc.so)
-     * frame #1: logging::allocator::allocate + 0x45 (0x7fff8a45 in Core.dll)
+     * frame #0: memory::cpu::memory_allocator::allocate + 0x1a2b (0x7fff8a2b in libc.so)
+     * frame #1: logging::logger::log + 0x45 (0x7fff8a45 in Core.dll)
      * frame #2: main + 0x12 (0x400512 in app.exe)
      * ```
      */

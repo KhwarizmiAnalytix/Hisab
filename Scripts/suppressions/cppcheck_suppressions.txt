@@ -83,12 +83,6 @@ localtimeCalled:Library/Profiler/common/standalone/execution_trace_observer.cpp
 # Examples and test code - unused results are acceptable
 unreadVariable:Examples/*
 
-# Memory adapter pattern - intentional delegation to wrapped allocator
-uselessOverride:Library/Memory/helper/process_state.h
-
-# use_allocator_bfc is intentionally disabled (fixme: env-var read commented out)
-knownConditionTrueFalse:Library/Memory/helper/process_state.cpp:113
-
 # Struct member reserved for future use / platform-specific debug info
 unusedStructMember:Library/Logging/logger/back_trace.cpp:53
 
