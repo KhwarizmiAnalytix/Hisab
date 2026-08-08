@@ -1,0 +1,22 @@
+---
+description: After each completed task, report the model used and token/context usage
+alwaysApply: true
+---
+
+# Report model and usage after each task
+
+At the end of every completed task (or substantial response), append a short usage footer:
+
+```
+---
+Model: <model name>
+Usage: <tokens used> tokens (<percentage>% of context/limit) — or best available usage stats
+```
+
+## Requirements
+
+- Always name the model actually used for the response (e.g. Cursor Grok 4.5).
+- Include token count and/or percentage of context/limit when those figures are available in the session.
+- If exact token or percentage figures are not available, state that clearly (e.g. `Usage: not available in this session`) instead of inventing numbers.
+- Keep the footer brief; place it after the main answer, not before.
+- Do this for completed tasks and substantial answers; skip for trivial one-line clarifications only when no real work was done.

@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from html_report import HtmlGenerator, JsonHtmlGenerator
+from coverage_tool.html_report import HtmlGenerator, JsonHtmlGenerator
 
 
 class TestHtmlGenerator(unittest.TestCase):
@@ -227,13 +227,13 @@ class TestCliInterface(unittest.TestCase):
         with open(json_file, 'w') as f:
             json.dump(data, f)
         
-        from html_report.cli import main
+        from coverage_tool.html_report.cli import main
         result = main([f"--json={json_file}", f"--output={self.output_dir}"])
         self.assertEqual(result, 0)
 
     def test_cli_with_missing_json(self):
         """Test CLI with missing JSON file."""
-        from html_report.cli import main
+        from coverage_tool.html_report.cli import main
         result = main([f"--json={self.output_dir}/nonexistent.json", 
                       f"--output={self.output_dir}"])
         self.assertNotEqual(result, 0)
@@ -254,7 +254,7 @@ class TestCliInterface(unittest.TestCase):
         with open(json_file, 'w') as f:
             json.dump(data, f)
         
-        from html_report.cli import main
+        from coverage_tool.html_report.cli import main
         result = main([f"--json={json_file}", f"--output={self.output_dir}", 
                       "--verbose"])
         self.assertEqual(result, 0)

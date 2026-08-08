@@ -114,6 +114,12 @@ id<MTLBuffer> buffer_for(const void* host_ptr)
     return (__bridge id<MTLBuffer>)handle;
 }
 
+NSUInteger buffer_offset_for(const void* host_ptr)
+{
+    return static_cast<NSUInteger>(
+        memory::metal::mtl_buffer_offset(const_cast<void*>(host_ptr)));
+}
+
 std::size_t next_pow2(std::size_t n)
 {
     std::size_t p = 1;
@@ -184,9 +190,13 @@ void dispatch(
         ^(id<MTLComputeCommandEncoder> enc) {
             for (int i = 0; i < n_in; ++i)
             {
-                [enc setBuffer:buffer_for(in_buffers[i]) offset:0 atIndex:i];
+                [enc setBuffer:buffer_for(in_buffers[i])
+                        offset:buffer_offset_for(in_buffers[i])
+                       atIndex:i];
             }
-            [enc setBuffer:buffer_for(out_buffer) offset:0 atIndex:n_in];
+            [enc setBuffer:buffer_for(out_buffer)
+                    offset:buffer_offset_for(out_buffer)
+                   atIndex:n_in];
             [enc setBytes:&n32 length:sizeof(n32) atIndex:n_in + 1];
         },
         n_elems);
@@ -205,7 +215,9 @@ void dispatch_fill(void* out_buffer, float value, std::size_t n_elems)
     run(
         pso,
         ^(id<MTLComputeCommandEncoder> enc) {
-            [enc setBuffer:buffer_for(out_buffer) offset:0 atIndex:0];
+            [enc setBuffer:buffer_for(out_buffer)
+                    offset:buffer_offset_for(out_buffer)
+                   atIndex:0];
             [enc setBytes:&value length:sizeof(value) atIndex:1];
             [enc setBytes:&n32 length:sizeof(n32) atIndex:2];
         },
@@ -239,8 +251,8 @@ float reduce_sum(const void* buffer, std::size_t n_elems)
     id<MTLCommandBuffer>         cb  = [command_queue() commandBuffer];
     id<MTLComputeCommandEncoder> enc = [cb computeCommandEncoder];
     [enc setComputePipelineState:pso];
-    [enc setBuffer:buffer_for(buffer) offset:0 atIndex:0];
-    [enc setBuffer:buffer_for(out_ptr) offset:0 atIndex:1];
+    [enc setBuffer:buffer_for(buffer) offset:buffer_offset_for(buffer) atIndex:0];
+    [enc setBuffer:buffer_for(out_ptr) offset:buffer_offset_for(out_ptr) atIndex:1];
     [enc setBytes:&n32 length:sizeof(n32) atIndex:2];
     [enc setThreadgroupMemoryLength:(tg_size * sizeof(float)) atIndex:0];
     // Exactly one threadgroup, sized to cover the whole (small, fixed-N) input — see the

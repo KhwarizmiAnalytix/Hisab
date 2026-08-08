@@ -6,6 +6,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.log
+*.egg-info/
 /CPUinfo.log
 /Heavy Function Performance
 /build*

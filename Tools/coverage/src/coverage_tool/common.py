@@ -5,11 +5,13 @@ Provides shared functions used across multiple coverage modules to eliminate
 code duplication and improve maintainability.
 """
 
+import json
 import os
+import shutil
 import subprocess
 import platform
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Optional, Union
 import logging
 
 try:
@@ -38,6 +40,10 @@ CONFIG = {
 
     # Name of the coverage output directory (relative to build_dir)
     "coverage_report_dir": "coverage_report",
+
+    # Minimum required line-coverage percent. None (or absent) disables the
+    # gate entirely; a run below this threshold exits non-zero.
+    "min_coverage": None,
 
     # File patterns to exclude from coverage reports
     "exclude_patterns": [
@@ -113,7 +119,8 @@ def _flatten_toml_config(toml_data: dict) -> dict:
     result: dict = {}
 
     # [coverage]
-    for key in ("filter", "source_folder", "output_format", "coverage_report_dir", "compiler"):
+    for key in ("filter", "source_folder", "output_format", "coverage_report_dir", "compiler",
+                "min_coverage"):
         if key in cov:
             result[key] = cov[key]
 
@@ -231,9 +238,9 @@ def get_config() -> dict:
 
 
 def merge_exclude_patterns(
-    user_patterns: Optional[List[str]] = None,
+    user_patterns: Optional[list[str]] = None,
     include_defaults: bool = True
-) -> List[str]:
+) -> list[str]:
     """Merge user-provided exclusion patterns with default patterns.
 
     Combines user-provided patterns with default exclusion patterns from CONFIG.
@@ -271,7 +278,7 @@ def merge_exclude_patterns(
     return merged
 
 
-def parse_exclude_patterns_string(patterns_str: str) -> List[str]:
+def parse_exclude_patterns_string(patterns_str: str) -> list[str]:
     """Parse comma-separated exclusion patterns from a string.
 
     Splits a comma-separated string into individual patterns, stripping whitespace.
@@ -383,7 +390,7 @@ def find_opencppcoverage() -> Optional[str]:
     return None
 
 
-def discover_test_executables(build_dir: Path) -> List[Path]:
+def discover_test_executables(build_dir: Path) -> list[Path]:
     """Discover all test executables in the build directory.
 
     Searches for executables matching common test patterns in configured search
@@ -423,6 +430,105 @@ def discover_test_executables(build_dir: Path) -> List[Path]:
             unique_executables.append(exe)
 
     return unique_executables
+
+
+def discover_tests_via_ctest(build_dir: Path) -> dict[str, dict]:
+    """Query CTest for the authoritative test-name -> command/cwd/labels map.
+
+    This is preferred over guessing an executable's location from a naming
+    template, because CTest already knows the exact command line and working
+    directory each test was registered with — accurate regardless of how a
+    given CMake project lays out its build tree. Returns an empty dict (never
+    raises) if ``ctest`` isn't on PATH, the build wasn't configured with
+    CTest, or the output can't be parsed — callers fall back to
+    template/glob-based discovery in that case.
+
+    Args:
+        build_dir: Path to the CMake build directory.
+
+    Returns:
+        Mapping of CTest test name to
+        ``{"command": [...], "cwd": Optional[str], "labels": [...]}``.
+    """
+    if shutil.which("ctest") is None:
+        return {}
+
+    try:
+        result = subprocess.run(
+            ["ctest", "--show-only=json-v1"],
+            cwd=str(build_dir),
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        if result.returncode != 0 or not result.stdout:
+            return {}
+        data = json.loads(result.stdout)
+    except (subprocess.TimeoutExpired, OSError, json.JSONDecodeError) as e:
+        logger.debug("ctest --show-only=json-v1 unavailable: %s", e)
+        return {}
+
+    tests: dict[str, dict] = {}
+    for test in data.get("tests", []):
+        name = test.get("name")
+        command = test.get("command")
+        if not name or not command:
+            continue
+        properties = {
+            prop.get("name"): prop.get("value")
+            for prop in test.get("properties", [])
+            if prop.get("name")
+        }
+        labels = properties.get("LABELS") or []
+        if isinstance(labels, str):
+            labels = [labels]
+        tests[name] = {
+            "command": command,
+            "cwd": properties.get("WORKING_DIRECTORY"),
+            "labels": labels,
+        }
+    return tests
+
+
+def find_test_for_module(
+    ctest_tests: dict[str, dict], module_name: str, exe_pattern: str
+) -> Optional[dict]:
+    """Match a module name to one of the tests returned by discover_tests_via_ctest.
+
+    Match order:
+    1. A test whose CTest LABELS include the module name exactly
+       (case-insensitive) — the strongest signal, since it doesn't depend on
+       any executable-naming convention.
+    2. A test whose name equals ``exe_pattern`` formatted with the module
+       (e.g. "{module}CxxTests") — matches this tool's own convention.
+    3. A test whose name contains the module name (case-insensitive
+       substring) — last-resort heuristic for projects using neither of the
+       above.
+
+    Args:
+        ctest_tests: Output of discover_tests_via_ctest().
+        module_name: Module directory name (e.g. "Memory").
+        exe_pattern: Executable name template, e.g. "{module}CxxTests".
+
+    Returns:
+        The matched test's info dict, or None if no test matched.
+    """
+    module_lower = module_name.lower()
+
+    for info in ctest_tests.values():
+        if any(label.lower() == module_lower for label in info["labels"]):
+            return info
+
+    expected_name = exe_pattern.format(module=module_name)
+    if expected_name in ctest_tests:
+        return ctest_tests[expected_name]
+
+    for name, info in ctest_tests.items():
+        if module_lower in name.lower():
+            return info
+
+    return None
 
 
 def find_library(build_dir: Path, lib_folder: str, module_name: str,
@@ -467,17 +573,34 @@ def get_project_root() -> Path:
     Searches upward from the script directory for markers like .git,
     .gitignore, or pyproject.toml.
 
+    ``.git`` is checked across the *entire* upward walk before falling back
+    to the other markers, rather than being just one option evaluated
+    per-directory. Otherwise, since this tool ships its own pyproject.toml
+    a few directories below the real project root (Tools/coverage/), a
+    shallower "pyproject.toml" match would stop the walk there instead of
+    continuing up to the actual repository root.
+
     Returns:
         Path to project root directory.
     """
-    current = Path(__file__).resolve().parent
+    start = Path(__file__).resolve().parent
+    markers = CONFIG["project_markers"]
+
+    if ".git" in markers:
+        current = start
+        for _ in range(10):  # Search up to 10 levels
+            if (current / ".git").exists():
+                return current
+            current = current.parent
+
+    current = start
     for _ in range(10):  # Search up to 10 levels
-        for marker in CONFIG["project_markers"]:
+        for marker in markers:
             if (current / marker).exists():
                 return current
         current = current.parent
 
-    return Path(__file__).resolve().parent
+    return start
 
 
 def resolve_build_dir(build_dir_arg: str,
@@ -759,5 +882,5 @@ def detect_compiler(build_dir: Union[Path, str]) -> str:
         "  python run_coverage.py --build=<path> --compiler=msvc\n"
         "Or set it in coverage.toml:\n"
         "  [coverage]\n"
-        "  compiler = \"msvc\""
+        '  compiler = "msvc"'
     )

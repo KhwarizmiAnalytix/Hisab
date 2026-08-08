@@ -4,33 +4,40 @@ Code coverage generation for the project. Supports **GCC** (lcov),
 **Clang** (LLVM), and **MSVC** (OpenCppCoverage) with automatic compiler
 detection, and produces consistent HTML and JSON reports across all three.
 
+Packaged as `coverage-tool` — installable standalone in *any*
+CMake/CTest project, not just this repo. See
+[Installing / using in another repo](#installing--using-in-another-repo).
+
 ---
 
 ## Table of Contents
 
 1. [Quick Start](#quick-start)
 2. [Requirements](#requirements)
-3. [Usage](#usage)
-   - [CLI — `run_coverage.py`](#cli--run_coveragepy)
+3. [Installing / using in another repo](#installing--using-in-another-repo)
+4. [Usage](#usage)
+   - [CLI](#cli)
    - [Python API — `get_coverage()`](#python-api--get_coverage)
+   - [Minimum coverage gate](#minimum-coverage-gate)
    - [HTML report standalone CLI](#html-report-standalone-cli)
-4. [Visual Studio .sln without CMake](#visual-studio-sln-without-cmake)
-5. [Output](#output)
-6. [Configuration — `coverage.toml`](#configuration--coveragetoml)
+5. [Visual Studio .sln without CMake](#visual-studio-sln-without-cmake)
+6. [Output](#output)
+7. [Configuration — `coverage.toml`](#configuration--coveragetoml)
    - [All options](#all-options)
    - [Customising exclude patterns](#customising-exclude-patterns)
    - [MSVC timeouts](#msvc-timeouts)
-7. [Architecture](#architecture)
+8. [Architecture](#architecture)
    - [File map](#file-map)
    - [Data flow](#data-flow)
    - [Compiler detection chain](#compiler-detection-chain)
-8. [Compiler-specific notes](#compiler-specific-notes)
+   - [Test discovery](#test-discovery)
+9. [Compiler-specific notes](#compiler-specific-notes)
    - [GCC / lcov](#gcc--lcov)
    - [Clang / LLVM](#clang--llvm)
    - [MSVC / OpenCppCoverage](#msvc--opencppcoverage)
-9. [HTML report module](#html-report-module)
-10. [Running the tests](#running-the-tests)
-11. [Troubleshooting](#troubleshooting)
+10. [HTML report module](#html-report-module)
+11. [Running the tests](#running-the-tests)
+12. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -38,19 +45,27 @@ detection, and produces consistent HTML and JSON reports across all three.
 
 ```bash
 # Auto-detect compiler, generate both HTML and JSON (default)
-python run_coverage.py --build=<path/to/build>
+coverage-tool --build=<path/to/build>
 
 # JSON only
-python run_coverage.py --build=build --output=json
+coverage-tool --build=build --output=json
 
 # HTML only
-python run_coverage.py --build=build --output=html
+coverage-tool --build=build --output=html
 
 # Use a custom config file
-python run_coverage.py --build=build --config=my_coverage.toml
+coverage-tool --build=build --config=my_coverage.toml
 
 # Override the source folder and add extra exclusions
-python run_coverage.py --build=build --filter=Src --exclude-patterns="*Generated*,*Benchmark*"
+coverage-tool --build=build --filter=Src --exclude-patterns="*Generated*,*Benchmark*"
+
+# Fail the run if line coverage drops below a threshold
+coverage-tool --build=build --min-coverage=80
+```
+
+Not installed yet? Any command above also works as:
+```bash
+PYTHONPATH=Tools/coverage/src python3 -m coverage_tool.run_coverage --build=build
 ```
 
 ---
@@ -63,21 +78,66 @@ python run_coverage.py --build=build --filter=Src --exclude-patterns="*Generated
 | Clang | `llvm-profdata`, `llvm-cov` (part of your LLVM installation) |
 | MSVC | [OpenCppCoverage](https://github.com/OpenCppCoverage/OpenCppCoverage) on Windows |
 
+Optional but recommended for all three: `ctest` on `PATH` (ships with
+CMake) — used for accurate test-executable discovery, see
+[Test discovery](#test-discovery).
+
 Python 3.11+ is required for built-in TOML support (`tomllib`). On Python
-3.10 and older, install `tomli`:
+3.10 and older, `pip install`ing the package pulls in `tomli` automatically
+(declared in `pyproject.toml`).
+
+---
+
+## Installing / using in another repo
+
+The tool is a standalone, installable Python package (`pyproject.toml`
+lives next to this README) with no dependency on any specific project's
+source layout beyond the generic "scan a `Library`-like folder for module
+subdirectories" convention — and even that is just a default, fully
+overridable via `coverage.toml`. To use it in a CMake/CTest project:
 
 ```bash
-pip install tomli
+pip install -e /path/to/coverage-tool
+# or, vendored into a consuming repo as Tools/coverage/:
+pip install -e Tools/coverage
+```
+
+This registers two console scripts:
+- `coverage-tool` — the main coverage generator (`run_coverage.py:main`)
+- `coverage-tool-html` — the standalone JSON→HTML CLI (`html_report/cli.py:main`)
+
+Then, from anywhere on the consuming project:
+
+```bash
+coverage-tool --build=build --filter=Library
+```
+
+Compiler detection reads the standard CMake `CMAKE_CXX_COMPILER_ID` cache
+variable (present in *any* CMake project) — no project-specific setup
+required. Test discovery prefers `ctest --show-only=json-v1` when available,
+so it doesn't depend on any particular `{module}CxxTests`-style naming
+convention either (see [Test discovery](#test-discovery)). What *is* still
+an opinionated default is the `filter = "Library"` module-scan root and the
+`exe_pattern`/`test_dir_template` glob fallback used only when CTest
+metadata isn't available — override these in your own `coverage.toml` if
+your layout differs; nothing in the code itself assumes a particular
+project name or directory structure.
+
+A project that vendors this tool at `Tools/coverage/` can use it directly
+via `sys.path`, without an install step:
+```python
+sys.path.insert(0, "Tools/coverage/src")
+from coverage_tool import get_coverage
 ```
 
 ---
 
 ## Usage
 
-### CLI — `run_coverage.py`
+### CLI
 
 ```
-python run_coverage.py --build=PATH [OPTIONS]
+coverage-tool --build=PATH [OPTIONS]
 ```
 
 | Argument | Default | Description |
@@ -88,6 +148,7 @@ python run_coverage.py --build=PATH [OPTIONS]
 | `--filter=FOLDER` | `Library` (from config) | Source folder containing modules to analyse. All non-hidden subdirectories are treated as modules. |
 | `--output=FORMAT` | `html-and-json` (from config) | `json`, `html`, or `html-and-json`. |
 | `--exclude-patterns=LIST` | *(none)* | Comma-separated extra patterns to exclude (e.g. `"*Generated*,*Benchmark*"`). Merged with the defaults from config. |
+| `--min-coverage=PERCENT` | *(none, from config)* | Minimum required line-coverage percent; exits non-zero if not met. Requires JSON output. |
 | `--verbose` | off | Print extra diagnostic output. |
 | `-h` / `--help` | — | Show detailed help. |
 
@@ -96,7 +157,7 @@ python run_coverage.py --build=PATH [OPTIONS]
 ### Python API — `get_coverage()`
 
 ```python
-from run_coverage import get_coverage
+from coverage_tool import get_coverage
 
 exit_code = get_coverage(
     compiler="auto",            # "clang" | "gcc" | "msvc" | "auto"
@@ -107,16 +168,34 @@ exit_code = get_coverage(
     verbose=False,
     output_format="html-and-json",
     project_root="/path/to/project",
+    min_coverage=None,          # e.g. 80.0 to gate on 80% line coverage
 )
 ```
 
-### HTML report standalone CLI
+### Minimum coverage gate
 
+Set `--min-coverage=PERCENT` (or `min_coverage` in `coverage.toml` /
+`get_coverage()`) to fail the run — non-zero exit code, clear error message
+— when line coverage falls short:
+
+```bash
+coverage-tool --build=build --min-coverage=80
+# Error: Line coverage 74.30% is below the required minimum of 80.00%
+```
+
+The gate reads the `summary.line_coverage.percent` value from the JSON
+summary each backend returns, so it requires `--output=json` or
+`html-and-json` (the default) — `--output=html` alone has no JSON to check
+against and raises an error if `--min-coverage` is also set.
+
+### HTML report standalone CLI
 
 Convert an existing JSON coverage report to HTML:
 
 ```bash
-python -m html_report.cli --json=coverage_report/coverage_summary.json --output=my_html
+coverage-tool-html --json=coverage_report/coverage_summary.json --output=my_html
+# or, unwrapped:
+python -m coverage_tool.html_report.cli --json=coverage_report/coverage_summary.json --output=my_html
 ```
 
 ---
@@ -147,7 +226,7 @@ detection via environment variables (step 3) will succeed automatically.
 
 ```bash
 # Fastest option — skip detection entirely
-python run_coverage.py --build=x64\Release --compiler=msvc --filter=Library
+coverage-tool --build=x64\Release --compiler=msvc --filter=Library
 
 # Or set it permanently in coverage.toml so you never need the flag
 ```
@@ -175,7 +254,7 @@ MyProject/
 ```
 
 ```bash
-python run_coverage.py --build=x64\Release --compiler=msvc --filter=Library
+coverage-tool --build=x64\Release --compiler=msvc --filter=Library
 ```
 
 If your binaries are in a non-standard location, configure the search
@@ -247,13 +326,18 @@ coverage_report/
 }
 ```
 
+This schema is now produced by a single shared function
+(`coverage_formats.build_summary_json`) for all three compilers, so
+`function_coverage`/`region_coverage` are always present and consistently
+computed rather than varying by backend.
+
 ---
 
 ## Configuration — `coverage.toml`
 
-Place `coverage.toml` next to `run_coverage.py` (or at the project root).
-The file is **optional** — all values have built-in defaults so the tool
-works out of the box without it.
+Place `coverage.toml` next to the package (`Tools/coverage/coverage.toml`)
+or at the project root. The file is **optional** — all values have built-in
+defaults so the tool works out of the box without it.
 
 The config is loaded once and cached. Pass `--config=PATH` on the CLI to
 use a non-standard location.
@@ -273,6 +357,10 @@ output_format = "html-and-json"
 
 # Name of the output directory (relative to build_dir)
 coverage_report_dir = "coverage_report"
+
+# Minimum required line-coverage percent. Commented out (disabled) by
+# default — see "Minimum coverage gate" above.
+# min_coverage = 80.0
 
 
 [coverage.exclude]
@@ -298,18 +386,21 @@ markers = [".git", ".gitignore", "pyproject.toml"]
 
 [coverage.tests]
 # Directories (relative to build_dir) searched for test executables
+# — fallback only; ctest --show-only=json-v1 is tried first when available.
 search_dirs = ["bin", "bin/Debug", "bin/Release", "lib", "tests"]
 
 # Glob patterns identifying test executables
 patterns = ["*Test*", "*test*", "*CxxTests*"]
 
-# Test executable name template — {module} is replaced at runtime (Clang/MSVC)
+# Test executable name template — {module} is replaced at runtime (Clang/MSVC).
+# Also used to match a CTest test name when no CTest LABELS match is found.
 exe_pattern = "{module}CxxTests"
 
 # .profraw filename template (Clang only)
 profraw_pattern = "{module}CxxTests.profraw"
 
-# Working directory for test execution, relative to build_dir (Clang only)
+# Working directory for test execution, relative to build_dir (Clang only,
+# fallback path — the CTest-reported WORKING_DIRECTORY is preferred).
 # {filter} and {module} are replaced at runtime
 test_dir_template = "{filter}/{module}/Testing/Cxx"
 
@@ -351,7 +442,7 @@ entirely, set `patterns = []` in `coverage.toml` and rely on the CLI flag.
 
 ```bash
 # Add extra patterns on top of the configured defaults
-python run_coverage.py --build=build --exclude-patterns="*Generated*,*Serialization*"
+coverage-tool --build=build --exclude-patterns="*Generated*,*Serialization*"
 ```
 
 ### MSVC timeouts
@@ -372,24 +463,39 @@ coverage_timeout = 300
 
 ```
 Tools/coverage/
+├── pyproject.toml          Package metadata, console-script entry points
 ├── coverage.toml           Configuration file (all hardcoded values)
-├── run_coverage.py         Main CLI entry point & Python API (get_coverage)
-├── common.py               Shared utilities, config loader (load_config / get_config)
-├── clang_coverage.py       Clang/LLVM implementation (llvm-profdata, llvm-cov)
-├── gcc_coverage.py         GCC implementation (lcov, genhtml, gcov)
-├── msvc_coverage.py        MSVC implementation (OpenCppCoverage)
-├── coverage_summary.py     JSON summary generator
-├── test_html_report.py     Test suite for the HTML report module
-└── html_report/
-    ├── __init__.py         Exports HtmlGenerator, JsonHtmlGenerator
-    ├── __main__.py         Entry point for `python -m html_report`
-    ├── cli.py              Standalone CLI (--json → --output)
-    ├── html_generator.py   Direct coverage data → HTML
-    ├── json_html_generator.py  JSON report → HTML
-    ├── directory_aggregator.py  Directory-level metric rollup
-    ├── templates.py        Shared HTML/CSS templates
-    └── custom.css          External stylesheet
+├── src/coverage_tool/
+│   ├── __init__.py         Public API: get_coverage, HtmlGenerator, JsonHtmlGenerator
+│   ├── run_coverage.py     Main CLI entry point & Python API (get_coverage)
+│   ├── common.py           Shared utilities, config loader, CTest discovery
+│   ├── clang_coverage.py   Clang/LLVM implementation (llvm-profdata, llvm-cov)
+│   ├── gcc_coverage.py     GCC implementation (lcov, genhtml, gcov)
+│   ├── msvc_coverage.py    MSVC implementation (OpenCppCoverage)
+│   ├── coverage_formats/   Shared LCOV/Cobertura parsers (see below)
+│   │   ├── model.py        Canonical FileCoverage model + build_summary_json
+│   │   ├── lcov.py         LCOV parser — used by both GCC and Clang
+│   │   └── cobertura.py    Cobertura XML parser — used by MSVC
+│   └── html_report/
+│       ├── __init__.py     Exports HtmlGenerator, JsonHtmlGenerator
+│       ├── __main__.py     Entry point for `python -m coverage_tool.html_report`
+│       ├── cli.py          Standalone CLI (--json → --output)
+│       ├── html_generator.py   Direct coverage data → HTML
+│       ├── json_html_generator.py  JSON report → HTML
+│       ├── directory_aggregator.py  Directory-level metric rollup
+│       ├── templates.py    Shared HTML/CSS templates
+│       └── custom.css      External stylesheet
+└── tests/
+    ├── test_coverage_formats.py  Fixture-based parser tests
+    ├── test_html_report.py       HTML report module tests
+    └── fixtures/                 Sample .lcov / .xml files
 ```
+
+Every backend parses its own raw format (LCOV for GCC/Clang, Cobertura XML
+for MSVC) into the same `coverage_formats.FileCoverage` model before
+building the JSON summary or handing data to `HtmlGenerator` — a parsing
+correctness fix (see the DA:-recompute note in `lcov.py`) applies to every
+backend at once instead of needing to be re-applied per compiler.
 
 ### Data flow
 
@@ -407,8 +513,11 @@ build_dir/
  gcc   clang      msvc
  coverage coverage coverage
    │     │          │
+   ▼     ▼          ▼
+ lcov.parse_lcov  cobertura.parse_cobertura   ◄── coverage_formats/
+   │     │          │        (shared parsing + FileCoverage model)
    └─────┼──────────┘
-         │ LCOV / Cobertura XML / profraw
+         │ build_summary_json() / to_line_dicts()
          ▼
   coverage_report/
     ├── coverage_summary.json
@@ -426,6 +535,37 @@ build_dir/
 2. `coverage.toml` (auto-detected or `--config` path)
 3. Built-in defaults in `common.CONFIG` (lowest priority)
 
+### Test discovery
+
+Clang and MSVC need to actually run each module's test executable. Rather
+than only guessing its path from a naming template, `common.py` first asks
+CTest for the ground truth:
+
+```bash
+ctest --show-only=json-v1
+```
+
+This returns each registered test's exact command line, working directory,
+and `LABELS`. Module → test matching then goes, in order:
+
+1. **CTest `LABELS`** — a test whose labels include the module name
+   (case-insensitive exact match). This is the strongest signal since it
+   doesn't depend on any executable-naming convention at all — any project
+   whose CMake labels tests by module (e.g.
+   `set_tests_properties(MyTest PROPERTIES LABELS "MyModule")`) gets
+   accurate discovery for free.
+2. **CTest test name == `exe_pattern.format(module=...)`** — matches this
+   tool's own `{module}CxxTests` convention when present.
+3. **CTest test name contains the module name** — last-resort substring
+   match.
+4. **Template/glob fallback** — `build_dir/bin/{module}CxxTests` — used only
+   when `ctest` isn't on `PATH` or the build wasn't configured with CTest.
+
+Because step 1 doesn't depend on any naming convention, this is the part of
+the tool most likely to work unmodified against a different CMake/CTest
+project — as long as its tests carry a `LABELS` property naming their
+module (`set_tests_properties(MyTest PROPERTIES LABELS "MyModule")`).
+
 ---
 
 ## Compiler-specific notes
@@ -439,7 +579,8 @@ build_dir/
 **What happens**:
 1. `lcov --capture` collects `.gcda` files from `build_dir`.
 2. `lcov --remove` strips excluded patterns.
-3. Filtered data is parsed into JSON and/or rendered to HTML.
+3. Filtered data is parsed (`coverage_formats.parse_lcov`) into JSON and/or
+   rendered to HTML.
 
 Intermediate files (`coverage.info`, `coverage_filtered.info`) are written
 directly to `build_dir`. The final report goes to `coverage_report/`.
@@ -454,14 +595,16 @@ Compiler is auto-detected from `CMakeCache.txt` (`CMAKE_CXX_COMPILER_ID`) —
 no manual setting needed.
 
 **What happens** (per module):
-1. `prepare_llvm_coverage()` runs `<module>CxxTests` with
-   `LLVM_PROFILE_FILE=<module>CxxTests.profraw`.
+1. `prepare_llvm_coverage()` finds each module's test via CTest (or the
+   naming template as fallback — see [Test discovery](#test-discovery)) and
+   runs it with `LLVM_PROFILE_FILE=<module>CxxTests.profraw`.
 2. `llvm-profdata merge` merges all `.profraw` files into
    `all-merged.profdata`.
 3. `llvm-cov export -format=lcov` produces `coverage.lcov`.
-4. The LCOV file is parsed into JSON and/or HTML.
+4. `coverage_formats.parse_lcov` parses it into JSON and/or HTML.
 
-Test executable and profraw paths are driven by the config templates:
+The naming-template fallback (used only without CTest metadata) is driven
+by config:
 
 ```toml
 [coverage.tests]
@@ -475,11 +618,14 @@ test_dir_template = "{filter}/{module}/Testing/Cxx"
 **Prerequisites**: Windows only. MSVC build. OpenCppCoverage installed.
 
 **What happens**:
-1. Each test executable is run through `OpenCppCoverage.exe` with
-   `--export_type=html`, `--export_type=cobertura`, and
-   `--export_type=binary`.
-2. Cobertura XML files (in `raw/`) are parsed into the standard JSON schema.
-3. Line-by-line HTML is generated from the XML using `HtmlGenerator`.
+1. Each test executable (found via `discover_test_executables` glob search)
+   is run through `OpenCppCoverage.exe` with `--export_type=html`,
+   `--export_type=cobertura`, and `--export_type=binary`.
+2. Cobertura XML files (in `raw/`) are parsed once via
+   `coverage_formats.parse_cobertura` and shared between JSON summary
+   generation and the detailed HTML report (previously two independent
+   parses of the same XML).
+3. Line-by-line HTML is generated from the parsed data using `HtmlGenerator`.
 
 **Finding OpenCppCoverage** (in order):
 1. `opencppcoverage_path` in `coverage.toml`
@@ -497,7 +643,7 @@ The `html_report/` package can be used independently of the coverage runner.
 ### From Python
 
 ```python
-from html_report import HtmlGenerator, JsonHtmlGenerator
+from coverage_tool.html_report import HtmlGenerator, JsonHtmlGenerator
 
 # Generate from raw line coverage data
 gen = HtmlGenerator(output_dir="my_report", source_root="/project/Library")
@@ -515,9 +661,9 @@ jgen.generate_from_json("coverage_report/coverage_summary.json")
 ### From the CLI
 
 ```bash
-python -m html_report --json=coverage_summary.json --output=html_out --verbose
+coverage-tool-html --json=coverage_summary.json --output=html_out --verbose
 # or
-python -m html_report.cli --json=coverage_summary.json --output=html_out
+python -m coverage_tool.html_report.cli --json=coverage_summary.json --output=html_out
 ```
 
 ### Classes
@@ -534,12 +680,23 @@ python -m html_report.cli --json=coverage_summary.json --output=html_out
 
 ```bash
 cd Tools/coverage
-python -m pytest test_html_report.py -v
+pip install -e ".[test]"   # once, pulls in pytest
+python -m pytest tests/ -v
 ```
 
-Expected output: **17 passed**.
+Or without installing, from the repo root:
+```bash
+PYTHONPATH=Tools/coverage/src python3 -m pytest Tools/coverage/tests/ -v
+```
+
+Expected output: **30 passed** (13 parser tests + 17 HTML report tests).
 
 The test suite covers:
+- `coverage_formats.parse_lcov` — multi-`DA:` records per line (the
+  LF:/LH: undercount fix), full/zero coverage, malformed records, missing file
+- `coverage_formats.parse_cobertura` — per-line hits, malformed `<line>`
+  entries, missing file
+- `coverage_formats.build_summary_json` — aggregation, 0%/100% coverage
 - `HtmlGenerator` — report creation, execution counts, HTML content
 - `JsonHtmlGenerator` — JSON file and dict inputs, file pages, metrics
 - CLI interface — valid JSON, missing JSON, verbose flag
@@ -554,7 +711,8 @@ The test suite covers:
 | `CMakeCache.txt not found` | Build directory is wrong or the project was never configured | Check `--build` points to the CMake build directory |
 | No compiler-id variable found | CMake cache exists but `CMAKE_CXX_COMPILER_ID` is missing or unrecognised | Reconfigure with the correct CMake toolchain, or pass `--compiler` explicitly |
 | `coverage.info is empty` (GCC) | No `.gcda` files — tests didn't run or build is missing `--coverage` flag | Run the tests first; verify the build flags |
-| `No profraw files generated` (Clang) | Test executable not found or failed to run | Check `exe_pattern` in `coverage.toml` matches the actual binary name |
+| `No profraw files generated` (Clang) | Test executable not found or failed to run | Check CTest registered the test (`ctest --show-only=json-v1`), or that `exe_pattern` in `coverage.toml` matches the actual binary name |
 | `OpenCppCoverage not found` (MSVC) | Tool not installed or not on PATH | Install from the GitHub releases page; set `OPENCPPCOVERAGE_PATH` or `opencppcoverage_path` in config |
 | `No modules found in <source_dir>` | `--filter` folder doesn't exist under the project root | Verify `filter` in `coverage.toml` or pass `--filter` explicitly |
-| TOML config silently ignored | Python < 3.11 and `tomli` not installed | `pip install tomli` |
+| `--min-coverage was requested but no JSON coverage summary was generated` | `--output=html` was used together with `--min-coverage` | Use `--output=json` or `html-and-json` (the default) when gating on coverage |
+| TOML config silently ignored | Python < 3.11 and `tomli` not installed | `pip install -e Tools/coverage` (pulls in `tomli` automatically) |

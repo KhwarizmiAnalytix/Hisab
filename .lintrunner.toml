@@ -1,7 +1,8 @@
 [[linter]]
 code = 'EDITORCONFIG'
-# Verifies indent style/size, end-of-line, and charset against .editorconfig.
-# Trailing whitespace / final newline are left to SPACES / NEWLINE.
+# Verifies .editorconfig via editorconfig-checker. Disable/Exclude policy lives
+# in .editorconfig-checker.json (IndentSize / trailing WS / final newline are
+# off there — SPACES / NEWLINE own those).
 include_patterns = ['**']
 exclude_patterns = [
     'ThirdParty/**',
@@ -16,6 +17,7 @@ exclude_patterns = [
     '.venv/**',
     'Tools/**',
     '.vscode/**',
+    '.cursor/**',
     '.git/**',
     '.augment/**',
     '**/*.png',
@@ -46,6 +48,7 @@ exclude_patterns = [
 command = [
     'python3',
     'Tools/linter/adapters/editorconfig_checker_linter.py',
+    '--config=.editorconfig-checker.json',
     '--',
     '@{{PATHSFILE}}',
 ]

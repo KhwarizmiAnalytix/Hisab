@@ -1627,6 +1627,16 @@ jobs:
         clang --version
         llvm-cov --version
 
+    - name: Install coverage tool package
+      shell: bash
+      run: |
+        pip install -e "Tools/coverage[test]"
+
+    - name: Run coverage tool test suite
+      shell: bash
+      run: |
+        python -m pytest Tools/coverage/tests/ -v
+
     - name: Run coverage build
       shell: bash
       run: |
@@ -1654,8 +1664,8 @@ jobs:
         # Run tests
         ctest --test-dir build --output-on-failure -j 2
 
-        # Run coverage analysis (Python script)
-        python Tools/coverage/run_coverage.py --build=build
+        # Run coverage analysis
+        coverage-tool --build=build
 
     - name: Verify JSON report generation
       shell: bash

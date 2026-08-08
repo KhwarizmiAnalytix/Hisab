@@ -53,9 +53,11 @@ memory::allocator<T, alignment>       allocator.h          — static dispatch b
         │   (compiled when          gpu/cuda_caching_allocator.{h,cpp}
         │    MEMORY_HAS_CUDA)        one shared instance per device
         │
-        └─ device_enum::METAL ──► memory::metal::allocate/deallocate
-            (compiled when           gpu/metal/metal_buffer_allocator.{h,mm}
-             MEMORY_HAS_METAL)       MTLResourceStorageModeShared buffers
+        └─ device_enum::METAL ──► memory::gpu::metal_caching_allocator_for_device(i)
+            (compiled when           gpu/metal/metal_caching_allocator.{h,mm}
+             MEMORY_HAS_METAL)       Shared MTLBuffer segment cache
+                                     (+ metal_buffer_allocator helpers for
+                                      handle/offset/copy)
 ```
 
 ### File map
@@ -63,14 +65,15 @@ memory::allocator<T, alignment>       allocator.h          — static dispatch b
 | Path | Role |
 |---|---|
 | `allocator.h` / `allocator.cpp` | `allocator<T>` static dispatch (allocate/free/copy + alignment helpers) |
-| `common/data_ptr.{h,cpp}` | RAII owning/non-owning pointer used by Vectorization |
+| `common/data_ptr.h` | RAII owning/non-owning pointer used by Vectorization |
 | `common/device.{h,cpp}` | `device_enum` (CPU/CUDA/HIP/PrivateUse1/METAL), `device_option` |
 | `common/memory_macros.h` | `MEMORY_ALIGNMENT` (64, 16 on `MEMORY_MOBILE`), force-inline/likely/export helpers |
 | `common/memory_containers.h` | `memory_map`/`memory_set` aliases (flat-hash optional) |
 | `common/numa.{h,cpp}` | `NUMAMove` / `GetCurrentNUMANode` (Linux, `MEMORY_HAS_NUMA`) |
 | `helper/memory_allocator.{h,cpp}` | Raw CPU allocation backend — the entire CPU implementation |
 | `gpu/cuda_caching_allocator.{h,cpp}` | CUDA segment cache + per-device registry |
-| `gpu/metal/metal_buffer_allocator.{h,mm}` | Metal shared-storage buffers |
+| `gpu/metal/metal_caching_allocator.{h,mm}` | Metal segment cache + per-device registry (CUDA parity) |
+| `gpu/metal/metal_buffer_allocator.{h,mm}` | Thin Metal helpers (`mtl_buffer_handle`/`offset`/`copy`) |
 | `profiler/unified_memory_stats.{h,cpp}` | `unified_cache_stats` — the only statistics surface (caching allocator metrics) |
 | `util/memory_exception.h` | `MEMORY_CHECK`/`MEMORY_LOG_*` macros |
 
@@ -131,8 +134,9 @@ sets `MEMORY_HAS_MIMALLOC_STATS=1`. Two consumption routes:
 - **Env vars**: `MIMALLOC_SHOW_STATS=1` dumps full stats at process exit;
   `MIMALLOC_VERBOSE=1` prints init messages.
 - **API** (`helper/memory_allocator.h`): `has_stats()` (compile-time
-  availability), `stats_print()` (`mi_stats_merge` + dump to stderr),
-  `process_info(process_memory_info&)` (RSS / commit / page faults).
+  availability), `stats_print()` (`mi_stats_merge` + line dump via
+  `MEMORY_LOG_INFO`), `process_info(process_memory_info&)` (RSS / commit /
+  page faults).
 
 Because mimalloc is linked with `MI_OVERRIDE=OFF`, the stats cover only
 allocations that went through this path — not the process's `malloc`.
@@ -264,26 +268,29 @@ the header offers a type-safe per-instance wrapper for direct users.
 
 ---
 
-## 5. Metal path — `metal_buffer_allocator`
+## 5. Metal path — `metal_caching_allocator`
 
-`gpu/metal/metal_buffer_allocator.{h,mm}` — a plain C++ header (no
-Objective-C types cross it) over an Objective-C++ implementation:
+`gpu/metal/metal_caching_allocator.{h,mm}` — PyTorch/CUDACachingAllocator
+semantics on shared-storage `MTLBuffer`s (same size classes, split/coalesce,
+trim, OOM flush+retry, `unified_cache_stats`, free-memory callbacks as the
+CUDA path). One `newBufferWithLength:MTLResourceStorageModeShared` per
+**segment**; many blocks per segment. Host pointers are
+`buffer.contents + offset` and are directly host-dereferenceable.
 
-- `allocate(bytes)` → `newBufferWithLength:options:MTLResourceStorageModeShared`
-  on the process-wide `MTLCreateSystemDefaultDevice()`, returns
-  `buffer.contents`. Throws `std::bad_alloc` when no Metal device or on
-  allocation failure.
-- Shared storage on Apple Silicon means the returned pointer is simultaneously
-  host- and GPU-addressable → `copy()` is a plain `memcpy` in every direction.
-- A mutex-protected `unordered_map<void*, id<MTLBuffer>>` tracks host pointer
-  → buffer so `mtl_buffer_handle(ptr)` can hand Vectorization's dispatch layer
-  the `MTLBuffer` to bind as a kernel argument; `deallocate` erases the entry
-  (ARC releases the buffer). `deallocate(nullptr)` is a no-op.
-- No caching/pooling layer — Metal allocations are assumed infrequent relative
-  to CUDA workloads.
-- No fp64: `allocator<T>` selects a throwing branch for `double` on METAL at
-  compile time (`if constexpr`), raising `std::invalid_argument` if reached —
-  Apple GPUs have no hardware double support.
+- Process-wide registry: `metal_caching_allocator_for_device(i)` (device index
+  0 only today — `MTLCreateSystemDefaultDevice`).
+- `allocator<T>`'s METAL branch routes through that registry, matching CUDA.
+- Streams: `stream_type` is `void*`; v1 uses a single default-stream pool.
+  `record_stream` is a documented no-op because Vectorization Metal dispatch
+  is synchronous (`waitUntilCompleted`).
+- Helpers in `gpu/metal/metal_buffer_allocator.{h,mm}` (plain C++ surface):
+  `mtl_buffer_handle` / `mtl_buffer_offset` resolve live (including
+  mid-segment) allocations for kernel binding; `copy` is `memcpy`;
+  `allocate`/`deallocate` forward to the caching allocator for direct callers.
+- No fp64: `allocator<T>` throws `std::invalid_argument` for `double` on METAL
+  at compile time (`if constexpr`) — Apple GPUs have no hardware double support.
+- Foreign/double free throw (same contract as CUDA), unlike the old
+  non-caching Metal free which was a silent map erase.
 
 ---
 
@@ -324,12 +331,10 @@ allocates on first use and then `allocator<T>::copy`s.
 - **Allocate paths throw**: `std::bad_alloc` on exhaustion (CPU null return,
   CUDA after the flush-and-retry chain, Metal on failure),
   `std::invalid_argument` for unsupported device/type combinations.
-- **Free paths**: CPU and Metal frees are non-throwing. CUDA `deallocate`
-  throws `std::invalid_argument` on a foreign pointer and `std::logic_error`
-  on double free — by design, since both are caller bugs. Because
-  `~data_ptr()` is implicitly `noexcept`, such a bug terminates the process
-  rather than corrupting silently (previously a failed `cudaFree` was
-  swallowed).
+- **Free paths**: CPU frees are non-throwing. CUDA and Metal caching
+  `deallocate` throw on a foreign pointer / double free — by design, since
+  both are caller bugs. Because `~data_ptr()` is implicitly `noexcept`, such
+  a bug terminates the process rather than corrupting silently.
 - `MEMORY_CHECK` (`util/memory_exception.h`) backs the internal invariants
   with formatted messages.
 
@@ -362,7 +367,8 @@ compiles only the stub (see limitations).
 |---|---|
 | `Testing/Cxx/TestCPUMemory.cpp` | Raw CPU backend: aligned alloc/free, alignment sweep, null-free, `usable_size`, `allocate_zero` |
 | `Testing/Cxx/TestCudaCachingAllocator.cpp` | Caching allocator (CUDA builds only) |
-| `Testing/Cxx/TestMetalBufferAllocator.cpp` | Metal allocate/deallocate/copy/handle (Metal builds only) |
+| `Testing/Cxx/TestMetalBufferAllocator.cpp` | Metal allocate/copy via `allocator<T>` (Metal builds only) |
+| `Testing/Cxx/TestMetalCachingAllocator.cpp` | Metal segment cache: packing, reuse, split, trim, handle/offset |
 | `Testing/Cxx/BenchmarkCPUMemoryAllocators.cpp` | Backend comparison benchmark (malloc/aligned/mimalloc/TBB) plus the production path (`memory_allocator`, `allocator<T>`, `data_ptr`) |
 | `Testing/Cxx/BenchmarkPyTorchComparison.cpp` | LibTorch CPU-allocation comparison (`c10` allocator and `torch::empty` vs `memory_allocator` and `data_ptr`); built only when `MEMORY_ENABLE_LIBTORCH` is ON and `find_package(Torch)` succeeds |
 
@@ -389,5 +395,5 @@ Test files are globbed per-backend (`TestGpu*`/`TestCuda*`/`TestHip*`/
    destructor terminates. Happy-path frees never throw.
 5. **No CPU-side allocation statistics** anymore; the caching allocator's
    `unified_cache_stats` is the only built-in metrics surface.
-6. **Metal has no caching layer** and no fp64; both are deliberate for the
-   current Vectorization use.
+6. **Metal caching has no async/command-queue reuse yet** (`record_stream` is
+   a no-op); packing and cache reuse are live. No fp64 on Metal (hardware).

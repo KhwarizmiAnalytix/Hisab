@@ -23,6 +23,11 @@ output_format = "html-and-json"
 # Name of the coverage output directory (relative to build_dir)
 coverage_report_dir = "coverage_report"
 
+# Minimum required line-coverage percent. Commented out (disabled) by
+# default; a run generating less than this fails with a non-zero exit code.
+# Requires JSON output (the default "html-and-json", or "json").
+# min_coverage = 80.0
+
 # ---------------------------------------------------------------------------
 # Exclusion patterns
 # ---------------------------------------------------------------------------

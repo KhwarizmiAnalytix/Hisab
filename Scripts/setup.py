@@ -23,8 +23,8 @@ from helpers import (
 
 
 # Import coverage runner
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "Tools", "coverage"))
-from run_coverage import get_coverage
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "Tools", "coverage", "src"))
+from coverage_tool import get_coverage
 
 
 # Initialize colorama for cross-platform colored output

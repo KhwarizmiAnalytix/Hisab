@@ -29,7 +29,18 @@
       "Bash(./benchmark_memory_pytorchcomparison --benchmark_out=/private/tmp/claude-501/-Users-toufikbellaj-XSigma/7eeab4bc-edb8-4e8d-a7c8-1afbdea26f42/scratchpad/pytorch_comparison_native.json --benchmark_out_format=json --benchmark_repetitions=3 --benchmark_report_aggregates_only=true)",
       "Bash(python3 -c ' *)",
       "Bash(python3 -m pytest test_html_report.py -q)",
-      "Bash(python3 setup.py config.build.test.ninja.clang.coverage --project.memory)"
+      "Bash(python3 setup.py config.build.test.ninja.clang.coverage --project.memory)",
+      "Bash(ctest --show-only=json-v1)",
+      "Bash(PYTHONPATH=src python3 -m xsigma_coverage_tool.run_coverage --build=../../build_ninja_coverage_project_memory --filter=Library --verbose)",
+      "Bash(PYTHONPATH=src python3 -c ' *)",
+      "Bash(rm -rf ../build_ninja_coverage_project_memory)",
+      "Bash(python3 -c \"import sys; print\\(sys.version\\)\")",
+      "Bash(pip3 show *)",
+      "Bash(python3 -m pip list)",
+      "Bash(pip3 install *)",
+      "Bash(PYTHONPATH=src python3 -m pytest tests/test_html_report.py -q)",
+      "Bash(python3 -)",
+      "Bash(PYTHONPATH=src python3 -m pytest tests/ -v)"
     ]
   },
   "skipDangerousModePermissionPrompt": true,

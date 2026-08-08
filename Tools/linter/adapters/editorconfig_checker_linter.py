@@ -2,10 +2,9 @@
 EDITORCONFIG: verify files against the repo-root .editorconfig.
 
 Wraps the `ec` binary from the `editorconfig-checker` PyPI package
-(https://pypi.org/project/editorconfig-checker/). Trailing-whitespace and
-final-newline checks are left to the SPACES / NEWLINE lintrunner codes so
-findings are not reported twice; this adapter focuses on indent style/size,
-end-of-line, and charset.
+(https://pypi.org/project/editorconfig-checker/). Policy for which checks
+run lives in `.editorconfig-checker.json` (Disable / Exclude); this adapter
+only supplies output format and the path list from lintrunner.
 """
 
 from __future__ import annotations
@@ -17,10 +16,12 @@ import subprocess
 import sys
 import time
 from enum import Enum
+from pathlib import Path
 from typing import Any, NamedTuple
 
 
 LINTER_CODE = "EDITORCONFIG"
+DEFAULT_CONFIG = ".editorconfig-checker.json"
 
 
 class LintSeverity(str, Enum):
@@ -51,21 +52,33 @@ def run_command(args: list[str]) -> subprocess.CompletedProcess[bytes]:
         logging.debug("took %dms", (time.monotonic() - start_time) * 1000)
 
 
-def check_files(files: list[str]) -> list[LintMessage]:
+def check_files(files: list[str], *, config: str) -> list[LintMessage]:
     if not files:
         return []
 
+    config_path = Path(config)
+    if not config_path.is_file():
+        return [
+            LintMessage(
+                path=None,
+                line=None,
+                char=None,
+                code=LINTER_CODE,
+                severity=LintSeverity.ERROR,
+                name="command-failed",
+                original=None,
+                replacement=None,
+                description=(
+                    f"editorconfig-checker config not found: {config_path}\n"
+                    f"Expected repo-root {DEFAULT_CONFIG}."
+                ),
+            )
+        ]
+
     cmd = [
         "ec",
+        f"-config={config_path}",
         "-format=codeclimate",
-        # Owned by SPACES / NEWLINE — avoid double reports.
-        "-disable-trim-trailing-whitespace",
-        "-disable-insert-final-newline",
-        # indent_size in .editorconfig still guides editors, but the checker
-        # is too strict for clang-format AlignConsecutive* / CMake argument
-        # alignment (continuation padding is rarely a multiple of indent_size).
-        # Enforce indent_style (spaces vs tabs) only.
-        "-disable-indent-size",
         *files,
     ]
     try:
@@ -180,6 +193,11 @@ def main() -> None:
         fromfile_prefix_chars="@",
     )
     parser.add_argument(
+        "--config",
+        default=DEFAULT_CONFIG,
+        help=f"path to editorconfig-checker JSON config (default: {DEFAULT_CONFIG})",
+    )
+    parser.add_argument(
         "filenames",
         nargs="+",
         help="paths to lint",
@@ -192,7 +210,7 @@ def main() -> None:
         stream=sys.stderr,
     )
 
-    for message in check_files(args.filenames):
+    for message in check_files(args.filenames, config=args.config):
         print(json.dumps(message._asdict()), flush=True)
 
 

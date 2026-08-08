@@ -5,31 +5,22 @@ Supports multiple compilers (Clang, GCC, MSVC) with automatic detection.
 Generates HTML reports and JSON summaries for code coverage analysis.
 """
 
-import os
 import sys
 import subprocess
-import platform
 import argparse
-import re
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 # Import compiler-specific modules
-from gcc_coverage import generate_lcov_coverage as gcc_generate_coverage
-from clang_coverage import generate_llvm_coverage as clang_generate_coverage
-from msvc_coverage import generate_msvc_coverage as msvc_generate_coverage
+from .gcc_coverage import generate_lcov_coverage as gcc_generate_coverage
+from .clang_coverage import generate_llvm_coverage as clang_generate_coverage
+from .msvc_coverage import generate_msvc_coverage as msvc_generate_coverage
 
 # Import common utilities
-from common import (
+from .common import (
     load_config,
-    get_config,
-    get_platform_config,
-    find_opencppcoverage,
-    discover_test_executables,
-    find_library,
     get_project_root,
     resolve_build_dir,
-    validate_build_structure,
     detect_compiler,
     merge_exclude_patterns,
     parse_exclude_patterns_string,
@@ -37,17 +28,50 @@ from common import (
 
 
 
+def _check_min_coverage(coverage_summary: Optional[dict], min_coverage: Optional[float]) -> None:
+    """Enforce a minimum line-coverage threshold, if one was requested.
+
+    Args:
+        coverage_summary: The coverage_summary.json-shaped dict returned by
+            a backend's generate_*_coverage(), or None if no JSON summary
+            was produced.
+        min_coverage: Minimum required line-coverage percent, or None to
+            skip the check entirely.
+
+    Raises:
+        RuntimeError: If a threshold was requested but no summary is
+            available, or coverage falls short of it.
+    """
+    if min_coverage is None:
+        return
+
+    if coverage_summary is None:
+        raise RuntimeError(
+            "--min-coverage was requested but no JSON coverage summary was "
+            "generated (requires --output=json or html-and-json)"
+        )
+
+    percent = coverage_summary.get("summary", {}).get("line_coverage", {}).get("percent", 0.0)
+    if percent < min_coverage:
+        raise RuntimeError(
+            f"Line coverage {percent:.2f}% is below the required minimum of "
+            f"{min_coverage:.2f}%"
+        )
+    print(f"[OK] Line coverage {percent:.2f}% meets the minimum of {min_coverage:.2f}%")
+
+
 def get_coverage(
     compiler: str = "auto",
     build_folder: Union[str, Path] = ".",
     source_folder: Union[str, Path] = "Library",
     output_folder: Optional[Union[str, Path]] = None,
-    exclude: Optional[List[str]] = None,
-    exclude_patterns: Optional[List[str]] = None,
+    exclude: Optional[list[str]] = None,
+    exclude_patterns: Optional[list[str]] = None,
     verbose: bool = False,
     summary: bool = True,
     project_root: Optional[Union[str, Path]] = None,
     output_format: str = "html-and-json",
+    min_coverage: Optional[float] = None,
 ) -> int:
     """Generate code coverage report for the project.
 
@@ -74,6 +98,10 @@ def get_coverage(
             If None, uses current directory. Default: None.
         output_format: Output format for all compilers - 'json', 'html', or
             'html-and-json'. Default: 'html-and-json'.
+        min_coverage: Minimum required line-coverage percent. If set,
+            requires JSON output (output_format 'json' or 'html-and-json')
+            and returns a non-zero exit code when coverage falls short.
+            Default: None (no gate).
 
     Returns:
         Exit code (0 for success, non-zero for failure).
@@ -135,26 +163,29 @@ def get_coverage(
         merged_patterns = merge_exclude_patterns(exclude_patterns, include_defaults=True)
 
         # Run coverage based on compiler
+        coverage_summary: Optional[dict] = None
         if compiler == "msvc":
             print("Generating MSVC coverage...")
-            msvc_generate_coverage(
+            coverage_summary = msvc_generate_coverage(
                 build_path, modules, source_path,
                 exclude_patterns=merged_patterns,
                 verbose=verbose,
                 output_format=output_format)
         elif compiler == "clang":
             print("Generating Clang coverage...")
-            clang_generate_coverage(
+            coverage_summary = clang_generate_coverage(
                 build_path, modules, source_path,
                 exclude_patterns=merged_patterns,
                 verbose=verbose,
                 output_format=output_format)
         elif compiler == "gcc":
             print("Generating GCC coverage...")
-            gcc_generate_coverage(
+            coverage_summary = gcc_generate_coverage(
                 build_path, modules, verbose=verbose,
                 exclude_patterns=merged_patterns,
                 output_format=output_format)
+
+        _check_min_coverage(coverage_summary, min_coverage)
 
         return 0
 
@@ -256,6 +287,9 @@ def main() -> None:
                         help="Output format: json, html, or html-and-json (default from config)")
     parser.add_argument("--exclude-patterns", default="",
                         help="Comma-separated patterns to exclude from coverage analysis")
+    parser.add_argument("--min-coverage", type=float, default=None,
+                        help="Minimum required line coverage percent; exits non-zero if not "
+                             "met. Requires --output=json or html-and-json (default from config).")
     parser.add_argument("--verbose", action="store_true",
                         help="Enable verbose output")
     parser.add_argument("-h", "--help", action="store_true",
@@ -311,34 +345,38 @@ def main() -> None:
         merged_patterns = merge_exclude_patterns(user_patterns, include_defaults=True)
 
         output_format = args.output if args.output is not None else cfg["output_format"]
+        min_coverage = args.min_coverage if args.min_coverage is not None else cfg.get("min_coverage")
 
         if args.verbose and user_patterns:
             print(f"User exclude patterns: {user_patterns}")
             print(f"Merged exclude patterns: {merged_patterns}")
 
         # Choose coverage tool based on compiler
+        coverage_summary: Optional[dict] = None
         if compiler == "msvc":
             print("Using opencppcoverage tool...")
-            msvc_generate_coverage(
+            coverage_summary = msvc_generate_coverage(
                 build_dir, modules, source_dir,
                 exclude_patterns=merged_patterns,
                 verbose=args.verbose,
                 output_format=output_format)
         elif compiler == "clang":
             print("Using LLVM coverage tools...")
-            clang_generate_coverage(
+            coverage_summary = clang_generate_coverage(
                 build_dir, modules, source_dir,
                 exclude_patterns=merged_patterns,
                 verbose=args.verbose,
                 output_format=output_format)
         elif compiler == "gcc":
             print("Using lcov coverage tool...")
-            gcc_generate_coverage(
+            coverage_summary = gcc_generate_coverage(
                 build_dir, modules, verbose=args.verbose,
                 exclude_patterns=merged_patterns,
                 output_format=output_format)
         else:
             raise RuntimeError(f"Unsupported compiler: {compiler}")
+
+        _check_min_coverage(coverage_summary, min_coverage)
 
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)

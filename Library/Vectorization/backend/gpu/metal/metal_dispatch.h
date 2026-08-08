@@ -24,10 +24,10 @@
 // compiled by ordinary clang++) can call into it without becoming Objective-C++ itself.
 //
 // in_buffers/out_buffer are raw host pointers previously returned by
-// memory::allocator<float>::allocate(..., device_enum::METAL) — i.e. an MTLBuffer's
-// `.contents` under MTLResourceStorageModeShared. dispatch() resolves them back to their
-// owning id<MTLBuffer> via memory::metal::mtl_buffer_handle() before binding them as
-// kernel arguments.
+// memory::allocator<float>::allocate(..., device_enum::METAL) — host-visible offsets into
+// shared-storage MTLBuffers (possibly packed by the Metal caching allocator). dispatch()
+// resolves them via memory::metal::mtl_buffer_handle() + mtl_buffer_offset() before
+// binding with setBuffer:offset:.
 
 #include <cstddef>
 
