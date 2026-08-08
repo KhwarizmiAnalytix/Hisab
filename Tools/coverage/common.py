@@ -51,7 +51,6 @@ CONFIG = {
         ".*Testing[/\\\\].*",
         ".*Serialization[/\\\\].*",
         ".*ThirdParty[/\\\\].*",
-        ".*quarismasys[/\\\\].*",
     ],
 
     # Markers to detect project root
@@ -559,10 +558,25 @@ def validate_build_structure(build_dir: Path, config: dict,
     return {"valid": len(issues) == 0, "issues": issues}
 
 
+# Maps the standard CMake CMAKE_CXX_COMPILER_ID value (as written into every
+# CMakeCache.txt) to the lowercase compiler name this tool uses internally.
+_CMAKE_COMPILER_ID_MAP = {
+    "gnu": "gcc",
+    "clang": "clang",
+    "appleclang": "clang",
+    "msvc": "msvc",
+    "intel": "intel",
+    "intelllvm": "intel",
+}
+
+
 def _detect_from_cmake_cache(cmake_cache: Path) -> Optional[str]:
     """Extract compiler from CMakeCache.txt.
 
-    Tries QUARISMA_COMPILER_ID first, then falls back to CMAKE_CXX_COMPILER.
+    Reads the standard CMAKE_CXX_COMPILER_ID cache variable, which CMake
+    writes for every project regardless of generator or platform. Falls back
+    to inferring from the CMAKE_CXX_COMPILER path if the ID is missing or
+    unrecognised.
 
     Args:
         cmake_cache: Path to CMakeCache.txt.
@@ -571,24 +585,30 @@ def _detect_from_cmake_cache(cmake_cache: Path) -> Optional[str]:
         Compiler name, or None if not found / unrecognised.
     """
     try:
-        quarisma_id: Optional[str] = None
+        cmake_compiler_id: Optional[str] = None
         cxx_compiler: Optional[str] = None
         with open(cmake_cache, encoding='utf-8', errors='ignore') as f:
             for line in f:
                 if '=' not in line:
                     continue
-                if 'QUARISMA_COMPILER_ID' in line:
-                    compiler_id = line.split('=', 1)[-1].strip().lower()
-                    logger.info("QUARISMA_COMPILER_ID found: %s", compiler_id)
-                    if compiler_id in ("gcc", "clang", "msvc", "intel"):
-                        quarisma_id = compiler_id
-                    else:
-                        logger.warning("Unknown QUARISMA_COMPILER_ID: %s", compiler_id)
-                elif 'CMAKE_CXX_COMPILER:' in line and cxx_compiler is None:
-                    cxx_compiler = line.split('=', 1)[-1].strip().lower()
+                # CMakeCache.txt entries look like NAME:TYPE=value. CMake also
+                # emits a NAME-ADVANCED:INTERNAL=1 metadata line per variable,
+                # so match on the exact key (before ':'), not a substring —
+                # otherwise the -ADVANCED line is misread as the value.
+                key = line.split(':', 1)[0].strip()
+                value = line.split('=', 1)[-1].strip().lower()
 
-        if quarisma_id:
-            return quarisma_id
+                if key == 'CMAKE_CXX_COMPILER_ID' and cmake_compiler_id is None:
+                    cmake_compiler_id = value
+                elif key == 'CMAKE_CXX_COMPILER' and cxx_compiler is None:
+                    cxx_compiler = value
+
+        if cmake_compiler_id:
+            mapped = _CMAKE_COMPILER_ID_MAP.get(cmake_compiler_id)
+            if mapped:
+                logger.info("CMAKE_CXX_COMPILER_ID found: %s -> %s", cmake_compiler_id, mapped)
+                return mapped
+            logger.warning("Unrecognised CMAKE_CXX_COMPILER_ID: %s", cmake_compiler_id)
 
         # Fall back to inferring from CMAKE_CXX_COMPILER path
         if cxx_compiler:
@@ -676,7 +696,8 @@ def detect_compiler(build_dir: Union[Path, str]) -> str:
     """Detect the compiler used in the build directory.
 
     Detection order:
-    1. ``CMakeCache.txt`` — reads ``QUARISMA_COMPILER_ID`` (CMake builds).
+    1. ``CMakeCache.txt`` — reads the standard ``CMAKE_CXX_COMPILER_ID``
+       (present in any CMake build).
     2. ``.sln`` / ``.vcxproj`` files — indicates a Visual Studio / MSVC build.
     3. Visual Studio environment variables (``VCINSTALLDIR`` etc.).
     4. ``cl.exe`` present in ``PATH``.
@@ -702,9 +723,9 @@ def detect_compiler(build_dir: Union[Path, str]) -> str:
         result = _detect_from_cmake_cache(cmake_cache)
         if result:
             return result
-        # CMakeCache exists but QUARISMA_COMPILER_ID is absent — fall through
+        # CMakeCache exists but neither compiler-id variable is usable — fall through
         logger.warning(
-            "CMakeCache.txt found but QUARISMA_COMPILER_ID is missing; "
+            "CMakeCache.txt found but no usable compiler-id variable; "
             "trying Visual Studio detection"
         )
     else:
@@ -729,7 +750,7 @@ def detect_compiler(build_dir: Union[Path, str]) -> str:
         f"Could not detect compiler for build directory: {build_dir}\n"
         "\n"
         "Tried:\n"
-        "  1. CMakeCache.txt  (QUARISMA_COMPILER_ID)\n"
+        "  1. CMakeCache.txt  (CMAKE_CXX_COMPILER_ID)\n"
         "  2. .sln / .vcxproj files in or near the build directory\n"
         "  3. Visual Studio environment variables (VCINSTALLDIR, etc.)\n"
         "  4. cl.exe in PATH\n"

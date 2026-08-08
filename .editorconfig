@@ -1,0 +1,69 @@
+# EditorConfig — https://editorconfig.org
+# Shared baseline for editors and the EDITORCONFIG lintrunner check.
+# Language formatters (clang-format, ruff-format, csharpier, cmake-format) own
+# line wrapping; max_line_length is intentionally unset here because C++ (100)
+# and Python (88) disagree.
+# Vendored/generated trees are excluded via .editorconfig-checker.json (and the
+# EDITORCONFIG exclude_patterns in .lintrunner.toml).
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# Python — matches [tool.ruff] / PYFMT
+[*.{py,pyi}]
+indent_size = 4
+
+# C / C++ / CUDA / ObjC++ — matches .clang-format IndentWidth
+[*.{c,cc,cxx,cpp,h,hh,hpp,hxx,cu,cuh,mm,m}]
+indent_size = 4
+
+# C# — ready for csharpier / dotnet format consumers
+[*.{cs,csx,props,targets}]
+indent_size = 4
+
+# CMake — this repo's CMakeLists use 4-space indent (not cmake-format's 2)
+[CMakeLists.txt]
+indent_size = 4
+
+[*.{cmake,cmake.in}]
+indent_size = 4
+
+# YAML — GitHub Actions / compose style
+[*.{yml,yaml}]
+indent_size = 2
+
+# JSON
+[*.{json,jsonc}]
+indent_size = 2
+
+# TOML — matches .lintrunner.toml / pyproject.toml indent used here
+[*.toml]
+indent_size = 4
+
+# Shell
+[*.{sh,bash,zsh}]
+indent_size = 2
+
+# Markdown — list nesting is not a fixed indent_size; leave formatting to authors.
+# Trailing spaces are meaningful (hard line breaks).
+[*.{md,mdx,markdown}]
+trim_trailing_whitespace = false
+indent_size = unset
+
+# Makefiles require tabs
+[{Makefile,makefile,GNUmakefile,*.mk}]
+indent_style = tab
+
+# Batch / PowerShell (Windows scripts in .github/workflows/install)
+[*.{bat,cmd}]
+end_of_line = crlf
+
+[*.ps1]
+indent_size = 4

@@ -36,6 +36,9 @@ Tools/code_coverage/profile/log/log.txt
 .lintbin/
 .venv*/
 
+# Local mypy daemon state (not shared)
+.dmypy.json
+
 # Bazel build artifacts
 bazel-*
 .bazelrc.user

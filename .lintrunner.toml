@@ -1,4 +1,62 @@
 [[linter]]
+code = 'EDITORCONFIG'
+# Verifies indent style/size, end-of-line, and charset against .editorconfig.
+# Trailing whitespace / final newline are left to SPACES / NEWLINE.
+include_patterns = ['**']
+exclude_patterns = [
+    'ThirdParty/**',
+    '**/experimental/**',
+    '**/Experimental/**',
+    '**/generated/**',
+    'build/**',
+    'build_*/**',
+    'dist/**',
+    '.lintbin/**',
+    'venv/**',
+    '.venv/**',
+    'Tools/**',
+    '.vscode/**',
+    '.git/**',
+    '.augment/**',
+    '**/*.png',
+    '**/*.jpg',
+    '**/*.jpeg',
+    '**/*.gif',
+    '**/*.ico',
+    '**/*.pdf',
+    '**/*.gz',
+    '**/*.zip',
+    '**/*.so',
+    '**/*.dylib',
+    '**/*.dll',
+    '**/*.a',
+    '**/*.lib',
+    '**/*.o',
+    '**/*.obj',
+    '**/*.pyc',
+    '**/*.pyd',
+    '**/*.whl',
+    '**/*.parquet',
+    '**/*.bin',
+    '**/*.pt',
+    '**/*.onnx',
+    '**/.DS_Store',
+    '.dmypy.json',
+]
+command = [
+    'python3',
+    'Tools/linter/adapters/editorconfig_checker_linter.py',
+    '--',
+    '@{{PATHSFILE}}',
+]
+init_command = [
+    'python3',
+    'Tools/linter/adapters/pip_init.py',
+    '--dry-run={{DRYRUN}}',
+    'editorconfig-checker==3.8.0',
+]
+
+[[linter]]
 code = 'FLAKE8'
 include_patterns = ['**/*.py']
 exclude_patterns = [

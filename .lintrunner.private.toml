@@ -1,0 +1,7 @@
+# Optional local lintrunner overrides — merged after .lintrunner.toml.
+# Safe to leave empty. Add personal [[linter]] blocks here if you need to
+# enable/disable a linter locally without touching the shared config.
+# Example:
+#   [[linter]]
+#   code = 'SOME_CODE'
+#   ...

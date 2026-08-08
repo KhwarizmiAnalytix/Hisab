@@ -1,0 +1,63 @@
+# Normalize text to LF; keep binaries untouched.
+* text=auto eol=lf
+
+# Explicit text
+*.py      text eol=lf
+*.pyi     text eol=lf
+*.h       text eol=lf
+*.hpp     text eol=lf
+*.hxx     text eol=lf
+*.c       text eol=lf
+*.cc      text eol=lf
+*.cpp     text eol=lf
+*.cxx     text eol=lf
+*.cu      text eol=lf
+*.cuh     text eol=lf
+*.mm      text eol=lf
+*.cs      text eol=lf
+*.cmake   text eol=lf
+CMakeLists.txt text eol=lf
+*.toml    text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.md      text eol=lf
+*.sh      text eol=lf
+*.bazel   text eol=lf
+*.bzl     text eol=lf
+MODULE.bazel text eol=lf
+WORKSPACE.bazel text eol=lf
+
+# Windows scripts keep CRLF
+*.bat     text eol=crlf
+*.cmd     text eol=crlf
+*.ps1     text eol=crlf
+
+# Makefiles need tabs preserved
+Makefile  text eol=lf
+makefile  text eol=lf
+*.mk      text eol=lf
+
+# Binary
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.pdf     binary
+*.gz      binary
+*.zip     binary
+*.7z      binary
+*.so      binary
+*.dylib   binary
+*.dll     binary
+*.a       binary
+*.lib     binary
+*.o       binary
+*.obj     binary
+*.pyc     binary
+*.pyd     binary
+*.whl     binary
+*.parquet binary
+*.bin     binary
+*.pt      binary
+*.onnx    binary

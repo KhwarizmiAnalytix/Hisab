@@ -114,7 +114,7 @@ def _generate_json_from_lcov(lcov_file: Path, output_dir: Path) -> Dict:
         summary = {
             "metadata": {
                 "format_version": "2.0",
-                "generator": "quarisma_coverage_tool",
+                "generator": "coverage_tool",
                 "schema": "cobertura-compatible"
             },
             "summary": {

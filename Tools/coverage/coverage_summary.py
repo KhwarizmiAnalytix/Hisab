@@ -19,7 +19,7 @@ class CoverageSummaryGenerator:
         self.summary = {
             "metadata": {
                 "format_version": "2.0",
-                "generator": "quarisma_coverage_tool",
+                "generator": "coverage_tool",
                 "schema": "cobertura-compatible"
             },
             "global_metrics": {

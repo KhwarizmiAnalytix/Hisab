@@ -1629,7 +1629,7 @@ class QuarismaConfiguration:
             source_folder=os.path.join(source_path, "Library"),
             output_folder=os.path.join(build_path, "coverage_report"),
             summary=True,
-            quarisma_root=source_path,
+            project_root=source_path,
         )
         if coverage_result == 0:
             print_status("Coverage collection completed successfully", "SUCCESS")

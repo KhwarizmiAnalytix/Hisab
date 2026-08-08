@@ -1,6 +1,6 @@
 # Coverage Tools
 
-Code coverage generation for the Quarisma project. Supports **GCC** (lcov),
+Code coverage generation for the project. Supports **GCC** (lcov),
 **Clang** (LLVM), and **MSVC** (OpenCppCoverage) with automatic compiler
 detection, and produces consistent HTML and JSON reports across all three.
 
@@ -106,7 +106,7 @@ exit_code = get_coverage(
     exclude_patterns=["*Benchmark*"],
     verbose=False,
     output_format="html-and-json",
-    quarisma_root="/path/to/project",
+    project_root="/path/to/project",
 )
 ```
 
@@ -134,7 +134,7 @@ The tool tries the following in order until one succeeds:
 
 | Step | What is checked | Detected as |
 |---|---|---|
-| 1 | `CMakeCache.txt` → `QUARISMA_COMPILER_ID` | gcc / clang / msvc |
+| 1 | `CMakeCache.txt` → `CMAKE_CXX_COMPILER_ID` | gcc / clang / msvc |
 | 2 | `.sln` or `.vcxproj` in `--build` dir or up to 2 parent dirs | msvc |
 | 3 | VS environment variables (`VCINSTALLDIR`, `VSCMD_ARG_TGT_ARCH`, …) | msvc |
 | 4 | `cl.exe` present in `PATH` | msvc |
@@ -229,7 +229,7 @@ coverage_report/
 {
   "metadata": {
     "format_version": "2.0",
-    "generator": "quarisma_coverage_tool",
+    "generator": "coverage_tool",
     "schema": "cobertura-compatible"
   },
   "summary": {
@@ -288,7 +288,6 @@ llvm_ignore_regex = [
     ".*Testing[/\\\\].*",
     ".*Serialization[/\\\\].*",
     ".*ThirdParty[/\\\\].*",
-    ".*quarismasys[/\\\\].*",
 ]
 
 
@@ -434,7 +433,8 @@ build_dir/
 ### GCC / lcov
 
 **Prerequisites**: Build with `-fprofile-arcs -ftest-coverage` (or
-`--coverage`). CMake: set `QUARISMA_COMPILER_ID=gcc`.
+`--coverage`). Compiler is auto-detected from `CMakeCache.txt`
+(`CMAKE_CXX_COMPILER_ID`) — no manual setting needed.
 
 **What happens**:
 1. `lcov --capture` collects `.gcda` files from `build_dir`.
@@ -450,7 +450,8 @@ Verify tests actually ran and that the build used the coverage flags.
 ### Clang / LLVM
 
 **Prerequisites**: Build with `-fprofile-instr-generate -fcoverage-mapping`.
-CMake: set `QUARISMA_COMPILER_ID=clang`.
+Compiler is auto-detected from `CMakeCache.txt` (`CMAKE_CXX_COMPILER_ID`) —
+no manual setting needed.
 
 **What happens** (per module):
 1. `prepare_llvm_coverage()` runs `<module>CxxTests` with
@@ -551,7 +552,7 @@ The test suite covers:
 | Symptom | Cause | Fix |
 |---|---|---|
 | `CMakeCache.txt not found` | Build directory is wrong or the project was never configured | Check `--build` points to the CMake build directory |
-| `QUARISMA_COMPILER_ID not found` | CMake cache exists but the variable is missing | Reconfigure with the correct CMake toolchain |
+| No compiler-id variable found | CMake cache exists but `CMAKE_CXX_COMPILER_ID` is missing or unrecognised | Reconfigure with the correct CMake toolchain, or pass `--compiler` explicitly |
 | `coverage.info is empty` (GCC) | No `.gcda` files — tests didn't run or build is missing `--coverage` flag | Run the tests first; verify the build flags |
 | `No profraw files generated` (Clang) | Test executable not found or failed to run | Check `exe_pattern` in `coverage.toml` matches the actual binary name |
 | `OpenCppCoverage not found` (MSVC) | Tool not installed or not on PATH | Install from the GitHub releases page; set `OPENCPPCOVERAGE_PATH` or `opencppcoverage_path` in config |
