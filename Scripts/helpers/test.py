@@ -41,8 +41,8 @@ def run_ctest(
     system: str,
     verbosity: str,
     shell_flag: bool,
-    sanitizer_type: str = None,
-    source_path: str = None,
+    sanitizer_type: Optional[str] = None,
+    source_path: Optional[str] = None,
 ) -> int:
     """
     Run tests using ctest.
@@ -96,7 +96,10 @@ def run_ctest(
 
         if sanitizer_type and source_path:
             suppressions_file = os.path.join(
-                source_path, "Scripts", "suppressions", f"{sanitizer_type}san_suppressions.txt"
+                source_path,
+                "Scripts",
+                "suppressions",
+                f"{sanitizer_type}san_suppressions.txt",
             )
             if os.path.exists(suppressions_file):
                 sanitizer_option = f"{sanitizer_type.upper()}SAN_OPTIONS"

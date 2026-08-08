@@ -693,8 +693,8 @@ class QuarismaFlags:
             "test": "BUILD_TESTING",
             "logging_backend": "LOGGING_BACKEND",
             "magic_enum": "CORE_ENABLE_MAGICENUM",
-                "mimalloc": "MEMORY_ENABLE_MIMALLOC",
-                "mimalloc_stats": "MEMORY_ENABLE_MIMALLOC_STATS",
+            "mimalloc": "MEMORY_ENABLE_MIMALLOC",
+            "mimalloc_stats": "MEMORY_ENABLE_MIMALLOC_STATS",
             "external": "QUARISMA_ENABLE_EXTERNAL",
             "profiler_type": "PROFILER_BACKEND",
             "enzyme": "CORE_ENABLE_ENZYME",
@@ -756,7 +756,7 @@ class QuarismaFlags:
         self.__value.update(
             {
                 "cpu_backend": "",  # Special case: string value
-                "gpu_backend": "",   # Special case: empty = let CMake use its default (none)
+                "gpu_backend": "",  # Special case: empty = let CMake use its default (none)
                 "static": self.ON,  # BUILD_SHARED_LIBS default is OFF, so static=ON
                 "test": self.ON,  # BUILD_TESTING default is ON
                 "javasourceversion": 1.8,  # Special case: numeric value
@@ -766,7 +766,7 @@ class QuarismaFlags:
                 "cache": self.ON,  # Per-module compiler cache (CMake defaults ON)
                 "cache_type": "none",  # Default cache backend is none
                 "parallel_backend": "std",  # Default SMP backend
-                "lto": "",     # empty = not specified; CMake picks the smart default per compiler
+                "lto": "",  # empty = not specified; CMake picks the smart default per compiler
                 "gtest": self.ON,  # *_ENABLE_GTEST CMake defaults are ON
                 "benchmark": self.OFF,  # *_ENABLE_BENCHMARK CMake defaults are ON
                 "magic_enum": self.ON,
@@ -856,9 +856,7 @@ class QuarismaFlags:
                     )
                     sys.exit(1)
             elif re.match(r"^psize([1-9][0-9]*)$", arg.lower()):
-                n = int(
-                    re.match(r"^psize([1-9][0-9]*)$", arg.lower()).group(1)
-                )
+                n = int(re.match(r"^psize([1-9][0-9]*)$", arg.lower()).group(1))
                 if n > 256:
                     print_status(
                         "packet size must be between 1 and 256 (inclusive)",
@@ -1917,7 +1915,7 @@ def parse_args(args):
                 )
                 sys.exit(1)
 
-        elif arg.startswith("--gpu_backend.") or arg.startswith("--gpu-backend."):
+        elif arg.startswith(("--gpu_backend.", "--gpu-backend.")):
             backend_value = arg.split(".", 1)[1].lower()
             valid_backends = ["none", "cuda", "hip", "metal"]
             if backend_value in valid_backends:
@@ -1996,16 +1994,30 @@ def main():
             "  fix                        Enable clang-tidy fix-errors and fix options"
         )
         print("\nSingle-library build (CMake):")
-        print("  --project.NAME             Only add_subdirectory Library/NAME (+ deps where needed).")
+        print(
+            "  --project.NAME             Only add_subdirectory Library/NAME (+ deps where needed)."
+        )
         print("                             memory = Memory only (Logging disabled).")
-        print("                             vectorization/core include their normal dependency chain.")
-        print("                             Example: python setup.py config.build.test --project.memory")
+        print(
+            "                             vectorization/core include their normal dependency chain."
+        )
+        print(
+            "                             Example: python setup.py config.build.test --project.memory"
+        )
         print("\nVectorization options:")
-        print("  sleef              Enable SLEEF math library for NEON/SVE transcendentals")
-        print("                             (auto-enabled by CMake when Apple Accelerate vForce is unavailable)")
-        print("                             Example: python setup.py config.build.test.neon.sleef")
+        print(
+            "  sleef              Enable SLEEF math library for NEON/SVE transcendentals"
+        )
+        print(
+            "                             (auto-enabled by CMake when Apple Accelerate vForce is unavailable)"
+        )
+        print(
+            "                             Example: python setup.py config.build.test.neon.sleef"
+        )
         print("\nVectorization packet size:")
-        print("  --packet-size=N    SIMD lane count (CMake VECTORIZATION_PACKET_SIZE; default 4)")
+        print(
+            "  --packet-size=N    SIMD lane count (CMake VECTORIZATION_PACKET_SIZE; default 4)"
+        )
         print("  psizeN             Same as --packet-size=N (e.g. psize8)")
         print("\nLogging backend flags:")
         print("  --logging=BACKEND  Set logging backend")

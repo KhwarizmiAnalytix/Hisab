@@ -1,6 +1,6 @@
 [[linter]]
 code = 'FLAKE8'
-include_patterns = ['**/*.py','Scripts/**/*.py']
+include_patterns = ['**/*.py']
 exclude_patterns = [
     '.git/**',
     'ThirdParty/**',
@@ -28,7 +28,6 @@ init_command = [
     'flake8-comprehensions==3.16.0',
     'flake8-executable==2.1.3',
     'flake8-logging-format==2024.24.12',
-    'flake8-pyi==25.5.0',
     'flake8-simplify==0.22.0',
     'mccabe==0.7.0',
     'pycodestyle==2.14.0',
@@ -40,9 +39,17 @@ init_command = [
 
 [[linter]]
 code = 'CLANGFORMAT'
+# Covers every C/C++/CUDA/ObjC++ extension present in Library/ (.mm = Metal
+# allocators, .cu/.cuh = CUDA, .cxx). The .metal shader sources are excluded
+# deliberately — clang-format has no Metal shading language mode.
 include_patterns = [
     '**/*.h',
+    '**/*.hxx',
     '**/*.cpp',
+    '**/*.cxx',
+    '**/*.cu',
+    '**/*.cuh',
+    '**/*.mm',
 ]
 exclude_patterns = [
     'ThirdParty/**',
@@ -217,8 +224,11 @@ exclude_patterns = [
     '.vscode/**',
     '.git/**',
     '.augment/**',
+    # Test trees are excluded entirely — sources AND headers (previously only
+    # *.cpp was excluded, which still clang-tidy-checked headers like
+    # MemoryTest.h while skipping their test files).
     'Library/**/Testing/**/*.cpp',
-
+    'Library/**/Testing/**/*.h',
 ]
 init_command = [
     'python3',
@@ -309,22 +319,6 @@ command = [
     '--',
     '@{{PATHSFILE}}'
 ]
-
-# [[linter]]
-# code = 'NATIVEFUNCTIONS'
-# include_patterns=['aten/src/Quarisma/native/native_functions.yaml']
-# command = [
-#     'python3',
-#     'Tools/linter/adapters/nativefunctions_linter.py',
-#     '--native-functions-yml=aten/src/Quarisma/native/native_functions.yaml',
-# ]
-# init_command = [
-#     'python3',
-#     'Tools/linter/adapters/pip_init.py',
-#     '--dry-run={{DRYRUN}}',
-#     'ruamel.yaml==0.18.10',
-# ]
-# is_formatter = true
 
 [[linter]]
 code = 'GHA'
@@ -431,199 +425,6 @@ command = [
     '@{{PATHSFILE}}'
 ]
 
-# [[linter]]
-# code = 'QUARISMA_UNUSED'
-# include_patterns = [
-#     '**/*.hxx',
-#     '**/*.cpp',
-#     '**/*.h',
-# ]
-# exclude_patterns = [
-#     'ThirdParty/**',
-#     'Tools/**',
-#     'Scripts/**',
-#     '.vscode/**',
-#     '.git/**',
-#     '.augment/**',
-# ]
-# command = [
-#     'python3',
-#     'Tools/linter/adapters/grep_linter.py',
-#     '--pattern=QUARISMA_UNUSED',
-#     '--linter-name=QUARISMA_UNUSED',
-#     '--error-name=deprecated QUARISMA_UNUSED macro',
-#     '--replace-pattern=s/QUARISMA_UNUSED/[[maybe_unused]]/',
-#     """--error-description=\
-#         Deprecated macro, use [[maybe_unused]] directly\
-#     """,
-#     '--',
-#     '@{{PATHSFILE}}'
-# ]
-
-# [[linter]]
-# code = 'QUARISMA_NODISCARD'
-# include_patterns = [
-#     '**/*.hxx',
-#     '**/*.cpp',
-#     '**/*.h',
-# ]
-# exclude_patterns = [
-#     'ThirdParty/**',
-#     'Tools/**',
-#     'Scripts/**',
-#     '.vscode/**',
-#     '.git/**',
-#     '.augment/**',
-# ]
-# command = [
-#     'python3',
-#     'Tools/linter/adapters/grep_linter.py',
-#     '--pattern=QUARISMA_NODISCARD',
-#     '--linter-name=QUARISMA_NODISCARD',
-#     '--error-name=deprecated QUARISMA_NODISCARD macro',
-#     '--replace-pattern=s/QUARISMA_NODISCARD/[[nodiscard]]/',
-#     """--error-description=\
-#         Deprecated macro, use [[nodiscard]] directly\
-#     """,
-#     '--',
-#     '@{{PATHSFILE}}'
-# ]
-
-# [[linter]]
-# code = 'INCLUDE'
-# include_patterns = [
-#     'Library/**',
-#     'Tests/**',
-# ]
-# exclude_patterns = [
-#     'ThirdParty/**',
-#     '**/generated/**',
-#     'Tools/**',
-#     '.vscode/**',
-#     '.git/**',
-#     '.augment/**',
-# ]
-# command = [
-#     'python3',
-#     'Tools/linter/adapters/grep_linter.py',
-#     '--pattern=#include "',
-#     '--linter-name=INCLUDE',
-#     '--error-name=quoted include',
-#     '--replace-pattern=s/#include "(.*)"$/#include <\1>/',
-#     """--error-description=\
-#         This #include uses quotes; please convert it to #include <xxxx>\
-#     """,
-#     '--',
-#     '@{{PATHSFILE}}'
-# ]
-
-[[linter]]
-code = 'PYBIND11_INCLUDE'
-include_patterns = [
-    '**/*.hxx',
-    '**/*.cpp',
-    '**/*.h',
-]
-exclude_patterns = [
-    'ThirdParty/**',
-    '**/experimental/**',
-    '**/Experimental/**',
-    'Tools/**',
-    '.vscode/**',
-    '.git/**',
-    '.augment/**',
-]
-command = [
-    'python3',
-    'Tools/linter/adapters/grep_linter.py',
-    '--pattern=#include <pybind11\/(^|[^(gil_simple\.h)])',
-    '--allowlist-pattern=#include <quarisma\/csrc\/utils\/pybind.h>',
-    '--linter-name=PYBIND11_INCLUDE',
-    '--match-first-only',
-    '--error-name=direct include of pybind11',
-    # https://stackoverflow.com/a/33416489/23845
-    # NB: this won't work if the pybind11 include is on the first line;
-    # but that's fine because it will just mean the lint will still fail
-    # after applying the change and you will have to fix it manually
-    '--replace-pattern=1,/(#include <pybind11\/)/ s/(#include <pybind11\/)/#include <quarisma\/csrc\/utils\/pybind.h>\n\1/',
-    """--error-description=\
-        This #include directly includes pybind11 without also including \
-        #include <quarisma/csrc/utils/pybind.h>;  this means some important \
-        specializations may not be included.\
-    """,
-    '--',
-    '@{{PATHSFILE}}'
-]
-
-[[linter]]
-code = 'ERROR_PRONE_ISINSTANCE'
-include_patterns = [
-    '**/*.py',
-]
-exclude_patterns = [
-    'ThirdParty/**',
-    '**/experimental/**',
-    '**/Experimental/**',
-    'Tools/**',
-    '.vscode/**',
-    '.git/**',
-    '.augment/**',
-]
-command = [
-    'python3',
-    'Tools/linter/adapters/grep_linter.py',
-    '--pattern=isinstance\([^)]+(int|float)\)',
-    '--linter-name=ERROR_PRONE_ISINSTANCE',
-    '--error-name=error prone isinstance',
-    """--error-description=\
-        This line has an isinstance call that directly refers to \
-        int or float.  This is error-prone because you may also \
-        have wanted to allow SymInt or SymFloat in your test.  \
-        To suppress this lint, use an appropriate type alias defined \
-        in quarisma._prims_common; use IntLike/FloatLike when you would accept \
-        both regular and symbolic numbers, Dim for ints representing \
-        dimensions, or IntWithoutSymInt/FloatWithoutSymFloat if you really \
-        meant to exclude symbolic numbers.
-    """,
-    '--',
-    '@{{PATHSFILE}}'
-]
-
-[[linter]]
-code = 'PYBIND11_SPECIALIZATION'
-include_patterns = [
-    '**/*.hxx',
-    '**/*.cpp',
-    '**/*.h',
-]
-exclude_patterns = [
-    'ThirdParty/**',
-    '**/experimental/**',
-    '**/Experimental/**',
-    'Tools/**',
-    '.vscode/**',
-    '.git/**',
-    '.augment/**',
-]
-command = [
-    'python3',
-    'Tools/linter/adapters/grep_linter.py',
-    '--pattern=PYBIND11_DECLARE_HOLDER_TYPE',
-    '--linter-name=PYBIND11_SPECIALIZATION',
-    '--error-name=pybind11 specialization in non-standard location',
-    """--error-description=\
-        This pybind11 specialization (PYBIND11_DECLARE_HOLDER_TYPE) should \
-        be placed in quarisma/csrc/utils/pybind.h so that it is guaranteed to be \
-        included at any site that may potentially make use of it via py::cast. \
-        If your specialization is in the same header file as the definition \
-        of the holder type, you can ignore this lint by adding your header to \
-        the exclude_patterns for this lint in .lintrunner.toml.  For more \
-        information see https://github.com/pybind/pybind11/issues/4099 \
-    """,
-    '--',
-    '@{{PATHSFILE}}'
-]
-
 [[linter]]
 code = 'PYPIDEP'
 include_patterns = ['.github/**']
@@ -682,63 +483,6 @@ command = [
 ]
 
 [[linter]]
-code = 'CUBINCLUDE'
-include_patterns = [
-    'Library/**',
-    'Tools/**',
-    'Tests/**',
-]
-exclude_patterns = [
-    'ThirdParty/**',
-    '**/experimental/**',
-    '**/Experimental/**',
-    'Tools/**',
-    '.vscode/**',
-    '.git/**',
-    '.augment/**',
-]
-command = [
-    'python3',
-    'Tools/linter/adapters/grep_linter.py',
-    '--pattern=#include <cub/',
-    '--linter-name=CUBINCLUDE',
-    '--error-name=direct cub include',
-    """--error-description=\
-        This line has a direct cub include; please include \
-        Quarisma/cuda/cub.cuh instead and wrap your cub calls in \
-        at::native namespace if necessary.
-    """,
-    '--',
-    '@{{PATHSFILE}}'
-]
-
-#[[linter]]
-#code = 'RAWCUDA'
-#include_patterns = [
-#    'Library/**',
-#    'Tests/**',
-#]
-#exclude_patterns = [
-#    'ThirdParty/**',
-#    'Tools/**',
-#    '.vscode/**',
-#    '.augment/**',
-#    '.git/**',
-#]
-#command = [
-#    'python3',
-#    'Tools/linter/adapters/grep_linter.py',
-#    '--pattern=cudaStreamSynchronize',
-#    '--linter-name=RAWCUDA',
-#    '--error-name=raw CUDA API usage',
-#    """--error-description=\
-#        This line calls raw CUDA APIs directly; please use at::cuda wrappers instead.
-#    """,
-#    '--',
-#    '@{{PATHSFILE}}'
-#]
-
-[[linter]]
 code = 'ROOT_LOGGING'
 include_patterns = [
     '**/*.py',
@@ -762,25 +506,6 @@ command = [
     """--error-description=\
         Do not use root logger (logging.info, etc) directly; instead \
         define 'log = logging.getLogger(__name__)' and call, e.g., log.info().
-    """,
-    '--',
-    '@{{PATHSFILE}}'
-]
-
-[[linter]]
-code = 'DEPLOY_DETECTION'
-include_patterns = [
-    '**/*.py',
-]
-command = [
-    'python3',
-    'Tools/linter/adapters/grep_linter.py',
-    '--pattern=sys\.executable == .torch_deploy.',
-    '--replace-pattern=s/sys\.executable == .torch_deploy./quarisma._running_with_deploy\(\)/',
-    '--linter-name=DEPLOY_DETECTION',
-    '--error-name=properly detect deploy runner',
-    """--error-description=\
-        Do not use sys.executable to detect if running within deploy/multiply, use quarisma._running_with_deploy().
     """,
     '--',
     '@{{PATHSFILE}}'
@@ -849,9 +574,9 @@ is_formatter = true
 
 [[linter]]
 code = 'SHELLCHECK'
+# Tools/**/*.sh is intentionally not included: Tools/** is excluded below.
 include_patterns = [
     'Scripts/**/*.sh',
-    'Tools/**/*.sh',
 ]
 exclude_patterns = [
     'ThirdParty/**',
@@ -910,169 +635,6 @@ init_command = [
 ]
 
 [[linter]]
-code = 'TESTOWNERS'
-include_patterns = [
-    'test/**/test_*.py',
-    'test/**/*_test.py',
-]
-exclude_patterns = [
-    'test/run_test.py',
-    '**/experimental/**',
-    '**/Experimental/**',
-    'Tools/**',
-    '.vscode/**',
-    '.git/**',
-    '.augment/**',
-]
-command = [
-    'python3',
-    'Tools/linter/adapters/testowners_linter.py',
-    '--',
-    '@{{PATHSFILE}}',
-]
-
-[[linter]]
-code = 'TEST_HAS_MAIN'
-include_patterns = [
-    'test/**/test_*.py',
-]
-exclude_patterns = [
-    'ThirdParty/**',
-    '**/experimental/**',
-    '**/Experimental/**',
-    'Tools/**',
-    '.vscode/**',
-    '.git/**',
-    '.augment/**',
-]
-command = [
-    'python3',
-    'Tools/linter/adapters/test_has_main_linter.py',
-    '--',
-    '@{{PATHSFILE}}',
-]
-
-#[[linter]]
-#code = 'CALL_ONCE'
-#include_patterns = [
-#    'Library/**',
-#]
-#exclude_patterns = [
-#    'Tools/**',
-#    '.vscode/**',
-#    '.augment/**',
-#    '.git/**',
-#]
-#command = [
-#    'python3',
-#    'Tools/linter/adapters/grep_linter.py',
-#    '--pattern=std::call_once',
-#    '--linter-name=CALL_ONCE',
-#    '--error-name=invalid call_once',
-#    '--replace-pattern=s/std::call_once/quarisma::call_once/',
-#    """--error-description=\
-#        Use of std::call_once is forbidden and should be replaced with quarisma::call_once\
-#    """,
-#    '--',
-#    '@{{PATHSFILE}}'
-#]
-
-[[linter]]
-code = 'CONTEXT_DECORATOR'
-include_patterns = [
-    'Library/**',
-]
-command = [
-    'python3',
-    'Tools/linter/adapters/grep_linter.py',
-    '--pattern=@.*(dynamo_timed|preserve_rng_state|clear_frame|with_fresh_cache_if_config|use_lazy_graph_module|_disable_current_modes)',
-    '--linter-name=CONTEXT_DECORATOR',
-    '--error-name=avoid context decorator',
-    """--error-description=\
-        Do not use context manager as decorator as it breaks cProfile traces.  Use it as \
-        a context manager instead\
-    """,
-    '--',
-    '@{{PATHSFILE}}'
-]
-
-#[[linter]]
-#code = 'ONCE_FLAG'
-#include_patterns = [
-#    'Library/**',
-#]
-#exclude_patterns = [
-#    'ThirdParty/**',
-#    'Tools/**',
-#    '.vscode/**',
-#    '.git/**',
-#    '.augment/**',
-#]
-#command = [
-#    'python3',
-#    'Tools/linter/adapters/grep_linter.py',
-#    '--pattern=std::once_flag',
-#    '--linter-name=ONCE_FLAG',
-#    '--error-name=invalid once_flag',
-#    '--replace-pattern=s/std::once_flag/std::once_flag/',
-#    """--error-description=\
-#        Use of std::once_flag is forbidden and should be replaced with std::once_flag\
-#    """,
-#    '--',
-#    '@{{PATHSFILE}}'
-#]
-
-[[linter]]
-code = 'WORKFLOWSYNC'
-include_patterns = [
-    '.github/workflows/pull.yml',
-    '.github/workflows/trunk.yml',
-    '.github/workflows/periodic.yml',
-    '.github/workflows/mac-mps.yml',
-    '.github/workflows/slow.yml',
-]
-command = [
-    'python3',
-    'Tools/linter/adapters/workflow_consistency_linter.py',
-    '--',
-    '@{{PATHSFILE}}'
-]
-init_command = [
-    'python3',
-    'Tools/linter/adapters/pip_init.py',
-    '--dry-run={{DRYRUN}}',
-    'pyyaml==6.0.2',
-]
-
-[[linter]]
-code = 'NO_WORKFLOWS_ON_FORK'
-include_patterns = [
-    '.github/**/*.yml',
-    '.github/**/*.yaml',
-]
-exclude_patterns = [
-    'ThirdParty/**',
-    '**/experimental/**',
-    '**/Experimental/**',
-    'Tools/**',
-    '.vscode/**',
-    '.git/**',
-    '.augment/**',
-]
-command = [
-    'python3',
-    'Tools/linter/adapters/no_workflows_on_fork.py',
-    '--',
-    '@{{PATHSFILE}}',
-]
-init_command = [
-    'python3',
-    'Tools/linter/adapters/pip_init.py',
-    '--dry-run={{DRYRUN}}',
-    'pyyaml==6.0.2',
-]
-
-[[linter]]
 code = 'CODESPELL'
 command = [
     'python3',
@@ -1091,7 +653,6 @@ exclude_patterns = [
     'Tools/**',
     '.vscode/**',
     '.git/**',
-    'Docs/git/**',
     '.augment/**',
     'Scripts/iwyu/iwyu_configure_detector.py',
 ]
@@ -1146,6 +707,15 @@ command = [
 include_patterns = [
     "**/pyproject.toml",
 ]
+exclude_patterns = [
+    'ThirdParty/**',
+    '**/experimental/**',
+    '**/Experimental/**',
+    'Tools/**',
+    '.vscode/**',
+    '.git/**',
+    '.augment/**',
+]
 init_command = [
     'python3',
     'Tools/linter/adapters/pip_init.py',
@@ -1171,6 +741,15 @@ include_patterns = [
     "**/*requirements*.txt",
     "**/*requirements*.in",
 ]
+exclude_patterns = [
+    'ThirdParty/**',
+    '**/experimental/**',
+    '**/Experimental/**',
+    'Tools/**',
+    '.vscode/**',
+    '.git/**',
+    '.augment/**',
+]
 init_command = [
     'python3',
     'Tools/linter/adapters/pip_init.py',
@@ -1187,7 +766,6 @@ exclude_patterns = [
     '**/experimental/**',
     '**/Experimental/**',
     '.lintrunner.toml',
-    'Docs/lintrunner_codes.md',
     'Tools/**',
     '.vscode/**',
     '.git/**',
@@ -1209,7 +787,13 @@ command = [
 
 [[linter]]
 code = 'BAZEL_LINTER'
-include_patterns = ['WORKSPACE']
+# The repo has no plain WORKSPACE file — it uses MODULE.bazel / WORKSPACE.bazel
+# plus *.bzl under Library/. http_archive (what this adapter checks) can appear
+# in any of them.
+include_patterns = ['**/WORKSPACE', '**/WORKSPACE.bazel', '**/MODULE.bazel', '**/*.bzl']
+exclude_patterns = [
+    'ThirdParty/**',
+]
 command = [
     'python3',
     'Tools/linter/adapters/bazel_linter.py',
@@ -1226,7 +810,6 @@ init_command = [
     '--output-dir=.lintbin',
     '--output-name=bazel',
 ]
-is_formatter = true
 
 [[linter]]
 code = 'LINTRUNNER_VERSION'
@@ -1279,78 +862,6 @@ init_command = [
 is_formatter = true
 
 [[linter]]
-code = 'META_NO_CREATE_UNBACKED'
-include_patterns = [
-  "Scripts/**/*.py",
-  "Tools/**/*.py",
-]
-command = [
-    'python3',
-    'Tools/linter/adapters/grep_linter.py',
-    '--pattern=create_unbacked',
-    '--linter-name=META_NO_CREATE_UNBACKED',
-    '--error-name=no create_unbacked in meta registrations',
-    """--error-description=\
-        Data-dependent operators should have their meta \
-        registration in quarisma/_subclasses/fake_impls.py, \
-        not quarisma/_meta_registrations.py
-    """,
-    '--',
-    '@{{PATHSFILE}}'
-]
-
-[[linter]]
-code = 'ATEN_CPU_GPU_AGNOSTIC'
-include_patterns = [
-    "Library/**/*.hxx",
-    "Library/**/*.cpp",
-    "Library/**/*.h",
-    "Tests/**/*.cpp",
-    "Tests/**/*.cpp",
-    "Tests/**/*.h",
-]
-exclude_patterns = [
-    "ThirdParty/**",
-    '**/experimental/**',
-    '**/Experimental/**',
-    'Tools/**',
-    '.vscode/**',
-    '.git/**',
-    '.augment/**',
-]
-command = [
-    'python3',
-    'Tools/linter/adapters/grep_linter.py',
-    '--pattern=(^#if.*USE_ROCM.*)|(^#if.*USE_CUDA.*)',
-    '--linter-name=ATEN_CPU',
-    '--error-name=aten-cpu should be gpu agnostic',
-    """--error-description=\
-        We strongly discourage the compile-time divergence \
-        on Quarisma-CPU code for different GPU code. This \
-        disallows sharing the same aten-cpu shared object \
-        between different GPU backends \
-    """,
-    '--',
-    '@{{PATHSFILE}}'
-]
-is_formatter = true
-
-# [[linter]]
-# code = 'SET_LINTER'
-# command = [
-#     'python3',
-#     'Tools/linter/adapters/set_linter.py',
-#     '--lintrunner',
-#     '--',
-#     '@{{PATHSFILE}}'
-# ]
-# include_patterns = [
-#     "Scripts/**/*.py",
-#     "Tools/**/*.py",
-# ]
-# is_formatter = true
-
-[[linter]]
 code = 'DOCSTRING_LINTER'
 command = [
     'python3',
@@ -1380,15 +891,3 @@ include_patterns = [
    'Scripts/**/*.py',
 ]
 is_formatter = false
-
-[[linter]]
-code = 'TEST_DEVICE_BIAS'
-command = [
-    'python3',
-    'Tools/linter/adapters/test_device_bias_linter.py',
-    '--',
-    '@{{PATHSFILE}}',
-]
-include_patterns = [
-    'Tests/**/test_*.py',
-]

@@ -210,6 +210,9 @@ library the file lives in, never another library's:
 - Follow the Google Python Style Guide; target Python 3.9+.
 - Modules: lowercase-with-underscores filenames, one module per file,
   `pathlib` for filesystem paths (not raw string concatenation).
-- Format with `black`, lint with `ruff`/`pylint` per the root
+- Format with `ruff-format` + `usort` (the `PYFMT`/`RUFF` linters in
+  `.lintrunner.toml`), lint with `ruff`/`flake8`/`mypy` per the root
   `pyproject.toml` / `.pylintrc` — these already exist and are wired into
-  `.lintrunner.toml`; don't add a competing config.
+  `.lintrunner.toml`; don't add a competing config. (`black` is not the
+  project formatter; isort's `profile = "black"` is only an
+  import-style compatibility setting.)

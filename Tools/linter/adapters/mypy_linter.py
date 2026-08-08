@@ -134,6 +134,21 @@ def check_files(
             extra_env={},
             retries=retries,
         )
+        # dmypy keeps a single daemon per status file, but MYPY and MYPYSTRICT
+        # run with different configs in the same lintrunner invocation — the
+        # daemon then answers "restart: configuration changed" and exits
+        # nonzero instead of restarting. Stop the stale daemon and retry once.
+        if (
+            mypy_commands[0] == "dmypy"
+            and proc.returncode not in (0, 1)
+            and b"configuration changed" in proc.stderr
+        ):
+            run_command(["dmypy", "stop"], extra_env={}, retries=0)
+            proc = run_command(
+                [*mypy_commands, f"--config={str(cfg_path)}"] + filenames,
+                extra_env={},
+                retries=retries,
+            )
     except OSError:
         # Fallback: try invoking mypy directly if dmypy is unavailable
         try:
