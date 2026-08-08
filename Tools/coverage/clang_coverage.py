@@ -295,9 +295,30 @@ def _generate_summary_json_from_lcov(lcov_file: Path, coverage_dir: Path,
             "files": []
         }
 
-        # Parse LCOV file
+        # Parse LCOV file.
+        #
+        # Line totals/hits are derived from the DA: records themselves rather
+        # than trusted from llvm-cov's own LF:/LH: summary fields. For headers
+        # instantiated as multiple distinct templates (e.g. allocator<T> over
+        # several T/alignment combinations), llvm-cov's -format=lcov export can
+        # emit an LF:/LH: pair that undercounts relative to the DA: lines it
+        # wrote in the very same section (observed: 110 DA: records, one per
+        # source line, all with a nonzero hit count, under an LF:107/LH:96 that
+        # implies 11 lines were never hit) -- self-inconsistent output from the
+        # same tool run. DA: is also what the HTML report is built from (see
+        # _parse_lcov_for_line_coverage below), so recomputing from DA: here
+        # keeps the JSON summary and the HTML report in agreement.
         current_file = None
         file_data = {}
+        current_line_hits: Dict[int, int] = {}
+
+        def _flush_line_coverage() -> None:
+            if current_file is None:
+                return
+            total = len(current_line_hits)
+            covered = sum(1 for hit_count in current_line_hits.values() if hit_count > 0)
+            file_data[current_file]["line_coverage"]["total"] = total
+            file_data[current_file]["line_coverage"]["covered"] = covered
 
         with open(lcov_file, 'r', encoding='utf-8') as f:
             for line in f:
@@ -305,7 +326,9 @@ def _generate_summary_json_from_lcov(lcov_file: Path, coverage_dir: Path,
 
                 if line.startswith("SF:"):
                     # Source file
+                    _flush_line_coverage()
                     current_file = line[3:]
+                    current_line_hits = {}
                     file_data[current_file] = {
                         "line_coverage": {"total": 0, "covered": 0, "uncovered": 0},
                         "function_coverage": {"total": 0, "covered": 0, "uncovered": 0}
@@ -319,13 +342,25 @@ def _generate_summary_json_from_lcov(lcov_file: Path, coverage_dir: Path,
                     # Function hit count
                     file_data[current_file]["function_coverage"]["covered"] = int(line[4:])
 
-                elif line.startswith("LF:") and current_file:
-                    # Line count
-                    file_data[current_file]["line_coverage"]["total"] = int(line[3:])
+                elif line.startswith("DA:") and current_file:
+                    # Line data: DA:line_number,hit_count[,checksum]
+                    parts = line[3:].split(',')
+                    if len(parts) >= 2:
+                        line_num = int(parts[0])
+                        hit_count = int(parts[1])
+                        # A line can carry multiple DA: records across distinct
+                        # template instantiations in the same TU; a line counts
+                        # as covered if any instantiation hit it.
+                        current_line_hits[line_num] = max(
+                            current_line_hits.get(line_num, 0), hit_count
+                        )
 
-                elif line.startswith("LH:") and current_file:
-                    # Line hit count
-                    file_data[current_file]["line_coverage"]["covered"] = int(line[3:])
+                elif line == "end_of_record" and current_file:
+                    _flush_line_coverage()
+                    current_file = None
+                    current_line_hits = {}
+
+            _flush_line_coverage()
 
         # Build summary from file data
         for filename, data in file_data.items():
