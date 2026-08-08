@@ -24,7 +24,10 @@
       "Bash(tasklist)",
       "Bash(\"/c/Program Files \\(x86\\)/Microsoft Visual Studio/Installer/vswhere.exe\" -all -prerelease -products '*' -format json)",
       "Bash(python -c ' *)",
-      "Bash(python setup.py config.build.TEST.vv.vs22.avx2.cuda.benchmark --project.vectorization --packet-size=8)"
+      "Bash(python setup.py config.build.TEST.vv.vs22.avx2.cuda.benchmark --project.vectorization --packet-size=8)",
+      "Bash(python3 setup.py config.build.ninja.clang.release.benchmark.torch.metal.mimalloc --project.memory)",
+      "Bash(./benchmark_memory_pytorchcomparison --benchmark_out=/private/tmp/claude-501/-Users-toufikbellaj-XSigma/7eeab4bc-edb8-4e8d-a7c8-1afbdea26f42/scratchpad/pytorch_comparison_native.json --benchmark_out_format=json --benchmark_repetitions=3 --benchmark_report_aggregates_only=true)",
+      "Bash(python3 -c ' *)"
     ]
   },
   "skipDangerousModePermissionPrompt": true,

@@ -620,6 +620,7 @@ class QuarismaFlags:
             "lto",
             "magic_enum",
             "mimalloc",
+            "mimalloc_stats",
             "external",
             "cxxstd",
             "cppcheck",
@@ -659,6 +660,7 @@ class QuarismaFlags:
             "LTO mode for all modules: off | thin | full | ipo | auto (bare 'lto' = auto)",
             "enable magic_enum static reflection for enums",
             "enable Microsoft mimalloc high-performance memory allocator",
+            "compile mimalloc statistics (MI_STAT=1); enable via --mimalloc_stats ('_' is a token delimiter in dotted args)",
             "use external copies of third party libraries by default",
             "C++ standard: cxx17, cxx20, cxx23",
             "enable cppcheck static analysis",
@@ -673,7 +675,7 @@ class QuarismaFlags:
             "SMP backend: std, openmp, or tbb",
             "Clang/GCC: -march=native for max CPU tuning (binary may not run on older CPUs)",
             "enable SLEEF SIMD math library for NEON/SVE (AArch64; auto-enabled when Accelerate vForce is unavailable)",
-            "enable LibTorch (PyTorch C++) comparison tests/benchmarks in Vectorization (requires LibTorch in CMAKE_PREFIX_PATH)",
+            "enable LibTorch (PyTorch C++) comparison tests/benchmarks in (requires LibTorch in CMAKE_PREFIX_PATH)",
         ]
 
     def __build_cmake_flag(self):
@@ -691,7 +693,8 @@ class QuarismaFlags:
             "test": "BUILD_TESTING",
             "logging_backend": "LOGGING_BACKEND",
             "magic_enum": "CORE_ENABLE_MAGICENUM",
-            "mimalloc": "MEMORY_ENABLE_MIMALLOC",
+                "mimalloc": "MEMORY_ENABLE_MIMALLOC",
+                "mimalloc_stats": "MEMORY_ENABLE_MIMALLOC_STATS",
             "external": "QUARISMA_ENABLE_EXTERNAL",
             "profiler_type": "PROFILER_BACKEND",
             "enzyme": "CORE_ENABLE_ENZYME",
@@ -1830,6 +1833,12 @@ def parse_args(args):
                     "ERROR",
                 )
                 sys.exit(1)
+        elif arg in ("--mimalloc_stats", "--mimalloc-stats"):
+            # Multi-word option: the dotted-token splitter treats '_' as a
+            # delimiter (re.split(r"_|\.|\ ", ...)), so this needs an explicit
+            # --flag form that passes through as a single token.
+            processed_args.append("mimalloc_stats")
+            print_status("mimalloc statistics enabled (MI_STAT=1)", "INFO")
         elif arg.startswith("--packet-size="):
             size_part = arg.split("=", 1)[1].strip()
             if not size_part.isdigit() or int(size_part) < 1:
@@ -1928,8 +1937,16 @@ def parse_args(args):
             # would destroy paths like C:/msys64/mingw64/bin/clang.exe.
             processed_args.append(arg)
         else:
-            # Apply the original parsing logic
-            processed_args.extend(re.split(r"_|\.|\ ", arg.lower()))
+            # Apply the original parsing logic, but split on '.'/space first so
+            # registered multi-word flags survive as single tokens: splitting a
+            # dotted arg containing "mimalloc_stats" on '_' would shred it into
+            # "mimalloc" (inverse-logic: DISABLES mimalloc!) and "stats" (unknown,
+            # ignored) — silently dropping mimalloc without enabling statistics.
+            for part in re.split(r"\.|\ ", arg.lower()):
+                if part == "mimalloc_stats":
+                    processed_args.append(part)
+                else:
+                    processed_args.extend(re.split(r"_", part))
 
     return processed_args
 
