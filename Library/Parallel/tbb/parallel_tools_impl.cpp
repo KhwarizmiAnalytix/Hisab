@@ -25,7 +25,6 @@
 
 #include <charconv>
 #include <cstdlib>  // For std::getenv()
-#include <memory>   // For std::unique_ptr
 #include <mutex>    // For std::mutex
 #include <stack>    // For std::stack
 #include <string>
@@ -50,36 +49,37 @@ namespace detail
 namespace parallel_impl
 {
 
-static std::unique_ptr<tbb::task_arena> task_arena;
-static std::unique_ptr<std::mutex>      parallel_parallel_tools_cs;
-static std::unique_ptr<std::stack<int>> thread_id_stack;
-static std::unique_ptr<std::mutex>      thread_id_stack_lock;
-static int                              specified_num_threads_tbb;  // Default initialized to zero
+static int specified_num_threads_tbb;  // Default initialized to zero
 
-//------------------------------------------------------------------------------
-// Must NOT be initialized. Default initialization to zero is necessary.
-// NOTE: This variable must NOT be static - it needs to be visible across
-// translation units for proper initialization/deinitialization tracking.
-static unsigned int parallel_tools_impl_tbb_initialize_count;
-
-//------------------------------------------------------------------------------
-parallel_tools_impl_tbb_initialize::parallel_tools_impl_tbb_initialize()
+// Process-wide state, each lazily initialized on first use via a
+// function-local static (C++11 magic statics: guaranteed thread-safe,
+// initialized on first call rather than at static-init time before
+// main()). This replaces a Schwarz-counter static object whose
+// constructor called std::make_unique (which can throw std::bad_alloc)
+// during static initialization, where no exception handler could ever
+// catch it.
+static tbb::task_arena& get_task_arena()
 {
-    if (++parallel_tools_impl_tbb_initialize_count == 1)
-    {
-        task_arena                 = std::make_unique<tbb::task_arena>();
-        parallel_parallel_tools_cs = std::make_unique<std::mutex>();
-        thread_id_stack            = std::make_unique<std::stack<int>>();
-        thread_id_stack_lock       = std::make_unique<std::mutex>();
-    }
+    static tbb::task_arena arena;
+    return arena;
 }
 
-//------------------------------------------------------------------------------
-parallel_tools_impl_tbb_initialize::
-    ~parallel_tools_impl_tbb_initialize()  // NOLINT(modernize-use-equals-default)
+static std::mutex& get_parallel_tools_mutex()
 {
-    // Empty destructor - cleanup is handled by unique_ptr members
-    // Cannot use = default due to DLL export issues on Windows
+    static std::mutex mutex;
+    return mutex;
+}
+
+static std::stack<int>& get_thread_id_stack()
+{
+    static std::stack<int> stack;
+    return stack;
+}
+
+static std::mutex& get_thread_id_stack_mutex()
+{
+    static std::mutex mutex;
+    return mutex;
 }
 
 //------------------------------------------------------------------------------
@@ -92,7 +92,7 @@ parallel_tools_impl<backend_type::TBB>::parallel_tools_impl() : nested_activated
 template <>
 void parallel_tools_impl<backend_type::TBB>::initialize(int num_threads)
 {
-    parallel_parallel_tools_cs->lock();
+    get_parallel_tools_mutex().lock();
 
     if (num_threads == 0)
     {
@@ -106,9 +106,9 @@ void parallel_tools_impl<backend_type::TBB>::initialize(int num_threads)
                 num_threads = 0;
             }
         }
-        else if (task_arena->is_active())
+        else if (get_task_arena().is_active())
         {
-            task_arena->terminate();
+            get_task_arena().terminate();
             specified_num_threads_tbb = 0;
         }
     }
@@ -116,15 +116,15 @@ void parallel_tools_impl<backend_type::TBB>::initialize(int num_threads)
         num_threads <=
             parallel_tools_impl<backend_type::TBB>::estimated_default_number_of_threads())
     {
-        if (task_arena->is_active())
+        if (get_task_arena().is_active())
         {
-            task_arena->terminate();
+            get_task_arena().terminate();
         }
-        task_arena->initialize(num_threads);
+        get_task_arena().initialize(num_threads);
         specified_num_threads_tbb = num_threads;
     }
 
-    parallel_parallel_tools_cs->unlock();
+    get_parallel_tools_mutex().unlock();
 }
 
 //------------------------------------------------------------------------------
@@ -140,7 +140,7 @@ int parallel_tools_impl<backend_type::TBB>::estimated_number_of_threads()
 template <>
 int parallel_tools_impl<backend_type::TBB>::estimated_default_number_of_threads()
 {
-    return task_arena->max_concurrency();
+    return get_task_arena().max_concurrency();
 }
 
 //------------------------------------------------------------------------------
@@ -149,18 +149,18 @@ bool parallel_tools_impl<backend_type::TBB>::single_thread()
 {
     // Check if we're inside a parallel region
     // If the stack is empty, we're not in a parallel region
-    thread_id_stack_lock->lock();
-    const bool is_empty = thread_id_stack->empty();
-    thread_id_stack_lock->unlock();
+    get_thread_id_stack_mutex().lock();
+    const bool is_empty = get_thread_id_stack().empty();
+    get_thread_id_stack_mutex().unlock();
 
     if (is_empty)
     {
         return false;
     }
 
-    thread_id_stack_lock->lock();
-    const int top_id = thread_id_stack->top();
-    thread_id_stack_lock->unlock();
+    get_thread_id_stack_mutex().lock();
+    const int top_id = get_thread_id_stack().top();
+    get_thread_id_stack_mutex().unlock();
 
     return top_id == tbb::this_task_arena::current_thread_index();
 }
@@ -173,22 +173,22 @@ void parallel_tools_impl_for_tbb(
     execute_functor_ptr_type functor_executer,
     void*                    functor)
 {
-    thread_id_stack_lock->lock();
-    thread_id_stack->emplace(tbb::this_task_arena::current_thread_index());
-    thread_id_stack_lock->unlock();
+    get_thread_id_stack_mutex().lock();
+    get_thread_id_stack().emplace(tbb::this_task_arena::current_thread_index());
+    get_thread_id_stack_mutex().unlock();
 
-    if (task_arena->is_active())
+    if (get_task_arena().is_active())
     {
-        task_arena->execute([&] { functor_executer(functor, first, last, grain); });
+        get_task_arena().execute([&] { functor_executer(functor, first, last, grain); });
     }
     else
     {
         functor_executer(functor, first, last, grain);
     }
 
-    thread_id_stack_lock->lock();
-    thread_id_stack->pop();
-    thread_id_stack_lock->unlock();
+    get_thread_id_stack_mutex().lock();
+    get_thread_id_stack().pop();
+    get_thread_id_stack_mutex().unlock();
 }
 
 }  // namespace parallel_impl

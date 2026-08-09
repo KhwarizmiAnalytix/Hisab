@@ -27,7 +27,6 @@
 
 #include <charconv>
 #include <cstdlib>  // For std::getenv()
-#include <memory>   // For std::unique_ptr
 #include <stack>    // For std::stack
 #include <string>
 
@@ -40,33 +39,18 @@ namespace detail
 namespace parallel_impl
 {
 
-static int                              specified_num_threads_omp;  // Default initialized to zero
-static std::unique_ptr<std::stack<int>> thread_id_stack;
+static int specified_num_threads_omp;  // Default initialized to zero
 
-//------------------------------------------------------------------------------
-// Must NOT be initialized. Default initialization to zero is necessary.
-// NOTE: This variable must NOT be static - it needs to be visible across
-// translation units for proper initialization/deinitialization tracking.
-static unsigned int parallel_tools_impl_openmp_initialize_count;
-
-//------------------------------------------------------------------------------
-parallel_tools_impl_openmp_initialize::parallel_tools_impl_openmp_initialize()
+// Lazily initialized on first use via a function-local static (C++11 magic
+// statics: guaranteed thread-safe, initialized on first call rather than at
+// static-init time before main()). This replaces a Schwarz-counter static
+// object whose constructor called std::make_unique (which can throw
+// std::bad_alloc) during static initialization, where no exception handler
+// could ever catch it.
+static std::stack<int>& get_thread_id_stack()
 {
-    if (++parallel_tools_impl_openmp_initialize_count == 1)
-    {
-        thread_id_stack = std::make_unique<std::stack<int>>();
-    }
-}
-
-//------------------------------------------------------------------------------
-parallel_tools_impl_openmp_initialize::~parallel_tools_impl_openmp_initialize()
-{
-    if (--parallel_tools_impl_openmp_initialize_count == 0)
-    {
-        // std::unique_ptr automatically deletes the managed object when destroyed.
-        // Explicit reset() call is unnecessary and adds function call overhead.
-        // The unique_ptr will be destroyed when this static variable goes out of scope.
-    }
+    static std::stack<int> stack;
+    return stack;
 }
 
 //------------------------------------------------------------------------------
@@ -116,11 +100,11 @@ bool single_thread_openmp()
     // Guard against calls made outside of any parallel_for region, where the
     // stack is empty and top() would be undefined behavior (matches the TBB
     // backend's equivalent empty-stack guard).
-    if (thread_id_stack->empty())
+    if (get_thread_id_stack().empty())
     {
         return false;
     }
-    return thread_id_stack->top() == omp_get_thread_num();
+    return get_thread_id_stack().top() == omp_get_thread_num();
 }
 
 //------------------------------------------------------------------------------
@@ -163,7 +147,7 @@ void parallel_tools_impl_for_openmp(
     omp_set_max_active_levels(static_cast<int>(nested_activated));
 
 #pragma omp single
-    thread_id_stack->emplace(omp_get_thread_num());
+    get_thread_id_stack().emplace(omp_get_thread_num());
 
 #pragma omp parallel for schedule(runtime)
     for (size_t from = first; from < last; from += grain)
@@ -172,7 +156,7 @@ void parallel_tools_impl_for_openmp(
     }
 
 #pragma omp single
-    thread_id_stack->pop();
+    get_thread_id_stack().pop();
 }
 
 }  // namespace parallel_impl

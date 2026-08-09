@@ -45,22 +45,6 @@ void PARALLEL_API parallel_tools_impl_for_openmp(
     void*                    functor,
     bool                     nested_activated);
 
-//------------------------------------------------------------------------------
-// Address the static initialization order 'fiasco' by implementing
-// the schwarz counter idiom.
-class PARALLEL_VISIBILITY parallel_tools_impl_openmp_initialize
-{
-public:
-    parallel_tools_impl_openmp_initialize();
-    ~parallel_tools_impl_openmp_initialize();
-};
-
-//--------------------------------------------------------------------------------
-// This instance will show up in any translation unit that uses parallel_tools_impl.
-// It will make sure parallel_tools_impl statistics are initialized before there are used
-// and finalized when they are done being used.
-static parallel_tools_impl_openmp_initialize parallel_tools_impl_openmp_initializer;
-
 //--------------------------------------------------------------------------------
 template <typename FunctorInternal>
 void execute_functor_openmp(void* functor, size_t from, size_t grain, size_t last)
