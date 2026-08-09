@@ -193,7 +193,7 @@ std::string exception::compute_what(bool include_backtrace) const
 void exception::refresh_what()
 {
     what_.reset();
-    what_without_backtrace_ = compute_what(/*include_backtrace*/ true);
+    what_without_backtrace_ = compute_what(/*include_backtrace*/ false);
     LOGGING_LOG_ERROR("Error message: {}", what());
 }
 

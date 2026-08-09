@@ -452,10 +452,10 @@ LOGGINGTEST(Exception, what_methods)
     // Should contain the error message
     ASSERT_TRUE(msg_str.find("Test error message") != std::string::npos);
 
-    // Note: Due to a bug in refresh_what() (line 195 in exception.cpp),
-    // what_without_backtrace_ is currently set with include_backtrace=true
-    // So this test documents the current behavior
-    // The backtrace is currently included in what_without_backtrace_
+    // what_without_backtrace() must NOT include the backtrace: it should not
+    // contain the "Exception raised from ..." marker that only appears in
+    // the backtrace string produced for what().
+    ASSERT_TRUE(msg_str.find("Exception raised from") == std::string::npos);
 
     // Test what_without_backtrace with context
     logging::source_location loc3{__func__, __FILE__, __LINE__};

@@ -43,7 +43,6 @@ namespace logging
 {
 // Constants for cleaning up demangled names
 constexpr std::string_view CLASS_NAME = "class ";  ///< C++ class prefix to remove
-constexpr std::string_view SPACE_STR  = " ";       ///< Spaces to remove for cleaner output
 constexpr std::string_view SPACE_LIB1 = "__1::";   ///< libstdc++ namespace to remove
 
 /**
@@ -83,7 +82,12 @@ std::string demangle(const char* name)
 
     // Clean up common unwanted prefixes and suffixes for better readability
     erase_all_sub_string(ret, CLASS_NAME);  // Remove "class " prefix
-    erase_all_sub_string(ret, SPACE_STR);   // Remove extra spaces
+    // Collapse nested-template closing brackets ("> > >" -> ">>>"). One pass only
+    // merges adjacent pairs, so repeat until a pass makes no more replacements to
+    // correctly handle arbitrarily deep nesting.
+    while (replace_all(ret, "> >", ">>") > 0)
+    {
+    }
     erase_all_sub_string(ret, SPACE_LIB1);  // Remove libstdc++ internal namespace
 
     return ret;

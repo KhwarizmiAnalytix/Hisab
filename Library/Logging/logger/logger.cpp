@@ -320,6 +320,7 @@ logger::LogScopeRAII::LogScopeRAII(
     this->Internals                 = new LSInternals();
     this->Internals->scope_message_ = buffer;
     // glog doesn't have built-in scope support, so we just log the scope entry
+    // NOLINTNEXTLINE(bugprone-reserved-identifier) - reserved names come from glog's VLOG macro, not our code
     VLOG(static_cast<int>(verbosity)) << "[SCOPE] " << buffer;
 #elif LOGGING_HAS_NATIVE
     // Native logging doesn't have scope support yet
@@ -497,7 +498,12 @@ void logger::Init(int& argc, char* argv[], const char* verbosity_flag /*= "-v"*/
     {
         if (std::string(argv[i]) == verbosity_flag && i + 1 < argc)
         {
-            FLAGS_v = std::atoi(argv[i + 1]);
+            char*      end    = nullptr;
+            const long parsed = std::strtol(argv[i + 1], &end, 10);
+            if (end != argv[i + 1] && *end == '\0')
+            {
+                FLAGS_v = static_cast<int>(parsed);
+            }
             break;
         }
     }
@@ -902,6 +908,7 @@ void logger::Log(
 #elif LOGGING_HAS_GLOG
     // Map verbosity to glog severity
     int glog_level = static_cast<int>(verbosity);
+    // NOLINTNEXTLINE(bugprone-reserved-identifier) - reserved names come from glog's VLOG macro, not our code
     VLOG(glog_level) << txt;
 #elif LOGGING_HAS_NATIVE
     // Use native logging - call the implementation function directly

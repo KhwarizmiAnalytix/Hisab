@@ -292,6 +292,26 @@ void testDemangleFunction()
     // This is platform-dependent, so we just verify it doesn't crash
     std::string demangled_complex = logging::demangle("_Z1gv");
     EXPECT_FALSE(demangled_complex.empty());
+
+    // Regression test: demangle() must not strip spaces out of multi-word
+    // fundamental type names. "unsigned int" is not a valid mangled symbol,
+    // so __cxa_demangle (where available) fails and demangle() falls back
+    // to the input unchanged before applying its cleanup passes -- making
+    // this assertion valid on every platform, including MSVC where
+    // demangling itself is unavailable.
+    std::string demangled_unsigned = logging::demangle("unsigned int");
+    EXPECT_EQ(demangled_unsigned, "unsigned int");
+
+    // Regression test: nested closing template brackets ("> >") should be
+    // collapsed to ">>", without touching other spaces in the string.
+    std::string demangled_nested = logging::demangle("std::vector<std::vector<int> >");
+    EXPECT_EQ(demangled_nested, "std::vector<std::vector<int>>");
+
+    // Regression test: triple-nested closing brackets ("> > >") must fully
+    // collapse to ">>>", not just merge the first adjacent pair.
+    std::string demangled_triple_nested =
+        logging::demangle("std::vector<std::vector<std::vector<int> > >");
+    EXPECT_EQ(demangled_triple_nested, "std::vector<std::vector<std::vector<int>>>");
 }
 
 void testReplaceAllEdgeCases()

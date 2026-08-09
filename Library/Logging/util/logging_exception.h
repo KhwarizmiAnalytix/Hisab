@@ -320,12 +320,15 @@ inline std::string format_check_msg(const char* cond_str)
  * LOGGING_CHECK(!empty());  // Simple check without message
  * ```
  */
-#define LOGGING_CHECK(cond, ...)                                                    \
-    if LOGGING_UNLIKELY (!(cond))                                                   \
-    {                                                                               \
-        std::string msg = logging::details::format_check_msg(#cond, ##__VA_ARGS__); \
-        LOGGING_THROW("{}", msg);                                                   \
-    }
+#define LOGGING_CHECK(cond, ...)                                                        \
+    do                                                                                  \
+    {                                                                                   \
+        if LOGGING_UNLIKELY (!(cond))                                                   \
+        {                                                                               \
+            std::string msg = logging::details::format_check_msg(#cond, ##__VA_ARGS__); \
+            LOGGING_THROW("{}", msg);                                                   \
+        }                                                                               \
+    } while (0)
 
 #define LOGGING_CHECK_ALL_POSITIVE(V)                                  \
     LOGGING_CHECK(                                                     \
