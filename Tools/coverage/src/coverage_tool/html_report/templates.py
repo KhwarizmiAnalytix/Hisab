@@ -88,6 +88,7 @@ def get_index_html_template(coverage_percent: float, total_covered: int,
     return f"""<!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Code Coverage Report</title>
     <style>
         {COMMON_CSS}
@@ -157,6 +158,7 @@ def get_file_html_template(file_path: str, coverage_percent: float,
     return f"""<!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Coverage: {file_path}</title>
     <style>
         {FILE_DETAIL_CSS}
@@ -225,6 +227,7 @@ def get_directory_html_template(dir_path: str, coverage_percent: float,
     return f"""<!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Coverage: {dir_path}</title>
     <style>
         {COMMON_CSS}

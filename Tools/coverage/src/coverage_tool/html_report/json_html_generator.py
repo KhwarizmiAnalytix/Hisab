@@ -159,6 +159,7 @@ class JsonHtmlGenerator:
         html = f"""<!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Code Coverage Report</title>
     <style>
         {COMMON_CSS}
@@ -287,6 +288,7 @@ class JsonHtmlGenerator:
         html = f"""<!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Coverage: {file_name}</title>
     <style>
         body {{ font-family: Arial, sans-serif; margin: 0; background-color: #f5f5f5; }}

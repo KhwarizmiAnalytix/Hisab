@@ -21,12 +21,11 @@
  *                            result every iteration: the realistic cost when
  *                            the tensors do not already live on the device.
  *   GPU_TensorAllocFree<T>  — isolates the cost of constructing/destroying a
- *                            device tensor. Every temporary produced inside a
- *                            GPU expression chain pays this because the GPU
- *                            allocator path (Memory/allocator.h) calls
- *                            cudaMalloc/cudaFree directly instead of routing
- *                            through the caching allocator that
- *                            Memory/gpu/cuda_caching_allocator.h provides.
+ *                            device tensor (XSigma metal/cuda caching
+ *                            allocator path via Memory/allocator.h).
+ *   LibTorch_MPS_TensorAllocFree<T> — same alloc/free loop on torch::kMPS
+ *                            (Metal builds with LibTorch only), for a direct
+ *                            comparison against PyTorch's MPS caching allocator.
  *   CPU/GPU_MonteCarloPath<T> — multi-factor Monte Carlo path update
  *                            X += sigma_0*Z_0 + ... + sigma_3*Z_3, repeated
  *                            over kMcSteps time steps per iteration. X holds
@@ -88,6 +87,19 @@ constexpr gpu_error_t kGpuSuccess = 0;
 #include <vector>
 
 #include "terminals/tensor.h"
+
+#if VECTORIZATION_HAS_METAL && VECTORIZATION_HAS_LIBTORCH
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+#include <torch/mps.h>
+#include <torch/torch.h>
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+#endif
 
 namespace
 {
@@ -392,6 +404,48 @@ static void GPU_TensorAllocFree(benchmark::State& state)
 }
 BENCHMARK_TEMPLATE(GPU_TensorAllocFree, float) BENCH_SIZES;
 BENCHMARK_TEMPLATE(GPU_TensorAllocFree, double) BENCH_SIZES;
+
+#if VECTORIZATION_HAS_METAL && VECTORIZATION_HAS_LIBTORCH
+// ---------------------------------------------------------------------------
+// LibTorch MPS allocation overhead — same construct/destroy loop as
+// GPU_TensorAllocFree, for a head-to-head against PyTorch's MPS caching path.
+// ---------------------------------------------------------------------------
+template <typename T>
+static void LibTorch_MPS_TensorAllocFree(benchmark::State& state)
+{
+    if constexpr (std::is_same_v<T, double>)
+    {
+        state.SkipWithError("Metal/MPS comparison is float-only (no fp64 on Apple GPUs)");
+        return;
+    }
+    if (!torch::mps::is_available())
+    {
+        state.SkipWithError("LibTorch MPS device not available");
+        return;
+    }
+
+    const int64_t n = state.range(0);
+    auto          opts =
+        torch::TensorOptions().dtype(torch::kFloat32).device(torch::kMPS).requires_grad(false);
+
+    // Warm the MPS caching allocator once so the timed loop measures reuse,
+    // matching XSigma's warm caching-allocator path after the first iteration.
+    {
+        auto warm = torch::empty({n}, opts);
+        benchmark::DoNotOptimize(warm.data_ptr());
+    }
+    torch::mps::synchronize();
+
+    for (auto _ : state)
+    {
+        auto t = torch::empty({n}, opts);
+        benchmark::DoNotOptimize(t.data_ptr());
+    }
+    torch::mps::synchronize();
+    state.SetItemsProcessed(state.iterations() * n);
+}
+BENCHMARK_TEMPLATE(LibTorch_MPS_TensorAllocFree, float) BENCH_SIZES;
+#endif  // VECTORIZATION_HAS_METAL && VECTORIZATION_HAS_LIBTORCH
 
 #undef BENCH_SIZES
 

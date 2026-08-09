@@ -480,6 +480,7 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
 
   # ---------------------------------------------------------------------------
   # BenchmarkTensorLibTorch: link LibTorch when available, otherwise stub out.
+  # BenchmarkTensorGpu (Metal): also link LibTorch for LibTorch_MPS_TensorAllocFree.
   # ---------------------------------------------------------------------------
   if(TARGET benchmark_tensorlibtorch)
     if(Torch_FOUND)
@@ -500,6 +501,20 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
     else()
       target_compile_definitions(benchmark_tensorlibtorch PRIVATE VECTORIZATION_HAS_LIBTORCH=0)
       message(STATUS "benchmark_tensorlibtorch: LibTorch not found — benchmark stubs only")
+    endif()
+  endif()
+
+  if(TARGET benchmark_tensorgpu)
+    if(Torch_FOUND AND VECTORIZATION_GPU_BACKEND STREQUAL "metal")
+      target_link_libraries(benchmark_tensorgpu PRIVATE torch)
+      target_compile_definitions(benchmark_tensorgpu PRIVATE VECTORIZATION_HAS_LIBTORCH=1)
+      target_compile_options(benchmark_tensorgpu PRIVATE
+        $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-deprecated-declarations -Wno-unused-parameter>
+        $<$<CXX_COMPILER_ID:GNU>:-Wno-deprecated-declarations -Wno-unused-parameter>
+      )
+      message(STATUS "benchmark_tensorgpu: LibTorch MPS alloc comparison ENABLED")
+    else()
+      target_compile_definitions(benchmark_tensorgpu PRIVATE VECTORIZATION_HAS_LIBTORCH=0)
     endif()
   endif()
 endif()
