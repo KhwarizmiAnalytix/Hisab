@@ -262,7 +262,7 @@ public:
 
     std::uint64_t get_next_result_id() const { return next_result_id_; }
 
-    void push(std::uint64_t task_id, const R&& result)
+    void push(std::uint64_t task_id, R&& result)
     {
         std::unique_lock<std::mutex> lk(results_mutex_);
         if (task_id >= next_result_id_)

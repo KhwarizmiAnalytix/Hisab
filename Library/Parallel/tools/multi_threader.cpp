@@ -158,7 +158,9 @@ multi_threader::multi_threader()
         thread_info_array_[i].active_flag_lock  = nullptr;
         multiple_method_[i]                     = nullptr;
         spawned_thread_active_flag_[i]          = 0;
-        spawned_thread_active_flag_lock_[i]     = nullptr;
+        // Allocated eagerly (rather than lazily in spawn_thread()) so that
+        // slot reuse never races two threads creating the same mutex.
+        spawned_thread_active_flag_lock_[i]     = std::make_unique<std::mutex>();
         spawned_thread_info_array_[i].thread_id = i;
         spawned_thread_process_id_[i]           = thread_process_id_type();
         multiple_data_[i]                       = nullptr;
@@ -480,10 +482,6 @@ int multi_threader::spawn_thread(thread_function_type f, void* userdata)
 
     for (id = 0; id < PARALLEL_MAX_THREADS; id++)
     {
-        if (!spawned_thread_active_flag_lock_[id])
-        {
-            spawned_thread_active_flag_lock_[id] = std::make_unique<std::mutex>();
-        }
         const std::scoped_lock lockGuard(*spawned_thread_active_flag_lock_[id]);
         if (spawned_thread_active_flag_[id] == 0)
         {
@@ -544,8 +542,13 @@ int multi_threader::spawn_thread(thread_function_type f, void* userdata)
 #if !PARALLEL_HAS_PTHREADS
     (void)f;
     // There is no multi threading, so there is only one thread.
-    // This won't work - so give an error message.
-    spawned_thread_active_flag_lock_[id].reset();
+    // This won't work - so give an error message. Release the slot claimed
+    // above instead of destroying its mutex: the lock array is allocated
+    // once for the object's lifetime and must stay valid for reuse.
+    {
+        const std::scoped_lock lockGuard(*spawned_thread_active_flag_lock_[id]);
+        spawned_thread_active_flag_[id] = 0;
+    }
     id = -1;
 #endif
 #endif
@@ -603,8 +606,6 @@ void multi_threader::terminate_thread(int thread_id)
     // This won't work - so give an error message.
 #endif
 #endif
-
-    spawned_thread_active_flag_lock_[thread_id].reset();
 }
 
 //------------------------------------------------------------------------------
@@ -630,13 +631,8 @@ bool multi_threader::is_thread_active(int thread_id)
         return false;
     }
 
-    // If we don't have a lock, then this thread is not active
-    if (spawned_thread_active_flag_lock_[thread_id] == nullptr)
-    {
-        return false;
-    }
-
-    // We have a lock - use it to get the active flag value
+    // The per-slot lock is allocated once for the object's lifetime; use it
+    // to get the active flag value.
     int val = 0;
     {
         const std::scoped_lock lockGuard(*spawned_thread_active_flag_lock_[thread_id]);

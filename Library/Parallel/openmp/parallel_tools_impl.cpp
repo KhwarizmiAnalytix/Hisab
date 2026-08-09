@@ -113,6 +113,13 @@ int number_of_threads_openmp()
 //------------------------------------------------------------------------------
 bool single_thread_openmp()
 {
+    // Guard against calls made outside of any parallel_for region, where the
+    // stack is empty and top() would be undefined behavior (matches the TBB
+    // backend's equivalent empty-stack guard).
+    if (thread_id_stack->empty())
+    {
+        return false;
+    }
     return thread_id_stack->top() == omp_get_thread_num();
 }
 

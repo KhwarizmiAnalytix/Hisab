@@ -638,14 +638,19 @@ void parallel_thread_pool::fill_threads_for_nested_proxy(proxy_data* proxy, std:
     // Lambda to check if a thread is free (not used by any ancestor proxy)
     const auto is_free = [proxy](thread_data* thread_data_ptr)
     {
-        // Walk up the proxy hierarchy
+        // Walk up the entire proxy hierarchy: the thread is only free if no
+        // ancestor (parent, grandparent, ...) has claimed it.
         for (auto* parent = proxy->parent_; parent != nullptr; parent = parent->parent_)
         {
-            return std::all_of(
+            const bool free_in_ancestor = std::all_of(
                 parent->threads_.begin(),
                 parent->threads_.end(),
                 [thread_data_ptr](const auto& proxy_thread)
                 { return proxy_thread.thread_ != thread_data_ptr; });
+            if (!free_in_ancestor)
+            {
+                return false;
+            }
         }
 
         return true;  // Thread is free

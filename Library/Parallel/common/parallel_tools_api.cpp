@@ -46,17 +46,12 @@ parallel_tools_api::parallel_tools_api()
 }
 
 //------------------------------------------------------------------------------
-// Singleton instance
-static parallel_tools_api* parallel_tools_api_instance = nullptr;
-
-//------------------------------------------------------------------------------
+// Thread-safe lazy initialization via C++11 magic statics (guaranteed
+// thread-safe by the standard, unlike a raw check-then-act pointer).
 parallel_tools_api& parallel_tools_api::instance()
 {
-    if (parallel_tools_api_instance == nullptr)
-    {
-        parallel_tools_api_instance = new parallel_tools_api();
-    }
-    return *parallel_tools_api_instance;
+    static parallel_tools_api instance;
+    return instance;
 }
 
 //------------------------------------------------------------------------------

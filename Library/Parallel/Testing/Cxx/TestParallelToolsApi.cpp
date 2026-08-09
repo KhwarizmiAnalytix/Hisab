@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <functional>
+#include <thread>
 #include <vector>
 
 #include "ParallelTest.h"

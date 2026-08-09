@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <atomic>
 #include <numeric>
+#include <thread>
 #include <vector>
 
 #include "ParallelTest.h"
