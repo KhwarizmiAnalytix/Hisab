@@ -50,14 +50,14 @@ memory::allocator<T, alignment>       allocator.h          — static dispatch b
         │                          mimalloc │ TBB │ Android memalign │ MSVC │ POSIX
         │
         ├─ device_enum::CUDA ───► memory::gpu::caching_allocator_for_device(i)
-        │   (compiled when          gpu/cuda_caching_allocator.{h,cpp}
-        │    MEMORY_HAS_CUDA)        one shared instance per device
+        │   device_enum::HIP      gpu/caching_allocator.h → cuda_caching_allocator
+        │   (MEMORY_HAS_CUDA      (HIP via gpu/gpu_runtime.h)
+        │    or MEMORY_HAS_HIP)
         │
-        └─ device_enum::METAL ──► memory::gpu::metal_caching_allocator_for_device(i)
-            (compiled when           gpu/metal/metal_caching_allocator.{h,mm}
+        └─ device_enum::METAL ──► memory::gpu::caching_allocator_for_device(i)
+            (compiled when           gpu/caching_allocator.h → metal_caching_allocator
              MEMORY_HAS_METAL)       Shared MTLBuffer segment cache
-                                     (+ metal_buffer_allocator helpers for
-                                      handle/offset/copy)
+                                     (+ metal_buffer_allocator: handle/offset only)
 ```
 
 ### File map
@@ -71,9 +71,12 @@ memory::allocator<T, alignment>       allocator.h          — static dispatch b
 | `common/memory_containers.h` | `memory_map`/`memory_set` aliases (flat-hash optional) |
 | `common/numa.{h,cpp}` | `NUMAMove` / `GetCurrentNUMANode` (Linux, `MEMORY_HAS_NUMA`) |
 | `helper/memory_allocator.{h,cpp}` | Raw CPU allocation backend — the entire CPU implementation |
-| `gpu/cuda_caching_allocator.{h,cpp}` | CUDA segment cache + per-device registry |
-| `gpu/metal/metal_caching_allocator.{h,mm}` | Metal segment cache + per-device registry (CUDA parity) |
-| `gpu/metal/metal_buffer_allocator.{h,mm}` | Thin Metal helpers (`mtl_buffer_handle`/`offset`/`copy`) |
+| `gpu/caching_allocator.h` | Unified CUDA/HIP/Metal registry facade (`caching_allocator_for_device`) |
+| `gpu/caching_allocator_config.h` | Shared size-class constants (512 B / 2–20 MiB segments) |
+| `gpu/gpu_runtime.h` | CUDA↔HIP portability (`cuda*` spellings → `hip*` under HIP) |
+| `gpu/cuda_caching_allocator.{h,cpp}` | CUDA/HIP segment cache + per-device registry |
+| `gpu/metal/metal_caching_allocator.{h,mm}` | Metal segment cache (CUDA parity) |
+| `gpu/metal/metal_buffer_allocator.{h,mm}` | Metal bind helpers (`mtl_buffer_handle` / `offset`) |
 | `profiler/unified_memory_stats.{h,cpp}` | `unified_cache_stats` — the only statistics surface (caching allocator metrics) |
 | `util/memory_exception.h` | `MEMORY_CHECK`/`MEMORY_LOG_*` macros |
 
@@ -277,20 +280,20 @@ CUDA path). One `newBufferWithLength:MTLResourceStorageModeShared` per
 **segment**; many blocks per segment. Host pointers are
 `buffer.contents + offset` and are directly host-dereferenceable.
 
-- Process-wide registry: `metal_caching_allocator_for_device(i)` (device index
-  0 only today — `MTLCreateSystemDefaultDevice`).
-- `allocator<T>`'s METAL branch routes through that registry, matching CUDA.
+- Process-wide registry: same name as CUDA — `caching_allocator_for_device(i)`
+  (facade in `gpu/caching_allocator.h`; device index 0 only today —
+  `MTLCreateSystemDefaultDevice`). `metal_caching_allocator_for_device` remains
+  as the Metal implementation symbol.
+- `allocator<T>`'s METAL branch routes through that unified registry.
 - Streams: `stream_type` is `void*`; v1 uses a single default-stream pool.
   `record_stream` is a documented no-op because Vectorization Metal dispatch
   is synchronous (`waitUntilCompleted`).
 - Helpers in `gpu/metal/metal_buffer_allocator.{h,mm}` (plain C++ surface):
-  `mtl_buffer_handle` / `mtl_buffer_offset` resolve live (including
-  mid-segment) allocations for kernel binding; `copy` is `memcpy`;
-  `allocate`/`deallocate` forward to the caching allocator for direct callers.
+  `mtl_buffer_handle` / `mtl_buffer_offset` for kernel binding only —
+  allocate/free/copy go through `allocator<T>`.
 - No fp64: `allocator<T>` throws `std::invalid_argument` for `double` on METAL
   at compile time (`if constexpr`) — Apple GPUs have no hardware double support.
-- Foreign/double free throw (same contract as CUDA), unlike the old
-  non-caching Metal free which was a silent map erase.
+- Foreign/double free throw (same contract as CUDA).
 
 ---
 
@@ -382,15 +385,15 @@ Test files are globbed per-backend (`TestGpu*`/`TestCuda*`/`TestHip*`/
 1. **CUDA-only compile verification gap.** The CUDA branch of `allocator<T>`
    and the registry were added without a local CUDA toolchain; they need one
    `--gpu_backend=cuda` build on a CUDA machine.
-2. **HIP has no allocation path.** `allocator<T>`'s GPU branch compiles only
-   under `MEMORY_HAS_CUDA`; HIP-only builds throw for GPU requests (the same
-   gap existed before the consolidation — the caching allocator is
-   CUDA-specific and no HIP port exists).
-3. **Single-device `data_ptr`.** Device index is not stored; CUDA allocations
-   and frees assume device 0. Freeing a non-zero-device pointer through the
-   device-0 allocator throws (foreign pointer). Multi-GPU callers must use
-   `allocator<T>`/`caching_allocator_for_device` directly with matching
-   indices.
+2. **HIP shares the CUDA caching allocator.** Under `MEMORY_HAS_HIP`,
+   `cuda_caching_allocator` is compiled against `hip*` via
+   `gpu/gpu_runtime.h`. Needs a ROCm machine for runtime verification
+   (same gap as CUDA on this Mac).
+3. **Single-device `data_ptr`.** Device index is not stored; CUDA/HIP
+   allocations and frees assume device 0. Freeing a non-zero-device pointer
+   through the device-0 allocator throws (foreign pointer). Multi-GPU
+   callers must use `allocator<T>`/`caching_allocator_for_device` directly
+   with matching indices.
 4. **Throwing free on caller bugs** (foreign/double free) inside a `noexcept`
    destructor terminates. Happy-path frees never throw.
 5. **No CPU-side allocation statistics** anymore; the caching allocator's

@@ -27,7 +27,9 @@
 #include <string>
 #include <unordered_map>
 
+#include "allocator.h"
 #include "backend/gpu/metal/metal_kernels_source.h"
+#include "common/device.h"
 #include "gpu/metal/metal_buffer_allocator.h"
 
 namespace vectorization::metal_backend
@@ -244,7 +246,8 @@ float reduce_sum(const void* buffer, std::size_t n_elems)
 
     // One-element shared-storage output buffer, read back directly via its host pointer
     // (MTLResourceStorageModeShared — no explicit device->host copy needed).
-    float* out_ptr = static_cast<float*>(memory::metal::allocate(sizeof(float)));
+    using metal_alloc_t = memory::allocator<float>;
+    float* out_ptr      = metal_alloc_t::allocate(1, memory::device_enum::METAL);
 
     uint32_t n32 = static_cast<uint32_t>(n_elems);
 
@@ -265,14 +268,14 @@ float reduce_sum(const void* buffer, std::size_t n_elems)
 
     if (cb.status == MTLCommandBufferStatusError)
     {
-        memory::metal::deallocate(out_ptr);
+        metal_alloc_t::free(out_ptr, memory::device_enum::METAL);
         throw std::runtime_error(
             "Metal reduce_sum dispatch failed: " +
             std::string([[cb.error localizedDescription] UTF8String]));
     }
 
     float result = *out_ptr;
-    memory::metal::deallocate(out_ptr);
+    metal_alloc_t::free(out_ptr, memory::device_enum::METAL);
     return result;
 }
 
