@@ -1758,6 +1758,163 @@ jobs:
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
   # ============================================================================
+  # Bazel Build Matrix — default config
+  # Real `bazel build`/`bazel test` runs via Scripts/setup_bazel.py, mirroring the
+  # CMake build-matrix job above but through the Bazel build system. Windows is not
+  # included here yet (only smoke-tested above via --help) — the Bazel setup has not
+  # been verified end-to-end on Windows.
+  # ============================================================================
+  bazel-build-matrix:
+    name: "Bazel - ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Setup Bazel
+      uses: bazel-contrib/setup-bazel@0.8.1
+      with:
+        bazelisk-cache: true
+        disk-cache: bazel-${{ runner.os }}-default-${{ env.CACHE_VERSION }}
+        repository-cache: true
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Bazel build + test (default config)
+      working-directory: Scripts
+      run: python3 setup_bazel.py config.build.test
+
+  # ============================================================================
+  # Bazel TBB Tests
+  # Exercises --config=tbb specifically: the Bazel-side MEMORY_HAS_TBB define was
+  # historically not paired with an actual @tbb dep (see Docs/BAZEL_USER_GUIDE.md's
+  # Known Gaps section) — this job is the regression guard for that class of bug.
+  # ============================================================================
+  bazel-tbb-tests:
+    name: "Bazel TBB - ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Setup Bazel
+      uses: bazel-contrib/setup-bazel@0.8.1
+      with:
+        bazelisk-cache: true
+        disk-cache: bazel-${{ runner.os }}-tbb-${{ env.CACHE_VERSION }}
+        repository-cache: true
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Bazel build + test (TBB)
+      working-directory: Scripts
+      run: python3 setup_bazel.py config.build.test.tbb
+
+  # ============================================================================
+  # Bazel Vectorization SIMD Backend Matrix
+  # Mirrors the CMake vectorization-simd-backend-tests job. This is the direct
+  # regression guard for the ARM-host select() ambiguity bug found in this project's
+  # Bazel/CMake alignment work: on aarch64, an explicit --define=vectorization_type=X
+  # for any tier except neon used to fail analysis entirely (see Docs/BAZEL_USER_GUIDE.md).
+  # ============================================================================
+  bazel-vectorization-simd-tests:
+    name: "Bazel Vectorization ${{ matrix.vectorization_type }} — ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - vectorization_type: sse
+            os: ubuntu-latest
+          - vectorization_type: avx512
+            os: ubuntu-latest
+          - vectorization_type: neon
+            os: ubuntu-24.04-arm
+          - vectorization_type: sve
+            os: ubuntu-24.04-arm
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Setup Bazel
+      uses: bazel-contrib/setup-bazel@0.8.1
+      with:
+        bazelisk-cache: true
+        disk-cache: bazel-vec-simd-${{ matrix.vectorization_type }}-${{ env.CACHE_VERSION }}
+        repository-cache: true
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Bazel build + test (Vectorization ${{ matrix.vectorization_type }})
+      working-directory: Scripts
+      run: python3 setup_bazel.py config.build.test.${{ matrix.vectorization_type }} --project.vectorization
+
+  # ============================================================================
+  # Bazel Metal Tests — macOS only
+  # Real Metal GPU dispatch through both Library/Memory and Library/Vectorization's
+  # independent GPU backends. Runs on real Metal hardware (macos-latest runners have
+  # a GPU), unlike every other job here which only exercises CPU paths.
+  # ============================================================================
+  bazel-metal-tests:
+    name: "Bazel Metal - macOS"
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Setup Bazel
+      uses: bazel-contrib/setup-bazel@0.8.1
+      with:
+        bazelisk-cache: true
+        disk-cache: bazel-macos-metal-${{ env.CACHE_VERSION }}
+        repository-cache: true
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Bazel build + test (Metal)
+      working-directory: Scripts
+      run: python3 setup_bazel.py config.build.test.metal
+
+  # ============================================================================
   # CI Success Summary
   # ============================================================================
   ci-success:
@@ -1775,6 +1932,10 @@ jobs:
       - sccache-enabled-tests
       - clang-coverage-tests
       - windows-cli-smoke
+      - bazel-build-matrix
+      - bazel-tbb-tests
+      - bazel-vectorization-simd-tests
+      - bazel-metal-tests
     runs-on: ubuntu-latest
     if: always()
 
@@ -1793,6 +1954,10 @@ jobs:
         echo "Sccache Enabled Tests: ${{ needs.sccache-enabled-tests.result }}"
         echo "Clang Coverage Tests: ${{ needs.clang-coverage-tests.result }}"
         echo "Windows CLI Smoke: ${{ needs.windows-cli-smoke.result }}"
+        echo "Bazel Build Matrix: ${{ needs.bazel-build-matrix.result }}"
+        echo "Bazel TBB Tests: ${{ needs.bazel-tbb-tests.result }}"
+        echo "Bazel Vectorization SIMD Tests: ${{ needs.bazel-vectorization-simd-tests.result }}"
+        echo "Bazel Metal Tests: ${{ needs.bazel-metal-tests.result }}"
         echo ""
 
         # Check if any required job failed
@@ -1835,6 +2000,22 @@ jobs:
           echo "ERROR: Clang coverage tests failed"
           exit 1
         fi
+        if [ "${{ needs.bazel-build-matrix.result }}" != "success" ]; then
+          echo "ERROR: Bazel build matrix failed"
+          exit 1
+        fi
+        if [ "${{ needs.bazel-tbb-tests.result }}" != "success" ]; then
+          echo "ERROR: Bazel TBB tests failed"
+          exit 1
+        fi
+        if [ "${{ needs.bazel-vectorization-simd-tests.result }}" != "success" ]; then
+          echo "ERROR: Bazel Vectorization SIMD tests failed"
+          exit 1
+        fi
+        if [ "${{ needs.bazel-metal-tests.result }}" != "success" ]; then
+          echo "ERROR: Bazel Metal tests failed"
+          exit 1
+        fi
 
         echo ""
         echo "SUCCESS: All essential CI checks passed successfully!"
@@ -1857,7 +2038,25 @@ jobs:
 # 7. benchmark-tests: Performance regression testing (non-blocking)
 # 8. sccache-baseline-tests: Build performance baseline without sccache (all platforms)
 # 9. sccache-enabled-tests: Build performance with sccache enabled (all platforms)
-# 10. ci-success: Aggregates results from all jobs
+# 10. bazel-build-matrix: Bazel build+test via Scripts/setup_bazel.py, default config
+#     (Ubuntu + macOS; Windows Bazel is smoke-tested only, see windows-cli-smoke)
+# 11. bazel-tbb-tests: Bazel build+test with --config=tbb (Ubuntu + macOS)
+# 12. bazel-vectorization-simd-tests: Bazel Vectorization SIMD tier matrix, mirrors
+#     vectorization-simd-backend-tests but through Bazel (--define vectorization_type=X)
+# 13. bazel-metal-tests: Bazel build+test with Metal GPU backend (macOS only, real GPU)
+# 14. ci-success: Aggregates results from all jobs
+#
+# ## Bazel Jobs:
+# - All four Bazel jobs run through Scripts/setup_bazel.py (never `bazel` directly),
+#   mirroring the CMake jobs' use of Scripts/setup.py.
+# - bazel-contrib/setup-bazel@0.8.1 installs bazelisk (reading .bazelversion) and
+#   provides disk/repository caching.
+# - Windows is not yet covered by a real Bazel build/test job — only a
+#   `setup_bazel.py --help` smoke test in windows-cli-smoke. The Bazel setup has not
+#   been verified end-to-end on Windows; add a real Windows job once it has been.
+# - See Docs/BAZEL_USER_GUIDE.md's "Known Gaps and CMake/Bazel Alignment Plan" section
+#   for the bug classes these jobs specifically guard against (TBB linkage, the
+#   aarch64 select() ambiguity, Metal wiring).
 #
 # ## Platform-Specific Notes:
 # - Ubuntu: Full TBB + CUDA support, all sanitizers including leak

@@ -5,6 +5,7 @@
 # Equivalent to Library/Parallel/Testing/Cxx/CMakeLists.txt
 # =============================================================================
 
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("//bazel:parallel.bzl", "parallel_copts", "parallel_defines", "parallel_linkopts")
 
 package(default_visibility = ["//visibility:public"])
@@ -17,7 +18,23 @@ cc_test(
     name = "ParallelCxxTests",
     size = "large",
     timeout = "long",
-    srcs = glob(["Test*.cpp"], allow_empty = True),
+    srcs = glob(
+        ["Test*.cpp"],
+        exclude = ["TestTbb*.cpp", "TestTBB*.cpp", "TestOpenMP*.cpp", "TestOmp*.cpp"],
+        allow_empty = True,
+    ) + selects.with_or({
+        (
+            "//bazel:parallel_backend_tbb",
+            "//bazel:parallel_enable_tbb",
+        ): glob(["TestTbb*.cpp", "TestTBB*.cpp"], allow_empty = True),
+        "//conditions:default": [],
+    }) + selects.with_or({
+        (
+            "//bazel:parallel_backend_openmp",
+            "//bazel:enable_openmp",
+        ): glob(["TestOpenMP*.cpp", "TestOmp*.cpp"], allow_empty = True),
+        "//conditions:default": [],
+    }),
     copts = parallel_copts(),
     defines = parallel_defines() + [
         "PARALLEL_GOOGLE_TEST",
@@ -36,19 +53,24 @@ cc_test(
 )
 
 # =============================================================================
-# Benchmark Target
-# Build with: bazel build //Library/Parallel/Testing/Cxx:BenchmarkParallel
+# Benchmark Targets
+# One cc_binary per Benchmark*.cpp file, named benchmark_<suffix_lowercased> —
+# mirrors the per-file foreach in Testing/Cxx/CMakeLists.txt (bench_sources loop).
+# Build with: bazel build //Library/Parallel/Testing/Cxx:benchmark_<suffix>
 # =============================================================================
 
-cc_binary(
-    name = "BenchmarkParallel",
-    srcs = ["BenchmarkParallel.cpp"],
-    copts = parallel_copts(),
-    defines = parallel_defines(),
-    linkopts = parallel_linkopts(),
-    deps = [
-        "//Library/Parallel:Parallel",
-        "@com_google_benchmark//:benchmark",
-        "@com_google_benchmark//:benchmark_main",
-    ],
-)
+[
+    cc_binary(
+        name = "benchmark_" + _src[len("Benchmark"):-len(".cpp")].lower(),
+        srcs = [_src],
+        copts = parallel_copts(),
+        defines = parallel_defines(),
+        linkopts = parallel_linkopts(),
+        deps = [
+            "//Library/Parallel:Parallel",
+            "@com_google_benchmark//:benchmark",
+            "@com_google_benchmark//:benchmark_main",
+        ],
+    )
+    for _src in glob(["Benchmark*.cpp"], allow_empty = True)
+]

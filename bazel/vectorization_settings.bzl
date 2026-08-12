@@ -3,8 +3,13 @@
 load("@bazel_skylib//lib:selects.bzl", "selects")
 
 def define_vectorization_platform_settings():
-    """Registers //bazel:vec_{no,sse,avx,avx2,avx512}_{win,linux,macos} and
-    //bazel:vec_{neon,sve}_{linux,macos,windows}_aarch64.
+    """Registers //bazel:vec_{no,sse,avx,avx2,avx512}_{win,linux,macos}, their
+    //bazel:vec_{no,sse,avx,avx2,avx512}_{win,linux,macos}_aarch64 counterparts (same
+    tier x OS match, plus the aarch64 constraint -- a strict superset used so an explicit
+    --define=vectorization_type=X on an aarch64 host resolves unambiguously against
+    //bazel:cpu_aarch64 instead of erroring as an ambiguous select() match; see the
+    vectorization_type_X_aarch64 config_setting comment in bazel/BUILD.bazel for the
+    general explanation of this pattern), and //bazel:vec_{neon,sve}_{linux,macos,windows}_aarch64.
     """
     specs = [
         ("no", "vectorization_type_no"),
@@ -33,6 +38,30 @@ def define_vectorization_platform_settings():
             match_all = [
                 "//bazel:%s" % full,
                 "@platforms//os:osx",
+            ],
+        )
+        selects.config_setting_group(
+            name = "vec_%s_win_aarch64" % short,
+            match_all = [
+                "//bazel:%s" % full,
+                "@platforms//os:windows",
+                "@platforms//cpu:aarch64",
+            ],
+        )
+        selects.config_setting_group(
+            name = "vec_%s_linux_aarch64" % short,
+            match_all = [
+                "//bazel:%s" % full,
+                "@platforms//os:linux",
+                "@platforms//cpu:aarch64",
+            ],
+        )
+        selects.config_setting_group(
+            name = "vec_%s_macos_aarch64" % short,
+            match_all = [
+                "//bazel:%s" % full,
+                "@platforms//os:osx",
+                "@platforms//cpu:aarch64",
             ],
         )
 

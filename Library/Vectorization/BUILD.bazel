@@ -5,6 +5,7 @@ load(
     "//bazel:vectorization.bzl",
     "vectorization_copts",
     "vectorization_defines",
+    "vectorization_gpu_deps",
     "vectorization_library_copts",
     "vectorization_linkopts",
     "vectorization_sleef_deps",
@@ -18,12 +19,76 @@ _VEC_TEST = ["Testing/**"]
 # CMake: exclude svml.h from the target when VECTORIZATION_ENABLE_SVML is OFF; re-add via hdrs select when ON.
 _VEC_SVML_H = "backend/cpu/avx/svml.h"
 
+# Metal GPU backend support (mirrors CMakeLists.txt:690-720's "Metal GPU backend" block).
+
+# Embeds kernels.metal as a C++ string literal via literal @METAL_KERNEL_SOURCE@ substitution
+# into metal_kernels_source.h.in -- the same substitution CMake's configure_file() does.
+genrule(
+    name = "metal_kernels_source_h",
+    srcs = [
+        "backend/gpu/metal/metal_kernels_source.h.in",
+        "backend/gpu/metal/kernels.metal",
+    ],
+    outs = ["backend/gpu/metal/metal_kernels_source.h"],
+    cmd = """python3 -c "
+import sys
+tmpl = open('$(location backend/gpu/metal/metal_kernels_source.h.in)').read()
+src = open('$(location backend/gpu/metal/kernels.metal)').read()
+open('$@', 'w').write(tmpl.replace('@METAL_KERNEL_SOURCE@', src))
+"
+""",
+)
+
+# .mm -> .cc rename workaround for cc_library's lack of native .mm support -- see the matching
+# comment in Library/Memory/BUILD.bazel for the full rationale.
+genrule(
+    name = "metal_dispatch_objcxx",
+    srcs = ["backend/gpu/metal/metal_dispatch.mm"],
+    outs = ["backend/gpu/metal/metal_dispatch_mm.cc"],
+    cmd = "cp $< $@",
+)
+
+# Isolates the -x objective-c++ -fobjc-arc copts to just this one translation unit rather than
+# applying them to the whole vectorization_lib target -- see the matching cc_library split
+# (memory_metal_objcxx) and comment in Library/Memory/BUILD.bazel for the full rationale.
+cc_library(
+    name = "vectorization_metal_objcxx",
+    srcs = select({
+        "//bazel:vectorization_enable_metal": [":metal_dispatch_objcxx"],
+        "//conditions:default": [],
+    }),
+    hdrs = select({
+        "//bazel:vectorization_enable_metal": glob(
+            ["backend/gpu/metal/*.h"],
+            allow_empty = True,
+        ) + [":metal_kernels_source_h"],
+        "//conditions:default": [],
+    }),
+    copts = vectorization_library_copts() + select({
+        "//bazel:vectorization_enable_metal": ["-x", "objective-c++", "-fobjc-arc"],
+        "//conditions:default": [],
+    }),
+    defines = vectorization_defines(),
+    includes = ["."],
+    deps = [
+        "//Library/Logging:Logging",
+        "//Library/Memory:Memory",
+    ],
+    visibility = ["//Library/Vectorization:__pkg__"],
+)
+
 cc_library(
     name = "vectorization_lib",
     srcs = select({
         "//bazel:vectorization_type_no": glob(
             ["**/*.cpp", "**/*.cxx"],
-            exclude = _VEC_TEST + ["backend/**"],
+            exclude = _VEC_TEST + [
+                "backend/cpu/sse/**",
+                "backend/cpu/avx/**",
+                "backend/cpu/avx512/**",
+                "backend/cpu/neon/**",
+                "backend/cpu/sve/**",
+            ],
             allow_empty = True,
         ),
         "//bazel:vectorization_type_sse": glob(
@@ -202,7 +267,10 @@ cc_library(
     deps = [
         "//Library/Logging:Logging",
         "//Library/Memory:Memory",
-    ] + vectorization_svml_deps() + vectorization_sleef_deps(),
+    ] + vectorization_svml_deps() + vectorization_sleef_deps() + vectorization_gpu_deps() + select({
+        "//bazel:vectorization_enable_metal": [":vectorization_metal_objcxx"],
+        "//conditions:default": [],
+    }),
     visibility = ["//Library/Vectorization:__pkg__"],
 )
 
@@ -222,12 +290,53 @@ cc_library(
     visibility = ["//Library/Vectorization:__pkg__"],
 )
 
+# metal_device_probe.mm: tiny Objective-C++ shim TestTensorGpu.cpp calls into for a Metal
+# device-count query (see Testing/Cxx/CMakeLists.txt's "*.mm (not just Test*.mm)" comment).
+genrule(
+    name = "metal_device_probe_objcxx",
+    srcs = ["Testing/Cxx/metal_device_probe.mm"],
+    outs = ["Testing/Cxx/metal_device_probe_mm.cc"],
+    cmd = "cp $< $@",
+)
+
+# Isolates -x objective-c++ -fobjc-arc to just this one translation unit -- see
+# vectorization_metal_objcxx above / Library/Memory/BUILD.bazel for the full rationale.
+cc_library(
+    name = "vectorization_test_metal_objcxx",
+    srcs = select({
+        "//bazel:vectorization_enable_metal": [":metal_device_probe_objcxx"],
+        "//conditions:default": [],
+    }),
+    copts = vectorization_copts() + select({
+        "//bazel:vectorization_enable_metal": ["-x", "objective-c++", "-fobjc-arc"],
+        "//conditions:default": [],
+    }),
+    visibility = ["//Library/Vectorization:__pkg__"],
+)
+
 # Mirrors CMake VectorizationCxxTests (Test*.cpp only; benchmarks are separate).
 cc_test(
     name = "VectorizationCxxTests",
     size = "large",
     timeout = "long",
-    srcs = glob(["Testing/Cxx/Test*.cpp"], allow_empty = True),
+    srcs = glob(
+        ["Testing/Cxx/Test*.cpp"],
+        # TestTensorGpu.cpp: CMake processes this via nvcc/hipcc (LANGUAGE CUDA/HIP) to
+        # instantiate GPU expression-template kernels (Testing/Cxx/CMakeLists.txt:32-38,
+        # 57-63) -- Bazel has no device-language compilation support anywhere in this
+        # project (same class of gap as Core's CudaEnzymeADTest.cu, see
+        # Docs/BAZEL_USER_GUIDE.md); compiling it as plain C++ under CUDA/HIP would produce
+        # a binary missing the GPU kernels. Statically excluded here, added back below only
+        # when neither CUDA nor HIP is selected -- under Metal (and no GPU backend) it stays
+        # included, since CMake treats it as "ordinary host C++" there too (no LANGUAGE tag
+        # needed, see the file's own header comment).
+        exclude = ["Testing/Cxx/TestTensorGpu.cpp"],
+        allow_empty = True,
+    ) + select({
+        "//bazel:vectorization_enable_cuda": [],
+        "//bazel:vectorization_enable_hip": [],
+        "//conditions:default": glob(["Testing/Cxx/TestTensorGpu.cpp"], allow_empty = True),
+    }),
     copts = vectorization_copts(),
     defines = vectorization_defines() + [
         "QUARISMA_HAS_GTEST=1",
@@ -252,7 +361,10 @@ cc_test(
         ":vectorization_test_hdrs",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
-    ],
+    ] + select({
+        "//bazel:vectorization_enable_metal": [":vectorization_test_metal_objcxx"],
+        "//conditions:default": [],
+    }),
 )
 
 # CMake: BenchmarkSimd*.cpp → benchmark_simd* when VECTORIZATION_ENABLE_BENCHMARK and type != no.
@@ -271,20 +383,26 @@ _SIMD_BENCH_COMPATIBLE = selects.with_or({
     "//conditions:default": [],
 })
 
-cc_binary(
-    name = "benchmark_simdunary",
-    srcs = ["Testing/Cxx/BenchmarkSimdUnary.cpp"],
-    copts = vectorization_copts(),
-    defines = vectorization_defines(),
-    includes = [
-        "Testing/Cxx",
-        ".",
-        "Testing",
-    ],
-    linkopts = vectorization_linkopts(),
-    target_compatible_with = _SIMD_BENCH_COMPATIBLE,
-    deps = _SIMD_BENCH_DEPS,
-)
+[
+    cc_binary(
+        name = "benchmark_simdunary" + _suffix.lower(),
+        srcs = [
+            "Testing/Cxx/BenchmarkSimdUnary" + _suffix + ".cpp",
+            "Testing/Cxx/BenchmarkSimdUnaryShared.h",
+        ],
+        copts = vectorization_copts(),
+        defines = vectorization_defines(),
+        includes = [
+            "Testing/Cxx",
+            ".",
+            "Testing",
+        ],
+        linkopts = vectorization_linkopts(),
+        target_compatible_with = _SIMD_BENCH_COMPATIBLE,
+        deps = _SIMD_BENCH_DEPS,
+    )
+    for _suffix in ["CbrtNeg", "Hyperbolic", "SqrtLog", "Trig"]
+]
 
 cc_binary(
     name = "benchmark_simdbinaryfn",

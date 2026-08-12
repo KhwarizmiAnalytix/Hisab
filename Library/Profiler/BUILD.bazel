@@ -21,12 +21,16 @@ _KINETO_BACKEND_SRCS = glob(
     allow_empty = True,
 )
 
-# ITT backend (when PROFILER_ENABLE_ITT and not KINETO): base + common + itt
+# ITT backend (when PROFILER_ENABLE_ITT and not KINETO): base + common + itt.
+# bespoke/kineto/kineto_shim.{h,cpp} is included even though this isn't the Kineto backend:
+# bespoke/common/collection.{h,cpp} #include "bespoke/kineto/kineto_shim.h" unconditionally
+# (matches CMakeLists.txt:337-349).
 _ITT_BACKEND_SRCS = glob(
     [
         "bespoke/base/**/*.cpp",
         "bespoke/common/**/*.cpp",
         "bespoke/itt/**/*.cpp",
+        "bespoke/kineto/kineto_shim.cpp",
     ],
     exclude = [
         "bespoke/common/unwind/**/*.cpp",
@@ -52,6 +56,7 @@ _ITT_BACKEND_HDRS = glob(
         "bespoke/base/**/*.h",
         "bespoke/common/**/*.h",
         "bespoke/itt/**/*.h",
+        "bespoke/kineto/kineto_shim.h",
     ],
     exclude = ["Testing/**"],
     allow_empty = True,
@@ -120,11 +125,7 @@ cc_library(
     }),
     includes = [
         ".",
-    ] + select({
-        "//bazel:enable_native_profiler": [],
-        "//bazel:enable_itt": [],
-        "//conditions:default": ["kineto"],
-    }),
+    ],
     linkopts = profiler_linkopts(),
     linkstatic = select({
         "//bazel:shared_libs": False,
@@ -135,7 +136,7 @@ cc_library(
         "//Library/Core:core_lib",
     ] + select({
         "//bazel:enable_native_profiler": [],
-        "//bazel:enable_itt": [],
+        "//bazel:enable_itt": ["@ittapi//:ittnotify"],
         "//conditions:default": ["@kineto//:kineto"],
     }),
     alwayslink = False,

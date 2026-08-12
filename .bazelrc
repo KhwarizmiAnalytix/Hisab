@@ -29,7 +29,8 @@ startup --connect_timeout_secs=30
 build --show_progress_rate_limit=10
 # Limit parallel jobs to avoid starving the system (uses all cores by default)
 build --jobs=HOST_CPUS*.5
-# Fetch timeout: abort if a single repository fetch takes more than 60s
+# Hardlink (instead of copy) repository cache entries into the output base
+# to save disk space and speed up repeated fetches of the same archive.
 build --experimental_repository_cache_hardlinks
 
 # =============================================================================
@@ -226,12 +227,19 @@ build:lsan --linkopt=-fsanitize=leak
 # Feature Flags (CMake-aligned --define keys: core_*, memory_*, parallel_*, profiler_*, etc.)
 # =============================================================================
 
-# Enable CUDA support
+# Enable CUDA support (Memory's and Vectorization's GPU backends are independent CMake cache
+# variables -- MEMORY_GPU_BACKEND / VECTORIZATION_GPU_BACKEND -- so both defines are needed)
 build:cuda --define=memory_enable_cuda=true
+build:cuda --define=vectorization_enable_cuda=true
 build:cuda --crosstool_top=@local_config_cuda//crosstool:toolchain
 
 # Enable HIP support
 build:hip --define=memory_enable_hip=true
+build:hip --define=vectorization_enable_hip=true
+
+# Enable Metal support (Apple platforms only)
+build:metal --define=memory_enable_metal=true
+build:metal --define=vectorization_enable_metal=true
 
 # Enable OpenMP (parallel backend + compile flags) — mirrors CMake PARALLEL_BACKEND=openmp
 build:openmp --define=parallel_backend=openmp --define=parallel_enable_openmp=true --copt=-fopenmp --linkopt=-fopenmp

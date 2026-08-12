@@ -194,7 +194,7 @@ def _merge_dotted_segments(parts: List[str]) -> List[str]:
         elif pl[i] == "cpu_backend" and i + 1 < len(pl) and pl[i + 1] in ("no", "sse", "avx", "avx2", "avx512", "neon", "sve"):
             out.append(f"cpu_backend.{pl[i + 1]}")
             i += 2
-        elif pl[i] == "gpu_backend" and i + 1 < len(pl) and pl[i + 1] in ("none", "cuda", "hip"):
+        elif pl[i] == "gpu_backend" and i + 1 < len(pl) and pl[i + 1] in ("none", "cuda", "hip", "metal"):
             out.append(f"gpu_backend.{pl[i + 1]}")
             i += 2
         else:
@@ -382,19 +382,19 @@ class BazelConfiguration:
                 self.cpu_backend = arg_lower
 
             # Optional features
-            elif arg_lower in ("cuda", "hip"):
+            elif arg_lower in ("cuda", "hip", "metal"):
                 self.gpu_backend = arg_lower
                 self.configs.append(arg_lower)
 
             elif arg_lower.startswith("gpu_backend."):
                 backend = arg_lower.split(".", 1)[1]
-                if backend in ("none", "cuda", "hip"):
+                if backend in ("none", "cuda", "hip", "metal"):
                     self.gpu_backend = backend
                     if backend != "none":
                         self.configs.append(backend)
                 else:
                     print_status(
-                        f"Invalid GPU backend '{backend}'. Valid options: none, cuda, hip",
+                        f"Invalid GPU backend '{backend}'. Valid options: none, cuda, hip, metal",
                         "ERROR",
                     )
                     sys.exit(1)
@@ -650,13 +650,23 @@ class BazelConfiguration:
         for config in cfg_list:
             cmd.append(f"--config={config}")
 
-        # CPU SIMD backend define — mirrors CMake -DVECTORIZATION_CPU.
+        # CPU SIMD backend define — mirrors CMake -DVECTORIZATION_CPU_BACKEND. Bazel's
+        # vectorization_type_{no,sse,avx,avx2,avx512,neon,sve} config_settings (bazel/BUILD.bazel)
+        # key on "vectorization_type", not "vectorization_cpu" -- the latter was never consumed
+        # by any config_setting, so this token silently did nothing before this fix.
         if self.cpu_backend:
-            cmd.append(f"--define=vectorization_cpu={self.cpu_backend}")
+            cmd.append(f"--define=vectorization_type={self.cpu_backend}")
 
         # GPU backend defines — mirrors CMake -DMEMORY_GPU_BACKEND / -DVECTORIZATION_GPU_BACKEND.
-        cmd.append(f"--define=memory_gpu_backend={self.gpu_backend}")
-        cmd.append(f"--define=vectorization_gpu_backend={self.gpu_backend}")
+        # Memory's and Vectorization's GPU backends are two independent CMake cache variables
+        # (see Docs/BAZEL_USER_GUIDE.md's Known Gaps section); Bazel models each as three
+        # mutually-exclusive booleans per library (enable_cuda/enable_hip/enable_metal), not a
+        # single "gpu_backend" string define (which -- like vectorization_cpu above -- was never
+        # consumed by any config_setting). Emit the matching pair of booleans for both libraries
+        # together, since this script only exposes one --gpu_backend chain to the user.
+        if self.gpu_backend in ("cuda", "hip", "metal"):
+            cmd.append(f"--define=memory_enable_{self.gpu_backend}=true")
+            cmd.append(f"--define=vectorization_enable_{self.gpu_backend}=true")
 
         # Enzyme: CMake applies -fpass-plugin at compile and link for Enzyme::enzyme.
         # Bazel only toggles QUARISMA_HAS_ENZYME; without the plugin, __enzyme_* calls are
@@ -826,8 +836,9 @@ class BazelConfiguration:
         self._pf("Memkind",      na,                                   W)
         self._pf("Numa",         na,                                   W)
         self._pf("Tbb",          self._on_off("tbb"  in self.configs), W)
-        self._pf("Cuda",         self._on_off("cuda" in self.configs), W)
-        self._pf("Hip",          self._on_off("hip"  in self.configs), W)
+        self._pf("Cuda",         self._on_off("cuda"  in self.configs), W)
+        self._pf("Hip",          self._on_off("hip"   in self.configs), W)
+        self._pf("Metal",        self._on_off("metal" in self.configs), W)
         self._pf("Cxx standard", cxx,                                  W)
         common()
 
@@ -1107,9 +1118,24 @@ class BazelConfiguration:
         self.clean()
         if self.run_build or self.run_tests or self.run_coverage:
             self._kill_stale_bazel_processes()
-        self.build()
-        self.test()
-        self.coverage()
+        # `bazel coverage` requires instrumented compilation (different compiler flags than a
+        # plain build/test), so it can never reuse the action cache from a preceding `bazel
+        # build`/`bazel test` run -- those would just be a second, wasted full build under
+        # different flags, and `bazel coverage` already builds everything and runs all tests
+        # itself (instrumented) as part of computing coverage. Skip the redundant steps rather
+        # than pay for three separate Bazel invocations when coverage is requested.
+        if self.run_coverage:
+            if self.run_build or self.run_tests:
+                print_status(
+                    "Coverage requested: skipping separate build/test steps (bazel coverage "
+                    "builds and tests everything itself, under different instrumented flags "
+                    "that wouldn't reuse a plain build's cache anyway).",
+                    "INFO",
+                )
+            self.coverage()
+        else:
+            self.build()
+            self.test()
         self.print_timing_summary()
 
 
@@ -1227,11 +1253,11 @@ def parse_args(args: list[str]) -> list[str]:
 
         if arg.startswith("--gpu_backend.") or arg.startswith("--gpu-backend."):
             bt = arg.split(".", 1)[1].lower()
-            if bt in ("none", "cuda", "hip"):
+            if bt in ("none", "cuda", "hip", "metal"):
                 processed.append(f"gpu_backend.{bt}")
             else:
                 print_status(
-                    f"Invalid GPU backend: {bt}. Valid options: none, cuda, hip",
+                    f"Invalid GPU backend: {bt}. Valid options: none, cuda, hip, metal",
                     "ERROR",
                 )
                 sys.exit(1)

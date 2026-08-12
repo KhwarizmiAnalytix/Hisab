@@ -46,12 +46,20 @@ cc_library(
             "libkineto/src/RoctracerActivityApi.cpp",
             "libkineto/src/RoctracerLogger.cpp",
             "libkineto/src/RocLogger.cpp",
-            # Exclude CUPTI-specific files that will be conditionally included below
-            # Note: CuptiActivityApi.cpp, CuptiActivityProfiler.cpp, ActivityProfilerController.cpp,
-            # and ActivityProfilerProxy.cpp are included in CPU-only builds (get_libkineto_cpu_only_srcs)
-            # They have runtime guards for CUPTI functionality
+            # Exclude CUPTI-specific files that will be conditionally included below.
+            # This list mirrors get_libkineto_cupti_srcs() in the vendored
+            # libkineto/libkineto_defs.bzl (kineto's own authoritative CPU-only vs.
+            # CUPTI-only source split) minus get_libkineto_cpu_only_srcs() and
+            # Demangle.cpp (always compiled -- listed in both). CuptiActivityApi.cpp,
+            # CuptiActivityProfiler.cpp, and CuptiCbidRegistry.cpp are *not* CPU-only
+            # despite an earlier version of this comment claiming otherwise: their
+            # headers #include <cupti.h> unconditionally (no HAS_CUPTI guard), so
+            # compiling them without CUDA fails with 'cupti.h' file not found.
             "libkineto/src/CuptiActivity.cpp",
+            "libkineto/src/CuptiActivityApi.cpp",
+            "libkineto/src/CuptiActivityProfiler.cpp",
             "libkineto/src/CuptiCallbackApi.cpp",
+            "libkineto/src/CuptiCbidRegistry.cpp",
             "libkineto/src/CuptiEventApi.cpp",
             "libkineto/src/CuptiMetricApi.cpp",
             "libkineto/src/CuptiRangeProfiler.cpp",
@@ -69,13 +77,15 @@ cc_library(
         allow_empty = True,
     ) + select({
         "@quarisma//bazel:enable_cuda": [
-            # Include CUPTI-specific files when CUDA is enabled
-            # These files are part of get_libkineto_cupti_srcs() in libkineto_defs.bzl
-            # Note: CuptiActivityApi.cpp, CuptiActivityProfiler.cpp, and Demangle.cpp
-            # are already included in the glob above (part of CPU-only build)
+            # Include CUPTI-specific files when CUDA is enabled. This list mirrors
+            # get_libkineto_cupti_srcs() in libkineto/libkineto_defs.bzl exactly (minus
+            # Demangle.cpp, always included via the base glob above).
             # Note: CuptiActivity.cpp is included as a header (see hdrs below) because
-            # it's meant to be #included by CuptiActivityProfiler.cpp
+            # it's meant to be #included by CuptiActivityProfiler.cpp.
+            "libkineto/src/CuptiActivityApi.cpp",
+            "libkineto/src/CuptiActivityProfiler.cpp",
             "libkineto/src/CuptiCallbackApi.cpp",
+            "libkineto/src/CuptiCbidRegistry.cpp",
             "libkineto/src/CuptiEventApi.cpp",
             "libkineto/src/CuptiMetricApi.cpp",
             "libkineto/src/CuptiRangeProfiler.cpp",

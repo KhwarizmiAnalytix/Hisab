@@ -58,7 +58,11 @@ namespace parallel_impl
 // Each thread gets its own copy automatically via OpenMP's threadprivate pragma.
 // NOTE: Do NOT use 'thread_local' with OpenMP's threadprivate pragma - they are incompatible.
 // OpenMP's threadprivate pragma provides thread-local storage for OpenMP parallel regions.
-unsigned char parallel_tools_functor_initialized = 0;
+// `static` gives this internal linkage so each translation unit that includes this header
+// gets its own distinct threadprivate object -- required for OpenMP's threadprivate pragma
+// (each TU needs its own declaration) and avoids an ODR violation / duplicate-symbol link
+// error when two TUs including this header end up statically linked into the same binary.
+static unsigned char parallel_tools_functor_initialized = 0;
 #pragma omp   threadprivate(parallel_tools_functor_initialized)
 #endif
 

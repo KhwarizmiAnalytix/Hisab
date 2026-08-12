@@ -13,6 +13,34 @@ def core_defines():
     """
     defines = quarisma_defines()
 
+    # SIMD instruction-set tokens — CORE_SSE/AVX/AVX2/AVX512. CMake sets these from
+    # PROJECT_SSE/AVX/AVX2/AVX512 (Cmake/tools/utils.cmake), which mirror whichever single
+    # VECTORIZATION_CPU_BACKEND tier is active. Reuse the same vectorization_type_* tier
+    # config_settings Vectorization already defines (bazel/BUILD.bazel) instead of adding a
+    # parallel set of Core-only settings.
+    defines += select({
+        "//bazel:vectorization_type_sse": ["CORE_SSE=1"],
+        "//conditions:default": ["CORE_SSE=0"],
+    })
+    defines += select({
+        "//bazel:vectorization_type_avx": ["CORE_AVX=1"],
+        "//conditions:default": ["CORE_AVX=0"],
+    })
+    defines += select({
+        "//bazel:vectorization_type_avx2": ["CORE_AVX2=1"],
+        "//conditions:default": ["CORE_AVX2=0"],
+    })
+    defines += select({
+        "//bazel:vectorization_type_avx512": ["CORE_AVX512=1"],
+        "//conditions:default": ["CORE_AVX512=0"],
+    })
+
+    # std::exception_ptr availability — CORE_HAS_EXCEPTION_PTR. CMake probes this with
+    # check_cxx_source_compiles (Cmake/tools/utils.cmake); fixed to 1 here since every
+    # compiler this project's Bazel setup targets (MSVC 2019+/Clang/GCC, all C++20) supports
+    # std::exception_ptr — the probe result is always 1 in practice.
+    defines += ["CORE_HAS_EXCEPTION_PTR=1"]
+
     # MKL — CORE_HAS_MKL
     defines += select({
         "//bazel:enable_mkl": ["CORE_HAS_MKL=1"],

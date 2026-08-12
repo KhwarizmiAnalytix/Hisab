@@ -8,13 +8,21 @@
 #   bazel/logging.bzl, bazel/profiler.bzl, bazel/vectorization.bzl
 # =============================================================================
 
-def quarisma_copts(cxx_std = "c++20"):
+def quarisma_copts(cxx_std = "c++20", cstdlib_include = True):
     """Returns common compiler options for Quarisma targets.
 
     Args:
         cxx_std: C++ standard to use (default: c++20, matches CMake default).
                  Each module passes its own standard so targets are self-contained
                  and do not rely on --cxxopt in .bazelrc.
+        cstdlib_include: Whether to force-include <cstdlib> on non-Windows (mirrors
+                 CMake's `target_compile_options(<Lib> PRIVATE -include cstdlib)`,
+                 applied identically across Core/Logging/Parallel/Profiler/Vectorization
+                 CMakeLists.txt). Memory's memory_copts() passes False: CMake skips this
+                 specifically for Clang there (compiler-instability workaround, see
+                 Library/Memory/CMakeLists.txt) — Bazel has no compiler-id config_setting
+                 to key off, so Memory omits it unconditionally rather than only for
+                 Clang (documented simplification, not a full match).
     """
     return select({
         "@platforms//os:windows": [
@@ -27,13 +35,14 @@ def quarisma_copts(cxx_std = "c++20"):
             "/wd4267",          # size_t → int conversion (mirrors CMake /wd4267)
             "/wd4715",          # not all control paths return (mirrors CMake /wd4715)
             "/wd4018",          # signed/unsigned comparison (mirrors CMake /wd4018)
+            "/WX",              # warnings as errors (mirrors CMake /WX)
         ],
         "//conditions:default": [
             "-std=" + cxx_std,
             "-Wall",
             "-Wextra",
             "-Wpedantic",
-        ],
+        ] + (["-include", "cstdlib"] if cstdlib_include else []),
     })
 
 def quarisma_defines():

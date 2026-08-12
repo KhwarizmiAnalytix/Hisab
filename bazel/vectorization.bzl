@@ -68,6 +68,12 @@ def vectorization_simd_copts():
         d["//bazel:vec_%s_win" % short] = msvc[short]
         d["//bazel:vec_%s_linux" % short] = unix[short]
         d["//bazel:vec_%s_macos" % short] = unix[short]
+        # _aarch64 counterparts (same value): strict supersets of "cpu_aarch64" below, so an
+        # explicit --define=vectorization_type=X on an aarch64 host resolves unambiguously
+        # instead of erroring against "cpu_aarch64" (see vectorization_settings.bzl).
+        d["//bazel:vec_%s_win_aarch64" % short] = msvc[short]
+        d["//bazel:vec_%s_linux_aarch64" % short] = unix[short]
+        d["//bazel:vec_%s_macos_aarch64" % short] = unix[short]
     arm_neon = ["-march=armv8-a"]
     arm_sve = ["-march=armv8-a+sve", "-msve-vector-bits=128"]
     for os_suffix in ("linux_aarch64", "macos_aarch64", "windows_aarch64"):
@@ -123,21 +129,21 @@ def vectorization_svml_deps():
     return selects.with_or({
         ("//bazel:enable_svml",): ["@svml//:SVML"],
         ("//bazel:disable_svml", "//bazel:vectorization_type_no", "//bazel:vectorization_type_neon", "//bazel:vectorization_type_sve"): [],
-        "//bazel:vec_no_win": [],
-        "//bazel:vec_sse_win": [],
-        "//bazel:vec_avx_win": [],
-        "//bazel:vec_avx2_win": [],
-        "//bazel:vec_avx512_win": [],
-        "//bazel:vec_no_linux": [],
-        "//bazel:vec_sse_linux": ["@svml//:SVML"] if SVML_NEEDED_SSE else [],
-        "//bazel:vec_avx_linux": ["@svml//:SVML"] if SVML_NEEDED_AVX else [],
-        "//bazel:vec_avx2_linux": ["@svml//:SVML"] if SVML_NEEDED_AVX2 else [],
-        "//bazel:vec_avx512_linux": ["@svml//:SVML"] if SVML_NEEDED_AVX512 else [],
-        "//bazel:vec_no_macos": [],
-        "//bazel:vec_sse_macos": ["@svml//:SVML"] if SVML_NEEDED_SSE else [],
-        "//bazel:vec_avx_macos": ["@svml//:SVML"] if SVML_NEEDED_AVX else [],
-        "//bazel:vec_avx2_macos": ["@svml//:SVML"] if SVML_NEEDED_AVX2 else [],
-        "//bazel:vec_avx512_macos": ["@svml//:SVML"] if SVML_NEEDED_AVX512 else [],
+        ("//bazel:vec_no_win", "//bazel:vec_no_win_aarch64"): [],
+        ("//bazel:vec_sse_win", "//bazel:vec_sse_win_aarch64"): [],
+        ("//bazel:vec_avx_win", "//bazel:vec_avx_win_aarch64"): [],
+        ("//bazel:vec_avx2_win", "//bazel:vec_avx2_win_aarch64"): [],
+        ("//bazel:vec_avx512_win", "//bazel:vec_avx512_win_aarch64"): [],
+        ("//bazel:vec_no_linux", "//bazel:vec_no_linux_aarch64"): [],
+        ("//bazel:vec_sse_linux", "//bazel:vec_sse_linux_aarch64"): ["@svml//:SVML"] if SVML_NEEDED_SSE else [],
+        ("//bazel:vec_avx_linux", "//bazel:vec_avx_linux_aarch64"): ["@svml//:SVML"] if SVML_NEEDED_AVX else [],
+        ("//bazel:vec_avx2_linux", "//bazel:vec_avx2_linux_aarch64"): ["@svml//:SVML"] if SVML_NEEDED_AVX2 else [],
+        ("//bazel:vec_avx512_linux", "//bazel:vec_avx512_linux_aarch64"): ["@svml//:SVML"] if SVML_NEEDED_AVX512 else [],
+        ("//bazel:vec_no_macos", "//bazel:vec_no_macos_aarch64"): [],
+        ("//bazel:vec_sse_macos", "//bazel:vec_sse_macos_aarch64"): ["@svml//:SVML"] if SVML_NEEDED_SSE else [],
+        ("//bazel:vec_avx_macos", "//bazel:vec_avx_macos_aarch64"): ["@svml//:SVML"] if SVML_NEEDED_AVX else [],
+        ("//bazel:vec_avx2_macos", "//bazel:vec_avx2_macos_aarch64"): ["@svml//:SVML"] if SVML_NEEDED_AVX2 else [],
+        ("//bazel:vec_avx512_macos", "//bazel:vec_avx512_macos_aarch64"): ["@svml//:SVML"] if SVML_NEEDED_AVX512 else [],
         "//bazel:cpu_aarch64": [],
         "//conditions:default": ["@svml//:SVML"] if SVML_NEEDED_AVX2 else [],
     })
@@ -151,8 +157,8 @@ def vectorization_svml_hdrs_extra(svml_hdr):
     return selects.with_or({
         ("//bazel:enable_svml",): [svml_hdr],
         ("//bazel:disable_svml", "//bazel:vectorization_type_no", "//bazel:vectorization_type_neon", "//bazel:vectorization_type_sve", "//bazel:vectorization_type_sse", "//bazel:vectorization_type_avx512"): [],
-        "//bazel:vectorization_type_avx": [svml_hdr] if SVML_NEEDED_AVX else [],
-        "//bazel:vectorization_type_avx2": [svml_hdr] if SVML_NEEDED_AVX2 else [],
+        ("//bazel:vectorization_type_avx", "//bazel:vectorization_type_avx_aarch64"): [svml_hdr] if SVML_NEEDED_AVX else [],
+        ("//bazel:vectorization_type_avx2", "//bazel:vectorization_type_avx2_aarch64"): [svml_hdr] if SVML_NEEDED_AVX2 else [],
         "//bazel:cpu_aarch64": [],
         "//conditions:default": [svml_hdr] if SVML_NEEDED_AVX2 else [],
     })
@@ -162,8 +168,16 @@ def vectorization_defines():
     # Chain selects + lists (Starlark: cannot .append onto a select).
     return (
         quarisma_defines()
-        + select({
-            "//bazel:vectorization_type_no": [
+        # Each tier is paired with its "_aarch64" counterpart (same defines, plus the aarch64
+        # constraint) via selects.with_or(): on an aarch64 host, the paired setting is a strict
+        # superset of "cpu_aarch64" below, so Bazel's select() picks it over the arch-based
+        # default instead of erroring out as an ambiguous match (see the vectorization_type_X_aarch64
+        # config_setting comment in bazel/BUILD.bazel for the full explanation).
+        + selects.with_or({
+            (
+                "//bazel:vectorization_type_no",
+                "//bazel:vectorization_type_no_aarch64",
+            ): [
                 "VECTORIZATION_HAS_SSE=0",
                 "VECTORIZATION_HAS_AVX=0",
                 "VECTORIZATION_HAS_AVX2=0",
@@ -172,7 +186,10 @@ def vectorization_defines():
                 "VECTORIZATION_HAS_SVE=0",
                 "VECTORIZATION_VECTORIZED=0",
             ],
-            "//bazel:vectorization_type_sse": [
+            (
+                "//bazel:vectorization_type_sse",
+                "//bazel:vectorization_type_sse_aarch64",
+            ): [
                 "VECTORIZATION_HAS_SSE=1",
                 "VECTORIZATION_HAS_AVX=0",
                 "VECTORIZATION_HAS_AVX2=0",
@@ -181,7 +198,10 @@ def vectorization_defines():
                 "VECTORIZATION_HAS_SVE=0",
                 "VECTORIZATION_VECTORIZED=1",
             ],
-            "//bazel:vectorization_type_avx": [
+            (
+                "//bazel:vectorization_type_avx",
+                "//bazel:vectorization_type_avx_aarch64",
+            ): [
                 "VECTORIZATION_HAS_SSE=0",
                 "VECTORIZATION_HAS_AVX=1",
                 "VECTORIZATION_HAS_AVX2=0",
@@ -190,7 +210,10 @@ def vectorization_defines():
                 "VECTORIZATION_HAS_SVE=0",
                 "VECTORIZATION_VECTORIZED=1",
             ],
-            "//bazel:vectorization_type_avx2": [
+            (
+                "//bazel:vectorization_type_avx2",
+                "//bazel:vectorization_type_avx2_aarch64",
+            ): [
                 "VECTORIZATION_HAS_SSE=0",
                 "VECTORIZATION_HAS_AVX=1",
                 "VECTORIZATION_HAS_AVX2=1",
@@ -199,7 +222,10 @@ def vectorization_defines():
                 "VECTORIZATION_HAS_SVE=0",
                 "VECTORIZATION_VECTORIZED=1",
             ],
-            "//bazel:vectorization_type_avx512": [
+            (
+                "//bazel:vectorization_type_avx512",
+                "//bazel:vectorization_type_avx512_aarch64",
+            ): [
                 "VECTORIZATION_HAS_SSE=0",
                 "VECTORIZATION_HAS_AVX=0",
                 "VECTORIZATION_HAS_AVX2=0",
@@ -208,7 +234,11 @@ def vectorization_defines():
                 "VECTORIZATION_HAS_SVE=0",
                 "VECTORIZATION_VECTORIZED=1",
             ],
-            "//bazel:vectorization_type_neon": [
+            (
+                "//bazel:vectorization_type_neon",
+                "//bazel:vectorization_type_neon_aarch64",
+                "//bazel:cpu_aarch64",
+            ): [
                 "VECTORIZATION_HAS_SSE=0",
                 "VECTORIZATION_HAS_AVX=0",
                 "VECTORIZATION_HAS_AVX2=0",
@@ -217,22 +247,16 @@ def vectorization_defines():
                 "VECTORIZATION_HAS_SVE=0",
                 "VECTORIZATION_VECTORIZED=1",
             ],
-            "//bazel:vectorization_type_sve": [
+            (
+                "//bazel:vectorization_type_sve",
+                "//bazel:vectorization_type_sve_aarch64",
+            ): [
                 "VECTORIZATION_HAS_SSE=0",
                 "VECTORIZATION_HAS_AVX=0",
                 "VECTORIZATION_HAS_AVX2=0",
                 "VECTORIZATION_HAS_AVX512=0",
                 "VECTORIZATION_HAS_NEON=0",
                 "VECTORIZATION_HAS_SVE=1",
-                "VECTORIZATION_VECTORIZED=1",
-            ],
-            "//bazel:cpu_aarch64": [
-                "VECTORIZATION_HAS_SSE=0",
-                "VECTORIZATION_HAS_AVX=0",
-                "VECTORIZATION_HAS_AVX2=0",
-                "VECTORIZATION_HAS_AVX512=0",
-                "VECTORIZATION_HAS_NEON=1",
-                "VECTORIZATION_HAS_SVE=0",
                 "VECTORIZATION_VECTORIZED=1",
             ],
             "//conditions:default": [
@@ -251,14 +275,94 @@ def vectorization_defines():
             "//bazel:disable_gtest": ["VECTORIZATION_HAS_GTEST=0"],
             "//conditions:default": ["VECTORIZATION_HAS_GTEST=1"],
         })
+        # Apple Accelerate vForce (NEON). CMake's compile_definition() helper (Cmake/flags/
+        # compile_definitions.cmake) maps the VECTORIZATION_ENABLE_ACCELERATE *option* to a
+        # VECTORIZATION_HAS_ACCELERATE *compile definition* (ENABLE -> HAS substring rename) --
+        # that HAS_ name is what backend/cpu/neon/svml.h actually guards on.
+        + select({
+            "//bazel:enable_accelerate": ["VECTORIZATION_HAS_ACCELERATE=1"],
+            "//conditions:default": ["VECTORIZATION_HAS_ACCELERATE=0"],
+        })
+        # MKL VML backend (x86_64 only, matching CMakeLists.txt:434-438's processor guard).
+        # No @mkl WORKSPACE dependency is wired here (see bazel/vectorization.bzl's deps -- not
+        # added -- and WORKSPACE.bazel:196-202's own commented-out @mkl repo): there's no real
+        # MKL install anywhere to verify a hermetic Bazel dep against, on this machine or
+        # otherwise, so only the *definition* side mirrors CMake exactly; enabling this flag on
+        # Bazel today only affects the macro, matching CMake's fallback-to-off behavior when
+        # MKL isn't found, but without CMake's own warning message.
+        + select({
+            "//bazel:vectorization_mkl_x86_64": ["VECTORIZATION_HAS_MKL=1"],
+            "//conditions:default": ["VECTORIZATION_HAS_MKL=0"],
+        })
+        + vectorization_packet_size_define()
+        # GPU backend (mutually exclusive, matches CMakeLists.txt:337-352's
+        # if/elif/elif/else on VECTORIZATION_GPU_BACKEND).
+        + select({
+            "//bazel:vectorization_enable_cuda": [
+                "VECTORIZATION_HAS_CUDA=1",
+                "VECTORIZATION_HAS_HIP=0",
+                "VECTORIZATION_HAS_METAL=0",
+            ],
+            "//bazel:vectorization_enable_hip": [
+                "VECTORIZATION_HAS_CUDA=0",
+                "VECTORIZATION_HAS_HIP=1",
+                "VECTORIZATION_HAS_METAL=0",
+            ],
+            "//bazel:vectorization_enable_metal": [
+                "VECTORIZATION_HAS_CUDA=0",
+                "VECTORIZATION_HAS_HIP=0",
+                "VECTORIZATION_HAS_METAL=1",
+            ],
+            "//conditions:default": [
+                "VECTORIZATION_HAS_CUDA=0",
+                "VECTORIZATION_HAS_HIP=0",
+                "VECTORIZATION_HAS_METAL=0",
+            ],
+        })
         + [
             "VECTORIZATION_HAS_MEMORY=1",
             "VECTORIZATION_HAS_LOGGING=1",
         ]
     )
 
+def vectorization_gpu_deps():
+    """CUDA/HIP runtime deps for Vectorization's own GPU backend (VECTORIZATION_GPU_BACKEND).
+
+    No device-language (.cu/.hip) compilation is needed for the *library* target itself --
+    Vectorization's only CMake-side use of enable_language(CUDA)/enable_language(HIP) is for
+    device-tagging specific *test*/*benchmark* files (Testing/Cxx/CMakeLists.txt), which have
+    no Bazel equivalent (same class of gap as Core's CudaEnzymeADTest.cu -- see
+    Docs/BAZEL_USER_GUIDE.md). The library itself only needs the CUDA/HIP runtime headers/libs,
+    reusing the same @local_config_cuda / @local_config_hip repos Memory's GPU backend uses.
+    """
+    return select({
+        "//bazel:vectorization_enable_cuda": ["@local_config_cuda//:cuda"],
+        "//bazel:vectorization_enable_hip": ["@local_config_hip//:hip"],
+        "//conditions:default": [],
+    })
+
+def vectorization_packet_size_define():
+    """VECTORIZATION_PACKET_SIZE=N from --//bazel:vectorization_packet_size (default 1).
+
+    Mirrors CMakeLists.txt:201-217's VECTORIZATION_PACKET_SIZE cache var (bounded [1,16]).
+    """
+    return select({
+        "//bazel:vectorization_packet_size_%d" % n: ["VECTORIZATION_PACKET_SIZE=%d" % n]
+        for n in range(1, 17)
+    })
+
 def vectorization_linkopts():
-    return quarisma_linkopts()
+    return quarisma_linkopts() + select({
+        # Mirrors CMakeLists.txt:784-786 (if(VECTORIZATION_ENABLE_ACCELERATE AND APPLE)).
+        "//bazel:vec_accelerate_macos": ["-framework", "Accelerate"],
+        "//conditions:default": [],
+    }) + select({
+        # Mirrors CMakeLists.txt:719 (target_link_libraries(Vectorization PUBLIC
+        # ${METAL_FRAMEWORK} ${FOUNDATION_FRAMEWORK})) for Vectorization's own Metal GPU
+        # backend (separate from Memory's, see Library/Memory/BUILD.bazel).
+        "//bazel:vectorization_enable_metal": ["-framework", "Metal", "-framework", "Foundation"],
+        "//conditions:default": [],
+    })
 
 def vectorization_sleef_defines():
     """Expose VECTORIZATION_HAS_SLEEF consistently with CMake flags."""
@@ -268,8 +372,13 @@ def vectorization_sleef_defines():
     })
 
 def vectorization_sleef_deps():
-    """Prebuilt SLEEF dependency used when --config=sleef is enabled."""
+    """Prebuilt SLEEF dependency used when --config=sleef is enabled.
+
+    Resolved by the @sleef_cmake repository rule (see
+    bazel/sleef_configure.bzl), which locates CMake-built SLEEF artifacts or
+    fails with an actionable message if none are found.
+    """
     return select({
-        "//bazel:enable_sleef": ["//:sleef"],
+        "//bazel:enable_sleef": ["@sleef_cmake//:sleef"],
         "//conditions:default": [],
     })

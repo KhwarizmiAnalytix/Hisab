@@ -6,6 +6,7 @@
 # memory_enable_cuda, parallel_backend, parallel_enable_openmp, vectorization_type, logging_backend).
 # =============================================================================
 
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load(":vectorization_settings.bzl", "define_vectorization_platform_settings")
 
 package(default_visibility = ["//visibility:public"])
@@ -34,6 +35,32 @@ config_setting(
 config_setting(
     name = "enable_hip",
     define_values = {"memory_enable_hip": "true"},
+)
+
+config_setting(
+    name = "enable_metal",
+    define_values = {"memory_enable_metal": "true"},
+)
+
+# Vectorization's own GPU backend (VECTORIZATION_GPU_BACKEND) is a CMake cache variable
+# independent of Memory's MEMORY_GPU_BACKEND -- Scripts/setup.py's --gpu_backend= flag sets
+# both together for convenience, but they're two separate CMake options (a raw CMake
+# invocation could set them differently), so these get their own vectorization_enable_*
+# config_settings rather than reusing enable_cuda/enable_hip/enable_metal above (which are
+# keyed on memory_enable_*).
+config_setting(
+    name = "vectorization_enable_cuda",
+    define_values = {"vectorization_enable_cuda": "true"},
+)
+
+config_setting(
+    name = "vectorization_enable_hip",
+    define_values = {"vectorization_enable_hip": "true"},
+)
+
+config_setting(
+    name = "vectorization_enable_metal",
+    define_values = {"vectorization_enable_metal": "true"},
 )
 
 # =============================================================================
@@ -233,6 +260,37 @@ config_setting(
 )
 
 config_setting(
+    name = "enable_accelerate",
+    define_values = {"vectorization_enable_accelerate": "true"},
+)
+
+# Vectorization's own MKL VML backend -- a distinct CMake option (VECTORIZATION_ENABLE_MKL)
+# from Core's CORE_ENABLE_MKL (//bazel:enable_mkl above, keyed on core_enable_mkl); don't
+# conflate the two, they're independently toggled in CMake.
+config_setting(
+    name = "vectorization_enable_mkl",
+    define_values = {"vectorization_enable_mkl": "true"},
+)
+
+# vectorization_enable_mkl AND x86_64 combined -- CMake disables VECTORIZATION_ENABLE_MKL
+# outright on non-x86_64 (CMakeLists.txt:436-438: "only supported on x86_64; disabling").
+config_setting(
+    name = "vectorization_mkl_x86_64",
+    constraint_values = ["@platforms//cpu:x86_64"],
+    define_values = {"vectorization_enable_mkl": "true"},
+)
+
+# enable_accelerate AND macOS combined -- Accelerate.framework is only linked on Apple
+# platforms (CMakeLists.txt:784: `if(VECTORIZATION_ENABLE_ACCELERATE AND APPLE)`); the
+# VECTORIZATION_HAS_ACCELERATE compile definition itself is platform-independent (see
+# vectorization_defines() in bazel/vectorization.bzl).
+config_setting(
+    name = "vec_accelerate_macos",
+    constraint_values = ["@platforms//os:osx"],
+    define_values = {"vectorization_enable_accelerate": "true"},
+)
+
+config_setting(
     name = "disable_svml",
     define_values = {"vectorization_enable_svml": "false"},
 )
@@ -295,6 +353,58 @@ config_setting(
     constraint_values = ["@platforms//cpu:aarch64"],
 )
 
+# vectorization_type_X_aarch64: same define_values as vectorization_type_X, plus the
+# aarch64 constraint -- a strict superset of both "cpu_aarch64" and the bare
+# "vectorization_type_X" setting. Bazel's select() ambiguity rule allows multiple matches
+# when one is unambiguously more specialized (a strict superset of the others); without
+# these, an explicit --define=vectorization_type=X on an aarch64 host is ambiguous against
+# "cpu_aarch64" (both match, neither is a superset of the other) for every tier whose
+# defines differ from NEON's -- i.e. every tier except neon itself, which only avoids the
+# error by coincidence (its define list happens to equal cpu_aarch64's). vectorization.bzl's
+# vectorization_defines() pairs each bare setting with its _aarch64 counterpart via
+# selects.with_or() so the explicit choice always wins over the arch-based default.
+config_setting(
+    name = "vectorization_type_no_aarch64",
+    constraint_values = ["@platforms//cpu:aarch64"],
+    define_values = {"vectorization_type": "no"},
+)
+
+config_setting(
+    name = "vectorization_type_sse_aarch64",
+    constraint_values = ["@platforms//cpu:aarch64"],
+    define_values = {"vectorization_type": "sse"},
+)
+
+config_setting(
+    name = "vectorization_type_avx_aarch64",
+    constraint_values = ["@platforms//cpu:aarch64"],
+    define_values = {"vectorization_type": "avx"},
+)
+
+config_setting(
+    name = "vectorization_type_avx2_aarch64",
+    constraint_values = ["@platforms//cpu:aarch64"],
+    define_values = {"vectorization_type": "avx2"},
+)
+
+config_setting(
+    name = "vectorization_type_avx512_aarch64",
+    constraint_values = ["@platforms//cpu:aarch64"],
+    define_values = {"vectorization_type": "avx512"},
+)
+
+config_setting(
+    name = "vectorization_type_neon_aarch64",
+    constraint_values = ["@platforms//cpu:aarch64"],
+    define_values = {"vectorization_type": "neon"},
+)
+
+config_setting(
+    name = "vectorization_type_sve_aarch64",
+    constraint_values = ["@platforms//cpu:aarch64"],
+    define_values = {"vectorization_type": "sve"},
+)
+
 config_setting(
     name = "enable_rocm",
     define_values = {"core_enable_rocm": "true"},
@@ -336,6 +446,22 @@ config_setting(
     name = "vectorization_disable_benchmark",
     define_values = {"vectorization_enable_benchmark": "false"},
 )
+
+# VECTORIZATION_PACKET_SIZE — SIMD registers processed per unrolled loop iteration in the
+# expression evaluator (CMakeLists.txt:201-215: cache var, default "1", bounded to [1,16]).
+# --//bazel:vectorization_packet_size=N (default "1", matching CMake's default).
+string_flag(
+    name = "vectorization_packet_size",
+    build_setting_default = "1",
+)
+
+[
+    config_setting(
+        name = "vectorization_packet_size_%d" % n,
+        flag_values = {":vectorization_packet_size": str(n)},
+    )
+    for n in range(1, 17)
+]
 
 # (vectorization_type) × OS — used by //bazel:vectorization.bzl SIMD copts
 define_vectorization_platform_settings()

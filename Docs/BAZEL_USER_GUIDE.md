@@ -15,9 +15,10 @@ This document consolidates all Bazel-related documentation for the Quarisma proj
 5. [Code Coverage](#code-coverage)
 6. [Third-Party Dependencies](#third-party-dependencies)
 7. [Bazel vs CMake Comparison](#bazel-vs-cmake-comparison)
-8. [Build Structure and Architecture](#build-structure-and-architecture)
-9. [Advanced Usage](#advanced-usage)
-10. [Troubleshooting](#troubleshooting)
+8. [Known Gaps and CMake/Bazel Alignment Plan](#known-gaps-and-cmakebazel-alignment-plan)
+9. [Build Structure and Architecture](#build-structure-and-architecture)
+10. [Advanced Usage](#advanced-usage)
+11. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -535,7 +536,7 @@ python setup.py config.build.test.ninja.clang.debug.coverage
 
 ## Third-Party Dependencies
 
-Quarisma uses a conditional compilation pattern where each library is controlled by `QUARISMA_ENABLE_XXX` options in CMake. In Bazel, dependencies are managed through the `WORKSPACE.bazel` file and controlled via `--config` flags.
+Quarisma uses a conditional compilation pattern where each library is controlled by its own per-library `<LIB>_ENABLE_XXX` options in CMake (e.g. `PARALLEL_ENABLE_SANITIZER`, `MEMORY_ENABLE_TBB`, `CORE_ENABLE_MAGICENUM`) — there is no single global `QUARISMA_ENABLE_XXX` prefix. In Bazel, dependencies are managed through the `WORKSPACE.bazel` / `MODULE.bazel` files and controlled via `--config` / `--define` flags using the same lowercase per-library convention (`parallel_enable_sanitizer`, `memory_enable_tbb`, `core_enable_magic_enum`).
 
 ### Dependency Categories
 
@@ -657,56 +658,67 @@ Both build systems are fully supported and offer different advantages. This sect
 
 ### Feature Flags Mapping
 
+CMake options are per-library prefixed (`PARALLEL_*`, `MEMORY_*`, `CORE_*`, `VECTORIZATION_*`, `LOGGING_*`, `PROFILER_*`) — there is no single global `QUARISMA_*` option. Bazel's `--define` keys mirror those names lowercased. Verified directly against the current `Library/*/CMakeLists.txt` and `bazel/*.bzl`/`.bazelrc`:
+
 | Feature | CMake Option | Bazel Equivalent |
 |---------|--------------|------------------|
-| **LTO** | `-DQUARISMA_ENABLE_LTO=ON` | `--config=lto` |
-| **AVX2** | `-DQUARISMA_VECTORIZATION_TYPE=avx2` | `--config=avx2` |
-| **AVX512** | `-DQUARISMA_VECTORIZATION_TYPE=avx512` | `--config=avx512` |
-| **SSE** | `-DQUARISMA_VECTORIZATION_TYPE=sse` | `--config=sse` |
-| **mimalloc** | `-DMEMORY_ENABLE_MIMALLOC=ON` | `--config=mimalloc` |
-| **magic_enum** | `-DQUARISMA_ENABLE_MAGICENUM=ON` | `--config=magic_enum` |
-| **Kineto** | `-DQUARISMA_ENABLE_KINETO=ON` | `--config=kineto` |
-| **TBB** | `-DQUARISMA_ENABLE_TBB=ON` | `--config=tbb` |
-| **OpenMP** | `-DQUARISMA_ENABLE_OPENMP=ON` | `--config=openmp` |
-| **CUDA** | `-DMEMOY_ENABLE_CUDA=ON` | `--config=cuda` |
-| **HIP** | `-DQUARISMA_ENABLE_HIP=ON` | `--config=hip` |
-| **Google Test** | `-DQUARISMA_ENABLE_GTEST=ON` | `--config=gtest` |
-| **Benchmark** | `-DQUARISMA_ENABLE_BENCHMARK=ON` | `--config=benchmark` |
-| **LU Pivoting** | `-DQUARISMA_LU_PIVOTING=ON` | `--config=lu_pivoting` |
-| **Sobol 1111** | `-DQUARISMA_SOBOL_1111=ON` | `--config=sobol_1111` |
+| **LTO** | `-D<LIB>_LTO_MODE=thin\|full\|ipo\|auto` (per-library; e.g. `-DPARALLEL_LTO_MODE=thin`) | `--config=lto` |
+| **AVX2** | `-DVECTORIZATION_CPU_BACKEND=avx2` | `--config=avx2` |
+| **AVX512** | `-DVECTORIZATION_CPU_BACKEND=avx512` | `--config=avx512` |
+| **SSE** | `-DVECTORIZATION_CPU_BACKEND=sse` | `--config=sse` |
+| **NEON** | `-DVECTORIZATION_CPU_BACKEND=neon` | `--config=neon` |
+| **mimalloc** | `-DMEMORY_ENABLE_MIMALLOC=ON` (default ON) | `--config=mimalloc` (default on) |
+| **magic_enum** | `-DCORE_ENABLE_MAGICENUM=ON` (default ON) | `--config=magic_enum` |
+| **Kineto** | `-DPROFILER_BACKEND=KINETO` (default) | `--config=kineto` |
+| **TBB (Parallel backend)** | `-DPARALLEL_BACKEND=tbb` | `--config=tbb` (also sets `memory_enable_tbb=true`) |
+| **OpenMP (Parallel backend)** | `-DPARALLEL_BACKEND=openmp` | `--config=openmp` |
+| **CUDA** | `-DMEMORY_GPU_BACKEND=cuda` (+ `VECTORIZATION_GPU_BACKEND=cuda`) | `--config=cuda` |
+| **HIP** | `-DMEMORY_GPU_BACKEND=hip` (+ `VECTORIZATION_GPU_BACKEND=hip`) | `--config=hip` |
+| **Google Test** | `-D<LIB>_ENABLE_GTEST=ON` (default ON; per-library) | `--config=gtest` |
+| **Benchmark** | `-D<LIB>_ENABLE_BENCHMARK=ON` (default ON; per-library) | `--config=benchmark` |
+| **LU Pivoting** | `-DCORE_LU_PIVOTING=ON` | `--config=lu_pivoting` |
+| **Sobol 1111** | `-DCORE_SOBOL_1111=ON` | `--config=sobol_1111` |
+| **SLEEF** | `-DVECTORIZATION_ENABLE_SLEEF=ON` | `--config=sleef` (⚠️ see [Known Gaps](#known-gaps-and-cmakebazel-alignment-plan) — not yet hermetic) |
 
 ### Logging Backend Mapping
 
 | Backend | CMake Option | Bazel Equivalent |
 |---------|--------------|------------------|
-| **Loguru** | `-DLOGGING_BACKEND=LOGURU` | `--config=logging_loguru` |
+| **Loguru** (default) | `-DLOGGING_BACKEND=LOGURU` | `--config=logging_loguru` |
 | **glog** | `-DLOGGING_BACKEND=GLOG` | `--config=logging_glog` |
+| **spdlog** | `-DLOGGING_BACKEND=SPDLOG` | `--config=logging_spdlog` |
 | **Native** | `-DLOGGING_BACKEND=NATIVE` | `--config=logging_native` |
 
 ### Profiler Backend Mapping
 
 | Backend | CMake Option | Bazel Equivalent |
 |---------|--------------|------------------|
-| **Native** | `-DQUARISMA_PROFILER_BACKEND=NATIVE` | `--config=profiler_native` |
-| **Kineto** | `-DQUARISMA_PROFILER_BACKEND=KINETO` | `--config=kineto` |
-| **ITT** | `-DQUARISMA_PROFILER_BACKEND=ITT` | `--config=profiler_itt` |
+| **Kineto** (default) | `-DPROFILER_BACKEND=KINETO` | `--config=kineto` |
+| **Native** | `-DPROFILER_BACKEND=NATIVE` | `--config=native_profiler` |
+| **ITT** | `-DPROFILER_BACKEND=ITT` | `--config=itt` |
 
 ### Sanitizer Mapping
 
-| Sanitizer | CMake Option | Bazel Equivalent |
+CMake's sanitizer options are also per-library (e.g. `PARALLEL_ENABLE_SANITIZER` / `PARALLEL_SANITIZER_TYPE`, `MEMORY_ENABLE_SANITIZER` / `MEMORY_SANITIZER_TYPE`); Bazel applies sanitizer flags globally via `--config`.
+
+| Sanitizer | CMake Option (example: Parallel) | Bazel Equivalent |
 |-----------|--------------|------------------|
-| **AddressSanitizer** | `-DQUARISMA_ENABLE_SANITIZER=ON -DQUARISMA_SANITIZER_TYPE=address` | `--config=asan` |
-| **ThreadSanitizer** | `-DQUARISMA_ENABLE_SANITIZER=ON -DQUARISMA_SANITIZER_TYPE=thread` | `--config=tsan` |
-| **UBSanitizer** | `-DQUARISMA_ENABLE_SANITIZER=ON -DQUARISMA_SANITIZER_TYPE=undefined` | `--config=ubsan` |
-| **MemorySanitizer** | `-DQUARISMA_ENABLE_SANITIZER=ON -DQUARISMA_SANITIZER_TYPE=memory` | `--config=msan` |
+| **AddressSanitizer** | `-DPARALLEL_ENABLE_SANITIZER=ON -DPARALLEL_SANITIZER_TYPE=address` | `--config=asan` |
+| **ThreadSanitizer** | `-DPARALLEL_ENABLE_SANITIZER=ON -DPARALLEL_SANITIZER_TYPE=thread` | `--config=tsan` |
+| **UBSanitizer** | `-DPARALLEL_ENABLE_SANITIZER=ON -DPARALLEL_SANITIZER_TYPE=undefined` | `--config=ubsan` |
+| **MemorySanitizer** | `-DPARALLEL_ENABLE_SANITIZER=ON -DPARALLEL_SANITIZER_TYPE=memory` | `--config=msan` |
+| **LeakSanitizer** | `-DPARALLEL_ENABLE_SANITIZER=ON -DPARALLEL_SANITIZER_TYPE=leak` | `--config=lsan` |
 
-### GPU Allocation Strategy Mapping
+### GPU Backend Mapping
 
-| Strategy | CMake Option | Bazel Equivalent |
-|----------|--------------|------------------|
-| **Sync** | `-DQUARISMA_GPU_ALLOC=SYNC` | `--config=gpu_alloc_sync` |
-| **Async** | `-DQUARISMA_GPU_ALLOC=ASYNC` | `--config=gpu_alloc_async` |
-| **Pool Async** | `-DQUARISMA_GPU_ALLOC=POOL_ASYNC` | `--config=gpu_alloc_pool_async` |
+There is no "GPU allocation strategy" (sync/async/pool_async) option in either build system today — that table previously here described flags that don't exist in the codebase and has been removed. The actual GPU control point is the GPU **backend** selector, shared by Memory and Vectorization:
+
+| Backend | CMake Option | Bazel Equivalent |
+|---------|--------------|------------------|
+| **None** (default) | `-DMEMORY_GPU_BACKEND=none -DVECTORIZATION_GPU_BACKEND=none` | (default; no `--config`) |
+| **CUDA** | `-DMEMORY_GPU_BACKEND=cuda -DVECTORIZATION_GPU_BACKEND=cuda` | `--config=cuda` |
+| **HIP** | `-DMEMORY_GPU_BACKEND=hip -DVECTORIZATION_GPU_BACKEND=hip` | `--config=hip` |
+| **Metal** | `-DMEMORY_GPU_BACKEND=metal -DVECTORIZATION_GPU_BACKEND=metal` | not exposed as a `--config` yet |
 
 ### Example Build Scenarios
 
@@ -715,9 +727,9 @@ Both build systems are fully supported and offer different advantages. This sect
 **CMake:**
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release \
-               -DQUARISMA_VECTORIZATION_TYPE=avx2 \
+               -DVECTORIZATION_CPU_BACKEND=avx2 \
                -DMEMORY_ENABLE_MIMALLOC=ON \
-               -DQUARISMA_ENABLE_MAGICENUM=ON
+               -DCORE_ENABLE_MAGICENUM=ON
 cmake --build build
 ```
 
@@ -735,8 +747,8 @@ bazel build --config=release \
 **CMake:**
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release \
-               -DQUARISMA_ENABLE_LTO=ON \
-               -DQUARISMA_VECTORIZATION_TYPE=avx2
+               -DPARALLEL_LTO_MODE=thin \
+               -DVECTORIZATION_CPU_BACKEND=avx2
 cmake --build build
 ```
 
@@ -750,8 +762,8 @@ bazel build --config=release --config=lto --config=avx2 //...
 **CMake:**
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Debug \
-               -DQUARISMA_ENABLE_SANITIZER=ON \
-               -DQUARISMA_SANITIZER_TYPE=address
+               -DPARALLEL_ENABLE_SANITIZER=ON \
+               -DPARALLEL_SANITIZER_TYPE=address
 cmake --build build
 ```
 
@@ -765,8 +777,9 @@ bazel build --config=debug --config=asan //...
 **CMake:**
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release \
-               -DMEMOY_ENABLE_CUDA=ON \
-               -DQUARISMA_VECTORIZATION_TYPE=avx2
+               -DMEMORY_GPU_BACKEND=cuda \
+               -DVECTORIZATION_GPU_BACKEND=cuda \
+               -DVECTORIZATION_CPU_BACKEND=avx2
 cmake --build build
 ```
 
@@ -774,6 +787,87 @@ cmake --build build
 ```bash
 bazel build --config=release --config=cuda --config=avx2 //...
 ```
+
+### Dependency Vendoring Strategy
+
+CMake and Bazel take different approaches to third-party dependencies, and this is a real (not just cosmetic) source of drift risk:
+
+| | CMake | Bazel |
+|---|---|---|
+| **Source of truth** | Every dependency is a pinned git submodule under `ThirdParty/`, built from source in-tree via `add_subdirectory`/`FetchContent`. | Mixed: some deps are the *same* vendored `ThirdParty/` submodules wired in via `local_repository`/`new_local_repository` (fmt, glog, loguru, spdlog, kineto, svml, **googletest**); others are fetched independently over the network via `http_archive` (magic_enum, mimalloc, benchmark, tbb) or resolved from the Bazel Central Registry via `bazel_dep` in `MODULE.bazel` (rules_cc, abseil, gflags, re2, and — separately — a `googletest` bzlmod module that, until this session, wasn't even the one actually used by the project's own targets). |
+| **Version drift risk** | None — one pinned commit per submodule, shared by every build. | Real. A network-fetched `http_archive` pin can silently diverge from the vendored submodule's pinned commit for the *same* library (this is exactly what happened with googletest: Bazel fetched v1.14.0 over the network while `ThirdParty/googletest` was pinned to a different commit that CMake actually built — see the Known Gaps section below for the fix applied). |
+| **Offline builds** | Fully offline-capable (nothing is fetched). | Partially — vendored-submodule deps work offline; `http_archive`/`bazel_dep`-resolved deps require network access (or a pre-warmed repository cache) on first fetch. |
+
+---
+
+## Known Gaps and CMake/Bazel Alignment Plan
+
+The Bazel setup is functionally younger than the CMake one and had accumulated real drift — some caught only by reading the Starlark, some only by actually running `bazel build`/`bazel test` against every backend. This section is a living record: what's been fixed, what's still open, and the plan for closing the rest.
+
+### Fixed — session 1 (Parallel/Vectorization spot fixes)
+
+| # | Bug | Symptom | Fix |
+|---|-----|---------|-----|
+| 1 | `Library/Parallel/BUILD.bazel` nested a `selects.with_or()` inside another `selects.with_or()`'s default branch (`srcs`/`hdrs` of `parallel_lib`). | `bazel build //Library/Parallel/...` failed at analysis time for **every** backend, not just TBB/OpenMP — `expected value of type 'list(label)' ... but got select(...)`. Bazel does not allow a `select()` as a branch value of another `select()`. | Flattened to one `selects.with_or()` level with three parallel OR-groups (tbb / openmp / default). |
+| 2 | `Library/Parallel/tools/parallel_tools.h` defined the OpenMP threadprivate global without `static` — an ODR violation waiting to happen. | `bazel test --config=openmp //Library/Parallel/...` failed the *link* step with a real `duplicate symbol` error. | Added `static`. (A separate, lower-probability cross-TU scoping concern in the same mechanism was flagged during code review — see "Still open" below.) |
+| 3 | Root `BUILD.bazel` hardcoded `cc_import` targets pointing at `build_ninja/ThirdParty/...` — CMake's output directory, not anything Bazel produces. | `bazel build --config=sleef //Library/Vectorization/...` failed with a confusing `missing input file` error unless a prior CMake build happened to exist. | Replaced with `bazel/sleef_configure.bzl` (fail-fast repository rule). **Still not hermetic** — see "Still open". |
+| 4 | `WORKSPACE.bazel` fetched googletest via `http_archive` while `MODULE.bazel` separately declared a *different* pinned version via `bazel_dep` — neither matched the `ThirdParty/googletest` submodule commit CMake actually builds. | Silent correctness/reproducibility gap, not a build failure. | `com_google_googletest` now points at the vendored submodule via `local_repository`. |
+| 5 | `.bazelrc` comment mislabeled `--experimental_repository_cache_hardlinks` as a fetch-timeout flag. | Cosmetic. | Corrected the comment. |
+
+### Fixed — session 2 (full per-library CMake/Bazel audit + fixes)
+
+A complete audit compared every `Library/*/CMakeLists.txt` against its `BUILD.bazel`/`bazel/*.bzl` counterpart for all 6 libraries (Core, Logging, Memory, Parallel, Profiler, Vectorization). ~25 mismatches were found and fixed, each verified with a real `bazel build`/`bazel test` run on macOS arm64 (not just static reading):
+
+**Source-level bug (not a Bazel/CMake gap):** `Library/Memory/allocator.h` called `gpu::caching_allocator_for_device(...)` unguarded — the `gpu` namespace only exists when a GPU backend is compiled in, so any build with GPU backend `none` (the default in **both** build systems) failed to compile. Confirmed independently with a standalone `clang++ -fsyntax-only` repro. Fixed by guarding the call sites with `#if MEMORY_HAS_CUDA || MEMORY_HAS_HIP || MEMORY_HAS_METAL`.
+
+**Bazel-only fixes, one per affected define/glob/dep:**
+- Core: `CORE_SSE/AVX/AVX2/AVX512` and `CORE_HAS_EXCEPTION_PTR` were never defined by Bazel at all (reused the existing `vectorization_type_*` config_settings; `EXCEPTION_PTR` fixed to `1`, a documented simplification of CMake's compiler probe).
+- Logging: `logger.cpp` was dropped from the NATIVE backend build (CMake compiles it for every backend); `LOGGING_BUILDING_DLL` was a public `defines` entry instead of `local_defines` (Windows dllexport/dllimport bug); `-ldbghelp`/`dbghelp.lib` added on Windows; test target's hardcoded `@loguru` dep replaced with the same backend-`select()` the library uses.
+- Parallel: `PARALLEL_BUILDING_DLL` moved to `local_defines`; redundant `-lpthread` removed; per-backend test-file excludes added; the single hardcoded benchmark target replaced with a glob-driven per-file loop.
+- Profiler: ITT backend was missing `bespoke/kineto/kineto_shim.{h,cpp}` (needed unconditionally by `bespoke/common/collection.*`); stray `PROFILER_HAS_CUDA/HIP` test-only defines removed (CMake never defines them anywhere); dead `includes=["kineto"]` path removed.
+- Vectorization: `benchmark_simdunary` pointed at a nonexistent file (fixed to 4 correctly-named per-file targets, matching CMake's `benchmark_<suffix>` naming); the `vectorization_type=no` hdrs glob excluded all of `backend/**` instead of just the ISA-specific subdirs, dropping the shared `backend/simd.h` dispatcher.
+- Shared: `quarisma_copts()` was missing `/WX` (MSVC) and `-include cstdlib` (non-MSVC) that every library's CMakeLists.txt applies (Memory opts out of the latter, matching its own Clang-specific CMake exception).
+
+**New toolchain wiring (structural gaps — CMake features with previously no Bazel path at all), all verified with real builds/tests on this machine:**
+- **OpenMP** (`bazel/openmp_configure.bzl`, new): host compiler probe (plain `-fopenmp`, or Homebrew `libomp` on macOS), wired into `parallel_copts()`/`parallel_linkopts()`. Verified: `bazel test --define parallel_backend=openmp //Library/Parallel/...` links and runs against a real `libomp.dylib`.
+- **ITT** (`ThirdParty/ittapi.BUILD`, new): the vendored `ThirdParty/ittapi` submodule had no Bazel build file; added one and wired `@ittapi//:ittnotify` into Profiler's `enable_itt` deps. Verified: `TestITTWrapper` (17 tests) passes.
+- **Metal — Memory** (`bazel/memory.bzl`, `Library/Memory/BUILD.bazel`): `.mm` sources compiled via the genrule-rename-to-`.cc` + `-x objective-c++` workaround (`cc_library` has no native `.mm` support without `rules_apple`), isolated into a small dedicated `memory_metal_objcxx` library so the ObjC++ compile mode doesn't leak onto plain `.cpp` sources in the same target. `-framework Metal -framework Foundation` linked. Verified: 88 Memory tests pass, including real `MetalBufferAllocator`/`MetalCachingAllocator` tests against actual Metal hardware.
+- **Metal — Vectorization** (own separate `VECTORIZATION_GPU_BACKEND`, independent of Memory's `MEMORY_GPU_BACKEND`): same `.mm`-rename technique for `backend/gpu/metal/metal_dispatch.mm` (isolated in `vectorization_metal_objcxx`), plus a `genrule` that embeds `kernels.metal` into `metal_kernels_source.h` the same way CMake's `configure_file()` does (byte-for-byte `@METAL_KERNEL_SOURCE@` substitution). **Caught a real bug in the process**: the test-only Objective-C++ shim `Testing/Cxx/metal_device_probe.mm` (providing `xsigma_metal_device_count()` for `TestTensorGpu.cpp`) was never wired into the Bazel test target at all — because this project's macOS linkopts use `-undefined dynamic_lookup`, the missing symbol didn't fail at link time, it resolved to a null stub that **crashed with SIGSEGV at runtime** the first time `TensorGpu.FillFloat` called it. Fixed by wiring the shim in (isolated in `vectorization_test_metal_objcxx`). Verified: `TensorGpu.{FillFloat,BinaryOpsFloat,UnaryMathFloat,CompoundFloat}` genuinely pass against real Metal hardware; the `*Double` variants correctly self-skip (Metal has no fp64).
+- **Accelerate** (`bazel/vectorization.bzl`): `VECTORIZATION_HAS_ACCELERATE` (not `_ENABLE_`; CMake's `compile_definition()` helper does an ENABLE→HAS name substitution) plus `-framework Accelerate` on macOS. Verified: framework genuinely linked (`otool -L`), 42 tests pass.
+- **Packet size** (`bazel/BUILD.bazel`, `bazel/vectorization.bzl`): a `bazel_skylib` `string_flag` (`--//bazel:vectorization_packet_size=N`, 1-16, default 1) replacing the previously-nonexistent Bazel equivalent of `VECTORIZATION_PACKET_SIZE`. Verified via `bazel aquery` that the define lands with the requested value, and a full test run at `packet_size=4`.
+- **Vectorization's own CUDA/HIP backend** (separate from Memory's): the library target itself needs no device-language compilation (confirmed by checking CMake's own `Testing/Cxx/CMakeLists.txt` — device-tagging via `set_source_files_properties(... LANGUAGE CUDA/HIP)` is confined entirely to test/benchmark files, never the main library), so `VECTORIZATION_HAS_CUDA/HIP/METAL` defines plus linking against the same `@local_config_cuda`/`@local_config_hip` repos Memory uses was enough. `TestTensorGpu.cpp` (which *does* need nvcc/hipcc to instantiate GPU expression-template kernels) is excluded from the Bazel test glob under CUDA/HIP, matching CMake's own conditional inclusion.
+- **HIP runtime linking — Memory** (`bazel/hip_configure.bzl`, new, modeled on the pre-existing `cuda_configure.bzl`): `MEMORY_HAS_HIP`/`VECTORIZATION_HAS_HIP` were being defined but nothing was ever linked. **Not verifiable here** (no ROCm toolkit on this machine) beyond confirming the fail-fast path gives a clear, actionable error instead of a confusing one.
+- **NUMA** (`Library/Memory/BUILD.bazel`): `-lnuma` linkopt added under `enable_numa`, matching CMake's plain `find_package(Numa)`. **Not verifiable here** (Linux-only; confirmed the expected failure mode is `numa.h: file not found`, not a Bazel/Starlark error).
+- **MKL — Vectorization** (`bazel/vectorization.bzl`): `VECTORIZATION_HAS_MKL` defined correctly (gated on x86_64, matching CMake's own processor guard — confirmed staying `0` on this arm64 host even with the flag explicitly passed). No `@mkl` external repo wired (matches Memory's own pre-existing, already-commented-out `@mkl` dependency — there's no real MKL install anywhere to verify a hermetic Bazel dep against).
+
+**A previously-undiscovered, unrelated Bazel bug found during verification (not in the original per-library audit):** `bazel/vectorization.bzl`'s SIMD-tier `select()` had `//bazel:cpu_aarch64` as a bare peer key alongside the six explicit `vectorization_type_*` keys. On any aarch64 host (this machine), passing an explicit `--define vectorization_type=X` for any tier except `neon` (which only avoided the bug by the coincidence of producing an identical output) hit an "Illegal ambiguous match" analysis error — i.e., `--config=sse/avx/avx2/avx512/sve` and `--define vectorization_type=no` were all broken on ARM. Root cause: Bazel's `select()` ambiguity rule only auto-resolves multiple matches when one is a strict superset ("more specialized") of the others, or all matches are identical values; a bare `constraint_values`-only setting and a bare `define_values`-only setting are on different axes and never satisfy either condition. Fixed by adding `vectorization_type_X_aarch64` combined config_settings (`constraint_values` + `define_values` together) that *are* supersets of `cpu_aarch64`, and pairing each bare tier key with its `_aarch64` counterpart via `selects.with_or()`. Verified: all 7 tiers plus the unset default now build cleanly on this arm64 host.
+
+**Code-review findings addressed:** an independent multi-angle review of the full diff (4 parallel passes: reuse/simplification, altitude/conventions, removed-behavior tracing, line-by-line diff scan) flagged the `-x objective-c++ -fobjc-arc` copts being applied target-wide (not per-file, unlike CMake's `set_source_files_properties`) as the most severe finding — a real behavior divergence, not just style, since any future plain `.cpp` file using `id`/`BOOL`/`Class`/`SEL` as an ordinary identifier would silently fail to compile only under Bazel. Fixed for both Memory and Vectorization by isolating the renamed `.mm`→`.cc` files into small dedicated `cc_library` targets with the ObjC++ copts scoped to just them. Two other review findings (a claimed ambiguity in `vectorization_svml_deps()`/`vectorization_svml_hdrs_extra()`, and general reuse/duplication across the new `*_configure.bzl` files) were checked and are respectively a false positive (Bazel's same-value escape hatch already covers it — verified empirically) and a real but low-severity style item (not fixed this session; noted below).
+
+### Still open
+
+1. **`--config=sleef` is not hermetic.** SLEEF's own CMake build does architecture-specific codegen; reimplementing that natively in Starlark is a substantial undertaking. The recommended path is `rules_foreign_cc`'s `cmake()` rule, pointed at the vendored `ThirdParty/sleef` submodule with the same cache flags CMake's `Library/Vectorization/CMakeLists.txt` already passes.
+2. **CUDA/HIP device-language (`.cu`/`.hip`) compilation has no Bazel support anywhere in this project.** This project's only existing CUDA precedent (`cuda_configure.bzl`) is host-side runtime linking (`cudart`/`cupti` prebuilt libs); nothing invokes `nvcc`/`hipcc`. This blocks, and is deliberately left unaddressed for: `Library/Core/Testing/Cxx/CudaEnzymeADTest.cu` (Core's Enzyme+CUDA test), `Library/Vectorization/Testing/Cxx/TestTensorGpu.cpp` and `BenchmarkTensorGpu.cpp` under `--define vectorization_enable_cuda/hip=true` (both excluded from Bazel's glob under those configs), and `Testing/Cxx/Test*.cu` files generally. Closing this needs `rules_cuda` (or a bespoke nvcc/hipcc invocation rule) — a `rules_foreign_cc`-scale addition, and *completely* unverifiable in this development environment (no CUDA/ROCm toolkit here at all, not even the fail-fast path, since toolchain resolution itself needs the toolkit present).
+3. **Memory's `memkind` support is a pre-existing CMake-side gap, not Bazel drift.** `MEMORY_ENABLE_MEMKIND` defines a macro but no `find_package`/`target_link_libraries` call for memkind exists anywhere in CMake either (unlike `numa.cmake`/`hip.cmake`). Nothing to align Bazel to; worth its own ticket on the CMake side.
+4. **Logging's Clang-on-Windows `-O1` SPDLOG ICE workaround** (`CMakeLists.txt:306-316`) has no Bazel equivalent — no Windows machine available to verify, no existing compiler-id `config_setting` to key off, and the failure mode if hit is a loud compiler crash at build time, not a silent correctness bug.
+5. **A latent ODR-adjacent scoping issue in `Library/Parallel/tools/parallel_tools.h`'s OpenMP threadprivate mechanism**, flagged during code review: the "already initialized" flag is a single namespace-scope variable shared by *every* `Functor` type dispatched from the same TU, unlike the TBB backend (a member of a per-functor struct) or the Native backend (a `thread_local` local, one copy per template instantiation). A shared, non-test-local functor type driven through OpenMP `parallel_for` from two different `.cpp` files could see toolchain-dependent COMDAT-selection behavior. Pre-existing (not introduced by the Bazel-alignment work), low-probability, not fixed this session.
+6. **Minor duplication across the new `bazel/*_configure.bzl` repository rules** (`hip_configure.bzl`, `openmp_configure.bzl`), flagged during code review: `_is_windows()` and the "fail with an actionable message" `genrule`+`cc_library` template are now each copy-pasted 3-4 times across `svml_configure.bzl`/`cuda_configure.bzl`/`sleef_configure.bzl`/`hip_configure.bzl`/`openmp_configure.bzl`. A shared `bazel/repo_rule_utils.bzl` would remove the duplication; not done this session (style/maintenance, not correctness).
+7. **This document had drifted significantly** before the first pass (stale `QUARISMA_*`-prefixed CMake option names, a fictional "GPU Allocation Strategy" table, a wrong `.bazelversion` reference, a `File Structure` tree describing a nonexistent `third_party/` directory) — the comparison tables and file tree were corrected then, but sections outside the comparison (Getting Started, Sanitizers, Coverage, etc.) were never audited and may have similar drift.
+8. **The bzlmod migration is incomplete beyond googletest.** `MODULE.bazel` declares `bazel_dep`s for a handful of libraries alongside `WORKSPACE.bazel`'s legacy declarations for everything vendored under `ThirdParty/`. This hybrid (`build --enable_workspace`) is Bazel's documented transitional pattern, not a bug, but Bazel 9 removes WORKSPACE support entirely, so it's worth a deliberate decision on how far the migration should go.
+
+### Alignment plan
+
+**Phase 1 (done) + Phase 1.5 (done, this session):** the full per-library audit and fix pass described above — every CMake↔Bazel mismatch found across Core/Logging/Memory/Parallel/Profiler/Vectorization, all 7 SIMD tiers on ARM, and 6 new toolchain integrations (OpenMP, ITT, Metal ×2, Accelerate, packet size), each verified with a real build/test run on this machine where possible.
+
+**Phase 2 — Hermetic SLEEF (scoped, not started):** introduce `rules_foreign_cc`, wrap `ThirdParty/sleef`'s CMakeLists.txt with a `cmake()` rule mirroring the CMake cache flags already in `Library/Vectorization/CMakeLists.txt`, remove `bazel/sleef_configure.bzl`'s CMake-build-directory probing once the hermetic path is verified on Linux/macOS/Windows.
+
+**Phase 2.5 — CUDA/HIP device-language compilation (scoped, not started):** the single largest remaining gap. Needs `rules_cuda` or equivalent, a real CUDA/ROCm toolkit to develop and verify against (unavailable in this environment), and covers `CudaEnzymeADTest.cu`, `TestTensorGpu.cpp`/`BenchmarkTensorGpu.cpp` under CUDA/HIP, and `Test*.cu` generally.
+
+**Phase 3 — Full documentation audit:** extend the correction pass done in Phase 1 (comparison tables, file structure) to the rest of this guide (Getting Started, Sanitizers, Coverage, Third-Party Dependencies sections) and to `Docs/BAZEL_FILES_SUMMARY.txt`, which has never been reviewed.
+
+**Phase 4 — Decide the bzlmod migration's end state:** either complete it (migrate every `ThirdParty/`-vendored dependency + the remaining `http_archive` fetches to `bazel_dep`/`local_path_override` and drop `WORKSPACE.bazel` + `--enable_workspace` once Bazel 9 removes WORKSPACE support entirely) or explicitly document the hybrid as the intended long-term state.
+
+**Ongoing — CI parity:** none of the bugs fixed across either session were CI-gated; all were found by manually invoking `bazel build`/`bazel test` per backend/config. Adding a CI matrix that runs `bazel test //...` across `--config=tbb`/`--config=openmp`/`--define vectorization_type=`{every tier}/default (mirroring whatever CMake matrix already exists) would have caught most of these classes of regression automatically.
 
 ---
 
@@ -785,26 +879,33 @@ Understanding the Bazel build structure helps you navigate and modify the build 
 
 ```
 Quarisma/
-├── WORKSPACE.bazel              # Workspace definition and external dependencies
+├── WORKSPACE.bazel              # Legacy-WORKSPACE deps (vendored ThirdParty/ + a few http_archive)
+├── MODULE.bazel                 # Bzlmod deps (rules_cc, googletest, abseil, gflags, re2, ...)
+├── MODULE.bazel.lock            # Bzlmod resolution lockfile
 ├── BUILD.bazel                  # Root build file
 ├── .bazelrc                     # Build configuration flags
-├── .bazelversion                # Specifies Bazel version (7.0.0)
+├── .bazelignore                 # Paths excluded from Bazel's package scan
+├── .bazelversion                # Pins the Bazel version (8.4.2)
 │
 ├── bazel/                       # Bazel helper files
-│   ├── BUILD.bazel             # Config settings
-│   └── quarisma.bzl              # Helper functions (copts, defines, linkopts)
+│   ├── BUILD.bazel              # config_setting definitions (mirror CMake --define keys)
+│   ├── quarisma.bzl             # Shared helper functions (copts, defines, linkopts)
+│   ├── core.bzl / memory.bzl / parallel.bzl / logging.bzl / profiler.bzl / vectorization.bzl
+│   │                             # Per-library copts/defines, mirroring each Library/*/CMakeLists.txt
+│   ├── vectorization_settings.bzl  # SIMD-tier × OS config_setting generation
+│   ├── cuda_configure.bzl       # Repository rule: resolves CUDA install path (mirrors FindCUDA)
+│   ├── svml_configure.bzl       # Repository rule: probes native SVML support per SIMD tier
+│   └── sleef_configure.bzl      # Repository rule: locates CMake-built SLEEF artifacts (see Known Gaps)
 │
-├── third_party/                 # Third-party BUILD files
-│   ├── fmt.BUILD               # fmt library
-│   ├── cpuinfo.BUILD           # cpuinfo library
-│   ├── magic_enum.BUILD        # magic_enum library
-│   └── mimalloc.BUILD          # mimalloc library
+├── ThirdParty/                  # Vendored git submodules — build files for those Bazel uses
+│   ├── fmt.BUILD, glog is used directly (ships its own BUILD.bazel), loguru.BUILD, spdlog.BUILD,
+│   │   kineto.BUILD, svml.BUILD, tbb.BUILD, mimalloc.BUILD, magic_enum.BUILD  # hand-written BUILD files
+│   └── googletest/BUILD.bazel   # ships its own official Bazel build (used via local_repository)
 │
-├── Library/
-│   └── Core/
-│       └── BUILD.bazel         # Core library build
-│
-└── ThirdParty/                  # (Existing CMake third-party deps)
+└── Library/
+    ├── Core/BUILD.bazel, Logging/BUILD.bazel, Memory/BUILD.bazel,
+    │   Parallel/BUILD.bazel, Profiler/BUILD.bazel, Vectorization/BUILD.bazel
+    └── */Testing/**/BUILD.bazel  # Test + benchmark targets per library
 ```
 
 ### Key Concepts

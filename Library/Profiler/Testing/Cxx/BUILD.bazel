@@ -90,14 +90,7 @@ cc_test(
         "USE_GTEST",
         "_VARIADIC_MAX=10",
         "PROFILER_HAS_GTEST=1",
-        "PROFILER_HAS_GTEST=1",
-    ] + select({
-        "//bazel:enable_cuda": ["PROFILER_HAS_CUDA=1"],
-        "//conditions:default": ["PROFILER_HAS_CUDA=0"],
-    }) + select({
-        "//bazel:enable_hip": ["PROFILER_HAS_HIP=1"],
-        "//conditions:default": ["PROFILER_HAS_HIP=0"],
-    }),
+    ],
     includes = ["."],
     linkopts = profiler_linkopts(),
     deps = [

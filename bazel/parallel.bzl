@@ -1,11 +1,22 @@
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@parallel_openmp//:config.bzl", "OPENMP_COPTS", "OPENMP_LINKOPTS")
 load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
 
 # C++ standard for Parallel — mirrors CMake PARALLEL_CXX_STANDARD (default: 20)
 PARALLEL_CXX_STD = "c++20"
 
 def parallel_copts():
-    return quarisma_copts(cxx_std = PARALLEL_CXX_STD)
+    # OPENMP_COPTS (from //bazel:openmp_configure.bzl's host probe) only applied when the
+    # openmp backend is actually selected -- an empty list otherwise, or when OpenMP wasn't
+    # found (in which case //Library/Parallel:BUILD.bazel's :openmp_check dep fails the
+    # build with an actionable message instead of silently compiling without OpenMP).
+    return quarisma_copts(cxx_std = PARALLEL_CXX_STD) + selects.with_or({
+        (
+            "//bazel:parallel_backend_openmp",
+            "//bazel:enable_openmp",
+        ): OPENMP_COPTS,
+        "//conditions:default": [],
+    })
 
 def parallel_defines():
     """Returns compile definitions for Library/Parallel.
@@ -50,4 +61,10 @@ def parallel_defines():
     return defines
 
 def parallel_linkopts():
-    return quarisma_linkopts()
+    return quarisma_linkopts() + selects.with_or({
+        (
+            "//bazel:parallel_backend_openmp",
+            "//bazel:enable_openmp",
+        ): OPENMP_LINKOPTS,
+        "//conditions:default": [],
+    })

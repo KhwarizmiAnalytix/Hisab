@@ -4,7 +4,10 @@ load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_lin
 MEMORY_CXX_STD = "c++20"
 
 def memory_copts():
-    return quarisma_copts(cxx_std = MEMORY_CXX_STD)
+    # cstdlib_include=False: CMake skips -include cstdlib for Memory specifically under
+    # Clang (compiler-instability workaround, see Library/Memory/CMakeLists.txt); see
+    # quarisma_copts()'s docstring for why Bazel omits it unconditionally here instead.
+    return quarisma_copts(cxx_std = MEMORY_CXX_STD, cstdlib_include = False)
 
 def memory_defines():
     """Returns compile definitions for Library/Memory.
@@ -23,6 +26,12 @@ def memory_defines():
     defines += select({
         "//bazel:enable_hip": ["MEMORY_HAS_HIP=1"],
         "//conditions:default": ["MEMORY_HAS_HIP=0"],
+    })
+
+    # Metal — MEMORY_HAS_METAL (Apple only)
+    defines += select({
+        "//bazel:enable_metal": ["MEMORY_HAS_METAL=1"],
+        "//conditions:default": ["MEMORY_HAS_METAL=0"],
     })
 
     # TBB scalable allocator — MEMORY_HAS_TBB

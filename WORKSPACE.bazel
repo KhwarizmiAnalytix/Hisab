@@ -30,6 +30,18 @@ load("//bazel:svml_configure.bzl", "svml_configure")
 # Host compile probe — mirrors Vectorization Cmake/utils.cmake native SVML check (per SIMD tier).
 svml_configure(name = "vectorization_svml_autodetect")
 
+load("//bazel:sleef_configure.bzl", "sleef_configure")
+
+# Locates CMake-built SLEEF artifacts for --config=sleef, or generates a
+# target that fails with an actionable message if none are found. See
+# bazel/sleef_configure.bzl for why this isn't a hermetic from-source build.
+sleef_configure(name = "sleef_cmake")
+
+load("//bazel:openmp_configure.bzl", "openmp_configure")
+
+# Host compile probe — mirrors Library/Parallel/Cmake/openmp.cmake's find_package(OpenMP).
+openmp_configure(name = "parallel_openmp")
+
 # =============================================================================
 # Third-Party Dependencies
 # =============================================================================
@@ -77,25 +89,17 @@ http_archive(
 # -----------------------------------------------------------------------------
 # Google Test - Unit testing framework
 # -----------------------------------------------------------------------------
-http_archive(
+# Use the vendored ThirdParty/googletest submodule (ships its own BUILD.bazel
+# with :gtest / :gtest_main targets) instead of fetching a separately pinned
+# version over the network. This is the same source CMake builds from
+# (ThirdParty/googletest via add_subdirectory), so both build systems compile
+# the exact same googletest commit -- no more version drift between them.
+# glog's own Bazel build references @googletest, which bzlmod already
+# provides via the `googletest` bazel_dep in MODULE.bazel; no WORKSPACE alias
+# is needed for that name.
+local_repository(
     name = "com_google_googletest",
-    sha256 = "8ad598c73ad796e0d8280b082cebd82a630d73e73cd3c70057938a6501bba5d7",
-    strip_prefix = "googletest-1.14.0",
-    urls = [
-        "https://github.com/google/googletest/archive/refs/tags/v1.14.0.tar.gz",
-    ],
-)
-
-# Alias for glog compatibility
-load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
-maybe(
-    http_archive,
-    name = "googletest",
-    sha256 = "8ad598c73ad796e0d8280b082cebd82a630d73e73cd3c70057938a6501bba5d7",
-    strip_prefix = "googletest-1.14.0",
-    urls = [
-        "https://github.com/google/googletest/archive/refs/tags/v1.14.0.tar.gz",
-    ],
+    path = "ThirdParty/googletest",
 )
 
 # -----------------------------------------------------------------------------
@@ -152,6 +156,18 @@ new_local_repository(
 )
 
 # -----------------------------------------------------------------------------
+# Intel ITT API (ittnotify) — VTune instrumentation, used by Profiler's ITT backend
+# -----------------------------------------------------------------------------
+# Note: ittapi is a git submodule in ThirdParty/ittapi (v3.27.0)
+# We use new_local_repository to provide our own BUILD file without modifying
+# the third-party submodule (as per .augment/rules/ThirdParty.md)
+new_local_repository(
+    name = "ittapi",
+    path = "ThirdParty/ittapi",
+    build_file = "//ThirdParty:ittapi.BUILD",
+)
+
+# -----------------------------------------------------------------------------
 # Intel SVML — Short Vector Math Library (optional, vendored binaries)
 # Link when autodetect says compiler needs it (see //bazel:svml_configure.bzl) or when
 # --define=vectorization_enable_svml=true; opt out with vectorization_enable_svml=false.
@@ -175,6 +191,14 @@ new_local_repository(
 load("//bazel:cuda_configure.bzl", "cuda_configure")
 
 cuda_configure(name = "local_config_cuda")
+
+# -----------------------------------------------------------------------------
+# HIP/ROCm Support (optional, Unix-only)
+# -----------------------------------------------------------------------------
+# Resolves ROCm toolkit from ROCM_PATH / HIP_PATH, or the default /opt/rocm install path.
+load("//bazel:hip_configure.bzl", "hip_configure")
+
+hip_configure(name = "local_config_hip")
 
 # -----------------------------------------------------------------------------
 # Intel MKL Support (optional)
