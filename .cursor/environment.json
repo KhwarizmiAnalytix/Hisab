@@ -1,0 +1,4 @@
+{
+  "name": "XSigma",
+  "install": "bash .cursor/install.sh"
+}
