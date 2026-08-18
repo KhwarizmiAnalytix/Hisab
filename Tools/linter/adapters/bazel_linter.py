@@ -9,12 +9,10 @@ https://github.com/community/community/discussions/46034.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
-import shlex
-import subprocess
 import sys
-import xml.etree.ElementTree as ET
 from enum import Enum
 from typing import NamedTuple
 from urllib.parse import urlparse
@@ -59,40 +57,63 @@ def is_required_checksum(urls: list[str | None]) -> bool:
     return True
 
 
+def _string_list(node: ast.expr) -> list[str | None]:
+    if not isinstance(node, (ast.List, ast.Tuple)):
+        return []
+    values: list[str | None] = []
+    for elt in node.elts:
+        if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+            values.append(elt.value)
+        else:
+            values.append(None)
+    return values
+
+
 def get_disallowed_checksums(
-    binary: str,
+    filenames: list[str],
 ) -> set[str]:
     """
-    Return the set of disallowed checksums from all http_archive rules
+    Return the set of disallowed checksums from all http_archive rules found in
+    the given WORKSPACE/MODULE.bazel/*.bzl files.
+
+    This parses the files directly rather than shelling out to `bazel query
+    'kind(http_archive, //external:*)'`: that query targets the legacy
+    WORKSPACE-only `//external` pseudo-package, which Bazel no longer exposes
+    once a repo has MODULE.bazel (Bzlmod) -- it fails with "no such package
+    'external'" regardless of --enable_workspace. http_archive() calls are
+    plain Starlark function calls with literal keyword arguments, so an AST
+    parse is both simpler and unaffected by that migration.
     """
-    # Use bazel to get the list of external dependencies in XML format
-    proc = subprocess.run(
-        [binary, "query", "kind(http_archive, //external:*)", "--output=xml"],
-        capture_output=True,
-        check=True,
-        text=True,
-    )
+    disallowed_checksums: set[str] = set()
 
-    root = ET.fromstring(proc.stdout)
-
-    disallowed_checksums = set()
-    # Parse all the http_archive rules in the XML output
-    for rule in root.findall('.//rule[@class="http_archive"]'):
-        urls_node = rule.find('.//list[@name="urls"]')
-        if urls_node is None:
-            continue
-        urls = [n.get("value") for n in urls_node.findall(".//string")]
-
-        checksum_node = rule.find('.//string[@name="sha256"]')
-        if checksum_node is None:
-            continue
-        checksum = checksum_node.get("value")
-
-        if not checksum:
+    for filename in filenames:
+        try:
+            with open(filename, encoding="utf-8") as f:
+                source = f.read()
+            tree = ast.parse(source, filename=filename)
+        except (OSError, SyntaxError, UnicodeDecodeError):
             continue
 
-        if not is_required_checksum(urls):
-            disallowed_checksums.add(checksum)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            if not isinstance(node.func, ast.Name) or node.func.id != "http_archive":
+                continue
+
+            urls: list[str | None] = []
+            checksum: str | None = None
+            for kw in node.keywords:
+                if kw.arg == "urls":
+                    urls = _string_list(kw.value)
+                elif kw.arg == "sha256" and isinstance(kw.value, ast.Constant):
+                    if isinstance(kw.value.value, str):
+                        checksum = kw.value.value
+
+            if not checksum:
+                continue
+
+            if not is_required_checksum(urls):
+                disallowed_checksums.add(checksum)
 
     return disallowed_checksums
 
@@ -141,11 +162,6 @@ def main() -> None:
         fromfile_prefix_chars="@",
     )
     parser.add_argument(
-        "--binary",
-        required=True,
-        help="bazel binary path",
-    )
-    parser.add_argument(
         "filenames",
         nargs="+",
         help="paths to lint",
@@ -153,26 +169,7 @@ def main() -> None:
     args = parser.parse_args()
 
     try:
-        disallowed_checksums = get_disallowed_checksums(args.binary)
-    except subprocess.CalledProcessError as err:
-        err_msg = LintMessage(
-            path=None,
-            line=None,
-            char=None,
-            code=__file__,
-            severity=LintSeverity.ADVICE,
-            name="command-failed",
-            original=None,
-            replacement=None,
-            description=(
-                f"COMMAND (exit code {err.returncode})\n"
-                f"{shlex.join(err.cmd)}\n\n"
-                f"STDERR\n{err.stderr or '(empty)'}\n\n"
-                f"STDOUT\n{err.stdout or '(empty)'}"
-            ),
-        )
-        print(json.dumps(err_msg._asdict()))
-        return
+        disallowed_checksums = get_disallowed_checksums(args.filenames)
     except Exception as e:
         err_msg = LintMessage(
             path=None,

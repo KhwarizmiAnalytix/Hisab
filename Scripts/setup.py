@@ -23,7 +23,9 @@ from helpers import (
 
 
 # Import coverage runner
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "Tools", "coverage", "src"))
+sys.path.insert(
+    0, os.path.join(os.path.dirname(__file__), "..", "Tools", "coverage", "src")
+)
 from coverage_tool import get_coverage
 
 
@@ -890,6 +892,7 @@ class QuarismaFlags:
                     "core",
                     "parallel",
                     "profiler",
+                    "models",
                 )
                 if proj_key not in valid_projects:
                     print_status(
@@ -1095,6 +1098,7 @@ class QuarismaFlags:
                     f"-DPROFILER_CXX_STANDARD={std_value}",
                     f"-DCORE_CXX_STANDARD={std_value}",
                     f"-DVECTORIZATION_CXX_STANDARD={std_value}",
+                    f"-DMODELS_CXX_STANDARD={std_value}",
                 ]
             )
 
@@ -1108,6 +1112,7 @@ class QuarismaFlags:
             "PARALLEL",
             "PROFILER",
             "VECTORIZATION",
+            "MODELS",
         ]
 
         def _fan_bool(key, cmake_suffix):
@@ -1862,6 +1867,7 @@ def parse_args(args):
                 "core",
                 "parallel",
                 "profiler",
+                "models",
             )
             if proj not in valid_projects:
                 print_status(

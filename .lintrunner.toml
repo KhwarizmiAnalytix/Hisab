@@ -291,20 +291,24 @@ exclude_patterns = [
     'Library/**/Testing/**/*.cpp',
     'Library/**/Testing/**/*.h',
 ]
-init_command = [
-    'python3',
-    'Tools/linter/adapters/s3_init.py',
-    '--config-json=Tools/linter/adapters/s3_init_config.json',
-    '--linter=clang-tidy',
-    '--dry-run={{DRYRUN}}',
-    '--output-dir=.lintbin',
-    '--output-name=clang-tidy',
-]
+# Resolves clang-tidy from PATH rather than a version pinned via s3_init --
+# clang-tidy's bundled resource-dir/builtin headers are tightly coupled to
+# libc++'s internal header layout, so a pinned binary a few major versions
+# behind the toolchain that actually built compile_commands.json breaks
+# every file with bogus "system header not found" errors. Install clang-tidy
+# from the same LLVM/Clang toolchain used to build this repo.
+#
+# No --build_dir here on purpose: setup.py names build directories with a
+# suffix per feature token (build_ninja_<tokens...>), so there is no single
+# stable directory to hardcode, and doing so (previously --build_dir=
+# ./build_ninja) silently pinned every run to whatever stale/narrow-scope
+# build happened to already be sitting in that exact directory name. Leaving
+# it unset makes clangtidy_linter.py auto-detect the most recently modified
+# build_ninja* directory with a compile_commands.json instead.
 command = [
     'python3',
     'Tools/linter/adapters/clangtidy_linter.py',
-    '--binary=.lintbin/clang-tidy',
-    '--build_dir=./build_ninja',
+    '--binary=clang-tidy',
     '--',
     '@{{PATHSFILE}}'
 ]
@@ -850,7 +854,11 @@ command = [
 code = 'BAZEL_LINTER'
 # The repo has no plain WORKSPACE file — it uses MODULE.bazel / WORKSPACE.bazel
 # plus *.bzl under Library/. http_archive (what this adapter checks) can appear
-# in any of them.
+# in any of them. The adapter parses these files directly (ast.parse) rather
+# than shelling out to `bazel query 'kind(http_archive, //external:*)'` — that
+# query targets the legacy WORKSPACE-only `//external` pseudo-package, which
+# Bazel stops exposing once MODULE.bazel/Bzlmod is in play, so no bazel binary
+# is needed here at all.
 include_patterns = ['**/WORKSPACE', '**/WORKSPACE.bazel', '**/MODULE.bazel', '**/*.bzl']
 exclude_patterns = [
     'ThirdParty/**',
@@ -858,18 +866,8 @@ exclude_patterns = [
 command = [
     'python3',
     'Tools/linter/adapters/bazel_linter.py',
-    '--binary=.lintbin/bazel',
     '--',
     '@{{PATHSFILE}}'
-]
-init_command = [
-    'python3',
-    'Tools/linter/adapters/s3_init.py',
-    '--config-json=Tools/linter/adapters/s3_init_config.json',
-    '--linter=bazel',
-    '--dry-run={{DRYRUN}}',
-    '--output-dir=.lintbin',
-    '--output-name=bazel',
 ]
 
 [[linter]]

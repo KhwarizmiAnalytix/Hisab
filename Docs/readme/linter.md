@@ -77,9 +77,9 @@ positional file paths at the end.
 | Lint code | Script | Purpose | Key options |
 | --- | --- | --- | --- |
 | ACTIONLINT | `adapters/actionlint_linter.py` | Wraps `actionlint` for GitHub workflow validation. | `--binary PATH` (required); `filenames...` |
-| BAZEL_LINTER | `adapters/bazel_linter.py` | Flags unstable `http_archive` checksums. | `--binary PATH` (required); `filenames...` |
+| BAZEL_LINTER | `adapters/bazel_linter.py` | Flags unstable `http_archive` checksums (parses WORKSPACE/MODULE.bazel/`*.bzl` directly; no bazel binary needed). | `filenames...` |
 | CLANGFORMAT | `adapters/clangformat_linter.py` | Runs `clang-format` and captures diffs. | `--binary PATH` (required); `--retries N`; `--timeout SEC`; `--verbose`; `filenames...` |
-| CLANGTIDY | `adapters/clangtidy_linter.py` | Executes `clang-tidy` using a build directory. | `--binary PATH` (required); `--build-dir DIR` (required); `--verbose`; `filenames...` |
+| CLANGTIDY | `adapters/clangtidy_linter.py` | Executes `clang-tidy` (resolved via PATH/`shutil.which`, matching the local toolchain) using a build directory. | `--binary NAME_OR_PATH` (required, e.g. `clang-tidy`); `--build-dir DIR` (required); `--verbose`; `filenames...` |
 | CMAKE | `adapters/cmake_linter.py` | Applies `cmakelint` with repo defaults. | `--config PATH` (required); `filenames...` |
 | CMAKEFORMAT | `adapters/cmake_format_linter.py` | Formats CMake files with `cmake-format`. | `--config PATH` (required); `--retries N`; `--timeout SEC`; `--verbose`; `filenames...` |
 | CMAKE_MINIMUM_REQUIRED | `adapters/cmake_minimum_required_linter.py` | Ensures CMake and dependency minimum versions match project policy. | `--verbose`; `filenames...` |

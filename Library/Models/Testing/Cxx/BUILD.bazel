@@ -1,0 +1,27 @@
+load("//bazel:models.bzl", "models_copts", "models_defines", "models_linkopts")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_test(
+    name = "ModelsCxxTests",
+    size = "large",
+    srcs = glob(
+        ["Test*.cpp"],
+        allow_empty = True,
+    ),
+    copts = models_copts(),
+    defines = models_defines() + [
+        "MODELS_GOOGLE_TEST",
+        "USE_GTEST",
+        "_VARIADIC_MAX=10",
+        "MODELS_HAS_GTEST=1",
+    ],
+    includes = ["."],
+    linkopts = models_linkopts(),
+    deps = [
+        "//Library/Models:Models",
+        "//Library/Models/Testing:modelsTest_header",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

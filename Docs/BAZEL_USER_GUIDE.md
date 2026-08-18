@@ -470,7 +470,74 @@ Code coverage analysis helps identify untested code paths and measure test effec
 
 ### Enabling Coverage with Bazel
 
-**Note**: Coverage support in Bazel is currently limited. For comprehensive coverage analysis, use the CMake build system with the coverage tools described below.
+```bash
+cd Scripts
+python setup_bazel.py config.build.test.coverage.native
+```
+
+`setup_bazel.py` produces a real, working HTML coverage report (verified:
+64.9% line / 71.3% function coverage on a real run), but not by trusting
+Bazel's own combined report — `bazel coverage`'s own C++ coverage report
+merging is broken (see "Known Bazel coverage limitation" below), so
+`setup_bazel.py` builds the LCOV trace itself:
+
+1. Widens `--instrumentation_filter` to cover the requested `//Library`
+   tree — Bazel's own default (derived from the package of the target(s) on
+   the command line) is normally too narrow, which by itself makes a
+   single-test-target `bazel coverage` report "no coverage found."
+2. Runs `bazel coverage`, which genuinely executes the instrumented tests
+   and writes real `.profraw` profile data — this part of Bazel's pipeline
+   works correctly.
+3. Harvests those `.profraw` files directly from the output base's sandbox
+   stash (`<output_base>/sandbox/sandbox_stash/TestRunner/**/`, filtered to
+   this run by mtime) rather than trusting Bazel's own report.
+4. Resolves each `cc_test` target's compiled binary under `bazel-bin` (via
+   `bazel query`) and runs `llvm-profdata merge` + `llvm-cov export -object
+   <binary> -format=lcov` directly — bypassing Bazel's broken merger
+   entirely — excluding `/external/` (non-vendored deps like googletest)
+   and `/ThirdParty/` the same way CMake's coverage tooling does.
+5. Rewrites `SF:` source paths from the transient per-action sandbox
+   (`.../execroot/_main/<path>`, gone by the time `genhtml` runs) to the
+   real, persistent repo path (via `bazel info workspace`).
+6. Converts to HTML with `genhtml --ignore-errors inconsistent,corrupt,
+   unsupported` — llvm-cov's LCOV export and genhtml's newer strict
+   consistency checker (lcov 2.x) don't always agree on function-vs-line
+   hit counts for lambdas/closures (e.g. inside googletest internals); this
+   is a known translation quirk between the two tools, not real corruption.
+
+Requires `llvm-profdata`/`llvm-cov` and `genhtml` (part of `lcov`) on
+`PATH` (`brew install lcov` on macOS, `apt install lcov` on Debian/Ubuntu).
+If the coverage run reused cached test results (nothing changed since the
+last coverage build), no fresh `.profraw` is produced and `setup_bazel.py`
+falls back to Bazel's own (empty) report with a warning — rerun after a
+real source change, or `bazel clean` first, to force fresh execution.
+
+**Clang only.** Unlike the CMake path below (which dispatches by compiler:
+Clang → llvm-profdata/llvm-cov, GCC → gcov/lcov, MSVC → OpenCppCoverage),
+Bazel coverage HTML generation is currently only implemented for Clang.
+`--config=gcc` builds at all (a missing `build:gcc` block in `.bazelrc` was
+fixed to add `--repo_env=CC=gcc`/`CXX=g++`), but on macOS `/usr/bin/gcc` is
+an Apple Clang shim, not real GNU GCC, and forcing the "GCC" compiler
+identity hits a pre-existing, unrelated incompatibility in vendored
+`ThirdParty/cpuinfo` (ARM microarchitecture enum values not visible under
+that branch) that can't be fixed without editing vendored code. `gcc` +
+`coverage` together print a clear "not yet supported" warning and fall back
+to Bazel's own (empty) report rather than silently producing a wrong one.
+MSVC-via-Bazel isn't set up in this repo at all yet.
+
+#### Known Bazel coverage limitation (worked around above, not fixed upstream)
+
+`bazel coverage`'s own combined-report generation is broken: its bundled
+`collect_cc_coverage.sh` never populates the `runtime_objects_list.txt`
+manifest entry that `llvm-cov export` needs (`-object <test-binary>`), so
+its own export step silently reports "No filenames specified!" and produces
+a trace with every file at zero hits — this is the upstream "Bazel C++ code
+coverage support is poor and limited" gap that script's own header comment
+references (tracking issue #1118), not something fixable via Bazel flags.
+The instrumentation and profiling runtime are not the problem, only Bazel's
+own C++ coverage report-merging plumbing is — which is exactly why
+`setup_bazel.py` drives `llvm-profdata`/`llvm-cov` itself instead of relying
+on it.
 
 ### Coverage with CMake (Recommended)
 
@@ -1505,4 +1572,3 @@ Both CMake and Bazel build systems are fully supported and produce equivalent bi
 **Last Updated:** 2025-11-23
 **Bazel Version:** 7.0.0
 **Quarisma Version:** 1.0.0
-

@@ -126,6 +126,12 @@ build:clang --repo_env=CXX=clang++
 
 # GCC compiler configuration (uses system GCC if available)
 # C++ standard comes from build:linux --cxxopt=-std=c++20.
+# NOTE: on macOS, /usr/bin/gcc is an Apple Clang shim, not real GNU GCC --
+# this config is written for a real gcc/g++ (Linux, or Homebrew gcc on macOS)
+# and is unverified without one on hand. See CMake's equivalent gcc.cmake path
+# for the reference behavior this is meant to match.
+build:gcc --repo_env=CC=gcc
+build:gcc --repo_env=CXX=g++
 
 # MSVC compiler configuration (uses system MSVC if available)
 # C++ standard for MSVC is set per-target via quarisma_copts() (/std:c++20).

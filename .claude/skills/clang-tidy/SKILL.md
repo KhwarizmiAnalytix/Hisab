@@ -30,19 +30,50 @@ python3 setup.py config.build.ninja.clang.clangtidy.fix          # check AND aut
   when fixing warnings introduced by a specific change rather than doing a
   repo-wide pass.
 
-## 2. lintrunner (separate pinned binary, CI-style check)
+## 2. lintrunner (`clang-tidy` from PATH, CI-style check)
 
 ```
-cd Tools/linter
-python -m lintrunner                 # check
-python -m lintrunner --fix           # apply available auto-fixes (clang-format + supported linters)
+lintrunner --take CLANGTIDY
+lintrunner -a --take CLANGTIDY       # apply available auto-fixes, if any
 ```
-- Downloads its own pinned `clang-tidy` into `.lintbin/clang-tidy`
-  (`Tools/linter/adapters/clangtidy_linter.py`, code `CLANGTIDY` in
-  `.lintrunner.toml`) — independent of whatever `clang-tidy` is on `PATH`.
-- Requires an existing build directory with `compile_commands.json`;
-  defaults to `./build_ninja` — build first (see the `xsigma-build` skill)
-  or the lint step has nothing to analyze.
+- Resolves `clang-tidy` via PATH (`shutil.which`, code `CLANGTIDY` in
+  `.lintrunner.toml`) — **not** a separately pinned/downloaded binary.
+  This is deliberate: clang-tidy's bundled resource-dir/builtin headers are
+  tightly version-coupled to libc++'s internal header chaining, so a pinned
+  binary even a few major versions behind the toolchain that actually
+  produced `compile_commands.json` breaks *every* file with bogus "system
+  header not found" errors (confirmed: pinned clang-tidy 19.1.4 vs. a
+  Homebrew LLVM 22 toolchain failed this way on 100% of files checked).
+  Make sure whatever `clang-tidy` is first on `PATH` matches (or is very
+  close to) the compiler actually used for the build.
+- `--build_dir` has no hardcoded default in `.lintrunner.toml`. `setup.py`
+  names build directories with a suffix per feature token
+  (`build_ninja_clangtidy_project_memory`, etc.), so there's no single
+  stable name to point at; `clangtidy_linter.py` auto-detects the most
+  recently modified `build_ninja*` directory under the repo root that has a
+  `compile_commands.json`, mirroring `setup.py`'s own `BuildDirectoryDetector`
+  freshness logic. In practice: whichever configure/build you ran most
+  recently is what lintrunner checks against. Pass `--build_dir` explicitly
+  to pin a specific one (e.g. for a future CI job).
+- **`compile_commands.json` only ever has entries for compiled `.cpp`/`.cc`/
+  `.c` files — never headers**, since headers aren't their own translation
+  unit. `clangtidy_linter.py` mirrors how the real build actually validates
+  headers (only via inclusion from a `.cpp`, using `--header-filter` —
+  never standalone) rather than guessing a synthesized compile command for
+  a header directly: a `.h`/`.hxx` with no TU entry is silently skipped
+  (visible with `--verbose`), not flagged. A header's findings surface when
+  a `.cpp` that includes it gets checked, exactly matching the
+  build-integrated pass's `--header-filter=^<root>/(Library|Cmake|Tools|
+  Examples)/.*` from `Cmake/tools/clang_tidy.cmake` (kept in sync as
+  `HEADER_FILTER`/`EXCLUDE_HEADER_FILTER` constants in
+  `clangtidy_linter.py`) — if either changes, update both.
+- A `.cpp` file *should* always have a `compile_commands.json` entry once
+  the build directory covers it. If one doesn't, `clangtidy_linter.py` fails
+  loudly (a `compile-error` lint message) instead of silently passing — a
+  clean result for a `.cpp` means clang-tidy actually analyzed it, not just
+  that nothing matched. If you see `compile-error` on many `.cpp` files,
+  the auto-detected build directory doesn't cover them; rebuild the full
+  tree (not a `--project.<lib>`-scoped one) so it does.
 - Scope: `Library/**/*.{h,hxx,cpp}`, excluding `ThirdParty/`,
   `**/experimental/**`, `**/generated/**`, `Tools/**`, and
   **`Library/**/Testing/**/*.cpp`** (test files are not clang-tidy-checked

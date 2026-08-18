@@ -1,0 +1,59 @@
+load("//bazel:models.bzl", "models_copts", "models_defines", "models_linkopts")
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "models_hdrs",
+    srcs = glob(
+        [
+            "common/*.h",
+            "model/*.h",
+            "nn/*.h",
+            "calibration/*.h",
+        ],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "models_srcs",
+    srcs = glob(
+        [
+            "model/*.cpp",
+            "nn/*.cpp",
+            "calibration/*.cpp",
+        ],
+        allow_empty = True,
+    ),
+)
+
+cc_library(
+    name = "models_lib",
+    srcs = [":models_srcs"],
+    hdrs = [":models_hdrs"],
+    copts = models_copts(),
+    defines = models_defines() + select({
+        "//bazel:shared_libs": ["MODELS_SHARED_DEFINE"],
+        "//conditions:default": ["MODELS_STATIC_DEFINE"],
+    }),
+    local_defines = select({
+        "//bazel:shared_libs": ["MODELS_BUILDING_DLL"],
+        "//conditions:default": [],
+    }),
+    includes = ["."],
+    linkopts = models_linkopts(),
+    linkstatic = select({
+        "//bazel:shared_libs": False,
+        "//conditions:default": True,
+    }),
+    alwayslink = False,
+    visibility = [
+        "//Library/Models:__pkg__",
+    ],
+)
+
+cc_library(
+    name = "Models",
+    deps = [":models_lib"],
+    visibility = ["//visibility:public"],
+)

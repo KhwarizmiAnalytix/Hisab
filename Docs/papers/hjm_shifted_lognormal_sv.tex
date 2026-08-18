@@ -1,0 +1,385 @@
+\documentclass[12pt,a4paper,final]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{hyperref}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+
+\author{Toufik Bellaj}
+\title{HJM model density of the shifted lognormal case with stochastic volatility}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Model formulation}
+Starting from the multi-factor HJM term structure model for the dynamics of the
+forward rates, driven by $N$ correlated Brownian motions, we have
+\begin{equation}
+df(t,T)
+=\Biggl(\sum_{i,j}\sigma_i(t,T)\rho_{ij}(t)\int_{t}^{T}\sigma_j(t,u)\,du\Biggr)dt
++\sum_i \sigma_i(t,T)\,dW_i(t).
+\end{equation}
+Under the separability condition
+\begin{equation}
+\sigma_i(t,u)=\sigma_i(t,X)\,\theta_i(u)
+\end{equation}
+we obtain
+\begin{eqnarray*}
+df(t,T)
+&=&\sum_{i,j}\theta_i(T)\sigma_i(t,X)\rho_{ij}(t)\sigma_j(t,X)
+\Biggl(\int_{t}^{T}\theta_j(u)\,du\Biggr)dt
++\sum_i\theta_i(T)\sigma_i(t,X)\,dW_i(t)\\
+&=&\sum_{i,j}\theta_i(T)\,d\Psi_{i,j}(t,X)\,\Theta_j(T)
++\sum_i\theta_i(T)\,dX_i(t),
+\end{eqnarray*}
+where
+\begin{eqnarray}
+\Theta_j(T)&=&\int_{t_0}^{T}\theta_j(u)\,du,\\
+d\Psi_{i,j}(t,X)&=&\sigma_i(t,X)\rho_{ij}(t)\sigma_j(t,X)\,dt,\\
+dX_i&=&\sigma_i(t,X)
+\Biggl(dW_i(t)-\sum_j\rho_{ij}(t)\sigma_j(t,X)\Theta_j(t)\,dt\Biggr),
+\end{eqnarray}
+with $X_i(t_0)=0$ and $\Psi_{i,j}(t_0)=0$.
+
+Integrating then yields
+\begin{eqnarray*}
+f(t,T)
+&=& f(t_0,T)
++\sum_{i}\theta_i(T)
+\Biggl(X_i(t)+\sum_{j}\Psi_{i,j}(t,X)\Theta_j(T)\Biggr),\\
+r_t
+&=& f(t_0,t)
++\sum_{i}\theta_i(t)
+\Biggl(X_i(t)+\sum_{j}\Psi_{i,j}(t,X)\Theta_j(t)\Biggr)\\
+&=& f(t_0,t)+\overline{r}_t,\\
+P(t,T)
+&=&\exp\Biggl(-\int_{t}^{T}f(t_0,u)\,du\Biggr),\\
+B(t,T)
+&=&P(t,T)Z_t\exp\Biggl(
+-\sum_{i}\Theta_i(T)
+\Biggl(X_i(t)+\frac12\sum_{j}\Psi_{i,j}(t,X)\Theta_j(T)\Biggr)
+\Biggr),
+\end{eqnarray*}
+where
+\begin{eqnarray*}
+Z_t
+&=&\exp\Biggl(
+\sum_{i}\Theta_i(t)
+\Biggl(X_i(t)+\frac12\sum_{j}\Psi_{i,j}(t,X)\Theta_j(t)\Biggr)
+\Biggr).
+\end{eqnarray*}
+Introduce the Radon--Nikodym process $M_t$ by
+\begin{eqnarray}
+\frac{dM_t}{M_t}&=&\sum_i\Theta_i(t)\sigma_i(t)\,dW_i(t).
+\end{eqnarray}
+
+\begin{theorem}\label{thm:rn}
+The Radon--Nikodym derivative $M_t$ satisfies
+\begin{eqnarray*}
+\frac{M_t}{M_s}
+&=&\exp\Biggl(-\int_{s}^{t}\overline{r}_u\,du\Biggr)\frac{Z_t}{Z_s}.
+\end{eqnarray*}
+Under this measure the dynamics become
+\begin{eqnarray*}
+\Theta_j(T)&=&\int_{t_0}^{T}\theta_j(u)\,du,\\
+d\Psi_{i,j}(t,X)&=&\sigma_i(t,X)\rho_{ij}(t)\sigma_j(t,X)\,dt,\\
+dX_i&=&\sigma_i(t,X)\,dW^{M}_i(t),
+\end{eqnarray*}
+and
+\begin{eqnarray*}
+E_{t}^{Q}\Biggl[\exp\Biggl(-\int_{t}^{T} r_u\,du\Biggr)\Phi(X_T,\Psi_T)\Biggr]
+&=&P(t,T)Z_t\,E_{t}^{M}\Biggl[\frac{\Phi(X_T,\Psi_T)}{Z_T}\Biggr].
+\end{eqnarray*}
+\end{theorem}
+
+\begin{proof}
+It\^{o}'s formula gives
+\begin{eqnarray*}
+\Theta_i(t)X_i(t)-\Theta_i(s)X_i(s)
+&=&\int_{s}^{t}\theta_i(u)X_i(u)\,du
++\int_{s}^{t}\Theta_i(u)\,dX_i(u).
+\end{eqnarray*}
+Hence
+\begin{eqnarray*}
+\int_{s}^{t}\overline{r}_u\,du
+&=&\sum_{i}\Biggl(
+\Theta_i(t)X_i(t)-\Theta_i(s)X_i(s)
+-\int_{s}^{t}\Theta_i(u)\sigma_i(u)\,dW_i(u)\Biggr)\\
+&&+\sum_{i,j}\int_{s}^{t}\theta_i(u)\Psi_{i,j}(u)\Theta_j(u)\,du
++\sum_{i,j}\int_{s}^{t}\Theta_i(u)\sigma_i(u)\rho_{ij}(u)\sigma_j(u)\Theta_j(u)\,du.
+\end{eqnarray*}
+Integration by parts yields
+\begin{eqnarray*}
+\sum_{i,j}\int_{s}^{t}\theta_i(u)\Psi_{i,j}(u)\Theta_j(u)\,du
+&=&\frac12\sum_{i,j}\Biggl(
+\Theta_i(t)\Psi_{i,j}(t,X)\Theta_j(t)
+-\Theta_i(s)\Psi_{i,j}(s,X)\Theta_j(s)\Biggr)\\
+&&-\frac12\sum_{i,j}\int_{s}^{t}
+\Theta_i(u)\sigma_i(u)\rho_{ij}(u)\sigma_j(u)\Theta_j(u)\,du.
+\end{eqnarray*}
+Therefore
+\begin{eqnarray*}
+\int_{s}^{t}\overline{r}_u\,du
+&=&\sum_{i}\Theta_i(t)
+\Biggl(X_i(t)+\frac12\sum_{j}\Psi_{i,j}(t,X)\Theta_j(t)\Biggr)\\
+&&-\sum_{i}\Theta_i(s)
+\Biggl(X_i(s)+\frac12\sum_{j}\Psi_{i,j}(s,X)\Theta_j(s)\Biggr)\\
+&&-\sum_{i}\int_{s}^{t}\Theta_i(u)\sigma_i(u)\,dW_i(u)
++\frac12\sum_{i,j}\int_{s}^{t}
+\Theta_i(u)\sigma_i(u)\rho_{ij}(u)\sigma_j(u)\Theta_j(u)\,du.
+\end{eqnarray*}
+The first two lines are $\log Z_t-\log Z_s$. The remaining stochastic
+exponential is exactly $M_t/M_s$, which proves
+\[
+\frac{M_t}{M_s}
+=\exp\Biggl(-\int_{s}^{t}\overline{r}_u\,du\Biggr)\frac{Z_t}{Z_s}.
+\]
+Under $M$, the finite-variation drift in $dX_i$ is removed by Girsanov,
+and the pricing identity follows from $dQ|_{{\mathcal F}_T}/dM|_{{\mathcal F}_T}=M_T^{-1}$
+together with $P(t,T)=\exp(-\int_t^T f(t_0,u)\,du)$.
+\end{proof}
+
+\section{Shifted lognormal case with lognormal stochastic volatility}
+In this section we consider the one-factor case with volatility
+\begin{equation}
+\sigma(t,X)=\sigma(t)\,\eta_t\,\bigl(\beta (X + \gamma \Psi(t,X))+1\bigr),
+\end{equation}
+where $\eta_t$ follows an uncorrelated Black--Karasinski dynamics~\cite{BK}
+\begin{eqnarray}
+d\log\eta_t
+&=&\kappa\bigl(m(t)-\log\eta_t\bigr)\,dt+\nu\,dZ_t,
+\qquad
+d\langle Z,W\rangle=0.
+\end{eqnarray}
+The zero correlation is used so that the time-changed Brownian motion is
+independent of the clock and the Matsumoto--Yor formulae below apply. It is
+not a material restriction on the smile. Instantaneous volatility is
+$V_t=\eta_t S_t$, with $S_t=\beta(X+\gamma\Psi)+1$, so $dX$ and $dV$ remain
+correlated through the local factor $S$ even though $\eta$ is independent of
+$W$:
+\begin{eqnarray*}
+dX_t&=&\sigma(t)\,V_t\,dW^M_t,\\
+dV_t&=&\beta\sigma(t)\,\eta_t V_t\,dW^M_t
++\nu\eta_t S_t\,dZ_t+\cdots,\\
+\rho^{\mathrm{eff}}_t
+&=&
+\frac{\langle dX,dV\rangle}{\sqrt{\langle dX\rangle\langle dV\rangle}}
+=
+\frac{\beta\,\sigma(t)\,\eta_t}{\sqrt{\beta^{2}\sigma^{2}(t)\,\eta_t^{2}+\nu^{2}}}.
+\end{eqnarray*}
+Thus $\beta$ is the parameter that captures rate--vol correlation (the SABR
+$\beta$--versus--$\rho$ trade-off). Once $\beta$ is free, a correlated driver
+for $\eta$ is weakly identified and would only add unspanned skew at the cost
+of destroying the time change. The remaining parameter $\gamma$ is not a
+correlation: it mixes the quadratic-variation state $\Psi$ into $S$ and
+produces the Girsanov kernel $(\gamma/\beta)S$ below.
+
+Set
+\begin{eqnarray*}
+S_t&=& \beta (X +\gamma \Psi(t,X))+1,\\
+A_t&=& \beta^2 \Psi(t,X).
+\end{eqnarray*}
+The initial conditions $X(t_0)=\Psi(t_0)=0$ give $S_{t_0}=1$ and $A_{t_0}=0$.
+Using Theorem~\ref{thm:rn} under the $M$-measure we have
+\begin{eqnarray}
+\frac{dS_t}{S_t}
+&=&\beta\sigma(t)\,\eta_t\,dW^M_t
++\beta\gamma\,\sigma^2(t)\,\eta_t^{2}\,S_t\,dt,\\
+dA_t&=&\beta^2 \sigma^2(t)\,\eta_t^{2}\,S^2_t\,dt.
+\end{eqnarray}
+
+Define the stochastic time change
+\begin{eqnarray*}
+d\tau_t &=& \beta^2 \sigma^2(t)\,\eta_t^{2}\,dt,
+\end{eqnarray*}
+so that
+\begin{equation}
+\tau_t = \beta^2 \int_{t_0}^{t} \sigma^2(u)\,\eta_u^{2}\,du.
+\end{equation}
+Then, under $M$ and in the time-changed clock,
+\begin{eqnarray}
+\frac{dS_{\tau}}{S_{\tau}}&=&dW^{M}_{\tau}+\frac{\gamma}{\beta}\,S_{\tau}\,d\tau,\\
+dA_{\tau}&=&S^{2}_{\tau}\,d\tau.
+\end{eqnarray}
+
+Girsanov with kernel $(\gamma/\beta)S$ removes the finite-variation drift.
+The resulting density is
+\begin{eqnarray*}
+L_{\tau}
+&:=&
+\frac{dQ^{D}}{dQ^{M}}
+=\exp\Biggl(-\frac{\gamma}{\beta}(S_{\tau}-1)+\frac{\gamma^{2}}{2\beta^{2}}A_{\tau}\Biggr),
+\end{eqnarray*}
+hence
+\begin{eqnarray*}
+\frac{dQ^{M}}{dQ^{D}}
+&=&L_{\tau}^{-1}
+=\exp\Biggl(\frac{\gamma}{\beta}(S_{\tau}-1)-\frac{\gamma^{2}}{2\beta^{2}}A_{\tau}\Biggr).
+\end{eqnarray*}
+Under $Q^{D}$ the dynamics become
+\begin{eqnarray*}
+S_{\tau}&=&\exp\Biggl(W^{D}_{\tau}-\frac{\tau}{2}\Biggr),\\
+A_{\tau}&=&\int_0^{\tau} S^{2}_{u}\,du,\\
+U_{\tau}&=&\frac{S_{\tau}}{A_{\tau}}.
+\end{eqnarray*}
+In particular $S_{\tau}=\exp(B_{\tau}^{(-1/2)})$ and
+$A_{\tau}=A_{\tau}^{(-1/2)}$ in the notation of Matsumoto and Yor~\cite{YOR}.
+Pricing identities under $M$ are rewritten under $D$ by
+\begin{eqnarray*}
+E^{M}\Biggl[\frac{g}{Z}\Biggr]
+&=&
+E^{D}\Biggl[L^{-1}\frac{g}{Z}\Biggr].
+\end{eqnarray*}
+
+The true one-factor HJM bond is, with $X=(S-1)/\beta-\gamma A/\beta^{2}$ and
+$\Psi=A/\beta^{2}$,
+\begin{eqnarray*}
+\frac{B(t,T)}{Z_t}
+&=&P(t,T)\exp\Biggl(
+-\frac{\Theta(T)}{\beta}(S_{\tau}-1)
++\frac{\gamma\Theta(T)}{\beta^{2}}A_{\tau}
+-\frac{\Theta(T)^{2}}{2\beta^{2}}A_{\tau}
+\Biggr).
+\end{eqnarray*}
+Multiplying by the Radon--Nikodym factor $L^{-1}$ produces the $D$-measure
+kernel
+\begin{eqnarray*}
+L_{\tau}^{-1}\frac{B(t,T)}{Z_t}
+&=&P(t,T)\exp\Biggl(
+-\Biggl(\frac{\Theta(T)-\gamma}{\beta}\Biggr)(S_{\tau}-1)
+-\frac{A_{\tau}}{2}
+\Biggl(\frac{\Theta(T)-\gamma}{\beta}\Biggr)^{2}
+\Biggr).
+\end{eqnarray*}
+(The previous display is \emph{not} the bond $B/Z$; it is the integrand for
+an expectation under $Q^{D}$.)
+
+Write $\alpha(T)=(\Theta(T)-\gamma)/\beta$. The joint law of
+$(S_{\tau},U_{\tau})$ under $Q^{D}$, conditionally on the clock $\tau$ (i.e.\
+on the path of $\eta$), follows from~\cite[Thm.~4.1]{YOR} after the change of
+variables $U=S/A$. The conditional law of $S$ given $U=u$ is inverse Gaussian
+with mean $1$ and shape $u$,
+\begin{eqnarray*}
+p(S_{\tau}=x\mid U_{\tau}=u,\tau)
+&=&\sqrt{\frac{u}{2\pi x^{3}}}
+\exp\Biggl(u-\frac{u}{2}\Biggl(x+\frac{1}{x}\Biggr)\Biggr),
+\end{eqnarray*}
+and the marginal of $U$ is
+\begin{eqnarray*}
+p(U_{\tau}=u\mid\tau)
+&=&\sqrt{2\pi}\,\exp\Biggl(-u-\frac{\tau}{8}\Biggr)
+\frac{H(u,\tau)}{u^{3/2}},
+\end{eqnarray*}
+where $H$ is the Hartman--Watson function $\theta$ of~\cite{YOR}. The
+conditional density in $S$ does not depend on $\tau$.
+
+The product of this density with the $D$-kernel, divided by $P(t,T)$, is the
+density of an inverse Gaussian law with mean $1/\mu$ and shape $U_{\tau}$,
+where $\mu=1+\alpha(T)/U_{\tau}=1+(\Theta(T)-\gamma)/(\beta U_{\tau})$:
+\begin{eqnarray*}
+p(x\mid U_{\tau},\tau)\,
+L^{-1}\frac{B(t,T)}{P(t,T)Z_t}\Biggm|_{S=x}
+&=&\sqrt{\frac{U_{\tau}}{2\pi x^{3}}}
+\exp\Biggl(
+\alpha(T)+U_{\tau}
+-\frac12\Biggl(
+\frac{x}{U_{\tau}}
+\bigl(U_{\tau}+\alpha(T)\bigr)^{2}
++\frac{U_{\tau}}{x}
+\Biggr)
+\Biggr)\\
+&=&\sqrt{\frac{U_{\tau}}{2\pi x^{3}}}
+\exp\Biggl(
+-\frac{U_{\tau}}{2x}
+\Biggl(x\mu-1\Biggr)^{2}
+\Biggr)\\
+&=&\sqrt{\frac{U_{\tau}}{2\pi x^{3}}}
+\exp\Biggl(
+-\frac12\Biggl(\sqrt{U_{\tau}x}\,\mu-\sqrt{\frac{U_{\tau}}{x}}\Biggr)^{2}
+\Biggr)\\
+&=&\sqrt{\frac{U_{\tau}}{2\pi x^{3}}}
+\exp\Biggl(
+2\mu U_{\tau}
+-\frac12\Biggl(\sqrt{U_{\tau}x}\,\mu+\sqrt{\frac{U_{\tau}}{x}}\Biggr)^{2}
+\Biggr).
+\end{eqnarray*}
+(The four right-hand sides are identical; they are a density times a kernel,
+not the bond itself.)
+
+Define
+\begin{eqnarray*}
+\xi^{+}(k)&=&\sqrt{U_{\tau}k}\,\mu-\sqrt{\frac{U_{\tau}}{k}},\\
+\xi^{-}(k)&=&-\sqrt{U_{\tau}k}\,\mu-\sqrt{\frac{U_{\tau}}{k}}.
+\end{eqnarray*}
+At frozen $U_{\tau}$ one has $d\xi^{+}+d\xi^{-}=\sqrt{U_{\tau}/k^{3}}\,dk$,
+but the two branches carry different Jacobians; the Gaussian split uses each
+branch separately. Integrating the product against $\mathbf{1}_{\{S\le k\}}$
+yields the inverse-Gaussian cdf (mean $1/\mu$, shape $U_{\tau}$)
+\begin{eqnarray*}
+E^{D}\Biggl[
+L^{-1}\frac{B(t,T)}{Z_t}
+\mathbf{1}_{\{S_{\tau}\le k\}}
+\Biggm|U_{\tau},\tau\Biggr]
+&=&P(t,T)
+\Biggl(
+N\bigl(\xi^{+}(k)\bigr)
++\exp\Biggl(2\Biggl(U_{\tau}+\frac{\Theta(T)-\gamma}{\beta}\Biggr)\Biggr)
+N\bigl(\xi^{-}(k)\bigr)
+\Biggr).
+\end{eqnarray*}
+
+A payer swaption with expiry $T_{e}$, last payment $T_{n}$ and strike $K$ has
+time-$T_{e}$ value
+$(1-B(T_{e},T_{n})-K\sum_{i=e+1}^{n}\delta_{i}B(T_{e},T_{i}))^{+}$,
+using $B(T_{e},T_{e})=1$. Theorem~\ref{thm:rn} gives
+\begin{eqnarray*}
+\mathrm{swap}(t)
+&=&P(t,T_{e})Z_{t}\,
+E^{M}\Biggl[
+\frac{
+\bigl(1-B(T_{e},T_{n})-K\sum_{i=e+1}^{n}\delta_{i}B(T_{e},T_{i})\bigr)^{+}
+}{Z_{T_{e}}}
+\Biggr]\\
+&=&P(t,T_{e})Z_{t}\,
+E^{D}\Biggl[
+L^{-1}
+\bigl(G_{e}-G_{n}-K\sum_{i=e+1}^{n}\delta_{i}G_{i}\bigr)^{+}
+\Biggr],
+\end{eqnarray*}
+where $G_{i}:=B(T_{e},T_{i})/Z_{T_{e}}$. Given $U$, every $G_{i}$ is strictly
+monotone in $S$, so the forward swap value has a unique root $S^{*}$ and the
+positive part is the same linear combination restricted to $\{S>S^{*}\}$ (or
+$\{S<S^{*}\}$, according to the sign of $\beta$). Each term
+$E^{D}[L^{-1}G_{i}\mathbf{1}_{\{S\gtrless S^{*}\}}\mid U,\tau]$ is the
+inverse-Gaussian formula above with tenor-specific
+$\alpha(T_{i})=(\Theta(T_{i})-\gamma)/\beta$. The remaining average is over
+the Hartman--Watson law of $U$ given $\tau$ and over the law of the clock
+$\tau=\beta^{2}\int_{t_0}^{T_{e}}\sigma^{2}(u)\eta_{u}^{2}\,du$. Under
+Black--Karasinski, $\log\eta$ is Ornstein--Uhlenbeck, so this mixing law is
+the exponential functional $\int e^{2\log\eta_u}\,du$ of an OU
+process~\cite{YOR}.
+
+\begin{thebibliography}{9}
+\bibitem{YOR}
+H.~Matsumoto and M.~Yor,
+Exponential functionals of Brownian motion, I: Probability laws at fixed time,
+\textit{Probability Surveys} \textbf{2} (2005), 312--347.
+
+\bibitem{BK}
+F.~Black and P.~Karasinski,
+Bond and option pricing when short rates are lognormal,
+\textit{Financial Analysts Journal} \textbf{47} (1991), 52--59.
+
+\bibitem{lognormal_vol}
+L.~B.~G.~Andersen and V.~V.~Piterbarg,
+\textit{Interest Rate Modeling. Volume~I: Foundations and Vanilla Models},
+Atlantic Financial Press, 2010.
+\end{thebibliography}
+
+\end{document}

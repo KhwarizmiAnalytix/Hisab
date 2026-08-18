@@ -72,6 +72,7 @@ _MODULE_NAME_ALLOW_LIST.update(
         "psutil",
         "helpers",
         "run_coverage",
+        "coverage_tool",
     ]
 )
 

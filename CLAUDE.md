@@ -85,6 +85,15 @@ This is a process expectation for me to follow, not a CI gate — small,
 single-file, low-risk edits (a comment, a doc-only change, a one-line
 config tweak) don't need the full sequence.
 
+### End of session / before commit
+
+Additionally, at the end of a session that made non-trivial changes, or
+before creating a commit, run the **`session-checklist`** skill: it checks
+that CMake and Bazel build definitions stayed in sync, builds and tests
+*both* build systems (not just the one used mid-session), and runs
+`lintrunner` and fixes what it finds. Same "not a CI gate" threshold as
+above — skip it deliberately for trivial edits, don't skip it by default.
+
 ## C++ coding standards
 
 ### Naming

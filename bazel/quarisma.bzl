@@ -5,7 +5,8 @@
 #
 # Module-specific defines live in the corresponding module bzl files:
 #   bazel/core.bzl, bazel/memory.bzl, bazel/parallel.bzl,
-#   bazel/logging.bzl, bazel/profiler.bzl, bazel/vectorization.bzl
+#   bazel/logging.bzl, bazel/profiler.bzl, bazel/vectorization.bzl,
+#   bazel/models.bzl
 # =============================================================================
 
 def quarisma_copts(cxx_std = "c++20", cstdlib_include = True):
@@ -17,7 +18,7 @@ def quarisma_copts(cxx_std = "c++20", cstdlib_include = True):
                  and do not rely on --cxxopt in .bazelrc.
         cstdlib_include: Whether to force-include <cstdlib> on non-Windows (mirrors
                  CMake's `target_compile_options(<Lib> PRIVATE -include cstdlib)`,
-                 applied identically across Core/Logging/Parallel/Profiler/Vectorization
+                 applied identically across Core/Logging/Parallel/Profiler/Vectorization/Models
                  CMakeLists.txt). Memory's memory_copts() passes False: CMake skips this
                  specifically for Clang there (compiler-instability workaround, see
                  Library/Memory/CMakeLists.txt) — Bazel has no compiler-id config_setting

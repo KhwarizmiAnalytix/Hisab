@@ -20,10 +20,11 @@ import shutil
 import subprocess
 import sys
 import time
-from typing import Dict, List, Optional
+from typing import Optional
 
 import colorama
 from colorama import Fore, Style
+
 
 # Initialize colorama for cross-platform colored output
 colorama.init()
@@ -79,7 +80,7 @@ def find_enzyme_pass_plugin() -> Optional[str]:
         return env_path
 
     system = platform.system()
-    search_dirs: List[str] = []
+    search_dirs: list[str] = []
     if system == "Darwin":
         search_dirs = ["/opt/homebrew/lib", "/usr/local/lib", "/usr/lib"]
     elif system == "Linux":
@@ -89,7 +90,9 @@ def find_enzyme_pass_plugin() -> Optional[str]:
             search_dirs.insert(0, os.path.join(llvm_dir, "lib"))
     elif system == "Windows":
         # Match FindEnzyme.cmake: optional ignore of LLVM_DIR for unwanted prefixes.
-        restrict = os.environ.get("ENZYME_RESTRICT_TO_SYSTEM_LLVM_INSTALL", "").strip().lower() in (
+        restrict = os.environ.get(
+            "ENZYME_RESTRICT_TO_SYSTEM_LLVM_INSTALL", ""
+        ).strip().lower() in (
             "1",
             "true",
             "yes",
@@ -110,7 +113,7 @@ def find_enzyme_pass_plugin() -> Optional[str]:
                 r"C:\Program Files\LLVM\lib",
             ]
 
-    patterns: List[str] = []
+    patterns: list[str] = []
     if system == "Darwin":
         patterns = ["LLDEnzyme-*.dylib", "ClangEnzyme-*.dylib", "LLVMEnzyme-*.dylib"]
     elif system == "Linux":
@@ -118,7 +121,7 @@ def find_enzyme_pass_plugin() -> Optional[str]:
     elif system == "Windows":
         patterns = ["LLDEnzyme-*.dll", "ClangEnzyme-*.dll", "LLVMEnzyme-*.dll"]
 
-    candidates: List[str] = []
+    candidates: list[str] = []
     for directory in search_dirs:
         if not directory or not os.path.isdir(directory):
             continue
@@ -150,6 +153,7 @@ _BAZEL_LIBRARY_PROJECTS = (
     "core",
     "parallel",
     "profiler",
+    "models",
 )
 
 _BAZEL_LIBRARY_PACKAGE_DIR = {
@@ -159,42 +163,76 @@ _BAZEL_LIBRARY_PACKAGE_DIR = {
     "core": "Core",
     "parallel": "Parallel",
     "profiler": "Profiler",
+    "models": "Models",
 }
 
 
-def _merge_dotted_segments(parts: List[str]) -> List[str]:
+def _merge_dotted_segments(parts: list[str]) -> list[str]:
     """Merge split segments like parallel.openmp, sanitizer.address into single tokens."""
-    out: List[str] = []
+    out: list[str] = []
     pl = [p.lower() for p in parts]
     i = 0
     while i < len(pl):
-        if pl[i] == "parallel" and i + 1 < len(pl) and pl[i + 1] in ("std", "openmp", "tbb"):
+        if (
+            pl[i] == "parallel"
+            and i + 1 < len(pl)
+            and pl[i + 1] in ("std", "openmp", "tbb")
+        ):
             out.append(f"parallel.{pl[i + 1]}")
             i += 2
-        elif pl[i] == "sanitizer" and i + 1 < len(pl) and pl[i + 1] in _CMAKE_SAN_TO_BAZEL:
+        elif (
+            pl[i] == "sanitizer"
+            and i + 1 < len(pl)
+            and pl[i + 1] in _CMAKE_SAN_TO_BAZEL
+        ):
             out.append(_CMAKE_SAN_TO_BAZEL[pl[i + 1]])
             i += 2
-        elif pl[i] == "profiler" and i + 1 < len(pl) and pl[i + 1] in ("kineto", "itt", "native"):
+        elif (
+            pl[i] == "profiler"
+            and i + 1 < len(pl)
+            and pl[i + 1] in ("kineto", "itt", "native")
+        ):
             out.append(f"profiler_{pl[i + 1]}")
             i += 2
-        elif pl[i] == "logging" and i + 1 < len(pl) and pl[i + 1] in (
-            "native",
-            "loguru",
-            "glog",
-            "spdlog",
+        elif (
+            pl[i] == "logging"
+            and i + 1 < len(pl)
+            and pl[i + 1]
+            in (
+                "native",
+                "loguru",
+                "glog",
+                "spdlog",
+            )
         ):
             out.append(f"logging_{pl[i + 1]}")
             i += 2
-        elif pl[i] == "lto" and i + 1 < len(pl) and pl[i + 1] in ("off", "thin", "full", "ipo", "auto"):
+        elif (
+            pl[i] == "lto"
+            and i + 1 < len(pl)
+            and pl[i + 1] in ("off", "thin", "full", "ipo", "auto")
+        ):
             out.append(f"lto.{pl[i + 1]}")
             i += 2
-        elif pl[i] == "project" and i + 1 < len(pl) and pl[i + 1] in _BAZEL_LIBRARY_PROJECTS:
+        elif (
+            pl[i] == "project"
+            and i + 1 < len(pl)
+            and pl[i + 1] in _BAZEL_LIBRARY_PROJECTS
+        ):
             out.append(f"project.{pl[i + 1]}")
             i += 2
-        elif pl[i] == "cpu_backend" and i + 1 < len(pl) and pl[i + 1] in ("no", "sse", "avx", "avx2", "avx512", "neon", "sve"):
+        elif (
+            pl[i] == "cpu_backend"
+            and i + 1 < len(pl)
+            and pl[i + 1] in ("no", "sse", "avx", "avx2", "avx512", "neon", "sve")
+        ):
             out.append(f"cpu_backend.{pl[i + 1]}")
             i += 2
-        elif pl[i] == "gpu_backend" and i + 1 < len(pl) and pl[i + 1] in ("none", "cuda", "hip", "metal"):
+        elif (
+            pl[i] == "gpu_backend"
+            and i + 1 < len(pl)
+            and pl[i + 1] in ("none", "cuda", "hip", "metal")
+        ):
             out.append(f"gpu_backend.{pl[i + 1]}")
             i += 2
         else:
@@ -212,14 +250,14 @@ class BazelConfiguration:
         self.build_type = "debug"  # Default build type
         self.vectorization: Optional[str] = None
         self.cxx_standard: Optional[str] = None
-        self.configs: List[str] = []
-        self.targets: List[str] = ["//..."]  # Default: build everything
+        self.configs: list[str] = []
+        self.targets: list[str] = ["//..."]  # Default: build everything
         self.run_tests = False
         self.run_build = False
         self.run_clean = False
         self.run_config = False
         self.run_coverage = False
-        self.timing_data: Dict[str, float] = {}
+        self.timing_data: dict[str, float] = {}
         # Warn when a phase exceeds this many seconds (incremental builds should stay fast)
         self.slow_phase_warn_seconds: float = 60.0
         # Pass --batch to bazel (avoids waiting on a stuck server; slower per invocation)
@@ -234,9 +272,15 @@ class BazelConfiguration:
         self.profiler_backend = "kineto"  # Default: KINETO (matches CMake)
 
         # Compiler and build tool configuration
-        self.compiler: Optional[str] = None  # Compiler type: "clang", "gcc", "msvc", etc.
-        self.build_tool: Optional[str] = None  # Build tool: "ninja", "xcode", "msvc", etc.
-        self.visual_studio_version: Optional[str] = None  # VS version: "vs17", "vs19", "vs22", "vs26"
+        self.compiler: Optional[str] = (
+            None  # Compiler type: "clang", "gcc", "msvc", etc.
+        )
+        self.build_tool: Optional[str] = (
+            None  # Build tool: "ninja", "xcode", "msvc", etc.
+        )
+        self.visual_studio_version: Optional[str] = (
+            None  # VS version: "vs17", "vs19", "vs22", "vs26"
+        )
         self.system = platform.system()
 
         # CPU SIMD backend: mirrors CMake VECTORIZATION_CPU_BACKEND (no|sse|avx|avx2|avx512|neon|sve).
@@ -260,14 +304,14 @@ class BazelConfiguration:
         self.enable_sleef: bool = False
 
         # CMake-only flags — not executed in Bazel but tracked so the summary is accurate.
-        self.spell:      bool = False
-        self.clangtidy:  bool = False
-        self.fix:        bool = False
-        self.iwyu:       bool = False
-        self.valgrind:   bool = False
-        self.icecc:      bool = False
-        self.examples:   bool = False
-        self.cppcheck:   bool = False
+        self.spell: bool = False
+        self.clangtidy: bool = False
+        self.fix: bool = False
+        self.iwyu: bool = False
+        self.valgrind: bool = False
+        self.icecc: bool = False
+        self.examples: bool = False
+        self.cppcheck: bool = False
 
         self._parse_arguments()
         self._apply_library_project_targets()
@@ -289,11 +333,19 @@ class BazelConfiguration:
 
     def _is_clang_compiler(self, arg: str) -> bool:
         """Check if argument is a Clang compiler specification."""
-        return "clang" in arg.lower() and arg.lower() not in ["clang-cl", "clangtidy", "clangtid", "clang-tidy", "clang_tidy"]
+        return "clang" in arg.lower() and arg.lower() not in [
+            "clang-cl",
+            "clangtidy",
+            "clangtid",
+            "clang-tidy",
+            "clang_tidy",
+        ]
 
     def _is_gcc_compiler(self, arg: str) -> bool:
         """Check if argument is a GCC compiler specification."""
-        return ("gcc" in arg.lower() or "g++" in arg.lower()) and arg.lower() not in ["cppcheck"]
+        return ("gcc" in arg.lower() or "g++" in arg.lower()) and arg.lower() not in [
+            "cppcheck"
+        ]
 
     def _apply_library_project_targets(self) -> None:
         """Narrow self.targets to one Library/* tree when project.NAME was set."""
@@ -452,35 +504,59 @@ class BazelConfiguration:
             # CMake-only developer flags — tracked for summary accuracy, not executed in Bazel
             elif arg_lower in ["spell"]:
                 self.spell = True
-                print_status("Token 'spell': spell-checking is CMake-only (shown in summary, not run).", "WARNING")
+                print_status(
+                    "Token 'spell': spell-checking is CMake-only (shown in summary, not run).",
+                    "WARNING",
+                )
 
             elif arg_lower in ["clangtidy", "clangtid", "clang-tidy", "clang_tidy"]:
                 self.clangtidy = True
-                print_status("Token 'clangtidy': clang-tidy is CMake-only (shown in summary, not run).", "WARNING")
+                print_status(
+                    "Token 'clangtidy': clang-tidy is CMake-only (shown in summary, not run).",
+                    "WARNING",
+                )
 
             elif arg_lower in ["fix"]:
                 self.fix = True
-                print_status("Token 'fix': clang-tidy --fix is CMake-only (shown in summary, not run).", "WARNING")
+                print_status(
+                    "Token 'fix': clang-tidy --fix is CMake-only (shown in summary, not run).",
+                    "WARNING",
+                )
 
             elif arg_lower in ["iwyu"]:
                 self.iwyu = True
-                print_status("Token 'iwyu': include-what-you-use is CMake-only (shown in summary, not run).", "WARNING")
+                print_status(
+                    "Token 'iwyu': include-what-you-use is CMake-only (shown in summary, not run).",
+                    "WARNING",
+                )
 
             elif arg_lower in ["valgrind"]:
                 self.valgrind = True
-                print_status("Token 'valgrind': Valgrind is CMake-only (shown in summary, not run).", "WARNING")
+                print_status(
+                    "Token 'valgrind': Valgrind is CMake-only (shown in summary, not run).",
+                    "WARNING",
+                )
 
             elif arg_lower in ["icecc"]:
                 self.icecc = True
-                print_status("Token 'icecc': Icecream compiler is CMake-only (shown in summary, not run).", "WARNING")
+                print_status(
+                    "Token 'icecc': Icecream compiler is CMake-only (shown in summary, not run).",
+                    "WARNING",
+                )
 
             elif arg_lower in ["examples"]:
                 self.examples = True
-                print_status("Token 'examples': examples are CMake-only (shown in summary, not run).", "WARNING")
+                print_status(
+                    "Token 'examples': examples are CMake-only (shown in summary, not run).",
+                    "WARNING",
+                )
 
             elif arg_lower in ["cppcheck"]:
                 self.cppcheck = True
-                print_status("Token 'cppcheck': cppcheck is CMake-only (shown in summary, not run).", "WARNING")
+                print_status(
+                    "Token 'cppcheck': cppcheck is CMake-only (shown in summary, not run).",
+                    "WARNING",
+                )
 
             elif arg_lower in ("external", "cache", "linker"):
                 print_status(
@@ -568,8 +644,7 @@ class BazelConfiguration:
         # If Visual Studio is specified on Windows, use it
         if self.visual_studio_version and self.system == "Windows":
             print_status(
-                f"Using Visual Studio {self.visual_studio_version.upper()}",
-                "INFO"
+                f"Using Visual Studio {self.visual_studio_version.upper()}", "INFO"
             )
             return
 
@@ -587,7 +662,7 @@ class BazelConfiguration:
 
         print_status(
             f"Using default build configuration: {self.build_tool.upper()} + {self.compiler.upper()}",
-            "INFO"
+            "INFO",
         )
 
     def build_bazel_command(self, action: str) -> list[str]:
@@ -614,7 +689,7 @@ class BazelConfiguration:
             cmd.append("--define=build_shared_libs=true")
 
         # Stable, de-duplicated config list (do not mutate self.configs — execute() may call twice)
-        cfg_list: List[str] = []
+        cfg_list: list[str] = []
         seen_cfg: set[str] = set()
         for c in self.configs:
             if c not in seen_cfg:
@@ -681,7 +756,9 @@ class BazelConfiguration:
             else:
                 plugin = find_enzyme_pass_plugin()
                 if plugin:
-                    cmd.append(f"--per_file_copt=//Library/Core/.*\\.cpp$@-fpass-plugin={plugin}")
+                    cmd.append(
+                        f"--per_file_copt=//Library/Core/.*\\.cpp$@-fpass-plugin={plugin}"
+                    )
                     cmd.append(f"--linkopt=-fpass-plugin={plugin}")
                     print_status(f"Enzyme LLVM pass plugin: {plugin}", "INFO")
                 else:
@@ -699,6 +776,21 @@ class BazelConfiguration:
                 cmd.append("--cxxopt=-std=c++20")
             elif self.cxx_standard == "cxx23":
                 cmd.append("--cxxopt=-std=c++23")
+
+        # Bazel derives a default --instrumentation_filter from the package(s) of the
+        # target(s) on the command line. A single test target such as
+        # //Library/Core/Testing/Cxx:CoreCxxTests only matches that test package, not the
+        # //Library/Core/... packages it actually exercises -- so `bazel coverage` silently
+        # emits an empty report ("WARNING: There was no coverage found.") unless the filter
+        # is widened explicitly. Scope it to the selected library when --project.NAME
+        # narrowed the target set, otherwise cover all of //Library.
+        if action == "coverage":
+            filter_pkg = "//Library"
+            if self.library_project:
+                pkg = _BAZEL_LIBRARY_PACKAGE_DIR.get(self.library_project)
+                if pkg:
+                    filter_pkg = f"//Library/{pkg}"
+            cmd.append(f"--instrumentation_filter={filter_pkg}[/:]")
 
         # Add targets
         cmd.extend(self.targets)
@@ -750,7 +842,11 @@ class BazelConfiguration:
     # -------------------------------------------------------------------------
 
     def _on_off(self, condition: bool) -> str:
-        return f"{Fore.GREEN}ON{Style.RESET_ALL}" if condition else f"{Fore.RED}OFF{Style.RESET_ALL}"
+        return (
+            f"{Fore.GREEN}ON{Style.RESET_ALL}"
+            if condition
+            else f"{Fore.RED}OFF{Style.RESET_ALL}"
+        )
 
     def _na(self) -> str:
         return self._on_off(False)
@@ -760,7 +856,7 @@ class BazelConfiguration:
             return self.cxx_standard.replace("cxx", "C++")
         return "C++20"
 
-    def _sanitizer_info(self) -> tuple:
+    def _sanitizer_info(self) -> tuple[bool, str]:
         for token, san_type in [
             ("asan", "address"),
             ("tsan", "thread"),
@@ -777,86 +873,100 @@ class BazelConfiguration:
 
     def print_module_summaries(self) -> None:
         """Print per-module configuration summaries mirroring CMake's per-module output."""
-        W         = 20   # uniform column width across all modules
-        na        = self._na()
-        cxx       = self._cxx_std_display()
+        W = 20  # uniform column width across all modules
+        na = self._na()
+        cxx = self._cxx_std_display()
         has_san, san_type = self._sanitizer_info()
-        lto       = self.lto_mode if self.lto_mode != "off" else f"{Fore.RED}off{Style.RESET_ALL}"
-        coverage  = self._on_off(self.run_coverage)
-        testing   = self._on_off(self.run_tests)
-        gtest     = self._on_off(not self.disable_gtest)
+        lto = (
+            self.lto_mode
+            if self.lto_mode != "off"
+            else f"{Fore.RED}off{Style.RESET_ALL}"
+        )
+        coverage = self._on_off(self.run_coverage)
+        testing = self._on_off(self.run_tests)
+        gtest = self._on_off(not self.disable_gtest)
         benchmark = self._on_off("benchmark" in self.configs)
-        vec       = self.vectorization.upper() if self.vectorization else "None"
+        vec = self.vectorization.upper() if self.vectorization else "None"
         sanitizer = self._on_off(has_san)
         mimalloc_on = True  # default: .bazelrc + memory.bzl; opt out: --define=memory_enable_mimalloc=false
 
         # Common trailing fields shared by all modules — every flag reflects actual passed state
         def common() -> None:
-            self._pf("Cache",          na,                                   W)
-            self._pf("Cache backend",  na,                                   W)
-            self._pf("Icecc",          self._on_off(self.icecc),             W)
-            self._pf("Linker",         na,                                   W)
-            self._pf("Lto",            lto,                                  W)
-            self._pf("Coverage",       coverage,                             W)
-            self._pf("Testing",        testing,                              W)
-            self._pf("Examples",       self._on_off(self.examples),          W)
-            self._pf("Gtest",          gtest,                                W)
-            self._pf("Benchmark",      benchmark,                            W)
-            self._pf("Clang-tidy",     self._on_off(self.clangtidy),         W)
-            self._pf("Fix",            self._on_off(self.fix),               W)
-            self._pf("Iwyu",           self._on_off(self.iwyu),              W)
-            self._pf("Sanitizer",      sanitizer,                            W)
-            self._pf("Sanitizer type", san_type,                             W)
-            self._pf("Spell",          self._on_off(self.spell),             W)
-            self._pf("Valgrind",       self._on_off(self.valgrind),          W)
+            self._pf("Cache", na, W)
+            self._pf("Cache backend", na, W)
+            self._pf("Icecc", self._on_off(self.icecc), W)
+            self._pf("Linker", na, W)
+            self._pf("Lto", lto, W)
+            self._pf("Coverage", coverage, W)
+            self._pf("Testing", testing, W)
+            self._pf("Examples", self._on_off(self.examples), W)
+            self._pf("Gtest", gtest, W)
+            self._pf("Benchmark", benchmark, W)
+            self._pf("Clang-tidy", self._on_off(self.clangtidy), W)
+            self._pf("Fix", self._on_off(self.fix), W)
+            self._pf("Iwyu", self._on_off(self.iwyu), W)
+            self._pf("Sanitizer", sanitizer, W)
+            self._pf("Sanitizer type", san_type, W)
+            self._pf("Spell", self._on_off(self.spell), W)
+            self._pf("Valgrind", self._on_off(self.valgrind), W)
 
         # ── Core ──────────────────────────────────────────────────────────────
-        print(f"\n{Fore.CYAN}******** Core module (Bazel flags) ********{Style.RESET_ALL}")
-        self._pf("Vectorization type", vec,                                        W)
-        self._pf("Sleef",              self._on_off(self.enable_sleef),            W)
-        self._pf("Mkl",                self._on_off("mkl" in self.configs),        W)
-        self._pf("Svml",               na,                                          W)
-        self._pf("Rocm",              na,                                      W)
-        self._pf("Experimental",      na,                                      W)
-        self._pf("Magic enum",        self._on_off(True),                      W)
-        self._pf("Enzyme",            self._on_off("enzyme" in self.configs),  W)
-        self._pf("Compression",       na,                                      W)
-        self._pf("Cxx standard",      cxx,                                     W)
+        print(
+            f"\n{Fore.CYAN}******** Core module (Bazel flags) ********{Style.RESET_ALL}"
+        )
+        self._pf("Vectorization type", vec, W)
+        self._pf("Sleef", self._on_off(self.enable_sleef), W)
+        self._pf("Mkl", self._on_off("mkl" in self.configs), W)
+        self._pf("Svml", na, W)
+        self._pf("Rocm", na, W)
+        self._pf("Experimental", na, W)
+        self._pf("Magic enum", self._on_off(True), W)
+        self._pf("Enzyme", self._on_off("enzyme" in self.configs), W)
+        self._pf("Compression", na, W)
+        self._pf("Cxx standard", cxx, W)
         common()
 
         # ── Logging ───────────────────────────────────────────────────────────
-        print(f"\n{Fore.CYAN}******** Logging module (Bazel flags) ********{Style.RESET_ALL}")
-        self._pf("Backend",      self.logging_backend.upper(), W)
-        self._pf("Cxx standard", cxx,                          W)
+        print(
+            f"\n{Fore.CYAN}******** Logging module (Bazel flags) ********{Style.RESET_ALL}"
+        )
+        self._pf("Backend", self.logging_backend.upper(), W)
+        self._pf("Cxx standard", cxx, W)
         common()
 
         # ── Memory ────────────────────────────────────────────────────────────
-        print(f"\n{Fore.CYAN}******** Memory module (Bazel flags) ********{Style.RESET_ALL}")
-        self._pf("Mimalloc",     self._on_off(mimalloc_on),           W)
-        self._pf("Memkind",      na,                                   W)
-        self._pf("Numa",         na,                                   W)
-        self._pf("Tbb",          self._on_off("tbb"  in self.configs), W)
-        self._pf("Cuda",         self._on_off("cuda"  in self.configs), W)
-        self._pf("Hip",          self._on_off("hip"   in self.configs), W)
-        self._pf("Metal",        self._on_off("metal" in self.configs), W)
-        self._pf("Cxx standard", cxx,                                  W)
+        print(
+            f"\n{Fore.CYAN}******** Memory module (Bazel flags) ********{Style.RESET_ALL}"
+        )
+        self._pf("Mimalloc", self._on_off(mimalloc_on), W)
+        self._pf("Memkind", na, W)
+        self._pf("Numa", na, W)
+        self._pf("Tbb", self._on_off("tbb" in self.configs), W)
+        self._pf("Cuda", self._on_off("cuda" in self.configs), W)
+        self._pf("Hip", self._on_off("hip" in self.configs), W)
+        self._pf("Metal", self._on_off("metal" in self.configs), W)
+        self._pf("Cxx standard", cxx, W)
         common()
 
         # ── Parallel ──────────────────────────────────────────────────────────
-        print(f"\n{Fore.CYAN}******** Parallel module (Bazel flags) ********{Style.RESET_ALL}")
-        self._pf("Tbb",          self._on_off("tbb"    in self.configs), W)
-        self._pf("Openmp",       self._on_off("openmp" in self.configs), W)
-        self._pf("Cxx standard", cxx,                                    W)
+        print(
+            f"\n{Fore.CYAN}******** Parallel module (Bazel flags) ********{Style.RESET_ALL}"
+        )
+        self._pf("Tbb", self._on_off("tbb" in self.configs), W)
+        self._pf("Openmp", self._on_off("openmp" in self.configs), W)
+        self._pf("Cxx standard", cxx, W)
         common()
 
         # ── Profiler ──────────────────────────────────────────────────────────
-        print(f"\n{Fore.CYAN}******** Profiler module (Bazel flags) ********{Style.RESET_ALL}")
-        self._pf("Backend",      self.profiler_backend.upper(), W)
-        self._pf("Cxx standard", cxx,                           W)
+        print(
+            f"\n{Fore.CYAN}******** Profiler module (Bazel flags) ********{Style.RESET_ALL}"
+        )
+        self._pf("Backend", self.profiler_backend.upper(), W)
+        self._pf("Cxx standard", cxx, W)
         common()
 
     def print_configuration_summary(self) -> None:
-        """Print a summary of the build configuration."""
+        """Print a summary of the resolved build configuration to stdout."""
         print("\n" + "=" * 80)
         print("QUARISMA BAZEL BUILD CONFIGURATION SUMMARY")
         print("=" * 80)
@@ -864,8 +974,12 @@ class BazelConfiguration:
         # Compiler and build tool
         print(f"\n{Fore.CYAN}Compiler & Build Tool:{Style.RESET_ALL}")
         print(f"  Platform:          {self.system}")
-        print(f"  Build Tool:        {self.build_tool.upper() if self.build_tool else 'NINJA (default)'}")
-        print(f"  Compiler:          {self.compiler.upper() if self.compiler else 'CLANG (default)'}")
+        print(
+            f"  Build Tool:        {self.build_tool.upper() if self.build_tool else 'NINJA (default)'}"
+        )
+        print(
+            f"  Compiler:          {self.compiler.upper() if self.compiler else 'CLANG (default)'}"
+        )
         if self.visual_studio_version:
             print(f"  Visual Studio:     {self.visual_studio_version.upper()}")
 
@@ -886,34 +1000,38 @@ class BazelConfiguration:
             print("  Vectorization:     None")
 
         if self.library_project:
-            pkg = _BAZEL_LIBRARY_PACKAGE_DIR.get(self.library_project, self.library_project)
+            pkg = _BAZEL_LIBRARY_PACKAGE_DIR.get(
+                self.library_project, self.library_project
+            )
             print(f"  Library scope:     //Library/{pkg}/...")
 
         # Feature flags — computed from the same state as per-module summaries
         mimalloc_on = True  # Bazel default ON (see .bazelrc memory_enable_mimalloc)
-        gtest_on    = not self.disable_gtest     # ON by default (mirrors CMake option(... ON))
+        gtest_on = (
+            not self.disable_gtest
+        )  # ON by default (mirrors CMake option(... ON))
 
         print(f"\n{Fore.CYAN}Feature Flags:{Style.RESET_ALL}")
-        flags = [
-            ("MEMORY_ENABLE_MIMALLOC",    mimalloc_on),
-            ("CORE_HAS_MAGICENUM",        True),
-            ("PARALLEL/MEMORY_HAS_TBB",   "tbb"    in self.configs),
-            ("PARALLEL_HAS_OPENMP",       "openmp" in self.configs),
-            ("MEMORY_HAS_CUDA",           "cuda"   in self.configs),
-            ("MEMORY_HAS_HIP",            "hip"    in self.configs),
-            ("LTO_MODE",                  self.lto_mode),
-            ("CORE_HAS_ENZYME",           "enzyme" in self.configs),
+        flags: list[tuple[str, bool | str]] = [
+            ("MEMORY_ENABLE_MIMALLOC", mimalloc_on),
+            ("CORE_HAS_MAGICENUM", True),
+            ("PARALLEL/MEMORY_HAS_TBB", "tbb" in self.configs),
+            ("PARALLEL_HAS_OPENMP", "openmp" in self.configs),
+            ("MEMORY_HAS_CUDA", "cuda" in self.configs),
+            ("MEMORY_HAS_HIP", "hip" in self.configs),
+            ("LTO_MODE", self.lto_mode),
+            ("CORE_HAS_ENZYME", "enzyme" in self.configs),
             ("VECTORIZATION_ENABLE_SLEEF", self.enable_sleef),
-            ("QUARISMA_ENABLE_GTEST",     gtest_on),
-            ("BUILD_SHARED_LIBS",         self.shared_libs),
-            ("ENABLE_SPELL",              self.spell),
-            ("ENABLE_CLANGTIDY",          self.clangtidy),
-            ("ENABLE_FIX",                self.fix),
-            ("ENABLE_IWYU",               self.iwyu),
-            ("ENABLE_CPPCHECK",           self.cppcheck),
-            ("ENABLE_VALGRIND",           self.valgrind),
-            ("ENABLE_ICECC",              self.icecc),
-            ("ENABLE_EXAMPLES",           self.examples),
+            ("QUARISMA_ENABLE_GTEST", gtest_on),
+            ("BUILD_SHARED_LIBS", self.shared_libs),
+            ("ENABLE_SPELL", self.spell),
+            ("ENABLE_CLANGTIDY", self.clangtidy),
+            ("ENABLE_FIX", self.fix),
+            ("ENABLE_IWYU", self.iwyu),
+            ("ENABLE_CPPCHECK", self.cppcheck),
+            ("ENABLE_VALGRIND", self.valgrind),
+            ("ENABLE_ICECC", self.icecc),
+            ("ENABLE_EXAMPLES", self.examples),
         ]
         for flag, state in flags:
             if isinstance(state, str):
@@ -938,7 +1056,11 @@ class BazelConfiguration:
 
         # Bazel command preview
         if self.run_build or self.run_tests or self.run_coverage:
-            action = "test" if self.run_tests else ("coverage" if self.run_coverage else "build")
+            action = (
+                "test"
+                if self.run_tests
+                else ("coverage" if self.run_coverage else "build")
+            )
             cmd = self.build_bazel_command(action)
             print(f"\n{Fore.CYAN}Bazel Command:{Style.RESET_ALL}")
             print(f"  {' '.join(cmd)}")
@@ -947,7 +1069,6 @@ class BazelConfiguration:
 
     def config(self) -> None:
         """Handle config action (summary already printed by execute())."""
-        pass
 
     def clean(self) -> None:
         """Clean Bazel build artifacts."""
@@ -1001,7 +1122,9 @@ class BazelConfiguration:
             print_status(f"Build failed with exit code {e.returncode}", "ERROR")
             sys.exit(1)
         except subprocess.TimeoutExpired:
-            print_status(f"Build timed out (exceeded {self.subprocess_timeout}s)", "ERROR")
+            print_status(
+                f"Build timed out (exceeded {self.subprocess_timeout}s)", "ERROR"
+            )
             sys.exit(1)
 
     def test(self) -> None:
@@ -1029,7 +1152,9 @@ class BazelConfiguration:
             self.timing_data["test"] = elapsed
 
             if result.returncode == 0:
-                print_status(f"Tests completed successfully ({elapsed:.2f}s)", "SUCCESS")
+                print_status(
+                    f"Tests completed successfully ({elapsed:.2f}s)", "SUCCESS"
+                )
                 if elapsed > self.slow_phase_warn_seconds:
                     print_status(
                         f"Tests took longer than {self.slow_phase_warn_seconds:.0f}s — "
@@ -1040,10 +1165,14 @@ class BazelConfiguration:
                 # No test targets found - this is not an error
                 print_status(f"No test targets found ({elapsed:.2f}s)", "WARNING")
             else:
-                print_status(f"Tests failed with exit code {result.returncode}", "ERROR")
+                print_status(
+                    f"Tests failed with exit code {result.returncode}", "ERROR"
+                )
                 sys.exit(1)
         except subprocess.TimeoutExpired:
-            print_status(f"Tests timed out (exceeded {self.subprocess_timeout}s)", "ERROR")
+            print_status(
+                f"Tests timed out (exceeded {self.subprocess_timeout}s)", "ERROR"
+            )
             sys.exit(1)
         except subprocess.CalledProcessError as e:
             print_status(f"Tests failed with exit code {e.returncode}", "ERROR")
@@ -1073,19 +1202,321 @@ class BazelConfiguration:
             self.timing_data["coverage"] = elapsed
 
             if result.returncode == 0:
-                print_status(f"Coverage completed successfully ({elapsed:.2f}s)", "SUCCESS")
-                print_status("Coverage report: bazel-out/_coverage/_coverage_report.dat", "INFO")
+                print_status(
+                    f"Coverage completed successfully ({elapsed:.2f}s)", "SUCCESS"
+                )
+                dat_path = self._build_llvm_coverage_report(start_time)
+                if dat_path is None:
+                    dat_path = self._resolve_coverage_dat_path()
+                print_status(f"Coverage report (LCOV): {dat_path}", "INFO")
+                self._generate_coverage_html(dat_path)
             elif result.returncode == 4:
                 print_status(f"No coverage targets found ({elapsed:.2f}s)", "WARNING")
             else:
-                print_status(f"Coverage failed with exit code {result.returncode}", "ERROR")
+                print_status(
+                    f"Coverage failed with exit code {result.returncode}", "ERROR"
+                )
                 sys.exit(1)
         except subprocess.TimeoutExpired:
-            print_status(f"Coverage timed out (exceeded {self.subprocess_timeout}s)", "ERROR")
+            print_status(
+                f"Coverage timed out (exceeded {self.subprocess_timeout}s)", "ERROR"
+            )
             sys.exit(1)
         except subprocess.CalledProcessError as e:
             print_status(f"Coverage failed with exit code {e.returncode}", "ERROR")
             sys.exit(1)
+
+    def _bazel_info(self, key: str, fallback: str) -> str:
+        """Resolve a `bazel info <key>` value (absolute path, cwd-independent).
+
+        setup_bazel.py is normally invoked from Scripts/, not the workspace root, so a
+        cwd-relative guess (e.g. "bazel-out/...") can silently miss the real path.
+        """
+        bazel_cmd = get_bazel_command()
+        try:
+            result = subprocess.run(
+                [bazel_cmd, "info", key],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            return result.stdout.strip()
+        except (
+            subprocess.CalledProcessError,
+            subprocess.TimeoutExpired,
+            FileNotFoundError,
+        ):
+            return fallback
+
+    def _resolve_coverage_dat_path(self) -> str:
+        """Resolve the absolute path to Bazel's own combined LCOV coverage report.
+
+        This is Bazel's own report (see the known-empty-DA-records issue in
+        Docs/BAZEL_USER_GUIDE.md's Coverage section) -- prefer
+        _build_llvm_coverage_report()'s output when available.
+        """
+        output_path = self._bazel_info("output_path", "bazel-out")
+        return os.path.join(output_path, "_coverage", "_coverage_report.dat")
+
+    def _find_recent_profraw_files(self, since: float) -> list[str]:
+        """Find .profraw files the just-run coverage tests produced.
+
+        `bazel coverage` genuinely runs the instrumented tests and writes real .profraw
+        profile data (confirmed non-empty, with real per-function counters) -- it's only
+        Bazel's own downstream report merging that's broken (see
+        _build_llvm_coverage_report). The raw files land under the output base's sandbox
+        stash, e.g. <output_base>/sandbox/sandbox_stash/TestRunner/<n>/.../_coverage/
+        <target-path>/test/*.profraw, which Bazel keeps around (for sandbox reuse) rather
+        than deleting immediately after the action completes -- reliable enough to harvest
+        right after this same coverage run, filtered by mtime to exclude stale leftovers
+        from earlier runs reusing the same stash slots.
+        """
+        output_base = self._bazel_info("output_base", "")
+        if not output_base:
+            return []
+
+        stash_root = os.path.join(output_base, "sandbox", "sandbox_stash", "TestRunner")
+        if not os.path.isdir(stash_root):
+            return []
+
+        profraw_files = []
+        for root, _dirs, files in os.walk(stash_root):
+            if "_coverage" not in root:
+                continue
+            for name in files:
+                if not name.endswith(".profraw"):
+                    continue
+                path = os.path.join(root, name)
+                try:
+                    if os.path.getmtime(path) >= since:
+                        profraw_files.append(path)
+                except OSError:
+                    continue
+        return profraw_files
+
+    def _find_coverage_test_binaries(self) -> list[str]:
+        """Resolve bazel-bin paths for every cc_test target covered by this run."""
+        bazel_cmd = get_bazel_command()
+        targets_expr = " + ".join(self.targets)
+        try:
+            query_result = subprocess.run(
+                [
+                    bazel_cmd,
+                    "query",
+                    f"kind(cc_test, {targets_expr})",
+                    "--output=label",
+                    # `query` doesn't inherit .bazelrc's "build --enable_workspace" the
+                    # way build/test/coverage do. This repo has one WORKSPACE-registered
+                    # repository rule (parallel_openmp, via openmp_configure() in
+                    # WORKSPACE.bazel) -- loading //Library/Parallel/... without this flag
+                    # fails with "unknown repo 'parallel_openmp'", which a full-tree (//...)
+                    # query touches even though a single-library-scoped one may not.
+                    "--enable_workspace",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+        except (
+            subprocess.CalledProcessError,
+            subprocess.TimeoutExpired,
+            FileNotFoundError,
+        ):
+            return []
+
+        bazel_bin = self._bazel_info("bazel-bin", "")
+        if not bazel_bin:
+            return []
+
+        binaries = []
+        for label in query_result.stdout.splitlines():
+            label = label.strip()
+            if not label.startswith("//"):
+                continue
+            pkg, _, name = label[2:].partition(":")
+            binaries.append(os.path.join(bazel_bin, pkg, name))
+        return binaries
+
+    def _build_llvm_coverage_report(self, since: float) -> Optional[str]:
+        """Build a real LCOV trace directly via llvm-profdata/llvm-cov (Clang only).
+
+        Bazel's own C++ coverage report merging is broken: its bundled
+        collect_cc_coverage.sh never populates the runtime_objects_list.txt manifest
+        entry that `llvm-cov export -object <binary>` needs, so its combined report
+        always has zero DA: (line-hit) records despite real .profraw data existing --
+        this is an acknowledged upstream limitation (that script's own header comment:
+        "Bazel C++ code coverage collection support is poor and limited... tracking
+        issue #1118"), not something fixable via Bazel flags. Drive the same
+        llvm-profdata merge + llvm-cov export pipeline manually instead, using the
+        .profraw files bazel coverage already wrote and the compiled test binaries --
+        verified to produce real per-line coverage data.
+
+        Clang-only, mirroring setup.py's CMake coverage dispatch (Clang ->
+        llvm-profdata/llvm-cov, GCC -> gcov/lcov, MSVC -> OpenCppCoverage; see
+        Docs/BAZEL_USER_GUIDE.md's Coverage Tools by Compiler table). Bazel's own
+        "gcc" compiler identity isn't wired up to a real GNU GCC on this repo's
+        supported platforms the way CMake's is (and hits an unrelated, pre-existing
+        ThirdParty/cpuinfo incompatibility when forced), and MSVC-via-Bazel isn't
+        set up here at all -- so unlike CMake, only the Clang path is implemented
+        for Bazel coverage right now.
+        """
+        if self.compiler != "clang":
+            print_status(
+                f"Bazel coverage HTML generation is only implemented for Clang "
+                f"(compiler is '{self.compiler}'); falling back to Bazel's own "
+                "(known-empty) report. See Docs/BAZEL_USER_GUIDE.md's Coverage "
+                "section.",
+                "WARNING",
+            )
+            return None
+
+        profraw_files = self._find_recent_profraw_files(since)
+        if not profraw_files:
+            print_status(
+                "No .profraw files found from this coverage run; "
+                "falling back to Bazel's own (known-empty) report",
+                "WARNING",
+            )
+            return None
+
+        binaries = [b for b in self._find_coverage_test_binaries() if os.path.isfile(b)]
+        if not binaries:
+            print_status(
+                "Could not resolve test binaries for llvm-cov -object; "
+                "falling back to Bazel's own (known-empty) report",
+                "WARNING",
+            )
+            return None
+
+        llvm_profdata = shutil.which("llvm-profdata")
+        llvm_cov = shutil.which("llvm-cov")
+        if not llvm_profdata or not llvm_cov:
+            print_status(
+                "llvm-profdata/llvm-cov not found on PATH; "
+                "falling back to Bazel's own (known-empty) report",
+                "WARNING",
+            )
+            return None
+
+        output_path = self._bazel_info("output_path", "bazel-out")
+        coverage_dir = os.path.join(output_path, "_coverage")
+        os.makedirs(coverage_dir, exist_ok=True)
+        merged_profdata = os.path.join(coverage_dir, "_merged.profdata")
+        dat_path = os.path.join(coverage_dir, "_llvm_coverage_report.dat")
+
+        try:
+            merge_result = subprocess.run(
+                [llvm_profdata, "merge", "-o", merged_profdata, *profraw_files],
+                capture_output=True,
+                text=True,
+                timeout=self.subprocess_timeout,
+            )
+            if merge_result.returncode != 0:
+                print_status(
+                    f"llvm-profdata merge failed: {merge_result.stderr.strip()}",
+                    "WARNING",
+                )
+                return None
+
+            export_cmd = [
+                llvm_cov,
+                "export",
+                "-instr-profile",
+                merged_profdata,
+                "-format=lcov",
+                # /external/ is Bazel's staging path for non-vendored deps (googletest,
+                # abseil, ...) -- exclude those the same way /ThirdParty/ (our vendored
+                # submodules) is excluded, so the report only covers our own code.
+                "-ignore-filename-regex=(/external/|/ThirdParty/|^/opt/|^/usr/|^/Applications/)",
+            ]
+            for binary in binaries:
+                export_cmd += ["-object", binary]
+            export_result = subprocess.run(
+                export_cmd,
+                capture_output=True,
+                text=True,
+                timeout=self.subprocess_timeout,
+            )
+            if export_result.returncode != 0:
+                print_status(
+                    f"llvm-cov export failed: {export_result.stderr.strip()}",
+                    "WARNING",
+                )
+                return None
+
+            # llvm-cov reports source paths as seen at compile time, i.e. under the
+            # per-action sandbox (.../execroot/_main/<workspace-relative-path>) --
+            # that directory is transient and typically gone by the time genhtml
+            # reads it back. Rewrite to the real, persistent repo path so genhtml can
+            # actually find and annotate the source.
+            workspace_root = self._bazel_info("workspace", "")
+            lcov_text = export_result.stdout
+            if workspace_root:
+                lcov_text = re.sub(
+                    r"^SF:.*?/execroot/_main/",
+                    f"SF:{workspace_root}/",
+                    lcov_text,
+                    flags=re.MULTILINE,
+                )
+            with open(dat_path, "w", encoding="utf-8") as f:
+                f.write(lcov_text)
+        except OSError as e:
+            print_status(f"Failed to build coverage report: {e}", "WARNING")
+            return None
+
+        return dat_path
+
+    def _generate_coverage_html(self, dat_path: str) -> None:
+        """Convert the Bazel LCOV coverage report into an HTML report via genhtml."""
+        if not os.path.isfile(dat_path):
+            print_status(
+                f"Coverage LCOV file not found at {dat_path}; skipping HTML report",
+                "WARNING",
+            )
+            return
+
+        genhtml = shutil.which("genhtml")
+        if genhtml is None:
+            print_status(
+                "genhtml not found on PATH; skipping HTML report "
+                "(install lcov to enable it, e.g. 'brew install lcov' or "
+                "'apt install lcov')",
+                "WARNING",
+            )
+            return
+
+        html_dir = os.path.join(os.path.dirname(dat_path), "html")
+        cmd = [
+            genhtml,
+            dat_path,
+            "--output-directory",
+            html_dir,
+            # llvm-cov's LCOV export and genhtml's newer strict consistency checker
+            # (added in lcov 2.x) don't always agree on function-vs-line hit counts
+            # for lambdas/closures (e.g. inside googletest internals) -- a known
+            # translation quirk between the two tools, not actual data corruption.
+            "--ignore-errors",
+            "inconsistent,corrupt,unsupported",
+        ]
+        try:
+            subprocess.run(
+                cmd,
+                check=True,
+                timeout=self.subprocess_timeout,
+                capture_output=True,
+                text=True,
+            )
+            index_html = os.path.abspath(os.path.join(html_dir, "index.html"))
+            print_status(f"Coverage HTML report: {index_html}", "SUCCESS")
+        except subprocess.CalledProcessError as e:
+            print_status(
+                f"Failed to generate HTML coverage report: {(e.stderr or '').strip()[-500:]}",
+                "WARNING",
+            )
+        except subprocess.TimeoutExpired as e:
+            print_status(f"Failed to generate HTML coverage report: {e}", "WARNING")
 
     def print_timing_summary(self) -> None:
         """Print timing summary for build phases."""
@@ -1113,7 +1544,9 @@ class BazelConfiguration:
         self.config()
         # config token implies a clean slate — force expunge before any build/test.
         if self.run_config and (self.run_build or self.run_tests or self.run_coverage):
-            print_status("Config requested: forcing clean build (bazel clean --expunge).", "INFO")
+            print_status(
+                "Config requested: forcing clean build (bazel clean --expunge).", "INFO"
+            )
             self.run_clean = True
         self.clean()
         if self.run_build or self.run_tests or self.run_coverage:
@@ -1145,7 +1578,7 @@ def parse_args(args: list[str]) -> list[str]:
     Supports the same long-option spellings as setup.py where applicable:
       --sanitizer.address, --logging.LOGURU, --profiler.kineto, --parallel.tbb
     """
-    processed: List[str] = []
+    processed: list[str] = []
 
     for arg in args:
         if arg.startswith("--project."):
@@ -1157,7 +1590,10 @@ def parse_args(args: list[str]) -> list[str]:
                 )
                 sys.exit(1)
             processed.append(f"project.{proj}")
-            print_status(f"Library scope: //Library/{_BAZEL_LIBRARY_PACKAGE_DIR[proj]}/...", "INFO")
+            print_status(
+                f"Library scope: //Library/{_BAZEL_LIBRARY_PACKAGE_DIR[proj]}/...",
+                "INFO",
+            )
             continue
 
         if arg.startswith("--lto."):
@@ -1239,7 +1675,7 @@ def parse_args(args: list[str]) -> list[str]:
                 sys.exit(1)
             continue
 
-        if arg.startswith("--cpu_backend.") or arg.startswith("--cpu-backend."):
+        if arg.startswith(("--cpu_backend.", "--cpu-backend.")):
             bt = arg.split(".", 1)[1].lower()
             if bt in ("no", "sse", "avx", "avx2", "avx512", "neon", "sve"):
                 processed.append(f"cpu_backend.{bt}")
@@ -1251,7 +1687,7 @@ def parse_args(args: list[str]) -> list[str]:
                 sys.exit(1)
             continue
 
-        if arg.startswith("--gpu_backend.") or arg.startswith("--gpu-backend."):
+        if arg.startswith(("--gpu_backend.", "--gpu-backend.")):
             bt = arg.split(".", 1)[1].lower()
             if bt in ("none", "cuda", "hip", "metal"):
                 processed.append(f"gpu_backend.{bt}")
@@ -1282,7 +1718,7 @@ def parse_args(args: list[str]) -> list[str]:
 
 
 def print_help() -> None:
-    """Print help message."""
+    """Print usage examples and the full list of supported dotted tokens."""
     print_status("Quarisma Bazel Build Configuration Helper", "INFO")
     print("\n" + "=" * 80)
     print("BAZEL BUILD SYSTEM")
@@ -1332,7 +1768,9 @@ def print_help() -> None:
     print("  avx512        - AVX512 vectorization")
     print("  neon          - AArch64 NEON (128-bit SIMD)")
     print("  sve           - AArch64 SVE fixed 128-bit (-msve-vector-bits=128)")
-    print("  sleef         - SLEEF SIMD math for NEON/SVE (maps to --config=sleef in .bazelrc)")
+    print(
+        "  sleef         - SLEEF SIMD math for NEON/SVE (maps to --config=sleef in .bazelrc)"
+    )
     print("\nOptional features:")
     print("  lto           - Link-time optimization (auto mode; maps to --config=lto)")
     print("  --lto.thin    - ThinLTO (Clang; Bazel maps to --config=lto)")
@@ -1348,28 +1786,44 @@ def print_help() -> None:
     print("  numa          - NUMA (build:numa)")
     print("  memkind       - memkind (build:memkind)")
     print("  benchmark     - Google Benchmark (default ON; token optional)")
-    print("  gtest         - Disables GTest defines (CMake inverse; default is ON in both systems)")
+    print(
+        "  gtest         - Disables GTest defines (CMake inverse; default is ON in both systems)"
+    )
     print("  static        - Shared libraries (CMake: BUILD_SHARED_LIBS=ON)")
     print("  parallel.std | parallel.openmp | parallel.tbb  — exclusive SMP backend")
-    print("  project.NAME | --project.NAME  — only //Library/<Name>/... (logging, memory, …)")
+    print(
+        "  project.NAME | --project.NAME  — only //Library/<Name>/... (logging, memory, …)"
+    )
     print("  --parallel.* / --logging.* / --profiler.*  — same long flags as setup.py")
     print("  vv            - Verbose Bazel test output (--test_output=all)")
-    print("  batch         - Pass --batch to Bazel; script runs `bazel shutdown` first to avoid")
-    print("                  startup-option warnings (or run: bazel shutdown; bazel --batch ...)")
-    print("  spell         - (CMake only) Spell-check — ignored in Bazel, warning emitted")
-    print("  clangtidy     - (CMake only) Clang-tidy — ignored in Bazel, warning emitted")
+    print(
+        "  batch         - Pass --batch to Bazel; script runs `bazel shutdown` first to avoid"
+    )
+    print(
+        "                  startup-option warnings (or run: bazel shutdown; bazel --batch ...)"
+    )
+    print(
+        "  spell         - (CMake only) Spell-check — ignored in Bazel, warning emitted"
+    )
+    print(
+        "  clangtidy     - (CMake only) Clang-tidy — ignored in Bazel, warning emitted"
+    )
     print("\nLogging backends:")
     print("  glog          - Google glog")
     print("  loguru        - Loguru logging")
     print("  native        - Native logging")
     print("  spdlog        - spdlog (header-only, external fmt)")
-    print("\nSanitizers (Bazel --config; CMake names accepted via dotted args or --sanitizer.*):")
+    print(
+        "\nSanitizers (Bazel --config; CMake names accepted via dotted args or --sanitizer.*):"
+    )
     print("  asan          - AddressSanitizer (CMake: address)")
     print("  tsan          - ThreadSanitizer (CMake: thread)")
     print("  ubsan         - UndefinedBehaviorSanitizer (CMake: undefined)")
     print("  msan          - MemorySanitizer (CMake: memory)")
     print("  lsan          - LeakSanitizer (CMake: leak)")
-    print("  --sanitizer.address | .undefined | .thread | .memory | .leak  (same as setup.py)")
+    print(
+        "  --sanitizer.address | .undefined | .thread | .memory | .leak  (same as setup.py)"
+    )
     print("\nActions:")
     print("  config        - Show configuration summary (no build)")
     print("  build         - Build the project")
@@ -1392,16 +1846,19 @@ def main() -> None:
         return
 
     # Check if Bazel is installed
-    '''if not check_bazel_installed():
+    """if not check_bazel_installed():
         print_status("Bazel or Bazelisk is not installed!", "ERROR")
         print_status("Install Bazelisk:", "INFO")
         print_status("  macOS:  brew install bazelisk", "INFO")
         print_status("  Linux:  npm install -g @bazel/bazelisk", "INFO")
         print_status("  Or download from: https://github.com/bazelbuild/bazelisk/releases", "INFO")
-        sys.exit(1)'''
+        sys.exit(1)"""
 
     if len(sys.argv) < 2:
-        print_status("No build configuration specified. Use --help for usage information.", "ERROR")
+        print_status(
+            "No build configuration specified. Use --help for usage information.",
+            "ERROR",
+        )
         sys.exit(1)
 
     try:
@@ -1414,7 +1871,13 @@ def main() -> None:
         config = BazelConfiguration(arg_list)
 
         # If no actions specified, default to build
-        if not (config.run_build or config.run_tests or config.run_clean or config.run_config or config.run_coverage):
+        if not (
+            config.run_build
+            or config.run_tests
+            or config.run_clean
+            or config.run_config
+            or config.run_coverage
+        ):
             config.run_build = True
 
         # Execute build pipeline

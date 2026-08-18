@@ -1,0 +1,16 @@
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "modelsTest_header",
+    hdrs = [
+        "ModelsTest.h",
+        "ModelsTest.h.in",
+    ],
+    includes = [
+        ".",
+        "../..",
+    ],
+    deps = [
+        "//Library/Models:Models",
+    ],
+)

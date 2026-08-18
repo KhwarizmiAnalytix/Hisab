@@ -63,7 +63,7 @@ namespace parallel_impl
 // (each TU needs its own declaration) and avoids an ODR violation / duplicate-symbol link
 // error when two TUs including this header end up statically linked into the same binary.
 static unsigned char parallel_tools_functor_initialized = 0;
-#pragma omp   threadprivate(parallel_tools_functor_initialized)
+#pragma omp          threadprivate(parallel_tools_functor_initialized)
 #endif
 
 template <typename T>
@@ -293,7 +293,7 @@ public:
         config(int max_num_threads) : max_number_of_threads_(max_num_threads) {}
         config(bool nested) : nested_parallelism_(nested) {}
         config(std::string backend) : backend_(std::move(backend)) {}
-        config(int max_num_threads, std::string  backend, bool nested)
+        config(int max_num_threads, std::string backend, bool nested)
             : max_number_of_threads_(max_num_threads),
               backend_(std::move(backend)),
               nested_parallelism_(nested)

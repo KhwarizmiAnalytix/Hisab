@@ -24,16 +24,18 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
     list(REMOVE_ITEM test_sources "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
     message(STATUS "VectorizationCxxTests: CUDA-specific tests (Test*.cu, TestTensorGpu.cpp) "
                    "excluded — Clang ${CMAKE_CXX_COMPILER_VERSION} + CUDA ${CUDAToolkit_VERSION} "
-                   "texture-intrinsics incompatibility")
+                   "texture-intrinsics incompatibility"
+    )
   else()
-    file(GLOB_RECURSE cuda_test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cu")
+    file(GLOB_RECURSE cuda_test_sources LIST_DIRECTORIES false
+         "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cu"
+    )
     list(APPEND test_sources ${cuda_test_sources})
 
     # TestTensorGpu.cpp: processed by nvcc to instantiate GPU expression-template kernels.
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
       set_source_files_properties(
-        "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp"
-        PROPERTIES LANGUAGE CUDA
+        "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp" PROPERTIES LANGUAGE CUDA
       )
     endif()
   endif()
@@ -57,8 +59,7 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "hip")
   # TestTensorGpu.cpp: processed by hipcc to instantiate GPU expression-template kernels.
   if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
     set_source_files_properties(
-      "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp"
-      PROPERTIES LANGUAGE HIP
+      "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp" PROPERTIES LANGUAGE HIP
     )
   endif()
   message(STATUS "VectorizationCxxTests: HIP-specific tests (Test*.cu, TestTensorGpu.cpp) included")
@@ -84,7 +85,8 @@ endif()
 if(NOT VECTORIZATION_ENABLE_LIBTORCH)
   list(FILTER test_sources EXCLUDE REGEX ".*TestTensorLibTorch.*\\.cpp$")
   message(STATUS "VectorizationCxxTests: TestTensorLibTorch*.cpp excluded — "
-                 "VECTORIZATION_ENABLE_LIBTORCH is OFF")
+                 "VECTORIZATION_ENABLE_LIBTORCH is OFF"
+  )
 endif()
 
 add_executable(VectorizationCxxTests ${test_sources})
@@ -115,12 +117,20 @@ target_link_libraries(
 # with "nvcc fatal : Host compiler targets unsupported OS" — regardless of
 # our own VECTORIZATION_GPU_BACKEND selection.
 if(NOT VECTORIZATION_ENABLE_LIBTORCH)
-  message(STATUS "LibTorch disabled (pass 'torch' to setup.py, or -DVECTORIZATION_ENABLE_LIBTORCH=ON, to enable)")
-elseif((VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND CMAKE_CUDA_COMPILER_ID STREQUAL "Clang")
-   OR (WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
-       AND NOT CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC"))
+  message(
+    STATUS
+      "LibTorch disabled (pass 'torch' to setup.py, or -DVECTORIZATION_ENABLE_LIBTORCH=ON, to enable)"
+  )
+elseif(
+  VECTORIZATION_GPU_BACKEND STREQUAL "cuda"
+  AND CMAKE_CUDA_COMPILER_ID STREQUAL "Clang"
+  OR WIN32
+  AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
+  AND NOT CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC"
+)
   message(STATUS "LibTorch not probed — GNU-frontend Clang is incompatible with "
-                 "LibTorch's CUDA detection (nvcc requires MSVC cl.exe or clang-cl on Windows)")
+                 "LibTorch's CUDA detection (nvcc requires MSVC cl.exe or clang-cl on Windows)"
+  )
 else()
   set(_saved_module_path "${CMAKE_MODULE_PATH}")
   set(CMAKE_MODULE_PATH "")
@@ -163,19 +173,25 @@ if(Torch_FOUND)
   unset(_mkl_link_dirs)
   unset(_mkl_ver_libs)
 elseif(VECTORIZATION_ENABLE_LIBTORCH)
-  message(STATUS "LibTorch not found — LibTorch tests skipped (add install dir to CMAKE_PREFIX_PATH to enable)")
+  message(
+    STATUS
+      "LibTorch not found — LibTorch tests skipped (add install dir to CMAKE_PREFIX_PATH to enable)"
+  )
 endif()
 
 if(Torch_FOUND)
   target_link_libraries(VectorizationCxxTests PRIVATE torch)
   target_compile_definitions(VectorizationCxxTests PRIVATE VECTORIZATION_HAS_LIBTORCH=1)
-  target_compile_options(VectorizationCxxTests PRIVATE
-    $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-deprecated-declarations -Wno-unused-parameter>
-    $<$<CXX_COMPILER_ID:GNU>:-Wno-deprecated-declarations -Wno-unused-parameter>
+  target_compile_options(
+    VectorizationCxxTests
+    PRIVATE $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-deprecated-declarations
+            -Wno-unused-parameter> $<$<CXX_COMPILER_ID:GNU>:-Wno-deprecated-declarations
+            -Wno-unused-parameter>
   )
   if(WIN32)
     file(GLOB _torch_dlls "${TORCH_INSTALL_PREFIX}/lib/*.dll")
-    add_custom_command(TARGET VectorizationCxxTests POST_BUILD
+    add_custom_command(
+      TARGET VectorizationCxxTests POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_torch_dlls}
               $<TARGET_FILE_DIR:VectorizationCxxTests>
     )
@@ -188,8 +204,10 @@ if(Torch_FOUND)
   endif()
   message(STATUS "VectorizationCxxTests: LibTorch comparison tests ENABLED")
 else()
-  target_compile_definitions(VectorizationCxxTests PRIVATE VECTORIZATION_HAS_LIBTORCH=0
-                                                           VECTORIZATION_LIBTORCH_CUDA_REQUIRED=0)
+  target_compile_definitions(
+    VectorizationCxxTests PRIVATE VECTORIZATION_HAS_LIBTORCH=0
+                                  VECTORIZATION_LIBTORCH_CUDA_REQUIRED=0
+  )
 endif()
 
 set_target_properties(
@@ -202,10 +220,13 @@ set_target_properties(
 
 # CUDA-specific properties for the test executable when any CUDA source is present
 # (.cu files or .cpp files compiled as CUDA via LANGUAGE CUDA).
-if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND
-   (cuda_test_sources OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp"))
-  set_target_properties(VectorizationCxxTests PROPERTIES
-    CUDA_ARCHITECTURES "${VECTORIZATION_CUDA_ARCHITECTURES}"
+set(_vectorization_has_cuda_gpu_test_source FALSE)
+if(cuda_test_sources OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
+  set(_vectorization_has_cuda_gpu_test_source TRUE)
+endif()
+if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND _vectorization_has_cuda_gpu_test_source)
+  set_target_properties(
+    VectorizationCxxTests PROPERTIES CUDA_ARCHITECTURES "${VECTORIZATION_CUDA_ARCHITECTURES}"
   )
   # Clang CUDA + MSVC C++20: std::lerp is constexpr, so Clang implicitly marks it
   # __host__ __device__, making the internal std::fma call ambiguous (both host and
@@ -216,26 +237,27 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND
   # CMAKE_CXX_COMPILER_ID as the reliable fallback: when Clang is the CUDA compiler
   # it is always also the CXX compiler, so CMAKE_CXX_COMPILER_ID is always "Clang".
   if(CMAKE_CUDA_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(VectorizationCxxTests PRIVATE
-      $<$<COMPILE_LANGUAGE:CUDA>:-Xclang -fno-cuda-host-device-constexpr>
+    target_compile_options(
+      VectorizationCxxTests PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xclang
+                                    -fno-cuda-host-device-constexpr>
     )
     # Clang 22 + -O3 crashes in the always-inline pass when compiling
     # TestTensorGpu.cpp (heavy tensor.h expression templates).  -O1 is sufficient
     # for integration tests and avoids the ICE.
     set_source_files_properties(
-      "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp"
-      PROPERTIES COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:CUDA>:-O1>"
+      "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp" PROPERTIES COMPILE_OPTIONS
+                                                                 "$<$<COMPILE_LANGUAGE:CUDA>:-O1>"
     )
     # Clang on Windows does not populate CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES,
     # so lld-link cannot find cudadevrt.lib / cudart_static.lib that Clang
     # adds automatically via -l flags. Point the linker at the CUDA lib dir.
     if(WIN32)
-      target_link_directories(VectorizationCxxTests PRIVATE
-        "${CMAKE_CUDA_COMPILER_TOOLKIT_LIBRARY_ROOT}/lib/x64"
+      target_link_directories(
+        VectorizationCxxTests PRIVATE "${CMAKE_CUDA_COMPILER_TOOLKIT_LIBRARY_ROOT}/lib/x64"
       )
     else()
-      target_link_directories(VectorizationCxxTests PRIVATE
-        "${CMAKE_CUDA_COMPILER_TOOLKIT_LIBRARY_ROOT}/lib64"
+      target_link_directories(
+        VectorizationCxxTests PRIVATE "${CMAKE_CUDA_COMPILER_TOOLKIT_LIBRARY_ROOT}/lib64"
       )
     endif()
   else()
@@ -261,23 +283,33 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND
     # 5 GPU architectures), not a source-level bug. -O1 is sufficient for
     # integration tests and avoids both crashes.
     set_source_files_properties(
-      "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp"
-      "${CMAKE_CURRENT_SOURCE_DIR}/TestGpuSimd.cu"
+      "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/TestGpuSimd.cu"
       PROPERTIES COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:CUDA>:-O1>"
     )
   endif()
-  message(STATUS "VectorizationCxxTests: CUDA simd tests enabled (archs: ${VECTORIZATION_CUDA_ARCHITECTURES})")
+  message(
+    STATUS
+      "VectorizationCxxTests: CUDA simd tests enabled (archs: ${VECTORIZATION_CUDA_ARCHITECTURES})"
+  )
 endif()
+unset(_vectorization_has_cuda_gpu_test_source)
 
 # HIP-specific properties for the test executable when any HIP source is present
 # (.cu files or .cpp files compiled as HIP via LANGUAGE HIP).
-if(VECTORIZATION_GPU_BACKEND STREQUAL "hip" AND
-   (hip_test_sources OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp"))
-  set_target_properties(VectorizationCxxTests PROPERTIES
-    HIP_ARCHITECTURES "${VECTORIZATION_GPU_ARCHITECTURES}"
-  )
-  message(STATUS "VectorizationCxxTests: HIP simd tests enabled (archs: ${VECTORIZATION_GPU_ARCHITECTURES})")
+set(_vectorization_has_hip_gpu_test_source FALSE)
+if(hip_test_sources OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
+  set(_vectorization_has_hip_gpu_test_source TRUE)
 endif()
+if(VECTORIZATION_GPU_BACKEND STREQUAL "hip" AND _vectorization_has_hip_gpu_test_source)
+  set_target_properties(
+    VectorizationCxxTests PROPERTIES HIP_ARCHITECTURES "${VECTORIZATION_GPU_ARCHITECTURES}"
+  )
+  message(
+    STATUS
+      "VectorizationCxxTests: HIP simd tests enabled (archs: ${VECTORIZATION_GPU_ARCHITECTURES})"
+  )
+endif()
+unset(_vectorization_has_hip_gpu_test_source)
 
 add_test(NAME VectorizationCxxTests COMMAND VectorizationCxxTests
          WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
@@ -380,11 +412,13 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
   # above). Without LANGUAGE CUDA the tensor<T> device-dispatch branch in
   # expressions_evaluator.h is silently compiled out (no __CUDACC__), which
   # would make the benchmark dereference device pointers from host code.
-  if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND
-     (CMAKE_CUDA_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
+  if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND (CMAKE_CUDA_COMPILER_ID STREQUAL "Clang"
+                                                    OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  )
     list(FILTER bench_sources EXCLUDE REGEX ".*BenchmarkTensorGpu\\.cpp$")
     message(STATUS "Vectorization: BenchmarkTensorGpu.cpp excluded — Clang CUDA compiler "
-                   "incompatibility (matches TestTensorGpu.cpp exclusion)")
+                   "incompatibility (matches TestTensorGpu.cpp exclusion)"
+    )
   endif()
 
   # LibTorch comparison benchmark requires LibTorch; skip building it entirely
@@ -393,7 +427,8 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
   if(NOT VECTORIZATION_ENABLE_LIBTORCH)
     list(FILTER bench_sources EXCLUDE REGEX ".*BenchmarkTensorLibTorch\\.cpp$")
     message(STATUS "Vectorization: BenchmarkTensorLibTorch.cpp excluded — "
-                   "VECTORIZATION_ENABLE_LIBTORCH is OFF")
+                   "VECTORIZATION_ENABLE_LIBTORCH is OFF"
+    )
   endif()
 
   foreach(_bench_source IN ITEMS ${bench_sources})
@@ -422,21 +457,24 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
     add_executable(${target_name} "${_bench_source}")
 
     if(_bench_is_gpu AND _bench_gpu_lang STREQUAL "CUDA")
-      set_target_properties(${target_name} PROPERTIES
-        CUDA_STANDARD              ${VECTORIZATION_CXX_STANDARD}
-        CUDA_STANDARD_REQUIRED     ON
-        CUDA_ARCHITECTURES         "${VECTORIZATION_CUDA_ARCHITECTURES}"
-        CUDA_SEPARABLE_COMPILATION OFF
+      set_target_properties(
+        ${target_name}
+        PROPERTIES CUDA_STANDARD ${VECTORIZATION_CXX_STANDARD}
+                   CUDA_STANDARD_REQUIRED ON
+                   CUDA_ARCHITECTURES "${VECTORIZATION_CUDA_ARCHITECTURES}"
+                   CUDA_SEPARABLE_COMPILATION OFF
       )
       # nvcc (cicc) fmt int128 fallback issue — same ADL shim as
       # VectorizationCxxTests above (see cuda_fmt_int128_fix.h).
-      target_compile_options(${target_name} PRIVATE
-        $<$<COMPILE_LANGUAGE:CUDA>:-include${CMAKE_CURRENT_SOURCE_DIR}/cuda_fmt_int128_fix.h>
+      target_compile_options(
+        ${target_name}
+        PRIVATE
+          $<$<COMPILE_LANGUAGE:CUDA>:-include${CMAKE_CURRENT_SOURCE_DIR}/cuda_fmt_int128_fix.h>
       )
     elseif(_bench_is_gpu AND _bench_gpu_lang STREQUAL "HIP")
-      set_target_properties(${target_name} PROPERTIES
-        HIP_STANDARD      ${VECTORIZATION_CXX_STANDARD}
-        HIP_ARCHITECTURES "${VECTORIZATION_GPU_ARCHITECTURES}"
+      set_target_properties(
+        ${target_name} PROPERTIES HIP_STANDARD ${VECTORIZATION_CXX_STANDARD}
+                                  HIP_ARCHITECTURES "${VECTORIZATION_GPU_ARCHITECTURES}"
       )
     endif()
 
@@ -486,13 +524,16 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
     if(Torch_FOUND)
       target_link_libraries(benchmark_tensorlibtorch PRIVATE torch)
       target_compile_definitions(benchmark_tensorlibtorch PRIVATE VECTORIZATION_HAS_LIBTORCH=1)
-      target_compile_options(benchmark_tensorlibtorch PRIVATE
-        $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-deprecated-declarations -Wno-unused-parameter>
-        $<$<CXX_COMPILER_ID:GNU>:-Wno-deprecated-declarations -Wno-unused-parameter>
+      target_compile_options(
+        benchmark_tensorlibtorch
+        PRIVATE $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-deprecated-declarations
+                -Wno-unused-parameter> $<$<CXX_COMPILER_ID:GNU>:-Wno-deprecated-declarations
+                -Wno-unused-parameter>
       )
       if(WIN32)
         file(GLOB _torch_dlls "${TORCH_INSTALL_PREFIX}/lib/*.dll")
-        add_custom_command(TARGET benchmark_tensorlibtorch POST_BUILD
+        add_custom_command(
+          TARGET benchmark_tensorlibtorch POST_BUILD
           COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_torch_dlls}
                   $<TARGET_FILE_DIR:benchmark_tensorlibtorch>
         )
@@ -508,9 +549,11 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
     if(Torch_FOUND AND VECTORIZATION_GPU_BACKEND STREQUAL "metal")
       target_link_libraries(benchmark_tensorgpu PRIVATE torch)
       target_compile_definitions(benchmark_tensorgpu PRIVATE VECTORIZATION_HAS_LIBTORCH=1)
-      target_compile_options(benchmark_tensorgpu PRIVATE
-        $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-deprecated-declarations -Wno-unused-parameter>
-        $<$<CXX_COMPILER_ID:GNU>:-Wno-deprecated-declarations -Wno-unused-parameter>
+      target_compile_options(
+        benchmark_tensorgpu
+        PRIVATE $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wno-deprecated-declarations
+                -Wno-unused-parameter> $<$<CXX_COMPILER_ID:GNU>:-Wno-deprecated-declarations
+                -Wno-unused-parameter>
       )
       message(STATUS "benchmark_tensorgpu: LibTorch MPS alloc comparison ENABLED")
     else()

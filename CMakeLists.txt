@@ -45,12 +45,21 @@ set(CMAKE_COLOR_DIAGNOSTICS ON)
 # Important: `include(CTest)` *generates* DartConfiguration.tcl at configure time. To make sure
 # custom Valgrind options (from `Cmake/tools/valgrind.cmake`) are reflected there, we need to
 # include valgrind (when enabled) BEFORE we include CTest.
-if((DEFINED CORE_ENABLE_VALGRIND AND CORE_ENABLE_VALGRIND)
-   OR (DEFINED LOGGING_ENABLE_VALGRIND AND LOGGING_ENABLE_VALGRIND)
-   OR (DEFINED MEMORY_ENABLE_VALGRIND AND MEMORY_ENABLE_VALGRIND)
-   OR (DEFINED PARALLEL_ENABLE_VALGRIND AND PARALLEL_ENABLE_VALGRIND)
-   OR (DEFINED PROFILER_ENABLE_VALGRIND AND PROFILER_ENABLE_VALGRIND)
-   OR (DEFINED VECTORIZATION_ENABLE_VALGRIND AND VECTORIZATION_ENABLE_VALGRIND))
+if(DEFINED CORE_ENABLE_VALGRIND
+   AND CORE_ENABLE_VALGRIND
+   OR DEFINED LOGGING_ENABLE_VALGRIND
+   AND LOGGING_ENABLE_VALGRIND
+   OR DEFINED MEMORY_ENABLE_VALGRIND
+   AND MEMORY_ENABLE_VALGRIND
+   OR DEFINED PARALLEL_ENABLE_VALGRIND
+   AND PARALLEL_ENABLE_VALGRIND
+   OR DEFINED PROFILER_ENABLE_VALGRIND
+   AND PROFILER_ENABLE_VALGRIND
+   OR DEFINED VECTORIZATION_ENABLE_VALGRIND
+   AND VECTORIZATION_ENABLE_VALGRIND
+   OR DEFINED MODELS_ENABLE_VALGRIND
+   AND MODELS_ENABLE_VALGRIND
+)
   include(valgrind)
 endif()
 include(CTest)
@@ -75,14 +84,24 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
 # --project.NAME). When empty or unset, all Library/* projects are enabled (full monolith).
 # setup.py always passes -DQUARISMA_LIBRARY_PROJECT=... so omitting --project.* resets any prior
 # single-library configure.
-set(QUARISMA_LIBRARY_PROJECT ""
-    CACHE STRING
-    "If non-empty: only this Library module and deps (Logging|Memory|Vectorization|Core|Parallel|Profiler). Empty: all Library/* (default)."
+set(QUARISMA_LIBRARY_PROJECT
+    ""
+    CACHE
+      STRING
+      "If non-empty: only this Library module and deps (Logging|Memory|Vectorization|Core|Parallel|Profiler|Models). Empty: all Library/* (default)."
 )
 
 string(TOLOWER "${QUARISMA_LIBRARY_PROJECT}" _quarisma_libproj_lc)
 
-set(_quarisma_lib_order Logging Memory Vectorization Core Parallel Profiler)
+set(_quarisma_lib_order
+    Logging
+    Memory
+    Vectorization
+    Core
+    Parallel
+    Profiler
+    Models
+)
 
 if(_quarisma_libproj_lc STREQUAL "")
   foreach(_lib IN LISTS _quarisma_lib_order)
@@ -93,14 +112,17 @@ else()
     set(_quarisma_lib_enabled Logging)
   elseif(_quarisma_libproj_lc STREQUAL "memory")
     # Memory only — no Library/Logging. Memory supports MEMORY_ENABLE_LOGGING=OFF (no logger headers).
-    set(MEMORY_ENABLE_LOGGING OFF CACHE BOOL
-        "Link Memory with the Logging library when available" FORCE)
+    set(MEMORY_ENABLE_LOGGING OFF CACHE BOOL "Link Memory with the Logging library when available"
+                                        FORCE
+    )
     set(_quarisma_lib_enabled Memory)
   elseif(_quarisma_libproj_lc STREQUAL "vectorization")
-    set(MEMORY_ENABLE_TESTING OFF CACHE BOOL
-        "Link Memory with the Logging library when available" FORCE)
-    set(MEMORY_ENABLE_BENCHMARK OFF CACHE BOOL
-        "Link Memory with the Logging library when available" FORCE)
+    set(MEMORY_ENABLE_TESTING OFF CACHE BOOL "Link Memory with the Logging library when available"
+                                        FORCE
+    )
+    set(MEMORY_ENABLE_BENCHMARK OFF
+        CACHE BOOL "Link Memory with the Logging library when available" FORCE
+    )
     set(_quarisma_lib_enabled Memory Vectorization)
   elseif(_quarisma_libproj_lc STREQUAL "core")
     set(_quarisma_lib_enabled Parallel Profiler Logging Memory Vectorization Core)
@@ -108,11 +130,13 @@ else()
     set(_quarisma_lib_enabled Parallel)
   elseif(_quarisma_libproj_lc STREQUAL "profiler")
     set(_quarisma_lib_enabled Profiler)
+  elseif(_quarisma_libproj_lc STREQUAL "models")
+    set(_quarisma_lib_enabled Models)
   else()
     message(
       FATAL_ERROR
         "QUARISMA_LIBRARY_PROJECT='${QUARISMA_LIBRARY_PROJECT}' is invalid. "
-        "Use one of: Logging, Memory, Vectorization, Core, Parallel, Profiler, or leave empty for all."
+        "Use one of: Logging, Memory, Vectorization, Core, Parallel, Profiler, Models, or leave empty for all."
     )
   endif()
 

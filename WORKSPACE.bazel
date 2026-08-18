@@ -15,7 +15,6 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_r
 # =============================================================================
 http_archive(
     name = "bazel_skylib",
-    sha256 = "66ffd9315665bfaafc96b52278f57c7e2dd09f5ede279ea6d39b2be471e7e3aa",
     urls = [
         "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.4.2/bazel-skylib-1.4.2.tar.gz",
         "https://github.com/bazelbuild/bazel-skylib/releases/download/1.4.2/bazel-skylib-1.4.2.tar.gz",
@@ -66,7 +65,6 @@ new_local_repository(
 http_archive(
     name = "magic_enum",
     build_file = "//ThirdParty:magic_enum.BUILD",
-    sha256 = "44ad80db5a72f5047e01d90e18315751d9ac90c0ab42cbea7a6f9ec66a4cd679",
     strip_prefix = "magic_enum-0.9.5",
     urls = [
         "https://github.com/Neargye/magic_enum/archive/refs/tags/v0.9.5.tar.gz",
@@ -79,7 +77,6 @@ http_archive(
 http_archive(
     name = "mimalloc",
     build_file = "//ThirdParty:mimalloc.BUILD",
-    sha256 = "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb",
     strip_prefix = "mimalloc-2.1.2",
     urls = [
         "https://github.com/microsoft/mimalloc/archive/refs/tags/v2.1.2.tar.gz",
@@ -136,7 +133,6 @@ new_local_repository(
 # -----------------------------------------------------------------------------
 http_archive(
     name = "com_google_benchmark",
-    sha256 = "6bc180a57d23d4d9515519f92b0c83d61b05b5bab188961f36ac7b06b0d9e9ce",
     strip_prefix = "benchmark-1.8.3",
     urls = [
         "https://github.com/google/benchmark/archive/refs/tags/v1.8.3.tar.gz",
@@ -215,7 +211,6 @@ hip_configure(name = "local_config_hip")
 http_archive(
     name = "tbb",
     build_file = "//ThirdParty:tbb.BUILD",
-    sha256 = "487023a955e5a3cc6d3a0d5f89179f9b6c0ae7222613a7185b0227ba0c83700b",
     strip_prefix = "oneTBB-2021.10.0",
     urls = [
         "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.10.0.tar.gz",
