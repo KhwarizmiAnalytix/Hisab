@@ -32,7 +32,8 @@ endif()
 include(lto)
 quarisma_lto_compute_default(_lto_default PROFILE SUPPORT)
 set(PROFILER_LTO_MODE "${_lto_default}"
-    CACHE STRING "LTO mode for Profiler: off | thin | full | ipo | auto")
+    CACHE STRING "LTO mode for Profiler: off | thin | full | ipo | auto"
+)
 set_property(CACHE PROFILER_LTO_MODE PROPERTY STRINGS off thin full ipo auto)
 
 # Coverage instrumentation — activates -fprofile-instr-generate / --coverage compiler flags for
@@ -200,6 +201,28 @@ if(PROFILER_ENABLE_KINETO)
     set(LIBKINETO_NOCUPTI OFF CACHE STRING "" FORCE)
     message(STATUS "Using Kineto with CUPTI support")
   endif()
+
+  # CUDA runtime + NVTX for the profiler's own CUDA event-fallback stub
+  # (bespoke/base/cuda.cpp, used when full CUPTI activity tracing isn't
+  # available) and for the PROFILER_HAS_CUDA guard in
+  # bespoke/kineto/profiler_kineto.h -- independent of the CUPTI gate above.
+  set(PROFILER_HAS_CUDA 0)
+  if(MEMORY_GPU_BACKEND STREQUAL "cuda")
+    find_package(CUDAToolkit QUIET)
+    if(CUDAToolkit_FOUND)
+      set(PROFILER_HAS_CUDA 1)
+      list(APPEND PROFILER_DEPENDENCY_LIBS CUDA::cudart)
+      if(TARGET CUDA::nvToolsExt)
+        list(APPEND PROFILER_DEPENDENCY_LIBS CUDA::nvToolsExt)
+      endif()
+      message(STATUS "Profiler: CUDA Toolkit found -- enabling PROFILER_HAS_CUDA")
+    else()
+      message(STATUS "Profiler: MEMORY_GPU_BACKEND=cuda but CUDA Toolkit was not found by "
+                     "find_package(CUDAToolkit) -- PROFILER_HAS_CUDA stays disabled"
+      )
+    endif()
+  endif()
+  list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_HAS_CUDA=${PROFILER_HAS_CUDA})
   if(NOT QUARISMA_ENABLE_ROCM)
     set(LIBKINETO_NOROCTRACER ON CACHE STRING "" FORCE)
   else()
@@ -337,18 +360,42 @@ endif()
 # ITT backend — base/ is shared with Kineto; guard against double-inclusion.
 if(PROFILER_ENABLE_ITT)
   if(NOT PROFILER_ENABLE_KINETO)
-    file(GLOB_RECURSE itt_base_headers LIST_DIRECTORIES false
-         "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/base/*.h"
-         "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/common/*.h"
-         "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/kineto/kineto_shim.h"
+    # profiler_kineto.{h,cpp} is the shared enableProfiler/disableProfiler
+    # orchestration layer for every backend (Kineto, ITT, NVTX, PRIVATEUSE1) --
+    # its ITT dispatch branch is internally guarded by #if PROFILER_HAS_ITT and
+    # does not touch libkineto. kineto_client_interface.* is Kineto-ondemand-only
+    # (its body is wholly `#if PROFILER_HAS_KINETO`) but is harmlessly inert
+    # when compiled without it, so it is included too for parity with the Kineto
+    # backend's file list.
+    file(
+      GLOB_RECURSE itt_base_headers
+      LIST_DIRECTORIES false
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/base/*.h"
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/common/*.h"
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/kineto/kineto_shim.h"
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/kineto/profiler_kineto.h"
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/kineto/kineto_client_interface.h"
     )
-    file(GLOB_RECURSE itt_base_sources LIST_DIRECTORIES false
-         "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/base/*.cpp"
-         "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/common/*.cpp"
-         "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/kineto/kineto_shim.cpp"
+    file(
+      GLOB_RECURSE itt_base_sources
+      LIST_DIRECTORIES false
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/base/*.cpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/common/*.cpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/kineto/kineto_shim.cpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/kineto/profiler_kineto.cpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/kineto/kineto_client_interface.cpp"
     )
     list(APPEND profiler_headers ${itt_base_headers})
     list(APPEND profiler_sources ${itt_base_sources})
+    # Without Kineto, nothing builds fmt's compiled sources (Kineto's own
+    # vendored build normally does this as a side effect via FMT_SOURCE_DIR).
+    # Profiler's bespoke/common/*.cpp files (collection.cpp, util.cpp,
+    # profiler_kineto.cpp) use fmt
+    # unconditionally, so fall back to fmt's header-only mode for this
+    # target specifically -- scoped to Profiler's own compile definitions so
+    # it cannot affect Core/Logging's separate (also header-only) fmt setup
+    # or Kineto's compiled one.
+    set(PROFILER_NEEDS_FMT_HEADER_ONLY ON)
   endif()
   file(GLOB_RECURSE itt_headers LIST_DIRECTORIES false
        "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/itt/*.h"
@@ -381,6 +428,10 @@ else()
 endif()
 
 add_library(Profiler::Profiler ALIAS Profiler)
+
+if(PROFILER_NEEDS_FMT_HEADER_ONLY)
+  target_compile_definitions(Profiler PRIVATE FMT_HEADER_ONLY=1)
+endif()
 
 quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 

@@ -34,6 +34,14 @@ def profiler_defines():
         ],
     })
 
+    # PROFILER_HAS_CUDA — independent of backend selection above. Gates
+    # bespoke/base/cuda.cpp's CUDA event-fallback stub and profiler_kineto.h's
+    # hasCUDA(). Mirrors CMakeLists.txt's find_package(CUDAToolkit) gate.
+    defines += select({
+        "//bazel:enable_cuda": ["PROFILER_HAS_CUDA=1"],
+        "//conditions:default": ["PROFILER_HAS_CUDA=0"],
+    })
+
     return defines
 
 def profiler_linkopts():

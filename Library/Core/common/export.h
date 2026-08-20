@@ -19,8 +19,8 @@
  * - QUARISMA_BUILDING_DLL when building the shared library
  */
 
-#ifndef __quarisma_export_h__
-#define __quarisma_export_h__
+#ifndef QUARISMA_EXPORT_H_INCLUDED_
+#define QUARISMA_EXPORT_H_INCLUDED_
 
 #define QUARISMA_VISIBILITY_ENUM
 
@@ -66,4 +66,4 @@
 #define QUARISMA_HIDDEN
 #endif
 
-#endif  // __quarisma_export_h__
+#endif  // QUARISMA_EXPORT_H_INCLUDED_

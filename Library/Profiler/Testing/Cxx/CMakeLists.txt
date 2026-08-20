@@ -29,7 +29,6 @@ foreach(_test_source IN ITEMS ${profiler_test_sources})
 endforeach()
 
 set(PROFILER_NATIVE_PROFILER_TESTS
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerBackendIntegration.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerPlatform.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerXPlane.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerTimespan.cpp"

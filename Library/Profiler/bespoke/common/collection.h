@@ -11,7 +11,6 @@
 // //#include <Profiler/Context.h>
 // #include <profiler/csrc/utils/python_stub.h>
 // These are Profiler-specific headers not available in Profiler
-// #include <profiler/core/TensorImpl.h>
 #include "bespoke/base/base.h"
 #include "bespoke/base/perf.h"
 #include "bespoke/common/containers.h"
@@ -54,7 +53,6 @@ enum class EventType : uint8_t
 struct PROFILER_VISIBILITY RawTensorMetadataBase
 {
     RawTensorMetadataBase() = default;
-    explicit RawTensorMetadataBase(const profiler::Tensor& t);
 
     StorageImplData data_;
     int             dtype_{0};
@@ -71,13 +69,9 @@ struct PROFILER_VISIBILITY RawTensorMetadata : RawTensorMetadataBase
     RawTensorMetadata& operator=(const RawTensorMetadata&)     = default;
     RawTensorMetadata& operator=(RawTensorMetadata&&) noexcept = default;
     ~RawTensorMetadata()                                       = default;
-    explicit RawTensorMetadata(const profiler::Tensor& t);
 
-    // Wrap `weak_self_` in `std::optional` and split device into components to
-    // keep struct default constructable. (which the std::array initializer needs)
-    std::optional<WeakTensor> weak_self_;
-    profiler::device_enum     device_type_{profiler::device_enum::CPU};
-    int16_t                   device_index_{-1};
+    profiler::device_enum device_type_{profiler::device_enum::CPU};
+    int16_t               device_index_{-1};
 };
 
 // Used during post processing.
@@ -88,7 +82,6 @@ struct PROFILER_VISIBILITY TensorMetadata : public RawTensorMetadataBase
 
     TensorImplAddress impl() const { return {}; }
 
-    WeakTensor              weak_self_;
     profiler::device_option device_;
     std::vector<int64_t>    sizes_;
     std::vector<int64_t>    strides_;
@@ -273,109 +266,6 @@ static_assert(
     std::is_trivial_v<ExtraFields<EventType::OutOfMemory>>,
     "Non-Trivial member of ExtraFields<EventType::OutOfMemory>.");
 
-struct PyFrameState
-{
-    int                  line_no_;
-    profiler::StringView filename_;
-    profiler::StringView funcname_;
-};
-
-template <typename T, typename Tag>
-using strong_t = strong::type<T, Tag, strong::regular, strong::convertible_to<T>, strong::hashable>;
-#if 0
-using PyModuleSelf    = strong_t<PyObject*, struct PyModuleSelf_>;
-using PyModuleCls     = strong_t<PyObject*, struct PyModuleCls_>;
-using PyMethod        = strong_t</*PyMethodDef*/ void*, struct PyMethod_>;
-using PyOptimizerSelf = strong_t<PyObject*, struct PyOptSelf_>;
-using PyOptimizerCls  = strong_t<PyObject*, struct PyOptimizer_>;
-
-struct NNModuleInfo
-{
-    struct ParameterInfo
-    {
-        std::string                   name_;
-        TensorMetadata                metadata_;
-        std::optional<TensorMetadata> grad_metadata_;
-    };
-
-    PyModuleSelf       self_;
-    PyModuleCls        cls_;
-    profiler::StringView cls_name_;
-
-    std::vector<ParameterInfo> parameters_;
-    // Indicates that `self_` is the kth instance of `cls_` observed.
-    size_t id_{std::numeric_limits<size_t>::max()};
-};
-
-struct OptimizerInfo
-{
-    struct ParameterInfo
-    {
-        TensorMetadata                                      metadata_;
-        std::optional<TensorMetadata>                       grad_metadata_;
-        std::vector<std::pair<std::string, TensorMetadata>> state_;
-    };
-
-    PyOptimizerSelf    self_;
-    PyOptimizerCls     cls_;
-    profiler::StringView cls_name_;
-
-    std::vector<ParameterInfo> parameters_;
-};
-
-struct PyExtraFieldsBase
-{
-    PyExtraFieldsBase(profiler::time_t end_time_ns, size_t python_tid, PyFrameState caller)
-        : end_time_ns_{end_time_ns}, python_tid_{python_tid}, caller_{std::move(caller)}
-    {
-    }
-
-    profiler::time_t end_time_ns_;
-    size_t         python_tid_;
-    PyFrameState   caller_;
-
-    // kth python event observed. (Used by TensorBoard)
-    size_t id_{std::numeric_limits<size_t>::max()};
-};
-
-template <>
-struct ExtraFields<EventType::PyCall> : public PyExtraFieldsBase
-{
-    struct args_t
-    {
-        PyFrameState                 frame_state_;
-        std::optional<NNModuleInfo>  module_info_;
-        std::optional<OptimizerInfo> optimizer_info_;
-    };
-
-    ExtraFields(profiler::time_t end_time_ns, size_t python_tid, PyFrameState caller, args_t args)
-        : PyExtraFieldsBase(end_time_ns, python_tid, std::move(caller)),
-          callsite_{std::move(args.frame_state_)},
-          module_{std::move(args.module_info_)},
-          optimizer_{std::move(args.optimizer_info_)}
-    {
-    }
-
-    PyFrameState                 callsite_;
-    std::optional<NNModuleInfo>  module_;
-    std::optional<OptimizerInfo> optimizer_;
-};
-
-template <>
-struct ExtraFields<EventType::PyCCall> : public PyExtraFieldsBase
-{
-    using args_t = profiler::StringView;
-
-    ExtraFields(profiler::time_t end_time_ns, size_t python_tid, PyFrameState caller, args_t args)
-        : PyExtraFieldsBase(end_time_ns, python_tid, std::move(caller)),
-          function_name_{std::move(args)}
-    {
-    }
-
-    profiler::StringView function_name_;
-};
-#endif
-
 template <>
 struct ExtraFields<EventType::Kineto>
 {
@@ -455,16 +345,16 @@ struct PROFILER_VISIBILITY Result : public std::enable_shared_from_this<Result>
     int64_t                   start_time_ns_;
     uint64_t                  start_tid_;
     kineto::DeviceAndResource kineto_info_;
+    // ExtraFields<EventType::PythonGC> is defined (above) but intentionally
+    // not a variant alternative: XSigma has no Python tracer, so no event is
+    // ever materialized with that type (see RecordQueue::getRecords()).
     std::variant<
         ExtraFields<EventType::TorchOp>,
         ExtraFields<EventType::Backend>,
         ExtraFields<EventType::Vulkan>,
         ExtraFields<EventType::Allocation>,
         ExtraFields<EventType::OutOfMemory>,
-        ExtraFields<EventType::Kineto>/*,
-        ExtraFields<EventType::PyCall>,
-        ExtraFields<EventType::PyCCall>,
-        ExtraFields<EventType::PythonGC>*/>
+        ExtraFields<EventType::Kineto>>
         extra_fields_;
 
     std::weak_ptr<Result>                                    parent_;
@@ -563,8 +453,6 @@ public:
     };
 
 private:
-    void push(const profiler::Tensor& t);
-
     // Implementation detail for getInputShapeGenerator and
     // getConcreteInputGenerator
     auto getIValueGenerator(const IOType& io_type);

@@ -47,8 +47,8 @@ profiler/
 │       ├── util.h                         # util definitions
 │       └── README.md                      # This file
 │   └── autograd/            # Autograd C++ source code
-│       ├── profiler_python.cpp          # Main python stack collection logic
-│       ├── profiler_python.h            # Python stack collection definitions
+│       ├── profiler_python.cpp          # Main python stack collection logic (removed in XSigma's port -- no Python tracer)
+│       ├── profiler_python.h            # Python stack collection definitions (removed in XSigma's port -- no Python tracer)
 │       ├── profiler_kineto.cpp          # Profiler backend logic for starting collection/kineto
 │       └── profiler_kineto.h            # Profiler backend definitions for starting collection/kineto
 │   └── Profiler/                # Profiler C++ source code
@@ -101,6 +101,8 @@ As previously mentioned, `profiler_kineto.cpp` is used in the backend to invoke 
 The final step in integration is file export. After all events have been collected and post-processed, they can be exported to a JSON file for visualization in Perfetto or Chrome Tracer. This is done by calling Kineto's `ActivityTraceInterface::save`, which writes all event information to disk.
 
 ## Python Tracing ##
+
+*(XSigma's port removed `profiler_python.cpp`/`.h` -- there is no Python tracer here; `PythonTracerBase::make()` always returns a no-op tracer. This section is kept for reference to PyTorch's own design.)*
 
 When `with_stack=True` is set in the profiler, the Python stack tracer is generated using the `make` function defined in `PythonTracerBase`. The implementation resides in `profiler_python.cpp`.
 To profile the stack, `PyEval_SetProfile` is used to trace and handle various execution events within a Python program. This enables comprehensive profiling by monitoring and responding to specific cases:

@@ -25,12 +25,20 @@ _KINETO_BACKEND_SRCS = glob(
 # bespoke/kineto/kineto_shim.{h,cpp} is included even though this isn't the Kineto backend:
 # bespoke/common/collection.{h,cpp} #include "bespoke/kineto/kineto_shim.h" unconditionally
 # (matches CMakeLists.txt:337-349).
+# profiler_kineto.{h,cpp} is also included: it is the shared enableProfiler/
+# disableProfiler orchestration layer for every backend (Kineto, ITT, NVTX,
+# PRIVATEUSE1), not just Kineto -- its ITT dispatch branch is internally
+# guarded by #if PROFILER_HAS_ITT and does not touch libkineto.
+# kineto_client_interface.* is Kineto-ondemand-only (its body is wholly
+# `#if PROFILER_HAS_KINETO`) but is harmlessly inert without it.
 _ITT_BACKEND_SRCS = glob(
     [
         "bespoke/base/**/*.cpp",
         "bespoke/common/**/*.cpp",
         "bespoke/itt/**/*.cpp",
         "bespoke/kineto/kineto_shim.cpp",
+        "bespoke/kineto/profiler_kineto.cpp",
+        "bespoke/kineto/kineto_client_interface.cpp",
     ],
     exclude = [
         "bespoke/common/unwind/**/*.cpp",
@@ -57,6 +65,8 @@ _ITT_BACKEND_HDRS = glob(
         "bespoke/common/**/*.h",
         "bespoke/itt/**/*.h",
         "bespoke/kineto/kineto_shim.h",
+        "bespoke/kineto/profiler_kineto.h",
+        "bespoke/kineto/kineto_client_interface.h",
     ],
     exclude = ["Testing/**"],
     allow_empty = True,
@@ -132,12 +142,20 @@ cc_library(
         "//conditions:default": True,
     }),
     deps = [
+        # No //Library/Core dependency: nothing under bespoke/ or native/ actually
+        # includes a Core header (verified by grep and a Core-less build); CMake's
+        # CMakeLists.txt never linked Core either. A prior Core dep here was
+        # vestigial and, left in place, would create a Memory -> Profiler -> Core
+        # -> Memory cycle once Memory takes a Profiler dependency (see
+        # Docs/profiler/PROFILER_MULTI_BACKEND_PLAN.md, Phase 2).
         "@fmt//:fmt",
-        "//Library/Core:core_lib",
     ] + select({
         "//bazel:enable_native_profiler": [],
         "//bazel:enable_itt": ["@ittapi//:ittnotify"],
         "//conditions:default": ["@kineto//:kineto"],
+    }) + select({
+        "//bazel:enable_cuda": ["@local_config_cuda//:cuda"],
+        "//conditions:default": [],
     }),
     alwayslink = False,
 )

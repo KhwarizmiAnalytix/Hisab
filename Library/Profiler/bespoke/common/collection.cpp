@@ -16,7 +16,6 @@
 #endif
 
 #include "bespoke/common/data_flow.h"
-#include "bespoke/common/ivalue.h"
 #include "bespoke/common/record_function.h"
 #include "bespoke/kineto/kineto_shim.h"
 #include "common/flat_hash.h"
@@ -28,42 +27,14 @@ namespace profiler::profiler_impl::impl
 using result_ptr_t = std::shared_ptr<Result>;
 using trace_ptr_t  = std::unique_ptr<profiler::profiler_impl::impl::kineto::ActivityTraceWrapper>;
 
-RawTensorMetadataBase::RawTensorMetadataBase(const profiler::Tensor& t)
-    : data_{nullptr},
-      dtype_{t.scalar_type()},
-      layout_{t.layout()},
-      size_dim_{static_cast<uint32_t>(t.sizes().size())}
-{
-    // PROFILER_CHECK_DEBUG(
-    // t.sizes().size() <= std::numeric_limits<uint32_t>::max(),
-    // "Cannot profile Tensors of size > uint32 max. Got dim: ",
-    // t.sizes().size());
-    // PROFILER_CHECK_DEBUG(
-    // t.sizes().size() == t.strides().size(),
-    // "Tensor has mismatching sizes and strides. Sizes: ",
-    // t.sizes().size(),
-    // " Strides: ",
-    // t.strides().size());
-}
-
-RawTensorMetadata::RawTensorMetadata(const profiler::Tensor& t)
-    : RawTensorMetadataBase(t),
-      weak_self_{WeakTensor(t)},
-      device_type_{t.device().type()},
-      device_index_{t.device().index()}
-{
-}
-
 TensorMetadata::TensorMetadata(
     const RawTensorMetadata& r, std::vector<int64_t> sizes, std::vector<int64_t> strides)
     // NOLINTNEXTLINE(cppcoreguidelines-slicing)
     : RawTensorMetadataBase(r),
-      weak_self_{r.weak_self_.value_or(WeakTensor(profiler::Tensor()))},
       device_{r.device_index_, r.device_type_},
       sizes_{std::move(sizes)},
       strides_{std::move(strides)}
 {
-    SOFT_ASSERT(r.weak_self_.has_value());
 }
 
 // ============================================================================
@@ -107,111 +78,24 @@ static_assert(allTagsMapped(), "tag_map is out of order");
 // ----------------------------
 void InputOutputEncoder::push(profiler::array_ref<const profiler::IValue> values)
 {
-    // Disabled: IValue methods (isTensor, toTensor, isScalar, isTensorList, toTensorList) not available in profiler-only build.
+    // profiler::IValue is a lightweight stub (record_function.h) with no
+    // tensor/scalar/list introspection, so every recorded value is treated as
+    // an opaque scalar entry.
     for (const auto& value : values)
     {
-#if 0
-        if (value.isTensor())
-        {
-            push(value.toTensor());
-        }
-        else if (value.isScalar())
-        {
-            tags_.emplace_back(Tag::Scalar);
-            // Scalars are small enough that they are stored in ivalues without an
-            // extra memory alloc
-            // TODO: further optimize this by maybe giving Profiler access to the
-            // guts of IValue.
-            ivalues_.emplace_back(value);
-        }
-        else if (value.isTensorList())
-        {
-            tags_.emplace_back(Tag::TensorListBegin);
-            for (const auto& t : value.toTensorList())
-            {
-                push(t);
-            }
-            tags_.emplace_back(Tag::TERMINATOR);
-        }
-        else if (isSupportedScalarList(value))
-        {
-            tags_.emplace_back(Tag::ScalarList);
-            ivalues_.emplace_back(value);
-        }
-        else
-        {
-            tags_.emplace_back(Tag::Other);
-        }
-#else
         tags_.emplace_back(Tag::Scalar);
         ivalues_.emplace_back(value);
-#endif
     }
     tags_.emplace_back(Tag::TERMINATOR);
 }
 
-void InputOutputEncoder::push(const profiler::Tensor& t)
-{
-    // TODO fix nested and symbolic sizes
-    if (t.defined() && !t.is_nested() && !t.unsafeGetTensorImpl()->has_symbolic_sizes_strides())
-    {
-        tags_.emplace_back(Tag::Tensor);
-        tensor_metadata_.emplace_back(t);
-        tensor_sizes_strides_.copy(t.sizes());
-        if (t.layout() == profiler::kStrided)
-        {
-            // Only Strided layout tensors have strides
-            tensor_sizes_strides_.copy(t.strides());
-        }
-    }
-    else
-    {
-        tags_.emplace_back(Tag::UndefinedTensor);
-    }
-}
-
-#if 0
-// Disabled: IValue methods (isList, toListRef, isScalar) not available in profiler-only build.
-bool InputOutputEncoder::isSupportedScalarList(const profiler::IValue& list_candidate)
-{
-    // Scalar list can be very long. If a list is too long, we shouldn't
-    // collect it. This function checks whether the list is a scalar list
-    // and whether its length is sufficiently short.
-
-    if (!get_record_concrete_inputs_enabled())
-    {
-        return false;
-    }
-
-    if (!list_candidate.isList())
-    {
-        return false;
-    }
-    auto list_ref = list_candidate.toListRef();
-    if PROFILER_UNLIKELY(list_ref.empty())
-    {
-        return true;
-    }
-    if PROFILER_UNLIKELY(!list_ref[0].isScalar())
-    {
-        return false;
-    }
-    if PROFILER_UNLIKELY(list_ref.size() > SCALAR_LIST_LENGTH_LIMIT)
-    {
-        return false;
-    }
-    return true;
-}
-#else
-// Stub implementation when IValue methods are not available
+// profiler::IValue has no list introspection, so a "scalar list" can never be
+// identified.
 bool InputOutputEncoder::isSupportedScalarList(const profiler::IValue& /*list_candidate*/)
 {
     return false;
 }
-#endif
 
-#if 0
-// Disabled: This function uses many IValue methods and profiler::irange that are not available in profiler-only build.
 // This function returns a lambda which is a custom-iterator-like getter.
 // Each invocation of the lambda returns input values for one op.
 //
@@ -234,8 +118,7 @@ auto InputOutputEncoder::getIValueGenerator(const IOType& io_type)
             std::vector<int64_t> strides;
             if (tensor_metadata_it.exhausted())
             {
-                //LOG(WARNING)
-                << "Tensor metadata exhausted prematurely. Reported shapes may be inaccurate!";
+                // Tensor metadata exhausted prematurely. Reported shapes may be inaccurate.
                 return {RawTensorMetadata(), sizes, strides};
             }
             const auto& raw_metadata = *tensor_metadata_it++;
@@ -243,8 +126,8 @@ auto InputOutputEncoder::getIValueGenerator(const IOType& io_type)
             {
                 if (tensor_size_strides_it.exhausted())
                 {
-                    //LOG(WARNING) << "Expected Tensor Size mismatch with raw Tensor metadata. "
-                    "Reported shapes may be inaccurate!";
+                    // Tensor size mismatch with raw tensor metadata. Reported shapes may be
+                    // inaccurate.
                     return {raw_metadata, sizes, strides};
                 }
                 sizes.push_back(*tensor_size_strides_it++);
@@ -255,8 +138,8 @@ auto InputOutputEncoder::getIValueGenerator(const IOType& io_type)
                 {
                     if (tensor_size_strides_it.exhausted())
                     {
-                        //LOG(WARNING) << "Expected Tensor Strides mismatch with raw Tensor "
-                        "metadata. Reported shapes may be inaccurate!";
+                        // Tensor strides mismatch with raw tensor metadata. Reported shapes may
+                        // be inaccurate.
                         return {raw_metadata, sizes, strides};
                     }
                     strides.push_back(*tensor_size_strides_it++);
@@ -335,13 +218,6 @@ auto InputOutputEncoder::getIValueGenerator(const IOType& io_type)
         return out;
     };
 }
-#else
-// Stub implementation when IValue methods are not available
-auto InputOutputEncoder::getIValueGenerator(const IOType& /*io_type*/)  //NOLINT
-{
-    return []() mutable { return std::nullopt; };
-}
-#endif
 
 auto InputOutputEncoder::getInputShapeGenerator()
 {
@@ -429,22 +305,9 @@ std::unique_ptr<KinetoObserverContext> ThreadLocalSubqueue::begin_op(
         }
     }
 
-#if !defined BUILD_LITE_INTERPRETER && !defined PROFILER_MOBILE
-    // backward nodes source range corresponds to the forward node
-    // TODO: consider using C++ stack trace
-#if 0
-    // Disabled: jit::currentCallstack() and jit::currentModuleHierarchy() not available in profiler-only build
-    if (config_.with_stack && fn.scope() != profiler::RecordScope::BACKWARD_FUNCTION)
-    {
-        auto cs = profiler::profiler_impl::impl::prepareCallstack(jit::currentCallstack());
-        torch_ops_.jit_stack_.emplace_back(callstackStr(cs));
-    }
-    if (config_.with_modules && fn.scope() != profiler::RecordScope::BACKWARD_FUNCTION)
-    {
-        torch_ops_.jit_modules_.emplace_back(jit::currentModuleHierarchy());
-    }
-#endif
-#endif
+    // XSigma has no JIT/TorchScript, so `with_stack`/`with_modules` capture
+    // nothing here (native stack capture, when implemented, belongs in
+    // bespoke/common/unwind/ instead of a JIT call-stack walk).
     if (config_.with_flops)
     {
         torch_ops_.extra_args_.emplace_back(profiler::profiler_impl::impl::saveExtraArgs(fn));
@@ -480,14 +343,8 @@ std::unique_ptr<KinetoObserverContext> ThreadLocalSubqueue::begin_op(
     }
 
     event->start_time_ = profiler::getApproximateTime();
-#if 0
-    // Disabled: profiler::globalContext() not available in profiler-only build
-    event->allow_tf32_cublas_ = profiler::globalContext().float32Precision(
-                                    profiler::Float32Backend::CUDA, profiler::Float32Op::MATMUL) ==
-                                profiler::Float32Precision::TF32;
-#else
+    // XSigma has no global TF32-precision context to query.
     event->allow_tf32_cublas_ = false;
-#endif
     if (!config_.experimental_config.performance_events.empty())
     {
         const size_t n   = config_.experimental_config.performance_events.size();
@@ -533,30 +390,30 @@ struct StealOrDefault
 [[maybe_unused]] static constexpr std::string_view profilerStepString = "ProfilerStep#";
 
 void ThreadLocalSubqueue::TorchOpStorage::materialize(
-    std::vector<std::shared_ptr<Result>>& /*out*/,
-    std::vector<ProfilerStepInfo>& /*step_info*/,
-    const std::function<profiler::time_t(profiler::approx_time_t)>& /*time_converter*/,
-    const uint64_t /*tid*/,
-    const kineto::DeviceAndResource& /*kineto_info*/)
+    std::vector<std::shared_ptr<Result>>&                           out,
+    std::vector<ProfilerStepInfo>&                                  step_info,
+    const std::function<profiler::time_t(profiler::approx_time_t)>& time_converter,
+    const uint64_t                                                  tid,
+    const kineto::DeviceAndResource&                                kineto_info)
 {
-#if 0
-    // Disabled: This loop uses irange and modifies event fields that may not be available
     // Plumb Autograd info to the top level annotation.
-    auto it = op_events_.begin();
-    for ([[maybe_unused]] const auto _ :
-         profiler::irange(static_cast<int64_t>(op_events_.size()) - 1))
+    if (op_events_.size() > 0)
     {
-        auto& first  = it->basic_fields_;
-        auto& second = (++it)->basic_fields_;
-        if (first.scope_ == profiler::RecordScope::FUNCTION &&
-            second.scope_ == profiler::RecordScope::BACKWARD_FUNCTION &&
-            first.name_.rfind("autograd::engine::evaluate_function: ", 0) == 0)
+        auto it = op_events_.begin();
+        for ([[maybe_unused]] const auto _ :
+             profiler::irange(static_cast<int64_t>(op_events_.size()) - 1))
         {
-            first.sequence_number_ = second.sequence_number_;
-            first.forward_tid_     = second.forward_tid_;
+            auto& first  = it->basic_fields_;
+            auto& second = (++it)->basic_fields_;
+            if (first.scope_ == profiler::RecordScope::FUNCTION &&
+                second.scope_ == profiler::RecordScope::BACKWARD_FUNCTION &&
+                first.name_.rfind("autograd::engine::evaluate_function: ", 0) == 0)
+            {
+                first.sequence_number_ = second.sequence_number_;
+                first.forward_tid_     = second.forward_tid_;
+            }
         }
     }
-#endif
 
     // `AccumulateGrad` is an important marker for profile analysis; however the
     // annotation relies on `profiler::demangle` which is platform dependent. In
@@ -581,9 +438,6 @@ void ThreadLocalSubqueue::TorchOpStorage::materialize(
     auto kwinputs     = StealOrDefault<decltype(kwinputs_)>(kwinputs_);
     auto gpu_fallback = StealOrDefault<decltype(device_fallback_)>(device_fallback_);
 
-#if 0
-    // Disabled: ExtraFields constructor expects std::vector<op_input_t> but getters return std::nullopt
-    // These variables are only used in the disabled code below
     auto input_shape_getter    = inputs_outputs_.getInputShapeGenerator();
     auto concrete_input_getter = inputs_outputs_.getConcreteInputGenerator();
     for (auto event = op_events_.begin(); event != op_events_.end(); ++event)
@@ -611,43 +465,13 @@ void ThreadLocalSubqueue::TorchOpStorage::materialize(
         out.emplace_back(
             Result::create(time_converter(event->start_time_), tid, kineto_info, std::move(e)));
     }
-#endif
 
     op_events_.clear();
     inputs_outputs_.clear();
 }
 
-#if 0
-// Disabled: profiler::profiler_impl::impl::vulkan not available in profiler-only build
-template <size_t BlockSize>
-static void materialize_vulkan(
-    std::vector<std::shared_ptr<Result>>&                                   out,
-    AppendOnlyList<ExtraFields<EventType::Vulkan>::raw_event_t, BlockSize>& raw_events,
-    const std::function<profiler::time_t(profiler::approx_time_t)>&             time_converter,
-    const uint64_t                                                          tid,
-    const kineto::DeviceAndResource&                                        kineto_info)
-{
-    for (const auto& i : raw_events)
-    {
-        const auto name_and_duration_ns =
-            profiler::profiler_impl::impl::vulkan::getShaderNameAndDurationNs(i.second);
-
-        out.emplace_back(
-            Result::create(
-                /*start_time_ns_=*/time_converter(i.first),
-                /*start_tid_=*/tid,
-                /*kineto_info_=*/kineto_info,
-                /*extra_fields_=*/
-                ExtraFields<EventType::Vulkan>{
-                    /*name_=*/std::get<0>(name_and_duration_ns),
-                    /*duration_ns_=*/
-                    static_cast<int64_t>(std::get<1>(name_and_duration_ns)),
-                    /*in_tree_building_=*/false}));
-    }
-    raw_events.clear();
-}
-#else
-// Stub implementation
+// XSigma has no Vulkan backend, so there is never a real shader name/duration
+// to materialize -- this just drains the (always-empty) raw event buffer.
 template <size_t BlockSize>
 static void materialize_vulkan(
     std::vector<std::shared_ptr<Result>>& /*out*/,
@@ -658,7 +482,6 @@ static void materialize_vulkan(
 {
     raw_events.clear();
 }
-#endif
 
 namespace
 {
@@ -678,28 +501,6 @@ struct SubQueueThreadCache
 // `sub_queue_cache_` and fall back to a different mechanism.
 std::atomic<uint32_t>            queue_id_{0};
 thread_local SubQueueThreadCache sub_queue_cache_{0, nullptr};
-
-#if 0
-// Disabled: ExtraFields<EventType::PyCall> is not defined in profiler-only build
-std::string toString(const ExtraFields<EventType::PyCall>& e)
-{
-    if (e.module_.has_value())
-    {
-        return fmt::format("nn.Module: {}_{}", e.module_->cls_name_.str(), e.module_->id_);
-    }
-    return fmt::format(
-        "{}({}): {}",
-        e.callsite_.filename_.str(),
-        e.callsite_.line_no_,
-        e.callsite_.funcname_.str());
-}
-#else
-// Stub implementation
-[[maybe_unused]] std::string toString(const ExtraFields<EventType::PyCall>& /*e*/)
-{
-    return "";
-}
-#endif
 
 #if PROFILER_HAS_KINETO
 auto scopeToType(profiler::RecordScope scope)
@@ -744,22 +545,8 @@ auto kinetoEventCorrelationID(
         return expr;                                 \
     }
 
-#if 0
-// Disabled: PyCall and PyCCall ExtraFields not defined in profiler-only build
-std::string Result::name() const
-{
-    return visit(
-        profiler::overloaded(
-            ATTRIBUTE(Vulkan, std::string(e.name_)),
-            ATTRIBUTE(Allocation, std::string("[memory]")),
-            ATTRIBUTE(OutOfMemory, std::string("[OutOfMemory]")),
-            ATTRIBUTE(PyCall, toString(e)),
-            ATTRIBUTE(PyCCall, std::string(e.function_name_.str())),
-            ATTRIBUTE(PythonGC, std::string("Python GC")),
-            [](const auto& e) -> std::string { return e.name_; }));
-}
-#else
-// Stub implementation
+// XSigma has no Python tracer, so ExtraFields<PyCall>/<PyCCall> are never
+// live variant alternatives here.
 std::string Result::name() const
 {
     return visit(profiler::overloaded(
@@ -769,7 +556,6 @@ std::string Result::name() const
         ATTRIBUTE(PythonGC, std::string("Python GC")),
         [](const auto& e) -> std::string { return e.name_; }));
 }
-#endif
 
 std::string Result::overload_name() const
 {
@@ -1770,45 +1556,9 @@ RecordQueue::getRecords(
         queue.allocations_.clear();
         materialize(queue.ooms_);
 
-#if 0
-        // Disabled: PythonGC event type not in variant (commented out in collection.h)
-        std::optional<int64_t> pending_start;
-        for (auto& e : queue.pythongc_)
-        {
-            if (e.first.find("start") != std::string::npos)
-            {
-                pending_start = e.second;
-            }
-            else if (e.first.find("stop") != std::string::npos)
-            {
-                if (pending_start.has_value())
-                {
-                    out.emplace_back(
-                        Result::create(
-                            /*start_time_ns_=*/converter(pending_start.value()),
-                            /*start_tid_=*/queue.tid(),
-                            /*kineto_info_=*/queue.kineto_info(),
-                            /*extra_fields_=*/
-                            // NOLINTNEXTLINE
-                            ExtraFields<EventType::PythonGC>{
-                                e.first, converter(e.second) - converter(pending_start.value())}));
-                    pending_start.reset();
-                }
-                else
-                {
-                    // Handle the case where "stop" is found without a matching "start"
-                    // For example, you might want to log a warning or take other action:
-                    //LOG(WARNING) << R"("stop" event found without a matching "start": )" << e.first;
-                }
-            }
-        }
-
-        for (auto& i : queue.py_calls_)
-        {
-            python_enters.push_back(
-                {i.first, queue.tid(), queue.kineto_info(), converter(i.second)});
-        }
-#endif
+        // queue.pythongc_/queue.py_calls_ are never populated (no Python
+        // tracer is registered -- see python_tracer.cpp's NoOpPythonTracer),
+        // so there is nothing to materialize from them here.
     }
 
     if (python_tracer_)

@@ -84,9 +84,13 @@
 
 // True when compiling the device-side pass (GPU kernel body).
 // Safe to use inside __host__ __device__ functions to select device-only paths.
+// Used in #if VECTORIZATION_ON_GPU_DEVICE elsewhere, so it must stay a
+// preprocessor macro rather than an enum.
 #if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)
+// NOLINTNEXTLINE(modernize-macro-to-enum)
 #define VECTORIZATION_ON_GPU_DEVICE 1
 #else
+// NOLINTNEXTLINE(modernize-macro-to-enum)
 #define VECTORIZATION_ON_GPU_DEVICE 0
 #endif
 

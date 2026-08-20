@@ -966,10 +966,11 @@ std::unique_ptr<ProfilerResult> disableProfiler()
         return std::make_unique<ProfilerResult>();
     }
 
-    // Shared among NVTX, PRIVATEUSE1, KINETO, KINETO_GPU_FALLBACK,
+    // Shared among NVTX, ITT, PRIVATEUSE1, KINETO, KINETO_GPU_FALLBACK,
     // KINETO_PRIVATEUSE1_FALLBACK
     std::unique_ptr<ProfilerResult> result;
     if (state_ptr->config().state == ProfilerState::NVTX ||
+        state_ptr->config().state == ProfilerState::ITT ||
         state_ptr->config().state == ProfilerState::PRIVATEUSE1)
     {
         result = std::make_unique<ProfilerResult>();
@@ -1226,7 +1227,28 @@ std::string KinetoEvent::metadataJson() const
 
 FORWARD_FROM_RESULT(startThreadId, start_tid_)
 FORWARD_FROM_RESULT(endThreadId, endTID())
+#if PROFILER_HAS_KINETO
 FORWARD_FROM_RESULT(activityType, kinetoType())
+#else
+// Result::kinetoType() only exists when compiled with Kineto (it forwards to
+// libkineto's ActivityType). Under ITT/NVTX-only builds no KinetoEvent is ever
+// materialized from real Kineto activity data, so this is never meaningfully
+// called -- provide a default rather than omitting the symbol, since
+// activityType() is part of KinetoEvent's unconditionally-declared public API.
+// Mirrors libkineto::ActivityType::ENUM_COUNT (ThirdParty/kineto/libkineto/
+// include/ActivityType.h), documented there as "not used for any profiling
+// logic" -- an explicit out-of-band sentinel, not 0, since 0 is the real,
+// commonly-matched ActivityType::CPU_OP and would be indistinguishable from a
+// genuine CPU-op event to any caller that switches on this value. Named here
+// (rather than including the Kineto header, which this build config never
+// compiles in) so it has one source of truth instead of a magic literal.
+constexpr uint8_t kActivityTypeUnavailable = 27;
+
+uint8_t KinetoEvent::activityType() const
+{
+    return kActivityTypeUnavailable;
+}
+#endif
 FORWARD_FROM_RESULT(name, name())
 FORWARD_FROM_RESULT(overload_name, overload_name())
 FORWARD_FROM_RESULT(deviceType, deviceType())

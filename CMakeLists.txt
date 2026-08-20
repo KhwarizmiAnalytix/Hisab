@@ -95,11 +95,17 @@ string(TOLOWER "${QUARISMA_LIBRARY_PROJECT}" _quarisma_libproj_lc)
 
 set(_quarisma_lib_order
     Logging
+    # Profiler has no CMake dependency on any other Quarisma library (only
+    # third-party fmt/kineto/itt/cuda), so it can build early. It must come
+    # before Memory/Vectorization/Parallel: each optionally links
+    # Profiler::Profiler when it exists (see e.g. Library/Memory/CMakeLists.txt's
+    # VECTORIZATION_ENABLE_PROFILER-style gate), and that `TARGET Profiler::Profiler`
+    # check only succeeds if Profiler's add_subdirectory has already run.
+    Profiler
     Memory
     Vectorization
     Core
     Parallel
-    Profiler
     Models
 )
 
@@ -123,11 +129,11 @@ else()
     set(MEMORY_ENABLE_BENCHMARK OFF
         CACHE BOOL "Link Memory with the Logging library when available" FORCE
     )
-    set(_quarisma_lib_enabled Memory Vectorization)
+    set(_quarisma_lib_enabled Memory Vectorization Profiler)
   elseif(_quarisma_libproj_lc STREQUAL "core")
     set(_quarisma_lib_enabled Parallel Profiler Logging Memory Vectorization Core)
   elseif(_quarisma_libproj_lc STREQUAL "parallel")
-    set(_quarisma_lib_enabled Parallel)
+    set(_quarisma_lib_enabled Parallel Profiler)
   elseif(_quarisma_libproj_lc STREQUAL "profiler")
     set(_quarisma_lib_enabled Profiler)
   elseif(_quarisma_libproj_lc STREQUAL "models")

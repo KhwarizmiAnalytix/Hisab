@@ -153,16 +153,21 @@ In this section we consider the one-factor case with volatility
 where $\eta_t$ follows an uncorrelated Black--Karasinski dynamics~\cite{BK}
 \begin{eqnarray}
 d\log\eta_t
-&=&\kappa\bigl(m(t)-\log\eta_t\bigr)\,dt+\nu\,dZ_t,
+&=&\bigl(m(t)-\kappa\log\eta_t\bigr)\,dt+\nu\,dZ_t,
 \qquad
 d\langle Z,W\rangle=0.
 \end{eqnarray}
+Set
+\begin{eqnarray*}
+S_t&=& \beta (X +\gamma \Psi(t,X))+1,\\
+A_t&=& \beta^2 \Psi(t,X).
+\end{eqnarray*}
+The initial conditions $X(t_0)=\Psi(t_0)=0$ give $S_{t_0}=1$ and $A_{t_0}=0$.
 The zero correlation is used so that the time-changed Brownian motion is
 independent of the clock and the Matsumoto--Yor formulae below apply. It is
 not a material restriction on the smile. Instantaneous volatility is
-$V_t=\eta_t S_t$, with $S_t=\beta(X+\gamma\Psi)+1$, so $dX$ and $dV$ remain
-correlated through the local factor $S$ even though $\eta$ is independent of
-$W$:
+$V_t=\eta_t S_t$, so $dX$ and $dV$ remain correlated through the local factor
+$S$ even though $\eta$ is independent of $W$:
 \begin{eqnarray*}
 dX_t&=&\sigma(t)\,V_t\,dW^M_t,\\
 dV_t&=&\beta\sigma(t)\,\eta_t V_t\,dW^M_t
@@ -180,12 +185,6 @@ of destroying the time change. The remaining parameter $\gamma$ is not a
 correlation: it mixes the quadratic-variation state $\Psi$ into $S$ and
 produces the Girsanov kernel $(\gamma/\beta)S$ below.
 
-Set
-\begin{eqnarray*}
-S_t&=& \beta (X +\gamma \Psi(t,X))+1,\\
-A_t&=& \beta^2 \Psi(t,X).
-\end{eqnarray*}
-The initial conditions $X(t_0)=\Psi(t_0)=0$ give $S_{t_0}=1$ and $A_{t_0}=0$.
 Using Theorem~\ref{thm:rn} under the $M$-measure we have
 \begin{eqnarray}
 \frac{dS_t}{S_t}
@@ -202,6 +201,74 @@ so that
 \begin{equation}
 \tau_t = \beta^2 \int_{t_0}^{t} \sigma^2(u)\,\eta_u^{2}\,du.
 \end{equation}
+Write $Y_t=\log\eta_t$. Then $Y$ is Gaussian,
+\begin{eqnarray*}
+Y_t
+&=&
+e^{-\kappa(t-t_0)}Y_{t_0}
++\int_{t_0}^{t}e^{-\kappa(t-s)}m(s)\,ds
++\nu\int_{t_0}^{t}e^{-\kappa(t-s)}\,dZ_s,\\
+\mathrm{Cov}(Y_t,Y_s)
+&=&
+\frac{\nu^{2}}{2\kappa}
+\Biggl(
+e^{-\kappa\lvert t-s\rvert}
+-e^{-\kappa(t+s-2t_0)}
+\Biggr),
+\end{eqnarray*}
+and $\tau$ is the exponential functional
+\(\tau_t=\beta^{2}\int_{t_0}^{t}\sigma^{2}(u)\,e^{2Y_u}\,du\).
+There is no Hartman--Watson density for this integral when $\kappa\neq 0$.
+The Laplace transform is given by Feynman--Kac: for $\lambda>0$,
+\begin{eqnarray*}
+\psi(t,y;\lambda)
+&=&
+E\Biggl[
+\exp\Biggl(
+-\lambda\beta^{2}\int_{t}^{T}\sigma^{2}(u)\,e^{2Y_u}\,du
+\Biggr)
+\Biggm|Y_t=y\Biggr]
+\end{eqnarray*}
+solves
+\begin{eqnarray*}
+\partial_t\psi
++(m(t)-\kappa y)\,\partial_y\psi
++\frac{\nu^{2}}{2}\,\partial_{yy}\psi
+-\lambda\beta^{2}\sigma^{2}(t)\,e^{2y}\,\psi
+&=&0,\\
+\psi(T,y;\lambda)&=&1,
+\end{eqnarray*}
+so $E[e^{-\lambda\tau_T}\mid Y_{t_0}=y_0]=\psi(t_0,y_0;\lambda)$. The density
+follows by Bromwich inversion,
+\begin{eqnarray*}
+p(\tau_T\in du)
+&=&
+\frac{du}{2\pi\mathrm{i}}
+\int_{c-\mathrm{i}\infty}^{c+\mathrm{i}\infty}
+e^{\lambda u}\,\psi(t_0,y_0;\lambda)\,d\lambda.
+\end{eqnarray*}
+If $\kappa=0$ and $m$, $\sigma$ are constant, $Y$ is Brownian motion with
+drift and $\tau_T$ reduces to a scaled Yor functional $A^{(\mu)}$; its
+density is then Hartman--Watson~\cite{YOR}. In the general BK case the
+moments of $\tau$ are nevertheless closed, because $(Y_u)$ is Gaussian:
+\begin{eqnarray*}
+E[\eta_u^{2}]
+&=&
+\exp\bigl(2E[Y_u]+2\mathrm{Var}(Y_u)\bigr),\\
+E[\tau_T]
+&=&
+\beta^{2}\int_{t_0}^{T}\sigma^{2}(u)\,E[\eta_u^{2}]\,du,\\
+\mathrm{Var}(\tau_T)
+&=&
+\beta^{4}
+\int_{t_0}^{T}\!\!\int_{t_0}^{T}
+\sigma^{2}(u)\sigma^{2}(v)\,
+E[\eta_u^{2}]E[\eta_v^{2}]
+\bigl(e^{4\,\mathrm{Cov}(Y_u,Y_v)}-1\bigr)\,du\,dv.
+\end{eqnarray*}
+Matching these two moments to a lognormal law of $\tau_T$ gives a usable
+mixing density; the exact law is the Laplace inversion above.
+
 Then, under $M$ and in the time-changed clock,
 \begin{eqnarray}
 \frac{dS_{\tau}}{S_{\tau}}&=&dW^{M}_{\tau}+\frac{\gamma}{\beta}\,S_{\tau}\,d\tau,\\
@@ -360,10 +427,148 @@ $E^{D}[L^{-1}G_{i}\mathbf{1}_{\{S\gtrless S^{*}\}}\mid U,\tau]$ is the
 inverse-Gaussian formula above with tenor-specific
 $\alpha(T_{i})=(\Theta(T_{i})-\gamma)/\beta$. The remaining average is over
 the Hartman--Watson law of $U$ given $\tau$ and over the law of the clock
-$\tau=\beta^{2}\int_{t_0}^{T_{e}}\sigma^{2}(u)\eta_{u}^{2}\,du$. Under
-Black--Karasinski, $\log\eta$ is Ornstein--Uhlenbeck, so this mixing law is
-the exponential functional $\int e^{2\log\eta_u}\,du$ of an OU
-process~\cite{YOR}.
+$\tau$ obtained above (Laplace inversion of $\psi$, or the lognormal mix
+fitted to $E[\tau]$ and $\mathrm{Var}(\tau)$).
+
+\section{One-factor Cheyette exotics}
+The Section~2 mix is the law of the curve at a \emph{single} date. It
+calibrates $(\sigma(t),\beta,\gamma,\kappa,m,\nu)$ to European swaptions.
+Bermudans and lookbacks see the curve along a schedule, so they are priced
+as one-factor Cheyette Markovian claims on $(X,\Psi)$, with $\eta$ an extra
+state only because volatility is stochastic~\cite{lognormal_vol}. Spreads,
+basis and FX-linked coupons are outside this setup.
+
+Under $Q$,
+\begin{eqnarray}
+dX_t&=&\sigma(t)\,\eta_t S_t
+\Biggl(dW_t-\sigma(t)\,\eta_t S_t\,\Theta(t)\,dt\Biggr),\\
+d\Psi_t&=&\sigma^{2}(t)\,\eta_t^{2} S_t^{2}\,dt,\\
+d\log\eta_t
+&=&\bigl(m(t)-\kappa\log\eta_t\bigr)\,dt+\nu\,dZ_t,
+\qquad d\langle Z,W\rangle=0,
+\end{eqnarray}
+with $S_t=\beta(X_t+\gamma\Psi_t)+1$. The whole curve is a closed function
+of $(X,\Psi)$:
+\begin{eqnarray*}
+r_t
+&=&
+f(t_0,t)+\theta(t)\bigl(X_t+\Psi_t\Theta(t)\bigr),\\
+B(t,T)
+&=&
+P(t,T)Z_t\exp\Biggl(
+-\Theta(T)\Biggl(X_t+\frac12\Psi_t\Theta(T)\Biggr)
+\Biggr),\\
+L(t;T,T+\delta)
+&=&
+\frac{1}{\delta}\Biggl(\frac{B(t,T)}{B(t,T+\delta)}-1\Biggr),\\
+R(t;T_a,T_b)
+&=&
+\frac{B(t,T_a)-B(t,T_b)}{\sum\delta_i B(t,T_i)}.
+\end{eqnarray*}
+Given $\Psi$, every such rate is strictly monotone in $X$. That is the
+one-factor Cheyette property used below. Europeans, Bermudans and
+lookbacks are all valued with the same generalised inverse-Gaussian
+(GIG) transition, conditioned on the current state and on the clock
+increment.
+
+\paragraph{Conditional GIG transition.}
+On $[T_i,T_{i+1}]$ write $\Delta\tau_i=\beta^{2}\int_{T_i}^{T_{i+1}}
+\sigma^{2}(u)\eta_u^{2}\,du$ and let $(\widehat S,\widehat A)$ be the
+Matsumoto--Yor pair started from $1$, run for time $\Delta\tau_i$ under
+$Q^{D}$. The Cheyette factor maps as
+\begin{eqnarray*}
+S'&=&S\,\widehat S,\qquad
+A'=A+S^{2}\widehat A,\qquad
+\widehat U=\widehat S/\widehat A.
+\end{eqnarray*}
+Conditionally on $\widehat U=u$, $\widehat S$ is inverse Gaussian with
+mean $1$ and shape $u$, i.e.\
+$\mathrm{GIG}\bigl(-\tfrac12,u,u\bigr)$. Scaling gives the transition
+in $S$:
+\begin{eqnarray*}
+S'\bigm|S,\widehat U=u
+&\sim&
+\mathrm{GIG}\Biggl(-\frac12,\,u S,\,\frac{u}{S}\Biggr),\\
+p(s'\mid s,u)
+&=&
+\sqrt{\frac{u s}{2\pi {s'}^{3}}}
+\exp\Biggl(
+u-\frac{u}{2}\Biggl(\frac{s'}{s}+\frac{s}{s'}\Biggr)
+\Biggr),\\
+A'
+&=&
+A+\frac{S S'}{u}.
+\end{eqnarray*}
+Given $(S,u)$, $A'$ is deterministic: the two-dimensional kernel in
+$(S,A)$ collapses to a one-dimensional GIG in $S'$. On a grid this is
+the GIG transition matrix $G(s,s';u)$. The increment $\widehat U$ is
+mixed with the Hartman--Watson law at time $\Delta\tau_i$, and
+$\Delta\tau_i$ is mixed with the Black--Karasinski law of the clock
+conditional on $\eta_{T_i}$ (Section~2). The incremental Girsanov is
+\begin{eqnarray*}
+L_{i\to i+1}
+&=&
+\exp\Biggl(
+-\frac{\gamma}{\beta}(S'-S)
++\frac{\gamma^{2}}{2\beta^{2}}(A'-A)
+\Biggr).
+\end{eqnarray*}
+A cashflow $\Phi$ paid at $T_{i+1}$ therefore has value
+\begin{eqnarray*}
+P(T_i,T_{i+1})Z_{T_i}\,
+E^{D}\Biggl[
+L_{i\to i+1}^{-1}\frac{\Phi}{Z_{T_{i+1}}}
+\Biggm|S,A,\eta_{T_i}\Biggr],
+\end{eqnarray*}
+the inner expectation being the GIG matrix, the outer the mix over
+$(\widehat U,\Delta\tau_i,\eta_{T_{i+1}})\mid\eta_{T_i}$. A European
+swaption is the same kernel in one step from $t_0$ ($S=1$, $A=0$).
+
+\paragraph{Bermudan swaption.}
+Fix exercise dates $T_1<\cdots<T_N$ and strike $K$. At $T_i$ the exercise
+value is the remaining vanilla swap, hence a function of the current curve
+only:
+\begin{eqnarray*}
+E_i(S,A)
+&=&
+\Biggl(
+B(T_i,T_i)-B(T_i,T_n)
+-K\sum_{j=i+1}^{n}\delta_j B(T_i,T_j)
+\Biggr)^{+}.
+\end{eqnarray*}
+No nested option is hidden in $E_i$. Let $u_i(S,A,\eta)$ be the value
+after the exercise decision. Then $u_N=E_N$ and
+$u_i=\max(E_i,C_i)$, where $C_i$ is one application of the conditional
+GIG matrix to $u_{i+1}$:
+\begin{eqnarray*}
+C_i(S,A,\eta)
+&=&
+P(T_i,T_{i+1})Z_i\,
+E\Biggl[
+G\bigl(S,S';\widehat U\bigr)
+L_{i\to i+1}^{-1}
+\frac{u_{i+1}(S',A',\eta')}{Z'}
+\Biggm|\eta\Biggr].
+\end{eqnarray*}
+The GIG matrix is always used. The only change relative to a European is
+that the kernel is applied \emph{conditionally} on the state at $T_i$ and
+chained backwards. One must not mix ready-made one-factor Bermudans over
+the unconditional law of $\tau_{T_N}$: that would ignore the filtration at
+each $T_i$. Conditioning on $(\widehat U,\Delta\tau_i,\eta_{T_i})$ restores
+the Markov property and keeps the same kernel as Section~2.
+
+\paragraph{Lookback.}
+Let $R_t=R(t,S_t,A_t)$ be a monotone Cheyette rate and
+$\underline{R}_t=\min_{u\le t}R_u$ (resp.\ $\overline{R}_t$ the max).
+A fixed-strike lookback pays $(K-\underline{R}_T)^{+}$ or
+$(\overline{R}_T-K)^{+}$; a floating-strike lookback pays
+$(R_T-\underline{R}_T)^{+}$ or $(\overline{R}_T-R_T)^{+}$. Discrete
+fixings $t_1,\ldots,t_n$: between $t_k$ and $t_{k+1}$ the running
+extremum is frozen, so the continuation is again the conditional GIG
+matrix in $(S,A)$ given $\eta_{t_k}$. At $t_{k+1}$ update
+$\underline{R}\leftarrow\min(\underline{R},R(t_{k+1},S',A'))$ and
+continue. The European mix is not used; the GIG transition is, at every
+step, conditional on the recorded extremum and on $\eta$.
 
 \begin{thebibliography}{9}
 \bibitem{YOR}

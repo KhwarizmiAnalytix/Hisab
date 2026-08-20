@@ -1,6 +1,5 @@
 #pragma once
 
-//#include <Profiler/core/ivalue.h>
 //#include <Profiler/core/operator_name.h>
 #include <array>
 #include <functional>

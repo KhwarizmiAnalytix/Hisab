@@ -100,54 +100,8 @@ void calculateUniqueTensorIDs(std::vector<std::shared_ptr<Result>>& sorted_resul
     {
         RawTensors raw_tensors;
 
-#if 0
-        // Disabled: Python bindings not available in profiler-only build.
-        // The python tracer caches values, so it's only safe to use the first case.
-        ska::flat_hash_set<PyModuleSelf>    seen_modules;
-        ska::flat_hash_set<PyOptimizerSelf> seen_optimizers;
-        for (auto& result : sorted_results)
-        {
-            result->visit(
-                profiler::overloaded(
-                    [&](ExtraFields<EventType::TorchOp>& torch_op)
-                    {
-                        for (auto& i : torch_op.inputs_)
-                        {
-                            std::visit(raw_tensors, i);
-                        }
-                    },
-                    [&](ExtraFields<EventType::PyCall>& py_call)
-                    {
-                        // profiler.nn.Module
-                        if (py_call.module_.has_value() &&
-                            seen_modules.insert(py_call.module_->self_).second)
-                        {
-                            for (auto& p : py_call.module_->parameters_)
-                            {
-                                raw_tensors(p.metadata_);
-                                raw_tensors(p.grad_metadata_);
-                            }
-                        }
-
-                        // profiler.optim.Optimizer
-                        if (py_call.optimizer_.has_value() &&
-                            seen_optimizers.insert(py_call.optimizer_->self_).second)
-                        {
-                            for (auto& p : py_call.optimizer_->parameters_)
-                            {
-                                raw_tensors(p.metadata_);
-                                raw_tensors(p.grad_metadata_);
-                                for (auto& state_i : p.state_)
-                                {
-                                    raw_tensors(state_i.second);
-                                }
-                            }
-                        }
-                    },
-                    [&](auto& i) { raw_tensors(i); }));
-        }
-#else
-        // Simplified path: only process TorchOp events when Python support is disabled.
+        // XSigma has no Python tracer (no nn.Module/optim.Optimizer concept),
+        // so only TorchOp events ever carry recorded input metadata.
         for (auto& result : sorted_results)
         {
             result->visit(profiler::overloaded(
@@ -160,7 +114,6 @@ void calculateUniqueTensorIDs(std::vector<std::shared_ptr<Result>>& sorted_resul
                 },
                 [&](auto& /*unused*/) { /* Skip non-TorchOp events */ }));
         }
-#endif
         tensors = std::move(raw_tensors.tensors_);
     }
 

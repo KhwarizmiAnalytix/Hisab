@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "bespoke/common/record_function.h"
-#include "common/TensorImpl.h"
 #include "common/profiler_export.h"
 #include "common/profiler_macros.h"
 //#include "util/hash.h"
@@ -29,13 +28,6 @@
         }                                                                        \
         return true;                                                             \
     }()
-
-namespace profiler::jit
-{
-struct StackEntry
-{
-};
-}  // namespace profiler::jit
 
 namespace profiler::detail
 {
@@ -111,8 +103,6 @@ struct PROFILER_VISIBILITY SaveNcclMetaConfig
     }
 };
 
-PROFILER_API std::vector<FileLineFunc> prepareCallstack(const std::vector<jit::StackEntry>& cs);
-PROFILER_API std::vector<std::string> callstackStr(const std::vector<FileLineFunc>& cs);
 PROFILER_API std::string stacksToStr(const std::vector<std::string>& stacks, const char* delim);
 PROFILER_API std::vector<std::vector<int64_t>> inputSizes(
     const profiler::RecordFunction& fn, const bool flatten_list_enabled = false);
@@ -129,9 +119,6 @@ std::unordered_map<std::string, profiler::IValue> PROFILER_API
 saveExtraArgs(const profiler::RecordFunction& fn);
 std::unordered_map<std::string, std::string> PROFILER_API saveNcclMeta(
     const profiler::RecordFunction& fn, const SaveNcclMetaConfig& config = SaveNcclMetaConfig());
-int  getTensorStartHint(const profiler::Tensor& t);
-bool checkFunctionOutputsForLogging(const profiler::RecordFunction& fn);
-bool checkFunctionInputsForLogging(const profiler::RecordFunction& fn);
 std::pair<bool, std::variant<int, std::vector<int>>> findStartAddrForTensors(
     const profiler::IValue& val);
 uint64_t PROFILER_API computeFlops(
@@ -197,25 +184,5 @@ private:
 //         return profiler::get_hash(i);
 //     }
 // };
-
-#ifdef USE_DISTRIBUTED
-constexpr auto kCommsName        = "Collective name";
-constexpr auto kDtype            = "dtype";
-constexpr auto kInMsgNelems      = "In msg nelems";
-constexpr auto kOutMsgNelems     = "Out msg nelems";
-constexpr auto kInSplit          = "In split size";
-constexpr auto kOutSplit         = "Out split size";
-constexpr auto kGlobalRankStart  = "Global rank start";
-constexpr auto kGlobalRankStride = "Global rank stride";
-constexpr auto kGroupSize        = "Group size";
-constexpr auto kProcessGroupName = "Process Group Name";
-constexpr auto kProcessGroupDesc = "Process Group Description";
-constexpr auto kGroupRanks       = "Process Group Ranks";
-constexpr auto kRank             = "Rank";
-constexpr auto kP2pSrc           = "Src Rank";
-constexpr auto kP2pDst           = "Dst Rank";
-constexpr auto kInTensorsStart   = "Input Tensors start";
-constexpr auto kOutTensorsStart  = "Output Tensors start";
-#endif  // USE_DISTRIBUTED
 
 }  // namespace profiler::profiler_impl::impl

@@ -58,6 +58,10 @@ def parallel_defines():
         "//conditions:default": ["PARALLEL_HAS_OPENMP=0"],
     })
 
+    # Profiler — always linked in Bazel (see Library/Parallel/BUILD.bazel's deps),
+    # so this is unconditionally 1, mirroring CMake's PARALLEL_HAS_PROFILER.
+    defines += ["PARALLEL_HAS_PROFILER=1"]
+
     return defines
 
 def parallel_linkopts():

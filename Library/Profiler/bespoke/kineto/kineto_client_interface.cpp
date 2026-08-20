@@ -31,12 +31,7 @@ using namespace profiler::autograd::profiler_impl;
 class LibKinetoClient : public libkineto::ClientInterface
 {
 public:
-#if 0
-    // Disabled: ::profiler::mtia::initMemoryProfiler() not available in profiler-only build
-    void init() override { ::profiler::mtia::initMemoryProfiler(); }
-#else
-    void init() override { /* Stub: mtia not available */ }
-#endif
+    void init() override { /* XSigma has no MTIA backend */ }
 
     void prepare(
         bool report_input_shapes = false,
@@ -71,23 +66,9 @@ public:
 
     void stop() override { (void)disableProfiler(); }
 
-    void start_memory_profile() override
-    {
-#if 0
-        // Disabled: LOG macro not available in profiler-only build
-        LOG(INFO) << "Starting on-demand memory profile";
-#endif
-        startMemoryProfile();
-    }
+    void start_memory_profile() override { startMemoryProfile(); }
 
-    void stop_memory_profile() override
-    {
-#if 0
-        // Disabled: LOG macro not available in profiler-only build
-        LOG(INFO) << "Stopping on-demand memory profile";
-#endif
-        stopMemoryProfile();
-    }
+    void stop_memory_profile() override { stopMemoryProfile(); }
 
     void export_memory_profile(const std::string& path) override { exportMemoryProfile(path); }
 

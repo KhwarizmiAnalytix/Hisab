@@ -64,8 +64,8 @@ if(NOT VECTORIZATION_CPU_BACKEND MATCHES "^(no|sse|avx|avx2|avx512|neon|sve)$")
 endif()
 
 # GPU backend. Can be set from the command line: -DVECTORIZATION_GPU_BACKEND=cuda|hip|metal|none
-set(VECTORIZATION_GPU_BACKEND "none"
-    CACHE STRING "GPU backend for Vectorization: none, cuda, hip, metal"
+set(VECTORIZATION_GPU_BACKEND "none" CACHE STRING
+                                           "GPU backend for Vectorization: none, cuda, hip, metal"
 )
 set_property(CACHE VECTORIZATION_GPU_BACKEND PROPERTY STRINGS none cuda hip metal)
 if(NOT VECTORIZATION_GPU_BACKEND MATCHES "^(none|cuda|hip|metal)$")
@@ -134,6 +134,16 @@ if(TARGET Logging::Logging)
   set(_vec_has_logging 1)
 else()
   set(_vec_has_logging 0)
+endif()
+
+# Profiler presence — detected from the CMake target; not a user option.
+# Lets kernel entry points call the always-safe RECORD_USER_SCOPE shim from
+# Profiler's common/instrumentation.h (Docs/profiler/PROFILER_MULTI_BACKEND_PLAN.md,
+# Phase 2) without depending on which PROFILER_BACKEND was selected.
+if(TARGET Profiler::Profiler)
+  set(_vec_has_profiler 1)
+else()
+  set(_vec_has_profiler 0)
 endif()
 
 option(VECTORIZATION_ENABLE_ICECC "Use Icecream distributed compiler for Vectorization" OFF)
@@ -335,20 +345,20 @@ endif()
 
 # --- GPU backend → VECTORIZATION_HAS_* (driven by VECTORIZATION_GPU_BACKEND) ---
 if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
-  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS
-       VECTORIZATION_HAS_CUDA=1 VECTORIZATION_HAS_HIP=0 VECTORIZATION_HAS_METAL=0
+  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_CUDA=1 VECTORIZATION_HAS_HIP=0
+       VECTORIZATION_HAS_METAL=0
   )
 elseif(VECTORIZATION_GPU_BACKEND STREQUAL "hip")
-  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS
-       VECTORIZATION_HAS_CUDA=0 VECTORIZATION_HAS_HIP=1 VECTORIZATION_HAS_METAL=0
+  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_CUDA=0 VECTORIZATION_HAS_HIP=1
+       VECTORIZATION_HAS_METAL=0
   )
 elseif(VECTORIZATION_GPU_BACKEND STREQUAL "metal")
-  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS
-       VECTORIZATION_HAS_CUDA=0 VECTORIZATION_HAS_HIP=0 VECTORIZATION_HAS_METAL=1
+  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_CUDA=0 VECTORIZATION_HAS_HIP=0
+       VECTORIZATION_HAS_METAL=1
   )
 else()
-  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS
-       VECTORIZATION_HAS_CUDA=0 VECTORIZATION_HAS_HIP=0 VECTORIZATION_HAS_METAL=0
+  list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_CUDA=0 VECTORIZATION_HAS_HIP=0
+       VECTORIZATION_HAS_METAL=0
   )
 endif()
 
@@ -359,6 +369,7 @@ compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_MKL)
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_GTEST)
 list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_MEMORY=${_vec_has_memory})
 list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_LOGGING=${_vec_has_logging})
+list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_PROFILER=${_vec_has_profiler})
 # VECTORIZATION_VECTORIZED: 1 when any CPU SIMD backend is active (GPU does not affect this).
 if(VECTORIZATION_CPU_BACKEND MATCHES "^(sse|avx|avx2|avx512|neon|sve)$")
   list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_VECTORIZED=1)
@@ -770,6 +781,10 @@ if(_vec_has_memory)
   target_link_libraries(Vectorization PUBLIC Memory::Memory)
 endif()
 
+if(_vec_has_profiler)
+  target_link_libraries(Vectorization PUBLIC Profiler::Profiler)
+endif()
+
 if(VECTORIZATION_DEPENDENCY_LIBS)
   target_link_libraries(Vectorization PUBLIC ${VECTORIZATION_DEPENDENCY_LIBS})
   message(STATUS "Vectorization: linked dependencies: ${VECTORIZATION_DEPENDENCY_LIBS}")
@@ -895,6 +910,7 @@ message("  Mkl VML              : ${VECTORIZATION_ENABLE_MKL}")
 message("  LibTorch             : ${VECTORIZATION_ENABLE_LIBTORCH}")
 message("  Memory (HAS)         : ${_vec_has_memory}")
 message("  Logging (HAS)        : ${_vec_has_logging}")
+message("  Profiler (HAS)       : ${_vec_has_profiler}")
 message("  Cxx standard         : ${VECTORIZATION_CXX_STANDARD}")
 message("  Cache                : ${VECTORIZATION_ENABLE_CACHE}")
 message("  Cache backend        : ${VECTORIZATION_CACHE_BACKEND}")

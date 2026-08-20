@@ -21,7 +21,6 @@ _PROFILER_NATIVE_ONLY_TESTS = [
     "TestProfilerAnalysis.cpp",
     "TestProfilerAnnotationParsing.cpp",
     "TestProfilerAnnotationStack.cpp",
-    "TestProfilerBackendIntegration.cpp",
     "TestProfilerChromeTraceHierarchical.cpp",
     "TestProfilerExporters.cpp",
     "TestProfilerFormatUtils.cpp",
@@ -43,7 +42,6 @@ _PROFILER_NATIVE_ONLY_TESTS = [
 
 # Kineto tests: excluded when kineto is OFF (native or ITT backends)
 _PROFILER_KINETO_TESTS = [
-    "TestKinetoProfiler.cpp",
     "TestKinetoShim.cpp",
 ]
 
@@ -51,28 +49,30 @@ _PROFILER_KINETO_TESTS = [
 # Matches CMake: step 2 removes TestKineto* (kineto OFF), step 3 keeps native tests (native ON)
 _PROFILER_TEST_FILES_NATIVE = (
     _PROFILER_NATIVE_ONLY_TESTS + [
+        "TestHotspotReport.cpp",
         "TestITTWrapper.cpp",
         "TestProfilerAutogradTrace.cpp",
-        "TestXSigmaProfiler.cpp",
+        "TestRecordFunctionIntegration.cpp",
     ]
 )
 
 # ITT mode: non-native tests only, no Kineto tests (kineto is off when ITT is active)
 # Matches CMake: step 2 removes TestKineto* (kineto OFF), step 3 removes native-only (native OFF)
 _PROFILER_TEST_FILES_ITT = [
+    "TestHotspotReport.cpp",
     "TestITTWrapper.cpp",
     "TestProfilerAutogradTrace.cpp",
-    "TestXSigmaProfiler.cpp",
+    "TestRecordFunctionIntegration.cpp",
 ]
 
 # Kineto mode (default): non-native tests + Kineto tests
 # Matches CMake: step 2 keeps TestKineto* (kineto ON), step 3 removes native-only (native OFF)
 _PROFILER_TEST_FILES_KINETO = [
+    "TestHotspotReport.cpp",
     "TestITTWrapper.cpp",
-    "TestKinetoProfiler.cpp",
     "TestKinetoShim.cpp",
     "TestProfilerAutogradTrace.cpp",
-    "TestXSigmaProfiler.cpp",
+    "TestRecordFunctionIntegration.cpp",
 ]
 
 cc_test(

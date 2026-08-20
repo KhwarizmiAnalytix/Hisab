@@ -629,46 +629,9 @@ void RecordFunction::end()
     }
 }
 
-#if 0
-// Disabled: FunctionSchema methods (name, arguments, returns, operator_name) not available in profiler-only build
-const char* RecordFunction::name() const
-{
-    return std::visit(
-        profiler::overloaded(
-            [](const std::string& name) { return name.c_str(); },
-            [](const schema_ref_t schema) { return schema.get().name().c_str(); }),
-        fn_);
-}
-
-size_t RecordFunction::num_inputs() const
-{
-    return std::visit(
-        profiler::overloaded(
-            [&](const std::string&) { return inputs_.size(); },
-            [](const schema_ref_t schema) { return schema.get().arguments().size(); }),
-        fn_);
-}
-
-size_t RecordFunction::num_outputs() const
-{
-    return std::visit(
-        profiler::overloaded(
-            [&](const std::string&) { return outputs_.size(); },
-            [](const schema_ref_t schema) { return schema.get().returns().size(); }),
-        fn_);
-}
-
-std::optional<OperatorName> RecordFunction::operator_name() const
-{
-    return std::visit(
-        profiler::overloaded(
-            [&](const std::string&) -> std::optional<OperatorName> { return std::nullopt; },
-            [](const schema_ref_t schema) -> std::optional<OperatorName>
-            { return schema.get().operator_name(); }),
-        fn_);
-}
-#else
-// Stub implementations
+// XSigma never populates the schema_ref_t variant arm of fn_ (no
+// FunctionSchema/TorchScript concept exists here), so these only need to
+// handle the plain-string name case.
 const char* RecordFunction::name() const
 {
     return std::visit(
@@ -705,7 +668,6 @@ std::optional<OperatorName> RecordFunction::operator_name() const
             { return std::nullopt; }),
         fn_);
 }
-#endif
 
 std::optional<profiler::FunctionSchema> RecordFunction::operator_schema() const
 {
@@ -718,19 +680,10 @@ std::optional<profiler::FunctionSchema> RecordFunction::operator_schema() const
         fn_);
 }
 
-// Disabled: FunctionSchema::overload_name() not available in profiler-only build
+// XSigma never populates the schema_ref_t variant arm of fn_.
 const char* RecordFunction::overload_name()
 {
-#if 0
-    return std::visit(
-        profiler::overloaded(
-            [&](const std::string&) -> const char* { return ""; },
-            [](const schema_ref_t schema) -> const char*
-            { return schema.get().overload_name().c_str(); }),
-        fn_);
-#else
     return "";
-#endif
 }
 
 StepCallbacks getStepCallbacks(RecordScope scope)
@@ -871,12 +824,9 @@ void RecordFunction::before(RecordFunction::FunctionDescriptor fn, int64_t seque
             }
             else
             {
-#if 0
-                is_nccl_meta_ = (fn.get().name() == kParamCommsCallName);
-#else
+                // XSigma never populates the schema_ref_t variant arm of fn_.
                 is_nccl_meta_ = false;
-#endif
-                fn_ = fn;
+                fn_           = fn;
             }
         },
         fn);

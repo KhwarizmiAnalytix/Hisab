@@ -38,6 +38,10 @@
 #include "expressions/expressions.h"
 #include "sizes_and_strides.h"
 
+#if VECTORIZATION_HAS_PROFILER
+#include "common/instrumentation.h"
+#endif
+
 namespace vectorization
 {
 
@@ -167,7 +171,8 @@ public:
     // combination such as tensor<double> on device_enum::METAL — MSL has no double type).
     // A noexcept constructor that throws internally calls std::terminate() instead of
     // letting the exception propagate, which would make that rejection uncatchable.
-    VECTORIZATION_CUDA_FUNCTION_TYPE explicit tensor(size_type n, device_enum type = device_enum::CPU)
+    VECTORIZATION_CUDA_FUNCTION_TYPE explicit tensor(
+        size_type n, device_enum type = device_enum::CPU)
         : storage_(n, type)
     {
         sizes_and_strides_.size_at_unchecked(0)   = static_cast<int64_t>(n);
@@ -234,7 +239,7 @@ public:
     VECTORIZATION_CUDA_FUNCTION_TYPE tensor(
         std::initializer_list<std::initializer_list<value_t>> list,
         device_enum                                           type = device_enum::CPU)
-        : tensor(list.size(), list.begin() -> size(), type)
+        : tensor(list.size(), list.begin()->size(), type)
     {
         size_t i = 0;
         for (auto const& row : list)
@@ -398,6 +403,9 @@ public:
     VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor(E const& expr)
         : storage_(expr.size(), device_enum::CPU)
     {
+#if VECTORIZATION_HAS_PROFILER
+        RECORD_USER_SCOPE("vectorization::tensor::construct");
+#endif
         sizes_and_strides_.size_at_unchecked(0)   = static_cast<int64_t>(expr.size());
         sizes_and_strides_.stride_at_unchecked(0) = 1;
         recompute_cpu_simd_alignment_state();
@@ -410,6 +418,9 @@ public:
     VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor(E&& expr)  // NOLINT
         : storage_(expr.size(), device_enum::CPU)
     {
+#if VECTORIZATION_HAS_PROFILER
+        RECORD_USER_SCOPE("vectorization::tensor::construct");
+#endif
         sizes_and_strides_.size_at_unchecked(0)   = static_cast<int64_t>(expr.size());
         sizes_and_strides_.stride_at_unchecked(0) = 1;
         recompute_cpu_simd_alignment_state();
@@ -421,6 +432,9 @@ public:
         std::enable_if_t<vectorization::is_pure_expression<E>::value, bool> = true>
     VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor& operator=(E const& expr)
     {
+#if VECTORIZATION_HAS_PROFILER
+        RECORD_USER_SCOPE("vectorization::tensor::assign");
+#endif
         evaluator::template run<E, tensor>(expr, *this);
         return *this;
     }
@@ -430,10 +444,18 @@ public:
         std::enable_if_t<vectorization::is_pure_expression<E>::value, bool> = true>
     VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor& operator=(E&& expr)
     {
+#if VECTORIZATION_HAS_PROFILER
+        RECORD_USER_SCOPE("vectorization::tensor::assign");
+#endif
         evaluator::template run<E, tensor>(static_cast<E const&>(expr), *this);
         return *this;
     }
 
+    // Not instrumented with RECORD_USER_SCOPE unlike the other assignment overloads
+    // above: RecordFunction construction/dispatch can throw (e.g. std::bad_alloc),
+    // which would escape this noexcept function and call std::terminate() -- the
+    // same hazard the constructor comment above already documents for allocation
+    // failures.
     template <typename T2, std::enable_if_t<std::is_fundamental<T2>::value, bool> = true>
     VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor& operator=(T2 value) noexcept
     {

@@ -2,24 +2,21 @@
 
 #include <memory>
 
-////#include <Profiler/core/TensorBody.h>
-#include "common/TensorImpl.h"
-#include "common/profiler_macros.h"
 #include "common/strong_type.h"
 
 namespace profiler::profiler_impl::impl
 {
 
-// Identity is a complex concept in Profiler. A Tensor might not have a
-// an associated storage, multiple Tensors might share the same underlying
-// storage, the storage of a Tensor might change over time, etc.
+// Identity is a complex concept in Profiler. A recorded value might not have
+// an associated storage, multiple values might share the same underlying
+// storage, the storage of a value might change over time, etc.
 //
 // For the purpose of profiling we're mostly interested in data flow
-// analysis. As a result, we can take an expansive view of identity:
-// Tensors share an ID if they share a TensorImpl or storage data.
+// analysis. As a result, we can take an expansive view of identity: values
+// share an ID if they share an object address or storage data.
 //
-// This identity equality is transitive; If Tensors T0 and T1 share a storage
-// S0 and T1 later points to a different storage S1 then all Tensors which
+// This identity equality is transitive; If values V0 and V1 share a storage
+// S0 and V1 later points to a different storage S1 then all values which
 // point to either S0 or S1 are considered to have the same identity. (Since
 // profiler cannot reason beyond that.)
 //
@@ -32,11 +29,13 @@ using TensorID = strong::type<size_t, struct TensorID_, strong::regular>;
 using AllocationID =
     strong::type<size_t, struct StorageID_, strong::ordered, strong::regular, strong::hashable>;
 
-// We use a Tensor's TensorImpl address and StorageImpl data start to build the
-// data flow graph. We do not hold an owning reference so we wrap them in strong
-// types to prevent direct access.
+// Opaque identity key for a recorded value's owning object. XSigma has no
+// tensor type to actually take a weak/owning reference on, so this is never
+// dereferenced -- only used for address-identity comparison/hashing (see
+// calculateUniqueTensorIDs), wrapped in a strong type to prevent direct
+// access.
 using TensorImplAddress = strong::type<
-    const profiler::TensorImpl*,
+    const void*,
     struct TensorImplAddress_,
     strong::regular,
     strong::hashable,
@@ -44,41 +43,6 @@ using TensorImplAddress = strong::type<
 
 using StorageImplData = strong::
     type<const void*, struct StorageImplData_, strong::regular, strong::hashable, strong::boolean>;
-
-// ============================================================================
-// == weak_intrusive_ptr and the ABA problem for TensorImpl* ==================
-// ============================================================================
-// Tracking `TensorImpl`s is an important part of identity tracking, because
-// a Tensor might change storage; however when it does we want to retain the
-// fact that the old and new storage belong to the same logical Tensor. We
-// cannot take an owning reference to the Tensor because that would change
-// program semantics by extending the lifetime of the Tensor. However if we
-// store a raw TensorImpl* pointer the TensorImpl might be deleted and a new
-// TensorImpl might be created that reuses the address. (ABA problem)
-//
-// Fortunately, there is a feature of `profiler::intrusive_ptr` that we can use to
-// prevent address reuse for the duration of profiling: the weak intrusive ptr.
-// When a Tensor's refcount reaches zero but there are outstanding weak
-// references (`weakcount_ > 0`) it will free the underlying managed resources
-// by calling `target_->release_resources()`, but it will not call `delete`.
-// (Instead, `delete` is called when the last weak reference is destroyed.)
-// This means that we can safely use address identity to track `TensorImpls`.
-class WeakTensor
-{
-public:
-    explicit WeakTensor(PROFILER_UNUSED const profiler::Tensor&){};
-
-    /*: weak_self_(t.getIntrusivePtr()) {}*/
-
-    auto get() const
-    {
-        return nullptr;
-        //TensorImplAddress{weak_self_._unsafe_get_target()};
-    }
-
-private:
-    //profiler::weak_intrusive_ptr<profiler::TensorImpl> weak_self_;
-};
 
 struct Result;
 

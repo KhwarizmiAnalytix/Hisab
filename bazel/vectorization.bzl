@@ -322,6 +322,7 @@ def vectorization_defines():
         + [
             "VECTORIZATION_HAS_MEMORY=1",
             "VECTORIZATION_HAS_LOGGING=1",
+            "VECTORIZATION_HAS_PROFILER=1",
         ]
     )
 

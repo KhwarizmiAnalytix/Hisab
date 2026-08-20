@@ -1,18 +1,20 @@
 #include <sstream>
-#if 0
+
+#include "bespoke/base/base.h"
+
+#if PROFILER_HAS_CUDA
+
 #ifndef ROCM_ON_WINDOWS
 #ifdef PROFILER_CUDA_USE_NVTX3
 #include <nvtx3/nvtx3.hpp>
 #else
 #include <nvToolsExt.h>
 #endif
-#else   // ROCM_ON_WINDOWS
 #endif  // ROCM_ON_WINDOWS
-#include <profiler/cuda/CUDAGuard.h>
-#include <profiler/util/ApproximateClock.h>
+#include <cuda_runtime_api.h>
 
-#include "bespoke/base/base.h"
 #include "bespoke/common/util.h"
+#include "common/approximate_clock.h"
 #include "common/irange.h"
 
 namespace profiler::profiler_impl::impl {
@@ -41,24 +43,55 @@ static void cudaCheck(cudaError_t result, const char* file, int line) {
 }
 #define PROFILER_CUDA_CHECK(result) cudaCheck(result, __FILE__, __LINE__);
 
+// Minimal RAII device guard: saves the current CUDA device on construction
+// and restores it on destruction. XSigma has no cross-library "current
+// stream" pool (unlike PyTorch's `at::cuda::CUDAGuard`/`getCurrentCUDAStream`,
+// which this file mirrors), so `record()` below deliberately records on the
+// default per-thread stream rather than a pooled one.
+class ScopedCUDADeviceGuard {
+ public:
+  explicit ScopedCUDADeviceGuard(int device) {
+    PROFILER_CUDA_CHECK(cudaGetDevice(&previous_device_));
+    if (device != previous_device_) {
+      PROFILER_CUDA_CHECK(cudaSetDevice(device));
+      changed_ = true;
+    }
+  }
+  ~ScopedCUDADeviceGuard() {
+    if (changed_) {
+      PROFILER_CUDA_CHECK(cudaSetDevice(previous_device_));
+    }
+  }
+  ScopedCUDADeviceGuard(const ScopedCUDADeviceGuard&) = delete;
+  ScopedCUDADeviceGuard& operator=(const ScopedCUDADeviceGuard&) = delete;
+
+ private:
+  int previous_device_{0};
+  bool changed_{false};
+};
+
 struct CUDAMethods : public ProfilerStubs {
   void record(
       int16_t* device,
       ProfilerVoidEventStub* event,
       int64_t* cpu_ns) const override {
     if (device) {
-      PROFILER_CUDA_CHECK(profiler::cuda::GetDevice(device));
+      int current_device = 0;
+      PROFILER_CUDA_CHECK(cudaGetDevice(&current_device));
+      *device = static_cast<int16_t>(current_device);
     }
     CUevent_st* cuda_event_ptr{nullptr};
     PROFILER_CUDA_CHECK(cudaEventCreate(&cuda_event_ptr));
     *event = std::shared_ptr<CUevent_st>(cuda_event_ptr, [](CUevent_st* ptr) {
       PROFILER_CUDA_CHECK(cudaEventDestroy(ptr));
     });
-    auto stream = profiler::cuda::getCurrentCUDAStream();
     if (cpu_ns) {
       *cpu_ns = profiler::getTime();
     }
-    PROFILER_CUDA_CHECK(cudaEventRecord(cuda_event_ptr, stream));
+    // Record on the default per-thread stream: see ScopedCUDADeviceGuard's
+    // comment above for why this is simplified relative to PyTorch's
+    // pooled-stream equivalent.
+    PROFILER_CUDA_CHECK(cudaEventRecord(cuda_event_ptr, /*stream=*/nullptr));
   }
 
   float elapsed(
@@ -102,9 +135,10 @@ struct CUDAMethods : public ProfilerStubs {
 #endif
 
   void onEachDevice(std::function<void(int)> op) const override {
-    profiler::cuda::OptionalCUDAGuard device_guard;
-    for (const auto i : profiler::irange(profiler::cuda::device_count())) {
-      device_guard.set_index(i);
+    int device_count = 0;
+    PROFILER_CUDA_CHECK(cudaGetDeviceCount(&device_count));
+    for (const auto i : profiler::irange(device_count)) {
+      ScopedCUDADeviceGuard device_guard(i);
       op(i);
     }
   }
@@ -128,4 +162,5 @@ RegisterCUDAMethods reg;
 
 } // namespace
 } // namespace profiler::profiler_impl::impl
-#endif  // 0
+
+#endif  // PROFILER_HAS_CUDA

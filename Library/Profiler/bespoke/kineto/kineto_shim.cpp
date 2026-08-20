@@ -220,11 +220,6 @@ public:
         const size_t      num_metrics = config_.profiler_metrics.size();
         std::stringstream configss;
 
-#if 0
-        // Disabled: Logging macros not available in profiler-only build.
-        LOG(INFO) << "CUPTI profiler metrics size = " << num_metrics;
-#endif
-
         configss << "ACTIVITIES_WARMUP_PERIOD_SECS=0\n"
                  << "CUPTI_PROFILER_METRICS=";
 
@@ -239,10 +234,6 @@ public:
         configss << "\nCUPTI_PROFILER_ENABLE_PER_KERNEL="
                  << (config_.profiler_measure_per_kernel ? "true" : "false") << "\n";
         configss << "CUSTOM_CONFIG=" << config_.custom_profiler_config << "\n";
-#if 0
-        // Disabled: Logging macros not available in profiler-only build.
-        LOG(INFO) << "Generated config = " << configss.str();
-#endif
 
         libkineto::api().activityProfiler().prepareTrace(k_activities, configss.str());
 #else
@@ -337,10 +328,6 @@ void prepareTrace(
         k_activities.insert(kCudaTypes.begin(), kCudaTypes.end());
         if (config.enable_cuda_sync_events || get_cuda_sync_enabled())
         {
-#if 0
-            // Disabled: Logging macros not available in profiler-only build.
-            LOG(INFO) << "Enabling CUDA Sync Events";
-#endif
             k_activities.insert(libkineto::ActivityType::CUDA_SYNC);
         }
     }
