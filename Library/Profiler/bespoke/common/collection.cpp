@@ -41,202 +41,6 @@ TensorMetadata::TensorMetadata(
 // == Profiler Ops =============================================================
 // ============================================================================
 
-namespace
-{
-struct TagToIOType
-{
-    InputOutputEncoder::Tag    tag;
-    InputOutputEncoder::IOType io_type;
-};
-
-constexpr int tagCount = (static_cast<int>(InputOutputEncoder::Tag::TERMINATOR)) + 1;
-constexpr std::array<TagToIOType, tagCount> tag_map = {{
-    {InputOutputEncoder::Tag::Tensor, InputOutputEncoder::IOType::Shapes},
-    {InputOutputEncoder::Tag::UndefinedTensor, InputOutputEncoder::IOType::Shapes},
-    {InputOutputEncoder::Tag::TensorListBegin, InputOutputEncoder::IOType::Shapes},
-    {InputOutputEncoder::Tag::ScalarList, InputOutputEncoder::IOType::ConcreteInputs},
-    {InputOutputEncoder::Tag::Scalar, InputOutputEncoder::IOType::Shapes},
-    {InputOutputEncoder::Tag::Other, InputOutputEncoder::IOType::Shapes},
-    {InputOutputEncoder::Tag::TERMINATOR, InputOutputEncoder::IOType::None},
-}};
-
-constexpr bool allTagsMapped(int idx = 0)
-{
-    return tag_map[idx].tag == InputOutputEncoder::Tag::TERMINATOR ||
-           ((idx == static_cast<int>(tag_map[idx].tag)) && allTagsMapped(idx + 1));
-}
-static_assert(allTagsMapped(), "tag_map is out of order");
-
-[[maybe_unused]] constexpr InputOutputEncoder::IOType tagToIOType(InputOutputEncoder::Tag tag)
-{
-    return tag_map[static_cast<int>(tag)].io_type;
-}
-}  // namespace
-
-// ----------------------------
-// |  Input / Output encoder  |
-// ----------------------------
-void InputOutputEncoder::push(profiler::array_ref<const profiler::IValue> values)
-{
-    // profiler::IValue is a lightweight stub (record_function.h) with no
-    // tensor/scalar/list introspection, so every recorded value is treated as
-    // an opaque scalar entry.
-    for (const auto& value : values)
-    {
-        tags_.emplace_back(Tag::Scalar);
-        ivalues_.emplace_back(value);
-    }
-    tags_.emplace_back(Tag::TERMINATOR);
-}
-
-// profiler::IValue has no list introspection, so a "scalar list" can never be
-// identified.
-bool InputOutputEncoder::isSupportedScalarList(const profiler::IValue& /*list_candidate*/)
-{
-    return false;
-}
-
-// This function returns a lambda which is a custom-iterator-like getter.
-// Each invocation of the lambda returns input values for one op.
-//
-// io_type is used to filter the ivalues between 'Shapes' and 'Concrete Args'.
-// Shapes are used to represent the shapes of tensors. We save only the shapes
-//   of the tensors because tensors can be large.
-// Concrete args are separated to clarify that they are the actual values.
-auto InputOutputEncoder::getIValueGenerator(const IOType& io_type)
-{
-    return [this,
-            tag_it                 = tags_.begin(),
-            tensor_metadata_it     = tensor_metadata_.begin(),
-            tensor_size_strides_it = tensor_sizes_strides_.begin(),
-            ivals_it               = ivalues_.begin(),
-            io_type]() mutable
-    {
-        auto decode_tensor = [&]() -> TensorMetadata
-        {
-            std::vector<int64_t> sizes;
-            std::vector<int64_t> strides;
-            if (tensor_metadata_it.exhausted())
-            {
-                // Tensor metadata exhausted prematurely. Reported shapes may be inaccurate.
-                return {RawTensorMetadata(), sizes, strides};
-            }
-            const auto& raw_metadata = *tensor_metadata_it++;
-            for ([[maybe_unused]] const auto _ : profiler::irange(raw_metadata.size_dim_))
-            {
-                if (tensor_size_strides_it.exhausted())
-                {
-                    // Tensor size mismatch with raw tensor metadata. Reported shapes may be
-                    // inaccurate.
-                    return {raw_metadata, sizes, strides};
-                }
-                sizes.push_back(*tensor_size_strides_it++);
-            }
-            if (raw_metadata.layout_ == profiler::kStrided)
-            {
-                for ([[maybe_unused]] const auto _ : profiler::irange(raw_metadata.size_dim_))
-                {
-                    if (tensor_size_strides_it.exhausted())
-                    {
-                        // Tensor strides mismatch with raw tensor metadata. Reported shapes may
-                        // be inaccurate.
-                        return {raw_metadata, sizes, strides};
-                    }
-                    strides.push_back(*tensor_size_strides_it++);
-                }
-            }
-            return {raw_metadata, sizes, strides};
-        };
-
-        std::vector<op_input_t> out;
-        auto                    push_value = [&out, io_type](const Tag& tag, op_input_t input)
-        {
-            if (io_type == tagToIOType(tag))
-            {
-                out.emplace_back(std::move(input));
-            }
-            else
-            {
-                out.emplace_back(std::nullopt);
-            }
-        };
-
-        bool terminate = false;
-        while (!terminate && tag_it != tags_.end())
-        {
-            switch (*tag_it)
-            {
-            case Tag::Tensor:
-                push_value(*tag_it, decode_tensor());
-                break;
-
-            case Tag::TensorListBegin:
-            {
-                std::vector<TensorMetadata> arg;
-                bool                        found_undefined = false;
-                while (*(++tag_it) != Tag::TERMINATOR)
-                {
-                    if (*tag_it == Tag::UndefinedTensor)
-                    {
-                        found_undefined = true;
-                        continue;
-                    }
-                    // PROFILER_CHECK(*tag_it == Tag::Tensor, (int)(*tag_it));
-                    arg.emplace_back(decode_tensor());
-                }
-                if (found_undefined)
-                {
-                    push_value(*tag_it, std::nullopt);
-                }
-                else
-                {
-                    push_value(Tag::TensorListBegin, std::move(arg));
-                }
-            }
-            break;
-
-            case Tag::ScalarList:
-            case Tag::Scalar:
-                push_value(*tag_it, *ivals_it++);
-                break;
-
-            case Tag::UndefinedTensor:
-            case Tag::Other:
-                push_value(*tag_it, std::nullopt);
-                break;
-
-            case Tag::TERMINATOR:
-                // This marks the end of this op.
-                terminate = true;
-                break;
-
-            default:
-                break;
-            }
-            ++tag_it;
-        }
-        return out;
-    };
-}
-
-auto InputOutputEncoder::getInputShapeGenerator()
-{
-    return getIValueGenerator(IOType::Shapes);
-}
-
-auto InputOutputEncoder::getConcreteInputGenerator()
-{
-    return getIValueGenerator(IOType::ConcreteInputs);
-}
-
-void InputOutputEncoder::clear()
-{
-    tags_.clear();
-    tensor_metadata_.clear();
-    tensor_sizes_strides_.clear();
-    ivalues_.clear();
-}
-
 // ---------------------------------------------------
 // |  Correlation ID tracking (OpList & EventBlock)  |
 // ---------------------------------------------------
@@ -290,8 +94,7 @@ std::unique_ptr<KinetoObserverContext> ThreadLocalSubqueue::begin_op(
 
     if (config_.report_input_shapes)
     {
-        torch_ops_.inputs_outputs_.push(fn.inputs());
-        torch_ops_.kwinputs_.emplace_back(fn.kwinputs());
+        torch_ops_.kwinputs_.emplace_back();
     }
     if (!config_.experimental_config.disable_external_correlation)
     {
@@ -305,29 +108,8 @@ std::unique_ptr<KinetoObserverContext> ThreadLocalSubqueue::begin_op(
         }
     }
 
-    // XSigma has no JIT/TorchScript, so `with_stack`/`with_modules` capture
-    // nothing here (native stack capture, when implemented, belongs in
-    // bespoke/common/unwind/ instead of a JIT call-stack walk).
-    if (config_.with_flops)
-    {
-        torch_ops_.extra_args_.emplace_back(profiler::profiler_impl::impl::saveExtraArgs(fn));
-    }
-
     auto out = std::make_unique<KinetoObserverContext>(event);
-    if (fn.isNcclMeta())
-    {
-        // Record NCCL metadata for specific CPU ops, switch off output
-        // introspection in this begin_op callback, we will do that in exit callback
-        // if needed.
-        profiler::profiler_impl::impl::SaveNcclMetaConfig const ncclMetaConfig{
-            true, true, true, false};
-        out->event_->extra_nccl_meta_ = torch_ops_.extra_meta_.emplace_back(
-            profiler::profiler_impl::impl::saveNcclMeta(fn, ncclMetaConfig));
-    }
-    else
-    {
-        out->event_->extra_nccl_meta_ = torch_ops_.extra_meta_.emplace_back();
-    }
+    torch_ops_.extra_meta_.emplace_back();
 
     if (config_.state == ProfilerState::KINETO_GPU_FALLBACK)
     {
@@ -396,41 +178,6 @@ void ThreadLocalSubqueue::TorchOpStorage::materialize(
     const uint64_t                                                  tid,
     const kineto::DeviceAndResource&                                kineto_info)
 {
-    // Plumb Autograd info to the top level annotation.
-    if (op_events_.size() > 0)
-    {
-        auto it = op_events_.begin();
-        for ([[maybe_unused]] const auto _ :
-             profiler::irange(static_cast<int64_t>(op_events_.size()) - 1))
-        {
-            auto& first  = it->basic_fields_;
-            auto& second = (++it)->basic_fields_;
-            if (first.scope_ == profiler::RecordScope::FUNCTION &&
-                second.scope_ == profiler::RecordScope::BACKWARD_FUNCTION &&
-                first.name_.rfind("autograd::engine::evaluate_function: ", 0) == 0)
-            {
-                first.sequence_number_ = second.sequence_number_;
-                first.forward_tid_     = second.forward_tid_;
-            }
-        }
-    }
-
-    // `AccumulateGrad` is an important marker for profile analysis; however the
-    // annotation relies on `profiler::demangle` which is platform dependent. In
-    // particular, Windows will add a "struct " prefix.
-    const std::string accumulate_grad = "profiler::autograd::AccumulateGrad";
-    const std::string windows_pattern = std::string("struct ") + accumulate_grad;
-    for (auto& event : op_events_)
-    {
-        auto& name     = event.basic_fields_.name_;
-        auto  position = name.find(windows_pattern);
-        if (position != std::string::npos)
-        {
-            name.replace(position, windows_pattern.size(), accumulate_grad);
-        }
-    }
-
-    // TODO: CTAD will take care of template args when we move to C++17
     auto jit_stack    = StealOrDefault<decltype(jit_stack_)>(jit_stack_);
     auto jit_module   = StealOrDefault<decltype(jit_modules_)>(jit_modules_);
     auto extra_args   = StealOrDefault<decltype(extra_args_)>(extra_args_);
@@ -438,16 +185,14 @@ void ThreadLocalSubqueue::TorchOpStorage::materialize(
     auto kwinputs     = StealOrDefault<decltype(kwinputs_)>(kwinputs_);
     auto gpu_fallback = StealOrDefault<decltype(device_fallback_)>(device_fallback_);
 
-    auto input_shape_getter    = inputs_outputs_.getInputShapeGenerator();
-    auto concrete_input_getter = inputs_outputs_.getConcreteInputGenerator();
     for (auto event = op_events_.begin(); event != op_events_.end(); ++event)
     {
         ExtraFields<EventType::TorchOp> e{
             std::move(event->basic_fields_),
             ThreadLocalSubqueue::TorchOpStorage::OpList::correlationID(event),
             time_converter(event->end_time_),
-            input_shape_getter(),
-            concrete_input_getter(),
+            {},
+            {},
             jit_stack(),
             jit_module(),
             extra_args(),
@@ -467,20 +212,6 @@ void ThreadLocalSubqueue::TorchOpStorage::materialize(
     }
 
     op_events_.clear();
-    inputs_outputs_.clear();
-}
-
-// XSigma has no Vulkan backend, so there is never a real shader name/duration
-// to materialize -- this just drains the (always-empty) raw event buffer.
-template <size_t BlockSize>
-static void materialize_vulkan(
-    std::vector<std::shared_ptr<Result>>& /*out*/,
-    AppendOnlyList<ExtraFields<EventType::Vulkan>::raw_event_t, BlockSize>& raw_events,
-    const std::function<profiler::time_t(profiler::approx_time_t)>& /*time_converter*/,
-    const uint64_t /*tid*/,
-    const kineto::DeviceAndResource& /*kineto_info*/)
-{
-    raw_events.clear();
 }
 
 namespace
@@ -545,15 +276,11 @@ auto kinetoEventCorrelationID(
         return expr;                                 \
     }
 
-// XSigma has no Python tracer, so ExtraFields<PyCall>/<PyCCall> are never
-// live variant alternatives here.
 std::string Result::name() const
 {
     return visit(profiler::overloaded(
-        ATTRIBUTE(Vulkan, std::string(e.name_)),
         ATTRIBUTE(Allocation, std::string("[memory]")),
         ATTRIBUTE(OutOfMemory, std::string("[OutOfMemory]")),
-        ATTRIBUTE(PythonGC, std::string("Python GC")),
         [](const auto& e) -> std::string { return e.name_; }));
 }
 
@@ -570,12 +297,8 @@ kineto::activity_type_t Result::kinetoType() const
     return visit(profiler::overloaded(
         ATTRIBUTE(TorchOp, scopeToType(e.scope_)),
         ATTRIBUTE(Backend, scopeToType(e.scope_)),
-        ATTRIBUTE(Vulkan, libkineto::ActivityType::CPU_OP),
         ATTRIBUTE(Allocation, libkineto::ActivityType::CPU_INSTANT_EVENT),
         ATTRIBUTE(OutOfMemory, libkineto::ActivityType::CPU_INSTANT_EVENT),
-        ATTRIBUTE(PyCall, libkineto::ActivityType::PYTHON_FUNCTION),
-        ATTRIBUTE(PyCCall, libkineto::ActivityType::PYTHON_FUNCTION),
-        ATTRIBUTE(PythonGC, libkineto::ActivityType::PYTHON_FUNCTION),
         ATTRIBUTE(Kineto, e.activity_type_)));
 }
 #endif  // PROFILER_HAS_KINETO
@@ -593,11 +316,9 @@ int64_t Result::endTimeNS() const
     auto end_time_ns = visit(profiler::overloaded(
         ATTRIBUTE(TorchOp, torchOpEndNS(e, finished_, parent_)),
         ATTRIBUTE(Backend, e.end_time_us_ * 1000),
-        ATTRIBUTE(Vulkan, start_time_ns_ + (e.in_tree_building_ ? 0 : e.duration_ns_)),
         ATTRIBUTE(Allocation, start_time_ns_),
         ATTRIBUTE(OutOfMemory, start_time_ns_),
         ATTRIBUTE(Kineto, start_time_ns_ + e.duration_ns_),
-        ATTRIBUTE(PythonGC, start_time_ns_ + e.duration_ns_),
         [&](const auto& e) -> int64_t { return e.end_time_ns_; }));
 
     // In rare cases we're willing to tolerate ops which are missing an end time
@@ -1240,18 +961,7 @@ struct ResultGreater
     }
 };
 
-void set_in_tree_building(const std::vector<result_ptr_t>& results, const bool value)
-{
-    for (result_ptr_t const& r : results)
-    {
-        r->visit(profiler::overloaded(
-            [value](ExtraFields<EventType::Vulkan>& i) { i.in_tree_building_ = value; },
-            [&](auto&)
-            {
-                // pass
-            }));
-    }
-}
+void set_in_tree_building(const std::vector<result_ptr_t>& /*results*/, const bool /*value*/) {}
 
 void build_tree(std::vector<std::shared_ptr<Result>>& sorted_events)
 {
@@ -1386,8 +1096,6 @@ int64_t adjust_durations_dfs(std::shared_ptr<Result>& r)
             r->visit(profiler::overloaded(
                 [&r, &children_total_duration](ExtraFields<EventType::TorchOp>& i)
                 { i.end_time_ns_ = r->start_time_ns_ + children_total_duration; },
-                [&children_total_duration](ExtraFields<EventType::Vulkan>& i)
-                { i.duration_ns_ = children_total_duration; },
                 []([[maybe_unused]] ExtraFields<EventType::Allocation>& _)
                 {
                     // Pass- Allocation events can't have children
@@ -1425,10 +1133,6 @@ int64_t adjust_timestamps_dfs(std::shared_ptr<Result>& r, int64_t new_start_time
             r->visit(profiler::overloaded(
                 [&r, &new_start_time](ExtraFields<EventType::TorchOp>& i)
                 { i.end_time_ns_ = new_start_time + (i.end_time_ns_ - r->start_time_ns_); },
-                []([[maybe_unused]] ExtraFields<EventType::Vulkan>& i)
-                {
-                    // Pass- We don't need to manually adjust end time for Vulkan events
-                },
                 []([[maybe_unused]] ExtraFields<EventType::Allocation>& _)
                 {
                     // Pass- No duration or end time to adjust
@@ -1479,11 +1183,7 @@ void adjust_timestamps(std::vector<std::shared_ptr<Result>>& out)
         {
             adjust_durations_dfs(r);
             min_start_time = adjust_timestamps_dfs(
-                r,
-                std::max(
-                    r->tag() != EventType::Vulkan ? r->start_time_ns_
-                                                  : std::numeric_limits<int64_t>::min(),
-                    min_start_time));
+                r, std::max(r->start_time_ns_, min_start_time));
         }
     }
 }
@@ -1514,7 +1214,6 @@ RecordQueue::getRecords(
     std::vector<std::shared_ptr<Result>>        out;
     std::vector<python_tracer::CompressedEvent> python_enters;
     std::vector<ProfilerStepInfo>               step_info;
-    long unsigned int                           step_idx = 0;
     for (auto& subqueue_it : sub_queues_)
     {
         auto& queue       = *subqueue_it.second;
@@ -1544,7 +1243,6 @@ RecordQueue::getRecords(
 
         queue.torch_ops_.materialize(out, step_info, converter, queue.tid(), queue.kineto_info());
         materialize(queue.backend_events_);
-        materialize_vulkan(out, queue.vulkan_events_, converter, queue.tid(), queue.kineto_info());
         for (auto& i : queue.allocations_)
         {
             out.emplace_back(Result::create(
@@ -1556,30 +1254,24 @@ RecordQueue::getRecords(
         queue.allocations_.clear();
         materialize(queue.ooms_);
 
-        // queue.pythongc_/queue.py_calls_ are never populated (no Python
-        // tracer is registered -- see python_tracer.cpp's NoOpPythonTracer),
-        // so there is nothing to materialize from them here.
+        // pythongc_ / py_calls_ are filled by a registered PythonTracerBase via
+        // emplace_gc_call / emplace_py_call; the default NoOp leaves them empty.
+        for (auto& i : queue.py_calls_)
+        {
+            python_enters.push_back(
+                {i.first, queue.tid(), queue.kineto_info(), converter(i.second)});
+        }
+        queue.py_calls_.clear();
     }
 
     if (python_tracer_)
     {
-        std::vector<std::shared_ptr<profiler::profiler_impl::impl::Result>> ev;
-        try
-        {
-            ev = python_tracer_->getEvents(
-                converter, python_enters, static_cast<profiler::time_t>(end_time_ns));
-        }
-        catch (std::exception&)
-        {
-            // Normally addKinetoEvents() below will stop the trace - but if an
-            // exception happens here then the events will never be stopped and future
-            // runs will be broken - so make sure to stopTrace() if we see an
-            // exception.
-            profiler::profiler_impl::impl::kineto::stopTrace();
-            throw;
-        }
+        auto             ev = python_tracer_->getEvents(
+            converter, python_enters, static_cast<profiler::time_t>(end_time_ns));
         // Placeholder for if we run out of ProfilerStep annotations
-        ProfilerStepInfo const defaultStep = {LLONG_MAX, LLONG_MAX, 0};
+        ProfilerStepInfo const defaultStep = {
+            std::numeric_limits<int64_t>::max(), std::numeric_limits<int64_t>::max(), 0};
+        size_t           step_idx = 0;
         ProfilerStepInfo step = step_idx < step_info.size() ? step_info[step_idx] : defaultStep;
         for (const auto& i : ev)
         {

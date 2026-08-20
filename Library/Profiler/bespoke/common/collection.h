@@ -1,16 +1,19 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
+#include <limits>
 #include <memory>
 #include <mutex>
+#include <optional>
+#include <set>
+#include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <variant>
+#include <vector>
 
-// TODO: Missing Profiler dependencies - original includes were:
-// //#include <Profiler/Context.h>
-// #include <profiler/csrc/utils/python_stub.h>
-// These are Profiler-specific headers not available in Profiler
 #include "bespoke/base/base.h"
 #include "bespoke/base/perf.h"
 #include "bespoke/common/containers.h"
@@ -25,12 +28,6 @@
 #include "common/flat_hash.h"
 #include "common/strong_type.h"
 
-// Minimal layout constant expected by profiler code for Tensor::layout()
-namespace profiler
-{
-inline constexpr int kStrided = 0;
-}
-
 namespace profiler::profiler_impl::impl
 {
 
@@ -38,7 +35,6 @@ enum class EventType : uint8_t
 {
     TorchOp = 0,
     Backend,
-    Vulkan,
     Allocation,
     OutOfMemory,
     PyCall,
@@ -48,8 +44,11 @@ enum class EventType : uint8_t
 };
 
 // ============================================================================
-// == Value (Tensor, Scalar) summary ==========================================
+// == Op-input shape stub =====================================================
 // ============================================================================
+// XSigma has no tensor / IValue type. These structs remain so ExtraFields
+// and data_flow can still type-check an (always-empty) inputs list. They are
+// never populated.
 struct PROFILER_VISIBILITY RawTensorMetadataBase
 {
     RawTensorMetadataBase() = default;
@@ -106,7 +105,7 @@ struct PROFILER_VISIBILITY ProfilerStepInfo
 };
 
 using op_input_t =
-    std::variant<TensorMetadata, std::vector<TensorMetadata>, profiler::IValue, std::nullopt_t>;
+    std::variant<TensorMetadata, std::vector<TensorMetadata>, std::nullopt_t>;
 
 // ============================================================================
 // == ExtraFields =============================================================
@@ -131,9 +130,9 @@ struct TorchOpBasicFields
 
 using jit_stack_t   = std::vector<std::string>;
 using jit_modules_t = std::vector<std::string>;
-using extra_args_t  = std::unordered_map<std::string, profiler::IValue>;
+using extra_args_t  = std::unordered_map<std::string, std::string>;
 using extra_meta_t  = std::unordered_map<std::string, std::string>;
-using kwinputs_t    = std::unordered_map<std::string, profiler::IValue>;
+using kwinputs_t    = std::unordered_map<std::string, std::string>;
 
 struct FallbackPair
 {
@@ -206,17 +205,6 @@ struct ExtraFields<EventType::PythonGC>
 {
     std::string phase;
     int64_t     duration_ns_;
-};
-
-template <>
-struct ExtraFields<EventType::Vulkan>
-{
-    using raw_event_t = std::pair<profiler::approx_time_t, vulkan_id_t>;
-    std::string name_;
-    int64_t     duration_ns_{0};
-    // While building the event tree, we want to report a vulkan event's duration
-    // as 0 so that its end time doesn't exceed that of its parent cpu op
-    bool in_tree_building_{false};
 };
 
 struct RawAllocation
@@ -345,13 +333,12 @@ struct PROFILER_VISIBILITY Result : public std::enable_shared_from_this<Result>
     int64_t                   start_time_ns_;
     uint64_t                  start_tid_;
     kineto::DeviceAndResource kineto_info_;
-    // ExtraFields<EventType::PythonGC> is defined (above) but intentionally
-    // not a variant alternative: XSigma has no Python tracer, so no event is
-    // ever materialized with that type (see RecordQueue::getRecords()).
+    // ExtraFields<EventType::PythonGC> / PyCall / PyCCall are defined for a
+    // registered python_tracer implementation to materialize; the default
+    // NoOpPythonTracer never produces them, so they are not variant alternatives.
     std::variant<
         ExtraFields<EventType::TorchOp>,
         ExtraFields<EventType::Backend>,
-        ExtraFields<EventType::Vulkan>,
         ExtraFields<EventType::Allocation>,
         ExtraFields<EventType::OutOfMemory>,
         ExtraFields<EventType::Kineto>>
@@ -396,71 +383,12 @@ struct KinetoObserverContext : public profiler::ObserverContext
 
         bool                             allow_tf32_cublas_;
         std::unique_ptr<perf_counters_t> counters_;
-        extra_meta_t*                    extra_nccl_meta_{};
     };
 
     explicit KinetoObserverContext(Event* event) : event_{event} {}
 
     Event*        event_;
     FallbackPair* fallback_{nullptr};
-};
-
-constexpr int IO_ENCODER_DEFAULT_BLOCK_SIZE = 1024;
-
-constexpr int SCALAR_LIST_LENGTH_LIMIT = 30;
-
-// InputOutputEncoder
-// Stores each op_events' shapes and dtypes, and concrete values into a
-// contiguous AppendOnlyList so that we no longer create vectors for shapes
-// and dtypes on every op. Those vectors can be created during
-// post-processing.
-// It splits the data into two categories: input shapes and concrete inputs.
-class InputOutputEncoder final
-{
-public:
-    void push(profiler::array_ref<const profiler::IValue> values);
-
-    // Used during post-processing to unpack the encoded data.
-    // Each method returns a "supplier" lambda which takes no arguments;
-    // invoking the lambda once will return a list of args that represent
-    // the inputs for one op.
-    // The data is split into two streams: "input shapes" and "concrete inputs".
-    // Note: "auto" only works because these are only used in collection.cpp,
-    // where they are implemented.
-    auto getInputShapeGenerator();
-    auto getConcreteInputGenerator();
-
-    static bool isSupportedScalarList(const profiler::IValue& list_candidate);
-
-    void clear();
-
-    enum class Tag
-    {
-        Tensor = 0,
-        UndefinedTensor,
-        TensorListBegin,  // TODO: generalize to other lists.
-        ScalarList,
-        Scalar,
-        Other,
-        TERMINATOR
-    };
-
-    enum class IOType
-    {
-        Shapes,
-        ConcreteInputs,
-        None
-    };
-
-private:
-    // Implementation detail for getInputShapeGenerator and
-    // getConcreteInputGenerator
-    auto getIValueGenerator(const IOType& io_type);
-
-    AppendOnlyList<Tag, IO_ENCODER_DEFAULT_BLOCK_SIZE>               tags_;
-    AppendOnlyList<RawTensorMetadata, IO_ENCODER_DEFAULT_BLOCK_SIZE> tensor_metadata_;
-    AppendOnlyList<int64_t, IO_ENCODER_DEFAULT_BLOCK_SIZE>           tensor_sizes_strides_;
-    AppendOnlyList<profiler::IValue, IO_ENCODER_DEFAULT_BLOCK_SIZE>  ivalues_;
 };
 
 using perf_profiler_t = profiler::profiler_impl::impl::linux_perf::PerfProfiler;
@@ -476,12 +404,6 @@ public:
     void emplace_backend_event(Args&&... args)
     {
         backend_events_.emplace_back(std::forward<Args>(args)...);
-    }
-
-    template <class... Args>
-    void emplace_vulkan_event(Args&&... args)
-    {
-        vulkan_events_.emplace_back(std::forward<Args>(args)...);
     }
 
     template <class... Args>
@@ -557,9 +479,6 @@ private:
             static uint64_t               correlationID(const OpList::Iterator& e);
         } op_events_;
 
-        // report_input_shapes
-        InputOutputEncoder inputs_outputs_;
-
         // with_stack (JIT)
         AppendOnlyList<jit_stack_t, BlockSize> jit_stack_;
 
@@ -583,16 +502,13 @@ private:
     // reportBackendEventToActiveKinetoProfiler
     AppendOnlyList<ExtraFields<EventType::Backend>, BlockSize> backend_events_;
 
-    // _reportVulkanEventToProfiler
-    AppendOnlyList<ExtraFields<EventType::Vulkan>::raw_event_t, BlockSize> vulkan_events_;
-
     // reportMemoryUsage
     AppendOnlyList<RawAllocation, BlockSize> allocations_;
 
     // reportOOMs
     AppendOnlyList<ExtraFields<EventType::OutOfMemory>, BlockSize> ooms_;
 
-    // with_stack (Python)
+    // with_stack (Python) — populated by a registered PythonTracerBase
     AppendOnlyList<std::pair<python_tracer::TraceKey, profiler::approx_time_t>, BlockSize>
         py_calls_;
     // gc with_stack (Python)

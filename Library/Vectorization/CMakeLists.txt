@@ -138,8 +138,8 @@ endif()
 
 # Profiler presence — detected from the CMake target; not a user option.
 # Lets kernel entry points call the always-safe RECORD_USER_SCOPE shim from
-# Profiler's common/instrumentation.h (Docs/profiler/PROFILER_MULTI_BACKEND_PLAN.md,
-# Phase 2) without depending on which PROFILER_BACKEND was selected.
+# Profiler's common/instrumentation.h (Docs/profiler/profiler.md,
+# Instrumentation) without depending on which PROFILER_BACKEND was selected.
 if(TARGET Profiler::Profiler)
   set(_vec_has_profiler 1)
 else()

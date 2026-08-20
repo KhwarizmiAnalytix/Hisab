@@ -147,7 +147,7 @@ cc_library(
         # CMakeLists.txt never linked Core either. A prior Core dep here was
         # vestigial and, left in place, would create a Memory -> Profiler -> Core
         # -> Memory cycle once Memory takes a Profiler dependency (see
-        # Docs/profiler/PROFILER_MULTI_BACKEND_PLAN.md, Phase 2).
+        # Docs/profiler/profiler.md, Instrumentation).
         "@fmt//:fmt",
     ] + select({
         "//bazel:enable_native_profiler": [],

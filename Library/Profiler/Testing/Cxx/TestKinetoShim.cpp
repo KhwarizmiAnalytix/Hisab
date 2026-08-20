@@ -10,22 +10,26 @@
 
 #include "ProfilerTest.h"
 
-#if PROFILER_HAS_KINETO && 0
+#if PROFILER_HAS_KINETO
 
 #include <ActivityTraceInterface.h>
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <set>
 #include <sstream>
+#include <string>
 #include <thread>
+#include <unordered_set>
 #include <vector>
 
-#include "bespoke/common/orchestration/observer.h"
+#include "bespoke/common/record_function.h"
 #include "bespoke/kineto/kineto_shim.h"
+#include "bespoke/kineto/profiler_kineto.h"
 
 using namespace profiler::profiler_impl;
 
@@ -42,13 +46,11 @@ PROFILERTEST(KinetoShim, Initialization)
     impl::ExperimentalConfig config;
     impl::kineto::prepareTrace(/*cpuOnly=*/false, activities, config);
 
-    // If we reach here without crashing, initialization succeeded
-    EXPECT_TRUE(true);
+    EXPECT_TRUE(kKinetoAvailable);
 }
 
 PROFILERTEST(KinetoShim, MultipleInitialization)
 {
-#if 0
     // Test that multiple initializations don't cause issues
     impl::kineto::ActivitySet activities;
     activities.insert(impl::ActivityType::CPU);
@@ -58,7 +60,6 @@ PROFILERTEST(KinetoShim, MultipleInitialization)
     impl::kineto::prepareTrace(/*cpuOnly=*/false, activities, config);
 
     EXPECT_TRUE(true);
-#endif
 }
 
 // ============================================================================
@@ -108,7 +109,7 @@ PROFILERTEST(KinetoShim, StartStopTrace)
 
     // Stop trace
     impl::kineto::ActivityTraceWrapper trace = impl::kineto::stopTrace();
-    EXPECT_TRUE(true);
+    EXPECT_TRUE(static_cast<bool>(trace));
 }
 
 PROFILERTEST(KinetoShim, TraceCollection)
@@ -130,7 +131,7 @@ PROFILERTEST(KinetoShim, TraceCollection)
 
     // Stop trace and collect
     impl::kineto::ActivityTraceWrapper trace = impl::kineto::stopTrace();
-    EXPECT_TRUE(true);
+    EXPECT_TRUE(static_cast<bool>(trace));
 }
 
 // ============================================================================
@@ -151,7 +152,7 @@ PROFILERTEST(KinetoShim, TraceExport)
 
     // Stop and get trace
     impl::kineto::ActivityTraceWrapper trace = impl::kineto::stopTrace();
-    EXPECT_TRUE(true);
+    EXPECT_TRUE(static_cast<bool>(trace));
 }
 
 // ============================================================================
@@ -208,7 +209,7 @@ PROFILERTEST(KinetoShim, FullProfilerCycle)
     }
 
     impl::kineto::ActivityTraceWrapper trace = impl::kineto::stopTrace();
-    EXPECT_TRUE(true);
+    EXPECT_TRUE(static_cast<bool>(trace));
 }
 
 PROFILERTEST(KinetoShim, MultipleTraces)
@@ -225,6 +226,7 @@ PROFILERTEST(KinetoShim, MultipleTraces)
         impl::kineto::startTrace();
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
         impl::kineto::ActivityTraceWrapper trace = impl::kineto::stopTrace();
+        EXPECT_TRUE(static_cast<bool>(trace));
     }
 
     EXPECT_TRUE(true);
@@ -265,7 +267,7 @@ PROFILERTEST(KinetoShim, ConcurrentTracing)
     t2.join();
 
     impl::kineto::ActivityTraceWrapper trace = impl::kineto::stopTrace();
-    EXPECT_TRUE(true);
+    EXPECT_TRUE(static_cast<bool>(trace));
 }
 
 // ============================================================================
@@ -605,35 +607,59 @@ PROFILERTEST(KinetoShim, EndToEndDetailedProfiling)
     EXPECT_NE(json_content.find("{"), std::string::npos) << "JSON should be valid object";
     EXPECT_NE(json_content.find("}"), std::string::npos) << "JSON should be valid object";
 
-    // Print JSON file location and content summary
-    std::cout << "\n=== Kineto Native JSON Generated ===" << std::endl;
-    std::cout << "File: " << trace_filename << std::endl;
-    std::cout << "Size: " << json_content.size() << " bytes" << std::endl;
-    std::cout << "\nJSON Schema Validation:" << std::endl;
-    std::cout << "  ✓ Valid Kineto JSON schema (schemaVersion: 1)" << std::endl;
-    std::cout << "  ✓ Contains traceEvents array" << std::endl;
-    std::cout << "  ✓ Contains Kineto-specific metadata" << std::endl;
-    std::cout << "\nIMPORTANT:" << std::endl;
-    std::cout << "  ✗ This JSON is NOT compatible with chrome://tracing" << std::endl;
-    std::cout << "  ✗ Kineto uses its own schema, not Chrome Trace Event Format" << std::endl;
-    std::cout << "\nTo get Chrome Trace compatible output:" << std::endl;
-    std::cout << "  1. Use Profiler's profiler_session with Kineto integration" << std::endl;
-    std::cout << "  2. Use export_to_chrome_trace_json() function" << std::endl;
-    std::cout << "  3. See TestProfilerChromeTraceHierarchical.cpp for examples" << std::endl;
-    std::cout << "\nKineto JSON can be viewed with:" << std::endl;
-    std::cout << "  - Kineto's own visualization tools" << std::endl;
-    std::cout << "  - PyTorch Profiler (torch.profiler)" << std::endl;
-    std::cout << "  - TensorBoard profiler plugin" << std::endl;
-    std::cout << "===================================\n" << std::endl;
+    std::remove(trace_filename.c_str());
+}
 
-    // ========================================================================
-    // Step 9: Cleanup - Remove temporary trace file
-    // ========================================================================
-    // Comment out cleanup to allow manual inspection
-    // std::remove(trace_filename.c_str());
+PROFILERTEST(KinetoShim, HeavyFunctionProfiling)
+{
+    profiler::autograd::profiler_impl::ProfilerConfig const config(
+        profiler::autograd::profiler_impl::ProfilerState::KINETO,
+        /*report_input_shapes=*/false,
+        /*profile_memory=*/false,
+        /*with_stack=*/false,
+        /*with_flops=*/false,
+        /*with_modules=*/false);
 
-    // Note: Keeping trace file for manual inspection
-    // To enable cleanup, uncomment the line above
+    const std::set<profiler::autograd::profiler_impl::ActivityType> activities{
+        profiler::autograd::profiler_impl::ActivityType::CPU};
+
+    profiler::autograd::profiler_impl::prepareProfiler(config, activities);
+    profiler::autograd::profiler_impl::enableProfiler(
+        config, activities, {profiler::RecordScope::USER_SCOPE});
+
+    {
+        RECORD_USER_SCOPE("kineto_heavy_workload");
+        complex_cpu_workload();
+        {
+            RECORD_USER_SCOPE("kineto_matrix_operations");
+            volatile double matrix_result = matrix_multiply_operation(32);
+            (void)matrix_result;
+        }
+        {
+            RECORD_USER_SCOPE("kineto_sorting_operations");
+            sorting_aggregation_phase(4096);
+        }
+    }
+
+    auto result = profiler::autograd::profiler_impl::disableProfiler();
+    ASSERT_NE(result, nullptr);
+
+    const std::string trace_filename = "kineto_heavy_function_trace.json";
+    result->save(trace_filename);
+
+    std::ifstream json_file(trace_filename);
+    ASSERT_TRUE(json_file.good()) << "Failed to create Kineto JSON output file";
+
+    std::stringstream buffer;
+    buffer << json_file.rdbuf();
+    const std::string json_content = buffer.str();
+    json_file.close();
+
+    EXPECT_NE(json_content.find("\"traceEvents\""), std::string::npos)
+        << "JSON file missing traceEvents array";
+    EXPECT_GT(json_content.size(), 100U) << "JSON should contain meaningful content";
+
+    std::remove(trace_filename.c_str());
 }
 
 #endif  // PROFILER_HAS_KINETO

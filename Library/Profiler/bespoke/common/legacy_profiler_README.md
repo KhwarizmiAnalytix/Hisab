@@ -102,7 +102,10 @@ The final step in integration is file export. After all events have been collect
 
 ## Python Tracing ##
 
-*(XSigma's port removed `profiler_python.cpp`/`.h` -- there is no Python tracer here; `PythonTracerBase::make()` always returns a no-op tracer. This section is kept for reference to PyTorch's own design.)*
+*(XSigma ships a pluggable `PythonTracerBase` in
+`bespoke/common/orchestration/python_tracer.{h,cpp}`. The default is a no-op;
+a real CPython tracer registers via `registerTracer`. Native backend has a
+matching stub factory in `native/cpu/python_tracer*`.)*
 
 When `with_stack=True` is set in the profiler, the Python stack tracer is generated using the `make` function defined in `PythonTracerBase`. The implementation resides in `profiler_python.cpp`.
 To profile the stack, `PyEval_SetProfile` is used to trace and handle various execution events within a Python program. This enables comprehensive profiling by monitoring and responding to specific cases:

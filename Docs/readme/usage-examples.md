@@ -303,7 +303,7 @@ The Enhanced Profiler is an experimental feature providing:
 
 ### Location
 
-- **Source**: `Library/Profiler` (see [Docs/profiler/README.md](../profiler/README.md))
+- **Source**: `Library/Profiler` (see [Docs/profiler/profiler.md](../profiler/profiler.md))
 - **Tests**: `Library/Profiler/Testing/Cxx/` (for example `TestEnhancedProfiler.cpp`)
 
 ### Usage Example

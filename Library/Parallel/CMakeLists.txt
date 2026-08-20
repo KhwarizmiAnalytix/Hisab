@@ -164,8 +164,8 @@ endif()
 
 # Profiler presence — detected from the CMake target; not a user option. Lets
 # the thread pool call the always-safe RECORD_USER_SCOPE shim from Profiler's
-# common/instrumentation.h (Docs/profiler/PROFILER_MULTI_BACKEND_PLAN.md,
-# Phase 2) without depending on which PROFILER_BACKEND was selected.
+# common/instrumentation.h (Docs/profiler/profiler.md, Instrumentation)
+# without depending on which PROFILER_BACKEND was selected.
 if(TARGET Profiler::Profiler)
   list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_PROFILER=1)
   list(APPEND PARALLEL_DEPENDENCY_LIBS Profiler::Profiler)

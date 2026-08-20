@@ -882,7 +882,7 @@ Full cross-platform compatibility across Windows, Linux, and macOS with platform
 - **[Cross-Platform Building](Docs/readme/cross-platform-building.md)** - Platform-specific build instructions
 - **[Linting System](Docs/readme/linter.md)** - Comprehensive linter documentation and configuration
 - **[Usage Examples](Docs/readme/usage-examples.md)** - Practical build configuration examples
-- **[Profiler](Docs/profiler/README.md)** - Profiler library, backends (native / Kineto / ITT), examples, and Kineto notes
+- **[Profiler](Docs/profiler/profiler.md)** - Profiler library, backends (native / Kineto / ITT), examples, and architecture
 
 ### Additional Documentation
 

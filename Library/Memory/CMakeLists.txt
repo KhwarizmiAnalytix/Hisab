@@ -44,7 +44,7 @@ option(MEMORY_ENABLE_LOGGING "Link Memory with the Logging library when availabl
 
 # When ON and target Profiler::Profiler exists: link Profiler and set MEMORY_HAS_PROFILER=1, so
 # the caching allocators can report allocation/deallocation events via
-# profiler::report_memory_usage() (Docs/profiler/PROFILER_MULTI_BACKEND_PLAN.md, Phase 2). That
+# profiler::report_memory_usage() (Docs/profiler/profiler.md, Instrumentation). That
 # call is a true no-op unless a profiling session with profile_memory=true is active, so this is
 # safe to leave ON.
 option(MEMORY_ENABLE_PROFILER "Link Memory with the Profiler library when available" ON)

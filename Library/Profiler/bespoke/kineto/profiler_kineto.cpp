@@ -13,6 +13,7 @@
 #include "bespoke/common/containers.h"
 #include "bespoke/common/events.h"
 #include "bespoke/common/orchestration/observer.h"
+#include "bespoke/common/orchestration/python_tracer.h"
 #include "bespoke/common/standalone/privateuse1_observer.h"
 #include "bespoke/common/util.h"
 #include "common/profiler_export.h"
@@ -91,25 +92,23 @@ struct OpArgData
     bool                              hasData;
     std::vector<shape>                shapes;
     std::vector<std::string>          dtypes;
-    std::vector<profiler::IValue>     concreteInputs;
     std::vector<std::vector<int64_t>> shapesForKinetoEvent;
     std::vector<shape>                strides;
 };
 
 auto parseArgData(
-    const std::vector<op_input_t>& input_shapes, const std::vector<op_input_t>& concreteInputs)
+    const std::vector<op_input_t>& input_shapes, const std::vector<op_input_t>& /*concreteInputs*/)
 {
     if (input_shapes.empty())
     {
-        return OpArgData{false, {}, {}, {}, {}, {}};
+        return OpArgData{false, {}, {}, {}, {}};
     }
 
     std::vector<shape>                shapes(input_shapes.size());
     std::vector<shape>                strides(input_shapes.size());
     std::vector<std::vector<int64_t>> shapesForKinetoEvent(input_shapes.size());
 
-    std::vector<std::string>      dtypes(input_shapes.size());
-    std::vector<profiler::IValue> concrete_inputs_list;
+    std::vector<std::string> dtypes(input_shapes.size());
 
     for (const auto& i : profiler::irange(input_shapes.size()))
     {
@@ -119,8 +118,8 @@ auto parseArgData(
                 {
                     shapes[i]               = t.sizes_;
                     shapesForKinetoEvent[i] = t.sizes_;
-                    dtypes[i]  = std::string();  //;scalarTypeToTypeMeta(t.dtype_).name());
-                    strides[i] = t.strides_;
+                    dtypes[i]               = std::string();
+                    strides[i]              = t.strides_;
                 },
                 [&](const std::vector<TensorMetadata>& tensor_list)
                 {
@@ -137,36 +136,11 @@ auto parseArgData(
                     strides[i] = stride;
                     dtypes[i]  = "TensorList";
                 },
-                [&](const profiler::IValue&) { dtypes[i] = "Scalar"; },
                 [&](const auto&) {}),
             input_shapes[i]);
     }
 
-    // If we recorded concrete inputs, then parse them
-    if (input_shapes.size() == concreteInputs.size() && !concreteInputs.empty())
-    {
-        concrete_inputs_list.resize(input_shapes.size());
-
-        for (const auto& i : profiler::irange(input_shapes.size()))
-        {
-            std::visit(
-                profiler::overloaded(
-                    [&](const profiler::IValue& val) { concrete_inputs_list[i] = val; },
-                    [&](const auto&) {}),
-                input_shapes[i]);
-            std::visit(
-                profiler::overloaded(
-                    [&](const profiler::IValue& val)
-                    {
-                        concrete_inputs_list[i] = val;
-                        dtypes[i]               = "ScalarList";
-                    },
-                    [&](const auto&) {}),
-                concreteInputs[i]);
-        }
-    }
-
-    return OpArgData{true, shapes, dtypes, concrete_inputs_list, shapesForKinetoEvent, strides};
+    return OpArgData{true, shapes, dtypes, shapesForKinetoEvent, strides};
 }
 
 struct MetadataBase
@@ -297,64 +271,7 @@ struct AddGenericMetadata : public MetadataBase
                     profiler::profiler_impl::impl::shapesToStr(arg_data.shapesForKinetoEvent));
             }
             addMetadata("Input type", profiler::profiler_impl::impl::strListToStr(arg_data.dtypes));
-            if (!arg_data.concreteInputs.empty())
-            {
-                addMetadata(
-                    "Concrete Inputs",
-                    profiler::profiler_impl::impl::ivalueListToStr(arg_data.concreteInputs));
-            }
         }
-
-        // Add metadata for kwinputs if exist
-        // NOTE: Disabled because IValue is a stub class without the required methods
-        // Uncomment when full IValue implementation is available
-        /*for (const auto& [key, val] : op_event.kwinputs_)
-        {
-            if (key == "stream" && !val.isInt())
-            {
-                PROFILER_LOG_WARNING(
-                    "Inputted stream is not an int for op: {} skipping", op_event.name_);
-                continue;
-            }
-
-            // Until needed, lets limit the kwargs to only ints, doubles, strings,
-            // bools, and list of strings
-            bool isValidType  = val.isInt() || val.isDouble() || val.isString() || val.isBool();
-            bool isStringList = false;
-
-            if (!isValidType && val.isList())
-            {
-                // Check if it's a list of strings
-                auto list    = val.toListRef();
-                isStringList = std::all_of(
-                    list.begin(),
-                    list.end(),
-                    [](const profiler::IValue& item) { return item.isString(); });
-            }
-
-            if (!isValidType && !isStringList)
-            {
-                PROFILER_LOG_WARNING(
-                    "Inputted kwarg: {} is not an int, double, string, bool, or list of strings "
-                    "for op: {} skipping",
-                    key,
-                    op_event.name_);
-                continue;
-            }
-
-            if (isStringList)
-            {
-                // For list of strings, use ivalueListToStr
-                auto                        list = val.toListRef();
-                std::vector<profiler::IValue> stringList(list.begin(), list.end());
-                addMetadata(key, profiler::profiler_impl::impl::ivalueListToStr(stringList));
-            }
-            else
-            {
-                bool isString = val.isString();
-                addMetadata(key, profiler::profiler_impl::impl::ivalueToStr(val, isString));
-            }
-        }*/
 
         // Add extra metadata if any
         for (const auto& [key, val] : op_event.extra_meta_)
@@ -440,14 +357,6 @@ struct KinetoThreadLocalState : public ProfilerStateBase
     }
 
     ActiveProfilerType profilerType() override { return ActiveProfilerType::KINETO; }
-
-    void reportVulkanEventToProfiler(profiler::profiler_impl::impl::vulkan_id_t id)
-    {
-        if (!config_.disabled())
-        {
-            recordQueue.getSubqueue()->emplace_vulkan_event(profiler::getApproximateTime(), id);
-        }
-    }
 
     void reportMemoryUsage(
         void*                   ptr,
@@ -594,15 +503,6 @@ void onFunctionExit(const profiler::RecordFunction& fn, profiler::ObserverContex
             *kineto_ctx_ptr->event_->counters_);
     }
     kineto_ctx_ptr->event_->basic_fields_.end_tid_ = profiler::RecordFunction::currentThreadId();
-    if (fn.isNcclMeta())
-    {
-        auto& extra_meta = *(kineto_ctx_ptr->event_->extra_nccl_meta_);
-        // Record only the outputs in this exit callback of the record function
-        profiler::profiler_impl::impl::SaveNcclMetaConfig const ncclMetaConfig{
-            true, false, false, true};
-        auto additonal_nccl_meta = profiler::profiler_impl::impl::saveNcclMeta(fn, ncclMetaConfig);
-        extra_meta.insert(additonal_nccl_meta.begin(), additonal_nccl_meta.end());
-    }
     if (config.state == ProfilerState::KINETO_GPU_FALLBACK)
     {
         auto* fallback = kineto_ctx_ptr->fallback_;
@@ -993,7 +893,8 @@ std::unique_ptr<ProfilerResult> disableProfiler()
 }
 namespace tracer = profiler::profiler_impl::impl::python_tracer;
 static std::unique_ptr<tracer::PythonMemoryTracerBase> memory_tracer;
-void                                                   startMemoryProfile()
+
+void startMemoryProfile()
 {
     if (memory_tracer == nullptr)
     {
@@ -1004,12 +905,18 @@ void                                                   startMemoryProfile()
 
 void stopMemoryProfile()
 {
-    memory_tracer->stop();
+    if (memory_tracer != nullptr)
+    {
+        memory_tracer->stop();
+    }
 }
 
 void exportMemoryProfile(const std::string& filename)
 {
-    memory_tracer->export_memory_history(filename);
+    if (memory_tracer != nullptr)
+    {
+        memory_tracer->export_memory_history(filename);
+    }
 }
 
 KinetoEvent::KinetoEvent(
@@ -1033,19 +940,15 @@ KinetoEvent::KinetoEvent(
     result->visit_if_base<ExtraFields<EventType::TorchOp>>(
         [&](const auto& op)
         {
-            auto arg_data    = parseArgData(op.inputs_, op.concrete_inputs_);
-            shapes_          = std::move(arg_data.shapesForKinetoEvent);
-            dtypes_          = std::move(arg_data.dtypes);
-            concrete_inputs_ = std::move(arg_data.concreteInputs);
-            kwinputs_        = std::move(op.kwinputs_);
+            auto arg_data = parseArgData(op.inputs_, op.concrete_inputs_);
+            shapes_       = std::move(arg_data.shapesForKinetoEvent);
+            dtypes_       = std::move(arg_data.dtypes);
         });
 }
 
 bool KinetoEvent::isPythonFunction()
 {
-    bool const out{false};
-    //result_->visit_if_base<PyExtraFieldsBase>([&](const auto&) { out = true; });
-    return out;
+    return false;
 }
 
 bool KinetoEvent::hasShapes() const
@@ -1070,27 +973,17 @@ profiler::array_ref<std::string> KinetoEvent::dtypes() const
 
 bool KinetoEvent::hasConcreteInputs() const
 {
-    return !concrete_inputs_.empty();
-}
-
-profiler::array_ref<profiler::IValue> KinetoEvent::concreteInputs() const
-{
-    return concrete_inputs_;
+    return false;
 }
 
 bool KinetoEvent::hasKwinputs() const
 {
-    return !kwinputs_.empty();
+    return false;
 }
 
 bool KinetoEvent::isHiddenEvent() const
 {
     return result_ && result_->hidden_;
-}
-
-std::unordered_map<std::string, profiler::IValue> KinetoEvent::kwinputs() const
-{
-    return kwinputs_;
 }
 
 profiler::array_ref<std::string> KinetoEvent::stack() const
@@ -1318,18 +1211,5 @@ void ProfilerResult::save(const std::string& path)
 }
 
 }  // namespace autograd::profiler_impl
-
-namespace profiler_impl::impl
-{
-void _reportVulkanEventToProfiler(vulkan_id_t id)
-{
-    auto* state_ptr = ::profiler::autograd::profiler_impl::KinetoThreadLocalState::get(
-        /*global=*/false);
-    if (state_ptr != nullptr)
-    {
-        state_ptr->reportVulkanEventToProfiler(id);
-    }
-}
-}  // namespace profiler_impl::impl
 
 }  // namespace profiler

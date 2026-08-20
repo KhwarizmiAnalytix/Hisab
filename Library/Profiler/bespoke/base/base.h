@@ -5,8 +5,6 @@
 #include <memory>
 
 #include "common/profiler_export.h"
-//#include "common/device.h"
-#include "common/strong_type.h"
 
 struct CUevent_st;
 
@@ -39,12 +37,5 @@ PROFILER_API void                 registerITTMethods(ProfilerStubs* stubs);
 PROFILER_API const ProfilerStubs* ittStubs();
 PROFILER_API void                 registerPrivateUse1Methods(ProfilerStubs* stubs);
 PROFILER_API const ProfilerStubs* privateuse1Stubs();
-
-using vulkan_id_t = strong::type<
-    int64_t,
-    struct _VulkanID,
-    strong::regular,
-    strong::convertible_to<int64_t>,
-    strong::hashable>;
 
 }  // namespace profiler::profiler_impl::impl

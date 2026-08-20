@@ -83,47 +83,6 @@ bool ProfilerConfig::pushGlobalCallbacks() const
     return global() || experimental_config.profile_all_threads;
 }
 
-namespace
-{
-enum ProfilerIValueIdx
-{
-    STATE = 0,
-    REPORT_INPUT_SHAPES,
-    PROFILE_MEMORY,
-    NUM_PROFILER_CFG_IVALUE_IDX  // must be last in list
-};
-}  // namespace
-profiler::IValue ProfilerConfig::toIValue()
-{
-    //profiler::impl::GenericList eventIValueList(profiler::AnyType::get());
-    //eventIValueList.reserve(NUM_PROFILER_CFG_IVALUE_IDX);
-    //eventIValueList.emplace_back(static_cast<int64_t>(state));
-    //eventIValueList.emplace_back(report_input_shapes);
-    //eventIValueList.emplace_back(profile_memory);
-    return {};
-}
-
-ProfilerConfig ProfilerConfig::fromIValue(
-    PROFILER_UNUSED const profiler::IValue& profilerConfigIValue)
-{
-    /*
-    PROFILER_CHECK(
-      profilerConfigIValue.isList(),
-      "Expected IValue to contain type profiler::impl::GenericList");
-  auto ivalues = profilerConfigIValue.toList();
-  PROFILER_CHECK(
-      ivalues.size() == NUM_PROFILER_CFG_IVALUE_IDX,
-      profiler::str(
-          "Expected exactly ",
-          NUM_PROFILER_CFG_IVALUE_IDX,
-          " ivalues to resconstruct ProfilerConfig."));
-    */
-    return ProfilerConfig(
-        static_cast<ProfilerState>(0),  //ivalues.get(ProfilerIValueIdx::STATE).toInt()),
-        false,   //ivalues.get(ProfilerIValueIdx::REPORT_INPUT_SHAPES).toBool(),
-        false);  //ivalues.get(ProfilerIValueIdx::PROFILE_MEMORY).toBool());
-}
-
 // ----------------------------------------------------------------------------
 // -- Profiler base class -----------------------------------------------------
 // ----------------------------------------------------------------------------

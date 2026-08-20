@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <iomanip>
+#include <numeric>
 #include <sstream>
 
 #include "bespoke/common/collection.h"
@@ -37,6 +38,16 @@ int64_t node_total_ns(const experimental_event_t& node)
     return total > 0 ? total : 0;
 }
 
+int64_t children_total_ns(const experimental_event_t& node)
+{
+    return std::accumulate(
+        node->children_.begin(),
+        node->children_.end(),
+        int64_t{0},
+        [](int64_t sum, const experimental_event_t& child)
+        { return sum + node_total_ns(child); });
+}
+
 // Recursively walks the RecordFunction event tree, accumulating per-name
 // self/total time and call counts into `hotspots`, and remembering the first
 // call path (root -> ... -> leaf) seen for each name into `call_stacks`.
@@ -48,11 +59,7 @@ void accumulate(
 {
     const auto  name       = node->name();
     const auto  total_ns   = node_total_ns(node);
-    int64_t     children_ns = 0;
-    for (const auto& child : node->children_)
-    {
-        children_ns += node_total_ns(child);
-    }
+    const auto  children_ns = children_total_ns(node);
     const auto self_ns = total_ns > children_ns ? total_ns - children_ns : 0;
 
     auto& entry = hotspots[name];
@@ -62,10 +69,7 @@ void accumulate(
     entry.call_count += 1;
 
     path.push_back(name);
-    if (call_stacks.find(name) == call_stacks.end())
-    {
-        call_stacks.emplace(name, path);
-    }
+    call_stacks.try_emplace(name, path);
     for (const auto& child : node->children_)
     {
         accumulate(child, path, hotspots, call_stacks);
@@ -100,12 +104,8 @@ void render_tree(
     size_t                      depth,
     std::ostringstream&         out)
 {
-    const auto total_ns = node_total_ns(node);
-    int64_t    children_ns = 0;
-    for (const auto& child : node->children_)
-    {
-        children_ns += node_total_ns(child);
-    }
+    const auto total_ns    = node_total_ns(node);
+    const auto children_ns = children_total_ns(node);
     const auto self_ns = total_ns > children_ns ? total_ns - children_ns : 0;
     const auto pct = root_total_ns > 0
                           ? (100.0 * static_cast<double>(total_ns) / static_cast<double>(root_total_ns))

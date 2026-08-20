@@ -71,38 +71,6 @@ std::string getNvtxStr(
     profiler::RecordFunctionHandle                                   op_id        = 0,
     const std::list<std::pair<profiler::RecordFunctionHandle, int>>& input_op_ids = {});
 
-struct PROFILER_VISIBILITY FileLineFunc
-{
-    std::string filename;
-    size_t      line;
-    std::string funcname;
-};
-
-struct PROFILER_VISIBILITY SaveNcclMetaConfig
-{
-    bool truncate;
-    bool introspectMetadata;
-    bool introspectInputs;
-    bool introspectOutputs;
-
-    SaveNcclMetaConfig()
-        : truncate(true),
-          introspectMetadata(true),
-          introspectInputs(false),
-          introspectOutputs(false)
-    {
-    }
-
-    SaveNcclMetaConfig(
-        bool truncate, bool introspectMetadata, bool introspectInputs, bool introspectOutputs)
-        : truncate(truncate),
-          introspectMetadata(introspectMetadata),
-          introspectInputs(introspectInputs),
-          introspectOutputs(introspectOutputs)
-    {
-    }
-};
-
 PROFILER_API std::string stacksToStr(const std::vector<std::string>& stacks, const char* delim);
 PROFILER_API std::vector<std::vector<int64_t>> inputSizes(
     const profiler::RecordFunction& fn, const bool flatten_list_enabled = false);
@@ -111,19 +79,10 @@ PROFILER_API std::string shapesToStr(const std::vector<std::vector<int64_t>>& sh
 PROFILER_API std::string strListToStr(const std::vector<std::string>& types);
 PROFILER_API std::string inputOpIdsToStr(
     const std::list<std::pair<profiler::RecordFunctionHandle, int>>& input_op_ids);
-PROFILER_API std::string ivalueToStr(const profiler::IValue& val, bool isString);
-PROFILER_API std::string ivalueListToStr(const std::vector<profiler::IValue>& list);
 PROFILER_API std::vector<std::string> inputTypes(const profiler::RecordFunction& fn);
 
-std::unordered_map<std::string, profiler::IValue> PROFILER_API
-saveExtraArgs(const profiler::RecordFunction& fn);
-std::unordered_map<std::string, std::string> PROFILER_API saveNcclMeta(
-    const profiler::RecordFunction& fn, const SaveNcclMetaConfig& config = SaveNcclMetaConfig());
-std::pair<bool, std::variant<int, std::vector<int>>> findStartAddrForTensors(
-    const profiler::IValue& val);
 uint64_t PROFILER_API computeFlops(
-    const std::string&                                       op_name,
-    const std::unordered_map<std::string, profiler::IValue>& extra_args);
+    const std::string& op_name, const std::unordered_map<std::string, std::string>& extra_args);
 
 std::string shapeToStr(const std::vector<int64_t>& shape);
 

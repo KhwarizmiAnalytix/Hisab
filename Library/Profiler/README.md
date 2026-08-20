@@ -4,7 +4,7 @@ Profiler **implementation**: native CPU profiler, **Kineto** (PyTorch-style) int
 
 ## Documentation
 
-User guides and macro reference: **[`Docs/profiler/`](../../Docs/profiler/README.md)** — e.g. [`Library_Profiler.md`](../../Docs/profiler/Library_Profiler.md), [`profiler.md`](../../Docs/profiler/profiler.md).
+User guide: **[`Docs/profiler/profiler.md`](../../Docs/profiler/profiler.md)**.
 
 ## Layout
 

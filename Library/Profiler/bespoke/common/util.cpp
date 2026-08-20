@@ -146,8 +146,7 @@ std::string stacksToStr(const std::vector<std::string>& stacks, const char* deli
     return "\"" + rc + "\"";
 }
 
-// XSigma has no tensor type (profiler::IValue carries no tensor/list payload);
-// this always returns empty.
+// XSigma has no tensor type; this always returns empty.
 std::vector<std::vector<int64_t>> inputSizes(
     const profiler::RecordFunction& /*fn*/, bool /*flatten_list_enabled*/)
 {
@@ -259,137 +258,14 @@ std::string strListToStr(const std::vector<std::string>& types)
     rc.erase(rc.length() - 2);  // remove last ", "
     return "[" + rc + "]";
 }
-#if 0
-// Disabled: IValue methods (isNone, isBool, operator<<) not available in profiler-only build.
-std::string ivalueToStr(const profiler::IValue& val, bool isString)
-{
-    std::stringstream ss;
-    if (val.isNone())
-    {
-        return "\"None\"";
-    }
-    else
-    {
-        ss.str("");
-        if (isString)
-        {
-            ss << "\"";
-        }
-        ss << val;
-        if (isString)
-        {
-            ss << "\"";
-        }
-        std::string mystr = ss.str();
 
-        // For boolean the values that ivalue gives is "True" and "False" but
-        // json only takes "true" and "false" so we convert the string to lower case
-        if (val.isBool())
-        {
-            for (char& c : mystr)
-            {
-                c = static_cast<char>(std::tolower(c));
-            }
-        }
-
-        // A double quote can cause issues with the chrome tracing so force
-        // all inputs to not contain more than the 2 we add in this function
-        auto count = std::count(mystr.begin(), mystr.end(), '"');
-        return count > 2 ? "\"None\"" : mystr;
-    }
-}
-#else
-// Stub implementation when IValue methods are not available.
-std::string ivalueToStr(const profiler::IValue& /*val*/, bool /*isString*/)
-{
-    return "\"None\"";
-}
-#endif
-
-#if 0
-// Disabled: IValue methods (isNone, operator<<) not available in profiler-only build.
-std::string ivalueListToStr(const std::vector<profiler::IValue>& list)
-{
-    std::vector<std::string> concrete_str_inputs;
-    std::stringstream        ss;
-    for (const auto& val : list)
-    {
-        if (val.isNone())
-        {
-            concrete_str_inputs.emplace_back("");
-        }
-        else
-        {
-            ss.str("");
-            ss << val;
-            concrete_str_inputs.emplace_back(ss.str());
-        }
-    }
-    return strListToStr(concrete_str_inputs);
-}
-#else
-// Stub implementation when IValue methods are not available.
-std::string ivalueListToStr(const std::vector<profiler::IValue>& /*list*/)
-{
-    return "[]";
-}
-#endif
-
-// XSigma has no tensor type (profiler::IValue carries no tensor/scalar/list
-// payload); this always returns one empty string per input.
-std::vector<std::string> inputTypes(const profiler::RecordFunction& fn)
-{
-    std::vector<std::string> types;
-    types.reserve(fn.inputs().size());
-    for (const auto& input_val : fn.inputs())
-    {
-        (void)input_val;       // Suppress unused variable warning
-        types.emplace_back();  // Return empty string for each input
-    }
-    return types;
-}
-
-// ----------------------------------------------------------------------------
-// -- NCCL Metadata -----------------------------------------------------------
-// ----------------------------------------------------------------------------
-
-// XSigma has no tensor type (profiler::IValue carries no tensor/tuple/list
-// payload); this always reports "not found".
-std::pair<bool, std::variant<int, std::vector<int>>> findStartAddrForTensors(
-    const profiler::IValue& /*val*/)
-{
-    return {false, -1};
-}
-
-// XSigma has no distributed/multi-node collective-communication concept
-// (Library/Parallel is a local thread-pool library), so there is no NCCL
-// metadata to report.
-std::unordered_map<std::string, std::string> saveNcclMeta(
-    const profiler::RecordFunction& /*fn*/, const SaveNcclMetaConfig& /*config*/)
-{
-    return {};
-}
-
-// XSigma has no tensor type (profiler::IValue carries no tensor payload); these
-// FLOPS-estimation helpers always return empty/zero.
-[[maybe_unused]] static std::vector<profiler::IntArrayRef> getInputSizes(
-    const std::string& /*op_name*/,
-    size_t /*min_size*/,
-    profiler::array_ref<const profiler::IValue> /*inputs*/,
-    const profiler::array_ref<int>& /*should_be_tensor*/)
-{
-    return {};
-}
-
-std::unordered_map<std::string, profiler::IValue> saveExtraArgs(
-    const profiler::RecordFunction& /*fn*/)
+std::vector<std::string> inputTypes(const profiler::RecordFunction& /*fn*/)
 {
     return {};
 }
 
 uint64_t computeFlops(
-    const std::string& /*op_name*/,
-    const std::unordered_map<std::string, profiler::IValue>& /*extra_args*/)
+    const std::string& /*op_name*/, const std::unordered_map<std::string, std::string>& /*extra_args*/)
 {
     return 0;
 }

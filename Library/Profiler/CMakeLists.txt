@@ -306,8 +306,14 @@ if(PROFILER_ENABLE_ITT)
 endif()
 
 # --- Runtime library wiring ---
+# Kineto's subtree builds fmt as target `fmt` (not `Fmt::fmt`). Profiler TUs
+# such as profiler_kineto.cpp call fmt::print(stderr, ...), which needs the
+# compiled FILE* vprint symbol. With coverage/Debug that symbol is not always
+# pulled through libkineto.a alone, so link fmt whenever either alias exists.
 if(TARGET Fmt::fmt)
   list(APPEND PROFILER_DEPENDENCY_LIBS Fmt::fmt)
+elseif(TARGET fmt)
+  list(APPEND PROFILER_DEPENDENCY_LIBS fmt)
 endif()
 if(PROFILER_ENABLE_KINETO AND TARGET Kineto::kineto)
   list(APPEND PROFILER_DEPENDENCY_LIBS Kineto::kineto)

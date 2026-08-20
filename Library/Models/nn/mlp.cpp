@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numeric>
 
 namespace models
 {
@@ -39,12 +40,15 @@ std::size_t weight_count(const std::vector<int>& sizes)
 
 std::size_t bias_count(const std::vector<int>& sizes)
 {
-    std::size_t n = 0;
-    for (std::size_t i = 1; i < sizes.size(); ++i)
+    if (sizes.size() < 2)
     {
-        n += static_cast<std::size_t>(sizes[i]);
+        return 0;
     }
-    return n;
+    return std::accumulate(
+        sizes.begin() + 1,
+        sizes.end(),
+        std::size_t{0},
+        [](std::size_t n, int size) { return n + static_cast<std::size_t>(size); });
 }
 
 }  // namespace

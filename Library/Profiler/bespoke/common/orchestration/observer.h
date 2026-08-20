@@ -190,10 +190,6 @@ struct PROFILER_VISIBILITY ProfilerConfig
     bool               with_flops;
     bool               with_modules;
     std::string        trace_id;
-
-    // For serialization
-    static PROFILER_API profiler::IValue toIValue();
-    PROFILER_API static ProfilerConfig   fromIValue(const profiler::IValue& profilerConfigIValue);
 };
 
 struct PROFILER_VISIBILITY MemoryReportingInfoBase : public DebugInfoBase

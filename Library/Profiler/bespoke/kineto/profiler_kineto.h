@@ -8,6 +8,7 @@
 #include "bespoke/common/api.h"
 #include "bespoke/common/events.h"
 #include "bespoke/common/util.h"
+#include "common/array_ref.h"
 
 namespace profiler
 {
@@ -49,10 +50,8 @@ struct PROFILER_VISIBILITY KinetoEvent
     PROFILER_API bool                                      hasTypes() const;
     PROFILER_API profiler::array_ref<std::string> dtypes() const;
     PROFILER_API bool                             hasConcreteInputs() const;
-    PROFILER_API profiler::array_ref<profiler::IValue> concreteInputs() const;
     PROFILER_API bool                                  hasKwinputs() const;
     PROFILER_API bool                                  isHiddenEvent() const;
-    PROFILER_API std::unordered_map<std::string, profiler::IValue> kwinputs() const;
     PROFILER_API uint64_t                                          flops() const;
     PROFILER_API int64_t                                           sequenceNr() const;
     PROFILER_API bool                                              hasStack() const;
@@ -89,10 +88,8 @@ private:
     std::vector<std::string>                                     python_stack_;
 
     // Copy fields from result so we can return ArrayRefs.
-    std::vector<std::vector<int64_t>>                 shapes_;
-    std::vector<std::string>                          dtypes_;
-    std::vector<profiler::IValue>                     concrete_inputs_;
-    std::unordered_map<std::string, profiler::IValue> kwinputs_;
+    std::vector<std::vector<int64_t>> shapes_;
+    std::vector<std::string>          dtypes_;
 };
 
 // Consolidating events returned directly from Kineto
@@ -221,13 +218,5 @@ PROFILER_API void enableProfilerInChildThread();
 PROFILER_API void disableProfilerInChildThread();
 
 }  // namespace autograd::profiler_impl
-
-namespace profiler_impl::impl
-{
-
-// Experimental.
-PROFILER_API void _reportVulkanEventToProfiler(vulkan_id_t id);
-
-}  // namespace profiler_impl::impl
 
 }  // namespace profiler
