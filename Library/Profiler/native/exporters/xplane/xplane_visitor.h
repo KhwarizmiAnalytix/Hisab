@@ -190,7 +190,7 @@ public:
     PROFILER_API xevent_visitor(
         const xplane_visitor* plane, const xline* line, const xevent* event);
 
-    const xplane_visitor& plane() const { return *plane_; }
+    const xplane_visitor& plane() const { return *plane_; }  // NOLINT(bugprone-derived-method-shadowing-base-method)
 
     const xevent& raw_event() const { return *event_; }
 

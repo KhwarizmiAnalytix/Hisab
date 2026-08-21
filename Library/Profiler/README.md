@@ -10,7 +10,8 @@ User guide: **[`Docs/profiler/profiler.md`](../../Docs/profiler/profiler.md)**.
 
 - `CMakeLists.txt` — `PROFILER_BACKEND`, `PROFILER_ENABLE_*`.
 - `BUILD.bazel` — `//Library/Profiler:Profiler` and tests.
-- `native/`, `bespoke/kineto/`, `bespoke/itt/` — backends.
+- `native/` — always-on native profiler pipeline (traceme/xplane/host_tracer/profiler_session).
+- `bespoke/kineto/`, `bespoke/itt/` — instrumentation backends layered on top of `native/`.
 - `Testing/Cxx/` — backend and integration tests.
 
 ---
@@ -19,9 +20,12 @@ User guide: **[`Docs/profiler/profiler.md`](../../Docs/profiler/profiler.md)**.
 
 ### Backend (single control point)
 
+`native/` (traceme/xplane/host_tracer/profiler_session) is always compiled — it is not a backend
+choice. `PROFILER_BACKEND` only selects the *instrumentation* backend layered alongside it.
+
 | CMake variable | Default | Values |
 |----------------|---------|--------|
-| `PROFILER_BACKEND` | `KINETO` | `KINETO`, `NATIVE`, `ITT` — sets `PROFILER_ENABLE_KINETO` / `PROFILER_ENABLE_ITT` / `PROFILER_ENABLE_NATIVE_PROFILER` |
+| `PROFILER_BACKEND` | `KINETO` | `KINETO`, `ITT` — sets `PROFILER_ENABLE_KINETO` / `PROFILER_ENABLE_ITT` (`PROFILER_ENABLE_NATIVE_PROFILER` is always `ON`) |
 
 ### Feature and toolchain
 
@@ -50,20 +54,20 @@ Early-only gate: `PROFILER_INCLUDE_GATE_ONLY` (root uses to gate Kineto before `
 
 ## Bazel flags
 
-Starlark: [`bazel/profiler.bzl`](../../bazel/profiler.bzl). `select` order: **native** → **ITT** → default **Kineto**.
+Starlark: [`bazel/profiler.bzl`](../../bazel/profiler.bzl). `select` order: **ITT** → default **Kineto**.
+`native/**` is globbed in unconditionally in `BUILD.bazel` — it is not part of either `select`.
 
-### Backend (`profiler_type` + helpers)
+### Backend (`profiler_enable_*` defines)
 
 Typical invocations (see `.bazelrc`):
 
 | Mode | Defines / config | `PROFILER_HAS_*` result |
 |------|-------------------|-------------------------|
-| Kineto (default) | *(none)* or `profiler_enable_kineto=true` with `profiler_type=kineto` | `PROFILER_HAS_KINETO=1` |
-| Native | `profiler_type=native` — `build:native_profiler` | `PROFILER_HAS_NATIVE=1` |
-| ITT | `profiler_type=itt` and `profiler_enable_itt=true` — `build:itt` | `PROFILER_HAS_ITT=1` |
+| Kineto (default) | *(none)* or `profiler_enable_kineto=true` — `build:kineto` | `PROFILER_HAS_KINETO=1`, `PROFILER_HAS_NATIVE=1` |
+| ITT | `profiler_enable_itt=true` — `build:itt` | `PROFILER_HAS_ITT=1`, `PROFILER_HAS_NATIVE=1` |
 
-`//bazel:enable_native_profiler` matches `profiler_type=native`.  
-`//bazel:enable_itt` matches `profiler_enable_itt=true` (use together with `profiler_type=itt` as in `build:itt`).
+`//bazel:enable_itt` matches `profiler_enable_itt=true`. `PROFILER_HAS_NATIVE=1` is appended
+unconditionally by `profiler_defines()`, independent of which arm above is selected.
 
 ### Other
 

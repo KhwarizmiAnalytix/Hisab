@@ -605,7 +605,8 @@ public:
     // Using these overloads guarantees names are unique.
     // WARNING: If calling any of these overloads, do not call the integer one
     // above on the same instance.
-    PROFILER_API x_stat_metadata* get_or_create_stat_metadata(std::string_view name);
+    PROFILER_API x_stat_metadata* get_or_create_stat_metadata(  // NOLINT(bugprone-derived-method-shadowing-base-method)
+        std::string_view name);
     PROFILER_API x_stat_metadata* get_or_create_stat_metadata(std::string&& name);
     x_stat_metadata*              get_or_create_stat_metadata(const char* name)
     {

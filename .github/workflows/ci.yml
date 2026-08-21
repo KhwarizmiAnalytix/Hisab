@@ -883,10 +883,6 @@ jobs:
             extra_cmake_flags: "-DPARALLEL_BACKEND=tbb"
 
           - project: Profiler
-            external: "ON"
-            backend_label: NATIVE
-            extra_cmake_flags: "-DPROFILER_BACKEND=NATIVE"
-          - project: Profiler
             external: "OFF"
             backend_label: ITT
             extra_cmake_flags: "-DPROFILER_BACKEND=ITT"

@@ -140,9 +140,8 @@ private:
     // Helper methods for report generation
     std::string        format_duration(double duration_ns) const;
     std::string        format_memory_size(size_t bytes) const;
-    std::string        format_memory_delta(int64_t bytes) const;
     static std::string format_percentage(double value);
-    static std::string format_thread_id(const std::thread::id& thread_id);
+    static std::string format_thread_label(const std::string& thread_label);
 
     std::string format_double(double value) const;
     // Section generators

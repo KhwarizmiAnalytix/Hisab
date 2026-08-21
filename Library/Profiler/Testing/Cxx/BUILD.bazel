@@ -7,90 +7,23 @@ load("//bazel:profiler.bzl", "profiler_copts", "profiler_defines", "profiler_lin
 package(default_visibility = ["//visibility:public"])
 
 # =============================================================================
-# Test file lists (mirror CMake's glob-then-exclude logic)
-# CMake step 1: glob all Test*.cpp
-# CMake step 2: remove TestKineto* when PROFILER_ENABLE_KINETO is OFF
-# CMake step 3: remove PROFILER_NATIVE_ONLY_TESTS when PROFILER_ENABLE_NATIVE_PROFILER is OFF
+# Test files: must match Library/Profiler/Testing/Cxx/CMakeLists.txt TestFiles.
+# Real-use-case coverage — backend function profiling, Chrome trace, heavy
+# function, and hotspot report / table.
 # =============================================================================
 
-# Native-only tests: kept only when PROFILER_ENABLE_NATIVE_PROFILER=ON
-# (matches CMake PROFILER_NATIVE_PROFILER_TESTS list)
-_PROFILER_NATIVE_ONLY_TESTS = [
-    "TestEnhancedProfiler.cpp",
-    "TestProfiler.cpp",
-    "TestProfilerAnalysis.cpp",
-    "TestProfilerAnnotationParsing.cpp",
-    "TestProfilerAnnotationStack.cpp",
-    "TestProfilerChromeTraceHierarchical.cpp",
-    "TestProfilerExporters.cpp",
-    "TestProfilerFormatUtils.cpp",
-    "TestProfilerHeavyFunction.cpp",
-    "TestProfilerMemoryAndStats.cpp",
-    "TestProfilerPlatform.cpp",
-    "TestProfilerSessionEdgeCases.cpp",
-    "TestProfilerStatsCalculator.cpp",
-    "TestProfilerTimespan.cpp",
-    "TestProfilerUtils.cpp",
-    "TestProfilerXPlane.cpp",
-    "TestProfilerXPlaneVisitor.cpp",
-    "TestScopedMemoryDebugAnnotation.cpp",
-    "TestTraceme.cpp",
-    "TestXPlaneBuilder.cpp",
-    "TestXPlaneSchema.cpp",
-    "TestXPlaneUtils.cpp",
-]
-
-# Kineto tests: excluded when kineto is OFF (native or ITT backends)
-_PROFILER_KINETO_TESTS = [
-    "TestKinetoShim.cpp",
-]
-
-# Shared across all backends (CMake glob picks this up; it is not TestKineto*
-# and is not in PROFILER_NATIVE_PROFILER_TESTS).
-_PROFILER_BACKEND_FUNCTION_TESTS = [
+_PROFILER_COMMON_TESTS = [
+    "TestHotspotReport.cpp",
     "TestProfilerBackendFunction.cpp",
-]
-
-# Native profiler mode: all tests EXCEPT Kineto (kineto is off in native mode)
-# Matches CMake: step 2 removes TestKineto* (kineto OFF), step 3 keeps native tests (native ON)
-_PROFILER_TEST_FILES_NATIVE = (
-    _PROFILER_NATIVE_ONLY_TESTS +
-    _PROFILER_BACKEND_FUNCTION_TESTS + [
-        "TestHotspotReport.cpp",
-        "TestITTWrapper.cpp",
-        "TestProfilerAutogradTrace.cpp",
-        "TestRecordFunctionIntegration.cpp",
-    ]
-)
-
-# ITT mode: non-native tests only, no Kineto tests (kineto is off when ITT is active)
-# Matches CMake: step 2 removes TestKineto* (kineto OFF), step 3 removes native-only (native OFF)
-_PROFILER_TEST_FILES_ITT = _PROFILER_BACKEND_FUNCTION_TESTS + [
-    "TestHotspotReport.cpp",
-    "TestITTWrapper.cpp",
-    "TestProfilerAutogradTrace.cpp",
-    "TestRecordFunctionIntegration.cpp",
-]
-
-# Kineto mode (default): non-native tests + Kineto tests
-# Matches CMake: step 2 keeps TestKineto* (kineto ON), step 3 removes native-only (native OFF)
-_PROFILER_TEST_FILES_KINETO = _PROFILER_BACKEND_FUNCTION_TESTS + [
-    "TestHotspotReport.cpp",
-    "TestITTWrapper.cpp",
-    "TestKinetoShim.cpp",
-    "TestProfilerAutogradTrace.cpp",
-    "TestRecordFunctionIntegration.cpp",
+    "TestProfilerChromeTraceHierarchical.cpp",
+    "TestProfilerHeavyFunction.cpp",
 ]
 
 cc_test(
     name = "ProfilerCxxTests",
     size = "large",
     timeout = "long",
-    srcs = select({
-        "//bazel:enable_native_profiler": _PROFILER_TEST_FILES_NATIVE,
-        "//bazel:enable_itt": _PROFILER_TEST_FILES_ITT,
-        "//conditions:default": _PROFILER_TEST_FILES_KINETO,
-    }),
+    srcs = _PROFILER_COMMON_TESTS,
     copts = profiler_copts(),
     defines = profiler_defines() + [
         "PROFILER_GOOGLE_TEST",

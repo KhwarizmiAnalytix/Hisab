@@ -14,25 +14,22 @@ def profiler_defines():
     """
     defines = quarisma_defines()
 
-    # Profiler backend — mutually exclusive; default KINETO (matches CMake PROFILER_BACKEND default)
-    # PROFILER_HAS_KINETO / PROFILER_HAS_ITT / PROFILER_HAS_NATIVE
+    # Instrumentation backend — mutually exclusive; default KINETO (matches CMake
+    # PROFILER_BACKEND default). PROFILER_HAS_KINETO / PROFILER_HAS_ITT
     defines += select({
-        "//bazel:enable_native_profiler": [
-            "PROFILER_HAS_NATIVE=1",
-            "PROFILER_HAS_KINETO=0",
-            "PROFILER_HAS_ITT=0",
-        ],
         "//bazel:enable_itt": [
             "PROFILER_HAS_ITT=1",
             "PROFILER_HAS_KINETO=0",
-            "PROFILER_HAS_NATIVE=0",
         ],
         "//conditions:default": [
             "PROFILER_HAS_KINETO=1",
             "PROFILER_HAS_ITT=0",
-            "PROFILER_HAS_NATIVE=0",
         ],
     })
+
+    # Native pipeline (traceme/xplane/host_tracer/profiler_session) is always compiled,
+    # independent of and alongside whichever instrumentation backend is selected above.
+    defines += ["PROFILER_HAS_NATIVE=1"]
 
     # PROFILER_HAS_CUDA — independent of backend selection above. Gates
     # bespoke/base/cuda.cpp's CUDA event-fallback stub and profiler_kineto.h's

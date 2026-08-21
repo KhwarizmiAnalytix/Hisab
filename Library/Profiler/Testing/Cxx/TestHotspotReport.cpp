@@ -178,6 +178,108 @@ PROFILERTEST(HotspotReport, text_renderers_are_non_empty_when_events_exist)
     profiler::autograd::profiler_impl::hotspot_report const report(*result);
     EXPECT_FALSE(report.top_down_tree().empty());
     EXPECT_FALSE(report.bottom_up_hotspots().empty());
+    EXPECT_FALSE(report.table().empty());
+}
+
+PROFILERTEST(HotspotReport, table_matches_pytorch_key_averages_columns)
+{
+    auto result = record_sample_workload();
+    ASSERT_NE(result, nullptr);
+    if (result->event_tree().empty())
+    {
+        GTEST_SKIP() << "Kineto backend produced no CPU events in this environment";
+    }
+
+    profiler::autograd::profiler_impl::hotspot_report const report(*result);
+    const std::string                                       table = report.table();
+
+    EXPECT_NE(table.find("Name"), std::string::npos);
+    EXPECT_NE(table.find("Self CPU %"), std::string::npos);
+    EXPECT_NE(table.find("Self CPU"), std::string::npos);
+    EXPECT_NE(table.find("CPU total %"), std::string::npos);
+    EXPECT_NE(table.find("CPU total"), std::string::npos);
+    EXPECT_NE(table.find("CPU time avg"), std::string::npos);
+    EXPECT_NE(table.find("# of Calls"), std::string::npos);
+    EXPECT_NE(table.find("Self CPU time total:"), std::string::npos);
+
+    EXPECT_EQ(table.find("Self CUDA"), std::string::npos);
+    EXPECT_EQ(table.find("Self XPU"), std::string::npos);
+
+    EXPECT_NE(table.find("hotspot_outer"), std::string::npos);
+    EXPECT_NE(table.find("hotspot_inner_a"), std::string::npos);
+    EXPECT_NE(table.find("hotspot_inner_b"), std::string::npos);
+}
+
+PROFILERTEST(HotspotReport, table_self_cpu_percent_sums_to_one_hundred)
+{
+    auto result = record_sample_workload();
+    ASSERT_NE(result, nullptr);
+    if (result->event_tree().empty())
+    {
+        GTEST_SKIP() << "Kineto backend produced no CPU events in this environment";
+    }
+
+    profiler::autograd::profiler_impl::hotspot_report const report(*result);
+    const auto&                                              hotspots = report.hotspots();
+    ASSERT_FALSE(hotspots.empty());
+
+    uint64_t self_cpu_total = 0;
+    for (const auto& entry : hotspots)
+    {
+        self_cpu_total += entry.self_time_ns;
+    }
+    ASSERT_GT(self_cpu_total, 0U);
+
+    double percent_sum = 0.0;
+    for (const auto& entry : hotspots)
+    {
+        percent_sum += 100.0 * static_cast<double>(entry.self_time_ns) /
+                       static_cast<double>(self_cpu_total);
+    }
+    EXPECT_NEAR(percent_sum, 100.0, 0.15);
+}
+
+PROFILERTEST(HotspotReport, table_respects_row_limit)
+{
+    auto result = record_sample_workload();
+    ASSERT_NE(result, nullptr);
+    if (result->event_tree().empty())
+    {
+        GTEST_SKIP() << "Kineto backend produced no CPU events in this environment";
+    }
+
+    profiler::autograd::profiler_impl::hotspot_report const report(*result);
+    ASSERT_GE(report.hotspots().size(), 2U);
+
+    const std::string limited = report.table("self_cpu_time_total", /*row_limit=*/1);
+    const auto&       first   = report.hotspots().front();
+    EXPECT_NE(limited.find(first.name), std::string::npos);
+
+    size_t data_rows = 0;
+    for (const auto& entry : report.hotspots())
+    {
+        if (limited.find(entry.name) != std::string::npos)
+        {
+            ++data_rows;
+        }
+    }
+    EXPECT_EQ(data_rows, 1U);
+}
+
+PROFILERTEST(HotspotReport, table_sort_by_cpu_total_puts_parent_first)
+{
+    auto result = record_sample_workload();
+    ASSERT_NE(result, nullptr);
+    if (result->event_tree().empty())
+    {
+        GTEST_SKIP() << "Kineto backend produced no CPU events in this environment";
+    }
+
+    profiler::autograd::profiler_impl::hotspot_report const report(*result);
+    const std::string table = report.table("cpu_time_total", /*row_limit=*/1);
+    EXPECT_NE(table.find("hotspot_outer"), std::string::npos);
+    EXPECT_EQ(table.find("hotspot_inner_a"), std::string::npos);
+    EXPECT_EQ(table.find("hotspot_inner_b"), std::string::npos);
 }
 
 #endif  // PROFILER_HAS_KINETO

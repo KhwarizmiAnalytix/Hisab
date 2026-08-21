@@ -582,15 +582,18 @@ class BazelConfiguration:
             # Profiler backends (with profiler_ prefix)
             elif arg_lower.startswith("profiler_"):
                 backend = arg_lower[9:]  # Remove "profiler_" prefix
-                if backend in ["kineto", "itt", "native"]:
+                if backend in ["kineto", "itt"]:
                     self.profiler_backend = backend
-                    # Map to Bazel config names
-                    if backend == "kineto":
-                        self.configs.append("kineto")
-                    elif backend == "itt":
-                        self.configs.append("itt")
-                    elif backend == "native":
-                        self.configs.append("native_profiler")
+                    self.configs.append(backend)
+                elif backend == "native":
+                    # The native traceme/xplane pipeline is always compiled now (no longer a
+                    # selectable backend -- see bazel/profiler.bzl); "native" only used to mean
+                    # "skip the Kineto/ITT instrumentation backend", which no longer applies.
+                    print_status(
+                        "profiler_native is a no-op: the native profiler pipeline is always "
+                        "compiled now, independent of the Kineto/ITT instrumentation backend.",
+                        "WARNING",
+                    )
 
             # Sanitizers: sanitizer_asan or legacy sanitizer_address -> asan
             elif arg_lower.startswith("sanitizer_"):
@@ -648,10 +651,12 @@ class BazelConfiguration:
             )
             return
 
-        # If Xcode is specified on macOS, use it (Kineto unsupported — matches setup.py)
+        # If Xcode is specified on macOS, use it (Kineto unsupported — matches setup.py). ITT is
+        # the only other instrumentation backend, so use it to avoid Kineto under Xcode (the
+        # native traceme/xplane pipeline compiles either way, independent of this choice).
         if self.build_tool == "xcode" and self.system == "Darwin":
             print_status("Using Xcode generator", "INFO")
-            self.profiler_backend = "native"
+            self.profiler_backend = "itt"
             return
 
         # Default to Ninja + Clang on all platforms
@@ -712,14 +717,10 @@ class BazelConfiguration:
             cfg_list.append(f"logging_{self.logging_backend}")
 
         # Add default profiler backend if not explicitly set
-        profiler_configs = ["kineto", "itt", "native_profiler"]
+        profiler_configs = ["kineto", "itt"]
         if not any(c in profiler_configs for c in cfg_list):
-            if self.profiler_backend == "kineto":
-                cfg_list.append("kineto")
-            elif self.profiler_backend == "itt":
-                cfg_list.append("itt")
-            elif self.profiler_backend == "native":
-                cfg_list.append("native_profiler")
+            if self.profiler_backend in profiler_configs:
+                cfg_list.append(self.profiler_backend)
 
         # Add all config flags
         for config in cfg_list:

@@ -788,7 +788,7 @@ class QuarismaFlags:
         gpu_backend_list = ["none", "hip", "cuda", "metal"]
         cxx_std_list = ["cxx17", "cxx20", "cxx23"]
         logging_backend_list = ["native", "loguru", "glog", "spdlog"]
-        profiler_choices = {"kineto": "KINETO", "native": "NATIVE", "itt": "ITT"}
+        profiler_choices = {"kineto": "KINETO", "itt": "ITT"}
         cache_type_list = ["none", "ccache", "sccache", "buildcache"]
         parallel_backend_list = ["std", "openmp", "tbb"]
         linker_list = ["default", "mold", "lld", "gold", "lld-link"]
@@ -876,6 +876,12 @@ class QuarismaFlags:
                     print_status(
                         f"Selecting profiler backend: {profiler_choices[backend_key]}",
                         "INFO",
+                    )
+                elif backend_key == "native":
+                    print_status(
+                        "profiler.native is a no-op: the native profiler pipeline is always "
+                        "compiled now, independent of the Kineto/ITT instrumentation backend.",
+                        "WARNING",
                     )
                 else:
                     print_status(
@@ -1338,8 +1344,9 @@ class QuarismaConfiguration:
                 if not self.__compiler_user_specified:
                     self.__value["cmake_c_compiler"] = ""
                     self.__value["cmake_cxx_compiler"] = ""
-                # Kineto is not supported on macOS/Xcode; use the native profiler instead.
-                self.__value["profiler_type"] = "NATIVE"
+                # Kineto is not supported on macOS/Xcode; ITT is the only other instrumentation
+                # backend, so use it (the native traceme/xplane pipeline compiles either way).
+                self.__value["profiler_type"] = "ITT"
                 print_status("Using Xcode generator", "SUCCESS")
             else:
                 print_status("Xcode not found, falling back to Ninja", "WARNING")

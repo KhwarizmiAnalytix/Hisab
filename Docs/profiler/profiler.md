@@ -45,22 +45,26 @@ XSigma’s profiler is a modular performance-analysis library:
 | ITT | Intel VTune range annotations (ITT backend) |
 | Kineto | PyTorch-style CPU (+ optional CUDA/CUPTI) activity tracing |
 
-Three **mutually exclusive** backends are selected at configure time. NVTX is
-not a fourth backend — it is a `ProfilerState` inside the Kineto/ITT
-orchestration layer.
+The native (XPlane/TraceMe) pipeline is **always compiled** — it is not a
+backend choice. `PROFILER_BACKEND` selects the *instrumentation* backend
+layered on top of it, and Kineto/ITT remain mutually exclusive with each
+other (only one instrumentation backend at a time). NVTX is not a fourth
+backend — it is a `ProfilerState` inside the Kineto/ITT orchestration layer.
 
 | Backend | CMake | Macro | Sources | Third-party |
 |---|---|---|---|---|
-| Kineto (default) | `PROFILER_BACKEND=KINETO` | `PROFILER_HAS_KINETO` | `bespoke/` | `ThirdParty/kineto` |
-| Native / XPlane | `PROFILER_BACKEND=NATIVE` | `PROFILER_HAS_NATIVE` | `native/` (+ `common/`) | none |
+| Native / XPlane (always on) | n/a — not selectable | `PROFILER_HAS_NATIVE` (always `1`) | `native/` (+ `common/`) | none |
+| Kineto (default instrumentation) | `PROFILER_BACKEND=KINETO` | `PROFILER_HAS_KINETO` | `bespoke/` | `ThirdParty/kineto` |
 | ITT | `PROFILER_BACKEND=ITT` | `PROFILER_HAS_ITT` | `bespoke/` (minus Python/JIT-only) | `ThirdParty/ittapi` |
 | NVTX | not independently selectable | n/a | `bespoke/base/nvtx_observer.cpp` | CUDA `nvToolsExt` (optional) |
 
-Enabling more than one of `PROFILER_HAS_KINETO` / `PROFILER_HAS_ITT` /
-`PROFILER_HAS_NATIVE` is a configure-time error and a compile-time `#error`
-in `common/profiler_export.h`. Lifting that exclusivity so backends can run
-as peers is [Phase 0](#target-architecture) of the multi-backend plan; it is
-not done yet.
+Enabling both `PROFILER_HAS_KINETO` and `PROFILER_HAS_ITT` at once is a
+configure-time error and a compile-time `#error` in
+`common/profiler_export.h`; `PROFILER_HAS_NATIVE` is excluded from that
+check since it's unconditional. [Phase 0](#target-architecture) of the
+multi-backend plan — dropping the old native/Kineto/ITT three-way
+mutual-exclusion so native compiles alongside whichever instrumentation
+backend is selected — is done.
 
 ---
 
@@ -71,22 +75,20 @@ directly. The `--profiler.X` flag is a **separate argument**, not a dotted
 token in the main chain (`profiler.itt` chained into `config.build.test…`
 does not work).
 
-### Native
+### Native (always compiled)
 
-Compiles only `native/` plus shared `common/`. Does not link libkineto or
-compile `bespoke/kineto` / `bespoke/itt`.
+`native/` plus shared `common/` are always compiled into `Profiler`,
+regardless of which instrumentation backend (below) is selected — it is not
+something you opt into.
 
-```bash
-cd Scripts
-python3 setup.py config.build.test.native.ninja --project.profiler --profiler.native
-```
-
-- **CMake:** `-DPROFILER_BACKEND=NATIVE` (also `python3 setup.py … --profiler.native`)
-- **Bazel:** `--config=native_profiler` or `--define=profiler_type=native`
 - **Header:** `#include "native/session/profiler.h"`
 - **Namespace:** `profiler` (`profiler_session_builder`, `profiler_session`,
   `profiler_scope`). Scope macros: `PROFILER_PROFILE_SCOPE`,
   `PROFILER_PROFILE_FUNCTION`, `PROFILER_PROFILE_BLOCK`
+
+`--profiler.native` / `profiler_native` are accepted as no-ops (with a
+warning) for backward compatibility with older invocations — they used to
+select the native-only backend; there is nothing left to select.
 
 ### Kineto (default)
 
@@ -116,7 +118,7 @@ python3 setup.py config.build.test.native.ninja --project.profiler --profiler.it
 
 | Variable | Default | Values / notes |
 |---|---|---|
-| `PROFILER_BACKEND` | `KINETO` | `KINETO`, `NATIVE`, `ITT` — sets `PROFILER_ENABLE_*` |
+| `PROFILER_BACKEND` | `KINETO` | `KINETO`, `ITT` — sets `PROFILER_ENABLE_KINETO`/`PROFILER_ENABLE_ITT`. `PROFILER_ENABLE_NATIVE_PROFILER` is always `ON`, independent of this. |
 | `PROFILER_ENABLE_TESTING` | ON | Tests |
 | `PROFILER_ENABLE_EXAMPLES` | OFF | `Examples/Profiling` |
 | `PROFILER_ENABLE_GTEST` | ON | GoogleTest |
@@ -128,22 +130,23 @@ Root also exposes `PROFILER_INCLUDE_GATE_ONLY` to gate Kineto before
 
 ### Bazel
 
-Starlark: [`bazel/profiler.bzl`](../../bazel/profiler.bzl). Select order:
-**native** → **ITT** → default **Kineto**.
+Starlark: [`bazel/profiler.bzl`](../../bazel/profiler.bzl). `native/**` is
+globbed in unconditionally in `BUILD.bazel` (not part of any `select`).
+Select order for the instrumentation backend: **ITT** → default **Kineto**.
 
 | Mode | Config | Result |
 |---|---|---|
-| Kineto | *(none)* | `PROFILER_HAS_KINETO=1` |
-| Native | `--config=native_profiler` | `PROFILER_HAS_NATIVE=1` |
-| ITT | `--config=itt` | `PROFILER_HAS_ITT=1` |
+| Kineto (default) | *(none)* | `PROFILER_HAS_KINETO=1`, `PROFILER_HAS_NATIVE=1` |
+| ITT | `--config=itt` | `PROFILER_HAS_ITT=1`, `PROFILER_HAS_NATIVE=1` |
 
 LTO, coverage, sanitizers, linker/cache, spell, Valgrind are **CMake only**.
 
 ### Tests
 
-`ProfilerCxxTests` under native mode excludes Kineto-only sources. Shared
-TUs that reference `bespoke/*` must guard includes with `PROFILER_HAS_KINETO`
-or `PROFILER_HAS_ITT` so Bazel’s include graph matches CMake.
+`ProfilerCxxTests` always includes the native-pipeline tests now (they are
+no longer conditionally excluded). Shared TUs that reference `bespoke/*`
+must guard includes with `PROFILER_HAS_KINETO` or `PROFILER_HAS_ITT` so
+Bazel's include graph matches CMake.
 
 ---
 
@@ -153,16 +156,29 @@ or `PROFILER_HAS_ITT` so Bazel’s include graph matches CMake.
 Application
   RECORD_USER_SCOPE / PROFILER_PROFILE_SCOPE / TraceMe
         │
-        ├─ Native session (PROFILER_HAS_NATIVE)
+        ├─ Native session (always compiled; PROFILER_HAS_NATIVE=1)
         │     profiler_session → profiler_scope → host_tracer / TraceMeRecorder
-        │     → XPlane / Chrome Trace / statistical report
+        │     → XPlane → (Chrome Trace | scope_tree_builder reconstruction → report)
         │
-        └─ Bespoke orchestration (PROFILER_HAS_KINETO or PROFILER_HAS_ITT)
+        └─ Bespoke orchestration (PROFILER_HAS_KINETO or PROFILER_HAS_ITT, one active)
               RecordFunction callbacks
                     ├─ Kineto  (RecordQueue → Result → ProfilerResult)
                     ├─ ITT     (VTune ranges; empty ProfilerResult)
                     └─ NVTX    (Nsight ranges; empty ProfilerResult)
 ```
+
+The native session and the Kineto/ITT orchestration layer now build and run
+side by side (native is not an alternative to them, it's always present).
+`profiler_scope` no longer tracks its own hierarchy tree: it emplaces a real
+`traceme` for its lifetime, so `PROFILER_PROFILE_SCOPE` rides the same
+lock-free, thread-local `traceme_recorder` path `host_tracer` reads from.
+`profiler_session::build_scope_tree()` lazily reconstructs a hierarchy view
+over the collected XSpace (nesting events by interval containment) rather
+than maintaining a live, mutex-protected tree — hierarchy is a *derived
+view*, computed once per collection and cached, matching how the TF/XLA
+profiler treats it. `generate_chrome_trace_json()`/`write_chrome_trace()`
+delegate to `chrome_trace_exporter` (the same exporter Kineto/ITT XSpace
+data would use) instead of a separate hand-rolled JSON writer.
 
 ### Native tree (`native/`)
 
@@ -234,7 +250,7 @@ RecordFunction callback dispatch        ← already multi-subscriber
 
 | Phase | Intent | Status |
 |---|---|---|
-| 0 | Independent `PROFILER_ENABLE_*` toggles; drop mutual-exclusion `#error` | Not done |
+| 0 | Independent `PROFILER_ENABLE_*` toggles; drop mutual-exclusion `#error` | Done — native always compiles; Kineto/ITT stay mutually exclusive with each other only |
 | 1 | Remove dead tests / unused APIs | Mostly done; `TestKinetoShim.cpp` still `#if 0` |
 | 2 | Instrument real call sites via `common/instrumentation.h` | Vectorization, Parallel, Memory-Metal done; CUDA/HIP allocators not |
 | 3 | Wrap each backend as `profiler_interface` | Not done |
@@ -317,7 +333,7 @@ built. Device type is `profiler::device_enum` (CPU, CUDA, HIP, PrivateUse1).
 
 ## Native session API
 
-Requires `PROFILER_HAS_NATIVE`. Link `Quarisma::Profiler`.
+Always available (`PROFILER_HAS_NATIVE` is unconditionally `1`). Link `Quarisma::Profiler`.
 
 ### Quick start
 
@@ -763,6 +779,8 @@ profiler::autograd::profiler_impl::hotspot_report report(*result);
 std::cout << report.top_down_tree();
 std::cout << report.bottom_up_hotspots();
 std::cout << report.call_stack_for("gemm_kernel");
+std::cout << report.table();  // PyTorch key_averages().table() columns
+std::cout << report.table("self_xpu_time_total", /*row_limit=*/10);
 ```
 
 ```
@@ -784,25 +802,27 @@ Tests: `TestHotspotReport.cpp`, `TestRecordFunctionIntegration.cpp`.
 
 ## Console table columns
 
-Spec for a PyTorch-style `key_averages()` table (self vs total CPU/CUDA,
-percentages, averages, call counts). Use with `hotspot_report` or a future
-console formatter.
+`hotspot_report::table(sort_by, row_limit)` prints the same breakdown as
+PyTorch `prof.key_averages().table()` / the [Intel Kineto profiler
+table](https://intel.github.io/intel-extension-for-pytorch/xpu/2.3.110+xpu/tutorials/features/profiler_kineto.html).
 
 | Column | Formula | Format |
 |---|---|---|
-| Name | Scope name; 2 spaces indent per level | Left, min width 20 |
-| Self CPU % | `(self_cpu / session_total) * 100` | `XX.XX%`, width 12 |
-| Self CPU | `total − sum(children)` | Auto unit, 3 decimals |
-| CPU total % | `(total_cpu / session_total) * 100` | `XX.XX%` |
-| CPU total | `end − start` | Auto unit |
-| CPU time avg | `total_cpu / call_count` | Auto unit |
-| Self CUDA / % / total / avg | Same, GPU times; omit if no CUDA | Optional |
+| Name | Aggregated scope / op / kernel name | Left, min width 20 |
+| Self CPU % | `(self_cpu / sum(self_cpu)) * 100` | `XX.XX%`, width 12 |
+| Self CPU | CPU time excluding same-device children | us/ms/s, 3 decimals |
+| CPU total % | `(cpu_total / sum(self_cpu)) * 100` | `XX.XX%` |
+| CPU total | Inclusive CPU time | us/ms/s |
+| CPU time avg | `cpu_total / call_count` | us/ms/s |
+| Self CUDA / % / total / avg | Same for CUDA/HIP; omitted when all zeros | Optional |
+| Self XPU / % / total / avg | Same for XPU; omitted when all zeros | Optional |
 | # of Calls | Aggregated invocation count | Integer |
 
-Aggregation: sum self and total; avg = total / calls; recount percentages
-from aggregated totals. Time unit: ms if max ≥ 1000 ms, else µs if max ≥
-1000 µs, else ns. Zero-time ops show `0.000` in the selected unit. Root row
-is usually 100% CPU total.
+Footer: `Self CPU time total:` (and CUDA/XPU totals when those columns are
+shown). `sort_by` accepts `self_cpu_time_total`, `cpu_time_total`,
+`cpu_time_avg`, `self_cuda_time_total`, `self_xpu_time_total`, `count`, and
+the matching `*_total` / `*_avg` keys. Empty `sort_by` keeps self-CPU
+descending order. `row_limit` 0 prints every row.
 
 ---
 
@@ -820,22 +840,26 @@ and file-local helpers are omitted.
 | `PROFILER_API` / `PROFILER_VISIBILITY` / `PROFILER_UNUSED` | `common/profiler_export.h`, `common/profiler_macros.h` | Export / unused params |
 | `PROFILER_LIKELY` / `PROFILER_UNLIKELY` / `PROFILER_NODISCARD` | `common/profiler_macros.h` | Attributes |
 
-### Backend flags (mutually exclusive)
+### Backend flags
+
+`PROFILER_HAS_KINETO` and `PROFILER_HAS_ITT` are mutually exclusive with
+each other (`#error` in `common/profiler_export.h` if both are `1`).
+`PROFILER_HAS_NATIVE` is independent of that and always `1`.
 
 | Macro | Purpose |
 |---|---|
 | `PROFILER_HAS_KINETO` | Kineto GPU/CPU activity tracing; shim is no-op when off |
 | `PROFILER_HAS_ITT` | Intel VTune ITT ranges |
-| `PROFILER_HAS_NATIVE` | Native XPlane / session / TraceMe |
+| `PROFILER_HAS_NATIVE` | Native XPlane / session / TraceMe — always `1` |
 | `PROFILER_HAS_CUDA` | CUDA Runtime + optional CUPTI/NVTX in Profiler |
 | `PROFILER_HAS_INSTRUMENTATION` | 1 when Kineto or ITT; set by `instrumentation.h` |
 | `QUARISMA_HAS_CUDA` | CUDA event types / NVML queries inside the Kineto wrapper |
 | `KINETO_HAS_HCCL_PROFILER` | AMD HCCL hooks (ROCm + HCCL only) |
 
-CMake also injects `PROFILER_ENABLE_KINETO` / `PROFILER_ENABLE_ITT` /
-`PROFILER_ENABLE_NATIVE_PROFILER` and the usual `PROFILER_SHARED_DEFINE` /
-`PROFILER_BUILDING_DLL` / `PROFILER_STATIC_DEFINE`. Tests define
-`PROFILER_GOOGLE_TEST`.
+CMake also injects `PROFILER_ENABLE_KINETO` / `PROFILER_ENABLE_ITT` (one of
+the two) and `PROFILER_ENABLE_NATIVE_PROFILER` (always `ON`), plus the usual
+`PROFILER_SHARED_DEFINE` / `PROFILER_BUILDING_DLL` / `PROFILER_STATIC_DEFINE`.
+Tests define `PROFILER_GOOGLE_TEST`.
 
 ### Other compile-time switches
 

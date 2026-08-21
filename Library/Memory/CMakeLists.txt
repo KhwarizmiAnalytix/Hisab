@@ -469,7 +469,10 @@ target_include_directories(
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-if(PROFILER_BACKEND STREQUAL "NATIVE")
+# native/ (traceme/xplane/host_tracer/profiler_session) is always compiled into Profiler now,
+# independent of PROFILER_BACKEND (Kineto/ITT) -- gate this on Profiler being available at all,
+# the same condition MEMORY_HAS_PROFILER_BUILD already captures above.
+if(MEMORY_HAS_PROFILER_BUILD)
   target_include_directories(Memory PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Library/Profiler>)
 endif()
 

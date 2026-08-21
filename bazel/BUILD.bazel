@@ -141,11 +141,6 @@ config_setting(
 )
 
 config_setting(
-    name = "enable_native_profiler",
-    define_values = {"profiler_type": "native"},
-)
-
-config_setting(
     name = "enable_itt",
     define_values = {"profiler_enable_itt": "true"},
 )

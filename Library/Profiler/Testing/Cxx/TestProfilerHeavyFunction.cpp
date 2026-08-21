@@ -822,13 +822,6 @@ PROFILERTEST(Profiler, heavy_function_comprehensive_computational_profiling)
 }
 
 // ============================================================================
-// KINETO PROFILER TEST
-// ============================================================================
-// This file is native-profiler-only (see CMake PROFILER_NATIVE_PROFILER_TESTS).
-// The Kineto heavy-function case lives in TestKinetoShim.cpp
-// (KinetoShim.HeavyFunctionProfiling) so it runs in the default Kineto build.
-
-// ============================================================================
 // INTEL ITT API TEST
 // ============================================================================
 // Test Intel ITT API integration with heavy computational functions
@@ -1100,6 +1093,6 @@ PROFILERTEST(Profiler, itt_api_heavy_function_profiling)
 // COMBINED KINETO + ITT PROFILING TEST
 // ============================================================================
 // Backends are mutually exclusive (PROFILER_HAS_KINETO vs PROFILER_HAS_ITT),
-// so a combined Kineto+ITT case cannot compile. Use TestKinetoShim.cpp for
-// Kineto and the ITT block above when PROFILER_HAS_ITT=1.
+// so a combined Kineto+ITT case cannot compile. Use BackendFunction /
+// HotspotReport for Kineto and the ITT block above when PROFILER_HAS_ITT=1.
 

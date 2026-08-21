@@ -110,21 +110,13 @@ cc_library(
     name = "Profiler",
     srcs = [
         ":profiler_srcs",
-    ] + select({
-        "//bazel:enable_native_profiler": glob(["native/**/*.cpp"], exclude = ["Testing/**"], allow_empty = True),
-        "//conditions:default": [],
-    }) + select({
-        "//bazel:enable_native_profiler": [],
+    ] + glob(["native/**/*.cpp"], exclude = ["Testing/**"], allow_empty = True) + select({
         "//bazel:enable_itt": _ITT_BACKEND_SRCS,
         "//conditions:default": _KINETO_BACKEND_SRCS,
     }),
     hdrs = [
         ":profiler_hdrs",
-    ] + select({
-        "//bazel:enable_native_profiler": glob(["native/**/*.h", "native/**/*.hxx"], exclude = ["Testing/**"], allow_empty = True),
-        "//conditions:default": [],
-    }) + select({
-        "//bazel:enable_native_profiler": [],
+    ] + glob(["native/**/*.h", "native/**/*.hxx"], exclude = ["Testing/**"], allow_empty = True) + select({
         "//bazel:enable_itt": _ITT_BACKEND_HDRS,
         "//conditions:default": _KINETO_BACKEND_HDRS,
     }),
@@ -150,12 +142,18 @@ cc_library(
         # Docs/profiler/profiler.md, Instrumentation).
         "@fmt//:fmt",
     ] + select({
-        "//bazel:enable_native_profiler": [],
         "//bazel:enable_itt": ["@ittapi//:ittnotify"],
         "//conditions:default": ["@kineto//:kineto"],
     }) + select({
         "//bazel:enable_cuda": ["@local_config_cuda//:cuda"],
         "//conditions:default": [],
     }),
-    alwayslink = False,
+    # native/core/profiler_factory.h's registered profilers (native/cpu/host_tracer_factory.cpp,
+    # native/cpu/python_tracer_factory.cpp) self-register purely via a static-init side effect --
+    # no other code references a symbol in those translation units. Bazel links this target as a
+    # static archive (see linkstatic above); without alwayslink, the linker drops object files
+    # nothing else references, silently disabling that registration (host_tracer never gets
+    # created, so no XSpace/Chrome-trace data is ever collected). CMake's shared-library build
+    # doesn't hit this since every object file in a .so gets linked regardless of reference.
+    alwayslink = True,
 )

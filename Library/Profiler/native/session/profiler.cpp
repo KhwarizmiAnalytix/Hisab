@@ -36,13 +36,8 @@
 #include <atomic>
 #include <chrono>
 #include <cstdint>
-#include <cstdio>
-#include <fstream>
-#include <functional>
-#include <map>
+#include <cstdlib>
 #include <memory>
-#include <mutex>
-#include <sstream>
 #include <string_view>
 #include <thread>
 #include <utility>
@@ -52,9 +47,11 @@
 #include "native/analysis/statistical_analyzer.h"
 #include "native/core/profiler_collection.h"
 #include "native/core/profiler_factory.h"
+#include "native/exporters/chrome_trace_exporter.h"
 #include "native/exporters/xplane/xplane_schema.h"
 #include "native/memory/memory_tracker.h"
 #include "native/session/profiler_report.h"
+#include "native/session/scope_tree_builder.h"
 
 // Prevent Windows min/max macros from interfering with std::numeric_limits
 #ifdef _WIN32
@@ -67,264 +64,6 @@
 
 namespace profiler
 {
-namespace
-{
-std::string JsonQuote(std::string_view value)
-{
-    std::string escaped;
-    escaped.reserve(value.size() + 2);
-    escaped.push_back('"');
-    for (char const c : value)
-    {
-        switch (c)
-        {
-        case '"':
-            escaped.append("\\\"");
-            break;
-        case '\\':
-            escaped.append("\\\\");
-            break;
-        case '\b':
-            escaped.append("\\b");
-            break;
-        case '\f':
-            escaped.append("\\f");
-            break;
-        case '\n':
-            escaped.append("\\n");
-            break;
-        case '\r':
-            escaped.append("\\r");
-            break;
-        case '\t':
-            escaped.append("\\t");
-            break;
-        default:
-            if (static_cast<unsigned char>(c) < 0x20)
-            {
-                char buffer[7];
-                std::snprintf(buffer, sizeof(buffer), "\\u%04x", static_cast<unsigned char>(c));
-                escaped.append(buffer);
-            }
-            else
-            {
-                escaped.push_back(c);
-            }
-        }
-    }
-    escaped.push_back('"');
-    return escaped;
-}
-
-/**
- * @brief Convert hierarchical profiler_scope_data to Chrome Trace Event Format JSON
- *
- * Recursively traverses the scope hierarchy and generates Chrome Trace Event Format
- * events for each scope, with proper timestamp and duration calculations.
- */
-std::string ConvertScopeDataToChromeTrace(
-    const profiler_scope_data* root_scope, uint64_t base_time_ns)
-{
-    std::ostringstream out;
-    // Use nanoseconds consistently for Chrome Trace output
-    out << R"({"displayTimeUnit":"ns","metadata":{"highres-ticks":true},"traceEvents":[)";
-
-    bool first        = true;
-    auto append_event = [&](const std::string& event_json)
-    {
-        if (!first)
-        {
-            out << ',';
-        }
-        first = false;
-        out << event_json;
-    };
-
-    // Add process metadata
-    append_event(
-        std::string(R"({"ph":"M","pid":0,"name":"process_name","args":{"name":)") +
-        JsonQuote("Profiler CPU Profiler") + "}}");
-
-    // Track threads we've seen
-    std::map<std::thread::id, int64_t> thread_to_tid;
-    int64_t                            next_tid = 1;
-
-    // Recursive function to process scope and its children
-    std::function<void(const profiler_scope_data*)> process_scope =
-        [&](const profiler_scope_data* scope)
-    {
-        if (scope == nullptr)
-        {
-            return;
-        }
-
-        // Get or assign thread ID
-        auto it = thread_to_tid.find(scope->thread_id_);
-        if (it == thread_to_tid.end())
-        {
-            thread_to_tid[scope->thread_id_] = next_tid++;
-
-            // Add thread metadata event
-            append_event(
-                std::string(R"({"ph":"M","pid":0,"tid":)") +
-                std::to_string(thread_to_tid[scope->thread_id_]) +
-                R"(,"name":"thread_name","args":{"name":"Thread )" +
-                std::to_string(thread_to_tid[scope->thread_id_]) + "\"}}");
-        }
-
-        int64_t const tid = thread_to_tid[scope->thread_id_];
-
-        // Calculate timestamps in nanoseconds
-        auto start_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                            scope->start_time_.time_since_epoch())
-                            .count();
-        auto end_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                          scope->end_time_.time_since_epoch())
-                          .count();
-
-        // Adjust for base time
-        start_ns -= base_time_ns;
-        end_ns -= base_time_ns;
-
-        start_ns = std::max<int64_t>(start_ns, 0);
-        end_ns   = std::max(end_ns, start_ns);
-
-        int64_t duration_ns = end_ns - start_ns;
-        // Ensure non-zero duration for visibility
-        duration_ns = std::max<int64_t>(1, duration_ns);
-
-        // Add duration event for this scope
-        append_event(
-            std::string("{\"name\":") + JsonQuote(scope->name_) + R"(,"ph":"X","pid":0,"tid":)" +
-            std::to_string(tid) + ",\"ts\":" + std::to_string(start_ns) +
-            ",\"dur\":" + std::to_string(duration_ns) + "}");
-
-        // Process children
-        for (const auto& child : scope->children_)
-        {
-            process_scope(child.get());
-        }
-    };
-
-    // Process root scope and all children
-    if (root_scope != nullptr)
-    {
-        process_scope(root_scope);
-    }
-
-    out << "]}";
-    return out.str();
-}
-
-std::string ConvertXSpaceToChromeTrace(const x_space& space)
-{
-    constexpr uint32_t kPid = 0;
-
-    std::ostringstream out;
-    // Use nanoseconds consistently for Chrome Trace output
-    out << R"({"displayTimeUnit":"ns","metadata":{"highres-ticks":true},"traceEvents":[)";
-    bool first        = true;
-    auto append_event = [&](const std::string& event_json)
-    {
-        if (!first)
-        {
-            out << ',';
-        }
-        first = false;
-        out << event_json;
-    };
-
-    append_event(
-        std::string(R"({"ph":"M","pid":0,"name":"process_name","args":{"name":)") +
-        JsonQuote("Profiler CPU Profiler") + "}}");
-    append_event(R"({"ph":"M","pid":0,"name":"process_sort_index","args":{"sort_index":0}})");
-
-    for (const xplane& plane : space.planes())
-    {
-        if (plane.name() != kHostThreadsPlaneName)
-        {
-            continue;
-        }
-
-        const auto& metadata     = plane.event_metadata();
-        int         thread_index = 0;
-        for (const xline& line : plane.lines())
-        {
-            ++thread_index;
-            int64_t tid = line.display_id() != 0 ? line.display_id() : line.id();
-            if (tid == 0)
-            {
-                tid = thread_index;
-            }
-
-            std::string thread_name = !line.display_name().empty()
-                                          ? std::string(line.display_name())
-                                          : std::string(line.name());
-            if (thread_name.empty())
-            {
-                thread_name = "Thread " + std::to_string(thread_index);
-            }
-
-            append_event(
-                std::string(R"({"ph":"M","pid":)") + std::to_string(kPid) +
-                ",\"tid\":" + std::to_string(tid) + R"(,"name":"thread_name","args":{"name":)" +
-                JsonQuote(thread_name) + "}}");
-            append_event(
-                std::string(R"({"ph":"M","pid":)") + std::to_string(kPid) + ",\"tid\":" +
-                std::to_string(tid) + R"(,"name":"thread_sort_index","args":{"sort_index":)" +
-                std::to_string(thread_index) + "}}");
-
-            int64_t const line_timestamp_ns = line.timestamp_ns();
-            for (const xevent& event : line.events())
-            {
-                if (event.data_case() == xevent::data_case_type::kNumOccurrences)
-                {
-                    continue;
-                }
-
-                std::string event_name;
-                if (const auto it = metadata.find(event.metadata_id()); it != metadata.end())
-                {
-                    const auto& md = it->second;
-                    event_name     = !md.display_name().empty() ? std::string(md.display_name())
-                                                                : std::string(md.name());
-                }
-                else
-                {
-                    event_name = "TraceEvent";
-                }
-
-                uint64_t const offset_ps =
-                    static_cast<uint64_t>(std::max<int64_t>(0, event.offset_ps()));
-                uint64_t const start_ps =
-                    (static_cast<uint64_t>(std::max<int64_t>(0, line_timestamp_ns)) * 1000ULL) +
-                    offset_ps;
-                uint64_t const ts_ns       = start_ps / 1000ULL;  // ps -> ns
-                auto           duration_ps = static_cast<uint64_t>(event.duration_ps());
-                if (duration_ps == 0)
-                {
-                    duration_ps = 1000ULL;  // 1 ns to ensure visibility
-                }
-                uint64_t const dur_ns = std::max<uint64_t>(1, duration_ps / 1000ULL);  // ps->ns
-
-                append_event(
-                    std::string(R"({"ph":"X","pid":)") + std::to_string(kPid) +
-                    ",\"tid\":" + std::to_string(tid) + ",\"ts\":" + std::to_string(ts_ns) +
-                    ",\"dur\":" + std::to_string(dur_ns) + ",\"name\":" + JsonQuote(event_name) +
-                    "}");
-            }
-        }
-    }
-
-    out << "]}";
-    return out.str();
-}
-
-}  // namespace
-
-// Static thread-local storage for current scope (DLL-compatible implementation)
-thread_local profiler::profiler_scope_data* profiler_session::thread_current_scope_ = nullptr;
-
 // Static current session management with atomic operations for thread safety
 static std::atomic<profiler::profiler_session*> g_current_session{nullptr};
 
@@ -467,6 +206,7 @@ bool profiler_session::start()
     backend_profile_options_.set_start_timestamp_ns(start_ns);
     start_time_ns_ = start_ns;
     xspace_ready_  = false;
+    scope_tree_cache_.reset();  // stale relative to the XSpace this run will collect
 
     auto profilers = profiler::create_profilers(backend_profile_options_);
     if (!profilers.empty())
@@ -489,19 +229,6 @@ bool profiler_session::start()
     }
 
     start_time_ = std::chrono::high_resolution_clock::now();
-
-    // Initialize root scope for hierarchical profiling
-    if (options_.enable_hierarchical_profiling_)
-    {
-        std::scoped_lock const lock(scope_mutex_);
-        root_scope_               = std::make_unique<profiler::profiler_scope_data>();
-        root_scope_->name_        = "ROOT";
-        root_scope_->start_time_  = start_time_;
-        root_scope_->thread_id_   = std::this_thread::get_id();
-        root_scope_->depth_level_ = 0;
-        current_scope_            = root_scope_.get();
-        thread_current_scope_     = current_scope_;
-    }
 
     // Start memory tracking
     if (options_.enable_memory_tracking_ && memory_tracker_)
@@ -529,14 +256,6 @@ bool profiler_session::stop()
 
     end_time_    = std::chrono::high_resolution_clock::now();
     end_time_ns_ = static_cast<uint64_t>(get_current_time_nanos());
-
-    // Finalize root scope
-    if (options_.enable_hierarchical_profiling_ && root_scope_)
-    {
-        std::scoped_lock const lock(scope_mutex_);
-        root_scope_->end_time_ = end_time_;
-        thread_current_scope_  = nullptr;
-    }
 
     // Stop memory tracking
     if (options_.enable_memory_tracking_ && memory_tracker_)
@@ -664,10 +383,7 @@ void profiler_session::cleanup_components()
     xspace_ready_  = false;
     start_time_ns_ = 0;
     end_time_ns_   = 0;
-
-    std::scoped_lock const lock(scope_mutex_);
-    root_scope_.reset();  //NOLINT
-    current_scope_ = nullptr;
+    scope_tree_cache_.reset();
 }
 
 profile_options profiler_session::build_backend_profile_options() const
@@ -676,7 +392,13 @@ profile_options profiler_session::build_backend_profile_options() const
     opts.set_version(5);
     opts.set_device_type(profile_options::device_type_enum::CPU);
     opts.set_include_dataset_ops(false);
-    opts.set_host_tracer_level(options_.enable_timing_ ? 2U : 0U);
+    // host_tracer must run whenever hierarchical profiling is requested, not only when timing is
+    // -- profiler_scope::start() backs every scope with a traceme_ event, and traceme events are
+    // only recorded while traceme_recorder is active at this level (see host_tracer.cpp), so
+    // host_tracer_level == 0 silently drops scope structure/memory capture too, independent of
+    // enable_timing_.
+    opts.set_host_tracer_level(
+        (options_.enable_timing_ || options_.enable_hierarchical_profiling_) ? 2U : 0U);
     opts.set_device_tracer_level(0);
     opts.set_python_tracer_level(0);
     opts.set_enable_hlo_proto(false);
@@ -705,58 +427,18 @@ void profiler_session::normalize_xspace(x_space* space) const
         space->add_hostname("localhost");
     }
 }
-void profiler_session::register_scope_start(const profiler::profiler_scope* scope)
+
+const profiler::profiler_scope_data* profiler_session::build_scope_tree() const
 {
-    if (!options_.enable_hierarchical_profiling_ || !active_.load())
+    if (!xspace_ready_)
     {
-        return;
+        return nullptr;
     }
-
-    std::scoped_lock const lock(scope_mutex_);
-
-    // Find the current scope for this thread
-    profiler::profiler_scope_data* parent_scope = thread_current_scope_;
-    if (parent_scope == nullptr)
+    if (!scope_tree_cache_)
     {
-        parent_scope = root_scope_.get();
+        scope_tree_cache_ = scope_tree_builder::build_scope_tree(xspace_);
     }
-
-    if (parent_scope != nullptr)
-    {
-        // Add as child to current scope
-        auto child_scope          = std::make_unique<profiler::profiler_scope_data>();
-        child_scope->name_        = scope->data().name_;
-        child_scope->start_time_  = scope->data().start_time_;
-        child_scope->thread_id_   = std::this_thread::get_id();
-        child_scope->depth_level_ = parent_scope->depth_level_ + 1;
-        child_scope->parent_      = parent_scope;
-
-        profiler::profiler_scope_data* child_ptr = child_scope.get();
-        parent_scope->children_.push_back(std::move(child_scope));
-
-        // Update thread-local current scope
-        thread_current_scope_ = child_ptr;
-    }
-}
-
-void profiler_session::register_scope_end(const profiler::profiler_scope* scope)
-{
-    if (!options_.enable_hierarchical_profiling_ || !active_.load())
-    {
-        return;
-    }
-
-    std::scoped_lock const lock(scope_mutex_);
-
-    if (thread_current_scope_ != nullptr)
-    {
-        thread_current_scope_->end_time_     = scope->data().end_time_;
-        thread_current_scope_->memory_stats_ = scope->data().memory_stats_;
-        thread_current_scope_->timing_stats_ = scope->data().timing_stats_;
-
-        // Move back to parent scope
-        thread_current_scope_ = thread_current_scope_->parent_;
-    }
+    return scope_tree_cache_.get();
 }
 
 //=============================================================================
@@ -787,8 +469,13 @@ profiler_scope::~profiler_scope()
 
 void profiler_scope::start()
 {
-    // Skip all work if no session or hierarchical profiling disabled
-    if (session_ == nullptr || !session_->options_.enable_hierarchical_profiling_)
+    // Skip all work if no session, session isn't active, or hierarchical profiling disabled.
+    // The is_active() check matters because traceme_recorder is a process-wide facility: without
+    // it, a scope bound to a never-started (or already-stopped) session would still emplace a
+    // real traceme_ event -- and get collected -- merely because some *other* session happens to
+    // be active and recording.
+    if (session_ == nullptr || !session_->is_active() ||
+        !session_->options_.enable_hierarchical_profiling_)
     {
         return;
     }
@@ -801,12 +488,14 @@ void profiler_scope::start()
     started_           = true;
     data_->start_time_ = std::chrono::high_resolution_clock::now();
 
-    // Register with session for hierarchical tracking
-    // session_ is guaranteed non-null here due to check at line 788
+    // Back this scope with a real traceme event -- this is what host_tracer reads from,
+    // so PROFILER_PROFILE_SCOPE rides the same lock-free, thread-local recording path as
+    // every other native/ instrumentation call site instead of tracking its own tree.
+    // session_ is guaranteed non-null here due to check above
     // cppcheck-suppress knownConditionTrueFalse
     if (session_ != nullptr)
     {
-        session_->register_scope_start(this);
+        traceme_.emplace(std::string_view(data_->name_));
 
         memory_annotation_ = std::make_unique<scoped_memory_debug_annotation>(data_->name_.c_str());
 
@@ -822,8 +511,13 @@ void profiler_scope::start()
 
 void profiler_scope::stop()
 {
-    // Skip all work if no session or hierarchical profiling disabled
-    if (session_ == nullptr || !session_->options_.enable_hierarchical_profiling_)
+    // Mirror start()'s guard: once the session has stopped, traceme_recorder is no longer active,
+    // so traceme_.reset() below would silently drop this scope's event while the timing/memory
+    // computation and statistical_analyzer_ recording further down would still run -- recording a
+    // sample for an event that never actually landed in the trace. Bail out the same way start()
+    // does instead of only checking enable_hierarchical_profiling_.
+    if (session_ == nullptr || !session_->is_active() ||
+        !session_->options_.enable_hierarchical_profiling_)
     {
         return;
     }
@@ -870,64 +564,47 @@ void profiler_scope::stop()
             }
         }
 
-        // Add timing sample to statistical analyzer
+        // Add timing/memory samples to the statistical analyzer, keyed by scope name. This is
+        // this session's per-scope memory record now that the reconstructed report tree
+        // (scope_tree_builder, built from XSpace) has no memory_stats_ of its own to carry --
+        // XSpace events don't record memory deltas -- so profiler_report reads memory data from
+        // here (by name) rather than from tree nodes; see generate_memory_section().
         if (session_->options_.enable_statistical_analysis_ && session_->statistical_analyzer_)
         {
             session_->statistical_analyzer_->add_timing_sample(data_->name_, duration_ms);
+            if (session_->options_.enable_memory_tracking_ && session_->memory_tracker_)
+            {
+                session_->statistical_analyzer_->add_memory_sample(
+                    data_->name_,
+                    static_cast<size_t>(std::abs(data_->memory_stats_.delta_since_start_)));
+            }
         }
-
-        // Register scope end with session
-        session_->register_scope_end(this);
     }
 
+    // Ends the traceme event, recording it into traceme_recorder for host_tracer to collect.
+    traceme_.reset();
     memory_annotation_.reset();
 }
 
 std::string profiler_session::generate_chrome_trace_json() const
 {
-    // Prefer hierarchical scope data if available, otherwise use xspace
-    if (root_scope_ != nullptr && options_.enable_hierarchical_profiling_)
+    // No collected XSpace yet (e.g. called before stop()) -- an empty string signals "no data",
+    // distinct from a valid-but-empty trace (which export_to_chrome_trace_json always produces
+    // with a populated "traceEvents" key, even for a session with zero recorded scopes).
+    if (!xspace_ready_)
     {
-        uint64_t const base_time_ns =
-            std::chrono::duration_cast<std::chrono::nanoseconds>(start_time_.time_since_epoch())
-                .count();
-        return ConvertScopeDataToChromeTrace(root_scope_.get(), base_time_ns);
+        return "";
     }
-    if (xspace_ready_)
-    {
-        return ConvertXSpaceToChromeTrace(xspace_);
-    }
-    return "{}";
+    return profiler_impl::export_to_chrome_trace_json(xspace_);
 }
 
 bool profiler_session::write_chrome_trace(const std::string& filename) const
 {
-    std::ofstream out(filename, std::ios::out | std::ios::binary);
-    if (!out)
+    if (!xspace_ready_)
     {
         return false;
     }
-
-    // Prefer hierarchical scope data if available, otherwise use xspace
-    std::string json;
-    if (root_scope_ != nullptr && options_.enable_hierarchical_profiling_)
-    {
-        uint64_t const base_time_ns =
-            std::chrono::duration_cast<std::chrono::nanoseconds>(start_time_.time_since_epoch())
-                .count();
-        json = ConvertScopeDataToChromeTrace(root_scope_.get(), base_time_ns);
-    }
-    else if (xspace_ready_)
-    {
-        json = ConvertXSpaceToChromeTrace(xspace_);
-    }
-    else
-    {
-        return false;
-    }
-
-    out << json;
-    return out.good();
+    return profiler_impl::export_to_chrome_trace_json_file(xspace_, filename);
 }
 
 }  // namespace profiler

@@ -377,7 +377,7 @@ public:
             throw std::bad_array_new_length();
         }
 
-        pointer ptr = static_cast<pointer>(std::malloc(n * sizeof(T)));
+        auto ptr = static_cast<pointer>(std::malloc(n * sizeof(T)));
         if (ptr == nullptr)
         {
             throw std::bad_alloc();

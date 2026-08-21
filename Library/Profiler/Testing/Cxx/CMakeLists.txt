@@ -3,60 +3,15 @@
 # =============================================================================
 quarisma_add_googletest()
 
-file(GLOB_RECURSE profiler_test_sources LIST_DIRECTORIES false
-     "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cpp"
-)
-
-set(TestFiles)
-foreach(_test_source IN ITEMS ${profiler_test_sources})
-  get_filename_component(file_name "${_test_source}" NAME)
-
-  if(NOT PROFILER_ENABLE_KINETO)
-    if(file_name MATCHES "TestKineto")
-      message(STATUS "Excluding Kineto profiler test (Kineto disabled): ${file_name}")
-      continue()
-    endif()
-  endif()
-
-  if(NOT PROFILER_ENABLE_ENZYME)
-    if(file_name MATCHES "TestEnzyme")
-      message(STATUS "Excluding Enzyme test (Enzyme disabled): ${file_name}")
-      continue()
-    endif()
-  endif()
-
-  list(APPEND TestFiles "${_test_source}")
-endforeach()
-
-set(PROFILER_NATIVE_PROFILER_TESTS
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerPlatform.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerXPlane.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerTimespan.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestEnhancedProfiler.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerAnnotationParsing.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerExporters.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerAnnotationStack.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerXPlaneVisitor.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerFormatUtils.cpp"
+# Explicit list (keep in sync with BUILD.bazel). Real-use-case coverage only:
+# backend function profiling, Chrome trace hierarchy, heavy-function stress,
+# and Kineto hotspot report / table.
+set(TestFiles
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestHotspotReport.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerBackendFunction.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerChromeTraceHierarchical.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestXPlaneSchema.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerAnalysis.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestXPlaneUtils.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerHeavyFunction.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestTraceme.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfiler.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerSessionEdgeCases.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestScopedMemoryDebugAnnotation.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerStatsCalculator.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerUtils.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerMemoryAndStats.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestXPlaneBuilder.cpp"
 )
-
-if(NOT PROFILER_ENABLE_NATIVE_PROFILER)
-  list(REMOVE_ITEM TestFiles ${PROFILER_NATIVE_PROFILER_TESTS})
-  message(STATUS "Native profiler disabled: excluding native-only Profiler tests")
-endif()
 
 add_executable(ProfilerCxxTests ${TestFiles})
 

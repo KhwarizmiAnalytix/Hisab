@@ -51,7 +51,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
-#include <mutex>
+#include <optional>
 #include <string>
 #include <thread>
 #include <unordered_map>
@@ -244,8 +244,15 @@ struct profiler_scope_data
     /// Timing statistics for this scope
     profiler::timing_stats timing_stats_;
 
-    /// ID of the thread that executed this scope
+    /// ID of the thread that executed this scope. Only meaningful on a live (not yet reconstructed
+    /// from XSpace) instance -- see thread_label_ for the field reports should read.
     std::thread::id thread_id_;
+
+    /// Human-readable thread label. On nodes reconstructed by scope_tree_builder (the only nodes
+    /// profiler_report ever reads) this is recovered from the originating XLine (see
+    /// xline_thread_label()) since XSpace carries no std::thread::id to rebuild thread_id_ from.
+    /// Empty on the synthetic multi-thread "ROOT" node, which has no single originating thread.
+    std::string thread_label_;
 
     /// Nesting depth level in the profiling hierarchy (0 = root)
     size_t depth_level_ = 0;
@@ -415,10 +422,22 @@ public:
     PROFILER_API static void set_current_session(profiler_session* session);
 
     /**
-     * @brief Get read-only access to the root profiling scope
-     * @return Const pointer to root scope data
+     * @brief Get (lazily reconstructing and caching) the scope hierarchy over the collected
+     * XSpace.
+     *
+     * Hierarchy is a derived view over the flat traceme/host_tracer event
+     * log, not a structure tracked live during collection (matching how the
+     * TF/XLA profiler treats it) — this walks collected_xspace() and nests
+     * events by interval containment. Computed once, on first call after
+     * stop(), and cached; the cache is invalidated whenever the collected
+     * XSpace changes (i.e. on the next start()/stop() cycle).
+     *
+     * @return Pointer to a synthetic "ROOT" node whose descendants mirror
+     *         the recorded scope nesting, owned by this session (valid
+     *         until the next start() or session destruction), or nullptr
+     *         if no XSpace was collected.
      */
-    const profiler::profiler_scope_data* get_root_scope() const { return root_scope_.get(); }
+    PROFILER_API const profiler::profiler_scope_data* build_scope_tree() const;
 
 private:
     friend class profiler_session_builder;
@@ -444,18 +463,6 @@ private:
 
     /// Statistical analysis component
     std::unique_ptr<profiler::statistical_analyzer> statistical_analyzer_;
-
-    /// Mutex for thread-safe access to hierarchical profiling data
-    mutable std::mutex scope_mutex_;
-
-    /// Root scope of the profiling hierarchy
-    std::unique_ptr<profiler::profiler_scope_data> root_scope_;
-
-    /// Pointer to the currently active scope
-    profiler::profiler_scope_data* current_scope_ = nullptr;
-
-    /// Thread-local storage for current scope (DLL-compatible implementation)
-    static thread_local profiler::profiler_scope_data* thread_current_scope_;
 
     /**
      * @brief Initialize all profiler components
@@ -484,20 +491,12 @@ private:
     profiler::x_space xspace_;
     bool              xspace_ready_ = false;
 
-    /// Allow profiler_scope to access private registration methods
+    /// Lazily-built, cached reconstruction of xspace_'s scope hierarchy (see build_scope_tree()).
+    /// mutable: built on demand from a const accessor; invalidated whenever xspace_ changes.
+    mutable std::unique_ptr<profiler::profiler_scope_data> scope_tree_cache_;
+
+    /// Allow profiler_scope to read options_/memory_tracker_/statistical_analyzer_ on the hot path.
     friend class profiler::profiler_scope;
-
-    /**
-     * @brief Register the start of a profiling scope
-     * @param scope Pointer to the scope being started
-     */
-    void register_scope_start(const profiler::profiler_scope* scope);
-
-    /**
-     * @brief Register the end of a profiling scope
-     * @param scope Pointer to the scope being ended
-     */
-    void register_scope_end(const profiler::profiler_scope* scope);
 };
 
 /**
@@ -735,6 +734,11 @@ private:
     bool stopped_ = false;
 
     std::unique_ptr<scoped_memory_debug_annotation> memory_annotation_;
+
+    /// Backs this scope with a real traceme event, so PROFILER_PROFILE_SCOPE feeds the same
+    /// lock-free, thread-local traceme_recorder that host_tracer reads from — no separate
+    /// hierarchy tracking is maintained here.
+    std::optional<profiler::traceme> traceme_;
 };
 
 /**

@@ -87,13 +87,15 @@ The `setup.py` script uses a standardized flag ordering convention to organize b
 
 ##### Profiler selection
 
-Use the `--profiler.<backend>` flag (where `<backend>` is `kineto`, `native`, or `itt`) to control `QUARISMA_PROFILER_TYPE` and automatically toggle the matching Kineto/TraceMe/ITT feature set. Example:
+The native traceme/xplane profiler pipeline is always compiled. Use the `--profiler.<backend>` flag
+(where `<backend>` is `kineto` or `itt`) to control `QUARISMA_PROFILER_TYPE` and choose which
+instrumentation backend is layered on top of it. Example:
 
 ```bash
-python setup.py config.build.ninja.clang.release --profiler.native
+python setup.py config.build.ninja.clang.release --profiler.itt
 ```
 
-If you omit the profiler flag, `KINETO` is selected by default. The helper no longer exposes separate `kineto` or `ittapi` switches – the single `profiler.xxx` option now controls which profiler backend you are compiling for.
+If you omit the profiler flag, `KINETO` is selected by default. The helper no longer exposes separate `kineto` or `ittapi` switches – the single `profiler.xxx` option now controls which instrumentation backend you are compiling for.
 
 #### Unix/Linux (GCC and Clang)
 
@@ -165,7 +167,7 @@ cmake --build . --config Release --parallel %NUMBER_OF_PROCESSORS%
 
 Quarisma supports **both CMake and Bazel** build systems, providing flexibility for different development workflows and CI/CD environments. The Bazel build system offers fast incremental builds, hermetic builds, and excellent caching capabilities.
 
-> **Note**: Both build systems are fully supported and maintained. Bazel defaults match CMake defaults where applicable (for example LOGURU for logging). The **profiler backend defaults to Kineto** in both CMake (`QUARISMA_PROFILER_TYPE=KINETO`) and Bazel (no `native_profiler` / `itt` config). Enable the **native** backend with CMake `-DQUARISMA_PROFILER_TYPE=NATIVE` or `python setup.py ... --profiler.native`, and with Bazel `--config=native_profiler` (or `--define=profiler_type=native`).
+> **Note**: Both build systems are fully supported and maintained. Bazel defaults match CMake defaults where applicable (for example LOGURU for logging). The native traceme/xplane profiler pipeline is always compiled; the **instrumentation backend layered on top defaults to Kineto** in both CMake (`QUARISMA_PROFILER_TYPE=KINETO`) and Bazel (no `itt` config). Enable the **ITT** backend with CMake `-DQUARISMA_PROFILER_TYPE=ITT` or `python setup.py ... --profiler.itt`, and with Bazel `--config=itt` (or `--define=profiler_enable_itt=true`).
 
 #### Prerequisites
 

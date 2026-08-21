@@ -19,6 +19,7 @@
 
 #include "native/exporters/chrome_trace_exporter.h"
 
+#include <cstdio>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -35,7 +36,9 @@ namespace
 /**
  * @brief Escape a string for JSON output.
  *
- * Escapes special characters: ", \, /, \b, \f, \n, \r, \t
+ * Escapes special characters: ", \, /, \b, \f, \n, \r, \t, plus any other
+ * control byte (< 0x20) as \uXXXX so the output is always valid JSON even
+ * for names containing stray control characters.
  */
 std::string escape_json_string(std::string_view str)
 {
@@ -71,7 +74,16 @@ std::string escape_json_string(std::string_view str)
             result += "\\t";
             break;
         default:
-            result += c;
+            if (static_cast<unsigned char>(c) < 0x20)
+            {
+                char buffer[7];
+                std::snprintf(buffer, sizeof(buffer), "\\u%04x", static_cast<unsigned char>(c));
+                result += buffer;
+            }
+            else
+            {
+                result += c;
+            }
             break;
         }
     }
@@ -238,7 +250,13 @@ bool export_to_chrome_trace_json_file(
         }
 
         file << json;
+        bool const write_ok = file.good();
         file.close();
+        if (!write_ok || !file.good())
+        {
+            PROFILER_LOG_ERROR("Failed to write Chrome Trace JSON to: {}", filename);
+            return false;
+        }
 
         //PROFILER_LOG_INFO("Exported Chrome Trace JSON to: {}", filename);
         return true;

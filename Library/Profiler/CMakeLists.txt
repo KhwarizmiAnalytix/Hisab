@@ -3,19 +3,21 @@
 # CMakeLists.txt
 #
 # Activity tracing, timing primitives, and pluggable profiler-backend support (Kineto, Intel
-# ITT/VTune, Native).
+# ITT/VTune) layered on top of an always-on native (traceme/xplane) pipeline.
 #
 # Public compile definitions: PROFILER_HAS_KINETO=1/0  — Kineto (PyTorch-compatible) backend active
-# PROFILER_HAS_ITT=1/0     — Intel ITT/VTune backend active PROFILER_HAS_NATIVE=1/0  — Lightweight
-# standalone native backend active
+# PROFILER_HAS_ITT=1/0     — Intel ITT/VTune backend active (mutually exclusive with Kineto)
+# PROFILER_HAS_NATIVE      — always 1; the native profiler pipeline is compiled unconditionally
 # =============================================================================
 cmake_minimum_required(VERSION 3.16)
 
 # --- Early-exit gate --- When PROFILER_INCLUDE_GATE_ONLY=ON, only set PROFILER_ENABLE_KINETO and
 # return early so the root can gate ThirdParty/Kineto before add_subdirectory runs.
 if(PROFILER_INCLUDE_GATE_ONLY)
-  set(PROFILER_BACKEND "KINETO" CACHE STRING "Profiler backend. Options: KINETO, NATIVE, ITT")
-  set_property(CACHE PROFILER_BACKEND PROPERTY STRINGS KINETO NATIVE ITT)
+  set(PROFILER_BACKEND "KINETO" CACHE STRING
+                                      "Profiler instrumentation backend. Options: KINETO, ITT"
+  )
+  set_property(CACHE PROFILER_BACKEND PROPERTY STRINGS KINETO ITT)
   if(PROFILER_BACKEND STREQUAL "KINETO")
     set(PROFILER_ENABLE_KINETO ON)
   else()
@@ -92,32 +94,29 @@ set(PROFILER_CACHE_BACKEND "none"
 set_property(CACHE PROFILER_CACHE_BACKEND PROPERTY STRINGS none ccache sccache buildcache)
 mark_as_advanced(PROFILER_CACHE_BACKEND)
 
-# Backend selector — the single control point for profiler backend choice. Derived booleans
-# (PROFILER_ENABLE_KINETO etc.) are set immediately below. KINETO — full PyTorch-compatible activity
-# tracing (default) ITT    — Intel Instrumentation and Tracing Technology / VTune NATIVE —
-# lightweight standalone backend with no external dependencies
-set(PROFILER_BACKEND "KINETO" CACHE STRING "Profiler backend. Options: KINETO, NATIVE, ITT")
-set_property(CACHE PROFILER_BACKEND PROPERTY STRINGS KINETO NATIVE ITT)
-if(NOT PROFILER_BACKEND MATCHES "^(KINETO|NATIVE|ITT)$")
-  message(
-    FATAL_ERROR "Invalid PROFILER_BACKEND '${PROFILER_BACKEND}'. Valid options: KINETO, NATIVE, ITT"
-  )
+# Backend selector — the single control point for the *instrumentation* backend layered on top of
+# the always-on native profiler (traceme/xplane/host_tracer/profiler_session — see Section 2 and
+# the unconditional source-discovery block below). Derived booleans (PROFILER_ENABLE_KINETO etc.)
+# are set immediately below. KINETO — full PyTorch-compatible activity tracing (default) ITT    —
+# Intel Instrumentation and Tracing Technology / VTune
+set(PROFILER_BACKEND "KINETO" CACHE STRING "Profiler instrumentation backend. Options: KINETO, ITT")
+set_property(CACHE PROFILER_BACKEND PROPERTY STRINGS KINETO ITT)
+if(NOT PROFILER_BACKEND MATCHES "^(KINETO|ITT)$")
+  message(FATAL_ERROR "Invalid PROFILER_BACKEND '${PROFILER_BACKEND}'. Valid options: KINETO, ITT")
 endif()
 
 # Derive mutually-exclusive enable booleans from the backend selector.
 if(PROFILER_BACKEND STREQUAL "KINETO")
   set(PROFILER_ENABLE_KINETO ON)
   set(PROFILER_ENABLE_ITT OFF)
-  set(PROFILER_ENABLE_NATIVE_PROFILER OFF)
-elseif(PROFILER_BACKEND STREQUAL "ITT")
+else()
   set(PROFILER_ENABLE_KINETO OFF)
   set(PROFILER_ENABLE_ITT ON)
-  set(PROFILER_ENABLE_NATIVE_PROFILER OFF)
-elseif(PROFILER_BACKEND STREQUAL "NATIVE")
-  set(PROFILER_ENABLE_KINETO OFF)
-  set(PROFILER_ENABLE_ITT OFF)
-  set(PROFILER_ENABLE_NATIVE_PROFILER ON)
 endif()
+
+# Native pipeline (traceme/xplane/host_tracer/profiler_session) is always compiled alongside
+# whichever of Kineto/ITT is selected above — it is no longer a backend choice.
+set(PROFILER_ENABLE_NATIVE_PROFILER ON)
 
 # C++ standard — applied to every TU in this module via CMAKE_CXX_STANDARD.
 set(PROFILER_CXX_STANDARD "20" CACHE STRING "C++ standard for Profiler. Options: 11 14 17 20 23")
@@ -126,26 +125,21 @@ if(NOT PROFILER_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
   message(FATAL_ERROR "PROFILER_CXX_STANDARD must be one of: 11 14 17 20 23")
 endif()
 
-# --- Section 2: PROFILER_ENABLE_* → PROFILER_HAS_* compile definitions --- Exactly one HAS_* will
-# be 1; the others 0.
+# --- Section 2: PROFILER_ENABLE_* → PROFILER_HAS_* compile definitions --- Exactly one of
+# KINETO/ITT will be 1, the other 0; PROFILER_HAS_NATIVE is unconditionally 1 (see
+# PROFILER_ENABLE_NATIVE_PROFILER above).
 set(PROFILER_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS})
 
 if(PROFILER_ENABLE_KINETO)
   # Kineto — full PyTorch-compatible activity-tracing and timeline recording.
-  list(APPEND PROFILER_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=1 PROFILER_HAS_ITT=0
-       PROFILER_HAS_NATIVE=0
-  )
-elseif(PROFILER_ENABLE_ITT)
+  list(APPEND PROFILER_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=1 PROFILER_HAS_ITT=0)
+else()
   # ITT/VTune — Intel instrumentation API; integrates with VTune Amplifier.
-  list(APPEND PROFILER_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=0 PROFILER_HAS_ITT=1
-       PROFILER_HAS_NATIVE=0
-  )
-elseif(PROFILER_ENABLE_NATIVE_PROFILER)
-  # Native — lightweight standalone backend; no external library dependency.
-  list(APPEND PROFILER_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=0 PROFILER_HAS_ITT=0
-       PROFILER_HAS_NATIVE=1
-  )
+  list(APPEND PROFILER_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=0 PROFILER_HAS_ITT=1)
 endif()
+# Native — traceme/xplane/host_tracer/profiler_session pipeline; always compiled, independent of
+# the Kineto/ITT instrumentation backend chosen above.
+list(APPEND PROFILER_COMPILE_DEFINITIONS PROFILER_HAS_NATIVE=1)
 
 list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS ${PROFILER_COMPILE_DEFINITIONS})
 
@@ -330,6 +324,16 @@ file(GLOB common_util_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR
 list(APPEND profiler_headers ${common_util_headers})
 list(APPEND profiler_sources ${common_util_sources})
 
+# Native pipeline — always compiled (traceme/xplane/host_tracer/profiler_session), independent of
+# and alongside whichever of Kineto/ITT is selected below.
+file(GLOB_RECURSE native_headers LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/native/*.h")
+file(GLOB_RECURSE native_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/native/*.cpp")
+list(APPEND profiler_headers ${native_headers})
+list(APPEND profiler_sources ${native_sources})
+message(
+  STATUS "Native profiler pipeline: always included (traceme/xplane/host_tracer/profiler_session)"
+)
+
 # Kineto backend — base/ is shared infrastructure between Kineto and ITT.
 if(PROFILER_ENABLE_KINETO)
   file(
@@ -350,17 +354,6 @@ if(PROFILER_ENABLE_KINETO)
   list(APPEND profiler_headers ${kineto_headers})
   list(APPEND profiler_sources ${kineto_sources})
   message(STATUS "Kineto profiler enabled: including base, kineto, and common sources")
-endif()
-
-# Native backend — standalone, no external dependencies.
-if(PROFILER_ENABLE_NATIVE_PROFILER)
-  file(GLOB_RECURSE native_headers LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/native/*.h")
-  file(GLOB_RECURSE native_sources LIST_DIRECTORIES false
-       "${CMAKE_CURRENT_SOURCE_DIR}/native/*.cpp"
-  )
-  list(APPEND profiler_headers ${native_headers})
-  list(APPEND profiler_sources ${native_sources})
-  message(STATUS "Native profiler enabled: including native sources (standalone)")
 endif()
 
 # ITT backend — base/ is shared with Kineto; guard against double-inclusion.
@@ -511,7 +504,8 @@ endif()
 
 message("")
 message("******** Profiler module (CMake flags) ********")
-message("  Backend          : ${PROFILER_BACKEND}")
+message("  Instrumentation backend : ${PROFILER_BACKEND}")
+message("  Native profiler  : ON (always compiled)")
 message("  Cxx standard     : ${PROFILER_CXX_STANDARD}")
 message("  Cache            : ${PROFILER_ENABLE_CACHE}")
 message("  Cache backend    : ${PROFILER_CACHE_BACKEND}")
