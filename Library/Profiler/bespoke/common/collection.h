@@ -17,7 +17,6 @@
 #include "bespoke/base/base.h"
 #include "bespoke/base/perf.h"
 #include "bespoke/common/containers.h"
-#include "bespoke/common/data_flow.h"
 #include "bespoke/common/events.h"
 #include "bespoke/common/orchestration/python_tracer.h"
 #include "bespoke/common/util.h"
@@ -46,9 +45,13 @@ enum class EventType : uint8_t
 // ============================================================================
 // == Op-input shape stub =====================================================
 // ============================================================================
-// XSigma has no tensor / IValue type. These structs remain so ExtraFields
-// and data_flow can still type-check an (always-empty) inputs list. They are
-// never populated.
+// Opaque identity for recorded storage. Wrapped in a strong type so it is
+// not mixed with other pointer identities. XSigma has no tensor / IValue
+// type; these structs exist so ExtraFields can type-check an always-empty
+// inputs list and are never populated.
+using StorageImplData = strong::
+    type<const void*, struct StorageImplData_, strong::regular, strong::hashable, strong::boolean>;
+
 struct PROFILER_VISIBILITY RawTensorMetadataBase
 {
     RawTensorMetadataBase() = default;
@@ -79,15 +82,9 @@ struct PROFILER_VISIBILITY TensorMetadata : public RawTensorMetadataBase
     TensorMetadata(
         const RawTensorMetadata& r, std::vector<int64_t> sizes, std::vector<int64_t> strides);
 
-    TensorImplAddress impl() const { return {}; }
-
     profiler::device_option device_;
     std::vector<int64_t>    sizes_;
     std::vector<int64_t>    strides_;
-
-    // Set during `calculateUniqueTensorIDs`.
-    std::optional<TensorID>     id_;
-    std::optional<AllocationID> allocation_id_;
 };
 
 // Used during post processing.
@@ -233,9 +230,6 @@ struct ExtraFields<EventType::Allocation> : RawAllocation
         d.index_ = device_index_;
         return d;
     }
-
-    std::optional<TensorID>     id_;
-    std::optional<AllocationID> allocation_id_;
 };
 
 template <>

@@ -15,7 +15,6 @@
 #include <libkineto.h>
 #endif
 
-#include "bespoke/common/data_flow.h"
 #include "bespoke/common/record_function.h"
 #include "bespoke/kineto/kineto_shim.h"
 #include "common/flat_hash.h"
@@ -1325,11 +1324,6 @@ RecordQueue::getRecords(
         out.begin(),
         out.end(),
         [](const auto& a, const auto& b) { return a->start_time_ns_ < b->start_time_ns_; });
-
-    if (config_.report_input_shapes && config_.profile_memory)
-    {
-        calculateUniqueTensorIDs(out);
-    }
 
     build_tree(out);
     return {out, std::move(trace)};

@@ -6,11 +6,21 @@ Profiler **implementation**: native CPU profiler, **Kineto** (PyTorch-style) int
 
 User guide: **[`Docs/profiler/profiler.md`](../../Docs/profiler/profiler.md)**.
 
-Native end-to-end steps (start → TraceMe → XSpace → Chrome / report /
-`stats_calculator` / **hotspot_report**): see
-[Native end-to-end scheme](../../Docs/profiler/profiler.md#native-end-to-end-scheme)
-and [Hotspot report](../../Docs/profiler/profiler.md#hotspot-report)
-(native vs Kineto).
+Native end-to-end (session → TraceMe → XSpace → Chrome / report /
+`stats_calculator` / native **hotspot_report**) and Kineto end-to-end
+(`RECORD_*` → correlation ids → `ProfilerResult` → `save()` / Kineto
+hotspot, including GPU CUPTI): see
+[profiler.md](../../Docs/profiler/profiler.md).
+
+## Tests (`Testing/Cxx/`)
+
+Keep CMake `TestFiles` and Bazel `_PROFILER_COMMON_TESTS` in sync:
+
+- `TestProfilerBackendFunction.cpp` / `TestProfilerBackendMemory.cpp` — Kineto, ITT, NVTX
+- `TestProfilerBackendOutput.cpp` / `TestProfilerChromeTraceHierarchical.cpp` — native reports and Chrome
+- `TestProfilerXPlanePipeline.cpp` / `TestProfilerThreadpoolTracing.cpp` — XSpace / tracing e2e
+- `TestProfilerNativeHotspot.cpp` / `TestHotspotReport.cpp` — native vs Kineto hotspots
+- `TestProfilerHeavyFunction.cpp` — native + Kineto + ITT stress
 
 ## Layout
 

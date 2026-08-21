@@ -467,6 +467,30 @@ if(PROFILER_DEPENDENCY_LIBS)
   message(STATUS "Profiler: linked dependencies: ${PROFILER_DEPENDENCY_LIBS}")
 endif()
 
+# Xcode does not archive a static library whose only inputs are
+# $<TARGET_OBJECTS:...> (kineto is kineto_base + kineto_api objects, no
+# compile units of its own), and it also does not treat that .a as a
+# target link dependency. Give kineto a dummy source so Libtool runs, then
+# wait for it before linking Profiler (same pattern as mimalloc on Core).
+if(PROFILER_ENABLE_KINETO AND TARGET kineto)
+  if(CMAKE_GENERATOR STREQUAL "Xcode")
+    set(_kineto_xcode_dummy "${CMAKE_CURRENT_BINARY_DIR}/kineto_xcode_dummy.cpp")
+    if(NOT EXISTS "${_kineto_xcode_dummy}")
+      file(WRITE "${_kineto_xcode_dummy}"
+           "/* Xcode requires a source file to archive object-only static libs. */\n"
+      )
+    endif()
+    target_sources(kineto PRIVATE "${_kineto_xcode_dummy}")
+    if(TARGET kineto_base)
+      add_dependencies(kineto kineto_base)
+    endif()
+    if(TARGET kineto_api)
+      add_dependencies(kineto kineto_api)
+    endif()
+  endif()
+  add_dependencies(Profiler kineto)
+endif()
+
 if(PROFILER_ENABLE_CLANGTIDY)
   include(clang_tidy)
   quarisma_target_clang_tidy(Profiler ${PROFILER_ENABLE_FIX})

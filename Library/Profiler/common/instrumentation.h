@@ -27,13 +27,11 @@
 
 // RECORD_FUNCTION/RECORD_USER_SCOPE (bespoke/common/record_function.h) and
 // MemoryReportingInfoBase::reportMemoryUsage (bespoke/common/orchestration/
-// observer.h) only exist when PROFILER_ENABLE_KINETO or PROFILER_ENABLE_ITT
-// is on -- under PROFILER_BACKEND=NATIVE, bespoke/common/ is excluded from
-// the library entirely (see Library/Profiler/CMakeLists.txt). This header is
-// the one thing outside libraries (Vectorization, Memory, Parallel, ...)
-// should include to instrument a call site: it is a real call under
-// Kineto/ITT and a true no-op under Native, so instrumented call sites don't
-// need their own PROFILER_HAS_* guards.
+// observer.h) exist when PROFILER_HAS_KINETO or PROFILER_HAS_ITT is 1.
+// Native (traceme/xplane) always compiles alongside that backend. This
+// header is what other libraries (Vectorization, Memory, Parallel, ...)
+// should include: real RECORD_* under Kineto/ITT, no-op macros only if
+// both HAS flags are 0 (not a supported CMake configuration).
 #if PROFILER_HAS_KINETO || PROFILER_HAS_ITT
 #include "bespoke/common/record_function.h"
 #define PROFILER_HAS_INSTRUMENTATION 1
@@ -53,8 +51,7 @@ namespace profiler
  * @brief Reports one allocation/deallocation event to the active profiling
  * session, mirroring PyTorch's c10::reportMemoryUsageToProfiler. Safe to
  * call unconditionally from any allocator: a true no-op when no profiling
- * session is active, memory profiling wasn't requested for it, or Profiler
- * was built with PROFILER_BACKEND=NATIVE.
+ * session is active or memory profiling was not requested.
  *
  * @param ptr Address returned by (or passed to) the allocator.
  * @param alloc_size Signed size of this allocation, negative for a

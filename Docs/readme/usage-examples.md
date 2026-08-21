@@ -12,7 +12,7 @@ This guide provides practical examples of different Quarisma build configuration
 - [Production Build](#production-build)
 - [Debugging Build](#debugging-build)
 - [CI/CD Build](#cicd-build)
-- [Enhanced Profiler](#enhanced-profiler)
+- [Profiler](#profiler-libraryprofiler)
 
 ## Minimal Build
 
@@ -286,64 +286,62 @@ jobs:
 - ✅ Code coverage reporting
 - ✅ Reproducible builds
 
-## Enhanced Profiler
+## Profiler (`Library/Profiler`)
 
-**Goal**: Advanced profiling with nanosecond-precision timing and memory tracking
+**Goal**: CPU timelines, Kineto GPU correlation, ITT/VTune ranges
 
-**Use Case**: Performance analysis, optimization, bottleneck identification
+**Use Case**: Performance analysis, Chrome/Perfetto traces, hotspot tables
 
-### Overview
+Canonical guide: [Docs/profiler/profiler.md](../profiler/profiler.md).
 
-The Enhanced Profiler is an experimental feature providing:
-- Nanosecond-precision timing
-- Memory tracking
-- Hierarchical scopes
-- Thread safety
-- Multiple output formats (console/JSON/CSV/XML)
-
-### Location
-
-- **Source**: `Library/Profiler` (see [Docs/profiler/profiler.md](../profiler/profiler.md))
-- **Tests**: `Library/Profiler/Testing/Cxx/` (for example `TestEnhancedProfiler.cpp`)
-
-### Usage Example
+Native session:
 
 ```cpp
-#include "profiler/native/core/profiler.h"
+#include "native/session/profiler.h"
 
-void example_function() {
-    // Profile entire function
-    QUARISMA_PROFILE_FUNCTION();
+using namespace profiler;
 
-    // Profile specific scope
-    {
-        QUARISMA_PROFILE_SCOPE("DataProcessing");
-        // Your code here
-    }
-
-    // Generate report
-    quarisma::profiler_impl::generate_report("profile_results.json");
+profiler_session session;
+session.start();
+{
+    PROFILER_PROFILE_SCOPE("DataProcessing");
+    // work
 }
+session.stop();
+session.write_chrome_trace("native_trace.json");
+std::cout << session.generate_hotspot_report()->table();
 ```
 
-### Building with Profiler
+Kineto (`RECORD_*` + optional CUDA correlation):
+
+```cpp
+#include "bespoke/kineto/profiler_kineto.h"
+#include "common/instrumentation.h"
+
+using namespace profiler::autograd::profiler_impl;
+using profiler::profiler_impl::impl::ActivityType;
+using profiler::profiler_impl::impl::ProfilerConfig;
+using profiler::profiler_impl::impl::ProfilerState;
+
+ProfilerConfig config(ProfilerState::KINETO);
+enableProfiler(config, {ActivityType::CPU});
+{
+    RECORD_USER_SCOPE("DataProcessing");
+    // work
+}
+auto result = disableProfiler();
+result->save("kineto_trace.json");
+```
+
+Build and test:
 
 ```bash
-# Build with profiler enabled
-cmake -B build_profile -S . \
-    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DQUARISMA_ENABLE_PROFILER=ON
-
-cmake --build build_profile -j
-
-# Run with profiling
-./build_profile/bin/quarisma
-
-# View results
-cat profile_results.json
+cd Scripts
+python3 setup.py config.build.test.native.ninja --project.profiler
 ```
 
-**Note**: The Enhanced Profiler is experimental and may change in future releases. See `Library/Core/Testing/Cxx/TestEnhancedProfiler.cpp` for complete examples.
+Tests live in `Library/Profiler/Testing/Cxx/` (see the list in profiler.md).
+There is no `TestEnhancedProfiler.cpp`.
 
 ## Comparison Table
 

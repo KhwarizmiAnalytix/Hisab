@@ -24,6 +24,39 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# CMake multi-config generators (Xcode, Visual Studio) place artifacts in
+# lib/<Config>/ and bin/<Config>/ rather than lib/ and bin/.
+_MULTI_CONFIG_DIR_NAMES = ("Debug", "Release", "RelWithDebInfo", "MinSizeRel")
+
+
+def multi_config_search_dirs(base: Path) -> list[Path]:
+    """Return ``base`` plus any existing CMake multi-config subdirectories."""
+    dirs = [base]
+    if not base.is_dir():
+        return dirs
+    for name in _MULTI_CONFIG_DIR_NAMES:
+        candidate = base / name
+        if candidate.is_dir():
+            dirs.append(candidate)
+    return dirs
+
+
+def resolve_multi_config_artifact(path: Path) -> Optional[Path]:
+    """Locate a build artifact, checking CMake multi-config subdirectories.
+
+    If ``path`` exists, it is returned. Otherwise ``path.parent/<Config>/path.name``
+    is tried for each standard CMake configuration name.
+    """
+    if path.exists():
+        return path
+    parent = path.parent
+    for name in _MULTI_CONFIG_DIR_NAMES:
+        candidate = parent / name / path.name
+        if candidate.exists():
+            return candidate
+    return None
+
+
 # ============================================================================
 # CONFIGURATION - Centralized hardcoded values
 # ============================================================================
@@ -556,13 +589,14 @@ def find_library(build_dir: Path, lib_folder: str, module_name: str,
         f"{module_name}*{dll_extension}",
     ]
 
-    for pattern in patterns:
-        matches = list(lib_path.glob(pattern))
-        if matches:
-            selected = matches[0]
-            print(f"Found library for module '{module_name}': {selected.name} "
-                  f"using {selected.name}")
-            return str(selected)
+    for directory in multi_config_search_dirs(lib_path):
+        for pattern in patterns:
+            matches = list(directory.glob(pattern))
+            if matches:
+                selected = matches[0]
+                print(f"Found library for module '{module_name}': {selected.name} "
+                      f"using {selected.name}")
+                return str(selected)
 
     return None
 
