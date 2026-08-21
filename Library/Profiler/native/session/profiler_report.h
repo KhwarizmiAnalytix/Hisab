@@ -151,6 +151,7 @@ private:
     std::string generate_memory_section() const;
     std::string generate_hierarchical_section() const;
     std::string generate_statistical_section() const;
+    std::string generate_hotspot_section() const;
     std::string generate_thread_section() const;
 
     // JSON helpers

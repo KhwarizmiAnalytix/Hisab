@@ -34,6 +34,7 @@
 #include <vector>
 
 ////#include "logger/logger.h"
+#include "native/analysis/hotspot_report.h"
 #include "native/analysis/stat_summarizer_options.h"
 #include "native/analysis/statistical_analyzer.h"
 #include "native/analysis/stats_calculator.h"
@@ -247,6 +248,7 @@ std::string profiler_report::generate_console_report() const
     ss << generate_timing_section();
     ss << generate_memory_section();
     ss << generate_statistical_section();
+    ss << generate_hotspot_section();
 
     if (include_thread_info_)
     {
@@ -403,6 +405,7 @@ std::string profiler_report::generate_xml_report() const
     ss << "  <timing>\n" << generate_timing_section() << "  </timing>\n";
     ss << "  <memory>\n" << generate_memory_section() << "  </memory>\n";
     ss << "  <statistics>\n" << generate_statistical_section() << "  </statistics>\n";
+    ss << "  <hotspots>\n" << generate_hotspot_section() << "  </hotspots>\n";
 
     if (include_thread_info_)
     {
@@ -753,6 +756,23 @@ std::string profiler_report::generate_statistical_section() const
         ss << "\n=== Node Stats (from XSpace) ===\n";
         ss << xspace_stats;
     }
+    ss << "\n";
+    return ss.str();
+}
+
+std::string profiler_report::generate_hotspot_section() const
+{
+    std::stringstream ss;
+    ss << "=== Hotspots ===\n";
+
+    const hotspot_report report(session_.build_scope_tree());
+    if (report.hotspots().empty())
+    {
+        ss << "No hotspot data available (no nested scopes in collected XSpace).\n\n";
+        return ss.str();
+    }
+
+    ss << report.bottom_up_hotspots(/*max_rows=*/20);
     ss << "\n";
     return ss.str();
 }

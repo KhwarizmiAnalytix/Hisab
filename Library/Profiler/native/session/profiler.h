@@ -63,6 +63,7 @@
 #include "native/core/profiler_options.h"
 #include "native/exporters/xplane/xplane.h"
 #include "native/memory/scoped_memory_debug_annotation.h"
+#include "native/analysis/hotspot_report.h"
 #include "native/tracing/traceme.h"
 
 namespace profiler
@@ -348,6 +349,12 @@ public:
      * @return Unique pointer to the generated report
      */
     PROFILER_API std::unique_ptr<profiler::profiler_report> generate_report() const;
+
+    /**
+     * @brief Build a Kineto-style CPU hotspot report from the reconstructed
+     * scope tree (build_scope_tree()). Empty when no scopes were collected.
+     */
+    PROFILER_API std::unique_ptr<profiler::hotspot_report> generate_hotspot_report() const;
 
     /**
      * @brief Access the raw XSpace captured during profiling.

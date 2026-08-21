@@ -12,20 +12,21 @@ C++ only — there are no Python or C bindings in this repository.
 1. [Overview](#overview)
 2. [Backends and build](#backends-and-build)
 3. [Architecture](#architecture)
-4. [Instrumentation](#instrumentation)
-5. [Native session API](#native-session-api)
-6. [Kineto](#kineto)
-7. [ITT and NVTX](#itt-and-nvtx)
-8. [GPU / CUDA](#gpu--cuda)
-9. [Runnable examples](#runnable-examples)
-10. [Output formats](#output-formats)
-11. [Hotspot report](#hotspot-report)
-12. [Console table columns](#console-table-columns)
-13. [Macros and feature flags](#macros-and-feature-flags)
-14. [Dependencies](#dependencies)
-15. [Best practices](#best-practices)
-16. [Troubleshooting](#troubleshooting)
-17. [Open follow-ups](#open-follow-ups)
+4. [Native end-to-end scheme](#native-end-to-end-scheme)
+5. [Instrumentation](#instrumentation)
+6. [Native session API](#native-session-api)
+7. [Kineto](#kineto)
+8. [ITT and NVTX](#itt-and-nvtx)
+9. [GPU / CUDA](#gpu--cuda)
+10. [Runnable examples](#runnable-examples)
+11. [Output formats](#output-formats)
+12. [Hotspot report](#hotspot-report)
+13. [Console table columns](#console-table-columns)
+14. [Macros and feature flags](#macros-and-feature-flags)
+15. [Dependencies](#dependencies)
+16. [Best practices](#best-practices)
+17. [Troubleshooting](#troubleshooting)
+18. [Open follow-ups](#open-follow-ups)
 
 ---
 
@@ -257,6 +258,69 @@ RecordFunction callback dispatch        ← already multi-subscriber
 
 ---
 
+## Native end-to-end scheme
+
+All native exports share one collected **XSpace**. Hierarchy and hotspots are
+*derived* after `stop()`, not maintained live under a lock.
+
+```mermaid
+flowchart TD
+  startNode[session.start]
+  scopes[profiler_scope / TraceMe]
+  recorder[traceme_recorder TLS]
+  host[host_tracer Collect]
+  stopNode[session.stop]
+  norm[normalize_xspace]
+  xspace[collected_xspace]
+  tree[build_scope_tree]
+  chrome[chrome_trace_exporter]
+  report[profiler_report]
+  stats[stats_calculator from XSpace]
+  hot[native hotspot_report from scope tree]
+
+  startNode --> scopes
+  scopes --> recorder
+  stopNode --> host
+  host --> norm
+  norm --> xspace
+  xspace --> tree
+  xspace --> chrome
+  xspace --> report
+  xspace --> stats
+  tree --> hot
+  tree --> report
+  hot --> report
+```
+
+| Step | API / component | What happens |
+|---|---|---|
+| 1 | `profiler_session::start()` | Profiler lock, enable `traceme_recorder` / `host_tracer`, optional `statistical_analyzer` / memory tracker |
+| 2 | Workload | `profiler_scope` / `PROFILER_PROFILE_SCOPE` emplace `traceme` into the TLS recorder |
+| 3 | `stop()` | `host_tracer` collects into XSpace, `normalize_xspace`, stop analyzer |
+| 4 | Timeline export | `generate_chrome_trace_json()` / `write_chrome_trace()` from the same XSpace |
+| 5 | Session reports | `generate_report()` → console / JSON / CSV / XML (joins tree + analyzer samples) |
+| 6 | Node stats | `stats_calculator` walks host-plane events via `CreateTfXPlaneVisitor` (in report statistical section) |
+| 7 | Hierarchy | Lazy `build_scope_tree()` — interval containment over host lines |
+| 8 | Hotspots | `generate_hotspot_report()` / report `=== Hotspots ===` — self/total by name, Kineto-like CPU table |
+
+Minimal session:
+
+```cpp
+session.start();
+{ PROFILER_PROFILE_SCOPE("work"); /* ... */ }
+session.stop();
+
+auto chrome = session.generate_chrome_trace_json();
+auto report = session.generate_report();
+std::cout << report->generate_console_report();
+
+auto hotspots = session.generate_hotspot_report();
+std::cout << hotspots->bottom_up_hotspots();
+std::cout << hotspots->table();
+```
+
+---
+
 ## Instrumentation
 
 Other libraries should include **`common/instrumentation.h`**, not
@@ -392,6 +456,7 @@ int main() {
 
 `start()` / `stop()` / `is_active()`, `create_scope(name)`,
 `generate_report()` / `export_report(filename)` / `print_report()`,
+`generate_hotspot_report()`,
 `write_chrome_trace(path)` where implemented.
 
 ### Scope macros
@@ -734,7 +799,11 @@ flowchart TB
   subgraph xsigma_reports["XSigma session reports<br/>(not TF schema)"]
     TREE["scope_tree_builder<br/>(interval nesting)"]
     RPT["profiler_report"]
+    HOT["hotspot_report<br/>(self/total CPU)"]
+    STATS["stats_calculator<br/>(node table)"]
     XS --> TREE --> RPT
+    XS --> STATS --> RPT
+    TREE --> HOT --> RPT
     RPT --> CONSOLE["CONSOLE / FILE<br/>human-readable text"]
     RPT --> JSONR["JSON report<br/>header / scopes / memory"]
     RPT --> CSV["CSV<br/>flat scope rows"]
@@ -753,6 +822,7 @@ flowchart TB
 |------|-----|-----------------|
 | Chrome Trace | `generate_chrome_trace_json()` / `write_chrome_trace(path)` | TF-style timelines; Chrome Trace Event Format |
 | XPlane / XSpace | `collected_xspace()` / `has_collected_xspace()` | TensorBoard profiler plane model (in memory only) |
+| Hotspots | `generate_hotspot_report()` / console `=== Hotspots ===` | Kineto-like CPU bottom-up / `key_averages` table (no CUDA/XPU) |
 | Console / FILE | `print_report()` / `export_report()` with `CONSOLE` or `FILE` | XSigma only (same text body) |
 | JSON report | `generate_report()->generate_json_report()` or `output_format_=JSON` | XSigma only — **not** `traceEvents` |
 | CSV | `generate_csv_report()` / `output_format_=CSV` | XSigma only |
@@ -816,8 +886,35 @@ and percentiles).
 
 ## Hotspot report
 
-Kineto-only. `bespoke/kineto/hotspot_report.h` —
-`profiler::autograd::profiler_impl::hotspot_report`.
+Two independent implementations share the same **CPU self/total** idea
+(VTune-style bottom-up). They do **not** share code or types.
+
+| | Native | Kineto |
+|---|---|---|
+| Header | `native/analysis/hotspot_report.h` → `profiler::hotspot_report` | `bespoke/kineto/hotspot_report.h` → `profiler::autograd::profiler_impl::hotspot_report` |
+| Input tree | `profiler_session::build_scope_tree()` (`profiler_scope` / TraceMe) | `ProfilerResult::event_tree()` (`RECORD_FUNCTION` / `RECORD_USER_SCOPE`) |
+| GPU columns | No (CPU only) | Optional CUDA / XPU when activities recorded |
+| Session API | `generate_hotspot_report()`; also console/XML `=== Hotspots ===` | After `disableProfiler()` |
+| Build gate | Always compiled | `PROFILER_HAS_KINETO` |
+
+### Native
+
+```cpp
+session.stop();
+auto report = session.generate_hotspot_report();
+std::cout << report->top_down_tree();
+std::cout << report->bottom_up_hotspots();
+std::cout << report->call_stack_for("nested_operation");
+std::cout << report->table();  // Name, Self CPU %, …, # of Calls
+```
+
+Semantics: `total = end − start`, `self = total − sum(children totals)`,
+merge by scope name, sort by self descending. Synthetic `"ROOT"` is walked
+but not emitted as a hotspot row.
+
+Tests: `TestProfilerNativeHotspot.cpp`.
+
+### Kineto
 
 Instrumentation-based (not PC sampling): nodes are `RECORD_FUNCTION` /
 `RECORD_USER_SCOPE` scopes. Self/total time is exact for annotated sites;

@@ -332,6 +332,11 @@ std::unique_ptr<profiler::profiler_report> profiler_session::generate_report() c
     return std::make_unique<profiler::profiler_report>(*this);
 }
 
+std::unique_ptr<profiler::hotspot_report> profiler_session::generate_hotspot_report() const
+{
+    return std::make_unique<profiler::hotspot_report>(build_scope_tree());
+}
+
 void profiler_session::export_report(const std::string& filename) const
 {
     auto report = generate_report();

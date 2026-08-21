@@ -6,6 +6,12 @@ Profiler **implementation**: native CPU profiler, **Kineto** (PyTorch-style) int
 
 User guide: **[`Docs/profiler/profiler.md`](../../Docs/profiler/profiler.md)**.
 
+Native end-to-end steps (start → TraceMe → XSpace → Chrome / report /
+`stats_calculator` / **hotspot_report**): see
+[Native end-to-end scheme](../../Docs/profiler/profiler.md#native-end-to-end-scheme)
+and [Hotspot report](../../Docs/profiler/profiler.md#hotspot-report)
+(native vs Kineto).
+
 ## Layout
 
 - `CMakeLists.txt` — `PROFILER_BACKEND`, `PROFILER_ENABLE_*`.
