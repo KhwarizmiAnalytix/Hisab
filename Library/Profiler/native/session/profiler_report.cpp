@@ -34,8 +34,13 @@
 #include <vector>
 
 ////#include "logger/logger.h"
+#include "native/analysis/stat_summarizer_options.h"
 #include "native/analysis/statistical_analyzer.h"
+#include "native/analysis/stats_calculator.h"
+#include "native/exporters/xplane/tf_xplane_visitor.h"
 #include "native/exporters/xplane/xplane_schema.h"
+#include "native/exporters/xplane/xplane_utils.h"
+#include "native/exporters/xplane/xplane_visitor.h"
 #include "native/session/profiler.h"
 
 namespace profiler
@@ -47,6 +52,81 @@ struct scope_snapshot
     const profiler_scope_data* scope;
     size_t                     depth;
 };
+
+// Offline tabular summary from the session XSpace (same events Chrome/report use).
+// Complements statistical_analyzer (online multi-sample mean/std).
+std::string build_xspace_stats_summary(const profiler_session& session)
+{
+    if (!session.has_collected_xspace())
+    {
+        return {};
+    }
+
+    const xplane* host =
+        find_plane_with_name(session.collected_xspace(), kHostThreadsPlaneName);
+    if (host == nullptr)
+    {
+        return {};
+    }
+
+    stats_calculator               calc(stat_summarizer_options{});
+    int64_t                        run_order  = 0;
+    int64_t                        run_total_us = 0;
+    const statistical_analyzer*    analyzer   = session.statistical_analyzer_ptr();
+
+    xplane_visitor const visitor = CreateTfXPlaneVisitor(host);
+    visitor.for_each_line(
+        [&](const xline_visitor& line)
+        {
+            line.for_each_event(
+                [&](const xevent_visitor& event)
+                {
+                    const std::string name = std::string(event.name());
+                    if (name.empty())
+                    {
+                        return;
+                    }
+
+                    // Schema-typed host events keep their name as the node type;
+                    // ordinary TraceMe scopes are labeled "Scope".
+                    const std::string type =
+                        event.type().has_value() ? name : std::string("Scope");
+
+                    const auto elapsed_us =
+                        static_cast<int64_t>(event.duration_ps() / 1000000);
+                    if (elapsed_us < 0)
+                    {
+                        return;
+                    }
+
+                    int64_t mem_used = 0;
+                    if (auto bytes = event.get_stat(static_cast<int64_t>(StatType::kRequestedBytes));
+                        bytes.has_value())
+                    {
+                        mem_used = bytes->int_or_uint_value();
+                    }
+                    else if (analyzer != nullptr)
+                    {
+                        const auto mem_stats = analyzer->calculate_memory_stats(name);
+                        if (mem_stats.is_valid())
+                        {
+                            mem_used = static_cast<int64_t>(mem_stats.mean);
+                        }
+                    }
+
+                    calc.add_node_stats(name, type, run_order++, elapsed_us, mem_used);
+                    run_total_us += elapsed_us;
+                });
+        });
+
+    if (run_order == 0)
+    {
+        return {};
+    }
+
+    calc.update_run_total_us(run_total_us);
+    return calc.get_output_string();
+}
 
 void collect_scope_snapshots(
     const profiler_scope_data* scope, size_t depth, std::vector<scope_snapshot>& snapshots)
@@ -636,32 +716,42 @@ std::string profiler_report::generate_statistical_section() const
     auto const* analyzer = session_.statistical_analyzer_ptr();
     if (analyzer == nullptr)
     {
-        ss << "Statistical analysis disabled for this session.\n\n";
-        return ss.str();
+        ss << "Statistical analysis disabled for this session.\n";
+    }
+    else
+    {
+        auto const timing_metrics = analyzer->calculate_all_timing_stats();
+        if (timing_metrics.empty())
+        {
+            ss << "No timing statistics recorded.\n";
+        }
+        else
+        {
+            size_t count = 0;
+            for (const auto& entry : timing_metrics)
+            {
+                auto const& metrics = entry.second;
+                if (!metrics.is_valid())
+                {
+                    continue;
+                }
+                ss << entry.first << ": mean " << format_double(metrics.mean) << " ms, ";
+                ss << "std-dev " << format_double(metrics.std_deviation) << " ms, ";
+                ss << "count " << metrics.count << "\n";
+                if (++count >= 10)
+                {
+                    break;
+                }
+            }
+        }
     }
 
-    auto const timing_metrics = analyzer->calculate_all_timing_stats();
-    if (timing_metrics.empty())
+    // Tabular per-event summary from collected_xspace via stats_calculator.
+    const std::string xspace_stats = build_xspace_stats_summary(session_);
+    if (!xspace_stats.empty())
     {
-        ss << "No timing statistics recorded.\n\n";
-        return ss.str();
-    }
-
-    size_t count = 0;
-    for (const auto& entry : timing_metrics)
-    {
-        auto const& metrics = entry.second;
-        if (!metrics.is_valid())
-        {
-            continue;
-        }
-        ss << entry.first << ": mean " << format_double(metrics.mean) << " ms, ";
-        ss << "std-dev " << format_double(metrics.std_deviation) << " ms, ";
-        ss << "count " << metrics.count << "\n";
-        if (++count >= 10)
-        {
-            break;
-        }
+        ss << "\n=== Node Stats (from XSpace) ===\n";
+        ss << xspace_stats;
     }
     ss << "\n";
     return ss.str();

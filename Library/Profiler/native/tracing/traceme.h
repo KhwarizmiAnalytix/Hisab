@@ -52,8 +52,7 @@ namespace profiler
  * @brief Gets the current timestamp in nanoseconds from a monotonic clock.
  *
  * Provides a high-precision timestamp for trace event timing. Deliberately
- * uses steady_clock rather than env_time::now_nanos() (which is
- * CLOCK_REALTIME/wall-clock-based, matching TF's EnvTime): traceme durations
+ * uses steady_clock rather than a wall CLOCK_REALTIME source: traceme durations
  * feed unsigned nanosecond math (profiler_session::start_time_ns_/
  * end_time_ns_, scope_tree_builder's interval nesting) that must never see
  * time run backwards, which a wall-clock step (NTP, manual clock change)

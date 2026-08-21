@@ -758,7 +758,7 @@ CMake options are per-library prefixed (`PARALLEL_*`, `MEMORY_*`, `CORE_*`, `VEC
 
 ### Profiler Backend Mapping
 
-The native traceme/xplane profiler pipeline (`PROFILER_HAS_NATIVE`) is always compiled, independent
+The native traceme/xplane profiler pipeline is always compiled, independent
 of this choice. `PROFILER_BACKEND` only selects the *instrumentation* backend layered on top of it:
 
 | Backend | CMake Option | Bazel Equivalent |

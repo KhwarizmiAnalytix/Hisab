@@ -25,7 +25,9 @@
 #include <string>
 #include <vector>
 
+#include "native/exporters/xplane/tf_xplane_visitor.h"
 #include "native/exporters/xplane/xplane_schema.h"
+#include "native/exporters/xplane/xplane_visitor.h"
 #include "native/session/profiler.h"
 
 namespace profiler::scope_tree_builder
@@ -48,38 +50,48 @@ std::chrono::high_resolution_clock::time_point to_time_point(int64_t nanos)
     return std::chrono::high_resolution_clock::time_point(std::chrono::nanoseconds(nanos));
 }
 
-std::string event_name(const xplane& plane, const xevent& event)
+std::string event_display_name(const xevent_visitor& event)
 {
-    const auto& metadata = plane.event_metadata();
-    if (const auto it = metadata.find(event.metadata_id()); it != metadata.end())
+    if (event.has_display_name())
     {
-        const auto& md = it->second;
-        std::string name =
-            !md.display_name().empty() ? std::string(md.display_name()) : std::string(md.name());
-        if (!name.empty())
-        {
-            return name;
-        }
+        return std::string(event.display_name());
+    }
+    if (!event.name().empty())
+    {
+        return std::string(event.name());
     }
     return "TraceEvent";
 }
 
-std::vector<flat_event> collect_line_events(const xplane& plane, const xline& line)
+std::string line_thread_label(const xline_visitor& line)
+{
+    // Same precedence as xline_thread_label(xline): display, then name, then id.
+    if (!line.display_name().empty())
+    {
+        return std::string(line.display_name());
+    }
+    return "thread " + std::to_string(line.id());
+}
+
+std::vector<flat_event> collect_line_events(const xline_visitor& line)
 {
     std::vector<flat_event> events;
-    events.reserve(line.events_size());
+    events.reserve(line.num_events());
 
-    int64_t const line_timestamp_ns = line.timestamp_ns();
-    for (const xevent& event : line.events())
-    {
-        if (event.data_case() == xevent::data_case_type::kNumOccurrences)
+    line.for_each_event(
+        [&](const xevent_visitor& event)
         {
-            continue;  // counter event, not a duration to nest
-        }
-        int64_t const start_ns    = line_timestamp_ns + (event.offset_ps() / 1000);
-        int64_t const duration_ns = std::max<int64_t>(0, event.duration_ps() / 1000);
-        events.push_back({start_ns, start_ns + duration_ns, event_name(plane, event)});
-    }
+            if (event.is_aggregated_event())
+            {
+                return;  // counter event, not a duration to nest
+            }
+            // Integer ns math via visitor helpers (avoid forking offset_ps/1000 locally).
+            int64_t const start_ns =
+                event.line_timestamp_ns() + xevent_visitor::pico_to_nano(event.offset_ps());
+            int64_t const duration_ns =
+                std::max<int64_t>(0, xevent_visitor::pico_to_nano(event.duration_ps()));
+            events.push_back({start_ns, start_ns + duration_ns, event_display_name(event)});
+        });
 
     std::stable_sort(
         events.begin(),
@@ -135,16 +147,19 @@ std::unique_ptr<profiler::profiler_scope_data> build_scope_tree(const profiler::
         {
             continue;
         }
-        for (const xline& line : plane.lines())
-        {
-            std::vector<flat_event> const events = collect_line_events(plane, line);
-            if (events.empty())
+        // Typed read path — same visitor TensorFlow analysis uses (schema getters attached).
+        xplane_visitor const plane_visitor = CreateTfXPlaneVisitor(&plane);
+        plane_visitor.for_each_line(
+            [&](const xline_visitor& line)
             {
-                continue;
-            }
-            found_events = true;
-            nest_line_events(events, xline_thread_label(line), *root);
-        }
+                std::vector<flat_event> const events = collect_line_events(line);
+                if (events.empty())
+                {
+                    return;
+                }
+                found_events = true;
+                nest_line_events(events, line_thread_label(line), *root);
+            });
     }
 
     return found_events ? std::move(root) : nullptr;

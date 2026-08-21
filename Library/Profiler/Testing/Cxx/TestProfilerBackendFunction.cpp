@@ -45,9 +45,7 @@
 #include "bespoke/kineto/profiler_kineto.h"
 #endif
 
-#if PROFILER_HAS_NATIVE
 #include "native/session/profiler.h"
-#endif
 
 #if PROFILER_HAS_ITT
 #include <functional>
@@ -168,8 +166,6 @@ PROFILERTEST(BackendFunction, kineto_profiles_function)
 
 #endif  // PROFILER_HAS_KINETO
 
-#if PROFILER_HAS_NATIVE
-
 PROFILERTEST(BackendFunction, native_profiles_function)
 {
     profiler::profiler_options opts;
@@ -199,8 +195,6 @@ PROFILERTEST(BackendFunction, native_profiles_function)
     EXPECT_NE(json.find(kFunctionScope), std::string::npos);
     EXPECT_NE(json.find(kNestedScope), std::string::npos);
 }
-
-#endif  // PROFILER_HAS_NATIVE
 
 #if PROFILER_HAS_ITT
 

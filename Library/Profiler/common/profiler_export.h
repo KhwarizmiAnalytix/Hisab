@@ -48,8 +48,7 @@
 #endif
 
 // Kineto and ITT are alternative instrumentation backends and may not both be active.
-// PROFILER_HAS_NATIVE is independent of this choice: the native traceme/xplane pipeline is always
-// compiled alongside whichever of Kineto/ITT (if either) is selected.
+// The native traceme/xplane pipeline is always compiled alongside whichever is selected.
 #if (PROFILER_HAS_KINETO + PROFILER_HAS_ITT) > 1
 #error "PROFILER_HAS_KINETO and PROFILER_HAS_ITT are mutually exclusive. Only one may equal 1."
 #endif

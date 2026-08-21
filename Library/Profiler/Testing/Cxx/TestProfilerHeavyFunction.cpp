@@ -406,10 +406,16 @@
 #include <chrono>
 #include <cmath>
 #include <complex>
+#include <cstdio>
+#include <exception>
+#include <fstream>
 #include <memory>
 #include <numeric>
 #include <random>
+#include <set>
+#include <sstream>
 #include <thread>
+#include <unordered_set>
 #include <vector>
 
 #include "ProfilerTest.h"
@@ -418,6 +424,11 @@
 #include "native/session/profiler.h"
 #include "native/tracing/traceme.h"
 #include "native/tracing/traceme_recorder.h"
+
+#if PROFILER_HAS_KINETO
+#include "bespoke/common/record_function.h"
+#include "bespoke/kineto/profiler_kineto.h"
+#endif
 
 using namespace profiler;
 
@@ -822,6 +833,126 @@ PROFILERTEST(Profiler, heavy_function_comprehensive_computational_profiling)
 }
 
 // ============================================================================
+// KINETO PROFILER TEST
+// ============================================================================
+// Same heavy workloads as the native case above, instrumented with
+// RECORD_USER_SCOPE and collected via enableProfiler / disableProfiler.
+// ============================================================================
+
+#if PROFILER_HAS_KINETO
+
+namespace
+{
+
+const profiler::autograd::profiler_impl::KinetoEvent* find_kineto_event(
+    const std::vector<profiler::autograd::profiler_impl::KinetoEvent>& events,
+    const std::string&                                                 name)
+{
+    for (const auto& event : events)
+    {
+        if (event.name() == name)
+        {
+            return &event;
+        }
+    }
+    return nullptr;
+}
+
+}  // namespace
+
+PROFILERTEST(Profiler, kineto_heavy_function_profiling)
+{
+    profiler::autograd::profiler_impl::ProfilerConfig const config(
+        profiler::autograd::profiler_impl::ProfilerState::KINETO,
+        /*report_input_shapes=*/false,
+        /*profile_memory=*/false,
+        /*with_stack=*/false,
+        /*with_flops=*/false,
+        /*with_modules=*/false);
+
+    const std::set<profiler::autograd::profiler_impl::ActivityType> activities{
+        profiler::autograd::profiler_impl::ActivityType::CPU};
+    const std::unordered_set<profiler::RecordScope> scopes{profiler::RecordScope::USER_SCOPE};
+
+    try
+    {
+        profiler::autograd::profiler_impl::prepareProfiler(config, activities);
+        profiler::autograd::profiler_impl::enableProfiler(config, activities, scopes);
+    }
+    catch (const std::exception& ex)
+    {
+        GTEST_SKIP() << "Kineto profiler unavailable: " << ex.what();
+    }
+
+    {
+        RECORD_USER_SCOPE("kineto_heavy_workload");
+
+        {
+            RECORD_USER_SCOPE("kineto_matrix_operations");
+            const size_t matrix_size = 50;
+            auto         matrix_a    = generate_test_matrix(matrix_size, matrix_size);
+            auto         matrix_b    = generate_test_matrix(matrix_size, matrix_size);
+            for (int i = 0; i < 2; ++i)
+            {
+                RECORD_USER_SCOPE("kineto_matrix_multiply_iteration");
+                auto result = matrix_multiply(matrix_a, matrix_b);
+                EXPECT_EQ(result.size(), matrix_size);
+                EXPECT_EQ(result[0].size(), matrix_size);
+            }
+        }
+
+        {
+            RECORD_USER_SCOPE("kineto_monte_carlo");
+            const double pi_estimate = estimate_pi_monte_carlo(200000);
+            EXPECT_GT(pi_estimate, 2.5);
+            EXPECT_LT(pi_estimate, 3.8);
+        }
+
+        {
+            RECORD_USER_SCOPE("kineto_fft_simulation");
+            auto signal = generate_test_signal(256);
+            EXPECT_EQ(signal.size(), 256U);
+        }
+    }
+
+    auto profiler_result = profiler::autograd::profiler_impl::disableProfiler();
+    ASSERT_NE(profiler_result, nullptr);
+
+    const auto& events = profiler_result->events();
+    if (events.empty())
+    {
+        GTEST_SKIP() << "Kineto backend produced no CPU events in this environment";
+    }
+
+    const auto* outer = find_kineto_event(events, "kineto_heavy_workload");
+    const auto* matrix = find_kineto_event(events, "kineto_matrix_operations");
+    const auto* monte = find_kineto_event(events, "kineto_monte_carlo");
+    ASSERT_NE(outer, nullptr);
+    ASSERT_NE(matrix, nullptr);
+    ASSERT_NE(monte, nullptr);
+    EXPECT_GT(outer->durationNs(), 0U);
+    EXPECT_GE(outer->durationNs(), matrix->durationNs());
+
+    const std::string trace_filename = "kineto_heavy_function_trace.json";
+    profiler_result->save(trace_filename);
+
+    std::ifstream json_file(trace_filename);
+    ASSERT_TRUE(json_file.good()) << "Failed to create Kineto JSON output file";
+    std::stringstream buffer;
+    buffer << json_file.rdbuf();
+    const std::string json_content = buffer.str();
+    json_file.close();
+
+    EXPECT_NE(json_content.find("\"traceEvents\""), std::string::npos)
+        << "JSON file missing traceEvents array";
+    EXPECT_GT(json_content.size(), 100U) << "JSON should contain meaningful content";
+
+    std::remove(trace_filename.c_str());
+}
+
+#endif  // PROFILER_HAS_KINETO
+
+// ============================================================================
 // INTEL ITT API TEST
 // ============================================================================
 // Test Intel ITT API integration with heavy computational functions
@@ -1093,6 +1224,7 @@ PROFILERTEST(Profiler, itt_api_heavy_function_profiling)
 // COMBINED KINETO + ITT PROFILING TEST
 // ============================================================================
 // Backends are mutually exclusive (PROFILER_HAS_KINETO vs PROFILER_HAS_ITT),
-// so a combined Kineto+ITT case cannot compile. Use BackendFunction /
-// HotspotReport for Kineto and the ITT block above when PROFILER_HAS_ITT=1.
+// so a combined Kineto+ITT case cannot compile. Use
+// Profiler.kineto_heavy_function_profiling above for Kineto and the ITT block
+// when PROFILER_HAS_ITT=1.
 

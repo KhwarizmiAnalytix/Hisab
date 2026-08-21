@@ -49,6 +49,7 @@
 #include "native/core/profiler_factory.h"
 #include "native/exporters/chrome_trace_exporter.h"
 #include "native/exporters/xplane/xplane_schema.h"
+#include "native/exporters/xplane/xplane_utils.h"
 #include "native/memory/memory_tracker.h"
 #include "native/session/profiler_report.h"
 #include "native/session/scope_tree_builder.h"
@@ -412,16 +413,8 @@ void profiler_session::normalize_xspace(x_space* space) const
     {
         return;
     }
-    auto const base_time = static_cast<int64_t>(start_time_ns_);
-    for (auto& plane : *space->mutable_planes())
-    {
-        for (auto& line : *plane.mutable_lines())
-        {
-            int64_t ts = line.timestamp_ns() - base_time;
-            ts         = std::max<int64_t>(ts, 0);
-            line.set_timestamp_ns(ts);
-        }
-    }
+    // Use the shared XPlane helper — do not fork timestamp math here.
+    NormalizeTimestamps(space, start_time_ns_);
     if (space->hostnames().empty())
     {
         space->add_hostname("localhost");

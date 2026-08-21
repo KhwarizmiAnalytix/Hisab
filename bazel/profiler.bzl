@@ -27,9 +27,8 @@ def profiler_defines():
         ],
     })
 
-    # Native pipeline (traceme/xplane/host_tracer/profiler_session) is always compiled,
-    # independent of and alongside whichever instrumentation backend is selected above.
-    defines += ["PROFILER_HAS_NATIVE=1"]
+    # Native pipeline (traceme/xplane/host_tracer/profiler_session) is always compiled
+    # alongside whichever instrumentation backend is selected above — no HAS_* gate.
 
     # PROFILER_HAS_CUDA — independent of backend selection above. Gates
     # bespoke/base/cuda.cpp's CUDA event-fallback stub and profiler_kineto.h's

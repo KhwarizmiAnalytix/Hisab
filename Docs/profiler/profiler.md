@@ -53,15 +53,14 @@ backend — it is a `ProfilerState` inside the Kineto/ITT orchestration layer.
 
 | Backend | CMake | Macro | Sources | Third-party |
 |---|---|---|---|---|
-| Native / XPlane (always on) | n/a — not selectable | `PROFILER_HAS_NATIVE` (always `1`) | `native/` (+ `common/`) | none |
+| Native / XPlane (always on) | n/a — not selectable | *(no gate)* | `native/` (+ `common/`) | none |
 | Kineto (default instrumentation) | `PROFILER_BACKEND=KINETO` | `PROFILER_HAS_KINETO` | `bespoke/` | `ThirdParty/kineto` |
 | ITT | `PROFILER_BACKEND=ITT` | `PROFILER_HAS_ITT` | `bespoke/` (minus Python/JIT-only) | `ThirdParty/ittapi` |
 | NVTX | not independently selectable | n/a | `bespoke/base/nvtx_observer.cpp` | CUDA `nvToolsExt` (optional) |
 
 Enabling both `PROFILER_HAS_KINETO` and `PROFILER_HAS_ITT` at once is a
 configure-time error and a compile-time `#error` in
-`common/profiler_export.h`; `PROFILER_HAS_NATIVE` is excluded from that
-check since it's unconditional. [Phase 0](#target-architecture) of the
+`common/profiler_export.h`. [Phase 0](#target-architecture) of the
 multi-backend plan — dropping the old native/Kineto/ITT three-way
 mutual-exclusion so native compiles alongside whichever instrumentation
 backend is selected — is done.
@@ -136,8 +135,8 @@ Select order for the instrumentation backend: **ITT** → default **Kineto**.
 
 | Mode | Config | Result |
 |---|---|---|
-| Kineto (default) | *(none)* | `PROFILER_HAS_KINETO=1`, `PROFILER_HAS_NATIVE=1` |
-| ITT | `--config=itt` | `PROFILER_HAS_ITT=1`, `PROFILER_HAS_NATIVE=1` |
+| Kineto (default) | *(none)* | `PROFILER_HAS_KINETO=1` |
+| ITT | `--config=itt` | `PROFILER_HAS_ITT=1` |
 
 LTO, coverage, sanitizers, linker/cache, spell, Valgrind are **CMake only**.
 
@@ -156,7 +155,7 @@ Bazel's include graph matches CMake.
 Application
   RECORD_USER_SCOPE / PROFILER_PROFILE_SCOPE / TraceMe
         │
-        ├─ Native session (always compiled; PROFILER_HAS_NATIVE=1)
+        ├─ Native session (always compiled)
         │     profiler_session → profiler_scope → host_tracer / TraceMeRecorder
         │     → XPlane → (Chrome Trace | scope_tree_builder reconstruction → report)
         │
@@ -333,7 +332,7 @@ built. Device type is `profiler::device_enum` (CPU, CUDA, HIP, PrivateUse1).
 
 ## Native session API
 
-Always available (`PROFILER_HAS_NATIVE` is unconditionally `1`). Link `Quarisma::Profiler`.
+Always available (native pipeline is unconditional). Link `Quarisma::Profiler`.
 
 ### Quick start
 
@@ -709,6 +708,61 @@ idle gaps, and profiler overhead (~100 ns/scope).
 
 ## Output formats
 
+### Native profiler outputs (diagram)
+
+After `profiler_session::stop()`, collection lives in an in-memory **XSpace**
+(XPlane planes/lines/events). Everything you export is derived from that
+(or from analyzer/memory samples joined when building reports):
+
+```mermaid
+flowchart TB
+  subgraph collect["Collection (always Native)"]
+    SCOPE["PROFILER_PROFILE_SCOPE / profiler_scope"]
+    TM["traceme → traceme_recorder"]
+    HT["host_tracer"]
+    XS["XSpace / XPlane<br/>(in memory)"]
+    SCOPE --> TM --> HT --> XS
+  end
+
+  subgraph tf_aligned["TF / TensorBoard aligned"]
+    CHROME["Chrome Trace JSON<br/>traceEvents + displayTimeUnit: ns"]
+    XP_VIEW["XSpace API<br/>collected_xspace()"]
+    XS --> CHROME
+    XS --> XP_VIEW
+  end
+
+  subgraph xsigma_reports["XSigma session reports<br/>(not TF schema)"]
+    TREE["scope_tree_builder<br/>(interval nesting)"]
+    RPT["profiler_report"]
+    XS --> TREE --> RPT
+    RPT --> CONSOLE["CONSOLE / FILE<br/>human-readable text"]
+    RPT --> JSONR["JSON report<br/>header / scopes / memory"]
+    RPT --> CSV["CSV<br/>flat scope rows"]
+    RPT --> XML["STRUCTURED → XML"]
+  end
+
+  CHROME --> VIEWERS["chrome://tracing · Perfetto UI"]
+  XP_VIEW --> TB["TensorBoard XPlane model<br/>(no on-disk writer yet)"]
+  CONSOLE --> TERM["Terminal / .txt"]
+  JSONR --> TOOLS["Scripts / tools"]
+  CSV --> SHEETS["Spreadsheets"]
+  XML --> XMLCONS["XML consumers"]
+```
+
+| Path | API | Compatible with |
+|------|-----|-----------------|
+| Chrome Trace | `generate_chrome_trace_json()` / `write_chrome_trace(path)` | TF-style timelines; Chrome Trace Event Format |
+| XPlane / XSpace | `collected_xspace()` / `has_collected_xspace()` | TensorBoard profiler plane model (in memory only) |
+| Console / FILE | `print_report()` / `export_report()` with `CONSOLE` or `FILE` | XSigma only (same text body) |
+| JSON report | `generate_report()->generate_json_report()` or `output_format_=JSON` | XSigma only — **not** `traceEvents` |
+| CSV | `generate_csv_report()` / `output_format_=CSV` | XSigma only |
+| STRUCTURED | `generate_xml_report()` / `output_format_=STRUCTURED` | XSigma only (XML) |
+
+Chrome Trace is **not** selected via `output_format_`; it is a separate API.
+`FILE` and `CONSOLE` share the same text formatter; `STRUCTURED` means XML.
+
+Tests: `BackendOutput.*` in `Library/Profiler/Testing/Cxx/TestProfilerBackendOutput.cpp`.
+
 ### JSON (session report)
 
 ```json
@@ -844,13 +898,12 @@ and file-local helpers are omitted.
 
 `PROFILER_HAS_KINETO` and `PROFILER_HAS_ITT` are mutually exclusive with
 each other (`#error` in `common/profiler_export.h` if both are `1`).
-`PROFILER_HAS_NATIVE` is independent of that and always `1`.
+The native traceme/xplane pipeline is always compiled and has no `HAS_*` gate.
 
 | Macro | Purpose |
 |---|---|
 | `PROFILER_HAS_KINETO` | Kineto GPU/CPU activity tracing; shim is no-op when off |
 | `PROFILER_HAS_ITT` | Intel VTune ITT ranges |
-| `PROFILER_HAS_NATIVE` | Native XPlane / session / TraceMe — always `1` |
 | `PROFILER_HAS_CUDA` | CUDA Runtime + optional CUPTI/NVTX in Profiler |
 | `PROFILER_HAS_INSTRUMENTATION` | 1 when Kineto or ITT; set by `instrumentation.h` |
 | `QUARISMA_HAS_CUDA` | CUDA event types / NVML queries inside the Kineto wrapper |

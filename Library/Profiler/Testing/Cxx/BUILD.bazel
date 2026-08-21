@@ -8,15 +8,19 @@ package(default_visibility = ["//visibility:public"])
 
 # =============================================================================
 # Test files: must match Library/Profiler/Testing/Cxx/CMakeLists.txt TestFiles.
-# Real-use-case coverage — backend function profiling, Chrome trace, heavy
-# function, and hotspot report / table.
+# Real-use-case coverage — backend function/memory/output formats, Chrome
+# trace, threadpool+tracing, XPlane pipeline, heavy function, hotspot report.
 # =============================================================================
 
 _PROFILER_COMMON_TESTS = [
     "TestHotspotReport.cpp",
     "TestProfilerBackendFunction.cpp",
+    "TestProfilerBackendMemory.cpp",
+    "TestProfilerBackendOutput.cpp",
     "TestProfilerChromeTraceHierarchical.cpp",
     "TestProfilerHeavyFunction.cpp",
+    "TestProfilerThreadpoolTracing.cpp",
+    "TestProfilerXPlanePipeline.cpp",
 ]
 
 cc_test(

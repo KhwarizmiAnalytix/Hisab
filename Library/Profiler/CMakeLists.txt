@@ -7,7 +7,7 @@
 #
 # Public compile definitions: PROFILER_HAS_KINETO=1/0  — Kineto (PyTorch-compatible) backend active
 # PROFILER_HAS_ITT=1/0     — Intel ITT/VTune backend active (mutually exclusive with Kineto)
-# PROFILER_HAS_NATIVE      — always 1; the native profiler pipeline is compiled unconditionally
+# The native (traceme/xplane) pipeline is always compiled — no PROFILER_HAS_NATIVE gate.
 # =============================================================================
 cmake_minimum_required(VERSION 3.16)
 
@@ -126,8 +126,8 @@ if(NOT PROFILER_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
 endif()
 
 # --- Section 2: PROFILER_ENABLE_* → PROFILER_HAS_* compile definitions --- Exactly one of
-# KINETO/ITT will be 1, the other 0; PROFILER_HAS_NATIVE is unconditionally 1 (see
-# PROFILER_ENABLE_NATIVE_PROFILER above).
+# KINETO/ITT will be 1, the other 0. Native (traceme/xplane) is always compiled (see
+# PROFILER_ENABLE_NATIVE_PROFILER above) and needs no HAS_* gate.
 set(PROFILER_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS})
 
 if(PROFILER_ENABLE_KINETO)
@@ -137,9 +137,6 @@ else()
   # ITT/VTune — Intel instrumentation API; integrates with VTune Amplifier.
   list(APPEND PROFILER_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=0 PROFILER_HAS_ITT=1)
 endif()
-# Native — traceme/xplane/host_tracer/profiler_session pipeline; always compiled, independent of
-# the Kineto/ITT instrumentation backend chosen above.
-list(APPEND PROFILER_COMPILE_DEFINITIONS PROFILER_HAS_NATIVE=1)
 
 list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS ${PROFILER_COMPILE_DEFINITIONS})
 

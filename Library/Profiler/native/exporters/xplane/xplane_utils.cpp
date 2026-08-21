@@ -257,29 +257,12 @@ timespan GetEventTimespan(const xevent_visitor& event)
 
 }  // namespace
 
-//static const xplane* FindPlaneWithName(const x_space& space, std::string_view name)
-//{
-//    int const i =
-//        Find(space.planes(), [name](const xplane* plane) { return plane->name() == name; });
-//    return (i != -1) ? &space.planes(i) : nullptr;
-//}
-
-//static std::vector<const xplane*> FindPlanesWithNames(
-//    const x_space& space, const std::vector<std::string_view>& names)
-//{
-//    flat_hash_set<std::string_view> names_set(names.begin(), names.end());
-//    std::vector<int> const          indices = FindAll(
-//        space.planes(),
-//        [&names_set](const xplane* plane)
-//        { return names_set.find(plane->name()) != names_set.end(); });
-//    std::vector<const xplane*> planes;
-//    planes.reserve(indices.size());
-//    for (int const i : indices)
-//    {
-//        planes.push_back(&space.planes(i));
-//    }
-//    return planes;
-//}
+const xplane* find_plane_with_name(const x_space& space, std::string_view name)
+{
+    int const i =
+        Find(space.planes(), [name](const xplane* plane) { return plane->name() == name; });
+    return (i != -1) ? &space.planes(i) : nullptr;
+}
 
 xplane* find_mutable_plane_with_name(x_space* space, std::string_view name)
 {
@@ -371,14 +354,15 @@ static void RemoveEmptyLines(xplane* plane)
     RemoveIf(plane->mutable_lines(), [&](const xline* line) { return line->events().empty(); });
 }
 
-//static void SortXPlane(xplane* plane)
-//{
-//    for (xline& line : *plane->mutable_lines())
-//    {
-//        auto& events = *line.mutable_events();
-//        std::sort(events.begin(), events.end(), xevents_comparator());
-//    }
-//}
+void sort_xplane(xplane* plane)
+{
+    for (xline& line : *plane->mutable_lines())
+    {
+        auto& events = *line.mutable_events();
+        std::sort(events.begin(), events.end(), xevents_comparator());
+    }
+}
+
 // Normalize the line's timestamp in this XPlane.
 // NOTE: This can be called multiple times on the same plane. Only the first
 // call will do the normalization, subsequent calls will do nothing.
@@ -481,13 +465,13 @@ bool xevents_comparator::operator()(const xevent& a, const xevent& b) const
     return xevent_timespan(a) < xevent_timespan(b);
 }
 
-//static void SortXSpace(x_space* space)
-//{
-//    for (xplane& plane : *space->mutable_planes())
-//    {
-//        SortXPlane(&plane);
-//    }
-//}
+void sort_x_space(x_space* space)
+{
+    for (xplane& plane : *space->mutable_planes())
+    {
+        sort_xplane(&plane);
+    }
+}
 
 int64_t GetStartTimestampNs(const xplane& plane)
 {

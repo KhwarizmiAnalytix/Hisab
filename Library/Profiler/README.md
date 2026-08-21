@@ -63,11 +63,12 @@ Typical invocations (see `.bazelrc`):
 
 | Mode | Defines / config | `PROFILER_HAS_*` result |
 |------|-------------------|-------------------------|
-| Kineto (default) | *(none)* or `profiler_enable_kineto=true` — `build:kineto` | `PROFILER_HAS_KINETO=1`, `PROFILER_HAS_NATIVE=1` |
-| ITT | `profiler_enable_itt=true` — `build:itt` | `PROFILER_HAS_ITT=1`, `PROFILER_HAS_NATIVE=1` |
+| Kineto (default) | *(none)* or `profiler_enable_kineto=true` — `build:kineto` | `PROFILER_HAS_KINETO=1` |
+| ITT | `profiler_enable_itt=true` — `build:itt` | `PROFILER_HAS_ITT=1` |
 
-`//bazel:enable_itt` matches `profiler_enable_itt=true`. `PROFILER_HAS_NATIVE=1` is appended
-unconditionally by `profiler_defines()`, independent of which arm above is selected.
+`//bazel:enable_itt` matches `profiler_enable_itt=true`. The native
+traceme/xplane pipeline is always compiled (no `HAS_*` gate), independent of
+which arm above is selected.
 
 ### Other
 
