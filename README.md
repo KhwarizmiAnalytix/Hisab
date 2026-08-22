@@ -5,8 +5,7 @@
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/11420/badge)](https://www.bestpractices.dev/projects/11420)
 [![License: GPL-3.0 or Commercial](https://img.shields.io/badge/License-GPL--3.0%20or%20Commercial-blue.svg)](LICENSE)
 
-
-> **Note**: Quarisma is actively working toward OpenSSF Best Practices certification. See [Docs/OpenSSF_Badge_Update_Guide.md](Docs/OpenSSF_Badge_Update_Guide.md) for our compliance roadmap and current status.
+> **Note**: The OpenSSF badge above links to the live Best Practices status for this project.
 ## Project Introduction
 
 **Quarisma** is a modern, high-performance quantitative analysis library designed for both CPU and GPU computing. Built with a production-ready C++ foundation and dual build system support (CMake and Bazel), Quarisma provides cross-platform compatibility, advanced optimization capabilities, and flexible dependency management for demanding computational workloads.
@@ -886,10 +885,6 @@ Full cross-platform compatibility across Windows, Linux, and macOS with platform
 - **[Usage Examples](Docs/readme/usage-examples.md)** - Practical build configuration examples
 - **[Profiler](Docs/profiler/profiler.md)** - Profiler library, backends (native / Kineto / ITT), examples, and architecture
 
-### Additional Documentation
-
-<!-- [CI/CD Pipeline](Docs/ci/CI_CD_PIPELINE.md) - Continuous integration setup (File not found: Docs/ci/ directory does not exist) -->
-<!-- [CI Quick Start](Docs/ci/CI_QUICK_START.md) - Getting started with CI (File not found: Docs/ci/ directory does not exist) -->
 - **[Valgrind Setup](Docs/readme/valgrind.md)** - Memory debugging with Valgrind
 
 ## Running Tests

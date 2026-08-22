@@ -130,5 +130,5 @@ bazel coverage //Library/... --combined_report=lcov --config=clang --config=debu
 ## See also
 
 - `Scripts/setup.py` — canonical CMake flag matrix.
-- `Cmake/PROJECT_FLAGS.md` — CMake option reference.
+- [PROJECT_FLAGS.md](../PROJECT_FLAGS.md) — CMake option reference.
 - `Docs/readme/build/build-configuration.md` — CMake-oriented build types and standards (wording may differ slightly from Bazel defaults; trust `.bazelrc` + `bazel/*.bzl` for Bazel).

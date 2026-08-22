@@ -64,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 - Comprehensive README.md with build instructions and examples
 - Security policy (SECURITY.md)
-- OpenSSF Best Practices compliance report (Docs/OPENSSF_COMPLIANCE.md)
+- OpenSSF Best Practices badge and security documentation
 - Code of Conduct (CODE_OF_CONDUCT.md)
 - Contributing guidelines (CONTRIBUTING.md)
 - Governance documentation (GOVERNANCE.md)
