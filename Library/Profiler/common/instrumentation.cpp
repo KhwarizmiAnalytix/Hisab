@@ -55,4 +55,14 @@ void report_memory_usage(
 #endif
 }
 
+bool memory_profiling_active()
+{
+#if PROFILER_HAS_KINETO || PROFILER_HAS_ITT
+    auto* state = profiler_impl::impl::ProfilerStateBase::get();
+    return state != nullptr && state->memoryProfilingEnabled();
+#else
+    return false;
+#endif
+}
+
 }  // namespace profiler

@@ -42,6 +42,7 @@
 
 #if MEMORY_HAS_PROFILER
 #include "common/instrumentation.h"
+#include "gpu/caching_allocator_profiler_report.h"
 #endif
 
 namespace memory
@@ -564,29 +565,11 @@ metal_caching_allocator& metal_caching_allocator::operator=(metal_caching_alloca
 #if MEMORY_HAS_PROFILER
 namespace
 {
-// Reports the real change in impl_'s tracked byte count, rather than trusting a
-// caller-supplied size: Impl::allocate() rounds requests up to its block-size
-// policy, and Impl::deallocate()'s own `size` parameter is unused -- it looks up
-// the real freed size internally -- so a caller-supplied size (e.g.
-// allocator<T>::free()'s hardcoded 0 at Library/Memory/allocator.h) would
-// otherwise silently misreport. device_type=3 is profiler::device_enum::PrivateUse1
-// -- Metal has no dedicated entry in that enum (a PyTorch-derived type with no
-// Metal concept of its own), so it is reported as a generic custom backend,
-// matching how profiler_kineto.cpp treats non-CUDA/HIP GPU backends elsewhere in
-// Profiler.
-void report_alloc_delta(
-    void* ptr, const unified_cache_stats& before, const unified_cache_stats& after, int device_index)
-{
-    const auto delta = static_cast<int64_t>(after.bytes_allocated) -
-                        static_cast<int64_t>(before.bytes_allocated);
-    profiler::report_memory_usage(
-        ptr,
-        delta,
-        after.bytes_allocated,
-        after.bytes_reserved,
-        /*device_type=*/3,
-        static_cast<int16_t>(device_index));
-}
+// device_type=3 is profiler::device_enum::PrivateUse1 -- Metal has no
+// dedicated entry in that enum (a PyTorch-derived type with no Metal concept
+// of its own), so it is reported as a generic custom backend, matching how
+// profiler_kineto.cpp treats non-CUDA/HIP GPU backends elsewhere in Profiler.
+constexpr int16_t kGpuDeviceType = 3;
 }  // namespace
 #endif
 
@@ -597,27 +580,33 @@ void* metal_caching_allocator::allocate(size_t size, stream_type stream)
         return nullptr;
     }
 #if MEMORY_HAS_PROFILER
-    const auto before = impl_->stats();
+    // Skip the before/after stats() snapshot entirely (each an O(cached
+    // blocks) locked scan) when no session actually wants memory events --
+    // report_memory_usage() is a no-op in that case too, but only after
+    // paying for the snapshot.
+    if (profiler::memory_profiling_active())
+    {
+        const auto before = impl_->stats();
+        void*      ptr     = impl_->allocate(size, stream);
+        report_caching_allocator_delta(ptr, before, impl_->stats(), impl_->device(), kGpuDeviceType);
+        return ptr;
+    }
 #endif
-    void* ptr = impl_->allocate(size, stream);
-#if MEMORY_HAS_PROFILER
-    report_alloc_delta(ptr, before, impl_->stats(), impl_->device());
-#endif
-    return ptr;
+    return impl_->allocate(size, stream);
 }
 
 void metal_caching_allocator::deallocate(void* ptr, size_t size, stream_type stream)
 {
 #if MEMORY_HAS_PROFILER
-    const auto before = impl_->stats();
-#endif
-    impl_->deallocate(ptr, size, stream);
-#if MEMORY_HAS_PROFILER
-    if (ptr != nullptr)
+    if (ptr != nullptr && profiler::memory_profiling_active())
     {
-        report_alloc_delta(ptr, before, impl_->stats(), impl_->device());
+        const auto before = impl_->stats();
+        impl_->deallocate(ptr, size, stream);
+        report_caching_allocator_delta(ptr, before, impl_->stats(), impl_->device(), kGpuDeviceType);
+        return;
     }
 #endif
+    impl_->deallocate(ptr, size, stream);
 }
 
 void metal_caching_allocator::record_stream(void* ptr, stream_type stream)

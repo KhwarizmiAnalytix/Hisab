@@ -97,7 +97,7 @@ struct expressions_evaluator
             // than through a `static_cast<remove_cvref_t<E> const&>`) avoids an nvcc codegen
             // bug where the alias-template-sugared cast type leaks into the mangled name of
             // the gpu_eval_kernel<E, T> instantiation inside run_gpu, producing an
-            // unparseable host stub (`remove_cvref_t<...>` used as a declarator).
+            // unparsable host stub (`remove_cvref_t<...>` used as a declarator).
             vectorization::run_gpu(expr, static_cast<value_t*>(rhs.begin()), rhs.size(), stream);
             return;
         }

@@ -159,6 +159,12 @@ PROFILERTEST(BackendMemory, kineto_profiles_memory)
         GTEST_SKIP() << "Kineto profiler unavailable: " << ex.what();
     }
 
+    // report_memory_usage's cheap early-out gate (also used directly by the
+    // Memory library's caching allocators to skip an expensive stats
+    // snapshot -- see Library/Memory/gpu/caching_allocator_profiler_report.h)
+    // should agree with the session actually being memory-profiling-enabled.
+    EXPECT_TRUE(profiler::memory_profiling_active());
+
     size_t total_allocated = 0;
     {
         RECORD_USER_SCOPE(kMemoryScope);
@@ -168,6 +174,7 @@ PROFILERTEST(BackendMemory, kineto_profiles_memory)
 
     auto profiler_result = profiler::profiler_impl::disableProfiler();
     ASSERT_NE(profiler_result, nullptr);
+    EXPECT_FALSE(profiler::memory_profiling_active());
 
     const auto& events = profiler_result->events();
     if (events.empty())

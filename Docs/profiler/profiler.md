@@ -48,7 +48,7 @@ orchestration layer.
 | Capability | Notes |
 |---|---|
 | Timing | Native: `std::chrono` / TraceMe. Kineto: approximate clock → Unix via converter |
-| Memory | Native `memory_tracker`; Kineto `profile_memory` + `report_memory_usage` (Metal allocators wired; CUDA/HIP not) |
+| Memory | Native `memory_tracker`; Kineto `profile_memory` + `report_memory_usage` (CUDA/HIP/Metal caching allocators all wired) |
 | Hierarchy | Native: derived from XSpace interval nesting. Kineto: RecordFunction parent chain |
 | Statistics | Native: `statistical_analyzer` (online samples) + `stats_calculator` (offline XSpace table) |
 | Hotspots | Two types, same CPU self/total math — see [Hotspot report](#hotspot-report) |
@@ -275,7 +275,7 @@ Today: native already has its own XSpace + hotspot; Kineto has
 |---|---|---|
 | 0 | Native always compiles; Kineto/ITT mutually exclusive with each other | Done |
 | 1 | Drop dead tests / unused APIs | Done for tests listed in CMake/Bazel; `#if 0` Torch remnants remain in orchestration |
-| 2 | Instrument real call sites via `common/instrumentation.h` | Vectorization, Parallel, Memory-Metal done; CUDA/HIP allocators not |
+| 2 | Instrument real call sites via `common/instrumentation.h` | Vectorization, Parallel, Memory (CUDA/HIP/Metal caching allocators) done |
 | 3 | Wrap each backend as `profiler_interface` | Not done |
 | 4 | One user-facing session selecting activities | Not done |
 
@@ -414,11 +414,13 @@ profiler::report_memory_usage(
 |---|---|
 | Vectorization | Non-`noexcept` `tensor<T>` assign/construct overloads through `expressions_evaluator::run`. Scalar-fill `operator=(T2) noexcept` is **not** instrumented. |
 | Parallel | `parallel::thread_pool::run_job` — execute boundary, not enqueue |
-| Memory | Metal caching allocator `allocate` / `deallocate` via `report_memory_usage` |
+| Memory | CUDA/HIP (`cuda_caching_allocator`) and Metal (`metal_caching_allocator`) caching allocators — `allocate` / `deallocate` via `report_memory_usage`, reporting the real post-rounding byte delta from `unified_cache_stats`, not the caller-supplied size |
 
 CMake/Bazel: `VECTORIZATION_HAS_PROFILER`, `PARALLEL_HAS_PROFILER`,
-`MEMORY_ENABLE_PROFILER` / `MEMORY_HAS_PROFILER`. CUDA/HIP caching allocators
-are not wired.
+`MEMORY_ENABLE_PROFILER` / `MEMORY_HAS_PROFILER`. The CPU allocation path
+(`cpu::memory_allocator`) is deliberately not wired — see
+`Docs/memory_design.md` §3 on why the CPU hot path carries no XSigma-level
+counters.
 
 ### RecordFunction macros (Kineto / ITT)
 
@@ -851,8 +853,9 @@ kernel events can pick up `kCorrelationId` from the host scope.
 ### CUDA / CUPTI (Kineto)
 
 Profiler **Kineto activity tracing** is CUDA-only. No HIP activity backend
-under `Library/Profiler`. Memory **allocators** can still call
-`report_memory_usage` (Metal is wired; CUDA/HIP allocators are not).
+under `Library/Profiler`. Memory **allocators** call `report_memory_usage`
+directly (CUDA, HIP, and Metal caching allocators are all wired), independent
+of Kineto activity tracing.
 
 Two CUDA paths, both gated by `PROFILER_HAS_CUDA` (`MEMORY_GPU_BACKEND=cuda`
 and `find_package(CUDAToolkit)`):
@@ -1223,8 +1226,17 @@ Platforms: Windows, Linux, macOS (CUDA/CUPTI: Linux + Toolkit).
 1. **`ProfilerStateBase::handle_` is not per-thread** — a child’s
    `enableProfilerInChildThread()` can clobber the main thread’s callback
    handle. Fix in `bespoke/common/orchestration/observer.*`.
-2. **CUDA/HIP allocator instrumentation** — `report_memory_usage` like Metal;
-   validate `PROFILER_HAS_CUDA=1`.
+2. **GPU caching-allocator profiler-delta race** — `allocate()`/`deallocate()`
+   in `cuda_caching_allocator.cpp`/`metal_caching_allocator.mm` bracket the
+   real call with two separately-locked `stats()` reads (before/after) to
+   compute the reported byte delta, not one atomic critical section; a
+   concurrent alloc/dealloc on the same device's shared allocator can
+   interleave and skew the reported per-event delta (the real cached-block
+   counters stay correct — only the derived profiler event can misattribute
+   bytes across threads). Exposure is higher on CUDA's multi-stream/
+   multi-thread path than Metal's synchronous dispatch. Fix belongs inside
+   `Impl::allocate`/`Impl::deallocate`'s existing lock (report the delta
+   while still holding `mutex_`), not the outer wrapper.
 3. **Phases 3–4** — `profiler_interface` wrappers + one session API (native
    and Kineto still have separate start/stop).
 4. **Symbolized stacks in hotspot reports** — `unwind/` + `fast_symbolizer.h`.

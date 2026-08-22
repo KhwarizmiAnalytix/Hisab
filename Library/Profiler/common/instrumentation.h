@@ -71,4 +71,15 @@ PROFILER_API void report_memory_usage(
     int16_t device_type,
     int16_t device_index);
 
+/**
+ * @brief Cheap check for whether the active session wants memory events,
+ * mirroring PyTorch's c10::memoryProfilingEnabled(). report_memory_usage()
+ * is already a true no-op when profiling isn't active, but that check comes
+ * too late for a caller that must gather non-trivial data first (e.g. a
+ * caching allocator snapshotting its stats before and after an allocate/
+ * deallocate to compute the real byte delta) -- such callers should check
+ * this first and skip that work entirely when it returns false.
+ */
+PROFILER_API bool memory_profiling_active();
+
 }  // namespace profiler
