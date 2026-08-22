@@ -924,6 +924,7 @@ jobs:
           -DCMAKE_CXX_COMPILER=clang++ \
           -DCMAKE_CXX_STANDARD=17 \
           -DQUARISMA_ENABLE_EXTERNAL=${{ matrix.external }} \
+          -DQUARISMA_LIBRARY_PROJECT=${{ matrix.project }} \
           -DBUILD_TESTING=ON \
           -DCORE_ENABLE_BENCHMARK=OFF \
           -DMEMORY_ENABLE_BENCHMARK=OFF \
@@ -1831,6 +1832,82 @@ jobs:
       run: python3 setup_bazel.py config.build.test.tbb
 
   # ============================================================================
+  # Bazel Project + Backend Matrix
+  # Mirrors the CMake project-flag-backend-tests job's project/backend coverage via
+  # Scripts/setup_bazel.py --project.NAME. QUARISMA_ENABLE_EXTERNAL has no Bazel
+  # equivalent (setup_bazel.py warns and no-ops on the "external" token -- see
+  # Docs/BAZEL_USER_GUIDE.md), so each project/backend combination appears once
+  # here instead of twice.
+  # ============================================================================
+  bazel-project-flag-backend-tests:
+    name: "Bazel Project Matrix - ${{ matrix.project }} - ${{ matrix.backend_label }}"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: core
+            backend_label: default
+            extra_config: ""
+          - project: memory
+            backend_label: default
+            extra_config: ""
+          - project: logging
+            backend_label: LOGURU
+            extra_config: logging_loguru
+          - project: logging
+            backend_label: NATIVE
+            extra_config: logging_native
+          - project: logging
+            backend_label: GLOG
+            extra_config: logging_glog
+          - project: parallel
+            backend_label: std
+            extra_config: parallel.std
+          - project: parallel
+            backend_label: openmp
+            extra_config: parallel.openmp
+          - project: parallel
+            backend_label: tbb
+            extra_config: parallel.tbb
+          - project: profiler
+            backend_label: ITT
+            extra_config: profiler_itt
+          - project: profiler
+            backend_label: KINETO
+            extra_config: profiler_kineto
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Setup Bazel
+      uses: bazel-contrib/setup-bazel@0.8.1
+      with:
+        bazelisk-cache: true
+        disk-cache: bazel-project-${{ matrix.project }}-${{ matrix.backend_label }}-${{ env.CACHE_VERSION }}
+        repository-cache: true
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Bazel build + test (${{ matrix.project }} / ${{ matrix.backend_label }})
+      working-directory: Scripts
+      shell: bash
+      run: |
+        if [ -n "${{ matrix.extra_config }}" ]; then
+          python3 setup_bazel.py config.build.test.${{ matrix.extra_config }} --project.${{ matrix.project }}
+        else
+          python3 setup_bazel.py config.build.test --project.${{ matrix.project }}
+        fi
+
+  # ============================================================================
   # Bazel Vectorization SIMD Backend Matrix
   # Mirrors the CMake vectorization-simd-backend-tests job. This is the direct
   # regression guard for the ARM-host select() ambiguity bug found in this project's
@@ -1930,6 +2007,7 @@ jobs:
       - windows-cli-smoke
       - bazel-build-matrix
       - bazel-tbb-tests
+      - bazel-project-flag-backend-tests
       - bazel-vectorization-simd-tests
       - bazel-metal-tests
     runs-on: ubuntu-latest
@@ -1952,6 +2030,7 @@ jobs:
         echo "Windows CLI Smoke: ${{ needs.windows-cli-smoke.result }}"
         echo "Bazel Build Matrix: ${{ needs.bazel-build-matrix.result }}"
         echo "Bazel TBB Tests: ${{ needs.bazel-tbb-tests.result }}"
+        echo "Bazel Project Flag + Backend Tests: ${{ needs.bazel-project-flag-backend-tests.result }}"
         echo "Bazel Vectorization SIMD Tests: ${{ needs.bazel-vectorization-simd-tests.result }}"
         echo "Bazel Metal Tests: ${{ needs.bazel-metal-tests.result }}"
         echo ""
@@ -2004,6 +2083,10 @@ jobs:
           echo "ERROR: Bazel TBB tests failed"
           exit 1
         fi
+        if [ "${{ needs.bazel-project-flag-backend-tests.result }}" != "success" ]; then
+          echo "ERROR: Bazel project flag + backend tests failed"
+          exit 1
+        fi
         if [ "${{ needs.bazel-vectorization-simd-tests.result }}" != "success" ]; then
           echo "ERROR: Bazel Vectorization SIMD tests failed"
           exit 1
@@ -2037,13 +2120,16 @@ jobs:
 # 10. bazel-build-matrix: Bazel build+test via Scripts/setup_bazel.py, default config
 #     (Ubuntu + macOS; Windows Bazel is smoke-tested only, see windows-cli-smoke)
 # 11. bazel-tbb-tests: Bazel build+test with --config=tbb (Ubuntu + macOS)
-# 12. bazel-vectorization-simd-tests: Bazel Vectorization SIMD tier matrix, mirrors
+# 12. bazel-project-flag-backend-tests: Bazel project/backend matrix, mirrors
+#     project-flag-backend-tests via --project.NAME (Ubuntu only; no Bazel
+#     equivalent for the QUARISMA_ENABLE_EXTERNAL dimension)
+# 13. bazel-vectorization-simd-tests: Bazel Vectorization SIMD tier matrix, mirrors
 #     vectorization-simd-backend-tests but through Bazel (--define vectorization_type=X)
-# 13. bazel-metal-tests: Bazel build+test with Metal GPU backend (macOS only, real GPU)
-# 14. ci-success: Aggregates results from all jobs
+# 14. bazel-metal-tests: Bazel build+test with Metal GPU backend (macOS only, real GPU)
+# 15. ci-success: Aggregates results from all jobs
 #
 # ## Bazel Jobs:
-# - All four Bazel jobs run through Scripts/setup_bazel.py (never `bazel` directly),
+# - All five Bazel jobs run through Scripts/setup_bazel.py (never `bazel` directly),
 #   mirroring the CMake jobs' use of Scripts/setup.py.
 # - bazel-contrib/setup-bazel@0.8.1 installs bazelisk (reading .bazelversion) and
 #   provides disk/repository caching.
