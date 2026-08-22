@@ -553,7 +553,7 @@ void LocalCallbackManager::rebuild_scope(
 // ============================================================================
 // == Callback execution ======================================================
 // ============================================================================
-void logTryRunCallbackError(const char* what, const char* name)
+void logTryRunCallbackError(PROFILER_UNUSED const char* what, PROFILER_UNUSED const char* name)
 {
     //LOG(WARNING) << "Exception in RecordFunction callback: " << what << " , for the range " << name;
 }

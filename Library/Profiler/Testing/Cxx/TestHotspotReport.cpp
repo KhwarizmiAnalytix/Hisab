@@ -36,12 +36,11 @@ namespace
 
 void busy_wait_for(std::chrono::microseconds duration)
 {
-    const auto start = std::chrono::high_resolution_clock::now();
+    const auto   start = std::chrono::high_resolution_clock::now();
+    volatile int spin  = 0;
     while (std::chrono::high_resolution_clock::now() - start < duration)
     {
-        PROFILER_UNUSED volatile int spin = 0;
-        (void)spin;
-        ++spin;
+        spin = spin + 1;
     }
 }
 

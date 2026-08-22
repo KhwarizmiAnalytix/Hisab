@@ -320,11 +320,11 @@ std::string hotspot_report::table(const std::string& sort_by, size_t row_limit) 
 
     const size_t shown = row_limit == 0 ? rows.size() : std::min(row_limit, rows.size());
 
-    uint64_t self_cpu_total = 0;
-    for (const auto& entry : hotspots_)
-    {
-        self_cpu_total += entry.self_time_ns;
-    }
+    const uint64_t self_cpu_total = std::accumulate(
+        hotspots_.begin(),
+        hotspots_.end(),
+        uint64_t{0},
+        [](uint64_t sum, const hotspot_entry& entry) { return sum + entry.self_time_ns; });
 
     constexpr size_t kNumericWidth = 12;
     size_t           name_width    = 20;

@@ -31,7 +31,7 @@ target_compile_definitions(
 )
 
 # Profiler links Core privately; executables may need Core explicitly when linking static archives.
-target_link_libraries(ProfilerCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Profiler::Profiler)
+target_link_libraries(ProfilerCxxTests PRIVATE Gtest::gtest_main Profiler::Profiler)
 
 # Thin LTO with GNU bfd/gold has crashed (SIGSEGV) when linking this executable with Kineto and
 # CUDA's libnvperf_host. IPO=OFF alone can still leave -flto on the compile line when IPO is enabled

@@ -364,7 +364,9 @@ if(PROFILER_HAS_METAL)
   find_library(PROFILER_FOUNDATION_FRAMEWORK Foundation REQUIRED)
   file(GLOB_RECURSE profiler_mm LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/native/*.mm")
   list(APPEND profiler_sources ${profiler_mm})
-  set_source_files_properties(${profiler_mm} PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+  set_source_files_properties(
+    ${profiler_mm} PROPERTIES COMPILE_OPTIONS "-fobjc-arc;-Wno-deprecated-declarations"
+  )
   list(APPEND PROFILER_DEPENDENCY_LIBS ${PROFILER_METAL_FRAMEWORK} ${PROFILER_FOUNDATION_FRAMEWORK})
   message(STATUS "Native profiler: Metal GPU tracer enabled (PROFILER_HAS_METAL=1)")
 
@@ -377,7 +379,9 @@ if(PROFILER_HAS_METAL)
        "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/base/*.mm"
   )
   list(APPEND profiler_sources ${profiler_kineto_mm})
-  set_source_files_properties(${profiler_kineto_mm} PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+  set_source_files_properties(
+    ${profiler_kineto_mm} PROPERTIES COMPILE_OPTIONS "-fobjc-arc;-Wno-deprecated-declarations"
+  )
 endif()
 message(
   STATUS "Native profiler pipeline: always included (traceme/xplane/host_tracer/profiler_session)"

@@ -126,7 +126,12 @@ cc_library(
         ":profiler_hdrs",
     ] + glob(["native/**/*.h", "native/**/*.hxx"], exclude = ["Testing/**"], allow_empty = True),
     copts = profiler_copts() + select({
-        "//bazel:enable_metal": ["-x", "objective-c++", "-fobjc-arc"],
+        "//bazel:enable_metal": [
+            "-x",
+            "objective-c++",
+            "-fobjc-arc",
+            "-Wno-deprecated-declarations",
+        ],
         "//conditions:default": [],
     }),
     defines = profiler_defines() + select({
@@ -162,7 +167,12 @@ cc_library(
         ":profiler_hdrs",
     ] + glob(["bespoke/base/*.h"], allow_empty = True),
     copts = profiler_copts() + select({
-        "//bazel:enable_metal": ["-x", "objective-c++", "-fobjc-arc"],
+        "//bazel:enable_metal": [
+            "-x",
+            "objective-c++",
+            "-fobjc-arc",
+            "-Wno-deprecated-declarations",
+        ],
         "//conditions:default": [],
     }),
     defines = profiler_defines() + select({

@@ -146,18 +146,21 @@ void record_completed_command_buffer(
     {
         return;
     }
-    const CFTimeInterval gpu_start = cb.GPUStartTime;
-    const CFTimeInterval gpu_end   = cb.GPUEndTime;
-    if (gpu_end <= gpu_start)
+    if (@available(macOS 10.15, *))
     {
-        return;
+        const CFTimeInterval gpu_start = cb.GPUStartTime;
+        const CFTimeInterval gpu_end   = cb.GPUEndTime;
+        if (gpu_end <= gpu_start)
+        {
+            return;
+        }
+        profiler::profiler_impl::gpu_tracer_event event;
+        event.type          = profiler::profiler_impl::gpu_tracer_event_type::kernel;
+        event.name          = std::string(name);
+        event.start_time_ns = static_cast<uint64_t>(gpu_start * 1e9);
+        event.end_time_ns   = static_cast<uint64_t>(gpu_end * 1e9);
+        profiler::profiler_impl::add_gpu_tracer_event(std::move(event));
     }
-    profiler::profiler_impl::gpu_tracer_event event;
-    event.type          = profiler::profiler_impl::gpu_tracer_event_type::kernel;
-    event.name          = std::string(name);
-    event.start_time_ns = static_cast<uint64_t>(gpu_start * 1e9);
-    event.end_time_ns   = static_cast<uint64_t>(gpu_end * 1e9);
-    profiler::profiler_impl::add_gpu_tracer_event(std::move(event));
 #endif
 }
 

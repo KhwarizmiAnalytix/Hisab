@@ -73,7 +73,7 @@ static auto get_annotation_data(const std::atomic<int>& atomic)
     if (generation != data.generation)
     {
         // Generation changed (enable/disable), reset the data
-        data = {generation};
+        data = {generation, {}, {}, {}};
     }
 
     return std::make_tuple(&data.stack, &data.string, &data.scope_range_id_stack);

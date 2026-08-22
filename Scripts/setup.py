@@ -1074,6 +1074,44 @@ class QuarismaFlags:
         else:
             build_type = str(build_enum).capitalize()
 
+        # Always set library scope so omitting --project.* clears a stale QUARISMA_LIBRARY_PROJECT
+        # from an earlier configure (empty = full Library/* tree).
+        _lp = self.__value.get("library_project") or ""
+        cmake_cmd_flags.append(f"-DQUARISMA_LIBRARY_PROJECT={_lp}")
+        # "Profiler" -> "PROFILER". Empty means fan flags to every module.
+        _lp_mod = _lp.upper()
+
+        # ------------------------------------------------------------------ per-module fan-outs
+        # Every flag in this section is propagated to all library modules so that a
+        # single setup.py argument controls the entire project uniformly. When
+        # --project.NAME is set, only that module's CMakeLists.txt is loaded, so
+        # fanning CORE_*/MEMORY_*/… flags would produce CMake unused-variable
+        # warnings.
+        ALL_MODULES = [
+            "CORE",
+            "LOGGING",
+            "MEMORY",
+            "PARALLEL",
+            "PROFILER",
+            "VECTORIZATION",
+            "MODELS",
+        ]
+        if _lp_mod:
+            ALL_MODULES = [mod for mod in ALL_MODULES if mod == _lp_mod]
+
+        _GLOBAL_CMAKE_FLAGS = {
+            "BUILD_SHARED_LIBS",
+            "BUILD_TESTING",
+            "QUARISMA_ENABLE_EXTERNAL",
+        }
+
+        def _cmake_flag_in_scope(flag_name):
+            if not _lp_mod:
+                return True
+            if flag_name in _GLOBAL_CMAKE_FLAGS:
+                return True
+            return flag_name.startswith(_lp_mod + "_")
+
         # Add all other CMake flags
         for key, value in self.__value.items():
             if key in self.__name:
@@ -1085,41 +1123,14 @@ class QuarismaFlags:
 
                 # Add the flag if it has a meaningful value
                 # Include OFF values for boolean flags to explicitly disable features
-                if flag_value and flag_value != "":
+                if flag_value and flag_value != "" and _cmake_flag_in_scope(flag_name):
                     cmake_cmd_flags.append(f"-D{flag_name}={flag_value}")
 
-        # Always set library scope so omitting --project.* clears a stale QUARISMA_LIBRARY_PROJECT
-        # from an earlier configure (empty = full Library/* tree).
-        _lp = self.__value.get("library_project") or ""
-        cmake_cmd_flags.append(f"-DQUARISMA_LIBRARY_PROJECT={_lp}")
-
-        # Fan C++ standard out to every module
+        # Fan C++ standard out to every in-scope module
         if self.__value.get("cxxstd"):
             std_value = self.__value["cxxstd"]
-            cmake_cmd_flags.extend(
-                [
-                    f"-DLOGGING_CXX_STANDARD={std_value}",
-                    f"-DMEMORY_CXX_STANDARD={std_value}",
-                    f"-DPARALLEL_CXX_STANDARD={std_value}",
-                    f"-DPROFILER_CXX_STANDARD={std_value}",
-                    f"-DCORE_CXX_STANDARD={std_value}",
-                    f"-DVECTORIZATION_CXX_STANDARD={std_value}",
-                    f"-DMODELS_CXX_STANDARD={std_value}",
-                ]
-            )
-
-        # ------------------------------------------------------------------ per-module fan-outs
-        # Every flag in this section is propagated to all library modules so that a
-        # single setup.py argument controls the entire project uniformly.
-        ALL_MODULES = [
-            "CORE",
-            "LOGGING",
-            "MEMORY",
-            "PARALLEL",
-            "PROFILER",
-            "VECTORIZATION",
-            "MODELS",
-        ]
+            for _mod in ALL_MODULES:
+                cmake_cmd_flags.append(f"-D{_mod}_CXX_STANDARD={std_value}")
 
         def _fan_bool(key, cmake_suffix):
             val = self.__value.get(key)
@@ -1154,7 +1165,8 @@ class QuarismaFlags:
         _fan_bool("fix", "ENABLE_FIX")
         _fan_bool("icecc", "ENABLE_ICECC")
         _fan_bool("examples", "ENABLE_EXAMPLES")
-        _fan_bool("cppcheck", "ENABLE_CPPCHECK")
+        # cppcheck runs via Scripts/helpers/cppcheck.py after the build. No library
+        # CMakeLists.txt consumes *_ENABLE_CPPCHECK, so do not fan it (unused-var warning).
         _fan_str("sanitizer_enum", "SANITIZER_TYPE")
         _fan_str("cache_type", "CACHE_BACKEND")
         _fan_str("linker", "LINKER_CHOICE")
@@ -1167,8 +1179,10 @@ class QuarismaFlags:
         # When the TBB parallel backend is selected, the Memory TBB allocator must
         # also be enabled: both PARALLEL_ENABLE_TBB and MEMORY_ENABLE_TBB must be ON.
         if self.__value.get("parallel_backend") == "tbb":
-            cmake_cmd_flags.append("-DPARALLEL_ENABLE_TBB=ON")
-            cmake_cmd_flags.append("-DMEMORY_ENABLE_TBB=ON")
+            if not _lp_mod or _lp_mod == "PARALLEL":
+                cmake_cmd_flags.append("-DPARALLEL_ENABLE_TBB=ON")
+            if not _lp_mod or _lp_mod == "MEMORY":
+                cmake_cmd_flags.append("-DMEMORY_ENABLE_TBB=ON")
 
         # MKL VML backend for the Vectorization expression evaluator.
         # CORE_ENABLE_MKL controls BLAS/LAPACK usage in Core; VECTORIZATION_ENABLE_MKL
@@ -1176,22 +1190,30 @@ class QuarismaFlags:
         # Both are enabled together when the user passes the 'mkl' flag.
         # Forward INTEL_MKL_DIR / MKLROOT from the environment so FindMKL.cmake can
         # locate the installation without requiring a manual -DINTEL_MKL_DIR= flag.
-        if self.__value.get("mkl") == self.ON:
-            cmake_cmd_flags.append("-DVECTORIZATION_ENABLE_MKL=ON")
+        if not _lp_mod or _lp_mod == "VECTORIZATION":
+            if self.__value.get("mkl") == self.ON:
+                cmake_cmd_flags.append("-DVECTORIZATION_ENABLE_MKL=ON")
+                mkl_root = os.environ.get("INTEL_MKL_DIR") or os.environ.get("MKLROOT")
+                if mkl_root:
+                    cmake_cmd_flags.append(f"-DINTEL_MKL_DIR={mkl_root}")
+            else:
+                cmake_cmd_flags.append("-DVECTORIZATION_ENABLE_MKL=OFF")
+        elif self.__value.get("mkl") == self.ON:
             mkl_root = os.environ.get("INTEL_MKL_DIR") or os.environ.get("MKLROOT")
             if mkl_root:
                 cmake_cmd_flags.append(f"-DINTEL_MKL_DIR={mkl_root}")
-        else:
-            cmake_cmd_flags.append("-DVECTORIZATION_ENABLE_MKL=OFF")
 
         # GPU backend — project-specific flags for the two GPU-aware modules.
+        # Profiler CMakeLists reads MEMORY_GPU_BACKEND to set PROFILER_HAS_METAL.
         gpu_val = self.__value.get("gpu_backend")
         if gpu_val and gpu_val != "":
-            cmake_cmd_flags.append(f"-DVECTORIZATION_GPU_BACKEND={gpu_val}")
-            cmake_cmd_flags.append(f"-DMEMORY_GPU_BACKEND={gpu_val}")
+            if not _lp_mod or _lp_mod in ("MEMORY", "PROFILER"):
+                cmake_cmd_flags.append(f"-DMEMORY_GPU_BACKEND={gpu_val}")
+            if not _lp_mod or _lp_mod == "VECTORIZATION":
+                cmake_cmd_flags.append(f"-DVECTORIZATION_GPU_BACKEND={gpu_val}")
 
         # Tune generated code for the host CPU (Clang/GCC; see Library/Vectorization/Cmake/utils.cmake).
-        if self.__value.get("native") == self.ON:
+        if self.__value.get("native") == self.ON and (not _lp_mod or _lp_mod == "VECTORIZATION"):
             cmake_cmd_flags.append("-DUSE_NATIVE_ARCH=ON")
 
         # Add compilation database generation flag

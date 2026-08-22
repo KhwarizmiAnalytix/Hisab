@@ -54,4 +54,4 @@ bazel_dep(name = "re2", version = "2024-07-02")
 
 # Enable WORKSPACE file for local third-party dependencies
 # This is a temporary solution until all dependencies are migrated to Bzlmod
-bazel_dep(name = "bazel_features", version = "1.22.0")
+bazel_dep(name = "bazel_features", version = "1.30.0")

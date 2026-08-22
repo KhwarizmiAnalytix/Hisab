@@ -33,7 +33,7 @@ limitations under the License.
 ==============================================================================*/
 #include "native/core/profiler_lock.h"
 
-#include <atomic>  // for atomic, memory_order, ATOMIC_INT_LOCK_FREE, ATOMIC_VAR_INIT
+#include <atomic>  // for atomic, memory_order, ATOMIC_INT_LOCK_FREE
 #include <optional>
 
 #include "common/profiler_macros.h"  // for PROFILER_UNLIKELY
@@ -47,7 +47,7 @@ namespace
 
 // Track whether there's an active profiler session.
 // Prevents another profiler session from creating ProfilerInterface(s).
-std::atomic<int> g_session_active = ATOMIC_VAR_INIT(0);
+std::atomic<int> g_session_active{0};
 
 // g_session_active implementation must be lock-free for faster execution of
 // the ProfilerLock API.

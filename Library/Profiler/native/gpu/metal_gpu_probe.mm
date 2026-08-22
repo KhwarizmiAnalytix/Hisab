@@ -124,12 +124,17 @@ bool run_gpu_kernel_probe(std::string_view kernel_name)
         return false;
     }
 
-    uint64_t start_ns = seconds_to_ns(cb.GPUStartTime);
-    uint64_t end_ns   = seconds_to_ns(cb.GPUEndTime);
-    if (end_ns <= start_ns)
+    uint64_t start_ns = host_start_ns;
+    uint64_t end_ns   = host_end_ns > host_start_ns ? host_end_ns : host_start_ns + 1;
+    if (@available(macOS 10.15, *))
     {
-        start_ns = host_start_ns;
-        end_ns   = host_end_ns > host_start_ns ? host_end_ns : host_start_ns + 1;
+        const uint64_t gpu_start_ns = seconds_to_ns(cb.GPUStartTime);
+        const uint64_t gpu_end_ns   = seconds_to_ns(cb.GPUEndTime);
+        if (gpu_end_ns > gpu_start_ns)
+        {
+            start_ns = gpu_start_ns;
+            end_ns   = gpu_end_ns;
+        }
     }
 
     const std::string name = kernel_name.empty() ? "profiler_gpu_probe" : std::string(kernel_name);

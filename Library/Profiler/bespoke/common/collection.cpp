@@ -734,7 +734,9 @@ private:
                 activity->type(),
                 {/*id=*/static_cast<uint32_t>(activity->flowId()),
                  /*type=*/static_cast<uint32_t>(activity->flowType()),
-                 /*start=*/static_cast<uint32_t>(activity->flowStart())}});
+                 /*start=*/static_cast<uint32_t>(activity->flowStart())},
+                {},
+                {}});
         event->hidden_ = isHiddenEvent(activity);
         // NB: It's tempting to set `event->kineto_activity_`; however we can only
         // guarantee that the events we passed to Kineto are of type

@@ -102,6 +102,7 @@ std::vector<std::vector<double>> matrix_multiply(
     return result;
 }
 
+#if PROFILER_HAS_ITT
 /**
  * @brief Heavy computational function: Merge sort implementation
  * Recursive merge sort with profiling at each level
@@ -155,6 +156,7 @@ void merge_sort(std::vector<double>& arr, size_t left, size_t right, int depth =
         }
     }
 }
+#endif  // PROFILER_HAS_ITT
 
 /**
  * @brief Heavy computational function: Monte Carlo Pi estimation

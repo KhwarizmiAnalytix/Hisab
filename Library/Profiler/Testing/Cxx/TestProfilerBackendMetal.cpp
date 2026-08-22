@@ -85,8 +85,10 @@ PROFILERTEST(BackendMetal, privateuse1_fallback_round_trips_elapsed_time)
         // fallback tier only measures dispatch-to-dispatch CPU wall time
         // (see bespoke/base/metal.mm), so no MTLCommandBuffer is needed to
         // exercise the ProfilerStubs round-trip this test checks.
-        for (volatile int spin = 0; spin < 100000; ++spin)
+        volatile int spin = 0;
+        for (int i = 0; i < 100000; ++i)
         {
+            spin = spin + 1;
         }
     }
 
