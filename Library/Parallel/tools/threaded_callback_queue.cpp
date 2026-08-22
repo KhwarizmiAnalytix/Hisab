@@ -305,6 +305,15 @@ bool threaded_callback_queue::try_invoke(shared_future_base* invoker)
                 invoker_queue_.pop_front();
                 this->pop_front_nullptr();
             }
+            else
+            {
+                // The invoker is not at the front, so it cannot be popped without disturbing the
+                // queue's index bookkeeping. Null out its slot instead so a worker thread does not
+                // pop and run it a second time (pop_front_nullptr skips these holes). Without this,
+                // the same invoker can be invoked concurrently by this call and a worker, which
+                // trips the RUNNING assertion in invoker::operator() and races on the future state.
+                invoker_queue_[index] = nullptr;
+            }
             invoker->status_.store(RUNNING, std::memory_order_release);
             return true;
         }())

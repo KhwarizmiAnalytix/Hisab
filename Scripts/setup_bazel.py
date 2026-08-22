@@ -22,8 +22,25 @@ import sys
 import time
 from typing import Optional
 
-import colorama
-from colorama import Fore, Style
+try:
+    import colorama
+    from colorama import Fore, Style
+except ImportError:
+    # colorama is an optional convenience dependency (colored output only). Fall back to
+    # plain, uncolored output so the CLI still works when dependencies are not installed
+    # (e.g. the Windows "build CLI smoke" check runs this with no pip install).
+    class _NoColor:
+        def __getattr__(self, _name):
+            return ""
+
+    class _ColoramaStub:
+        @staticmethod
+        def init(*_args, **_kwargs):
+            pass
+
+    colorama = _ColoramaStub()  # type: ignore[assignment]
+    Fore = _NoColor()  # type: ignore[assignment]
+    Style = _NoColor()  # type: ignore[assignment]
 
 
 # Initialize colorama for cross-platform colored output
