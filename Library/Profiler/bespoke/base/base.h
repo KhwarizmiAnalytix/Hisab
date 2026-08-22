@@ -6,7 +6,15 @@
 
 #include "common/profiler_export.h"
 
+#if PROFILER_HAS_HIP
+// HIP's opaque event type (`hipEvent_t` is `ihipEvent_t*`). Forward-declared
+// only -- this header must not pull in <hip/hip_runtime.h>, same as it never
+// pulled in <cuda_runtime_api.h> for the CUDA case below.
+struct ihipEvent_t;
+using CUevent_st = ihipEvent_t;
+#else
 struct CUevent_st;
+#endif
 
 namespace profiler::profiler_impl::impl
 {

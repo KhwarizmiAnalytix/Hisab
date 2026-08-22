@@ -24,7 +24,6 @@
  * API and pipeline docs: Docs/profiler/profiler.md
  */
 
-
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -443,9 +442,8 @@ PROFILERTEST(Profiler, heavy_function_comprehensive_computational_profiling)
 namespace
 {
 
-const profiler::autograd::profiler_impl::KinetoEvent* find_kineto_event(
-    const std::vector<profiler::autograd::profiler_impl::KinetoEvent>& events,
-    const std::string&                                                 name)
+const profiler::profiler_impl::KinetoEvent* find_kineto_event(
+    const std::vector<profiler::profiler_impl::KinetoEvent>& events, const std::string& name)
 {
     for (const auto& event : events)
     {
@@ -461,22 +459,22 @@ const profiler::autograd::profiler_impl::KinetoEvent* find_kineto_event(
 
 PROFILERTEST(Profiler, kineto_heavy_function_profiling)
 {
-    profiler::autograd::profiler_impl::ProfilerConfig const config(
-        profiler::autograd::profiler_impl::ProfilerState::KINETO,
+    profiler::profiler_impl::ProfilerConfig const config(
+        profiler::profiler_impl::ProfilerState::KINETO,
         /*report_input_shapes=*/false,
         /*profile_memory=*/false,
         /*with_stack=*/false,
         /*with_flops=*/false,
         /*with_modules=*/false);
 
-    const std::set<profiler::autograd::profiler_impl::ActivityType> activities{
-        profiler::autograd::profiler_impl::ActivityType::CPU};
+    const std::set<profiler::profiler_impl::ActivityType> activities{
+        profiler::profiler_impl::ActivityType::CPU};
     const std::unordered_set<profiler::RecordScope> scopes{profiler::RecordScope::USER_SCOPE};
 
     try
     {
-        profiler::autograd::profiler_impl::prepareProfiler(config, activities);
-        profiler::autograd::profiler_impl::enableProfiler(config, activities, scopes);
+        profiler::profiler_impl::prepareProfiler(config, activities);
+        profiler::profiler_impl::enableProfiler(config, activities, scopes);
     }
     catch (const std::exception& ex)
     {
@@ -514,7 +512,7 @@ PROFILERTEST(Profiler, kineto_heavy_function_profiling)
         }
     }
 
-    auto profiler_result = profiler::autograd::profiler_impl::disableProfiler();
+    auto profiler_result = profiler::profiler_impl::disableProfiler();
     ASSERT_NE(profiler_result, nullptr);
 
     const auto& events = profiler_result->events();
@@ -523,9 +521,9 @@ PROFILERTEST(Profiler, kineto_heavy_function_profiling)
         GTEST_SKIP() << "Kineto backend produced no CPU events in this environment";
     }
 
-    const auto* outer = find_kineto_event(events, "kineto_heavy_workload");
+    const auto* outer  = find_kineto_event(events, "kineto_heavy_workload");
     const auto* matrix = find_kineto_event(events, "kineto_matrix_operations");
-    const auto* monte = find_kineto_event(events, "kineto_monte_carlo");
+    const auto* monte  = find_kineto_event(events, "kineto_monte_carlo");
     ASSERT_NE(outer, nullptr);
     ASSERT_NE(matrix, nullptr);
     ASSERT_NE(monte, nullptr);
@@ -534,7 +532,7 @@ PROFILERTEST(Profiler, kineto_heavy_function_profiling)
 
     if (!profiler_result->event_tree().empty())
     {
-        profiler::autograd::profiler_impl::hotspot_report const hotspot(*profiler_result);
+        profiler::profiler_impl::hotspot_report const hotspot(*profiler_result);
         std::cout << "\n=== Kineto heavy-function hotspot report ===\n";
         std::cout << "--- Operator table ---\n" << hotspot.table();
         std::cout << "\n--- Top-down call tree ---\n" << hotspot.top_down_tree();
@@ -836,4 +834,3 @@ PROFILERTEST(Profiler, itt_api_heavy_function_profiling)
 // so a combined Kineto+ITT case cannot compile. Use
 // Profiler.kineto_heavy_function_profiling above for Kineto and the ITT block
 // when PROFILER_HAS_ITT=1.
-

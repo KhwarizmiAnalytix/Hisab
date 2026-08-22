@@ -47,6 +47,7 @@
 #include "native/analysis/statistical_analyzer.h"
 #include "native/core/profiler_collection.h"
 #include "native/core/profiler_factory.h"
+#include "native/cpu/annotation_stack.h"
 #include "native/exporters/chrome_trace_exporter.h"
 #include "native/exporters/xplane/xplane_schema.h"
 #include "native/exporters/xplane/xplane_utils.h"
@@ -286,6 +287,18 @@ bool profiler_session::stop()
         {
             xspace_ = std::move(collected_space);
             normalize_xspace(&xspace_);
+            if (options_.enable_gpu_tracing_)
+            {
+                auto* planes = xspace_.mutable_planes();
+                for (auto& plane : *planes)
+                {
+                    AddFlowsToXplane(
+                        static_cast<int32_t>(plane.id()),
+                        IsHostPlane(plane),
+                        /*connect_traceme=*/true,
+                        &plane);
+                }
+            }
         }
         else
         {
@@ -405,7 +418,11 @@ profile_options profiler_session::build_backend_profile_options() const
     // enable_timing_.
     opts.set_host_tracer_level(
         (options_.enable_timing_ || options_.enable_hierarchical_profiling_) ? 2U : 0U);
-    opts.set_device_tracer_level(0);
+    opts.set_device_tracer_level(options_.enable_gpu_tracing_ ? 1U : 0U);
+    if (options_.enable_gpu_tracing_)
+    {
+        opts.set_device_type(profile_options::device_type_enum::GPU);
+    }
     opts.set_python_tracer_level(0);
     opts.set_enable_hlo_proto(false);
     opts.set_duration_ms(0);
@@ -495,6 +512,12 @@ void profiler_scope::start()
     {
         traceme_.emplace(std::string_view(data_->name_));
 
+        if (profiler_impl::annotation_stack::is_enabled())
+        {
+            profiler_impl::annotation_stack::push_annotation(data_->name_);
+            pushed_gpu_annotation_ = true;
+        }
+
         memory_annotation_ = std::make_unique<scoped_memory_debug_annotation>(data_->name_.c_str());
 
         // Start memory tracking for this scope
@@ -509,6 +532,12 @@ void profiler_scope::start()
 
 void profiler_scope::stop()
 {
+    if (pushed_gpu_annotation_)
+    {
+        profiler_impl::annotation_stack::pop_annotation();
+        pushed_gpu_annotation_ = false;
+    }
+
     // Mirror start()'s guard: once the session has stopped, traceme_recorder is no longer active,
     // so traceme_.reset() below would silently drop this scope's event while the timing/memory
     // computation and statistical_analyzer_ recording further down would still run -- recording a

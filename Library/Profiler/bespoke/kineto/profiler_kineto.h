@@ -12,9 +12,12 @@
 
 namespace profiler
 {
-constexpr bool hasCUDA()
+// True when a GPU activity-fallback backend (CUDA or HIP) is compiled in.
+// Only one is ever active in a given build -- see PROFILER_HAS_CUDA /
+// PROFILER_HAS_HIP in CMakeLists.txt.
+constexpr bool hasGPU()
 {
-#if PROFILER_HAS_CUDA
+#if PROFILER_HAS_CUDA || PROFILER_HAS_HIP
     return true;
 #else
     return false;
@@ -30,7 +33,7 @@ struct ActivityTraceWrapper;
 }  // namespace kineto
 }  // namespace profiler_impl::impl
 
-namespace autograd::profiler_impl
+namespace profiler_impl
 {
 using experimental_event_t = std::shared_ptr<profiler::profiler_impl::impl::Result>;
 using extra_meta_t         = std::unordered_map<std::string, std::string>;
@@ -44,24 +47,9 @@ struct PROFILER_VISIBILITY KinetoEvent
     PROFILER_API uint64_t startThreadId() const;
     PROFILER_API uint64_t endThreadId() const;
     PROFILER_API uint8_t  activityType() const;
-    PROFILER_API uint64_t fwdThreadId() const;
-    PROFILER_API bool     hasShapes() const;
-    PROFILER_API profiler::array_ref<std::vector<int64_t>> shapes() const;
-    PROFILER_API bool                                      hasTypes() const;
-    PROFILER_API profiler::array_ref<std::string> dtypes() const;
-    PROFILER_API bool                             hasConcreteInputs() const;
-    PROFILER_API bool                                  hasKwinputs() const;
-    PROFILER_API bool                                  isHiddenEvent() const;
-    PROFILER_API uint64_t                                          flops() const;
-    PROFILER_API int64_t                                           sequenceNr() const;
-    PROFILER_API bool                                              hasStack() const;
-    PROFILER_API profiler::array_ref<std::string> stack() const;
-    PROFILER_API uint8_t                          scope() const;
-    PROFILER_API bool                             hasModuleHierarchy() const;
-    PROFILER_API profiler::array_ref<std::string> moduleHierarchy() const;
-    PROFILER_API int64_t                          debugHandle() const;
+    PROFILER_API bool     isHiddenEvent() const;
+    PROFILER_API uint8_t  scope() const;
     PROFILER_API std::string name() const;
-    PROFILER_API std::string overload_name() const;
     PROFILER_API profiler::device_enum deviceType() const;
     PROFILER_API int                   deviceIndex() const;
     PROFILER_API int64_t               nBytes() const;
@@ -72,10 +60,8 @@ struct PROFILER_VISIBILITY KinetoEvent
     PROFILER_API uint64_t              correlationId() const;
     PROFILER_API uint64_t              linkedCorrelationId() const;
     PROFILER_API int64_t               deviceResourceId() const;
-    PROFILER_API std::string backend() const;
-    static PROFILER_API bool isPythonFunction();
-    PROFILER_API int64_t     cudaElapsedUs() const;
-    PROFILER_API int64_t     privateuse1ElapsedUs() const;
+    PROFILER_API int64_t               cudaElapsedUs() const;
+    PROFILER_API int64_t               privateuse1ElapsedUs() const;
     PROFILER_API void getPerfEventCounters(profiler::profiler_impl::perf_counters_t& /*in*/) const;
     PROFILER_API extra_meta_t extraMeta() const;
     PROFILER_API std::string metadataJson() const;
@@ -85,11 +71,6 @@ private:
     profiler::profiler_impl::impl::ProfilerVoidEventStub fallbackEnd() const;
 
     std::shared_ptr<const profiler::profiler_impl::impl::Result> result_;
-    std::vector<std::string>                                     python_stack_;
-
-    // Copy fields from result so we can return ArrayRefs.
-    std::vector<std::vector<int64_t>> shapes_;
-    std::vector<std::string>          dtypes_;
 };
 
 // Consolidating events returned directly from Kineto
@@ -154,34 +135,6 @@ PROFILER_API void enableProfiler(
     const std::set<profiler::profiler_impl::impl::ActivityType>& activities,
     const std::unordered_set<profiler::RecordScope>&             scopes = {});
 
-/*
- * Same as enableProfiler but with callback to do post-processing of
- * KinetoEvents.
- * enableProfilerWithEventPostProcess enables profiler to capture
- * specified activities, with specified RecordFunction scope, if any.
- * Additionally, it takes a functor that does in-place post processing of
- * events, e.g. populate stack trace or module hierarchy information lazily
- * using debug_handle.
- * Example usage is with lite interpreter that has recording scope of
- * LITE_INTERPRETER. In this case lite interpreter runtime, records debug
- * handles in RecordFunction, along with other information. Debug handles are
- * eventually passed down to KinetoEvent and recorded as part of the event.
- * KinetoEdgeCPUProfiler, in profiler/csrc/jit/mobile/profiler_edge.cpp, enables
- * profiler using post-processing callback, via
- * enableProfilerWithEventPostProcess, that takes these debug handles and
- * generates stack trace and module hierarchy information, once profiling is
- * done.
- */
-using post_process_t = std::function<void(
-    /*debug_handle */ int64_t,
-    /*jit_stack    */ std::vector<std::string>&,
-    /*jit_modules  */ std::vector<std::string>&)>;
-PROFILER_API void enableProfilerWithEventPostProcess(
-    const profiler::profiler_impl::impl::ProfilerConfig&         config,
-    const std::set<profiler::profiler_impl::impl::ActivityType>& activities,
-    post_process_t&&                                             cb,
-    const std::unordered_set<profiler::RecordScope>&             scopes = {});
-
 PROFILER_API std::unique_ptr<ProfilerResult> disableProfiler();
 
 PROFILER_API void prepareProfiler(
@@ -202,7 +155,7 @@ PROFILER_API void exportMemoryProfile(const std::string& path);
  * Without calling these functions, the symptom may be "not seeing GPU events
  * from some child C++ threads". This is an example on how to use them,
  *
- *    using namespace profiler::autograd::profiler_impl;
+ *    using namespace profiler::profiler_impl;
  *    bool enabled = isProfilerEnabledInMainThread();
  *    if (enabled != saved_enabled_state) {
  *      if (enabled) {
@@ -217,6 +170,6 @@ PROFILER_API bool isProfilerEnabledInMainThread();
 PROFILER_API void enableProfilerInChildThread();
 PROFILER_API void disableProfilerInChildThread();
 
-}  // namespace autograd::profiler_impl
+}  // namespace profiler_impl
 
 }  // namespace profiler

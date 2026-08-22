@@ -121,7 +121,7 @@ namespace
 {
 
 bool has_memory_event_with_bytes(
-    const std::vector<profiler::autograd::profiler_impl::KinetoEvent>& events, int64_t nbytes)
+    const std::vector<profiler::profiler_impl::KinetoEvent>& events, int64_t nbytes)
 {
     for (const auto& event : events)
     {
@@ -137,22 +137,22 @@ bool has_memory_event_with_bytes(
 
 PROFILERTEST(BackendMemory, kineto_profiles_memory)
 {
-    profiler::autograd::profiler_impl::ProfilerConfig const config(
-        profiler::autograd::profiler_impl::ProfilerState::KINETO,
+    profiler::profiler_impl::ProfilerConfig const config(
+        profiler::profiler_impl::ProfilerState::KINETO,
         /*report_input_shapes=*/false,
         /*profile_memory=*/true,
         /*with_stack=*/false,
         /*with_flops=*/false,
         /*with_modules=*/false);
 
-    const std::set<profiler::autograd::profiler_impl::ActivityType> activities{
-        profiler::autograd::profiler_impl::ActivityType::CPU};
+    const std::set<profiler::profiler_impl::ActivityType> activities{
+        profiler::profiler_impl::ActivityType::CPU};
     const std::unordered_set<profiler::RecordScope> scopes{profiler::RecordScope::USER_SCOPE};
 
     try
     {
-        profiler::autograd::profiler_impl::prepareProfiler(config, activities);
-        profiler::autograd::profiler_impl::enableProfiler(config, activities, scopes);
+        profiler::profiler_impl::prepareProfiler(config, activities);
+        profiler::profiler_impl::enableProfiler(config, activities, scopes);
     }
     catch (const std::exception& ex)
     {
@@ -166,7 +166,7 @@ PROFILERTEST(BackendMemory, kineto_profiles_memory)
         free_and_report(ptr, kAllocBytes, &total_allocated);
     }
 
-    auto profiler_result = profiler::autograd::profiler_impl::disableProfiler();
+    auto profiler_result = profiler::profiler_impl::disableProfiler();
     ASSERT_NE(profiler_result, nullptr);
 
     const auto& events = profiler_result->events();
@@ -233,15 +233,15 @@ PROFILERTEST(BackendMemory, itt_profiles_memory)
     profiler::profiler_impl::itt_init();
     EXPECT_TRUE(profiler::profiler_impl::kITTAvailable);
 
-    profiler::autograd::profiler_impl::ProfilerConfig config(
-        profiler::autograd::profiler_impl::ProfilerState::ITT,
+    profiler::profiler_impl::ProfilerConfig config(
+        profiler::profiler_impl::ProfilerState::ITT,
         /*report_input_shapes=*/false,
         /*profile_memory=*/true);
     try
     {
-        profiler::autograd::profiler_impl::enableProfiler(
+        profiler::profiler_impl::enableProfiler(
             config,
-            {profiler::autograd::profiler_impl::ActivityType::CPU},
+            {profiler::profiler_impl::ActivityType::CPU},
             {profiler::RecordScope::USER_SCOPE});
     }
     catch (const std::exception& ex)
@@ -262,7 +262,7 @@ PROFILERTEST(BackendMemory, itt_profiles_memory)
         profiler::profiler_impl::itt_range_pop();
     }
 
-    PROFILER_UNUSED auto profiler_result = profiler::autograd::profiler_impl::disableProfiler();
+    PROFILER_UNUSED auto profiler_result = profiler::profiler_impl::disableProfiler();
     EXPECT_EQ(total_allocated, 0U);
 }
 
@@ -272,15 +272,15 @@ PROFILERTEST(BackendMemory, itt_profiles_memory)
 
 PROFILERTEST(BackendMemory, nvtx_profiles_memory)
 {
-    profiler::autograd::profiler_impl::ProfilerConfig config(
-        profiler::autograd::profiler_impl::ProfilerState::NVTX,
+    profiler::profiler_impl::ProfilerConfig config(
+        profiler::profiler_impl::ProfilerState::NVTX,
         /*report_input_shapes=*/false,
         /*profile_memory=*/true);
     try
     {
-        profiler::autograd::profiler_impl::enableProfiler(
+        profiler::profiler_impl::enableProfiler(
             config,
-            {profiler::autograd::profiler_impl::ActivityType::CPU},
+            {profiler::profiler_impl::ActivityType::CPU},
             {profiler::RecordScope::USER_SCOPE});
     }
     catch (const std::exception& ex)
@@ -299,7 +299,7 @@ PROFILERTEST(BackendMemory, nvtx_profiles_memory)
         free_and_report(ptr, kAllocBytes, &total_allocated);
     }
 
-    PROFILER_UNUSED auto profiler_result = profiler::autograd::profiler_impl::disableProfiler();
+    PROFILER_UNUSED auto profiler_result = profiler::profiler_impl::disableProfiler();
     EXPECT_EQ(total_allocated, 0U);
 }
 

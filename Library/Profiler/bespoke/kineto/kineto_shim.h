@@ -118,7 +118,7 @@ private:
 };
 
 // TODO: Profiler-specific types commented out
-using ActivitySet = std::set<profiler::autograd::profiler_impl::ActivityType>;
+using ActivitySet = std::set<profiler::profiler_impl::ActivityType>;
 PROFILER_API void prepareTrace(
     const bool                                               cpuOnly,
     const ActivitySet&                                       activities,
@@ -145,7 +145,7 @@ PROFILER_API void logInvariantViolation(
 
 }  // namespace profiler_impl
 
-namespace autograd::profiler_impl
+namespace profiler_impl
 {
 // TODO: Profiler-specific function commented out
 profiler::device_enum deviceTypeFromActivity(
@@ -155,6 +155,6 @@ PROFILER_API void addMetadataJson(const std::string& key, const std::string& val
 
 PROFILER_API void profilerStep();
 
-}  // namespace autograd::profiler_impl
+}  // namespace profiler_impl
 
 }  // namespace profiler

@@ -32,7 +32,7 @@ namespace profiler::profiler_impl::impl
 
 enum class EventType : uint8_t
 {
-    TorchOp = 0,
+    FunctionOp = 0,
     Backend,
     Allocation,
     OutOfMemory,
@@ -40,51 +40,6 @@ enum class EventType : uint8_t
     PyCCall,
     Kineto,
     PythonGC
-};
-
-// ============================================================================
-// == Op-input shape stub =====================================================
-// ============================================================================
-// Opaque identity for recorded storage. Wrapped in a strong type so it is
-// not mixed with other pointer identities. XSigma has no tensor / IValue
-// type; these structs exist so ExtraFields can type-check an always-empty
-// inputs list and are never populated.
-using StorageImplData = strong::
-    type<const void*, struct StorageImplData_, strong::regular, strong::hashable, strong::boolean>;
-
-struct PROFILER_VISIBILITY RawTensorMetadataBase
-{
-    RawTensorMetadataBase() = default;
-
-    StorageImplData data_;
-    int             dtype_{0};
-    int             layout_{0};
-    uint32_t        size_dim_{0};
-};
-
-// Collected during profiling.
-struct PROFILER_VISIBILITY RawTensorMetadata : RawTensorMetadataBase
-{
-    RawTensorMetadata()                                        = default;
-    RawTensorMetadata(const RawTensorMetadata&)                = default;
-    RawTensorMetadata(RawTensorMetadata&&) noexcept            = default;
-    RawTensorMetadata& operator=(const RawTensorMetadata&)     = default;
-    RawTensorMetadata& operator=(RawTensorMetadata&&) noexcept = default;
-    ~RawTensorMetadata()                                       = default;
-
-    profiler::device_enum device_type_{profiler::device_enum::CPU};
-    int16_t               device_index_{-1};
-};
-
-// Used during post processing.
-struct PROFILER_VISIBILITY TensorMetadata : public RawTensorMetadataBase
-{
-    TensorMetadata(
-        const RawTensorMetadata& r, std::vector<int64_t> sizes, std::vector<int64_t> strides);
-
-    profiler::device_option device_;
-    std::vector<int64_t>    sizes_;
-    std::vector<int64_t>    strides_;
 };
 
 // Used during post processing.
@@ -101,16 +56,13 @@ struct PROFILER_VISIBILITY ProfilerStepInfo
     }
 };
 
-using op_input_t =
-    std::variant<TensorMetadata, std::vector<TensorMetadata>, std::nullopt_t>;
-
 // ============================================================================
 // == ExtraFields =============================================================
 // ============================================================================
 template <EventType>
 struct ExtraFields;
 
-struct TorchOpBasicFields
+struct FunctionOpBasicFields
 {
     int64_t               sequence_number_{0};
     uint64_t              forward_tid_{0};
@@ -125,11 +77,7 @@ struct TorchOpBasicFields
     uint64_t end_tid_{0};
 };
 
-using jit_stack_t   = std::vector<std::string>;
-using jit_modules_t = std::vector<std::string>;
-using extra_args_t  = std::unordered_map<std::string, std::string>;
-using extra_meta_t  = std::unordered_map<std::string, std::string>;
-using kwinputs_t    = std::unordered_map<std::string, std::string>;
+using extra_meta_t = std::unordered_map<std::string, std::string>;
 
 struct FallbackPair
 {
@@ -138,48 +86,27 @@ struct FallbackPair
 };
 
 template <>
-struct ExtraFields<EventType::TorchOp> : TorchOpBasicFields
+struct ExtraFields<EventType::FunctionOp> : FunctionOpBasicFields
 {
     ExtraFields(
-        TorchOpBasicFields&&               f,
+        FunctionOpBasicFields&&            f,
         uint64_t                           correlation_id,
         profiler::time_t                   end_time_ns,
-        std::vector<op_input_t>&&          inputs,
-        std::vector<op_input_t>&&          concrete_inputs,
-        jit_stack_t&&                      jit_stack,
-        jit_modules_t&&                    jit_modules,
-        extra_args_t&&                     extra_args,
         extra_meta_t&&                     extra_meta,
-        kwinputs_t&&                       kwinputs,
         FallbackPair&&                     device_fallback,
-        bool                               allow_tf32_cublas,
         std::unique_ptr<perf_counters_t>&& perf_event_counters)
-        : TorchOpBasicFields(std::move(f)),
+        : FunctionOpBasicFields(std::move(f)),
           correlation_id_{correlation_id},
           end_time_ns_{end_time_ns},
-          inputs_{std::move(inputs)},
-          concrete_inputs_{std::move(concrete_inputs)},
-          jit_stack_{std::move(jit_stack)},
-          jit_modules_{std::move(jit_modules)},
-          extra_args_{std::move(extra_args)},
           extra_meta_{std::move(extra_meta)},
-          kwinputs_{std::move(kwinputs)},
           device_fallback_{std::move(device_fallback)},
-          allow_tf32_cublas_{allow_tf32_cublas},
           perf_event_counters_{std::move(perf_event_counters)}
     {
     }
     uint64_t                         correlation_id_;
     profiler::time_t                 end_time_ns_;
-    std::vector<op_input_t>          inputs_;
-    std::vector<op_input_t>          concrete_inputs_;
-    jit_stack_t                      jit_stack_;
-    jit_modules_t                    jit_modules_;
-    extra_args_t                     extra_args_;
     extra_meta_t                     extra_meta_;
-    kwinputs_t                       kwinputs_;
     FallbackPair                     device_fallback_;
-    bool                             allow_tf32_cublas_;
     std::unique_ptr<perf_counters_t> perf_event_counters_;
     std::string                      metadata_json_;
 };
@@ -193,8 +120,6 @@ struct ExtraFields<EventType::Backend>
     profiler::RecordScope scope_;
     std::string           name_;
     std::string           backend_;
-    jit_stack_t           jit_stack_;
-    jit_modules_t         jit_modules_;
 };
 
 template <>
@@ -331,7 +256,7 @@ struct PROFILER_VISIBILITY Result : public std::enable_shared_from_this<Result>
     // registered python_tracer implementation to materialize; the default
     // NoOpPythonTracer never produces them, so they are not variant alternatives.
     std::variant<
-        ExtraFields<EventType::TorchOp>,
+        ExtraFields<EventType::FunctionOp>,
         ExtraFields<EventType::Backend>,
         ExtraFields<EventType::Allocation>,
         ExtraFields<EventType::OutOfMemory>,
@@ -369,13 +294,12 @@ struct KinetoObserverContext : public profiler::ObserverContext
 {
     struct Event
     {
-        TorchOpBasicFields      basic_fields_;
+        FunctionOpBasicFields   basic_fields_;
         profiler::approx_time_t start_time_;
 
         // Set in the exit callback.
         profiler::approx_time_t end_time_{std::numeric_limits<profiler::approx_time_t>::min()};
 
-        bool                             allow_tf32_cublas_;
         std::unique_ptr<perf_counters_t> counters_;
     };
 
@@ -443,7 +367,7 @@ private:
     // See `containers.h` for block size benchmarks.
     static constexpr size_t BlockSize = 512;
 
-    struct TorchOpStorage
+    struct FunctionOpStorage
     {
         // NB: This is a destructive operation.
         void materialize(
@@ -473,25 +397,13 @@ private:
             static uint64_t               correlationID(const OpList::Iterator& e);
         } op_events_;
 
-        // with_stack (JIT)
-        AppendOnlyList<jit_stack_t, BlockSize> jit_stack_;
-
-        // with_modules
-        AppendOnlyList<jit_modules_t, BlockSize> jit_modules_;
-
-        // with_flops
-        AppendOnlyList<extra_args_t, BlockSize> extra_args_;
-
-        // report extra metadata, i.e. collective communication meta
+        // Per-function structured metadata, populated from RecordFunction::metadata().
         AppendOnlyList<extra_meta_t, BlockSize> extra_meta_;
-
-        // report kwinputs
-        AppendOnlyList<kwinputs_t, BlockSize> kwinputs_;
 
         // ProfilerState::KINETO_GPU_FALLBACK or
         // ProfilerState::KINETO_PRIVATEUSE1_FALLBACK
         AppendOnlyList<FallbackPair, BlockSize> device_fallback_;
-    } torch_ops_;
+    } function_ops_;
 
     // reportBackendEventToActiveKinetoProfiler
     AppendOnlyList<ExtraFields<EventType::Backend>, BlockSize> backend_events_;
@@ -537,10 +449,6 @@ private:
     std::mutex                                                              sub_queue_mutex_;
     std::unique_ptr<python_tracer::PythonTracerBase>                        python_tracer_;
 };
-
-PROFILER_API bool get_record_concrete_inputs_enabled();
-PROFILER_API void set_record_concrete_inputs_enabled_fn(std::function<bool()> /*fn*/);
-PROFILER_API void set_record_concrete_inputs_enabled_val(bool /*val*/);
 
 PROFILER_API bool get_fwd_bwd_enabled();
 PROFILER_API void set_fwd_bwd_enabled_fn(std::function<bool()> /*fn*/);

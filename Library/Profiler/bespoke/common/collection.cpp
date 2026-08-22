@@ -26,16 +26,6 @@ namespace profiler::profiler_impl::impl
 using result_ptr_t = std::shared_ptr<Result>;
 using trace_ptr_t  = std::unique_ptr<profiler::profiler_impl::impl::kineto::ActivityTraceWrapper>;
 
-TensorMetadata::TensorMetadata(
-    const RawTensorMetadata& r, std::vector<int64_t> sizes, std::vector<int64_t> strides)
-    // NOLINTNEXTLINE(cppcoreguidelines-slicing)
-    : RawTensorMetadataBase(r),
-      device_{r.device_index_, r.device_type_},
-      sizes_{std::move(sizes)},
-      strides_{std::move(strides)}
-{
-}
-
 // ============================================================================
 // == Profiler Ops =============================================================
 // ============================================================================
@@ -44,7 +34,7 @@ TensorMetadata::TensorMetadata(
 // |  Correlation ID tracking (OpList & EventBlock)  |
 // ---------------------------------------------------
 template <typename T, size_t ChunkSize>
-ThreadLocalSubqueue::TorchOpStorage::EventBlock<T, ChunkSize>::EventBlock()
+ThreadLocalSubqueue::FunctionOpStorage::EventBlock<T, ChunkSize>::EventBlock()
 {
     static std::atomic<uint64_t> counter_{0};
     id_start_ = 1 + (ChunkSize * counter_++);
@@ -52,20 +42,20 @@ ThreadLocalSubqueue::TorchOpStorage::EventBlock<T, ChunkSize>::EventBlock()
 
 template <class... Args>
 std::pair<KinetoObserverContext::Event*, uint64_t>
-ThreadLocalSubqueue::TorchOpStorage::OpList::emplace_back(Args&&... args)
+ThreadLocalSubqueue::FunctionOpStorage::OpList::emplace_back(Args&&... args)
 {
     auto event_ptr = AppendOnlyList::emplace_back(std::forward<Args>(args)...);
     auto corr_id   = buffer_last_->correlation_id(event_ptr);
     return {event_ptr, corr_id};
 }
 
-uint64_t ThreadLocalSubqueue::TorchOpStorage::OpList::correlationID(const OpList::Iterator& e)
+uint64_t ThreadLocalSubqueue::FunctionOpStorage::OpList::correlationID(const OpList::Iterator& e)
 {
     return e.address().first->correlation_id(&*e);
 }
 
 template <typename T, size_t ChunkSize>
-uint64_t ThreadLocalSubqueue::TorchOpStorage::EventBlock<T, ChunkSize>::correlation_id(
+uint64_t ThreadLocalSubqueue::FunctionOpStorage::EventBlock<T, ChunkSize>::correlation_id(
     const T* ptr) const
 {
     // PROFILER_CHECK_DEBUG(ptr >= this->data() && ptr < this->data() + ChunkSize);
@@ -81,7 +71,7 @@ std::unique_ptr<KinetoObserverContext> ThreadLocalSubqueue::begin_op(
     const auto* overload_name =
         config_.experimental_config.capture_overload_names ? fn.overload_name() : "";
     auto [event, corr_id] =
-        torch_ops_.op_events_.emplace_back(profiler::profiler_impl::impl::TorchOpBasicFields{
+        function_ops_.op_events_.emplace_back(profiler::profiler_impl::impl::FunctionOpBasicFields{
             fn.seqNr(),
             fn.forwardThreadId(),
             fn.scope(),
@@ -91,10 +81,6 @@ std::unique_ptr<KinetoObserverContext> ThreadLocalSubqueue::begin_op(
             fn.name(),
             overload_name});
 
-    if (config_.report_input_shapes)
-    {
-        torch_ops_.kwinputs_.emplace_back();
-    }
     if (!config_.experimental_config.disable_external_correlation)
     {
         if (fn.scope() == profiler::RecordScope::USER_SCOPE)
@@ -108,24 +94,22 @@ std::unique_ptr<KinetoObserverContext> ThreadLocalSubqueue::begin_op(
     }
 
     auto out = std::make_unique<KinetoObserverContext>(event);
-    torch_ops_.extra_meta_.emplace_back();
+    function_ops_.extra_meta_.emplace_back(fn.metadata());
 
     if (config_.state == ProfilerState::KINETO_GPU_FALLBACK)
     {
-        out->fallback_ = torch_ops_.device_fallback_.emplace_back();
+        out->fallback_ = function_ops_.device_fallback_.emplace_back();
         profiler::profiler_impl::impl::cudaStubs()->record(
             nullptr, &out->fallback_->device_event_start_, nullptr);
     }
     else if (config_.state == ProfilerState::KINETO_PRIVATEUSE1_FALLBACK)
     {
-        out->fallback_ = torch_ops_.device_fallback_.emplace_back();
+        out->fallback_ = function_ops_.device_fallback_.emplace_back();
         profiler::profiler_impl::impl::privateuse1Stubs()->record(
             nullptr, &out->fallback_->device_event_start_, nullptr);
     }
 
     event->start_time_ = profiler::getApproximateTime();
-    // XSigma has no global TF32-precision context to query.
-    event->allow_tf32_cublas_ = false;
     if (!config_.experimental_config.performance_events.empty())
     {
         const size_t n   = config_.experimental_config.performance_events.size();
@@ -170,35 +154,24 @@ struct StealOrDefault
 
 [[maybe_unused]] static constexpr std::string_view profilerStepString = "ProfilerStep#";
 
-void ThreadLocalSubqueue::TorchOpStorage::materialize(
+void ThreadLocalSubqueue::FunctionOpStorage::materialize(
     std::vector<std::shared_ptr<Result>>&                           out,
     std::vector<ProfilerStepInfo>&                                  step_info,
     const std::function<profiler::time_t(profiler::approx_time_t)>& time_converter,
     const uint64_t                                                  tid,
     const kineto::DeviceAndResource&                                kineto_info)
 {
-    auto jit_stack    = StealOrDefault<decltype(jit_stack_)>(jit_stack_);
-    auto jit_module   = StealOrDefault<decltype(jit_modules_)>(jit_modules_);
-    auto extra_args   = StealOrDefault<decltype(extra_args_)>(extra_args_);
     auto extra_meta   = StealOrDefault<decltype(extra_meta_)>(extra_meta_);
-    auto kwinputs     = StealOrDefault<decltype(kwinputs_)>(kwinputs_);
     auto gpu_fallback = StealOrDefault<decltype(device_fallback_)>(device_fallback_);
 
     for (auto event = op_events_.begin(); event != op_events_.end(); ++event)
     {
-        ExtraFields<EventType::TorchOp> e{
+        ExtraFields<EventType::FunctionOp> e{
             std::move(event->basic_fields_),
-            ThreadLocalSubqueue::TorchOpStorage::OpList::correlationID(event),
+            ThreadLocalSubqueue::FunctionOpStorage::OpList::correlationID(event),
             time_converter(event->end_time_),
-            {},
-            {},
-            jit_stack(),
-            jit_module(),
-            extra_args(),
             extra_meta(),
-            kwinputs(),
             gpu_fallback(),
-            event->allow_tf32_cublas_,
             std::move(event->counters_)};
 
         if (e.name_.find(profilerStepString) != std::string::npos)
@@ -240,10 +213,10 @@ auto scopeToType(profiler::RecordScope scope)
 }
 #endif  // PROFILER_HAS_KINETO
 
-int64_t torchOpEndNS(
-    const ExtraFields<EventType::TorchOp>& e,
-    const bool                             finished,
-    const std::weak_ptr<Result>&           parent)
+int64_t functionOpEndNS(
+    const ExtraFields<EventType::FunctionOp>& e,
+    const bool                                finished,
+    const std::weak_ptr<Result>&              parent)
 {
     if (finished && e.end_time_ns_ == std::numeric_limits<profiler::time_t>::min())
     {
@@ -286,7 +259,7 @@ std::string Result::name() const
 std::string Result::overload_name() const
 {
     return visit(profiler::overloaded(
-        ATTRIBUTE(TorchOp, std::string(e.overload_name_)),
+        ATTRIBUTE(FunctionOp, std::string(e.overload_name_)),
         [](const auto& /*e*/) -> std::string { return ""; }));
 }
 
@@ -294,7 +267,7 @@ std::string Result::overload_name() const
 kineto::activity_type_t Result::kinetoType() const
 {
     return visit(profiler::overloaded(
-        ATTRIBUTE(TorchOp, scopeToType(e.scope_)),
+        ATTRIBUTE(FunctionOp, scopeToType(e.scope_)),
         ATTRIBUTE(Backend, scopeToType(e.scope_)),
         ATTRIBUTE(Allocation, libkineto::ActivityType::CPU_INSTANT_EVENT),
         ATTRIBUTE(OutOfMemory, libkineto::ActivityType::CPU_INSTANT_EVENT),
@@ -305,7 +278,7 @@ kineto::activity_type_t Result::kinetoType() const
 uint64_t Result::correlationID() const
 {
     return visit(profiler::overloaded(
-        ATTRIBUTE(TorchOp, e.correlation_id_),
+        ATTRIBUTE(FunctionOp, e.correlation_id_),
         ATTRIBUTE(Kineto, kinetoEventCorrelationID(e, parent_)),
         [&](const auto&) -> uint64_t { return 0; }));
 }
@@ -313,7 +286,7 @@ uint64_t Result::correlationID() const
 int64_t Result::endTimeNS() const
 {
     auto end_time_ns = visit(profiler::overloaded(
-        ATTRIBUTE(TorchOp, torchOpEndNS(e, finished_, parent_)),
+        ATTRIBUTE(FunctionOp, functionOpEndNS(e, finished_, parent_)),
         ATTRIBUTE(Backend, e.end_time_us_ * 1000),
         ATTRIBUTE(Allocation, start_time_ns_),
         ATTRIBUTE(OutOfMemory, start_time_ns_),
@@ -331,12 +304,12 @@ int64_t Result::endTimeNS() const
 uint64_t Result::endTID() const
 {
     return visit(profiler::overloaded(
-        ATTRIBUTE(TorchOp, e.end_tid_), [&](const auto&) -> uint64_t { return start_tid_; }));
+        ATTRIBUTE(FunctionOp, e.end_tid_), [&](const auto&) -> uint64_t { return start_tid_; }));
 }
 
 profiler::device_enum Result::deviceType() const
 {
-    using profiler::autograd::profiler_impl::deviceTypeFromActivity;
+    using profiler::profiler_impl::deviceTypeFromActivity;
     return visit(profiler::overloaded(
         ATTRIBUTE(Allocation, e.device_type_),
         ATTRIBUTE(OutOfMemory, e.device_type_),
@@ -451,7 +424,7 @@ void generateForwardBackwardLink(
     std::unordered_map<uint64_t, libkineto::GenericTraceActivity*>& tidSeq2activity)
 {
     const auto& extra_fields =
-        std::get<ExtraFields<EventType::TorchOp>>(profiler_result.extra_fields_);
+        std::get<ExtraFields<EventType::FunctionOp>>(profiler_result.extra_fields_);
     if (extra_fields.forward_tid_ > 0)
     {
         // act is backward op.
@@ -527,7 +500,7 @@ void generateForwardBackwardLinks(
         // add information about an associated forward op, if a sequence number
         // is available (e.g. during training)
 
-        profiler_result->visit_if_base<ExtraFields<EventType::TorchOp>>(
+        profiler_result->visit_if_base<ExtraFields<EventType::FunctionOp>>(
             [&](const auto& e)
             {
                 if (e.sequence_number_ >= 0)
@@ -545,9 +518,11 @@ void generateForwardBackwardLinks(
         [](const result_activity_t& left, const result_activity_t& right)
         {
             auto left_end_time =
-                std::get<ExtraFields<EventType::TorchOp>>(left.first->extra_fields_).end_time_ns_;
+                std::get<ExtraFields<EventType::FunctionOp>>(left.first->extra_fields_)
+                    .end_time_ns_;
             auto right_end_time =
-                std::get<ExtraFields<EventType::TorchOp>>(right.first->extra_fields_).end_time_ns_;
+                std::get<ExtraFields<EventType::FunctionOp>>(right.first->extra_fields_)
+                    .end_time_ns_;
             return left_end_time < right_end_time;
         });
 
@@ -631,7 +606,7 @@ void passEventsToKineto(
 // However, this is not a sufficient description because it does not retain
 // dependency information between kineto ops. Consider a call to `profiler.add`.
 // Three events will be collected:
-//   `aten::add`          (TorchOp, collected by profiler)
+//   `aten::add`          (FunctionOp, collected by profiler)
 //   `cudaLaunchKernel`   (CUDA runtime event, collected by Kineto)
 //   `profiler::vectorized_...` (GPU kernel, collected by Kineto)
 // If we only relied on correlation IDs we would set both Kineto events as
@@ -810,7 +785,7 @@ private:
                 if (config_.experimental_config.expose_kineto_event_metadata)
                 {
                     e->visit(profiler::overloaded(
-                        [&](ExtraFields<EventType::TorchOp>& i)
+                        [&](ExtraFields<EventType::FunctionOp>& i)
                         { i.metadata_json_ = activity->metadataJson(); },
                         [&](ExtraFields<EventType::Kineto>& i)
                         { i.metadata_json_ = activity->metadataJson(); },
@@ -966,7 +941,7 @@ void build_tree(std::vector<std::shared_ptr<Result>>& sorted_events)
 {
     set_in_tree_building(sorted_events, true);
 
-    using op_fields = ExtraFields<EventType::TorchOp>;
+    using op_fields = ExtraFields<EventType::FunctionOp>;
     profiler::flat_hash_map<uint64_t, std::shared_ptr<Result>>                  stacks;
     std::priority_queue<result_ptr_t, std::vector<result_ptr_t>, ResultGreater> end_events_;
 
@@ -1093,7 +1068,7 @@ int64_t adjust_durations_dfs(std::shared_ptr<Result>& r)
         if (children_total_duration > original_duration)
         {
             r->visit(profiler::overloaded(
-                [&r, &children_total_duration](ExtraFields<EventType::TorchOp>& i)
+                [&r, &children_total_duration](ExtraFields<EventType::FunctionOp>& i)
                 { i.end_time_ns_ = r->start_time_ns_ + children_total_duration; },
                 []([[maybe_unused]] ExtraFields<EventType::Allocation>& _)
                 {
@@ -1130,7 +1105,7 @@ int64_t adjust_timestamps_dfs(std::shared_ptr<Result>& r, int64_t new_start_time
         {
             // Adjust start time (keeping duration constant)
             r->visit(profiler::overloaded(
-                [&r, &new_start_time](ExtraFields<EventType::TorchOp>& i)
+                [&r, &new_start_time](ExtraFields<EventType::FunctionOp>& i)
                 { i.end_time_ns_ = new_start_time + (i.end_time_ns_ - r->start_time_ns_); },
                 []([[maybe_unused]] ExtraFields<EventType::Allocation>& _)
                 {
@@ -1181,8 +1156,7 @@ void adjust_timestamps(std::vector<std::shared_ptr<Result>>& out)
         if (r->parent_.expired())
         {
             adjust_durations_dfs(r);
-            min_start_time = adjust_timestamps_dfs(
-                r, std::max(r->start_time_ns_, min_start_time));
+            min_start_time = adjust_timestamps_dfs(r, std::max(r->start_time_ns_, min_start_time));
         }
     }
 }
@@ -1240,7 +1214,8 @@ RecordQueue::getRecords(
             events.clear();
         };
 
-        queue.torch_ops_.materialize(out, step_info, converter, queue.tid(), queue.kineto_info());
+        queue.function_ops_.materialize(
+            out, step_info, converter, queue.tid(), queue.kineto_info());
         materialize(queue.backend_events_);
         for (auto& i : queue.allocations_)
         {
@@ -1265,13 +1240,13 @@ RecordQueue::getRecords(
 
     if (python_tracer_)
     {
-        auto             ev = python_tracer_->getEvents(
+        auto ev = python_tracer_->getEvents(
             converter, python_enters, static_cast<profiler::time_t>(end_time_ns));
         // Placeholder for if we run out of ProfilerStep annotations
         ProfilerStepInfo const defaultStep = {
             std::numeric_limits<int64_t>::max(), std::numeric_limits<int64_t>::max(), 0};
         size_t           step_idx = 0;
-        ProfilerStepInfo step = step_idx < step_info.size() ? step_info[step_idx] : defaultStep;
+        ProfilerStepInfo step     = step_idx < step_info.size() ? step_info[step_idx] : defaultStep;
         for (const auto& i : ev)
         {
             // Only adjust timestamps if experimental config is enabled
@@ -1327,30 +1302,6 @@ RecordQueue::getRecords(
 
     build_tree(out);
     return {out, std::move(trace)};
-}
-
-namespace
-{
-std::function<bool()>& record_concrete_inputs_enabled_fn()
-{
-    static std::function<bool()> fn = []() { return true; };
-    return fn;
-}
-}  // namespace
-
-bool get_record_concrete_inputs_enabled()
-{
-    return record_concrete_inputs_enabled_fn()();
-}
-
-void set_record_concrete_inputs_enabled_fn(std::function<bool()> fn)
-{
-    record_concrete_inputs_enabled_fn() = std::move(fn);
-}
-
-void set_record_concrete_inputs_enabled_val(bool val)
-{
-    record_concrete_inputs_enabled_fn() = [val]() { return val; };
 }
 
 namespace

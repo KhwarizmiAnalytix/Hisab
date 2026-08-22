@@ -26,7 +26,7 @@ namespace profiler_impl::impl
 namespace
 {
 
-using namespace profiler::autograd::profiler_impl;
+using namespace profiler::profiler_impl;
 
 class LibKinetoClient : public libkineto::ClientInterface
 {
@@ -93,7 +93,7 @@ void global_kineto_init()
     if (envar != nullptr)
     {
         libkineto_init(
-            /*cpuOnly=*/!(profiler::hasCUDA() /*|| profiler::hasXPU() || profiler::hasMTIA()*/),
+            /*cpuOnly=*/!(profiler::hasGPU() /*|| profiler::hasXPU() || profiler::hasMTIA()*/),
             /*logOnError=*/true);
         libkineto::api().suppressLogMessages();
     }

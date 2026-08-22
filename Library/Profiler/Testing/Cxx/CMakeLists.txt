@@ -6,14 +6,19 @@ quarisma_add_googletest()
 # Explicit list (keep in sync with BUILD.bazel). Real-use-case coverage only:
 # backend function / memory / output formats, Chrome trace hierarchy,
 # threadpool+tracing end-to-end, XPlane pipeline, native hotspot report,
-# heavy-function stress, and Kineto hotspot report / table.
+# heavy-function stress, native GpuTracer device plane, and Kineto hotspot
+# report / table.
 set(TestFiles
     "${CMAKE_CURRENT_SOURCE_DIR}/TestHotspotReport.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerBackendFunction.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerBackendGpuFallback.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerBackendMemory.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerBackendMetadata.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerBackendMetal.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerBackendOutput.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerChromeTraceHierarchical.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerHeavyFunction.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerGpuTracer.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerNativeHotspot.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerThreadpoolTracing.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerXPlanePipeline.cpp"

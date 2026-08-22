@@ -62,7 +62,7 @@ constexpr const char* kNestedScope   = "backend_nested_work";
 
 double profiled_function()
 {
-    constexpr int k_size = 24;
+    constexpr int       k_size = 24;
     std::vector<double> lhs(static_cast<size_t>(k_size * k_size), 1.25);
     std::vector<double> rhs(static_cast<size_t>(k_size * k_size), 0.75);
     std::vector<double> out(static_cast<size_t>(k_size * k_size), 0.0);
@@ -96,9 +96,8 @@ double profiled_function()
 namespace
 {
 
-const profiler::autograd::profiler_impl::KinetoEvent* find_named_event(
-    const std::vector<profiler::autograd::profiler_impl::KinetoEvent>& events,
-    const std::string&                                                 name)
+const profiler::profiler_impl::KinetoEvent* find_named_event(
+    const std::vector<profiler::profiler_impl::KinetoEvent>& events, const std::string& name)
 {
     for (const auto& event : events)
     {
@@ -114,22 +113,22 @@ const profiler::autograd::profiler_impl::KinetoEvent* find_named_event(
 
 PROFILERTEST(BackendFunction, kineto_profiles_function)
 {
-    profiler::autograd::profiler_impl::ProfilerConfig const config(
-        profiler::autograd::profiler_impl::ProfilerState::KINETO,
+    profiler::profiler_impl::ProfilerConfig const config(
+        profiler::profiler_impl::ProfilerState::KINETO,
         /*report_input_shapes=*/false,
         /*profile_memory=*/false,
         /*with_stack=*/false,
         /*with_flops=*/false,
         /*with_modules=*/false);
 
-    const std::set<profiler::autograd::profiler_impl::ActivityType> activities{
-        profiler::autograd::profiler_impl::ActivityType::CPU};
+    const std::set<profiler::profiler_impl::ActivityType> activities{
+        profiler::profiler_impl::ActivityType::CPU};
     const std::unordered_set<profiler::RecordScope> scopes{profiler::RecordScope::USER_SCOPE};
 
     try
     {
-        profiler::autograd::profiler_impl::prepareProfiler(config, activities);
-        profiler::autograd::profiler_impl::enableProfiler(config, activities, scopes);
+        profiler::profiler_impl::prepareProfiler(config, activities);
+        profiler::profiler_impl::enableProfiler(config, activities, scopes);
     }
     catch (const std::exception& ex)
     {
@@ -146,7 +145,7 @@ PROFILERTEST(BackendFunction, kineto_profiles_function)
         }
     }
 
-    auto profiler_result = profiler::autograd::profiler_impl::disableProfiler();
+    auto profiler_result = profiler::profiler_impl::disableProfiler();
     EXPECT_GT(result, 0.0);
     ASSERT_NE(profiler_result, nullptr);
 
@@ -281,13 +280,12 @@ PROFILERTEST(BackendFunction, itt_profiles_function)
     recording_itt_stub stub;
     scoped_itt_stub    stub_guard(stub);
 
-    profiler::autograd::profiler_impl::ProfilerConfig config(
-        profiler::autograd::profiler_impl::ProfilerState::ITT);
+    profiler::profiler_impl::ProfilerConfig config(profiler::profiler_impl::ProfilerState::ITT);
     try
     {
-        profiler::autograd::profiler_impl::enableProfiler(
+        profiler::profiler_impl::enableProfiler(
             config,
-            {profiler::autograd::profiler_impl::ActivityType::CPU},
+            {profiler::profiler_impl::ActivityType::CPU},
             {profiler::RecordScope::USER_SCOPE});
     }
     catch (const std::exception& ex)
@@ -309,7 +307,7 @@ PROFILERTEST(BackendFunction, itt_profiles_function)
         profiler::profiler_impl::itt_range_pop();
     }
 
-    PROFILER_UNUSED auto profiler_result = profiler::autograd::profiler_impl::disableProfiler();
+    PROFILER_UNUSED auto profiler_result = profiler::profiler_impl::disableProfiler();
     EXPECT_GT(result, 0.0);
     EXPECT_TRUE(saw_name(stub.pushes_, kFunctionScope));
     EXPECT_TRUE(saw_name(stub.pushes_, kNestedScope));
@@ -322,13 +320,12 @@ PROFILERTEST(BackendFunction, itt_profiles_function)
 
 PROFILERTEST(BackendFunction, nvtx_profiles_function)
 {
-    profiler::autograd::profiler_impl::ProfilerConfig config(
-        profiler::autograd::profiler_impl::ProfilerState::NVTX);
+    profiler::profiler_impl::ProfilerConfig config(profiler::profiler_impl::ProfilerState::NVTX);
     try
     {
-        profiler::autograd::profiler_impl::enableProfiler(
+        profiler::profiler_impl::enableProfiler(
             config,
-            {profiler::autograd::profiler_impl::ActivityType::CPU},
+            {profiler::profiler_impl::ActivityType::CPU},
             {profiler::RecordScope::USER_SCOPE});
     }
     catch (const std::exception& ex)
@@ -346,7 +343,7 @@ PROFILERTEST(BackendFunction, nvtx_profiles_function)
         }
     }
 
-    PROFILER_UNUSED auto profiler_result = profiler::autograd::profiler_impl::disableProfiler();
+    PROFILER_UNUSED auto profiler_result = profiler::profiler_impl::disableProfiler();
     EXPECT_GT(result, 0.0);
 }
 

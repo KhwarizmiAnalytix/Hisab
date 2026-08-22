@@ -29,7 +29,6 @@
  *   Chrome Trace + report still derived from the session XSpace
  */
 
-
 #include <iostream>
 #include <string>
 #include <thread>
@@ -76,7 +75,7 @@ void run_nested_workload(profiler_session& session)
         profiler_scope inner(kInnerScope, &session);
         // Name matches HostEventType so CreateTfXPlaneVisitor maps event types.
         profiler_scope typed(kTypedHostEvent, &session);
-        traceme encoded(
+        traceme        encoded(
             [&]()
             {
                 // Keys match StatType map so CreateTfXPlaneVisitor types them.
@@ -95,7 +94,7 @@ void run_nested_workload(profiler_session& session)
         [&session]()
         {
             profiler_scope scope("xplane_pipeline_worker", &session);
-            int spin = 0;
+            int            spin = 0;
             for (int i = 0; i < 500; ++i)
             {
                 ++spin;
@@ -143,10 +142,10 @@ PROFILERTEST(BackendXPlanePipeline, session_xspace_sort_merge_visitor_export)
         xplane_visitor const visitor = CreateTfXPlaneVisitor(host);
         EXPECT_EQ(visitor.name(), kHostThreadsPlaneName);
 
-        bool saw_typed_event = false;
-        bool saw_outer       = false;
-        bool saw_group_stat  = false;
-        size_t event_count   = 0;
+        bool   saw_typed_event = false;
+        bool   saw_outer       = false;
+        bool   saw_group_stat  = false;
+        size_t event_count     = 0;
         visitor.for_each_line(
             [&](const xline_visitor& line)
             {
@@ -198,9 +197,7 @@ PROFILERTEST(BackendXPlanePipeline, session_xspace_sort_merge_visitor_export)
         size_t               merged_events  = 0;
         merged_visitor.for_each_line(
             [&](const xline_visitor& line)
-            {
-                line.for_each_event([&](const xevent_visitor& /*event*/) { ++merged_events; });
-            });
+            { line.for_each_event([&](const xevent_visitor& /*event*/) { ++merged_events; }); });
         EXPECT_EQ(merged_events, count_events(merged));
     }
 
@@ -245,4 +242,3 @@ PROFILERTEST(BackendXPlanePipeline, empty_session_xspace_is_empty)
         }
     }
 }
-

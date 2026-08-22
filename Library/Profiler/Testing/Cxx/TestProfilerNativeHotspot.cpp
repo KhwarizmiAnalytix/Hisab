@@ -27,7 +27,6 @@
  * RECORD_USER_SCOPE + Kineto ProfilerResult.
  */
 
-
 #include <chrono>
 #include <iostream>
 #include <string>

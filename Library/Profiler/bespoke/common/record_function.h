@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <unordered_set>
 
 #include "common/profiler_export.h"
@@ -312,18 +313,30 @@ struct PROFILER_VISIBILITY RecordFunction
 
     void setDebugHandle(int64_t debug_handle) { debug_handle_ = debug_handle; }
 
+    // Structured per-call metadata: arbitrary caller-supplied key/value pairs,
+    // surfaced downstream via KinetoEvent::extraMeta(). This is the generic
+    // replacement for op-specific (tensor/IValue-shaped) argument recording --
+    // see record_function_metadata_builder for the ergonomic call-site API.
+    void addMetadata(std::string key, std::string value)
+    {
+        metadata_[std::move(key)] = std::move(value);
+    }
+
+    const std::unordered_map<std::string, std::string>& metadata() const { return metadata_; }
+
 private:
     void runStartCallbacks();
 
-    StepCallbacks       step_callbacks_;
-    bool                called_start_callbacks_ = false;
-    ObserverContextList ctx_;
-    std::string         fn_;
-    int64_t             sequence_nr_   = -1;
-    uint64_t            fwd_thread_id_ = 0;
-    RecordFunctionHandle handle_{0};
-    bool                 is_async_{false};
-    int64_t              debug_handle_{-1};
+    StepCallbacks                                step_callbacks_;
+    bool                                         called_start_callbacks_ = false;
+    ObserverContextList                          ctx_;
+    std::string                                  fn_;
+    int64_t                                      sequence_nr_   = -1;
+    uint64_t                                     fwd_thread_id_ = 0;
+    RecordFunctionHandle                         handle_{0};
+    bool                                         is_async_{false};
+    int64_t                                      debug_handle_{-1};
+    std::unordered_map<std::string, std::string> metadata_;
 };
 
 PROFILER_API StepCallbacks getStepCallbacks(RecordScope scope);
@@ -337,11 +350,77 @@ PROFILER_API std::optional<StepCallbacks> getStepCallbacksUnlessEmpty(RecordScop
         guard.before(fn);                     \
     }
 
-#define RECORD_FUNCTION(fn, ...) \
-    RECORD_FUNCTION_WITH_SCOPE(profiler::RecordScope::FUNCTION, fn)
+#define RECORD_FUNCTION(fn, ...) RECORD_FUNCTION_WITH_SCOPE(profiler::RecordScope::FUNCTION, fn)
 
-#define RECORD_USER_SCOPE(fn) \
-    RECORD_FUNCTION_WITH_SCOPE(profiler::RecordScope::USER_SCOPE, fn)
+#define RECORD_USER_SCOPE(fn) RECORD_FUNCTION_WITH_SCOPE(profiler::RecordScope::USER_SCOPE, fn)
+
+/**
+ * @brief Fluent builder for attaching structured metadata to a RecordFunction
+ * guard, e.g.:
+ *
+ *   RECORD_FUNCTION_WITH_METADATA(guard, "gemm")
+ *       .with_metadata("m", m).with_metadata("n", n).with_metadata("k", k);
+ *
+ * Values are stringified into the same key/value map surfaced via
+ * KinetoEvent::extraMeta() -- this is a generic mechanism for profiling any
+ * function's parameters, not a tensor/IValue-shaped argument list.
+ *
+ * `guard` is constructed but not yet started (see the macro below); this
+ * builder starts it -- calling RecordFunction::before(), which synchronously
+ * runs the profiler's start callbacks -- only once its own lifetime ends
+ * (its destructor fires after every chained with_metadata() call in the
+ * same full expression), so metadata set here is visible to those
+ * callbacks. Starting `guard` itself, rather than in the macro, would run
+ * the callbacks before any metadata had been attached.
+ */
+class PROFILER_VISIBILITY record_function_metadata_builder
+{
+public:
+    record_function_metadata_builder(RecordFunction& fn, std::string_view name)
+        : fn_(fn), name_(name)
+    {
+    }
+
+    record_function_metadata_builder(const record_function_metadata_builder&)            = delete;
+    record_function_metadata_builder& operator=(const record_function_metadata_builder&) = delete;
+    record_function_metadata_builder(record_function_metadata_builder&&)                 = delete;
+    record_function_metadata_builder& operator=(record_function_metadata_builder&&)      = delete;
+
+    ~record_function_metadata_builder()
+    {
+        if (fn_.isActive())
+        {
+            fn_.before(name_);
+        }
+    }
+
+    record_function_metadata_builder& with_metadata(std::string key, std::string value)
+    {
+        fn_.addMetadata(std::move(key), std::move(value));
+        return *this;
+    }
+
+    record_function_metadata_builder& with_metadata(std::string key, int64_t value)
+    {
+        return with_metadata(std::move(key), std::to_string(value));
+    }
+
+    record_function_metadata_builder& with_metadata(std::string key, double value)
+    {
+        return with_metadata(std::move(key), std::to_string(value));
+    }
+
+private:
+    RecordFunction&  fn_;
+    std::string_view name_;
+};
+
+// Declares `guard_name` (scope: the enclosing block, like RECORD_FUNCTION)
+// without starting it. Chain record_function_metadata_builder(guard_name, fn)
+// .with_metadata(...) immediately after to attach metadata and start it --
+// see the class comment above for why start is deferred to the builder.
+#define RECORD_FUNCTION_WITH_METADATA(guard_name, fn) \
+    profiler::RecordFunction guard_name(profiler::RecordScope::FUNCTION)
 
 /**
  * addThreadLocalCallback adds a thread local callback to run with

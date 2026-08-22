@@ -30,15 +30,29 @@ def profiler_defines():
     # Native pipeline (traceme/xplane/host_tracer/profiler_session) is always compiled
     # alongside whichever instrumentation backend is selected above — no HAS_* gate.
 
-    # PROFILER_HAS_CUDA — independent of backend selection above. Gates
-    # bespoke/base/cuda.cpp's CUDA event-fallback stub and profiler_kineto.h's
-    # hasCUDA(). Mirrors CMakeLists.txt's find_package(CUDAToolkit) gate.
+    # PROFILER_HAS_CUDA / PROFILER_HAS_HIP — independent of backend selection
+    # above, and of each other's build (MEMORY_GPU_BACKEND only ever selects
+    # one GPU vendor). Both gate bespoke/base/cuda.cpp's event-fallback stub
+    # (generalized to also serve HIP via bespoke/base/gpu_runtime.h) and
+    # profiler_kineto.h's hasGPU(). Mirrors CMakeLists.txt's
+    # find_package(CUDAToolkit) / find_package(hip) gates.
     defines += select({
         "//bazel:enable_cuda": ["PROFILER_HAS_CUDA=1"],
         "//conditions:default": ["PROFILER_HAS_CUDA=0"],
+    })
+    defines += select({
+        "//bazel:enable_hip": ["PROFILER_HAS_HIP=1"],
+        "//conditions:default": ["PROFILER_HAS_HIP=0"],
+    })
+    defines += select({
+        "//bazel:enable_metal": ["PROFILER_HAS_METAL=1"],
+        "//conditions:default": ["PROFILER_HAS_METAL=0"],
     })
 
     return defines
 
 def profiler_linkopts():
-    return quarisma_linkopts()
+    return quarisma_linkopts() + select({
+        "//bazel:enable_metal": ["-framework", "Metal", "-framework", "Foundation"],
+        "//conditions:default": [],
+    })

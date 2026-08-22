@@ -28,7 +28,7 @@
 #include "bespoke/kineto/profiler_kineto.h"
 #include "common/profiler_export.h"
 
-namespace profiler::autograd::profiler_impl
+namespace profiler::profiler_impl
 {
 
 /**
@@ -98,16 +98,15 @@ public:
      * Empty `sort_by` keeps the default self-CPU descending order.
      * @param row_limit Maximum data rows (0 = all).
      */
-    PROFILER_API std::string table(
-        const std::string& sort_by = "", size_t row_limit = 100) const;
+    PROFILER_API std::string table(const std::string& sort_by = "", size_t row_limit = 100) const;
 
     /// Hotspots sorted by self CPU time descending.
     const std::vector<hotspot_entry>& hotspots() const { return hotspots_; }
 
 private:
-    std::vector<experimental_event_t>                          roots_;
-    std::vector<hotspot_entry>                                 hotspots_;
-    std::unordered_map<std::string, std::vector<std::string>>  call_stacks_;
+    std::vector<experimental_event_t>                         roots_;
+    std::vector<hotspot_entry>                                hotspots_;
+    std::unordered_map<std::string, std::vector<std::string>> call_stacks_;
 };
 
-}  // namespace profiler::autograd::profiler_impl
+}  // namespace profiler::profiler_impl

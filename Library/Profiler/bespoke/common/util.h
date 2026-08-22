@@ -81,9 +81,6 @@ PROFILER_API std::string inputOpIdsToStr(
     const std::list<std::pair<profiler::RecordFunctionHandle, int>>& input_op_ids);
 PROFILER_API std::vector<std::string> inputTypes(const profiler::RecordFunction& fn);
 
-uint64_t PROFILER_API computeFlops(
-    const std::string& op_name, const std::unordered_map<std::string, std::string>& extra_args);
-
 std::string shapeToStr(const std::vector<int64_t>& shape);
 
 template <typename T>

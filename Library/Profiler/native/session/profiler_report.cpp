@@ -63,17 +63,16 @@ std::string build_xspace_stats_summary(const profiler_session& session)
         return {};
     }
 
-    const xplane* host =
-        find_plane_with_name(session.collected_xspace(), kHostThreadsPlaneName);
+    const xplane* host = find_plane_with_name(session.collected_xspace(), kHostThreadsPlaneName);
     if (host == nullptr)
     {
         return {};
     }
 
-    stats_calculator               calc(stat_summarizer_options{});
-    int64_t                        run_order  = 0;
-    int64_t                        run_total_us = 0;
-    const statistical_analyzer*    analyzer   = session.statistical_analyzer_ptr();
+    stats_calculator            calc(stat_summarizer_options{});
+    int64_t                     run_order    = 0;
+    int64_t                     run_total_us = 0;
+    const statistical_analyzer* analyzer     = session.statistical_analyzer_ptr();
 
     xplane_visitor const visitor = CreateTfXPlaneVisitor(host);
     visitor.for_each_line(
@@ -90,18 +89,17 @@ std::string build_xspace_stats_summary(const profiler_session& session)
 
                     // Schema-typed host events keep their name as the node type;
                     // ordinary TraceMe scopes are labeled "Scope".
-                    const std::string type =
-                        event.type().has_value() ? name : std::string("Scope");
+                    const std::string type = event.type().has_value() ? name : std::string("Scope");
 
-                    const auto elapsed_us =
-                        static_cast<int64_t>(event.duration_ps() / 1000000);
+                    const auto elapsed_us = static_cast<int64_t>(event.duration_ps() / 1000000);
                     if (elapsed_us < 0)
                     {
                         return;
                     }
 
                     int64_t mem_used = 0;
-                    if (auto bytes = event.get_stat(static_cast<int64_t>(StatType::kRequestedBytes));
+                    if (auto bytes =
+                            event.get_stat(static_cast<int64_t>(StatType::kRequestedBytes));
                         bytes.has_value())
                     {
                         mem_used = bytes->int_or_uint_value();
@@ -595,8 +593,8 @@ std::string profiler_report::generate_summary_section() const
     // root is a synthetic node aggregating every recorded thread's scopes (see
     // scope_tree_builder::build_scope_tree()), so it has no single originating thread to report --
     // report the thread count instead; generate_thread_section() has the per-thread breakdown.
-    ss << "Threads involved: "
-       << build_thread_histogram(session_.collected_xspace()).size() << "\n";
+    ss << "Threads involved: " << build_thread_histogram(session_.collected_xspace()).size()
+       << "\n";
 
     if (auto const* tracker = session_.memory_tracker_ptr())
     {
@@ -939,7 +937,7 @@ void profiler_report::process_scope_data_recursive(
     const profiler_scope_data& scope, std::stringstream& ss, int indent) const
 {
     std::string const prefix(static_cast<size_t>(indent) * 2, ' ');
-    auto const memory = scope_memory_stats(session_, scope.name_);
+    auto const        memory = scope_memory_stats(session_, scope.name_);
     ss << prefix << "- " << scope.name_ << " | duration " << format_double(scope.get_duration_ms())
        << " ms" << " | thread " << format_thread_label(scope.thread_label_) << " | memory ";
     if (memory.is_valid())
@@ -967,8 +965,7 @@ void profiler_report::process_scope_data_json_recursive(
     ss << indent_str << "  \"name\": " << escape_json_string(scope.name_) << ",\n";
     ss << indent_str << "  \"duration_ms\": " << format_double(scope.get_duration_ms()) << ",\n";
     ss << indent_str
-       << "  \"thread\": " << escape_json_string(format_thread_label(scope.thread_label_))
-       << ",\n";
+       << "  \"thread\": " << escape_json_string(format_thread_label(scope.thread_label_)) << ",\n";
     ss << indent_str << "  \"memory\": {\n";
     if (memory.is_valid())
     {

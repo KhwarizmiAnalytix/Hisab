@@ -47,7 +47,6 @@
  * use case is documented next to the assertions that prove it works.
  */
 
-
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -73,7 +72,7 @@ void run_nested_workload(profiler_session& session)
     {
         profiler_scope outer(kOuterScope, &session);
         {
-            profiler_scope inner(kInnerScope, &session);
+            profiler_scope  inner(kInnerScope, &session);
             volatile double sink = 0.0;
             for (int i = 0; i < 1000; ++i)
             {
@@ -104,8 +103,7 @@ std::string read_file(const std::string& path)
     {
         return {};
     }
-    return std::string(
-        (std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
 }
 
 }  // namespace
@@ -188,7 +186,7 @@ PROFILERTEST(BackendOutput, console_report_text)
 // -----------------------------------------------------------------------------
 PROFILERTEST(BackendOutput, file_format_exports_console_text)
 {
-    profiler_options opts = make_report_options(profiler_options::output_format_enum::FILE);
+    profiler_options opts  = make_report_options(profiler_options::output_format_enum::FILE);
     opts.output_file_path_ = "backend_output_file_report.txt";
 
     profiler_session session(opts);
@@ -275,8 +273,7 @@ PROFILERTEST(BackendOutput, csv_report_rows)
 // -----------------------------------------------------------------------------
 PROFILERTEST(BackendOutput, structured_xml_report)
 {
-    profiler_session session(
-        make_report_options(profiler_options::output_format_enum::STRUCTURED));
+    profiler_session session(make_report_options(profiler_options::output_format_enum::STRUCTURED));
     ASSERT_TRUE(session.start());
     run_nested_workload(session);
     ASSERT_TRUE(session.stop());
@@ -340,4 +337,3 @@ PROFILERTEST(BackendOutput, all_formats_from_one_session)
     EXPECT_NE(xml.find("=== Node Stats (from XSpace) ==="), std::string::npos);
     EXPECT_NE(xml.find("<statistics>"), std::string::npos);
 }
-

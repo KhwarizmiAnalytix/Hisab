@@ -53,7 +53,7 @@ extern "C"
 
 namespace profiler
 {
-namespace autograd::profiler_impl
+namespace profiler_impl
 {
 
 namespace
@@ -72,76 +72,8 @@ inline int64_t getTimeNs()
 using profiler::profiler_impl::impl::ActiveProfilerType;
 using profiler::profiler_impl::impl::EventType;
 using profiler::profiler_impl::impl::ExtraFields;
-using profiler::profiler_impl::impl::get_record_concrete_inputs_enabled;  //NOLINT
-//using profiler::profiler_impl::impl::ivalueListToStr;
-//using profiler::profiler_impl::impl::ivalueToStr;
-using profiler::profiler_impl::impl::op_input_t;
 using profiler::profiler_impl::impl::ProfilerStateBase;
-//using profiler::profiler_impl::impl::PyExtraFieldsBase;
 using profiler::profiler_impl::impl::Result;
-//using profiler::profiler_impl::impl::shape;
-//using profiler::profiler_impl::impl::shapesToStr;
-//using profiler::profiler_impl::impl::stacksToStr;
-//using profiler::profiler_impl::impl::strListToStr;
-using profiler::profiler_impl::impl::TensorMetadata;
-//using profiler::profiler_impl::impl::variantShapesToStr;
-using shape = std::variant<std::vector<int64_t>, std::vector<std::vector<int64_t>>>;
-
-struct OpArgData
-{
-    bool                              hasData;
-    std::vector<shape>                shapes;
-    std::vector<std::string>          dtypes;
-    std::vector<std::vector<int64_t>> shapesForKinetoEvent;
-    std::vector<shape>                strides;
-};
-
-auto parseArgData(
-    const std::vector<op_input_t>& input_shapes, const std::vector<op_input_t>& /*concreteInputs*/)
-{
-    if (input_shapes.empty())
-    {
-        return OpArgData{false, {}, {}, {}, {}};
-    }
-
-    std::vector<shape>                shapes(input_shapes.size());
-    std::vector<shape>                strides(input_shapes.size());
-    std::vector<std::vector<int64_t>> shapesForKinetoEvent(input_shapes.size());
-
-    std::vector<std::string> dtypes(input_shapes.size());
-
-    for (const auto& i : profiler::irange(input_shapes.size()))
-    {
-        std::visit(
-            profiler::overloaded(
-                [&](const TensorMetadata& t)
-                {
-                    shapes[i]               = t.sizes_;
-                    shapesForKinetoEvent[i] = t.sizes_;
-                    dtypes[i]               = std::string();
-                    strides[i]              = t.strides_;
-                },
-                [&](const std::vector<TensorMetadata>& tensor_list)
-                {
-                    std::vector<std::vector<int64_t>> shape;
-                    shape.reserve(tensor_list.size());
-                    std::vector<std::vector<int64_t>> stride;
-                    stride.reserve(tensor_list.size());
-                    for (const auto& t : tensor_list)
-                    {
-                        shape.emplace_back(t.sizes_);
-                        stride.emplace_back(t.strides_);
-                    }
-                    shapes[i]  = shape;
-                    strides[i] = stride;
-                    dtypes[i]  = "TensorList";
-                },
-                [&](const auto&) {}),
-            input_shapes[i]);
-    }
-
-    return OpArgData{true, shapes, dtypes, shapesForKinetoEvent, strides};
-}
 
 struct MetadataBase
 {
@@ -182,55 +114,6 @@ private:
     const profiler::profiler_impl::impl::kineto::activity_t* kinetoActivity_{nullptr};
 };
 
-struct AddTensorboardFields : public MetadataBase
-{
-    AddTensorboardFields(const std::shared_ptr<Result>& result, KinetoEvent& kineto_event)
-        : MetadataBase(result)
-    {
-        result->visit(*this);
-        const auto module_hierarchy = kineto_event.moduleHierarchy();
-        addMetadata(
-            "Module Hierarchy",
-            profiler::profiler_impl::impl::stacksToStr(module_hierarchy.vec(), "."));
-        addMetadata(
-            "Call stack",
-            profiler::profiler_impl::impl::stacksToStr(kineto_event.stack().vec(), ";"));
-
-        // Note: PyExtraFieldsBase is not currently available in this build
-        // Uncomment when Python integration is enabled
-        /*result->visit_if_base<PyExtraFieldsBase>(
-            [&, this](const auto& i) -> void
-            {
-                this->addMetadata("Python id", std::to_string(i.id_));
-
-                std::optional<std::string> parent_id;
-                std::shared_ptr<Result>    parent = result->parent_.lock();
-                while (parent && !parent_id.has_value())
-                {
-                    parent->visit_if_base<PyExtraFieldsBase>(
-                        [&](const auto& j) { parent_id = std::to_string(j.id_); });
-                    parent = parent->parent_.lock();
-                }
-                this->addMetadata("Python parent id", parent_id.value_or("null"));
-            });*/
-    }
-
-    // Note: PyCall event type is not currently available in this build
-    // Uncomment when Python integration is enabled
-    /*void operator()(const ExtraFields<EventType::PyCall>& py_call)
-    {
-        if (py_call.module_.has_value())
-        {
-            addMetadata("Python module id", std::to_string(py_call.module_->id_));
-        }
-    }*/
-
-    template <typename T>
-    void operator()(const T& /*unused*/)
-    {
-    }
-};
-
 struct AddGenericMetadata : public MetadataBase
 {
     AddGenericMetadata(
@@ -249,31 +132,10 @@ struct AddGenericMetadata : public MetadataBase
         }
     }
 
-    void operator()(ExtraFields<EventType::TorchOp>& op_event)
+    void operator()(ExtraFields<EventType::FunctionOp>& op_event)
     {
-        const auto arg_data = parseArgData(op_event.inputs_, op_event.concrete_inputs_);
-
-        if (arg_data.hasData)
-        {
-            if (get_record_concrete_inputs_enabled())
-            {
-                addMetadata(
-                    "Input Dims",
-                    profiler::profiler_impl::impl::variantShapesToStr(arg_data.shapes));
-                addMetadata(
-                    "Input Strides",
-                    profiler::profiler_impl::impl::variantShapesToStr(arg_data.strides));
-            }
-            else
-            {
-                addMetadata(
-                    "Input Dims",
-                    profiler::profiler_impl::impl::shapesToStr(arg_data.shapesForKinetoEvent));
-            }
-            addMetadata("Input type", profiler::profiler_impl::impl::strListToStr(arg_data.dtypes));
-        }
-
-        // Add extra metadata if any
+        // Caller-supplied structured metadata (RecordFunction::addMetadata /
+        // record_function_metadata_builder).
         for (const auto& [key, val] : op_event.extra_meta_)
         {
             addMetadata(key, val);
@@ -396,8 +258,6 @@ struct KinetoThreadLocalState : public ProfilerStateBase
         }
     }
 
-    void setEventPostProcessingCallback(post_process_t&& cb) { eventPostProcessCb = std::move(cb); }
-
     void pausePython() { recordQueue.stop(); }
 
     void resumePython() { recordQueue.restart(); }
@@ -416,25 +276,7 @@ struct KinetoThreadLocalState : public ProfilerStateBase
 
         materializeOpEvents(records_and_trace.first);
 
-        // `kinetoEvents` does not include Python events. Instead it exposes them
-        // via the `stacks` property.
-        kinetoEvents.erase(
-            std::remove_if(
-                kinetoEvents.begin(),
-                kinetoEvents.end(),
-                [](const auto& i) { return i.isPythonFunction(); }),
-            kinetoEvents.end());
-
         return std::move(records_and_trace.second);
-    }
-
-    template <typename T>
-    void invokeCallback(T& t)
-    {
-        if (eventPostProcessCb)
-        {
-            eventPostProcessCb(t.debug_handle_, t.jit_stack_, t.jit_modules_);
-        }
     }
 
     void materializeOpEvents(std::vector<std::shared_ptr<Result>>& events)
@@ -448,14 +290,8 @@ struct KinetoThreadLocalState : public ProfilerStateBase
 
             if (e->finished_)
             {
-                e->visit(profiler::overloaded(
-                    [this](ExtraFields<EventType::TorchOp>& i) { invokeCallback(i); },
-                    [this](ExtraFields<EventType::Backend>& i) { invokeCallback(i); },
-                    [](auto&) {}));
-
                 kinetoEvents.emplace_back(e, config_.experimental_config.verbose);
-                AddTensorboardFields const add_tb(e, kinetoEvents.back());
-                AddGenericMetadata const   add_generic(e, &config_);
+                AddGenericMetadata const add_generic(e, &config_);
 
                 // It is not safe to use the activity after post processing.
                 e->kineto_activity_ = nullptr;
@@ -468,8 +304,6 @@ struct KinetoThreadLocalState : public ProfilerStateBase
     profiler::profiler_impl::impl::RecordQueue    recordQueue;
     std::vector<KinetoEvent>                      kinetoEvents;
     std::vector<experimental_event_t>             eventTree;
-    // Optional, if event post-processing is enabled.
-    post_process_t eventPostProcessCb;
 };
 
 template <bool use_global_state_ptr = false>
@@ -608,7 +442,7 @@ void prepareProfiler(
     // "Supported only in Kineto profiler");
 
     profiler::profiler_impl::impl::kineto::prepareTrace(
-        /*cpuOnly=*/!(profiler::hasCUDA()  //|| profiler::hasXPU() || profiler::hasMTIA() ||
+        /*cpuOnly=*/!(profiler::hasGPU()  //|| profiler::hasXPU() || profiler::hasMTIA() ||
                       //profiler::get_privateuse1_backend() != "privateuseone"
                       ),
         activities,
@@ -619,7 +453,7 @@ void prepareProfiler(
     {
         /* For now only CPU activity is supported */
         // PROFILER_CHECK(
-        // activities.count(profiler::autograd::profiler_impl::ActivityType::CPU),
+        // activities.count(profiler::profiler_impl::ActivityType::CPU),
         // "Cannot run cpu hardware profiler without CPU activities, please only use CPU activity "
         // "type");
         /*
@@ -649,7 +483,7 @@ void prepareProfiler(
     }
 }
 
-static void toggleTorchOpCollectionDynamic(bool enable)
+static void toggleFunctionOpCollectionDynamic(bool enable)
 {
     auto* state_ptr = ProfilerStateBase::get();
     if (state_ptr != nullptr)
@@ -690,7 +524,7 @@ static void toggleTorchOpCollectionDynamic(bool enable)
 
 static void toggleCPUCollectionDynamic(bool enable)
 {
-    toggleTorchOpCollectionDynamic(enable);
+    toggleFunctionOpCollectionDynamic(enable);
     // For now we only support Torch Op collection dynamic toggling as
     // implementing Python ops would require not only string parsing to get rid of
     // the toggling events as well as other unfinished events as well as changes
@@ -701,18 +535,18 @@ static void toggleCPUCollectionDynamic(bool enable)
 void toggleCollectionDynamic(
     const bool enable, const std::set<profiler::profiler_impl::impl::ActivityType>& activities)
 {
-    /*if (activities.contains(profiler::autograd::profiler_impl::ActivityType::CPU) &&
-        (!activities.contains(profiler::autograd::profiler_impl::ActivityType::CUDA) ||
-         !activities.contains(profiler::autograd::profiler_impl::ActivityType::XPU)))
+    /*if (activities.contains(profiler::profiler_impl::ActivityType::CPU) &&
+        (!activities.contains(profiler::profiler_impl::ActivityType::CUDA) ||
+         !activities.contains(profiler::profiler_impl::ActivityType::XPU)))
     {
         //LOG(WARNING)
         //<< "Toggling CPU activity with GPU activity on may result in traces with GPU events on "
         //  "artibrary tracks";
     }
     else if (
-        (activities.contains(profiler::autograd::profiler_impl::ActivityType::CUDA) ||
-         activities.contains(profiler::autograd::profiler_impl::ActivityType::XPU)) &&
-        !activities.contains(profiler::autograd::profiler_impl::ActivityType::CPU))
+        (activities.contains(profiler::profiler_impl::ActivityType::CUDA) ||
+         activities.contains(profiler::profiler_impl::ActivityType::XPU)) &&
+        !activities.contains(profiler::profiler_impl::ActivityType::CPU))
     {
         //LOG(WARNING)
         //<< "Toggling GPU activity with CPU activity on may result in traces with incorrect "
@@ -720,12 +554,12 @@ void toggleCollectionDynamic(
     }*/
     for (auto act : activities)
     {
-        if (act == profiler::autograd::profiler_impl::ActivityType::CUDA ||
-            act == profiler::autograd::profiler_impl::ActivityType::XPU)
+        if (act == profiler::profiler_impl::ActivityType::CUDA ||
+            act == profiler::profiler_impl::ActivityType::XPU)
         {
             profiler::profiler_impl::impl::kineto::toggleCollectionDynamic(enable);
         }
-        else if (act == profiler::autograd::profiler_impl::ActivityType::CPU)
+        else if (act == profiler::profiler_impl::ActivityType::CPU)
         {
             toggleCPUCollectionDynamic(enable);
         }
@@ -737,25 +571,6 @@ void toggleCollectionDynamic(
             continue;
         }
     }
-}
-
-void enableProfilerWithEventPostProcess(
-    const profiler::profiler_impl::impl::ProfilerConfig&         config,
-    const std::set<profiler::profiler_impl::impl::ActivityType>& activities,
-    post_process_t&&                                             cb,
-    const std::unordered_set<profiler::RecordScope>&             scopes)
-{
-    // PROFILER_CHECK(
-    // config.state != ProfilerState::NVTX, "NVTX does not support post processing callback.");
-    // PROFILER_CHECK(
-    // config.state != ProfilerState::ITT, "ITT does not support post processing callback.");
-    // PROFILER_CHECK(
-    // KinetoThreadLocalState::get(/*global=*/true) == nullptr,
-    // "On-demand profiling does not support post processing callback");
-
-    enableProfiler(config, activities, scopes);
-    auto* state_ptr = KinetoThreadLocalState::get(config.global());
-    state_ptr->setEventPostProcessingCallback(std::move(cb));
 }
 
 void enableProfiler(
@@ -924,97 +739,12 @@ KinetoEvent::KinetoEvent(
     : result_{result}
 {
     // PROFILER_CHECK(result != nullptr);
-
-    if (verbose)
-    {
-        // Populate Python stack
-        auto parent = result_->parent_.lock();
-        while (parent != nullptr)
-        {
-            //parent->visit_if_base<PyExtraFieldsBase>([&](const auto&)
-            // { python_stack_.push_back(parent->name()); });
-            parent = parent->parent_.lock();
-        }
-    }
-
-    result->visit_if_base<ExtraFields<EventType::TorchOp>>(
-        [&](const auto& op)
-        {
-            auto arg_data = parseArgData(op.inputs_, op.concrete_inputs_);
-            shapes_       = std::move(arg_data.shapesForKinetoEvent);
-            dtypes_       = std::move(arg_data.dtypes);
-        });
-}
-
-bool KinetoEvent::isPythonFunction()
-{
-    return false;
-}
-
-bool KinetoEvent::hasShapes() const
-{
-    return !shapes_.empty();
-}
-
-profiler::array_ref<std::vector<int64_t>> KinetoEvent::shapes() const
-{
-    return shapes_;
-}
-
-bool KinetoEvent::hasTypes() const
-{
-    return !dtypes_.empty();
-}
-
-profiler::array_ref<std::string> KinetoEvent::dtypes() const
-{
-    return dtypes_;
-}
-
-bool KinetoEvent::hasConcreteInputs() const
-{
-    return false;
-}
-
-bool KinetoEvent::hasKwinputs() const
-{
-    return false;
+    (void)verbose;
 }
 
 bool KinetoEvent::isHiddenEvent() const
 {
     return result_ && result_->hidden_;
-}
-
-profiler::array_ref<std::string> KinetoEvent::stack() const
-{
-    auto get = [&](const auto& i) -> auto&
-    { return !i.jit_stack_.empty() ? i.jit_stack_ : python_stack_; };
-
-    auto const& extra_fields = result_->extra_fields_;
-    if (const auto* p = std::get_if<ExtraFields<EventType::TorchOp>>(&extra_fields))
-    {
-        return get(*p);
-    }
-    if (const auto* p = std::get_if<ExtraFields<EventType::Backend>>(&extra_fields))
-    {
-        return get(*p);
-    }
-    return python_stack_;
-}
-
-profiler::array_ref<std::string> KinetoEvent::moduleHierarchy() const
-{
-    auto const& extra_fields = result_->extra_fields_;
-    if (const auto* p = std::get_if<ExtraFields<EventType::TorchOp>>(&extra_fields))
-    {
-        return p->jit_modules_;
-    }
-    if (const auto* p = std::get_if<ExtraFields<EventType::Backend>>(&extra_fields))
-    {
-        return p->jit_modules_;
-    }
-    return {};
 }
 
 uint64_t KinetoEvent::endNs() const
@@ -1027,14 +757,6 @@ uint64_t KinetoEvent::durationNs() const
     return (result_->endTimeNS() - result_->start_time_ns_);
 }
 
-int64_t KinetoEvent::debugHandle() const
-{
-    return result_->visit(profiler::overloaded(
-        [](const ExtraFields<EventType::TorchOp>& i) { return i.debug_handle_; },
-        [](const ExtraFields<EventType::Backend>& i) { return i.debug_handle_; },
-        [](const auto&) -> int64_t { return -1; }));
-}
-
 int KinetoEvent::deviceIndex() const
 {
     return result_->visit(profiler::overloaded(
@@ -1043,11 +765,6 @@ int KinetoEvent::deviceIndex() const
         [](const ExtraFields<EventType::OutOfMemory>& i)
         { return static_cast<int>(i.device_index_); },
         [&](const auto&) { return static_cast<int>(result_->kineto_info_.device); }));
-}
-
-bool KinetoEvent::hasStack() const
-{
-    return !stack().empty();
 }
 
 int64_t KinetoEvent::cudaElapsedUs() const
@@ -1087,7 +804,7 @@ int64_t KinetoEvent::privateuse1ElapsedUs() const
 void KinetoEvent::getPerfEventCounters(std::vector<uint64_t>& in) const
 {
     return result_->visit(profiler::overloaded(
-        [&in](const ExtraFields<EventType::TorchOp>& e) -> void
+        [&in](const ExtraFields<EventType::FunctionOp>& e) -> void
         {
             const size_t n = e.perf_event_counters_->size();
             // should be rare
@@ -1106,7 +823,8 @@ void KinetoEvent::getPerfEventCounters(std::vector<uint64_t>& in) const
 std::string KinetoEvent::metadataJson() const
 {
     return result_->visit(profiler::overloaded(
-        [](const ExtraFields<EventType::TorchOp>& op) -> std::string { return op.metadata_json_; },
+        [](const ExtraFields<EventType::FunctionOp>& op) -> std::string
+        { return op.metadata_json_; },
         [](const ExtraFields<EventType::Kineto>& op) -> std::string { return op.metadata_json_; },
         [](const auto&) -> std::string { return {""}; }));
 }
@@ -1143,7 +861,6 @@ uint8_t KinetoEvent::activityType() const
 }
 #endif
 FORWARD_FROM_RESULT(name, name())
-FORWARD_FROM_RESULT(overload_name, overload_name())
 FORWARD_FROM_RESULT(deviceType, deviceType())
 FORWARD_FROM_RESULT(startNs, start_time_ns_)
 FORWARD_FROM_RESULT(correlationId, correlationID())
@@ -1151,7 +868,7 @@ FORWARD_FROM_RESULT(deviceResourceId, kineto_info_.resource)
 #undef FORWARD_FROM_RESULT
 
 // Most of the fields in `KinetoEvent` only make sense for a single event type.
-// (Generally TorchOp.) For all other types they simply return the default
+// (Generally FunctionOp.) For all other types they simply return the default
 // value. This macro provides a succinct way of expressing this behavior.
 #define TYPED_ATTR_WITH_DEFAULT(event_type, method_name, expression, default_value)          \
     decltype(std::declval<KinetoEvent>().method_name()) KinetoEvent::method_name() const     \
@@ -1165,20 +882,11 @@ FORWARD_FROM_RESULT(deviceResourceId, kineto_info_.resource)
 #define TYPED_ATTR(event_type, method_name, expression) \
     TYPED_ATTR_WITH_DEFAULT(event_type, method_name, expression, {})
 
-TYPED_ATTR_WITH_DEFAULT(TorchOp, sequenceNr, e.sequence_number_, -1)
-TYPED_ATTR(TorchOp, fwdThreadId, e.sequence_number_ >= 0 ? e.forward_tid_ : 0)
-TYPED_ATTR(TorchOp, scope, static_cast<uint8_t>(e.scope_))
-TYPED_ATTR(TorchOp, hasModuleHierarchy, !e.jit_modules_.empty())
-TYPED_ATTR(TorchOp, isAsync, e.is_async_)
-TYPED_ATTR(TorchOp, extraMeta, e.extra_meta_)
-TYPED_ATTR(TorchOp, fallbackStart, e.device_fallback_.device_event_start_)
-TYPED_ATTR(TorchOp, fallbackEnd, e.device_fallback_.device_event_end_)
-TYPED_ATTR(
-    TorchOp,
-    flops,
-    !e.extra_args_.empty() ? profiler::profiler_impl::impl::computeFlops(e.name_, e.extra_args_)
-                           : 0)
-TYPED_ATTR(Backend, backend, e.backend_)
+TYPED_ATTR(FunctionOp, scope, static_cast<uint8_t>(e.scope_))
+TYPED_ATTR(FunctionOp, isAsync, e.is_async_)
+TYPED_ATTR(FunctionOp, extraMeta, e.extra_meta_)
+TYPED_ATTR(FunctionOp, fallbackStart, e.device_fallback_.device_event_start_)
+TYPED_ATTR(FunctionOp, fallbackEnd, e.device_fallback_.device_event_end_)
 TYPED_ATTR(Allocation, nBytes, e.alloc_size_)
 TYPED_ATTR(
     Kineto,
@@ -1210,6 +918,6 @@ void ProfilerResult::save(const std::string& path)
     trace_->save(path);
 }
 
-}  // namespace autograd::profiler_impl
+}  // namespace profiler_impl
 
 }  // namespace profiler

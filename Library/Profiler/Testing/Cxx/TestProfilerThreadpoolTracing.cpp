@@ -38,7 +38,6 @@
  * timeline events.
  */
 
-
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
@@ -64,11 +63,11 @@ using namespace profiler;
 namespace
 {
 
-constexpr const char* kSessionScope   = "threadpool_session_root";
-constexpr const char* kWorkerCompute  = "threadpool_worker_compute";
-constexpr const char* kAsyncSubtask   = "threadpool_async_subtask";
-constexpr int         kWorkerCount    = 3;
-constexpr int         kTaskCount      = 8;
+constexpr const char* kSessionScope  = "threadpool_session_root";
+constexpr const char* kWorkerCompute = "threadpool_worker_compute";
+constexpr const char* kAsyncSubtask  = "threadpool_async_subtask";
+constexpr int         kWorkerCount   = 3;
+constexpr int         kTaskCount     = 8;
 
 // Minimal pool that mirrors Eigen/TF instrumentation around enqueue + run.
 class instrumented_thread_pool
@@ -147,11 +146,11 @@ private:
         }
     }
 
-    std::vector<std::thread>        workers_;
-    std::mutex                      mutex_;
-    std::condition_variable         cv_;
+    std::vector<std::thread>          workers_;
+    std::mutex                        mutex_;
+    std::condition_variable           cv_;
     std::queue<std::function<void()>> jobs_;
-    bool                            stop_;
+    bool                              stop_;
 };
 
 double run_dense_kernel(int size, int task_id)
@@ -208,10 +207,7 @@ void run_profiled_worker_task(profiler_session* session, int task_id, std::atomi
 
     // Async-style split events (start/end) on the worker thread.
     const int64_t activity_id = traceme::activity_start(
-        [&]()
-        {
-            return traceme_encode(kAsyncSubtask, {{"task_id", task_id}, {"async", true}});
-        });
+        [&]() { return traceme_encode(kAsyncSubtask, {{"task_id", task_id}, {"async", true}}); });
 
     const double value = run_dense_kernel(16, task_id);
     sink->store(sink->load(std::memory_order_relaxed) + value, std::memory_order_relaxed);
@@ -261,8 +257,7 @@ PROFILERTEST(BackendThreadpoolTracing, end_to_end_pool_feeds_chrome_and_report)
     EXPECT_STREQ(
         tracing::get_event_category_name(tracing::event_category::kScheduleClosure),
         "ScheduleClosure");
-    EXPECT_STREQ(
-        tracing::get_event_category_name(tracing::event_category::kCompute), "Compute");
+    EXPECT_STREQ(tracing::get_event_category_name(tracing::event_category::kCompute), "Compute");
     EXPECT_STREQ(
         tracing::get_event_category_name(tracing::event_category::kNumCategories), "Unknown");
 
@@ -272,7 +267,7 @@ PROFILERTEST(BackendThreadpoolTracing, end_to_end_pool_feeds_chrome_and_report)
 
     std::atomic<double> sink{0.0};
     {
-        profiler_scope root(kSessionScope, &session);
+        profiler_scope           root(kSessionScope, &session);
         instrumented_thread_pool pool(kWorkerCount);
 
         for (int task_id = 0; task_id < kTaskCount; ++task_id)
@@ -340,7 +335,7 @@ PROFILERTEST(BackendThreadpoolTracing, pool_instrumentation_is_session_gated)
     ASSERT_TRUE(tracing::event_collector::is_enabled());
 
     {
-        profiler_scope root(kSessionScope, &session);
+        profiler_scope           root(kSessionScope, &session);
         instrumented_thread_pool pool(2);
         std::atomic<int>         done{0};
         for (int i = 0; i < 4; ++i)
@@ -349,7 +344,7 @@ PROFILERTEST(BackendThreadpoolTracing, pool_instrumentation_is_session_gated)
                 static_cast<uint64_t>(i),
                 [&session, &done, i]()
                 {
-                    profiler_scope scope(kWorkerCompute, &session);
+                    profiler_scope  scope(kWorkerCompute, &session);
                     volatile double sink = 0.0;
                     for (int n = 0; n < 200; ++n)
                     {
@@ -372,4 +367,3 @@ PROFILERTEST(BackendThreadpoolTracing, pool_instrumentation_is_session_gated)
     EXPECT_NE(chrome.find(std::string(kThreadpoolListenerRecord)), std::string::npos);
     EXPECT_NE(chrome.find(kWorkerCompute), std::string::npos);
 }
-

@@ -21,12 +21,13 @@ Keep CMake `TestFiles` and Bazel `_PROFILER_COMMON_TESTS` in sync:
 - `TestProfilerXPlanePipeline.cpp` / `TestProfilerThreadpoolTracing.cpp` — XSpace / tracing e2e
 - `TestProfilerNativeHotspot.cpp` / `TestHotspotReport.cpp` — native vs Kineto hotspots
 - `TestProfilerHeavyFunction.cpp` — native + Kineto + ITT stress
+- `TestProfilerGpuTracer.cpp` — TF GpuTracer `/device:GPU:N` (collector + device probe)
 
 ## Layout
 
 - `CMakeLists.txt` — `PROFILER_BACKEND`, `PROFILER_ENABLE_*`.
 - `BUILD.bazel` — `//Library/Profiler:Profiler` and tests.
-- `native/` — always-on native profiler pipeline (traceme/xplane/host_tracer/profiler_session).
+- `native/` — always-on native profiler pipeline (traceme/xplane/host_tracer/gpu_tracer/profiler_session).
 - `bespoke/kineto/`, `bespoke/itt/` — instrumentation backends layered on top of `native/`.
 - `Testing/Cxx/` — backend and integration tests.
 

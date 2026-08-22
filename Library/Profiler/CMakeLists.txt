@@ -140,6 +140,14 @@ endif()
 
 list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS ${PROFILER_COMPILE_DEFINITIONS})
 
+# Native Metal GPU tracer (command-buffer GPUStartTime → `/device:GPU:N`). Independent of
+# Kineto/CUPTI. Matches Memory's MEMORY_GPU_BACKEND=metal gate.
+set(PROFILER_HAS_METAL 0)
+if(APPLE AND MEMORY_GPU_BACKEND STREQUAL "metal")
+  set(PROFILER_HAS_METAL 1)
+endif()
+list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_HAS_METAL=${PROFILER_HAS_METAL})
+
 # --- Section 3: CMake module includes --- Order: introspection → toolchain helpers →
 # coverage/sanitizer → LTO/linker.
 
@@ -214,7 +222,28 @@ if(PROFILER_ENABLE_KINETO)
     endif()
   endif()
   list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_HAS_CUDA=${PROFILER_HAS_CUDA})
-  if(NOT QUARISMA_ENABLE_ROCM)
+
+  # HIP runtime for the profiler's own event-fallback stub (bespoke/base/cuda.cpp,
+  # generalized to also serve HIP via bespoke/base/gpu_runtime.h) and for the
+  # PROFILER_HAS_HIP guard in bespoke/kineto/profiler_kineto.h -- independent of
+  # the Roctracer gate below. Mirrors the PROFILER_HAS_CUDA block above; mutually
+  # exclusive with it since MEMORY_GPU_BACKEND only ever selects one GPU vendor.
+  set(PROFILER_HAS_HIP 0)
+  if(MEMORY_GPU_BACKEND STREQUAL "hip")
+    find_package(hip QUIET)
+    if(hip_FOUND)
+      set(PROFILER_HAS_HIP 1)
+      list(APPEND PROFILER_DEPENDENCY_LIBS hip::host)
+      message(STATUS "Profiler: HIP found -- enabling PROFILER_HAS_HIP")
+    else()
+      message(STATUS "Profiler: MEMORY_GPU_BACKEND=hip but find_package(hip) failed -- "
+                     "PROFILER_HAS_HIP stays disabled"
+      )
+    endif()
+  endif()
+  list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_HAS_HIP=${PROFILER_HAS_HIP})
+
+  if(NOT PROFILER_HAS_HIP)
     set(LIBKINETO_NOROCTRACER ON CACHE STRING "" FORCE)
   else()
     set(LIBKINETO_NOROCTRACER OFF CACHE STRING "" FORCE)
@@ -327,6 +356,29 @@ file(GLOB_RECURSE native_headers LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_
 file(GLOB_RECURSE native_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/native/*.cpp")
 list(APPEND profiler_headers ${native_headers})
 list(APPEND profiler_sources ${native_sources})
+if(PROFILER_HAS_METAL)
+  enable_language(OBJCXX)
+  set(CMAKE_OBJCXX_STANDARD ${PROFILER_CXX_STANDARD})
+  set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
+  find_library(PROFILER_METAL_FRAMEWORK Metal REQUIRED)
+  find_library(PROFILER_FOUNDATION_FRAMEWORK Foundation REQUIRED)
+  file(GLOB_RECURSE profiler_mm LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/native/*.mm")
+  list(APPEND profiler_sources ${profiler_mm})
+  set_source_files_properties(${profiler_mm} PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+  list(APPEND PROFILER_DEPENDENCY_LIBS ${PROFILER_METAL_FRAMEWORK} ${PROFILER_FOUNDATION_FRAMEWORK})
+  message(STATUS "Native profiler: Metal GPU tracer enabled (PROFILER_HAS_METAL=1)")
+
+  # Kineto/ITT-side Metal fallback stub (bespoke/base/metal.mm), reusing the
+  # PROFILER_HAS_METAL gate and OBJCXX/framework setup above -- registers into
+  # the generic PrivateUse1 ProfilerStubs slot (see bespoke/base/base.h), not a
+  # new device_enum value. bespoke/base/ is otherwise *.cpp-only compiled by
+  # the Kineto/ITT blocks below, so the .mm file is appended here directly.
+  file(GLOB_RECURSE profiler_kineto_mm LIST_DIRECTORIES false
+       "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/base/*.mm"
+  )
+  list(APPEND profiler_sources ${profiler_kineto_mm})
+  set_source_files_properties(${profiler_kineto_mm} PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+endif()
 message(
   STATUS "Native profiler pipeline: always included (traceme/xplane/host_tracer/profiler_session)"
 )
@@ -527,6 +579,9 @@ message("")
 message("******** Profiler module (CMake flags) ********")
 message("  Instrumentation backend : ${PROFILER_BACKEND}")
 message("  Native profiler  : ON (always compiled)")
+message("  CUDA fallback    : ${PROFILER_HAS_CUDA}")
+message("  HIP fallback     : ${PROFILER_HAS_HIP}")
+message("  Metal GPU tracer : ${PROFILER_HAS_METAL}")
 message("  Cxx standard     : ${PROFILER_CXX_STANDARD}")
 message("  Cache            : ${PROFILER_ENABLE_CACHE}")
 message("  Cache backend    : ${PROFILER_CACHE_BACKEND}")

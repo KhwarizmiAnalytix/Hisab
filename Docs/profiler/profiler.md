@@ -19,7 +19,7 @@ C++ only — there are no Python or C bindings in this repository.
 8. [Native session API](#native-session-api)
 9. [Kineto](#kineto)
 10. [ITT and NVTX](#itt-and-nvtx)
-11. [GPU / CUDA](#gpu--cuda)
+11. [GPU](#gpu)
 12. [Runnable examples](#runnable-examples)
 13. [Output formats](#output-formats)
 14. [Hotspot report](#hotspot-report)
@@ -52,7 +52,7 @@ orchestration layer.
 | Hierarchy | Native: derived from XSpace interval nesting. Kineto: RecordFunction parent chain |
 | Statistics | Native: `statistical_analyzer` (online samples) + `stats_calculator` (offline XSpace table) |
 | Hotspots | Two types, same CPU self/total math — see [Hotspot report](#hotspot-report) |
-| GPU | Kineto + CUPTI (or `KINETO_GPU_FALLBACK`); correlation via RecordFunction — see [GPU / CUDA](#gpu--cuda) |
+| GPU | Native TensorFlow GpuTracer (`device_tracer_level` / `with_gpu_tracing()`) on `/device:GPU:N`; Kineto + CUPTI (or `KINETO_GPU_FALLBACK`) for CUDA — see [GPU](#gpu) |
 
 | Backend | CMake | Macro | Sources | Third-party |
 |---|---|---|---|---|
@@ -164,6 +164,7 @@ CMake `TestFiles` and Bazel `_PROFILER_COMMON_TESTS` must stay in sync.
 | `TestProfilerXPlanePipeline.cpp` | Session → `collected_xspace()` → visitor / sort / merge → report |
 | `TestProfilerThreadpoolTracing.cpp` | `tracing::record_event` / `scoped_region` → Chrome + report |
 | `TestProfilerNativeHotspot.cpp` | Native `generate_hotspot_report()` and console `=== Hotspots ===` |
+| `TestProfilerGpuTracer.cpp` | Native TF GpuTracer `/device:GPU:N` (collector events + device probe) |
 | `TestHotspotReport.cpp` | Kineto `hotspot_report` over `ProfilerResult::event_tree()` (`PROFILER_HAS_KINETO`) |
 | `TestProfilerHeavyFunction.cpp` | Native + Kineto + ITT stress (matrix / Monte Carlo / FFT) |
 
@@ -180,7 +181,7 @@ Application
         │
         ├─ Native session (always compiled)
         │     profiler_session → profiler_scope → traceme_recorder
-        │     → host_tracer → XSpace
+        │     → host_tracer + gpu_tracer → XSpace
         │     → chrome_trace_exporter | scope_tree_builder
         │       | profiler_report | stats_calculator | native hotspot_report
         │
@@ -205,6 +206,7 @@ Chrome JSON is **not** the same file as `ProfilerResult::save()`.
 |---|---|
 | `native/core/` | Plugin ABI: `profiler_interface`, `profiler_collection`, `profiler_factory`, `profiler_controller`, `profiler_lock` |
 | `native/cpu/` | `host_tracer` over `traceme_recorder`, `annotation_stack`, stub Python tracer, `threadpool_listener` (`threadpool_profiler_interface` / `threadpool_event_collector`, fed via `tracing::record_event` / `scoped_region`) |
+| `native/gpu/` | TensorFlow `GpuTracer` + `gpu_trace_collector` (`CreateGpuTracer` / `device_tracer_level`); Metal command-buffer times are the activity backend (CUPTI analog) |
 | `native/tracing/` | `traceme` / recorder (independent of `RECORD_FUNCTION`) |
 | `native/exporters/xplane/` | TensorBoard XPlane schema (ported; no TF runtime) |
 | `native/exporters/` | `chrome_trace_exporter` (native XSpace → Chrome JSON) |
@@ -213,6 +215,8 @@ Chrome JSON is **not** the same file as `ProfilerResult::save()`.
 | `native/memory/` | Session-local alloc annotation (not `Library/Memory`) |
 
 `host_tracer_factory.cpp` registers `host_tracer` at static-init.
+`gpu_tracer_factory.cpp` registers `CreateGpuTracer` the same way (no-op when
+`device_tracer_level == 0`).
 
 ### Bespoke tree (`bespoke/`)
 
@@ -422,13 +426,7 @@ are not wired.
 RECORD_FUNCTION(fn, ...)
 RECORD_USER_SCOPE(fn)
 RECORD_FUNCTION_WITH_SCOPE(scope, fn)
-RECORD_FUNCTION_WITH_INPUTS_OUTPUTS(...)
-RECORD_USER_SCOPE_WITH_INPUTS(...)
-RECORD_USER_SCOPE_WITH_KWARGS_ONLY(...)
-RECORD_WITH_SCOPE_DEBUG_HANDLE_AND_INPUTS(...)
-RECORD_EDGE_SCOPE_WITH_DEBUG_HANDLE_AND_INPUTS(...)
-RECORD_OUTPUTS(...)
-RECORD_TORCHSCRIPT_FUNCTION(...)   // no-op without TorchScript
+RECORD_FUNCTION_WITH_METADATA(guard_name, fn)
 ```
 
 `RECORD_USER_SCOPE` expands to a local `profiler::RecordFunction` guard.
@@ -442,6 +440,32 @@ enableProfilerInChildThread();
 }
 disableProfilerInChildThread();
 ```
+
+### Structured per-function metadata
+
+`RECORD_FUNCTION`/`RECORD_USER_SCOPE` take only a name. To attach arbitrary
+key-value data to a scope — profiling a non-tensor function's parameters,
+not just its name — declare the guard with `RECORD_FUNCTION_WITH_METADATA`
+(this does **not** start it) and immediately chain
+`record_function_metadata_builder` to populate it and start it:
+
+```cpp
+RECORD_FUNCTION_WITH_METADATA(guard, "gemm");
+profiler::record_function_metadata_builder(guard, "gemm")
+    .with_metadata("m", m)
+    .with_metadata("n", n)
+    .with_metadata("k", k);
+```
+
+The builder starts `guard` (calls its `before()`, which runs the profiler's
+start callbacks) in its own destructor, once the chained `with_metadata()`
+calls finish — starting inside the macro instead would run those callbacks
+before any metadata had been attached.
+
+Values are stringified into the same map read back via
+`KinetoEvent::extraMeta()`. This is XSigma's generic replacement for
+PyTorch's IValue-based op-argument recording — no tensor/IValue type
+involved, just `std::string`/`int64_t`/`double` key-value pairs.
 
 Correlation stacks:
 
@@ -511,6 +535,7 @@ int main() {
 | `with_hierarchical_profiling(bool)` | Nested scopes (host tracer) |
 | `with_statistical_analysis(bool)` | Online `statistical_analyzer` samples |
 | `with_thread_safety(bool)` | Thread-safe collection |
+| `with_gpu_tracing(bool)` | Maps to TF `device_tracer_level` (GpuTracer on `/device:GPU:N`) |
 | `with_output_format(...)` | JSON, CSV, XML, console, FILE |
 | `with_output_file(string)` | Default export path |
 | `with_max_samples(size_t)` | Cap per series |
@@ -596,9 +621,9 @@ session->stop();
 ## Kineto
 
 Default instrumentation backend. Public header:
-`bespoke/kineto/profiler_kineto.h`. Namespace:
-`profiler::autograd::profiler_impl` (historical PyTorch name). XSigma does
-**not** link libtorch.
+`bespoke/kineto/profiler_kineto.h`. Namespace: `profiler::profiler_impl`
+(public API; internals live in the nested `profiler::profiler_impl::impl`).
+XSigma does **not** link libtorch.
 
 ### Enable / disable
 
@@ -606,7 +631,7 @@ Default instrumentation backend. Public header:
 #include "bespoke/kineto/profiler_kineto.h"
 #include "common/instrumentation.h"
 
-using namespace profiler::autograd::profiler_impl;
+using namespace profiler::profiler_impl;
 using profiler::profiler_impl::impl::ActivityType;
 using profiler::profiler_impl::impl::ProfilerConfig;
 using profiler::profiler_impl::impl::ProfilerState;
@@ -702,15 +727,31 @@ must produce them): `GPU_MEMCPY`, `GPU_MEMSET`, `CONCURRENT_KERNEL`,
 `CUDA_RUNTIME`, `CUDA_DRIVER`, `CUDA_SYNC`, `PYTHON_FUNCTION`,
 `PRIVATEUSE1_*`, `XPU_*`, `MTIA_*`, `HPU_OP`, `COLLECTIVE_COMM`, `OVERHEAD`.
 
-### PyTorch types removed
+### PyTorch types removed (tensor-independence pass)
 
-Not a PyTorch runtime. Deleted or emptied: `IValue` tensor branches,
-`FunctionSchema` / `OperatorHandle`, Vulkan events, NCCL helpers,
-`ProfilerConfig::{to,from}IValue`, TorchScript/lite `RecordScope`s.
+Not a PyTorch runtime, and not tensor-op-specific. Deleted (confirmed dead —
+never populated by any call site, never asserted by any test): `TensorMetadata`
+/ `RawTensorMetadata` / `StorageImplData` / `op_input_t`, `IValue` tensor
+branches, `FunctionSchema` / `OperatorHandle`, Vulkan events, NCCL helpers,
+`ProfilerConfig::{to,from}IValue`, TorchScript/lite `RecordScope`s,
+`computeFlops` (was a stub returning 0), the JIT-debug-handle post-processing
+callback (`post_process_t` / `enableProfilerWithEventPostProcess`), and the
+`jit_stack_` / `jit_modules_` / `extra_args_` / `kwinputs_` / `allow_tf32_cublas_`
+fields that only existed to feed those.
 
-Kept as XSigma names: `EventType::TorchOp` (a `RECORD_FUNCTION` CPU span),
-Python tracer plug-in (default no-op), `profiler::autograd::profiler_impl`,
-empty `TensorMetadata` stubs, `PRIVATEUSE1` observer.
+Renamed for accuracy: `EventType::TorchOp` → `EventType::FunctionOp` (a
+generic `RECORD_FUNCTION` CPU span — it now holds nothing tensor-specific),
+`profiler::autograd::profiler_impl` → `profiler::profiler_impl` (dropped
+`autograd::`; there is no autograd engine in this repo).
+
+Kept: Python tracer plug-in (default no-op), `PRIVATEUSE1` observer.
+
+**Generic per-function metadata**: `RecordFunction::addMetadata(key, value)` /
+`record_function_metadata_builder` / `RECORD_FUNCTION_WITH_METADATA` attach
+arbitrary string/numeric key-value pairs to any instrumented scope, surfaced
+via `KinetoEvent::extraMeta()` — this is the mechanism for profiling
+non-tensor functions with structured data, replacing the deleted
+tensor-shaped `extra_args_`/`kwinputs_`.
 
 ### Python tracer plug-in
 
@@ -769,9 +810,47 @@ producer/consumer correlation is a no-op.
 
 ---
 
-## GPU / CUDA
+## GPU
 
-Profiler **activity tracing** is CUDA-only. No HIP or Metal activity backend
+Two independent GPU paths. They do **not** share a trace.
+
+### Native GpuTracer (TensorFlow device tracer)
+
+Port of TF/XLA `GpuTracer` (`device_tracer_cuda.cc`) + `CuptiTraceCollector`.
+`CreateGpuTracer` is a `profiler_factory` gated by `device_tracer_level()`
+(session: `with_gpu_tracing()`). Events land on XPlane `/device:GPU:<ordinal>`
+with `kStream` / `kKernelDetails` / `kCorrelationId`, then `AddFlowsToXplane`.
+
+Activity backends fill the collector the same way CUPTI callbacks do in TF:
+
+- **Metal** (`PROFILER_HAS_METAL`) — command-buffer `GPUStartTime`/`GPUEndTime`
+- **CUDA CUPTI** — not in this native plugin (use the Kineto path below)
+
+```cpp
+#include "native/session/profiler.h"
+#include "native/gpu/gpu_tracer.h"
+
+auto session = profiler_session_builder()
+    .with_timing(true)
+    .with_gpu_tracing()
+    .build();
+session->start();
+{
+    PROFILER_PROFILE_SCOPE("host_launch");
+    // Device backends call profiler_impl::add_gpu_tracer_event()
+    // (CuptiTraceCollector::AddEvent). Vectorization Metal dispatches do this
+    // after waitUntilCompleted.
+}
+session->stop();
+session->write_chrome_trace("native_gpu.json");  // process "/device:GPU:0"
+```
+
+`profiler_scope` pushes TF `annotation_stack` while GpuTracer is recording so
+kernel events can pick up `kCorrelationId` from the host scope.
+
+### CUDA / CUPTI (Kineto)
+
+Profiler **Kineto activity tracing** is CUDA-only. No HIP activity backend
 under `Library/Profiler`. Memory **allocators** can still call
 `report_memory_usage` (Metal is wired; CUDA/HIP allocators are not).
 
@@ -906,7 +985,7 @@ flowchart TB
 | CSV | `generate_csv_report()` | XSigma |
 | STRUCTURED | `generate_xml_report()` | XSigma XML |
 | Kineto Chrome | `ProfilerResult::save(path)` | libkineto Chrome JSON |
-| Kineto hotspots | `autograd::profiler_impl::hotspot_report` | CPU + optional CUDA/XPU columns |
+| Kineto hotspots | `profiler_impl::hotspot_report` | CPU + optional CUDA/XPU columns |
 
 Native Chrome is **not** selected via `output_format_`. `FILE` and `CONSOLE`
 share the same text formatter; `STRUCTURED` means XML.
@@ -964,7 +1043,7 @@ Two implementations share CPU self/total math. They do **not** share types.
 
 | | Native | Kineto |
 |---|---|---|
-| Header | `native/analysis/hotspot_report.h` → `profiler::hotspot_report` | `bespoke/kineto/hotspot_report.h` → `profiler::autograd::profiler_impl::hotspot_report` |
+| Header | `native/analysis/hotspot_report.h` → `profiler::hotspot_report` | `bespoke/kineto/hotspot_report.h` → `profiler::profiler_impl::hotspot_report` |
 | Input | `build_scope_tree()` | `ProfilerResult::event_tree()` |
 | GPU columns | No | CUDA / XPU when those times are non-zero |
 | API | `generate_hotspot_report()`; console/XML `=== Hotspots ===` | After `disableProfiler()` |
@@ -994,8 +1073,8 @@ parent chain. `config.with_stack` captures raw `void*` addresses;
 symbolizing them into this report is an [open follow-up](#open-follow-ups).
 
 ```cpp
-auto result = profiler::autograd::profiler_impl::disableProfiler();
-profiler::autograd::profiler_impl::hotspot_report report(*result);
+auto result = profiler::profiler_impl::disableProfiler();
+profiler::profiler_impl::hotspot_report report(*result);
 
 std::cout << report.top_down_tree();
 std::cout << report.bottom_up_hotspots();
@@ -1059,6 +1138,7 @@ Native has no `HAS_*` gate.
 | `PROFILER_HAS_KINETO` | Kineto GPU/CPU activity tracing |
 | `PROFILER_HAS_ITT` | Intel VTune ITT ranges |
 | `PROFILER_HAS_CUDA` | CUDA Runtime + optional CUPTI/NVTX |
+| `PROFILER_HAS_METAL` | Metal activity backend for native GpuTracer (`GPUStartTime`) |
 | `PROFILER_HAS_INSTRUMENTATION` | 1 when Kineto or ITT (`instrumentation.h`) |
 | `QUARISMA_HAS_CUDA` | CUDA event types / NVML inside the Kineto wrapper |
 | `KINETO_HAS_HCCL_PROFILER` | AMD HCCL hooks (ROCm + HCCL only) |
@@ -1110,7 +1190,7 @@ No pybind11 / `extern "C"` public ABI.
 3. **Instrument boundaries**, not inner loops.
 4. **Short names** on the hot path.
 5. **Enable only what you need** — timing vs memory vs stats vs CUDA.
-6. **GPU** — `ActivityType::CPU` **and** `CUDA`; launch inside `RECORD_*`.
+6. **GPU** — Native: `with_gpu_tracing()` (TF GpuTracer). Kineto CUDA: `ActivityType::CPU` **and** `CUDA`; launch inside `RECORD_*`.
 7. **Threads** — Native: `.with_thread_safety(true)`. Kineto:
    `enableProfilerInChildThread()`.
 8. **Do not instrument `noexcept` functions** with `RECORD_USER_SCOPE`.
@@ -1123,7 +1203,7 @@ No pybind11 / `extern "C"` public ABI.
 |---|---|
 | Empty `ProfilerResult` / no CPU events | `RECORD_USER_SCOPE` must destruct before `disableProfiler()`. |
 | Child thread missing from the Kineto trace | `enableProfilerInChildThread()` on that thread. |
-| GPU kernels uncorrelated / missing | `ActivityType::CUDA` + `CPU`; CUPTI on (`LIBKINETO_NOCUPTI=OFF`); launch inside `RECORD_*`; not native TraceMe. |
+| GPU kernels uncorrelated / missing | CUDA: `ActivityType::CUDA` + `CPU`; CUPTI on (`LIBKINETO_NOCUPTI=OFF`); launch inside `RECORD_*`; not native TraceMe. Native GpuTracer: `with_gpu_tracing()`; activity backend recording while the session is active. |
 | High overhead | Fewer / coarser scopes; disable memory/stats/CUDA; avoid per-iteration names. |
 | Empty or tiny JSON | Native: `start`/`stop` then `write_chrome_trace`. Kineto: `save()` after `disableProfiler()`. |
 | Kineto trace has no events | `ActivityType::CPU` only sees `RecordFunction`. Wrap ad-hoc CPU in `RECORD_USER_SCOPE`. |
@@ -1149,8 +1229,10 @@ Platforms: Windows, Linux, macOS (CUDA/CUPTI: Linux + Toolkit).
    and Kineto still have separate start/stop).
 4. **Symbolized stacks in hotspot reports** — `unwind/` + `fast_symbolizer.h`.
 5. **`startMemoryProfile`** vs Memory `unified_memory_stats.cpp`.
-6. **GPU e2e tests** — `ActivityType::CUDA`, child-thread enable, toggle,
-   on-demand client (need a CUDA machine).
+6. **GPU e2e tests** — CUDA: `ActivityType::CUDA`, child-thread enable, toggle,
+   on-demand client (need a CUDA machine). Native GpuTracer:
+   `TestProfilerGpuTracer.cpp` (`BackendGpuTracer.*`); Metal activity with
+   `--gpu_backend.metal`.
 7. Pre-existing: `step_info` order under multi-thread `ProfilerStep#`;
    dormant `AppendOnlyList` bounds-check.
 

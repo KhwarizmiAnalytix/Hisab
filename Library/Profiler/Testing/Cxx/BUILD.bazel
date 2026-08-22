@@ -9,16 +9,21 @@ package(default_visibility = ["//visibility:public"])
 # =============================================================================
 # Test files: must match Library/Profiler/Testing/Cxx/CMakeLists.txt TestFiles.
 # Real-use-case coverage — backend function/memory/output formats, Chrome
-# trace, threadpool+tracing, XPlane pipeline, heavy function, hotspot report.
+# trace, threadpool+tracing, XPlane pipeline, heavy function, hotspot report,
+# native GpuTracer device plane.
 # =============================================================================
 
 _PROFILER_COMMON_TESTS = [
     "TestHotspotReport.cpp",
     "TestProfilerBackendFunction.cpp",
+    "TestProfilerBackendGpuFallback.cpp",
     "TestProfilerBackendMemory.cpp",
+    "TestProfilerBackendMetadata.cpp",
+    "TestProfilerBackendMetal.cpp",
     "TestProfilerBackendOutput.cpp",
     "TestProfilerChromeTraceHierarchical.cpp",
     "TestProfilerHeavyFunction.cpp",
+    "TestProfilerGpuTracer.cpp",
     "TestProfilerNativeHotspot.cpp",
     "TestProfilerThreadpoolTracing.cpp",
     "TestProfilerXPlanePipeline.cpp",

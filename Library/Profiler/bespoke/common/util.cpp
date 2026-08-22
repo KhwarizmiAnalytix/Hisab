@@ -264,10 +264,4 @@ std::vector<std::string> inputTypes(const profiler::RecordFunction& /*fn*/)
     return {};
 }
 
-uint64_t computeFlops(
-    const std::string& /*op_name*/, const std::unordered_map<std::string, std::string>& /*extra_args*/)
-{
-    return 0;
-}
-
 }  // namespace profiler::profiler_impl::impl

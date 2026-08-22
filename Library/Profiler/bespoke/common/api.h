@@ -6,11 +6,11 @@
 // we have to mirror them in the old autograd namespace.
 
 // TODO: Profiler-specific types commented out
-namespace profiler::autograd::profiler_impl
+namespace profiler::profiler_impl
 {
 using profiler::profiler_impl::impl::ActivityType;
 using profiler::profiler_impl::impl::getProfilerConfig;
 using profiler::profiler_impl::impl::ProfilerConfig;
 using profiler::profiler_impl::impl::profilerEnabled;
 using profiler::profiler_impl::impl::ProfilerState;
-}  // namespace profiler::autograd::profiler_impl
+}  // namespace profiler::profiler_impl

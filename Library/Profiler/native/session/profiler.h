@@ -58,12 +58,12 @@
 #include <vector>
 
 #include "common/profiler_macros.h"
+#include "native/analysis/hotspot_report.h"
 #include "native/core/profiler_interface.h"
 #include "native/core/profiler_lock.h"
 #include "native/core/profiler_options.h"
 #include "native/exporters/xplane/xplane.h"
 #include "native/memory/scoped_memory_debug_annotation.h"
-#include "native/analysis/hotspot_report.h"
 #include "native/tracing/traceme.h"
 
 namespace profiler
@@ -102,6 +102,9 @@ struct profiler_options
 
     /// Enable thread-safe profiling for multi-threaded applications
     bool enable_thread_safety_ = true;
+
+    /// Enable native GPU device tracing (Metal command-buffer GPU times → `/device:GPU:N`).
+    bool enable_gpu_tracing_ = false;
 
     /**
      * @brief Output format options for profiling reports
@@ -577,6 +580,17 @@ public:
     }
 
     /**
+     * @brief Enable native GPU device tracing (Metal GPU intervals on `/device:GPU:N`)
+     * @param enable true to start the Metal device tracer with the session
+     * @return Reference to this profiler_session_builder for method chaining
+     */
+    profiler_session_builder& with_gpu_tracing(bool enable = true)
+    {
+        options_.enable_gpu_tracing_ = enable;
+        return *this;
+    }
+
+    /**
      * @brief Set the output format for reports
      * @param format Output format to use
      * @return Reference to this profiler_session_builder for method chaining
@@ -746,6 +760,9 @@ private:
     /// lock-free, thread-local traceme_recorder that host_tracer reads from — no separate
     /// hierarchy tracking is maintained here.
     std::optional<profiler::traceme> traceme_;
+
+    /// TensorFlow AnnotationStack analog — pushed while GpuTracer has enabled it.
+    bool pushed_gpu_annotation_ = false;
 };
 
 /**

@@ -54,7 +54,7 @@ enum class PROFILER_VISIBILITY_ENUM ActivityType
 inline std::string actToString(ActivityType t)
 {
     const std::array<std::string, static_cast<size_t>(ActivityType::NUM_KINETO_ACTIVITIES)>
-        ActivityTypeNames = {"CPU", "XPU", "CUDA", "MTIA", "PrivateUse1"};
+        ActivityTypeNames = {"CPU", "XPU", "CUDA", "HPU", "MTIA", "PrivateUse1"};
     return ActivityTypeNames[static_cast<int>(t)];
 }
 

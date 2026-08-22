@@ -288,7 +288,7 @@ jobs:
 
 ## Profiler (`Library/Profiler`)
 
-**Goal**: CPU timelines, Kineto GPU correlation, ITT/VTune ranges
+**Goal**: CPU timelines, native Metal GPU planes, Kineto GPU correlation, ITT/VTune ranges
 
 **Use Case**: Performance analysis, Chrome/Perfetto traces, hotspot tables
 
@@ -318,7 +318,7 @@ Kineto (`RECORD_*` + optional CUDA correlation):
 #include "bespoke/kineto/profiler_kineto.h"
 #include "common/instrumentation.h"
 
-using namespace profiler::autograd::profiler_impl;
+using namespace profiler::profiler_impl;
 using profiler::profiler_impl::impl::ActivityType;
 using profiler::profiler_impl::impl::ProfilerConfig;
 using profiler::profiler_impl::impl::ProfilerState;
@@ -338,6 +338,7 @@ Build and test:
 ```bash
 cd Scripts
 python3 setup.py config.build.test.native.ninja --project.profiler
+python3 setup.py config.build.test.native.ninja.metal --project.profiler
 ```
 
 Tests live in `Library/Profiler/Testing/Cxx/` (see the list in profiler.md).
