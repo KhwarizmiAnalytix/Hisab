@@ -772,6 +772,11 @@ std::string profiler_report::generate_hotspot_section() const
         return ss.str();
     }
 
+    ss << "--- Operator table (self CPU) ---\n";
+    ss << report.table();
+    ss << "\n--- Top-down call tree ---\n";
+    ss << report.top_down_tree();
+    ss << "\n--- Bottom-up hotspots ---\n";
     ss << report.bottom_up_hotspots(/*max_rows=*/20);
     ss << "\n";
     return ss.str();

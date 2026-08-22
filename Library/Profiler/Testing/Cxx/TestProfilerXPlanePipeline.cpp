@@ -30,6 +30,7 @@
  */
 
 
+#include <iostream>
 #include <string>
 #include <thread>
 #include <vector>
@@ -221,6 +222,8 @@ PROFILERTEST(BackendXPlanePipeline, session_xspace_sort_merge_visitor_export)
     EXPECT_NE(console.find("=== Node Stats (from XSpace) ==="), std::string::npos);
     EXPECT_NE(console.find("nodes observed"), std::string::npos);
     EXPECT_NE(console.find(kTypedHostEvent), std::string::npos);
+
+    std::cout << "\n=== XPlane pipeline console report ===\n" << console << std::flush;
 }
 
 PROFILERTEST(BackendXPlanePipeline, empty_session_xspace_is_empty)

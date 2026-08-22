@@ -50,6 +50,7 @@
 
 #include <cstdio>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -176,7 +177,7 @@ PROFILERTEST(BackendOutput, console_report_text)
     EXPECT_NE(text.find("nodes observed"), std::string::npos);
     EXPECT_NE(text.find("Summary by node type"), std::string::npos);
 
-    // print_report() routes through the same console formatter (no crash / empty).
+    std::cout << "\n=== BackendOutput console report ===\n" << text << std::flush;
     session.print_report();
 }
 

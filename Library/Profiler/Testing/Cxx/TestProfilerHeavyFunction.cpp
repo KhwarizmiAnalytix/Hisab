@@ -32,6 +32,7 @@
 #include <cstdio>
 #include <exception>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <numeric>
 #include <random>
@@ -42,14 +43,17 @@
 #include <vector>
 
 #include "ProfilerTest.h"
+#include "native/analysis/hotspot_report.h"
 #include "native/analysis/statistical_analyzer.h"
 #include "native/memory/memory_tracker.h"
 #include "native/session/profiler.h"
+#include "native/session/profiler_report.h"
 #include "native/tracing/traceme.h"
 #include "native/tracing/traceme_recorder.h"
 
 #if PROFILER_HAS_KINETO
 #include "bespoke/common/record_function.h"
+#include "bespoke/kineto/hotspot_report.h"
 #include "bespoke/kineto/profiler_kineto.h"
 #endif
 
@@ -271,11 +275,12 @@ PROFILERTEST(Profiler, heavy_function_comprehensive_computational_profiling)
 {
     // Configure profiler session with all features enabled
     profiler_options opts;
-    opts.enable_timing_               = true;
-    opts.enable_memory_tracking_      = true;
-    opts.enable_statistical_analysis_ = true;
-    opts.enable_thread_safety_        = true;
-    opts.output_format_               = profiler_options::output_format_enum::JSON;
+    opts.enable_timing_                 = true;
+    opts.enable_memory_tracking_        = true;
+    opts.enable_hierarchical_profiling_ = true;
+    opts.enable_statistical_analysis_   = true;
+    opts.enable_thread_safety_          = true;
+    opts.output_format_                 = profiler_options::output_format_enum::CONSOLE;
 
     profiler_session session(opts);
     session.start();
@@ -396,6 +401,18 @@ PROFILERTEST(Profiler, heavy_function_comprehensive_computational_profiling)
     std::string chrome_trace_file = "heavy_function_profile.json";
     session.write_chrome_trace(chrome_trace_file);
 
+    auto report = session.generate_report();
+    ASSERT_NE(report, nullptr);
+    std::cout << "\n=== Heavy Function profiler report ===\n";
+    std::cout << report->generate_console_report() << std::flush;
+
+    auto hotspot = session.generate_hotspot_report();
+    ASSERT_NE(hotspot, nullptr);
+    std::cout << "\n=== Heavy Function hotspot table ===\n" << hotspot->table();
+    std::cout << "\n--- Top-down call tree ---\n" << hotspot->top_down_tree();
+    std::cout << "\n--- Bottom-up hotspots ---\n" << hotspot->bottom_up_hotspots();
+    std::cout << std::flush;
+
     std::cout << "\n=== Heavy Function Performance Analysis ===\n";
     std::cout << "\n✓ Chrome Trace JSON exported to: " << chrome_trace_file << "\n";
     std::cout << "\nTo view the trace:\n";
@@ -514,6 +531,16 @@ PROFILERTEST(Profiler, kineto_heavy_function_profiling)
     ASSERT_NE(monte, nullptr);
     EXPECT_GT(outer->durationNs(), 0U);
     EXPECT_GE(outer->durationNs(), matrix->durationNs());
+
+    if (!profiler_result->event_tree().empty())
+    {
+        profiler::autograd::profiler_impl::hotspot_report const hotspot(*profiler_result);
+        std::cout << "\n=== Kineto heavy-function hotspot report ===\n";
+        std::cout << "--- Operator table ---\n" << hotspot.table();
+        std::cout << "\n--- Top-down call tree ---\n" << hotspot.top_down_tree();
+        std::cout << "\n--- Bottom-up hotspots ---\n" << hotspot.bottom_up_hotspots();
+        std::cout << std::flush;
+    }
 
     const std::string trace_filename = "kineto_heavy_function_trace.json";
     profiler_result->save(trace_filename);

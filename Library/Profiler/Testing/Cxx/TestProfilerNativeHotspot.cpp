@@ -29,6 +29,7 @@
 
 
 #include <chrono>
+#include <iostream>
 #include <string>
 #include <thread>
 
@@ -157,6 +158,12 @@ PROFILERTEST(BackendNativeHotspot, call_stack_and_text_renderers)
     EXPECT_NE(table.find(kOuter), std::string::npos);
     EXPECT_NE(table.find(kInnerA), std::string::npos);
     EXPECT_NE(table.find("# of Calls"), std::string::npos);
+
+    std::cout << "\n=== Native hotspot report ===\n";
+    std::cout << "--- Operator table ---\n" << table;
+    std::cout << "\n--- Top-down call tree ---\n" << report->top_down_tree();
+    std::cout << "\n--- Bottom-up hotspots ---\n" << report->bottom_up_hotspots();
+    std::cout << std::flush;
 }
 
 PROFILERTEST(BackendNativeHotspot, console_report_includes_hotspots_section)
@@ -177,6 +184,9 @@ PROFILERTEST(BackendNativeHotspot, console_report_includes_hotspots_section)
     const std::string xml = report->generate_xml_report();
     EXPECT_NE(xml.find("<hotspots>"), std::string::npos);
     EXPECT_NE(xml.find("=== Hotspots ==="), std::string::npos);
+
+    std::cout << "\n=== Native profiler console report ===\n" << console << std::flush;
+    session.print_report();
 }
 
 PROFILERTEST(BackendNativeHotspot, empty_session_has_no_hotspot_rows)

@@ -18,6 +18,7 @@
  */
 
 #include <chrono>
+#include <iostream>
 #include <set>
 #include <string>
 #include <thread>
@@ -179,6 +180,12 @@ PROFILERTEST(HotspotReport, text_renderers_are_non_empty_when_events_exist)
     EXPECT_FALSE(report.top_down_tree().empty());
     EXPECT_FALSE(report.bottom_up_hotspots().empty());
     EXPECT_FALSE(report.table().empty());
+
+    std::cout << "\n=== Kineto hotspot report ===\n";
+    std::cout << "--- Operator table ---\n" << report.table();
+    std::cout << "\n--- Top-down call tree ---\n" << report.top_down_tree();
+    std::cout << "\n--- Bottom-up hotspots ---\n" << report.bottom_up_hotspots();
+    std::cout << std::flush;
 }
 
 PROFILERTEST(HotspotReport, table_matches_pytorch_key_averages_columns)

@@ -43,6 +43,7 @@
 #include <condition_variable>
 #include <cstdint>
 #include <functional>
+#include <iostream>
 #include <mutex>
 #include <queue>
 #include <string>
@@ -316,6 +317,8 @@ PROFILERTEST(BackendThreadpoolTracing, end_to_end_pool_feeds_chrome_and_report)
 
     const std::string json_report = report->generate_json_report();
     EXPECT_NE(json_report.find(kWorkerCompute), std::string::npos);
+
+    std::cout << "\n=== Threadpool tracing console report ===\n" << console << std::flush;
 }
 
 // -----------------------------------------------------------------------------
