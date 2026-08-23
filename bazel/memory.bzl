@@ -58,6 +58,10 @@ def memory_defines():
         "//conditions:default": ["MEMORY_HAS_MEMKIND=0"],
     })
 
+    # Profiler — always linked in Bazel (see Library/Memory/BUILD.bazel's deps),
+    # so this is unconditionally 1, mirroring CMake's MEMORY_HAS_PROFILER.
+    defines += ["MEMORY_HAS_PROFILER=1"]
+
     return defines
 
 def memory_linkopts():

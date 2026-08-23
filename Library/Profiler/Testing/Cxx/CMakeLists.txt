@@ -3,61 +3,26 @@
 # =============================================================================
 quarisma_add_googletest()
 
-file(GLOB_RECURSE profiler_test_sources LIST_DIRECTORIES false
-     "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cpp"
-)
-
-set(TestFiles)
-foreach(_test_source IN ITEMS ${profiler_test_sources})
-  get_filename_component(file_name "${_test_source}" NAME)
-
-  if(NOT PROFILER_ENABLE_KINETO)
-    if(file_name MATCHES "TestKineto")
-      message(STATUS "Excluding Kineto profiler test (Kineto disabled): ${file_name}")
-      continue()
-    endif()
-  endif()
-
-  if(NOT PROFILER_ENABLE_ENZYME)
-    if(file_name MATCHES "TestEnzyme")
-      message(STATUS "Excluding Enzyme test (Enzyme disabled): ${file_name}")
-      continue()
-    endif()
-  endif()
-
-  list(APPEND TestFiles "${_test_source}")
-endforeach()
-
-set(PROFILER_NATIVE_PROFILER_TESTS
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerBackendIntegration.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerPlatform.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerXPlane.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerTimespan.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestEnhancedProfiler.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerAnnotationParsing.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerExporters.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerAnnotationStack.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerXPlaneVisitor.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerFormatUtils.cpp"
+# Explicit list (keep in sync with BUILD.bazel). Real-use-case coverage only:
+# backend function / memory / output formats, Chrome trace hierarchy,
+# threadpool+tracing end-to-end, XPlane pipeline, native hotspot report,
+# heavy-function stress, native GpuTracer device plane, and Kineto hotspot
+# report / table.
+set(TestFiles
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestHotspotReport.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerBackendFunction.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerBackendGpuFallback.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerBackendMemory.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerBackendMetadata.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerBackendMetal.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerBackendOutput.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerChromeTraceHierarchical.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestXPlaneSchema.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerAnalysis.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestXPlaneUtils.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerHeavyFunction.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestTraceme.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfiler.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerSessionEdgeCases.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestScopedMemoryDebugAnnotation.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerStatsCalculator.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerUtils.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerMemoryAndStats.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/TestXPlaneBuilder.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerGpuTracer.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerNativeHotspot.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerThreadpoolTracing.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/TestProfilerXPlanePipeline.cpp"
 )
-
-if(NOT PROFILER_ENABLE_NATIVE_PROFILER)
-  list(REMOVE_ITEM TestFiles ${PROFILER_NATIVE_PROFILER_TESTS})
-  message(STATUS "Native profiler disabled: excluding native-only Profiler tests")
-endif()
 
 add_executable(ProfilerCxxTests ${TestFiles})
 
@@ -66,7 +31,7 @@ target_compile_definitions(
 )
 
 # Profiler links Core privately; executables may need Core explicitly when linking static archives.
-target_link_libraries(ProfilerCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Profiler::Profiler)
+target_link_libraries(ProfilerCxxTests PRIVATE Gtest::gtest_main Profiler::Profiler)
 
 # Thin LTO with GNU bfd/gold has crashed (SIGSEGV) when linking this executable with Kineto and
 # CUDA's libnvperf_host. IPO=OFF alone can still leave -flto on the compile line when IPO is enabled

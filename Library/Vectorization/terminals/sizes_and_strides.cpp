@@ -26,7 +26,7 @@ void sizes_and_strides::resizeSlowPath(const size_t newSize, const size_t oldSiz
         {
             // CANNOT USE allocateOutOfLineStorage(newSize) HERE! WOULD
             // OVERWRITE inlineStorage_!
-            int64_t* tempStorage =
+            auto* tempStorage =
                 // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
                 static_cast<int64_t*>(malloc(storageBytes(newSize)));
             VECTORIZATION_CHECK(

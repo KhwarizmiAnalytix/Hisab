@@ -220,11 +220,6 @@ public:
         const size_t      num_metrics = config_.profiler_metrics.size();
         std::stringstream configss;
 
-#if 0
-        // Disabled: Logging macros not available in profiler-only build.
-        LOG(INFO) << "CUPTI profiler metrics size = " << num_metrics;
-#endif
-
         configss << "ACTIVITIES_WARMUP_PERIOD_SECS=0\n"
                  << "CUPTI_PROFILER_METRICS=";
 
@@ -239,10 +234,6 @@ public:
         configss << "\nCUPTI_PROFILER_ENABLE_PER_KERNEL="
                  << (config_.profiler_measure_per_kernel ? "true" : "false") << "\n";
         configss << "CUSTOM_CONFIG=" << config_.custom_profiler_config << "\n";
-#if 0
-        // Disabled: Logging macros not available in profiler-only build.
-        LOG(INFO) << "Generated config = " << configss.str();
-#endif
 
         libkineto::api().activityProfiler().prepareTrace(k_activities, configss.str());
 #else
@@ -314,33 +305,29 @@ void prepareTrace(
 
     std::set<libkineto::ActivityType> k_activities;
     bool const                        has_cpu_activity =
-        activities.count(profiler::autograd::profiler_impl::ActivityType::CPU) > 0;  //NOLINT
+        activities.count(profiler::profiler_impl::ActivityType::CPU) > 0;  //NOLINT
 
     if (has_cpu_activity)
     {
         k_activities.insert(kCpuTypes.begin(), kCpuTypes.end());
     }
-    if (activities.count(profiler::autograd::profiler_impl::ActivityType::XPU) > 0)  //NOLINT
+    if (activities.count(profiler::profiler_impl::ActivityType::XPU) > 0)  //NOLINT
     {
         k_activities.insert(kXpuTypes.begin(), kXpuTypes.end());
     }
-    if (activities.count(profiler::autograd::profiler_impl::ActivityType::MTIA) > 0)  //NOLINT
+    if (activities.count(profiler::profiler_impl::ActivityType::MTIA) > 0)  //NOLINT
     {
         k_activities.insert(kMtiaTypes.begin(), kMtiaTypes.end());
     }
-    if (activities.count(profiler::autograd::profiler_impl::ActivityType::HPU) > 0)  //NOLINT
+    if (activities.count(profiler::profiler_impl::ActivityType::HPU) > 0)  //NOLINT
     {
         k_activities.insert(hpuTypes.begin(), hpuTypes.end());
     }
-    if (activities.count(profiler::autograd::profiler_impl::ActivityType::CUDA) > 0)  //NOLINT
+    if (activities.count(profiler::profiler_impl::ActivityType::CUDA) > 0)  //NOLINT
     {
         k_activities.insert(kCudaTypes.begin(), kCudaTypes.end());
         if (config.enable_cuda_sync_events || get_cuda_sync_enabled())
         {
-#if 0
-            // Disabled: Logging macros not available in profiler-only build.
-            LOG(INFO) << "Enabling CUDA Sync Events";
-#endif
             k_activities.insert(libkineto::ActivityType::CUDA_SYNC);
         }
     }
@@ -348,8 +335,7 @@ void prepareTrace(
     {
         k_activities.insert(libkineto::ActivityType::COLLECTIVE_COMM);
     }
-    if (activities.count(profiler::autograd::profiler_impl::ActivityType::PrivateUse1) >
-        0)  //NOLINT
+    if (activities.count(profiler::profiler_impl::ActivityType::PrivateUse1) > 0)  //NOLINT
     {
         k_activities.insert(kPrivateUse1Types.begin(), kPrivateUse1Types.end());
     }
@@ -451,12 +437,21 @@ void logInvariantViolation(
 
 }  // namespace profiler_impl::impl::kineto
 
-namespace autograd::profiler_impl
+namespace profiler_impl
 {
 profiler::device_enum deviceTypeFromActivity(
     profiler::profiler_impl::impl::kineto::activity_type_t activity_type)
 {
 #if PROFILER_HAS_KINETO
+    // libkineto has no HIP-specific ActivityType values -- its ROCm/roctracer
+    // backend reuses the same CUDA-named ones below. Only one GPU backend is
+    // ever active in a build (see PROFILER_HAS_CUDA/PROFILER_HAS_HIP in
+    // CMakeLists.txt), so the tag is a compile-time choice, not a runtime one.
+#if PROFILER_HAS_HIP
+    constexpr profiler::device_enum kGpuDeviceType = profiler::device_enum::HIP;
+#else
+    constexpr profiler::device_enum kGpuDeviceType = profiler::device_enum::CUDA;
+#endif
     // fallthrough
     switch (activity_type)
     {
@@ -467,8 +462,7 @@ profiler::device_enum deviceTypeFromActivity(
     case libkineto::ActivityType::GPU_USER_ANNOTATION:
     case libkineto::ActivityType::CUDA_PROFILER_RANGE:
     {
-        profiler::device_enum const device_type = profiler::device_enum::CUDA;
-        return device_type;
+        return kGpuDeviceType;
     }
     case libkineto::ActivityType::CPU_OP:
     case libkineto::ActivityType::USER_ANNOTATION:
@@ -527,6 +521,6 @@ void profilerStep()
 #endif  // PROFILER_HAS_KINETO
 }
 
-}  // namespace autograd::profiler_impl
+}  // namespace profiler_impl
 
 }  // namespace profiler

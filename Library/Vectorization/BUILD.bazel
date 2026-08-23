@@ -73,6 +73,7 @@ cc_library(
     deps = [
         "//Library/Logging:Logging",
         "//Library/Memory:Memory",
+        "//Library/Profiler:Profiler",
     ],
     visibility = ["//Library/Vectorization:__pkg__"],
 )
@@ -267,6 +268,7 @@ cc_library(
     deps = [
         "//Library/Logging:Logging",
         "//Library/Memory:Memory",
+        "//Library/Profiler:Profiler",
     ] + vectorization_svml_deps() + vectorization_sleef_deps() + vectorization_gpu_deps() + select({
         "//bazel:vectorization_enable_metal": [":vectorization_metal_objcxx"],
         "//conditions:default": [],

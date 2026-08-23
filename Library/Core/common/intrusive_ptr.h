@@ -735,6 +735,9 @@ struct MaybeOwnedTraits<quarisma::intrusive_ptr<T>>
 
     static const owned_type& referenceFromBorrow(const borrow_type& borrow) noexcept
     {
+        // owned_type and borrow_type are the same type here, so this returns
+        // the parameter itself rather than a temporary.
+        // NOLINTNEXTLINE(bugprone-return-const-ref-from-parameter)
         return borrow;
     }
 

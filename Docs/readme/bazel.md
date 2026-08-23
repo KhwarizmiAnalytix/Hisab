@@ -48,7 +48,7 @@ Full CLI reference: `python Scripts/setup_bazel.py --help`.
 | NUMA / memkind | `numa`, `memkind` | `--config=numa` / `memkind` |
 | mimalloc / magic_enum | Defaults ON in CMake; tokens flip | mimalloc: **`memory_enable_mimalloc=true`** in root `.bazelrc` + link `@mimalloc` by default (`memory.bzl`); opt out `--define=memory_enable_mimalloc=false`. magic_enum: Starlark defaults; `--config=magic_enum` if needed |
 | Logging backend | `native` / `loguru` / `glog`, `--logging.*` | `--config=logging_native` / `logging_loguru` / `logging_glog` |
-| Profiler | `profiler.kineto` / `itt` / `native`, Xcode→native | `--config=kineto` / `itt` / `native_profiler`; Xcode defaults to native in `setup_bazel.py` |
+| Profiler | `profiler.kineto` / `itt` (instrumentation backend only; native traceme/xplane pipeline always compiles), Xcode→itt | `--config=kineto` / `itt`; Xcode defaults to itt in `setup_bazel.py` (Kineto unsupported under Xcode) |
 | Sanitizers | `--sanitizer.*` CMake names | `--config=asan` / `tsan` / `ubsan` / `msan` / `lsan` or same `--sanitizer.*` long flags |
 | GoogleTest | Default ON; token `gtest` **disables** | `--config=gtest` added by default; `gtest` token → `--define=enable_gtest=false` |
 | Google Benchmark | Default ON (matches each module’s `*ENABLE_BENCHMARK` in CMake); token optional | Root `.bazelrc` sets `core_enable_benchmark`, `memory_enable_benchmark`, `parallel_enable_benchmark`, `logging_enable_benchmark`, `profiler_enable_benchmark`, `vectorization_enable_benchmark`, and `enable_benchmark`; `setup_bazel.py` adds `--config=benchmark` by default |
@@ -85,7 +85,7 @@ This avoids the pitfall where `--sanitizer.address` was previously split incorre
 
 Each `Library/<Name>/BUILD.bazel` is written to pull **module policy** from `//bazel:<module>.bzl` and `//bazel:BUILD.bazel` `config_setting`s instead of hard-coding global defines. That is the right *shape* for extraction.
 
-However, a **standalone Git repository** for e.g. only `Library/Core` still needs you to **vendor or re-declare**:
+However, a **standalone Git repository** for e.g. only `Library/Core` still needs you to **vendor or redeclare**:
 
 1. **`bazel/`** — at minimum `quarisma.bzl`, `core.bzl`, and the `config_setting` targets those `select()` branches depend on (or trim unused branches).
 2. **Third-party labels** — today `Core` depends on `@fmt`, `@magic_enum//`, `//ThirdParty/cpuinfo`, `//Library/Logging`, `//Library/Memory`, etc. A split repo must replace those with `MODULE.bazel` deps or local `new_local_repository` paths.
@@ -130,5 +130,5 @@ bazel coverage //Library/... --combined_report=lcov --config=clang --config=debu
 ## See also
 
 - `Scripts/setup.py` — canonical CMake flag matrix.
-- `Cmake/PROJECT_FLAGS.md` — CMake option reference.
+- [PROJECT_FLAGS.md](../PROJECT_FLAGS.md) — CMake option reference.
 - `Docs/readme/build/build-configuration.md` — CMake-oriented build types and standards (wording may differ slightly from Bazel defaults; trust `.bazelrc` + `bazel/*.bzl` for Bazel).

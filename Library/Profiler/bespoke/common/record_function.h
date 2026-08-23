@@ -1,62 +1,27 @@
 #pragma once
 
-//#include <Profiler/core/ivalue.h>
-//#include <Profiler/core/operator_name.h>
 #include <array>
+#include <cstring>
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string>
 #include <string_view>
+#include <unordered_map>
 #include <unordered_set>
-#include <variant>
 
-#include "common/array_ref.h"
 #include "common/profiler_export.h"
 #include "common/small_vector.h"
 
 namespace profiler
 {
-class PROFILER_VISIBILITY OperatorHandle;
-}
 
-namespace profiler
-{
-struct IValue
-{
-    IValue() = default;
-};
-class FunctionSchema
-{
-};
-class OperatorName
-{
-};
-
-// Function name to record NCCL metadata
-extern PROFILER_API const std::string kParamCommsCallName;
-
-// Kind of record function scope;
+// Kind of record function scope.
 enum class RecordScope : uint8_t
 {
-    // profiler/Profiler ops, autograd nodes
     FUNCTION = 0,
-    // Functions/nodes called from the autograd
     BACKWARD_FUNCTION,
-    // TorchScript functions, methods
-    TORCHSCRIPT_FUNCTION,
-    // Kernel Function dtype Tag
-    KERNEL_FUNCTION_DTYPE,
-    // Torchbind custom class,
-    CUSTOM_CLASS,
-    // Generic Build Feature
-    BUILD_FEATURE,
-    // Kernel Function dtype Tag
-    LITE_INTERPRETER,
-    // User defined scope (e.g. with record_function())
     USER_SCOPE,
-    // Scopes for static runtime, a specialized TorchScript interpreter
-    STATIC_RUNTIME_OP,
-    STATIC_RUNTIME_MODEL,
     NUM_SCOPES,  // must be the last in the list
 };
 
@@ -297,80 +262,9 @@ struct StepCallbacks
 
 struct PROFILER_VISIBILITY RecordFunction
 {
-    // Default constructor is used with before function called afterwards:
-    //  scope - record scope that this function tracks
-    //  pre_sampled - whether this RecordFunction was already pre-sampled with
-    //    kLowProb probability
     PROFILER_API explicit RecordFunction(RecordScope scope = RecordScope::FUNCTION);
     PROFILER_API explicit RecordFunction(StepCallbacks&& step_callbacks);
 
-    using schema_ref_t       = std::reference_wrapper<const profiler::FunctionSchema>;
-    using FunctionDescriptor = std::variant<std::string_view, schema_ref_t>;
-
-    void before(
-        FunctionDescriptor                          fn,
-        profiler::array_ref<const profiler::IValue> args,
-        int64_t                                     current_sequence_nr = -1)
-    {
-        if (!isActive())
-        {
-            return;
-        }
-        inputs_ = args;
-        before(fn, current_sequence_nr);
-    }
-
-    void before(
-        FunctionDescriptor                             fn,
-        profiler::array_ref<const profiler::IValue>    args,
-        const std::unordered_map<std::string, IValue>* kwargs,
-        int64_t                                        current_sequence_nr = -1)
-    {
-        if (!isActive())
-        {
-            return;
-        }
-        kwinputs_ = *kwargs;
-        before(fn, args, current_sequence_nr);
-    }
-
-    void before(
-        FunctionDescriptor                             fn,
-        const std::unordered_map<std::string, IValue>* kwargs,
-        int64_t                                        current_sequence_nr = -1)
-    {
-        if (!isActive())
-        {
-            return;
-        }
-        kwinputs_ = *kwargs;
-        before(fn, current_sequence_nr);
-    }
-
-    void before(
-        FunctionDescriptor fn, const std::vector<IValue>* args, int64_t current_sequence_nr = -1)
-    {
-        before(
-            fn,
-            profiler::array_ref<const profiler::IValue>(args->data(), args->size()),
-            current_sequence_nr);
-    }
-
-    void before(
-        FunctionDescriptor                             fn,
-        const std::vector<IValue>*                     args,
-        const std::unordered_map<std::string, IValue>* kwargs,
-        int64_t                                        current_sequence_nr = -1)
-    {
-        if (!isActive())
-        {
-            return;
-        }
-        kwinputs_ = *kwargs;
-        before(std::move(fn), args, current_sequence_nr);
-    }
-
-    // Destructor calls end callbacks
     PROFILER_API virtual ~RecordFunction();
 
     RecordFunction(const RecordFunction&)            = delete;
@@ -383,88 +277,32 @@ struct PROFILER_VISIBILITY RecordFunction
 
     int64_t seqNr() const { return sequence_nr_; }
 
-    profiler::array_ref<const IValue> inputs() const
-    {
-        // PROFILER_CHECK_DEBUG(
-        // inputs_valid_, "Called inputs() outside RecordFunction start callback");
-        return inputs_;
-    }
-
-    std::unordered_map<std::string, IValue> kwinputs() const
-    {
-        // PROFILER_CHECK_DEBUG(
-        // inputs_valid_, "Called kwinputs() outside RecordFunction start callback");
-        return kwinputs_;
-    }
-
-    const std::vector<profiler::IValue>& outputs() const { return outputs_; }
-
-    void setOutputs(std::vector<profiler::IValue>&& outputs) { outputs_ = std::move(outputs); }
-
-    void setOutputs(profiler::array_ref<profiler::IValue> outputs) { outputs_ = outputs.vec(); }
-
-    PROFILER_API size_t num_inputs() const;
-    PROFILER_API size_t num_outputs() const;
-
-    // Retrieves the thread_id that this RecordFunction ran start callbacks with.
-    // Useful for writing thread safe end callbacks that may be potentially
-    // executed in a different thread (async ops)
+    // Thread that ran start callbacks. End callbacks may run on a different
+    // thread for async ops.
     uint64_t threadId() const { return step_callbacks_.thread_id_; }
 
-    // For backward functions - thread id of the corresponding forward function,
-    // or zero otherwise;
-    // used alongside with sequence number to correlate backward functions with
-    // the forward ones
     uint64_t forwardThreadId() const { return fwd_thread_id_; }
 
     void setForwardThreadId(uint64_t thread_id) { fwd_thread_id_ = thread_id; }
 
     RecordScope scope() const { return step_callbacks_.scope_; }
 
-    // Returns logical thread_id for the current thread
     PROFILER_API static uint64_t currentThreadId();
 
-    // Internal functions, do not use directly;
-    // used in python's context manager
+    PROFILER_API void before(std::string_view name, int64_t sequence_nr = -1);
 
-    // before functions initialize RecordFunction members and call
-    // start callbacks
-    PROFILER_API void before(FunctionDescriptor schema, int64_t sequence_nr = -1);
-
-    // Sets node ID for distributed profiling
-    PROFILER_API static void setDefaultNodeId(int64_t defaultNodeId);
-    // Gets node ID for distributed profiling
+    PROFILER_API static void    setDefaultNodeId(int64_t defaultNodeId);
     PROFILER_API static int64_t getDefaultNodeId();
 
-    // Calls end callbacks. After end(), accessors will no longer provide useful
-    // results.
     PROFILER_API void end();
 
-    // Internal-only, used only force async event for distributed events
-    // profiling.
     void _setAsync();
-
-    // Returns whether this RecordFunction corresponds to an async event or not.
     bool isAsync() const;
-
-    // Returns whether this RecordFunction corresponds to NCCL metadata collection
-    // or not.
-    bool isNcclMeta() const { return is_nccl_meta_; }
-
-    // Internal-only, used to denote out variant used for Static Runtime execution
-    void _setStaticRuntimeOutVariant();
-    bool isStaticRuntimeOutVariant() const;
 
     RecordFunctionHandle handle() const { return handle_; }
 
-    std::optional<OperatorName> operator_name() const;
-
-    // This method returns a copy of the FunctionSchema and can be expensive.
-    std::optional<FunctionSchema> operator_schema() const;
-
     void setHandle(RecordFunctionHandle handle) { handle_ = handle; }
 
-    // Whether this RecordFunction runs any callbacks.
     bool isActive() const { return !step_callbacks_.empty(); }
 
     bool needsInputs() const { return step_callbacks_.needs_inputs_; }
@@ -475,213 +313,114 @@ struct PROFILER_VISIBILITY RecordFunction
 
     void setDebugHandle(int64_t debug_handle) { debug_handle_ = debug_handle; }
 
-    void invalidateInputs()
+    // Structured per-call metadata: arbitrary caller-supplied key/value pairs,
+    // surfaced downstream via KinetoEvent::extraMeta(). This is the generic
+    // replacement for op-specific (tensor/IValue-shaped) argument recording --
+    // see record_function_metadata_builder for the ergonomic call-site API.
+    void addMetadata(std::string key, std::string value)
     {
-#ifndef NDEBUG
-        inputs_valid_ = false;
-#endif
+        metadata_[std::move(key)] = std::move(value);
     }
+
+    const std::unordered_map<std::string, std::string>& metadata() const { return metadata_; }
 
 private:
     void runStartCallbacks();
 
-    StepCallbacks step_callbacks_;
-
-    // In cases when RecordFunction might be active but we chose not to
-    // use the observers (e.g. operator is not observed), this boolean
-    // flag is used to check whether the start callbacks were called
-    bool called_start_callbacks_ = false;
-
-#ifndef NDEBUG
-    bool inputs_valid_ = false;
-#endif
-
-    // Stores various ObserverContext objects with event metadata for callbacks.
-    ObserverContextList ctx_;
-
-    std::variant<std::string, schema_ref_t> fn_;
-
-    int64_t                                 sequence_nr_ = -1;
-    profiler::array_ref<const IValue>       inputs_;
-    std::unordered_map<std::string, IValue> kwinputs_;
-    std::vector<profiler::IValue>           outputs_;
-
-    // For backward functions - thread id of the forward function
-    uint64_t fwd_thread_id_ = 0;
-
-    // Unique id for this RecordFunction, used in callbacks to track start
-    // and end of ranges
-    RecordFunctionHandle handle_{0};
-
-    // Whether this record_function corresponds to an async event or not. Async
-    // events can complete in different threads or follow a future-like pattern
-    // of use.
-    bool is_async_{false};
-
-    // Debug handles are used for lazy annotation of module hierarchy
-    // and callstack.
-    // This is specifically is useful for mobile runtime, where generated
-    // debug handles can be lazily symbolicated using debug information
-    int64_t debug_handle_{-1};
-
-    // Whether this RecordFunction is used for an out variant run with
-    // Static Runtime
-    bool is_static_runtime_out_variant_{false};
-
-    // Whether this RecordFunction is used for NCCL metadata collection
-    bool is_nccl_meta_{false};
+    StepCallbacks                                step_callbacks_;
+    bool                                         called_start_callbacks_ = false;
+    ObserverContextList                          ctx_;
+    std::string                                  fn_;
+    int64_t                                      sequence_nr_   = -1;
+    uint64_t                                     fwd_thread_id_ = 0;
+    RecordFunctionHandle                         handle_{0};
+    bool                                         is_async_{false};
+    int64_t                                      debug_handle_{-1};
+    std::unordered_map<std::string, std::string> metadata_;
 };
 
 PROFILER_API StepCallbacks getStepCallbacks(RecordScope scope);
 
 PROFILER_API std::optional<StepCallbacks> getStepCallbacksUnlessEmpty(RecordScope scope);
 
-namespace detail
+#define RECORD_FUNCTION_WITH_SCOPE(scope, fn) \
+    profiler::RecordFunction guard(scope);    \
+    if (guard.isActive())                     \
+    {                                         \
+        guard.before(fn);                     \
+    }
+
+#define RECORD_FUNCTION(fn, ...) RECORD_FUNCTION_WITH_SCOPE(profiler::RecordScope::FUNCTION, fn)
+
+#define RECORD_USER_SCOPE(fn) RECORD_FUNCTION_WITH_SCOPE(profiler::RecordScope::USER_SCOPE, fn)
+
+/**
+ * @brief Fluent builder for attaching structured metadata to a RecordFunction
+ * guard, e.g.:
+ *
+ *   RECORD_FUNCTION_WITH_METADATA(guard, "gemm")
+ *       .with_metadata("m", m).with_metadata("n", n).with_metadata("k", k);
+ *
+ * Values are stringified into the same key/value map surfaced via
+ * KinetoEvent::extraMeta() -- this is a generic mechanism for profiling any
+ * function's parameters, not a tensor/IValue-shaped argument list.
+ *
+ * `guard` is constructed but not yet started (see the macro below); this
+ * builder starts it -- calling RecordFunction::before(), which synchronously
+ * runs the profiler's start callbacks -- only once its own lifetime ends
+ * (its destructor fires after every chained with_metadata() call in the
+ * same full expression), so metadata set here is visible to those
+ * callbacks. Starting `guard` itself, rather than in the macro, would run
+ * the callbacks before any metadata had been attached.
+ */
+class PROFILER_VISIBILITY record_function_metadata_builder
 {
-template <typename Inputs, typename... Args>
-void record_function_with_scope(
-    RecordFunction&                    guard,
-    RecordFunction::FunctionDescriptor fn,
-    const Inputs&                      inputs,
-    Args&&... args)
-{
-    if (guard.needsInputs())
+public:
+    record_function_metadata_builder(RecordFunction& fn, std::string_view name)
+        : fn_(fn), name_(name)
     {
-        guard.before(
-            fn,
-            profiler::array_ref<const profiler::IValue>(inputs.data(), inputs.size()),
-            std::forward<Args>(args)...);
     }
-    else
+
+    record_function_metadata_builder(const record_function_metadata_builder&)            = delete;
+    record_function_metadata_builder& operator=(const record_function_metadata_builder&) = delete;
+    record_function_metadata_builder(record_function_metadata_builder&&)                 = delete;
+    record_function_metadata_builder& operator=(record_function_metadata_builder&&)      = delete;
+
+    ~record_function_metadata_builder()
     {
-        guard.before(fn, std::forward<Args>(args)...);
+        if (fn_.isActive())
+        {
+            fn_.before(name_);
+        }
     }
-}
 
-template <typename Inputs, typename... Args>
-void record_function_with_scope_and_debug_handle(
-    RecordFunction&                    guard,
-    RecordFunction::FunctionDescriptor fn,
-    int64_t                            debug_handle,
-    const Inputs&                      inputs,
-    Args&&... args)
-{
-    guard.setDebugHandle(debug_handle);
-    if (guard.needsInputs())
+    record_function_metadata_builder& with_metadata(std::string key, std::string value)
     {
-        guard.before(
-            fn,
-            profiler::array_ref<const profiler::IValue>(inputs.data(), inputs.size()),
-            std::forward<Args>(args)...);
+        fn_.addMetadata(std::move(key), std::move(value));
+        return *this;
     }
-    else
+
+    record_function_metadata_builder& with_metadata(std::string key, int64_t value)
     {
-        guard.before(fn, std::forward<Args>(args)...);
-    }
-}
-
-template <typename... Args>
-void record_function_with_scope(
-    RecordFunction&                             guard,
-    RecordFunction::FunctionDescriptor          fn,
-    profiler::array_ref<const profiler::IValue> inputs,
-    Args&&... args)
-{
-    return record_function_with_scope<profiler::array_ref<const profiler::IValue>, Args...>(
-        guard, fn, inputs, std::forward<Args>(args)...);
-}
-
-template <typename... Args>
-void record_function_with_scope_and_debug_handle(
-    RecordFunction&                             guard,
-    RecordFunction::FunctionDescriptor          fn,
-    int64_t                                     debug_handle,
-    profiler::array_ref<const profiler::IValue> inputs,
-    Args&&... args)
-{
-    return record_function_with_scope_and_debug_handle<
-        profiler::array_ref<const profiler::IValue>,
-        Args...>(guard, fn, debug_handle, inputs, std::forward<Args>(args)...);
-}
-
-}  // namespace detail
-
-// optional argument - function's seq_no
-#define RECORD_FUNCTION_WITH_SCOPE(scope, fn, inputs, ...)                                \
-    profiler::RecordFunction guard(scope);                                                \
-    if (guard.isActive())                                                                 \
-    {                                                                                     \
-        ::profiler::detail::record_function_with_scope(guard, fn, inputs, ##__VA_ARGS__); \
+        return with_metadata(std::move(key), std::to_string(value));
     }
 
-#define RECORD_FUNCTION_WITH_SCOPE_INPUTS_OUTPUTS(scope, fn, inputs, outputs, ...) \
-    profiler::RecordFunction guard(scope);                                         \
-    if (guard.isActive())                                                          \
-    {                                                                              \
-        if (guard.needsInputs())                                                   \
-        {                                                                          \
-            guard.before(fn, inputs, ##__VA_ARGS__);                               \
-        }                                                                          \
-        else                                                                       \
-        {                                                                          \
-            guard.before(fn, ##__VA_ARGS__);                                       \
-        }                                                                          \
-        if (guard.needsOutputs())                                                  \
-        {                                                                          \
-            guard.setOutputs(outputs);                                             \
-        }                                                                          \
+    record_function_metadata_builder& with_metadata(std::string key, double value)
+    {
+        return with_metadata(std::move(key), std::to_string(value));
     }
 
-#define RECORD_FUNCTION(fn, inputs, ...) \
-    RECORD_FUNCTION_WITH_SCOPE(profiler::RecordScope::FUNCTION, fn, inputs, ##__VA_ARGS__)
+private:
+    RecordFunction&  fn_;
+    std::string_view name_;
+};
 
-#define RECORD_TORCHSCRIPT_FUNCTION(mn, inputs) \
-    RECORD_FUNCTION_WITH_SCOPE(profiler::RecordScope::TORCHSCRIPT_FUNCTION, mn, inputs)
-
-#define RECORD_FUNCTION_WITH_INPUTS_OUTPUTS(fn, inputs, outputs, ...) \
-    RECORD_FUNCTION_WITH_SCOPE_INPUTS_OUTPUTS(                        \
-        profiler::RecordScope::FUNCTION, fn, inputs, outputs, ##__VA_ARGS__)
-
-// Custom user scopes in C++; similar to Python's 'with record_function("..."):'
-#define RECORD_USER_SCOPE(fn)   \
-    RECORD_FUNCTION_WITH_SCOPE( \
-        profiler::RecordScope::USER_SCOPE, fn, profiler::array_ref<const profiler::IValue>{})
-
-// RECORD_USER_SCOPE with inputs
-#define RECORD_USER_SCOPE_WITH_INPUTS(fn, inputs) \
-    RECORD_FUNCTION_WITH_SCOPE(profiler::RecordScope::USER_SCOPE, fn, inputs)
-
-#define RECORD_USER_SCOPE_WITH_KWARGS_ONLY(fn, kwargs) \
-    RECORD_FUNCTION_WITH_SCOPE(                        \
-        profiler::RecordScope::USER_SCOPE,             \
-        fn,                                            \
-        profiler::array_ref<const profiler::IValue>{}, \
-        kwargs)
-
-// Helper macro to pass in debug handle that is used to
-// post process events
-#define RECORD_WITH_SCOPE_DEBUG_HANDLE_AND_INPUTS(scope, fn, debug_handle, inputs, ...) \
-    profiler::RecordFunction guard(scope);                                              \
-    if (guard.isActive())                                                               \
-    {                                                                                   \
-        ::profiler::detail::record_function_with_scope_and_debug_handle(                \
-            guard, fn, debug_handle, inputs, ##__VA_ARGS__);                            \
-    }
-
-// Helper macros to record LITE INTERPRETER scope events with debug handles
-#define RECORD_EDGE_SCOPE_WITH_DEBUG_HANDLE_AND_INPUTS(fn, debug_handle, inputs) \
-    RECORD_WITH_SCOPE_DEBUG_HANDLE_AND_INPUTS(                                   \
-        profiler::RecordScope::LITE_INTERPRETER, fn, debug_handle, inputs)
-
-// Bookend to the RECORD_FUNCTION macros.  Use this after the kernel
-// launch to let the profiler bind the outputs to the op that produced
-// them.  Note that guard is declared by RECORD_FUNCTION so this macro
-// needs to be called from the same scope as RECORD_FUNCTION
-#define RECORD_OUTPUTS(outputs)                                                          \
-    if (guard.needsOutputs())                                                            \
-    {                                                                                    \
-        guard.setOutputs(std::vector<profiler::IValue>(outputs.begin(), outputs.end())); \
-    }
+// Declares `guard_name` (scope: the enclosing block, like RECORD_FUNCTION)
+// without starting it. Chain record_function_metadata_builder(guard_name, fn)
+// .with_metadata(...) immediately after to attach metadata and start it --
+// see the class comment above for why start is deferred to the builder.
+#define RECORD_FUNCTION_WITH_METADATA(guard_name, fn) \
+    profiler::RecordFunction guard_name(profiler::RecordScope::FUNCTION)
 
 /**
  * addThreadLocalCallback adds a thread local callback to run with

@@ -264,4 +264,3 @@ No code changes are required - the logging API remains consistent across backend
 
 - **[Setup Guide](setup.md)** - How to configure logging backend during build
 - **[Code Quality Tools](../README.md#code-quality-and-analysis-tools)** - Other analysis tools
-<!-- [CI/CD Pipeline](../ci/CI_CD_PIPELINE.md) - Logging in CI/CD environments (File not found: Docs/ci/ directory does not exist) -->

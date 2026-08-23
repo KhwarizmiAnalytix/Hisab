@@ -90,7 +90,7 @@ private:
     public:
         static Registry& Get()
         {
-            static Registry* singleton = new Registry();
+            static auto* singleton = new Registry();
             return *singleton;
         }
 

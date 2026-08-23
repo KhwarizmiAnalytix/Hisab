@@ -152,7 +152,9 @@ build:macos --cxxopt=-std=c++20
 build:macos --host_cxxopt=-std=c++20
 build:macos --cxxopt=-stdlib=libc++
 build:macos --cxxopt=-faligned-allocation
-build:macos --cxxopt=-mmacosx-version-min=10.13
+build:macos --cxxopt=-mmacosx-version-min=11.0
+build:macos --copt=-mmacosx-version-min=11.0
+build:macos --host_cxxopt=-mmacosx-version-min=11.0
 build:macos --linkopt=-undefined
 build:macos --linkopt=dynamic_lookup
 
@@ -266,15 +268,11 @@ build:mimalloc --define=memory_enable_mimalloc=true
 # Enable magic_enum
 build:magic_enum --define=core_enable_magic_enum=true
 
-# Enable Kineto profiling
-# Note: Kineto config also enables native profiler for compatibility with tests
-build:kineto --define=profiler_type=kineto --define=profiler_enable_kineto=true
-
-# Enable native profiler
-build:native_profiler --define=profiler_type=native
+# Enable Kineto profiling (default instrumentation backend; native profiler pipeline is always on)
+build:kineto --define=profiler_enable_kineto=true
 
 # Enable ITT profiling
-build:itt --define=profiler_type=itt --define=profiler_enable_itt=true
+build:itt --define=profiler_enable_itt=true
 
 # Enable LU pivoting
 build:lu_pivoting --define=core_lu_pivoting=true

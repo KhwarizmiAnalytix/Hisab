@@ -1,5 +1,29 @@
 ---
 HeaderFilterRegex: '^(?!.*(ThirdParty|experimental|Experimental)).*'  # Exclude third party and experimental folders from checks
+# Rationale for checks disabled below beyond the original baseline list
+# (kept here, not inline, because '#' inside the double-quoted Checks
+# string below is literal text, not a YAML comment, and a comment placed
+# between backslash-continued lines silently corrupts the following
+# glob entry instead of documenting it):
+#   bugprone-crtp-constructor-accessibility: CRTP base accessibility pattern used intentionally throughout the library
+#   bugprone-implicit-widening-of-multiplication-result: intentional widening multiplications in numeric/SIMD code
+#   bugprone-random-generator-seed: seeding patterns are controlled by the caller
+#   bugprone-reserved-identifier: internal header guards use reserved identifiers by convention
+#   bugprone-return-const-ref-from-parameter: const-ref return from parameter is an intentional design pattern here
+#   bugprone-std-namespace-modification: std namespace specializations (e.g. std::hash) are explicitly intended
+#   bugprone-throwing-static-initialization: static initializers with exceptions are acceptable in this codebase
+#   bugprone-unhandled-self-assignment: self-assignment handled at a higher level or intentionally omitted
+#   modernize-avoid-c-style-cast: C-style casts used in low-level/interop code intentionally
+#   modernize-avoid-variadic-functions: variadic functions used in logging/formatting interfaces
+#   modernize-macro-to-enum: macros kept as macros for cross-platform compatibility
+#   modernize-pass-by-value: pass-by-value would break existing API contracts
+#   modernize-return-braced-init-list: explicit construction preferred over braced-init-list for clarity
+#   modernize-unary-static-assert: single-argument static_assert kept for older compiler compatibility
+#   modernize-use-constraints: requires-clauses migration deferred to a dedicated refactor pass
+#   modernize-use-equals-default: explicitly defaulted functions require broader audit before enabling
+#   modernize-use-override: virtual override annotations pending a dedicated refactor pass
+#   modernize-use-scoped-lock: scoped_lock migration deferred; existing lock usage is correct
+#   modernize-use-using: typedef/using migration deferred to a dedicated refactor pass
 Checks: "-*,\
 bugprone-*,\
 -bugprone-unchecked-optional-access,\
@@ -7,21 +31,13 @@ bugprone-*,\
 -bugprone-narrowing-conversions,\
 -bugprone-easily-swappable-parameters,\
 -bugprone-macro-parentheses,\
-# New: CRTP base accessibility pattern used intentionally throughout the library
 -bugprone-crtp-constructor-accessibility,\
-# New: intentional widening multiplications in numeric/SIMD code
 -bugprone-implicit-widening-of-multiplication-result,\
-# New: seeding patterns are controlled by the caller
 -bugprone-random-generator-seed,\
-# New: internal header guards use reserved identifiers by convention
 -bugprone-reserved-identifier,\
-# New: const-ref return from parameter is an intentional design pattern here
 -bugprone-return-const-ref-from-parameter,\
-# New: std namespace specializations (e.g. std::hash) are explicitly intended
 -bugprone-std-namespace-modification,\
-# New: static initializers with exceptions are acceptable in this codebase
 -bugprone-throwing-static-initialization,\
-# New: self-assignment handled at a higher level or intentionally omitted
 -bugprone-unhandled-self-assignment,\
 modernize-*,\
 -modernize-use-ranges,\
@@ -34,27 +50,16 @@ modernize-*,\
 -modernize-use-equals-delete,\
 -modernize-use-nodiscard,\
 -modernize-use-default-member-init,\
-# New: C-style casts used in low-level/interop code intentionally
 -modernize-avoid-c-style-cast,\
-# New: variadic functions used in logging/formatting interfaces
 -modernize-avoid-variadic-functions,\
-# New: macros kept as macros for cross-platform compatibility
 -modernize-macro-to-enum,\
-# New: pass-by-value would break existing API contracts
 -modernize-pass-by-value,\
-# New: explicit construction preferred over braced-init-list for clarity
 -modernize-return-braced-init-list,\
-# New: single-argument static_assert kept for older compiler compatibility
 -modernize-unary-static-assert,\
-# New: requires-clauses migration deferred to a dedicated refactor pass
 -modernize-use-constraints,\
-# New: explicitly defaulted functions require broader audit before enabling
 -modernize-use-equals-default,\
-# New: virtual override annotations pending a dedicated refactor pass
 -modernize-use-override,\
-# New: scoped_lock migration deferred; existing lock usage is correct
 -modernize-use-scoped-lock,\
-# New: typedef/using migration deferred to a dedicated refactor pass
 -modernize-use-using,\
 readability-*,\
 -readability-suspicious-call-argument,\

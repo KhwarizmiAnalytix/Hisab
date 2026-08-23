@@ -199,8 +199,7 @@ library the file lives in, never another library's:
 - **Do not create summary/verification/status markdown files
   (`SUMMARY.md`, `*_COMPLETE.md`, `VERIFICATION_CHECKLIST.md`,
   `*_ANALYSIS.md`, etc.) unless the user explicitly asks for one.** Explain
-  what changed directly in the response instead. `Docs/` already has ~35
-  such files from past sessions — don't add to that pile by default.
+  what changed directly in the response instead.
 - If the user does ask for a written doc and doesn't name a location, put
   it in `Docs/` with a clear, descriptive name matching existing
   conventions there. Core project files (README, CHANGELOG, LICENSE) stay

@@ -20,7 +20,8 @@ cmake_minimum_required(VERSION 3.16)
 include(lto)
 quarisma_lto_compute_default(_lto_default PROFILE PERFORMANCE)
 set(PARALLEL_LTO_MODE "${_lto_default}"
-    CACHE STRING "LTO mode for Parallel: off | thin | full | ipo | auto")
+    CACHE STRING "LTO mode for Parallel: off | thin | full | ipo | auto"
+)
 set_property(CACHE PARALLEL_LTO_MODE PROPERTY STRINGS off thin full ipo auto)
 
 # Coverage instrumentation — activates -fprofile-instr-generate / --coverage compiler flags for
@@ -159,6 +160,17 @@ if(PARALLEL_ENABLE_WIN32_THREADS)
   list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_WIN32_THREADS=1)
 else()
   list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_WIN32_THREADS=0)
+endif()
+
+# Profiler presence — detected from the CMake target; not a user option. Lets
+# the thread pool call the always-safe RECORD_USER_SCOPE shim from Profiler's
+# common/instrumentation.h (Docs/profiler/profiler.md, Instrumentation)
+# without depending on which PROFILER_BACKEND was selected.
+if(TARGET Profiler::Profiler)
+  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_PROFILER=1)
+  list(APPEND PARALLEL_DEPENDENCY_LIBS Profiler::Profiler)
+else()
+  list(APPEND PARALLEL_COMPILE_DEFINITIONS PARALLEL_HAS_PROFILER=0)
 endif()
 
 list(APPEND PARALLEL_DEPENDENCY_COMPILE_DEFINITIONS ${PARALLEL_COMPILE_DEFINITIONS})

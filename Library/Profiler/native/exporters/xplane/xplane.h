@@ -396,6 +396,23 @@ private:
     std::vector<xevent> events_;
 };
 
+// Human-readable label for an XLine's originating thread. XSpace only records what host_tracer
+// captured at collection time (a numeric line id plus an optional display/name string) -- there is
+// no std::thread::id to recover -- so this is the single source of truth callers should use instead
+// of trying to reconstruct a real thread::id from XSpace data.
+inline std::string xline_thread_label(const xline& line)
+{
+    if (!line.display_name().empty())
+    {
+        return std::string(line.display_name());
+    }
+    if (!line.name().empty())
+    {
+        return std::string(line.name());
+    }
+    return "thread " + std::to_string(line.id());
+}
+
 // xplane class
 class xplane
 {

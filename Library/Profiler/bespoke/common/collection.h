@@ -1,21 +1,22 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
+#include <limits>
 #include <memory>
 #include <mutex>
+#include <optional>
+#include <set>
+#include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <variant>
+#include <vector>
 
-// TODO: Missing Profiler dependencies - original includes were:
-// //#include <Profiler/Context.h>
-// #include <profiler/csrc/utils/python_stub.h>
-// These are Profiler-specific headers not available in Profiler
-// #include <profiler/core/TensorImpl.h>
 #include "bespoke/base/base.h"
 #include "bespoke/base/perf.h"
 #include "bespoke/common/containers.h"
-#include "bespoke/common/data_flow.h"
 #include "bespoke/common/events.h"
 #include "bespoke/common/orchestration/python_tracer.h"
 #include "bespoke/common/util.h"
@@ -26,76 +27,19 @@
 #include "common/flat_hash.h"
 #include "common/strong_type.h"
 
-// Minimal layout constant expected by profiler code for Tensor::layout()
-namespace profiler
-{
-inline constexpr int kStrided = 0;
-}
-
 namespace profiler::profiler_impl::impl
 {
 
 enum class EventType : uint8_t
 {
-    TorchOp = 0,
+    FunctionOp = 0,
     Backend,
-    Vulkan,
     Allocation,
     OutOfMemory,
     PyCall,
     PyCCall,
     Kineto,
     PythonGC
-};
-
-// ============================================================================
-// == Value (Tensor, Scalar) summary ==========================================
-// ============================================================================
-struct PROFILER_VISIBILITY RawTensorMetadataBase
-{
-    RawTensorMetadataBase() = default;
-    explicit RawTensorMetadataBase(const profiler::Tensor& t);
-
-    StorageImplData data_;
-    int             dtype_{0};
-    int             layout_{0};
-    uint32_t        size_dim_{0};
-};
-
-// Collected during profiling.
-struct PROFILER_VISIBILITY RawTensorMetadata : RawTensorMetadataBase
-{
-    RawTensorMetadata()                                        = default;
-    RawTensorMetadata(const RawTensorMetadata&)                = default;
-    RawTensorMetadata(RawTensorMetadata&&) noexcept            = default;
-    RawTensorMetadata& operator=(const RawTensorMetadata&)     = default;
-    RawTensorMetadata& operator=(RawTensorMetadata&&) noexcept = default;
-    ~RawTensorMetadata()                                       = default;
-    explicit RawTensorMetadata(const profiler::Tensor& t);
-
-    // Wrap `weak_self_` in `std::optional` and split device into components to
-    // keep struct default constructable. (which the std::array initializer needs)
-    std::optional<WeakTensor> weak_self_;
-    profiler::device_enum     device_type_{profiler::device_enum::CPU};
-    int16_t                   device_index_{-1};
-};
-
-// Used during post processing.
-struct PROFILER_VISIBILITY TensorMetadata : public RawTensorMetadataBase
-{
-    TensorMetadata(
-        const RawTensorMetadata& r, std::vector<int64_t> sizes, std::vector<int64_t> strides);
-
-    TensorImplAddress impl() const { return {}; }
-
-    WeakTensor              weak_self_;
-    profiler::device_option device_;
-    std::vector<int64_t>    sizes_;
-    std::vector<int64_t>    strides_;
-
-    // Set during `calculateUniqueTensorIDs`.
-    std::optional<TensorID>     id_;
-    std::optional<AllocationID> allocation_id_;
 };
 
 // Used during post processing.
@@ -112,16 +56,13 @@ struct PROFILER_VISIBILITY ProfilerStepInfo
     }
 };
 
-using op_input_t =
-    std::variant<TensorMetadata, std::vector<TensorMetadata>, profiler::IValue, std::nullopt_t>;
-
 // ============================================================================
 // == ExtraFields =============================================================
 // ============================================================================
 template <EventType>
 struct ExtraFields;
 
-struct TorchOpBasicFields
+struct FunctionOpBasicFields
 {
     int64_t               sequence_number_{0};
     uint64_t              forward_tid_{0};
@@ -136,11 +77,7 @@ struct TorchOpBasicFields
     uint64_t end_tid_{0};
 };
 
-using jit_stack_t   = std::vector<std::string>;
-using jit_modules_t = std::vector<std::string>;
-using extra_args_t  = std::unordered_map<std::string, profiler::IValue>;
-using extra_meta_t  = std::unordered_map<std::string, std::string>;
-using kwinputs_t    = std::unordered_map<std::string, profiler::IValue>;
+using extra_meta_t = std::unordered_map<std::string, std::string>;
 
 struct FallbackPair
 {
@@ -149,48 +86,27 @@ struct FallbackPair
 };
 
 template <>
-struct ExtraFields<EventType::TorchOp> : TorchOpBasicFields
+struct ExtraFields<EventType::FunctionOp> : FunctionOpBasicFields
 {
     ExtraFields(
-        TorchOpBasicFields&&               f,
+        FunctionOpBasicFields&&            f,
         uint64_t                           correlation_id,
         profiler::time_t                   end_time_ns,
-        std::vector<op_input_t>&&          inputs,
-        std::vector<op_input_t>&&          concrete_inputs,
-        jit_stack_t&&                      jit_stack,
-        jit_modules_t&&                    jit_modules,
-        extra_args_t&&                     extra_args,
         extra_meta_t&&                     extra_meta,
-        kwinputs_t&&                       kwinputs,
         FallbackPair&&                     device_fallback,
-        bool                               allow_tf32_cublas,
         std::unique_ptr<perf_counters_t>&& perf_event_counters)
-        : TorchOpBasicFields(std::move(f)),
+        : FunctionOpBasicFields(std::move(f)),
           correlation_id_{correlation_id},
           end_time_ns_{end_time_ns},
-          inputs_{std::move(inputs)},
-          concrete_inputs_{std::move(concrete_inputs)},
-          jit_stack_{std::move(jit_stack)},
-          jit_modules_{std::move(jit_modules)},
-          extra_args_{std::move(extra_args)},
           extra_meta_{std::move(extra_meta)},
-          kwinputs_{std::move(kwinputs)},
           device_fallback_{std::move(device_fallback)},
-          allow_tf32_cublas_{allow_tf32_cublas},
           perf_event_counters_{std::move(perf_event_counters)}
     {
     }
     uint64_t                         correlation_id_;
     profiler::time_t                 end_time_ns_;
-    std::vector<op_input_t>          inputs_;
-    std::vector<op_input_t>          concrete_inputs_;
-    jit_stack_t                      jit_stack_;
-    jit_modules_t                    jit_modules_;
-    extra_args_t                     extra_args_;
     extra_meta_t                     extra_meta_;
-    kwinputs_t                       kwinputs_;
     FallbackPair                     device_fallback_;
-    bool                             allow_tf32_cublas_;
     std::unique_ptr<perf_counters_t> perf_event_counters_;
     std::string                      metadata_json_;
 };
@@ -204,8 +120,6 @@ struct ExtraFields<EventType::Backend>
     profiler::RecordScope scope_;
     std::string           name_;
     std::string           backend_;
-    jit_stack_t           jit_stack_;
-    jit_modules_t         jit_modules_;
 };
 
 template <>
@@ -213,17 +127,6 @@ struct ExtraFields<EventType::PythonGC>
 {
     std::string phase;
     int64_t     duration_ns_;
-};
-
-template <>
-struct ExtraFields<EventType::Vulkan>
-{
-    using raw_event_t = std::pair<profiler::approx_time_t, vulkan_id_t>;
-    std::string name_;
-    int64_t     duration_ns_{0};
-    // While building the event tree, we want to report a vulkan event's duration
-    // as 0 so that its end time doesn't exceed that of its parent cpu op
-    bool in_tree_building_{false};
 };
 
 struct RawAllocation
@@ -252,9 +155,6 @@ struct ExtraFields<EventType::Allocation> : RawAllocation
         d.index_ = device_index_;
         return d;
     }
-
-    std::optional<TensorID>     id_;
-    std::optional<AllocationID> allocation_id_;
 };
 
 template <>
@@ -272,109 +172,6 @@ struct ExtraFields<EventType::OutOfMemory>
 static_assert(
     std::is_trivial_v<ExtraFields<EventType::OutOfMemory>>,
     "Non-Trivial member of ExtraFields<EventType::OutOfMemory>.");
-
-struct PyFrameState
-{
-    int                  line_no_;
-    profiler::StringView filename_;
-    profiler::StringView funcname_;
-};
-
-template <typename T, typename Tag>
-using strong_t = strong::type<T, Tag, strong::regular, strong::convertible_to<T>, strong::hashable>;
-#if 0
-using PyModuleSelf    = strong_t<PyObject*, struct PyModuleSelf_>;
-using PyModuleCls     = strong_t<PyObject*, struct PyModuleCls_>;
-using PyMethod        = strong_t</*PyMethodDef*/ void*, struct PyMethod_>;
-using PyOptimizerSelf = strong_t<PyObject*, struct PyOptSelf_>;
-using PyOptimizerCls  = strong_t<PyObject*, struct PyOptimizer_>;
-
-struct NNModuleInfo
-{
-    struct ParameterInfo
-    {
-        std::string                   name_;
-        TensorMetadata                metadata_;
-        std::optional<TensorMetadata> grad_metadata_;
-    };
-
-    PyModuleSelf       self_;
-    PyModuleCls        cls_;
-    profiler::StringView cls_name_;
-
-    std::vector<ParameterInfo> parameters_;
-    // Indicates that `self_` is the kth instance of `cls_` observed.
-    size_t id_{std::numeric_limits<size_t>::max()};
-};
-
-struct OptimizerInfo
-{
-    struct ParameterInfo
-    {
-        TensorMetadata                                      metadata_;
-        std::optional<TensorMetadata>                       grad_metadata_;
-        std::vector<std::pair<std::string, TensorMetadata>> state_;
-    };
-
-    PyOptimizerSelf    self_;
-    PyOptimizerCls     cls_;
-    profiler::StringView cls_name_;
-
-    std::vector<ParameterInfo> parameters_;
-};
-
-struct PyExtraFieldsBase
-{
-    PyExtraFieldsBase(profiler::time_t end_time_ns, size_t python_tid, PyFrameState caller)
-        : end_time_ns_{end_time_ns}, python_tid_{python_tid}, caller_{std::move(caller)}
-    {
-    }
-
-    profiler::time_t end_time_ns_;
-    size_t         python_tid_;
-    PyFrameState   caller_;
-
-    // kth python event observed. (Used by TensorBoard)
-    size_t id_{std::numeric_limits<size_t>::max()};
-};
-
-template <>
-struct ExtraFields<EventType::PyCall> : public PyExtraFieldsBase
-{
-    struct args_t
-    {
-        PyFrameState                 frame_state_;
-        std::optional<NNModuleInfo>  module_info_;
-        std::optional<OptimizerInfo> optimizer_info_;
-    };
-
-    ExtraFields(profiler::time_t end_time_ns, size_t python_tid, PyFrameState caller, args_t args)
-        : PyExtraFieldsBase(end_time_ns, python_tid, std::move(caller)),
-          callsite_{std::move(args.frame_state_)},
-          module_{std::move(args.module_info_)},
-          optimizer_{std::move(args.optimizer_info_)}
-    {
-    }
-
-    PyFrameState                 callsite_;
-    std::optional<NNModuleInfo>  module_;
-    std::optional<OptimizerInfo> optimizer_;
-};
-
-template <>
-struct ExtraFields<EventType::PyCCall> : public PyExtraFieldsBase
-{
-    using args_t = profiler::StringView;
-
-    ExtraFields(profiler::time_t end_time_ns, size_t python_tid, PyFrameState caller, args_t args)
-        : PyExtraFieldsBase(end_time_ns, python_tid, std::move(caller)),
-          function_name_{std::move(args)}
-    {
-    }
-
-    profiler::StringView function_name_;
-};
-#endif
 
 template <>
 struct ExtraFields<EventType::Kineto>
@@ -455,16 +252,15 @@ struct PROFILER_VISIBILITY Result : public std::enable_shared_from_this<Result>
     int64_t                   start_time_ns_;
     uint64_t                  start_tid_;
     kineto::DeviceAndResource kineto_info_;
+    // ExtraFields<EventType::PythonGC> / PyCall / PyCCall are defined for a
+    // registered python_tracer implementation to materialize; the default
+    // NoOpPythonTracer never produces them, so they are not variant alternatives.
     std::variant<
-        ExtraFields<EventType::TorchOp>,
+        ExtraFields<EventType::FunctionOp>,
         ExtraFields<EventType::Backend>,
-        ExtraFields<EventType::Vulkan>,
         ExtraFields<EventType::Allocation>,
         ExtraFields<EventType::OutOfMemory>,
-        ExtraFields<EventType::Kineto>/*,
-        ExtraFields<EventType::PyCall>,
-        ExtraFields<EventType::PyCCall>,
-        ExtraFields<EventType::PythonGC>*/>
+        ExtraFields<EventType::Kineto>>
         extra_fields_;
 
     std::weak_ptr<Result>                                    parent_;
@@ -498,81 +294,19 @@ struct KinetoObserverContext : public profiler::ObserverContext
 {
     struct Event
     {
-        TorchOpBasicFields      basic_fields_;
+        FunctionOpBasicFields   basic_fields_;
         profiler::approx_time_t start_time_;
 
         // Set in the exit callback.
         profiler::approx_time_t end_time_{std::numeric_limits<profiler::approx_time_t>::min()};
 
-        bool                             allow_tf32_cublas_;
         std::unique_ptr<perf_counters_t> counters_;
-        extra_meta_t*                    extra_nccl_meta_{};
     };
 
     explicit KinetoObserverContext(Event* event) : event_{event} {}
 
     Event*        event_;
     FallbackPair* fallback_{nullptr};
-};
-
-constexpr int IO_ENCODER_DEFAULT_BLOCK_SIZE = 1024;
-
-constexpr int SCALAR_LIST_LENGTH_LIMIT = 30;
-
-// InputOutputEncoder
-// Stores each op_events' shapes and dtypes, and concrete values into a
-// contiguous AppendOnlyList so that we no longer create vectors for shapes
-// and dtypes on every op. Those vectors can be created during
-// post-processing.
-// It splits the data into two categories: input shapes and concrete inputs.
-class InputOutputEncoder final
-{
-public:
-    void push(profiler::array_ref<const profiler::IValue> values);
-
-    // Used during post-processing to unpack the encoded data.
-    // Each method returns a "supplier" lambda which takes no arguments;
-    // invoking the lambda once will return a list of args that represent
-    // the inputs for one op.
-    // The data is split into two streams: "input shapes" and "concrete inputs".
-    // Note: "auto" only works because these are only used in collection.cpp,
-    // where they are implemented.
-    auto getInputShapeGenerator();
-    auto getConcreteInputGenerator();
-
-    static bool isSupportedScalarList(const profiler::IValue& list_candidate);
-
-    void clear();
-
-    enum class Tag
-    {
-        Tensor = 0,
-        UndefinedTensor,
-        TensorListBegin,  // TODO: generalize to other lists.
-        ScalarList,
-        Scalar,
-        Other,
-        TERMINATOR
-    };
-
-    enum class IOType
-    {
-        Shapes,
-        ConcreteInputs,
-        None
-    };
-
-private:
-    void push(const profiler::Tensor& t);
-
-    // Implementation detail for getInputShapeGenerator and
-    // getConcreteInputGenerator
-    auto getIValueGenerator(const IOType& io_type);
-
-    AppendOnlyList<Tag, IO_ENCODER_DEFAULT_BLOCK_SIZE>               tags_;
-    AppendOnlyList<RawTensorMetadata, IO_ENCODER_DEFAULT_BLOCK_SIZE> tensor_metadata_;
-    AppendOnlyList<int64_t, IO_ENCODER_DEFAULT_BLOCK_SIZE>           tensor_sizes_strides_;
-    AppendOnlyList<profiler::IValue, IO_ENCODER_DEFAULT_BLOCK_SIZE>  ivalues_;
 };
 
 using perf_profiler_t = profiler::profiler_impl::impl::linux_perf::PerfProfiler;
@@ -588,12 +322,6 @@ public:
     void emplace_backend_event(Args&&... args)
     {
         backend_events_.emplace_back(std::forward<Args>(args)...);
-    }
-
-    template <class... Args>
-    void emplace_vulkan_event(Args&&... args)
-    {
-        vulkan_events_.emplace_back(std::forward<Args>(args)...);
     }
 
     template <class... Args>
@@ -639,7 +367,7 @@ private:
     // See `containers.h` for block size benchmarks.
     static constexpr size_t BlockSize = 512;
 
-    struct TorchOpStorage
+    struct FunctionOpStorage
     {
         // NB: This is a destructive operation.
         void materialize(
@@ -669,34 +397,16 @@ private:
             static uint64_t               correlationID(const OpList::Iterator& e);
         } op_events_;
 
-        // report_input_shapes
-        InputOutputEncoder inputs_outputs_;
-
-        // with_stack (JIT)
-        AppendOnlyList<jit_stack_t, BlockSize> jit_stack_;
-
-        // with_modules
-        AppendOnlyList<jit_modules_t, BlockSize> jit_modules_;
-
-        // with_flops
-        AppendOnlyList<extra_args_t, BlockSize> extra_args_;
-
-        // report extra metadata, i.e. collective communication meta
+        // Per-function structured metadata, populated from RecordFunction::metadata().
         AppendOnlyList<extra_meta_t, BlockSize> extra_meta_;
-
-        // report kwinputs
-        AppendOnlyList<kwinputs_t, BlockSize> kwinputs_;
 
         // ProfilerState::KINETO_GPU_FALLBACK or
         // ProfilerState::KINETO_PRIVATEUSE1_FALLBACK
         AppendOnlyList<FallbackPair, BlockSize> device_fallback_;
-    } torch_ops_;
+    } function_ops_;
 
     // reportBackendEventToActiveKinetoProfiler
     AppendOnlyList<ExtraFields<EventType::Backend>, BlockSize> backend_events_;
-
-    // _reportVulkanEventToProfiler
-    AppendOnlyList<ExtraFields<EventType::Vulkan>::raw_event_t, BlockSize> vulkan_events_;
 
     // reportMemoryUsage
     AppendOnlyList<RawAllocation, BlockSize> allocations_;
@@ -704,7 +414,7 @@ private:
     // reportOOMs
     AppendOnlyList<ExtraFields<EventType::OutOfMemory>, BlockSize> ooms_;
 
-    // with_stack (Python)
+    // with_stack (Python) — populated by a registered PythonTracerBase
     AppendOnlyList<std::pair<python_tracer::TraceKey, profiler::approx_time_t>, BlockSize>
         py_calls_;
     // gc with_stack (Python)
@@ -739,10 +449,6 @@ private:
     std::mutex                                                              sub_queue_mutex_;
     std::unique_ptr<python_tracer::PythonTracerBase>                        python_tracer_;
 };
-
-PROFILER_API bool get_record_concrete_inputs_enabled();
-PROFILER_API void set_record_concrete_inputs_enabled_fn(std::function<bool()> /*fn*/);
-PROFILER_API void set_record_concrete_inputs_enabled_val(bool /*val*/);
 
 PROFILER_API bool get_fwd_bwd_enabled();
 PROFILER_API void set_fwd_bwd_enabled_fn(std::function<bool()> /*fn*/);

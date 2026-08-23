@@ -49,29 +49,31 @@ namespace profiler
 {
 
 /**
- * @brief Gets the current high-resolution timestamp in nanoseconds since Unix epoch.
+ * @brief Gets the current timestamp in nanoseconds from a monotonic clock.
  *
- * Provides a high-precision timestamp for trace event timing. Uses the system's
- * highest resolution clock available, typically providing nanosecond precision
- * on modern systems.
+ * Provides a high-precision timestamp for trace event timing. Deliberately
+ * uses steady_clock rather than a wall CLOCK_REALTIME source: traceme durations
+ * feed unsigned nanosecond math (profiler_session::start_time_ns_/
+ * end_time_ns_, scope_tree_builder's interval nesting) that must never see
+ * time run backwards, which a wall-clock step (NTP, manual clock change)
+ * could otherwise cause. This is the single clock source for the native
+ * tracing hot path; native/utils/time_utils.cpp's get_current_time_nanos()
+ * delegates here rather than reimplementing it.
  *
- * @return Current time as nanoseconds since Unix epoch (January 1, 1970 00:00:00 UTC)
+ * @return Current time in nanoseconds from an unspecified, monotonically
+ *         non-decreasing epoch (not the Unix epoch -- only differences
+ *         between calls are meaningful).
  *
  * **Performance**: Optimized for speed - typically 10-50 nanoseconds per call
  * **Resolution**: Nanosecond precision where supported by the system
  * **Thread Safety**: Safe to call from any thread
- * **Monotonic**: Uses high_resolution_clock which may not be monotonic on all systems,
- *                but provides the best available precision for profiling
  *
  * @note This function is force-inlined for optimal performance in hot paths
  */
 inline int64_t get_current_time_nanos()
 {
-    // Monotonic clock for consistent relative timing
-    auto now = std::chrono::steady_clock::now();
-    auto nanos =
-        std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
-    return nanos;
+    auto const now = std::chrono::steady_clock::now();
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
 }
 
 /**

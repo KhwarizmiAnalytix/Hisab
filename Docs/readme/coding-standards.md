@@ -1770,11 +1770,10 @@ std::unique_ptr<my_class> obj = std::make_unique<my_class>();
 ## Related Documentation
 
 - **[Contributing Guide](../../CONTRIBUTING.md)** - Contributor-specific requirements and pull request process
-- **[Complete Coding Standards Rules](.augment/rules/coding.md)** - Detailed standards covering all aspects
+- **[Complete Coding Standards Rules](../../.augment/rules/coding.md)** - Detailed standards covering all aspects
 - **[README.md - Coding Standards Section](../../README.md#coding-standards)** - Quick reference guide
 
 ---
 
 **Last Updated:** 2025-11-03  
 **Maintained by:** Quarisma Development Team
-

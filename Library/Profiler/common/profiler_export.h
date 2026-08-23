@@ -47,10 +47,8 @@
 #define PROFILER_HIDDEN
 #endif
 
-// Mutual exclusivity: only one profiler backend may be active per translation unit.
-// PROFILER_HAS_KINETO, PROFILER_HAS_ITT, and PROFILER_HAS_NATIVE are
-// mutually exclusive — exactly one (or none) may equal 1.
-#if (PROFILER_HAS_KINETO + PROFILER_HAS_ITT + PROFILER_HAS_NATIVE) > 1
-#error \
-    "PROFILER_HAS_KINETO, PROFILER_HAS_ITT, and PROFILER_HAS_NATIVE are mutually exclusive. Only one may equal 1."
+// Kineto and ITT are alternative instrumentation backends and may not both be active.
+// The native traceme/xplane pipeline is always compiled alongside whichever is selected.
+#if (PROFILER_HAS_KINETO + PROFILER_HAS_ITT) > 1
+#error "PROFILER_HAS_KINETO and PROFILER_HAS_ITT are mutually exclusive. Only one may equal 1."
 #endif

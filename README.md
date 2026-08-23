@@ -5,8 +5,7 @@
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/11420/badge)](https://www.bestpractices.dev/projects/11420)
 [![License: GPL-3.0 or Commercial](https://img.shields.io/badge/License-GPL--3.0%20or%20Commercial-blue.svg)](LICENSE)
 
-
-> **Note**: Quarisma is actively working toward OpenSSF Best Practices certification. See [Docs/OpenSSF_Badge_Update_Guide.md](Docs/OpenSSF_Badge_Update_Guide.md) for our compliance roadmap and current status.
+> **Note**: The OpenSSF badge above links to the live Best Practices status for this project.
 ## Project Introduction
 
 **Quarisma** is a modern, high-performance quantitative analysis library designed for both CPU and GPU computing. Built with a production-ready C++ foundation and dual build system support (CMake and Bazel), Quarisma provides cross-platform compatibility, advanced optimization capabilities, and flexible dependency management for demanding computational workloads.
@@ -87,13 +86,15 @@ The `setup.py` script uses a standardized flag ordering convention to organize b
 
 ##### Profiler selection
 
-Use the `--profiler.<backend>` flag (where `<backend>` is `kineto`, `native`, or `itt`) to control `QUARISMA_PROFILER_TYPE` and automatically toggle the matching Kineto/TraceMe/ITT feature set. Example:
+The native traceme/xplane profiler pipeline is always compiled. Use the `--profiler.<backend>` flag
+(where `<backend>` is `kineto` or `itt`) to control `QUARISMA_PROFILER_TYPE` and choose which
+instrumentation backend is layered on top of it. Example:
 
 ```bash
-python setup.py config.build.ninja.clang.release --profiler.native
+python setup.py config.build.ninja.clang.release --profiler.itt
 ```
 
-If you omit the profiler flag, `KINETO` is selected by default. The helper no longer exposes separate `kineto` or `ittapi` switches – the single `profiler.xxx` option now controls which profiler backend you are compiling for.
+If you omit the profiler flag, `KINETO` is selected by default. The helper no longer exposes separate `kineto` or `ittapi` switches – the single `profiler.xxx` option now controls which instrumentation backend you are compiling for.
 
 #### Unix/Linux (GCC and Clang)
 
@@ -165,7 +166,7 @@ cmake --build . --config Release --parallel %NUMBER_OF_PROCESSORS%
 
 Quarisma supports **both CMake and Bazel** build systems, providing flexibility for different development workflows and CI/CD environments. The Bazel build system offers fast incremental builds, hermetic builds, and excellent caching capabilities.
 
-> **Note**: Both build systems are fully supported and maintained. Bazel defaults match CMake defaults where applicable (for example LOGURU for logging). The **profiler backend defaults to Kineto** in both CMake (`QUARISMA_PROFILER_TYPE=KINETO`) and Bazel (no `native_profiler` / `itt` config). Enable the **native** backend with CMake `-DQUARISMA_PROFILER_TYPE=NATIVE` or `python setup.py ... --profiler.native`, and with Bazel `--config=native_profiler` (or `--define=profiler_type=native`).
+> **Note**: Both build systems are fully supported and maintained. Bazel defaults match CMake defaults where applicable (for example LOGURU for logging). The native traceme/xplane profiler pipeline is always compiled; the **instrumentation backend layered on top defaults to Kineto** in both CMake (`QUARISMA_PROFILER_TYPE=KINETO`) and Bazel (no `itt` config). Enable the **ITT** backend with CMake `-DQUARISMA_PROFILER_TYPE=ITT` or `python setup.py ... --profiler.itt`, and with Bazel `--config=itt` (or `--define=profiler_enable_itt=true`).
 
 #### Prerequisites
 
@@ -882,12 +883,8 @@ Full cross-platform compatibility across Windows, Linux, and macOS with platform
 - **[Cross-Platform Building](Docs/readme/cross-platform-building.md)** - Platform-specific build instructions
 - **[Linting System](Docs/readme/linter.md)** - Comprehensive linter documentation and configuration
 - **[Usage Examples](Docs/readme/usage-examples.md)** - Practical build configuration examples
-- **[Profiler](Docs/profiler/README.md)** - Profiler library, backends (native / Kineto / ITT), examples, and Kineto notes
+- **[Profiler](Docs/profiler/profiler.md)** - Profiler library, backends (native / Kineto / ITT), examples, and architecture
 
-### Additional Documentation
-
-<!-- [CI/CD Pipeline](Docs/ci/CI_CD_PIPELINE.md) - Continuous integration setup (File not found: Docs/ci/ directory does not exist) -->
-<!-- [CI Quick Start](Docs/ci/CI_QUICK_START.md) - Getting started with CI (File not found: Docs/ci/ directory does not exist) -->
 - **[Valgrind Setup](Docs/readme/valgrind.md)** - Memory debugging with Valgrind
 
 ## Running Tests

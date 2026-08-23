@@ -19,6 +19,7 @@ from .common import (
     find_test_for_module,
     get_config,
     get_platform_config,
+    resolve_multi_config_artifact,
 )
 from .coverage_formats import build_summary_json, parse_lcov, to_line_dicts
 
@@ -267,19 +268,24 @@ def prepare_llvm_coverage(
 
     matched = find_test_for_module(ctest_tests or {}, module_name, cfg["test_exe_pattern"])
     if matched and matched["command"]:
-        candidate = Path(matched["command"][0])
-        if candidate.exists():
+        candidate = resolve_multi_config_artifact(Path(matched["command"][0]))
+        if candidate is not None:
             test_executable = candidate
             if matched["cwd"]:
                 test_dir = Path(matched["cwd"])
 
     if test_executable is None:
         # Fallback: template-based glob, for builds without CTest metadata.
+        # Multi-config generators (Xcode, VS) use bin/<Config>/.
         test_dir_rel = cfg["test_dir_template"].format(
             filter=cfg["filter"], module=module_name
         )
         test_dir = build_dir / test_dir_rel
-        test_executable = build_dir / "bin" / f"{test_exe_name}{exe_extension}"
+        test_executable = resolve_multi_config_artifact(
+            build_dir / "bin" / f"{test_exe_name}{exe_extension}"
+        )
+        if test_executable is None:
+            test_executable = build_dir / "bin" / f"{test_exe_name}{exe_extension}"
 
     if test_dir is None:
         test_dir = test_executable.parent

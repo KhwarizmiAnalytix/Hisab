@@ -84,18 +84,18 @@ VECTORIZATIONTEST(MetalDispatch, Add)
 
     float* da  = upload(a);
     float* db  = upload(b);
-    float* dout = alloc_t::allocate(n, memory::device_enum::METAL);
+    float* doubt = alloc_t::allocate(n, memory::device_enum::METAL);
 
     const void* ins[] = {da, db};
-    vectorization::metal_backend::dispatch("add", ins, 2, dout, n);
+    vectorization::metal_backend::dispatch("add", ins, 2, doubt, n);
 
-    auto host = download(dout, n);
+    auto host = download(doubt, n);
     for (size_t i = 0; i < n; ++i)
         EXPECT_FLOAT_EQ(host[i], a[i] + b[i]);
 
     alloc_t::free(da, memory::device_enum::METAL);
     alloc_t::free(db, memory::device_enum::METAL);
-    alloc_t::free(dout, memory::device_enum::METAL);
+    alloc_t::free(doubt, memory::device_enum::METAL);
     END_TEST();
 }
 
@@ -107,17 +107,17 @@ VECTORIZATIONTEST(MetalDispatch, Sin)
         a[i] = static_cast<float>(i) * 0.01f;
 
     float* da   = upload(a);
-    float* dout = alloc_t::allocate(n, memory::device_enum::METAL);
+    float* doubt = alloc_t::allocate(n, memory::device_enum::METAL);
 
     const void* ins[] = {da};
-    vectorization::metal_backend::dispatch("sin", ins, 1, dout, n);
+    vectorization::metal_backend::dispatch("sin", ins, 1, doubt, n);
 
-    auto host = download(dout, n);
+    auto host = download(doubt, n);
     for (size_t i = 0; i < n; ++i)
         EXPECT_NEAR(host[i], std::sin(a[i]), 1e-5f);
 
     alloc_t::free(da, memory::device_enum::METAL);
-    alloc_t::free(dout, memory::device_enum::METAL);
+    alloc_t::free(doubt, memory::device_enum::METAL);
     END_TEST();
 }
 
@@ -135,19 +135,19 @@ VECTORIZATIONTEST(MetalDispatch, Fma)
     float* da   = upload(a);
     float* db   = upload(b);
     float* dc   = upload(c);
-    float* dout = alloc_t::allocate(n, memory::device_enum::METAL);
+    float* doubt = alloc_t::allocate(n, memory::device_enum::METAL);
 
     const void* ins[] = {da, db, dc};
-    vectorization::metal_backend::dispatch("fma", ins, 3, dout, n);
+    vectorization::metal_backend::dispatch("fma", ins, 3, doubt, n);
 
-    auto host = download(dout, n);
+    auto host = download(doubt, n);
     for (size_t i = 0; i < n; ++i)
         EXPECT_NEAR(host[i], a[i] * b[i] + c[i], 1e-5f);
 
     alloc_t::free(da, memory::device_enum::METAL);
     alloc_t::free(db, memory::device_enum::METAL);
     alloc_t::free(dc, memory::device_enum::METAL);
-    alloc_t::free(dout, memory::device_enum::METAL);
+    alloc_t::free(doubt, memory::device_enum::METAL);
     END_TEST();
 }
 

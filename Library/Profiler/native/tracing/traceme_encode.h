@@ -204,7 +204,7 @@ inline std::string append_args(std::string name, std::initializer_list<TraceMeAr
             new_size += arg.key.size() + arg.value.size();
         }
         name.resize(new_size);
-        char* const begin = &name[0];
+        char* const begin = name.data();
         char*       out   = begin + old_size;
         *out++            = '#';  // Start metadata section
         for (const auto& arg : args)

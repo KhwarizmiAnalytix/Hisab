@@ -34,7 +34,14 @@
 #include <vector>
 
 ////#include "logger/logger.h"
+#include "native/analysis/hotspot_report.h"
+#include "native/analysis/stat_summarizer_options.h"
 #include "native/analysis/statistical_analyzer.h"
+#include "native/analysis/stats_calculator.h"
+#include "native/exporters/xplane/tf_xplane_visitor.h"
+#include "native/exporters/xplane/xplane_schema.h"
+#include "native/exporters/xplane/xplane_utils.h"
+#include "native/exporters/xplane/xplane_visitor.h"
 #include "native/session/profiler.h"
 
 namespace profiler
@@ -47,11 +54,77 @@ struct scope_snapshot
     size_t                     depth;
 };
 
-std::string to_string_thread_id(const std::thread::id& thread_id)
+// Offline tabular summary from the session XSpace (same events Chrome/report use).
+// Complements statistical_analyzer (online multi-sample mean/std).
+std::string build_xspace_stats_summary(const profiler_session& session)
 {
-    std::stringstream ss;
-    ss << thread_id;
-    return ss.str();
+    if (!session.has_collected_xspace())
+    {
+        return {};
+    }
+
+    const xplane* host = find_plane_with_name(session.collected_xspace(), kHostThreadsPlaneName);
+    if (host == nullptr)
+    {
+        return {};
+    }
+
+    stats_calculator            calc(stat_summarizer_options{});
+    int64_t                     run_order    = 0;
+    int64_t                     run_total_us = 0;
+    const statistical_analyzer* analyzer     = session.statistical_analyzer_ptr();
+
+    xplane_visitor const visitor = CreateTfXPlaneVisitor(host);
+    visitor.for_each_line(
+        [&](const xline_visitor& line)
+        {
+            line.for_each_event(
+                [&](const xevent_visitor& event)
+                {
+                    const std::string name = std::string(event.name());
+                    if (name.empty())
+                    {
+                        return;
+                    }
+
+                    // Schema-typed host events keep their name as the node type;
+                    // ordinary TraceMe scopes are labeled "Scope".
+                    const std::string type = event.type().has_value() ? name : std::string("Scope");
+
+                    const auto elapsed_us = static_cast<int64_t>(event.duration_ps() / 1000000);
+                    if (elapsed_us < 0)
+                    {
+                        return;
+                    }
+
+                    int64_t mem_used = 0;
+                    if (auto bytes =
+                            event.get_stat(static_cast<int64_t>(StatType::kRequestedBytes));
+                        bytes.has_value())
+                    {
+                        mem_used = bytes->int_or_uint_value();
+                    }
+                    else if (analyzer != nullptr)
+                    {
+                        const auto mem_stats = analyzer->calculate_memory_stats(name);
+                        if (mem_stats.is_valid())
+                        {
+                            mem_used = static_cast<int64_t>(mem_stats.mean);
+                        }
+                    }
+
+                    calc.add_node_stats(name, type, run_order++, elapsed_us, mem_used);
+                    run_total_us += elapsed_us;
+                });
+        });
+
+    if (run_order == 0)
+    {
+        return {};
+    }
+
+    calc.update_run_total_us(run_total_us);
+    return calc.get_output_string();
 }
 
 void collect_scope_snapshots(
@@ -87,14 +160,29 @@ size_t compute_max_depth(const std::vector<scope_snapshot>& snapshots)
         { return (std::max)(max_depth, snapshot.depth); });
 }
 
-std::unordered_map<std::string, size_t> build_thread_histogram(
-    const std::vector<scope_snapshot>& snapshots)
+// Per-thread scope counts, keyed by thread display name (see xline_thread_label()). Reads XSpace's
+// XLines directly rather than profiler_scope_data::thread_id_: XSpace has no std::thread::id to
+// reconstruct, only the numeric line id/name host_tracer captured.
+std::unordered_map<std::string, size_t> build_thread_histogram(const x_space& space)
 {
     std::unordered_map<std::string, size_t> histogram;
-    for (const auto& snapshot : snapshots)
+    for (const auto& plane : space.planes())
     {
-        std::string const thread_id = to_string_thread_id(snapshot.scope->thread_id_);
-        ++histogram[thread_id];
+        if (plane.name() != kHostThreadsPlaneName)
+        {
+            continue;
+        }
+        for (const auto& line : plane.lines())
+        {
+            std::string const thread_label = xline_thread_label(line);
+            for (const auto& event : line.events())
+            {
+                if (event.data_case() != xevent::data_case_type::kNumOccurrences)
+                {
+                    ++histogram[thread_label];
+                }
+            }
+        }
     }
     return histogram;
 }
@@ -116,6 +204,23 @@ std::vector<std::pair<std::string, ValueT>> sort_map_by_value_desc(
             return lhs.second > rhs.second;
         });
     return entries;
+}
+
+// Per-scope-name memory delta stats, aggregated across every recorded invocation of that name.
+// Individual scope-tree nodes (reconstructed from XSpace by scope_tree_builder) carry no memory
+// data of their own -- XSpace events have no memory field -- so this analyzer-by-name aggregate,
+// keyed on profiler_scope_data::name_, is the closest available substitute; see the comment on
+// profiler_scope::stop()'s call to add_memory_sample() for where these samples come from. Samples
+// are stored as an absolute-value magnitude, so mean/max here are magnitudes, not signed deltas.
+profiler::statistical_metrics scope_memory_stats(
+    const profiler::profiler_session& session, const std::string& scope_name)
+{
+    auto const* analyzer = session.statistical_analyzer_ptr();
+    if (analyzer == nullptr)
+    {
+        return {};
+    }
+    return analyzer->calculate_memory_stats(scope_name);
 }
 
 }  // namespace
@@ -141,6 +246,7 @@ std::string profiler_report::generate_console_report() const
     ss << generate_timing_section();
     ss << generate_memory_section();
     ss << generate_statistical_section();
+    ss << generate_hotspot_section();
 
     if (include_thread_info_)
     {
@@ -152,7 +258,7 @@ std::string profiler_report::generate_console_report() const
 
 std::string profiler_report::generate_json_report() const
 {
-    auto const* root = session_.get_root_scope();
+    auto const* root = session_.build_scope_tree();
     auto const  snapshots =
         root != nullptr ? collect_scope_snapshots(root) : std::vector<scope_snapshot>();
 
@@ -206,7 +312,7 @@ std::string profiler_report::generate_json_report() const
         ss << "      \"name\": " << escape_json_string(scope->name_) << ",\n";
         ss << "      \"duration_ms\": " << format_double(scope->get_duration_ms()) << ",\n";
         ss << "      \"depth\": " << snapshot.depth << ",\n";
-        ss << "      \"thread\": " << escape_json_string(format_thread_id(scope->thread_id_))
+        ss << "      \"thread\": " << escape_json_string(format_thread_label(scope->thread_label_))
            << "\n";
         ss << "    }";
         if (i + 1 < duration_limit)
@@ -236,7 +342,8 @@ std::string profiler_report::generate_json_report() const
     ss << "  },\n";
 
     ss << "  \"threads\": [\n";
-    auto const thread_histogram = sort_map_by_value_desc(build_thread_histogram(snapshots));
+    auto const thread_histogram =
+        sort_map_by_value_desc(build_thread_histogram(session_.collected_xspace()));
     for (size_t i = 0; i < thread_histogram.size(); ++i)
     {
         if (i != 0)
@@ -263,10 +370,11 @@ std::string profiler_report::generate_csv_report() const
     std::stringstream ss;
 
     ss << generate_csv_header() << "\n";
-    if (include_hierarchical_data_ && (session_.get_root_scope() != nullptr))
+    auto const* root = session_.build_scope_tree();
+    if (include_hierarchical_data_ && (root != nullptr))
     {
         std::vector<std::string> rows;
-        process_scope_data_csv_recursive(*session_.get_root_scope(), rows);
+        process_scope_data_csv_recursive(*root, rows);
         for (const auto& row : rows)
         {
             ss << row << "\n";
@@ -295,6 +403,7 @@ std::string profiler_report::generate_xml_report() const
     ss << "  <timing>\n" << generate_timing_section() << "  </timing>\n";
     ss << "  <memory>\n" << generate_memory_section() << "  </memory>\n";
     ss << "  <statistics>\n" << generate_statistical_section() << "  </statistics>\n";
+    ss << "  <hotspots>\n" << generate_hotspot_section() << "  </hotspots>\n";
 
     if (include_thread_info_)
     {
@@ -421,16 +530,6 @@ std::string profiler_report::format_memory_size(size_t bytes) const
     return format_double(static_cast<double>(bytes)) + " bytes";
 }
 
-std::string profiler_report::format_memory_delta(int64_t bytes) const
-{
-    if (bytes == 0)
-    {
-        return "0";
-    }
-    std::string const sign = (bytes > 0) ? "+" : "-";
-    return sign + format_memory_size(static_cast<size_t>(std::abs(bytes)));
-}
-
 std::string profiler_report::format_percentage(double value)
 {
     std::ostringstream ss;
@@ -438,11 +537,9 @@ std::string profiler_report::format_percentage(double value)
     return ss.str();
 }
 
-std::string profiler_report::format_thread_id(const std::thread::id& thread_id)
+std::string profiler_report::format_thread_label(const std::string& thread_label)
 {
-    std::stringstream ss;
-    ss << thread_id;
-    return ss.str();
+    return thread_label.empty() ? "n/a" : thread_label;
 }
 
 std::string profiler_report::format_double(double value) const
@@ -471,7 +568,7 @@ std::string profiler_report::generate_header_section() const
         ss << "Duration: n/a\n";
     }
 
-    auto const* root = session_.get_root_scope();
+    auto const* root = session_.build_scope_tree();
     auto const  snapshots =
         root != nullptr ? collect_scope_snapshots(root) : std::vector<scope_snapshot>();
     ss << "Total scopes: " << snapshots.size() << "\n";
@@ -484,7 +581,7 @@ std::string profiler_report::generate_summary_section() const
 {
     std::stringstream ss;
     ss << "=== Summary ===\n";
-    auto const* root = session_.get_root_scope();
+    auto const* root = session_.build_scope_tree();
     if (root == nullptr)
     {
         ss << "No profiling scopes were recorded.\n\n";
@@ -493,7 +590,11 @@ std::string profiler_report::generate_summary_section() const
 
     ss << "Root scope: " << root->name_ << "\n";
     ss << "Total duration: " << format_double(root->get_duration_ms()) << " ms\n";
-    ss << "Root thread: " << format_thread_id(root->thread_id_) << "\n";
+    // root is a synthetic node aggregating every recorded thread's scopes (see
+    // scope_tree_builder::build_scope_tree()), so it has no single originating thread to report --
+    // report the thread count instead; generate_thread_section() has the per-thread breakdown.
+    ss << "Threads involved: " << build_thread_histogram(session_.collected_xspace()).size()
+       << "\n";
 
     if (auto const* tracker = session_.memory_tracker_ptr())
     {
@@ -515,7 +616,7 @@ std::string profiler_report::generate_timing_section() const
 {
     std::stringstream ss;
     ss << "=== Timing Analysis ===\n";
-    auto const* root = session_.get_root_scope();
+    auto const* root = session_.build_scope_tree();
     if (root == nullptr)
     {
         ss << "No timing data available.\n\n";
@@ -535,8 +636,8 @@ std::string profiler_report::generate_timing_section() const
         const auto* scope = snapshot.scope;
         ss << "#" << rank++ << " ";
         ss << scope->name_ << " - " << format_double(scope->get_duration_ms()) << " ms"
-           << " (depth " << snapshot.depth << ", thread " << format_thread_id(scope->thread_id_)
-           << ")\n";
+           << " (depth " << snapshot.depth << ", thread "
+           << format_thread_label(scope->thread_label_) << ")\n";
 
         if (rank > 10)
         {
@@ -551,36 +652,35 @@ std::string profiler_report::generate_memory_section() const
 {
     std::stringstream ss;
     ss << "=== Memory Analysis ===\n";
-    auto const* root = session_.get_root_scope();
-    if (root == nullptr)
+
+    // Per-scope memory deltas are recorded by name into the statistical analyzer (see
+    // profiler_scope::stop()), not carried on the XSpace-reconstructed scope tree -- XSpace
+    // events have no memory field, so there's nothing for scope_tree_builder to recover.
+    auto const* analyzer = session_.statistical_analyzer_ptr();
+    if (analyzer == nullptr)
     {
-        ss << "No memory data captured.\n\n";
+        ss << "Memory tracking disabled for this session.\n\n";
         return ss.str();
     }
 
-    std::vector<scope_snapshot> snapshots = collect_scope_snapshots(root);
+    auto const memory_metrics = analyzer->calculate_all_memory_stats();
+    std::vector<std::pair<std::string, profiler::statistical_metrics>> entries(
+        memory_metrics.begin(), memory_metrics.end());
     std::sort(
-        snapshots.begin(),
-        snapshots.end(),
-        [](const auto& lhs, const auto& rhs)
-        {
-            return std::abs(lhs.scope->memory_stats_.delta_since_start_) >
-                   std::abs(rhs.scope->memory_stats_.delta_since_start_);
-        });
+        entries.begin(),
+        entries.end(),
+        [](const auto& lhs, const auto& rhs) { return lhs.second.mean > rhs.second.mean; });
 
     size_t displayed = 0;
-    for (const auto& snapshot : snapshots)
+    for (const auto& [name, metrics] : entries)
     {
-        const auto*   scope = snapshot.scope;
-        int64_t const delta = scope->memory_stats_.delta_since_start_;
-        if (delta == 0)
+        if (!metrics.is_valid() || metrics.mean == 0.0)
         {
             continue;
         }
-        ss << scope->name_ << " (depth " << snapshot.depth << "): delta "
-           << format_memory_delta(delta) << ", current "
-           << format_memory_size(scope->memory_stats_.current_usage_) << ", peak "
-           << format_memory_size(scope->memory_stats_.peak_usage_) << "\n";
+        ss << name << ": mean delta " << format_memory_size(static_cast<size_t>(metrics.mean))
+           << " over " << metrics.count << " scope(s), max "
+           << format_memory_size(static_cast<size_t>(metrics.max_value)) << "\n";
         if (++displayed >= 10)
         {
             break;
@@ -598,7 +698,7 @@ std::string profiler_report::generate_hierarchical_section() const
 {
     std::stringstream ss;
     ss << "=== Hierarchical Analysis ===\n";
-    auto const* root = session_.get_root_scope();
+    auto const* root = session_.build_scope_tree();
     if (root == nullptr)
     {
         ss << "No scope hierarchy available.\n\n";
@@ -617,33 +717,65 @@ std::string profiler_report::generate_statistical_section() const
     auto const* analyzer = session_.statistical_analyzer_ptr();
     if (analyzer == nullptr)
     {
-        ss << "Statistical analysis disabled for this session.\n\n";
+        ss << "Statistical analysis disabled for this session.\n";
+    }
+    else
+    {
+        auto const timing_metrics = analyzer->calculate_all_timing_stats();
+        if (timing_metrics.empty())
+        {
+            ss << "No timing statistics recorded.\n";
+        }
+        else
+        {
+            size_t count = 0;
+            for (const auto& entry : timing_metrics)
+            {
+                auto const& metrics = entry.second;
+                if (!metrics.is_valid())
+                {
+                    continue;
+                }
+                ss << entry.first << ": mean " << format_double(metrics.mean) << " ms, ";
+                ss << "std-dev " << format_double(metrics.std_deviation) << " ms, ";
+                ss << "count " << metrics.count << "\n";
+                if (++count >= 10)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    // Tabular per-event summary from collected_xspace via stats_calculator.
+    const std::string xspace_stats = build_xspace_stats_summary(session_);
+    if (!xspace_stats.empty())
+    {
+        ss << "\n=== Node Stats (from XSpace) ===\n";
+        ss << xspace_stats;
+    }
+    ss << "\n";
+    return ss.str();
+}
+
+std::string profiler_report::generate_hotspot_section() const
+{
+    std::stringstream ss;
+    ss << "=== Hotspots ===\n";
+
+    const hotspot_report report(session_.build_scope_tree());
+    if (report.hotspots().empty())
+    {
+        ss << "No hotspot data available (no nested scopes in collected XSpace).\n\n";
         return ss.str();
     }
 
-    auto const timing_metrics = analyzer->calculate_all_timing_stats();
-    if (timing_metrics.empty())
-    {
-        ss << "No timing statistics recorded.\n\n";
-        return ss.str();
-    }
-
-    size_t count = 0;
-    for (const auto& entry : timing_metrics)
-    {
-        auto const& metrics = entry.second;
-        if (!metrics.is_valid())
-        {
-            continue;
-        }
-        ss << entry.first << ": mean " << format_double(metrics.mean) << " ms, ";
-        ss << "std-dev " << format_double(metrics.std_deviation) << " ms, ";
-        ss << "count " << metrics.count << "\n";
-        if (++count >= 10)
-        {
-            break;
-        }
-    }
+    ss << "--- Operator table (self CPU) ---\n";
+    ss << report.table();
+    ss << "\n--- Top-down call tree ---\n";
+    ss << report.top_down_tree();
+    ss << "\n--- Bottom-up hotspots ---\n";
+    ss << report.bottom_up_hotspots(/*max_rows=*/20);
     ss << "\n";
     return ss.str();
 }
@@ -652,16 +784,10 @@ std::string profiler_report::generate_thread_section() const
 {
     std::stringstream ss;
     ss << "=== Thread Analysis ===\n";
-    auto const* root = session_.get_root_scope();
-    if (root == nullptr)
-    {
-        ss << "No thread information available.\n\n";
-        return ss.str();
-    }
 
-    auto const snapshots = collect_scope_snapshots(root);
-    auto const histogram = sort_map_by_value_desc(build_thread_histogram(snapshots));
-    size_t     rank      = 1;
+    auto const histogram =
+        sort_map_by_value_desc(build_thread_histogram(session_.collected_xspace()));
+    size_t rank = 1;
     for (const auto& entry : histogram)
     {
         ss << "#" << rank++ << " " << entry.first << ": " << entry.second << " scope(s)\n";
@@ -746,7 +872,9 @@ std::string profiler_report::escape_csv_field(const std::string& field)
 
 std::string profiler_report::generate_csv_header()
 {
-    return "Scope,Depth,Thread,Duration(ms),Memory Current,Memory Peak,Memory Delta";
+    // "Memory Delta" columns are per-scope-name aggregates from the statistical analyzer (see
+    // scope_memory_stats()), not a live per-instance reading -- see process_scope_data_csv_recursive().
+    return "Scope,Depth,Thread,Duration(ms),Memory Delta Mean,Memory Delta Max";
 }
 
 std::string profiler_report::generate_csv_row(const std::vector<std::string>& fields)
@@ -809,9 +937,18 @@ void profiler_report::process_scope_data_recursive(
     const profiler_scope_data& scope, std::stringstream& ss, int indent) const
 {
     std::string const prefix(static_cast<size_t>(indent) * 2, ' ');
+    auto const        memory = scope_memory_stats(session_, scope.name_);
     ss << prefix << "- " << scope.name_ << " | duration " << format_double(scope.get_duration_ms())
-       << " ms" << " | thread " << format_thread_id(scope.thread_id_) << " | memory "
-       << format_memory_delta(scope.memory_stats_.delta_since_start_) << "\n";
+       << " ms" << " | thread " << format_thread_label(scope.thread_label_) << " | memory ";
+    if (memory.is_valid())
+    {
+        ss << "avg " << format_memory_size(static_cast<size_t>(memory.mean));
+    }
+    else
+    {
+        ss << "n/a";
+    }
+    ss << "\n";
 
     for (const auto& child : scope.children_)
     {
@@ -823,15 +960,23 @@ void profiler_report::process_scope_data_json_recursive(
     const profiler_scope_data& scope, std::stringstream& ss, int indent) const
 {
     std::string const indent_str(static_cast<size_t>(indent), ' ');
+    auto const        memory = scope_memory_stats(session_, scope.name_);
     ss << indent_str << "{\n";
     ss << indent_str << "  \"name\": " << escape_json_string(scope.name_) << ",\n";
     ss << indent_str << "  \"duration_ms\": " << format_double(scope.get_duration_ms()) << ",\n";
-    ss << indent_str << "  \"thread\": " << escape_json_string(format_thread_id(scope.thread_id_))
-       << ",\n";
+    ss << indent_str
+       << "  \"thread\": " << escape_json_string(format_thread_label(scope.thread_label_)) << ",\n";
     ss << indent_str << "  \"memory\": {\n";
-    ss << indent_str << "    \"current_bytes\": " << scope.memory_stats_.current_usage_ << ",\n";
-    ss << indent_str << "    \"peak_bytes\": " << scope.memory_stats_.peak_usage_ << ",\n";
-    ss << indent_str << "    \"delta_bytes\": " << scope.memory_stats_.delta_since_start_ << "\n";
+    if (memory.is_valid())
+    {
+        ss << indent_str << "    \"delta_mean_bytes\": " << format_double(memory.mean) << ",\n";
+        ss << indent_str << "    \"delta_max_bytes\": " << format_double(memory.max_value) << "\n";
+    }
+    else
+    {
+        ss << indent_str << "    \"delta_mean_bytes\": null,\n";
+        ss << indent_str << "    \"delta_max_bytes\": null\n";
+    }
     ss << indent_str << "  }";
 
     if (!scope.children_.empty())
@@ -856,14 +1001,14 @@ void profiler_report::process_scope_data_json_recursive(
 void profiler_report::process_scope_data_csv_recursive(
     const profiler_scope_data& scope, std::vector<std::string>& rows, int depth) const
 {
+    auto const memory = scope_memory_stats(session_, scope.name_);
     rows.push_back(generate_csv_row({
         std::string(static_cast<size_t>(depth) * 2, ' ') + scope.name_,
         std::to_string(depth),
-        format_thread_id(scope.thread_id_),
+        format_thread_label(scope.thread_label_),
         format_double(scope.get_duration_ms()),
-        format_memory_size(scope.memory_stats_.current_usage_),
-        format_memory_size(scope.memory_stats_.peak_usage_),
-        format_memory_delta(scope.memory_stats_.delta_since_start_),
+        memory.is_valid() ? format_memory_size(static_cast<size_t>(memory.mean)) : "n/a",
+        memory.is_valid() ? format_memory_size(static_cast<size_t>(memory.max_value)) : "n/a",
     }));
 
     for (const auto& child : scope.children_)

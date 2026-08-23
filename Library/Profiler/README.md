@@ -4,13 +4,31 @@ Profiler **implementation**: native CPU profiler, **Kineto** (PyTorch-style) int
 
 ## Documentation
 
-User guides and macro reference: **[`Docs/profiler/`](../../Docs/profiler/README.md)** — e.g. [`Library_Profiler.md`](../../Docs/profiler/Library_Profiler.md), [`profiler.md`](../../Docs/profiler/profiler.md).
+User guide: **[`Docs/profiler/profiler.md`](../../Docs/profiler/profiler.md)**.
+
+Native end-to-end (session → TraceMe → XSpace → Chrome / report /
+`stats_calculator` / native **hotspot_report**) and Kineto end-to-end
+(`RECORD_*` → correlation ids → `ProfilerResult` → `save()` / Kineto
+hotspot, including GPU CUPTI): see
+[profiler.md](../../Docs/profiler/profiler.md).
+
+## Tests (`Testing/Cxx/`)
+
+Keep CMake `TestFiles` and Bazel `_PROFILER_COMMON_TESTS` in sync:
+
+- `TestProfilerBackendFunction.cpp` / `TestProfilerBackendMemory.cpp` — Kineto, ITT, NVTX
+- `TestProfilerBackendOutput.cpp` / `TestProfilerChromeTraceHierarchical.cpp` — native reports and Chrome
+- `TestProfilerXPlanePipeline.cpp` / `TestProfilerThreadpoolTracing.cpp` — XSpace / tracing e2e
+- `TestProfilerNativeHotspot.cpp` / `TestHotspotReport.cpp` — native vs Kineto hotspots
+- `TestProfilerHeavyFunction.cpp` — native + Kineto + ITT stress
+- `TestProfilerGpuTracer.cpp` — TF GpuTracer `/device:GPU:N` (collector + device probe)
 
 ## Layout
 
 - `CMakeLists.txt` — `PROFILER_BACKEND`, `PROFILER_ENABLE_*`.
 - `BUILD.bazel` — `//Library/Profiler:Profiler` and tests.
-- `native/`, `bespoke/kineto/`, `bespoke/itt/` — backends.
+- `native/` — always-on native profiler pipeline (traceme/xplane/host_tracer/gpu_tracer/profiler_session).
+- `bespoke/kineto/`, `bespoke/itt/` — instrumentation backends layered on top of `native/`.
 - `Testing/Cxx/` — backend and integration tests.
 
 ---
@@ -19,9 +37,12 @@ User guides and macro reference: **[`Docs/profiler/`](../../Docs/profiler/README
 
 ### Backend (single control point)
 
+`native/` (traceme/xplane/host_tracer/profiler_session) is always compiled — it is not a backend
+choice. `PROFILER_BACKEND` only selects the *instrumentation* backend layered alongside it.
+
 | CMake variable | Default | Values |
 |----------------|---------|--------|
-| `PROFILER_BACKEND` | `KINETO` | `KINETO`, `NATIVE`, `ITT` — sets `PROFILER_ENABLE_KINETO` / `PROFILER_ENABLE_ITT` / `PROFILER_ENABLE_NATIVE_PROFILER` |
+| `PROFILER_BACKEND` | `KINETO` | `KINETO`, `ITT` — sets `PROFILER_ENABLE_KINETO` / `PROFILER_ENABLE_ITT` (`PROFILER_ENABLE_NATIVE_PROFILER` is always `ON`) |
 
 ### Feature and toolchain
 
@@ -50,20 +71,21 @@ Early-only gate: `PROFILER_INCLUDE_GATE_ONLY` (root uses to gate Kineto before `
 
 ## Bazel flags
 
-Starlark: [`bazel/profiler.bzl`](../../bazel/profiler.bzl). `select` order: **native** → **ITT** → default **Kineto**.
+Starlark: [`bazel/profiler.bzl`](../../bazel/profiler.bzl). `select` order: **ITT** → default **Kineto**.
+`native/**` is globbed in unconditionally in `BUILD.bazel` — it is not part of either `select`.
 
-### Backend (`profiler_type` + helpers)
+### Backend (`profiler_enable_*` defines)
 
 Typical invocations (see `.bazelrc`):
 
 | Mode | Defines / config | `PROFILER_HAS_*` result |
 |------|-------------------|-------------------------|
-| Kineto (default) | *(none)* or `profiler_enable_kineto=true` with `profiler_type=kineto` | `PROFILER_HAS_KINETO=1` |
-| Native | `profiler_type=native` — `build:native_profiler` | `PROFILER_HAS_NATIVE=1` |
-| ITT | `profiler_type=itt` and `profiler_enable_itt=true` — `build:itt` | `PROFILER_HAS_ITT=1` |
+| Kineto (default) | *(none)* or `profiler_enable_kineto=true` — `build:kineto` | `PROFILER_HAS_KINETO=1` |
+| ITT | `profiler_enable_itt=true` — `build:itt` | `PROFILER_HAS_ITT=1` |
 
-`//bazel:enable_native_profiler` matches `profiler_type=native`.  
-`//bazel:enable_itt` matches `profiler_enable_itt=true` (use together with `profiler_type=itt` as in `build:itt`).
+`//bazel:enable_itt` matches `profiler_enable_itt=true`. The native
+traceme/xplane pipeline is always compiled (no `HAS_*` gate), independent of
+which arm above is selected.
 
 ### Other
 

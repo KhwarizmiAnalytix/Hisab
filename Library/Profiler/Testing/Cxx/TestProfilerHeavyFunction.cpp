@@ -1,423 +1,60 @@
-
-/**
- * @file TestProfilerHeavyFunction.cpp
- * @brief Comprehensive profiling example with computationally intensive functions
+/*
+ * Quarisma: High-Performance Computational Library
  *
- * This test demonstrates practical profiling usage with realistic heavy computational
- * workloads including matrix operations, sorting algorithms, and data processing.
- * Shows complete instrumentation, multi-format output generation, and performance analysis.
+ * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * @author Profiler Development Team
- * @version 1.0
- * @date 2024
+ * This file is part of Quarisma and is licensed under a dual-license model:
+ *
+ *   - Open-source License (GPLv3):
+ *       Free for personal, academic, and research use under the terms of
+ *       the GNU General Public License v3.0 or later.
+ *
+ *   - Commercial License:
+ *       A commercial license is required for proprietary, closed-source,
+ *       or SaaS usage. Contact us to obtain a commercial agreement.
+ *
+ * Contact: licensing@quarisma.co.uk
+ * Website: https://www.quarisma.co.uk
  */
 
-// ============================================================================
-// PROFILING USAGE GUIDE
-// ============================================================================
-//
-// This file demonstrates how to use Profiler's three profiling systems:
-// 1. Profiler Native Profiler - Hierarchical CPU profiling with Chrome Trace JSON export
-// 2. Kineto Profiler - Profiler profiling library for GPU-related CPU operations
-// 3. ITT Profiler - Intel Instrumentation and Tracing Technology for VTune
-//
-// Each profiler can be used individually or combined for comprehensive analysis.
-//
-// ============================================================================
-// 1. PROFILER NATIVE PROFILER
-// ============================================================================
-//
-// The Profiler native profiler provides hierarchical CPU profiling with full
-// drill-down capability in Chrome DevTools and Perfetto UI.
-//
-// BASIC USAGE:
-// ------------
-//
-// #include "native/session/profiler.h"
-//
-// void my_function() {
-//     // Configure profiler options
-//     profiler_options opts;
-//     opts.enable_timing_               = true;   // Enable timing measurements
-//     opts.enable_memory_tracking_      = true;   // Track memory allocations
-//     opts.enable_statistical_analysis_ = true;   // Compute statistics
-//     opts.enable_thread_safety_        = true;   // Thread-safe operations
-//     opts.output_format_               = profiler_options::output_format_enum::JSON;
-//
-//     // Create and start profiler session
-//     profiler_session session(opts);
-//     session.start();
-//
-//     // Instrument your code with scopes
-//     {
-//         PROFILER_PROFILE_SCOPE("my_operation");
-//         // ... your code here ...
-//
-//         {
-//             PROFILER_PROFILE_SCOPE("nested_operation");
-//             // ... nested code ...
-//         }
-//     }
-//
-//     // Stop profiling
-//     session.stop();
-//
-//     // Export Chrome Trace JSON
-//     session.write_chrome_trace("my_profile.json");
-// }
-//
-// VIEWING RESULTS:
-// ----------------
-// 1. Chrome DevTools (chrome://tracing):
-//    - Open Chrome browser
-//    - Navigate to chrome://tracing
-//    - Click 'Load' and select your JSON file
-//    - Use W/S to zoom, A/D to pan, click events for details
-//
-// 2. Perfetto UI (https://ui.perfetto.dev):
-//    - Visit https://ui.perfetto.dev
-//    - Click 'Open trace file'
-//    - Select your JSON file
-//    - Explore hierarchical timeline with drill-down
-//
-// OUTPUT FORMAT:
-// --------------
-// - File: *.json (Chrome Trace Event Format)
-// - Size: ~4 MB for 50,000 events
-// - Structure: Hierarchical events with timestamps, durations, thread info
-//
-// ============================================================================
-// 2. KINETO PROFILER
-// ============================================================================
-//
-// Kineto is Profiler's profiling library. It captures GPU-related CPU operations
-// (CUDA kernel launches, memory transfers). For hierarchical CPU profiling,
-// combine Kineto with Profiler's native profiler.
-//
-// BASIC USAGE:
-// ------------
-//
-// #include "kineto_shim.h"
-//
-// void my_function() {
-//     // Initialize Kineto profiler
-//     profiler::profiler_impl::kineto_init(false, true);
-//
-//     // Check if Kineto is available
-//     if (!profiler::profiler_impl::kineto_is_profiler_registered()) {
-//         std::cout << "Kineto profiler not available\n";
-//         return;
-//     }
-//
-//     // Prepare trace with activity types
-//     std::set<libkineto::ActivityType> activities;
-//     activities.insert(libkineto::ActivityType::CPU_OP);
-//     profiler::profiler_impl::kineto_prepare_trace(activities);
-//
-//     // Start Kineto profiling
-//     profiler::profiler_impl::kineto_start_trace();
-//
-//     // Your code here (GPU-related operations)
-//     // ...
-//
-//     // Stop profiling and get trace
-//     std::unique_ptr<libkineto::ActivityTraceInterface> trace(
-//         static_cast<libkineto::ActivityTraceInterface*>(
-//             profiler::profiler_impl::kineto_stop_trace()));
-//
-//     // Save Kineto trace
-//     if (trace) {
-//         trace->save("kineto_trace.json");
-//     }
-// }
-//
-// COMBINED WITH PROFILER PROFILER (RECOMMENDED):
-// ---------------------------------------------
-//
-// void my_function() {
-//     // Initialize Kineto
-//     profiler::profiler_impl::kineto_init(false, true);
-//     profiler::profiler_impl::kineto_prepare_trace(activities);
-//     profiler::profiler_impl::kineto_start_trace();
-//
-//     // Start Profiler profiler for hierarchical CPU profiling
-//     profiler_options opts;
-//     opts.enable_timing_ = true;
-//     opts.output_format_ = profiler_options::output_format_enum::JSON;
-//
-//     profiler_session session(opts);
-//     session.start();
-//
-//     // Instrument with PROFILER_PROFILE_SCOPE
-//     {
-//         PROFILER_PROFILE_SCOPE("my_operation");
-//         // ... your code ...
-//     }
-//
-//     // Stop both profilers
-//     session.stop();
-//     auto kineto_trace = profiler::profiler_impl::kineto_stop_trace();
-//
-//     // Export both traces
-//     session.write_chrome_trace("profiler_trace.json");  // Full hierarchical CPU profiling
-//     if (kineto_trace) {
-//         static_cast<libkineto::ActivityTraceInterface*>(kineto_trace)->save("kineto_trace.json");
-//     }
-// }
-//
-// VIEWING RESULTS:
-// ----------------
-// - Profiler trace (profiler_trace.json): Chrome DevTools, Perfetto UI
-// - Kineto trace (kineto_trace.json): Profiler Profiler, Chrome DevTools
-//
-// ============================================================================
-// 3. ITT PROFILER (INTEL VTUNE)
-// ============================================================================
-//
-// ITT (Intel Instrumentation and Tracing Technology) provides annotations for
-// Intel VTune Profiler. Use Profiler's ITT wrapper for automatic domain management
-// and graceful degradation when VTune is not available.
-//
-// BASIC USAGE:
-// ------------
-//
-// #include "itt_wrapper.h"
-//
-// void my_function() {
-//     // Initialize ITT profiler (creates global "Profiler" domain)
-//     profiler::profiler_impl::itt_init();
-//
-//     // Check if ITT is available (VTune installed)
-//     bool const itt_available = (profiler::profiler_impl::itt_get_domain() != nullptr);
-//
-//     if (!itt_available) {
-//         std::cout << "ITT not available (VTune not installed)\n";
-//         return;
-//     }
-//
-//     // Annotate code with ITT ranges
-//     profiler::profiler_impl::itt_range_push("my_operation");
-//     {
-//         // ... your code ...
-//
-//         profiler::profiler_impl::itt_range_push("nested_operation");
-//         // ... nested code ...
-//         profiler::profiler_impl::itt_range_pop();
-//     }
-//     profiler::profiler_impl::itt_range_pop();
-//
-//     // Mark instantaneous events
-//     profiler::profiler_impl::itt_mark("checkpoint_reached");
-// }
-//
-// COMBINED WITH PROFILER PROFILER (RECOMMENDED):
-// ---------------------------------------------
-//
-// void my_function() {
-//     // Initialize ITT
-//     profiler::profiler_impl::itt_init();
-//     bool const itt_available = (profiler::profiler_impl::itt_get_domain() != nullptr);
-//
-//     // Start Profiler profiler for JSON export
-//     profiler_options opts;
-//     opts.enable_timing_ = true;
-//     opts.output_format_ = profiler_options::output_format_enum::JSON;
-//
-//     profiler_session session(opts);
-//     session.start();
-//
-//     // Instrument with both ITT and Profiler
-//     {
-//         if (itt_available) {
-//             profiler::profiler_impl::itt_range_push("my_operation");
-//         }
-//         PROFILER_PROFILE_SCOPE("my_operation");
-//
-//         // ... your code ...
-//
-//         if (itt_available) {
-//             profiler::profiler_impl::itt_range_pop();
-//         }
-//     }
-//
-//     // Stop profiling
-//     session.stop();
-//
-//     // Export Profiler trace (always available)
-//     session.write_chrome_trace("itt_trace.json");
-//
-//     // ITT annotations are captured by VTune when running under VTune
-// }
-//
-// VIEWING RESULTS:
-// ----------------
-// 1. Intel VTune Profiler (if VTune installed):
-//    vtune -collect hotspots -app ./your_app
-//    vtune-gui  # View results with ITT annotations
-//
-// 2. Profiler trace (itt_trace.json): Chrome DevTools, Perfetto UI
-//
-// ============================================================================
-// 4. COMBINED PROFILING (ALL THREE SYSTEMS)
-// ============================================================================
-//
-// For comprehensive profiling, combine all three systems:
-// - Profiler: Hierarchical CPU profiling with JSON export
-// - Kineto: GPU-related CPU operations
-// - ITT: VTune annotations
-//
-// COMPLETE EXAMPLE:
-// -----------------
-//
-// #include "native/session/profiler.h"
-// #include "kineto_shim.h"
-// #include "itt_wrapper.h"
-//
-// void my_function() {
-//     // Initialize all profilers
-//     profiler::profiler_impl::kineto_init(false, true);
-//     profiler::profiler_impl::itt_init();
-//
-//     // Check availability
-//     bool const kineto_available = profiler::profiler_impl::kineto_is_profiler_registered();
-//     bool const itt_available = (profiler::profiler_impl::itt_get_domain() != nullptr);
-//
-//     // Prepare Kineto
-//     if (kineto_available) {
-//         std::set<libkineto::ActivityType> activities;
-//         activities.insert(libkineto::ActivityType::CPU_OP);
-//         profiler::profiler_impl::kineto_prepare_trace(activities);
-//         profiler::profiler_impl::kineto_start_trace();
-//     }
-//
-//     // Start Profiler profiler
-//     profiler_options opts;
-//     opts.enable_timing_ = true;
-//     opts.enable_memory_tracking_ = true;
-//     opts.output_format_ = profiler_options::output_format_enum::JSON;
-//
-//     profiler_session session(opts);
-//     session.start();
-//
-//     // Instrument with all three profilers
-//     {
-//         if (itt_available) {
-//             profiler::profiler_impl::itt_range_push("my_operation");
-//         }
-//         PROFILER_PROFILE_SCOPE("my_operation");
-//
-//         // ... your code ...
-//
-//         {
-//             if (itt_available) {
-//                 profiler::profiler_impl::itt_range_push("nested_operation");
-//             }
-//             PROFILER_PROFILE_SCOPE("nested_operation");
-//
-//             // ... nested code ...
-//
-//             if (itt_available) {
-//                 profiler::profiler_impl::itt_range_pop();
-//             }
-//         }
-//
-//         if (itt_available) {
-//             profiler::profiler_impl::itt_range_pop();
-//         }
-//     }
-//
-//     // Stop all profilers
-//     session.stop();
-//
-//     void* kineto_trace = nullptr;
-//     if (kineto_available) {
-//         kineto_trace = profiler::profiler_impl::kineto_stop_trace();
-//     }
-//
-//     // Export all traces
-//     session.write_chrome_trace("combined_trace.json");  // Profiler trace
-//
-//     if (kineto_trace) {
-//         static_cast<libkineto::ActivityTraceInterface*>(kineto_trace)->save("kineto_trace.json");
-//     }
-//
-//     // ITT annotations captured by VTune (if running under VTune)
-// }
-//
-// OUTPUT FILES:
-// -------------
-// - combined_trace.json: Full hierarchical CPU profiling (Profiler)
-// - kineto_trace.json: GPU-related CPU operations (Kineto)
-// - VTune results: ITT annotations (when running under VTune)
-//
-// ============================================================================
-// BEST PRACTICES
-// ============================================================================
-//
-// 1. SCOPE NAMING:
-//    - Use descriptive names: "matrix_multiply" not "func1"
-//    - Include iteration info: "process_batch_" + std::to_string(i)
-//    - Keep names consistent across profilers
-//
-// 2. GRANULARITY:
-//    - Profile at multiple levels (coarse and fine-grained)
-//    - Avoid profiling trivial operations (< 1 microsecond)
-//    - Balance detail vs. overhead (profiling adds ~100ns per scope)
-//
-// 3. GRACEFUL DEGRADATION:
-//    - Always check profiler availability before use
-//    - Provide fallback to Profiler profiler when Kineto/ITT unavailable
-//    - Use conditional compilation for optional profilers
-//
-// 4. OUTPUT MANAGEMENT:
-//    - Use descriptive filenames: "matrix_multiply_profile.json"
-//    - Include timestamps in filenames for multiple runs
-//    - Clean up old trace files to save disk space
-//
-// 5. PERFORMANCE:
-//    - Disable profiling in production builds (use #if PROFILER_ENABLE_PROFILING)
-//    - Use profiler_session RAII for automatic cleanup
-//    - Minimize string allocations in hot paths
-//
-// ============================================================================
-// TROUBLESHOOTING
-// ============================================================================
-//
-// ISSUE: Empty or small JSON file (< 1 KB)
-// SOLUTION: Ensure profiler session is started and stopped correctly
-//           Check that PROFILER_PROFILE_SCOPE macros are used
-//
-// ISSUE: Kineto trace has no events
-// SOLUTION: Kineto's CPU_OP captures GPU-related operations only
-//           Use Profiler profiler for general CPU profiling
-//
-// ISSUE: ITT annotations not visible in VTune
-// SOLUTION: Ensure VTune is installed and app is run under VTune
-//           Check that itt_get_domain() returns non-null
-//
-// ISSUE: Chrome DevTools shows "Invalid trace format"
-// SOLUTION: Ensure JSON file is complete (session.stop() called)
-//           Check file size is > 0 bytes
-//           Validate JSON syntax with json.tool
-//
-// ============================================================================
+/*
+ * Stress / e2e: native profiler_session, Kineto RECORD_USER_SCOPE, and ITT
+ * ranges over the same computational workloads (matrix, Monte Carlo, FFT).
+ *
+ * API and pipeline docs: Docs/profiler/profiler.md
+ */
 
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <complex>
+#include <cstdio>
+#include <exception>
+#include <fstream>
+#include <iostream>
 #include <memory>
 #include <numeric>
 #include <random>
+#include <set>
+#include <sstream>
 #include <thread>
+#include <unordered_set>
 #include <vector>
 
 #include "ProfilerTest.h"
+#include "native/analysis/hotspot_report.h"
 #include "native/analysis/statistical_analyzer.h"
 #include "native/memory/memory_tracker.h"
 #include "native/session/profiler.h"
+#include "native/session/profiler_report.h"
 #include "native/tracing/traceme.h"
 #include "native/tracing/traceme_recorder.h"
+
+#if PROFILER_HAS_KINETO
+#include "bespoke/common/record_function.h"
+#include "bespoke/kineto/hotspot_report.h"
+#include "bespoke/kineto/profiler_kineto.h"
+#endif
 
 using namespace profiler;
 
@@ -465,6 +102,7 @@ std::vector<std::vector<double>> matrix_multiply(
     return result;
 }
 
+#if PROFILER_HAS_ITT
 /**
  * @brief Heavy computational function: Merge sort implementation
  * Recursive merge sort with profiling at each level
@@ -518,6 +156,7 @@ void merge_sort(std::vector<double>& arr, size_t left, size_t right, int depth =
         }
     }
 }
+#endif  // PROFILER_HAS_ITT
 
 /**
  * @brief Heavy computational function: Monte Carlo Pi estimation
@@ -637,11 +276,12 @@ PROFILERTEST(Profiler, heavy_function_comprehensive_computational_profiling)
 {
     // Configure profiler session with all features enabled
     profiler_options opts;
-    opts.enable_timing_               = true;
-    opts.enable_memory_tracking_      = true;
-    opts.enable_statistical_analysis_ = true;
-    opts.enable_thread_safety_        = true;
-    opts.output_format_               = profiler_options::output_format_enum::JSON;
+    opts.enable_timing_                 = true;
+    opts.enable_memory_tracking_        = true;
+    opts.enable_hierarchical_profiling_ = true;
+    opts.enable_statistical_analysis_   = true;
+    opts.enable_thread_safety_          = true;
+    opts.output_format_                 = profiler_options::output_format_enum::CONSOLE;
 
     profiler_session session(opts);
     session.start();
@@ -669,48 +309,7 @@ PROFILERTEST(Profiler, heavy_function_comprehensive_computational_profiling)
             }
         }
 
-        // Test 2: Sorting algorithm profiling
-        if (false)
-        {
-            PROFILER_PROFILE_SCOPE("sorting_algorithms_test");
-
-            const size_t        array_size = 50000;
-            std::vector<double> test_data(array_size);
-
-            // Generate random data
-            {
-                PROFILER_PROFILE_SCOPE("random_data_generation");
-                std::random_device                     rd;
-                std::mt19937                           gen(rd());
-                std::uniform_real_distribution<double> dis(0.0, 1000.0);
-
-                for (size_t i = 0; i < array_size; ++i)
-                {
-                    test_data[i] = dis(gen);
-                }
-            }
-
-            // Test merge sort
-            {
-                PROFILER_PROFILE_SCOPE("merge_sort_test");
-                auto data_copy = test_data;
-                merge_sort(data_copy, 0, data_copy.size() - 1);
-
-                // Verify sorting correctness
-                EXPECT_TRUE(std::is_sorted(data_copy.begin(), data_copy.end()));
-            }
-
-            // Test std::sort for comparison
-            {
-                PROFILER_PROFILE_SCOPE("std_sort_comparison");
-                auto data_copy = test_data;
-                std::sort(data_copy.begin(), data_copy.end());
-
-                EXPECT_TRUE(std::is_sorted(data_copy.begin(), data_copy.end()));
-            }
-        }
-
-        // Test 3: Monte Carlo simulation profiling
+        // Test 2: Monte Carlo simulation profiling
         {
             PROFILER_PROFILE_SCOPE("monte_carlo_simulation_test");
 
@@ -803,6 +402,18 @@ PROFILERTEST(Profiler, heavy_function_comprehensive_computational_profiling)
     std::string chrome_trace_file = "heavy_function_profile.json";
     session.write_chrome_trace(chrome_trace_file);
 
+    auto report = session.generate_report();
+    ASSERT_NE(report, nullptr);
+    std::cout << "\n=== Heavy Function profiler report ===\n";
+    std::cout << report->generate_console_report() << std::flush;
+
+    auto hotspot = session.generate_hotspot_report();
+    ASSERT_NE(hotspot, nullptr);
+    std::cout << "\n=== Heavy Function hotspot table ===\n" << hotspot->table();
+    std::cout << "\n--- Top-down call tree ---\n" << hotspot->top_down_tree();
+    std::cout << "\n--- Bottom-up hotspots ---\n" << hotspot->bottom_up_hotspots();
+    std::cout << std::flush;
+
     std::cout << "\n=== Heavy Function Performance Analysis ===\n";
     std::cout << "\n✓ Chrome Trace JSON exported to: " << chrome_trace_file << "\n";
     std::cout << "\nTo view the trace:\n";
@@ -824,278 +435,130 @@ PROFILERTEST(Profiler, heavy_function_comprehensive_computational_profiling)
 // ============================================================================
 // KINETO PROFILER TEST
 // ============================================================================
-// Test Profiler Kineto profiler integration with heavy computational functions
-//
-// Kineto provides comprehensive profiling capabilities including:
-// - CPU activity tracing
-// - GPU activity tracing (if available)
-// - Memory profiling
-// - Operator-level profiling
-//
-// OUTPUT: Kineto generates JSON trace files compatible with:
-// - Profiler Profiler Viewer
-// - TensorBoard
-// - Chrome DevTools (chrome://tracing)
-//
-// HOW TO USE:
-// 1. Run this test to generate kineto_trace.json
-// 2. View with Profiler Profiler:
-//    python -m profiler.profiler.viewer kineto_trace.json
-// 3. Or view in Chrome:
-//    - Open chrome://tracing
-//    - Load the JSON file
+// Same heavy workloads as the native case above, instrumented with
+// RECORD_USER_SCOPE and collected via enableProfiler / disableProfiler.
 // ============================================================================
 
-#if PROFILER_HAS_KINETO && 0
-#include <fstream>
-#include <sstream>
+#if PROFILER_HAS_KINETO
 
-#include "bespoke/kineto/kineto_shim.h"
-#include "bespoke/kineto/profiler_kineto.h"
+namespace
+{
 
-// Suppress MSVC warnings for Kineto headers
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4100)  // unreferenced formal parameter
-#pragma warning(disable : 4245)  // signed/unsigned mismatch
-#endif
+const profiler::profiler_impl::KinetoEvent* find_kineto_event(
+    const std::vector<profiler::profiler_impl::KinetoEvent>& events, const std::string& name)
+{
+    for (const auto& event : events)
+    {
+        if (event.name() == name)
+        {
+            return &event;
+        }
+    }
+    return nullptr;
+}
 
-#include <libkineto.h>
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
+}  // namespace
 
 PROFILERTEST(Profiler, kineto_heavy_function_profiling)
 {
-    std::cout << "\n=== Kineto + Profiler Profiler Heavy Function Test (with Drill-Down) ===\n";
-    std::cout << "Note: Kineto's CPU_OP activity type captures GPU-related CPU operations.\n";
-    std::cout << "For hierarchical CPU profiling with drill-down, we combine Kineto with Profiler "
-                 "profiler.\n\n";
+    profiler::profiler_impl::ProfilerConfig const config(
+        profiler::profiler_impl::ProfilerState::KINETO,
+        /*report_input_shapes=*/false,
+        /*profile_memory=*/false,
+        /*with_stack=*/false,
+        /*with_flops=*/false,
+        /*with_modules=*/false);
 
-    // Initialize Kineto profiler
-    profiler::profiler_impl::kineto_init(false, true);
+    const std::set<profiler::profiler_impl::ActivityType> activities{
+        profiler::profiler_impl::ActivityType::CPU};
+    const std::unordered_set<profiler::RecordScope> scopes{profiler::RecordScope::USER_SCOPE};
 
-    if (!profiler::profiler_impl::kineto_is_profiler_registered())
+    try
     {
-        std::cout << "Kineto profiler not registered - using Profiler profiler only\n";
-        // Fall back to Profiler profiler only
-        profiler_options opts;
-        opts.enable_timing_ = true;
-        opts.output_format_ = profiler_options::output_format_enum::JSON;
+        profiler::profiler_impl::prepareProfiler(config, activities);
+        profiler::profiler_impl::enableProfiler(config, activities, scopes);
+    }
+    catch (const std::exception& ex)
+    {
+        GTEST_SKIP() << "Kineto profiler unavailable: " << ex.what();
+    }
 
-        profiler_session session(opts);
-        session.start();
+    {
+        RECORD_USER_SCOPE("kineto_heavy_workload");
 
-        // Profile heavy computational workloads with hierarchical scopes
         {
-            PROFILER_PROFILE_SCOPE("kineto_matrix_operations");
-
+            RECORD_USER_SCOPE("kineto_matrix_operations");
             const size_t matrix_size = 50;
             auto         matrix_a    = generate_test_matrix(matrix_size, matrix_size);
             auto         matrix_b    = generate_test_matrix(matrix_size, matrix_size);
-
             for (int i = 0; i < 2; ++i)
             {
-                PROFILER_PROFILE_SCOPE("kineto_matrix_multiply_" + std::to_string(i));
+                RECORD_USER_SCOPE("kineto_matrix_multiply_iteration");
                 auto result = matrix_multiply(matrix_a, matrix_b);
                 EXPECT_EQ(result.size(), matrix_size);
+                EXPECT_EQ(result[0].size(), matrix_size);
             }
         }
 
-        if (false)
         {
-            PROFILER_PROFILE_SCOPE("kineto_sorting_operations");
-
-            const size_t        array_size = 10000;
-            std::vector<double> test_data(array_size);
-
-            std::random_device                     rd;
-            std::mt19937                           gen(rd());
-            std::uniform_real_distribution<double> dis(0.0, 1000.0);
-
-            for (size_t i = 0; i < array_size; ++i)
-            {
-                test_data[i] = dis(gen);
-            }
-
-            {
-                PROFILER_PROFILE_SCOPE("kineto_merge_sort");
-                auto data_copy = test_data;
-                merge_sort(data_copy, 0, data_copy.size() - 1);
-                EXPECT_TRUE(std::is_sorted(data_copy.begin(), data_copy.end()));
-            }
+            RECORD_USER_SCOPE("kineto_monte_carlo");
+            const double pi_estimate = estimate_pi_monte_carlo(200000);
+            EXPECT_GT(pi_estimate, 2.5);
+            EXPECT_LT(pi_estimate, 3.8);
         }
 
-        session.stop();
-
-        // Export to Chrome Trace JSON format (supports drill-down)
-        std::string const output_file = "kineto_heavy_function_trace.json";
-        session.write_chrome_trace(output_file);
-
-        // Verify JSON file
-        std::ifstream json_file(output_file);
-        EXPECT_TRUE(json_file.good()) << "Failed to create JSON output file";
-
-        if (json_file.good())
         {
-            std::stringstream buffer;
-            buffer << json_file.rdbuf();
-            std::string const json_content = buffer.str();
-
-            EXPECT_TRUE(json_content.find("\"traceEvents\"") != std::string::npos)
-                << "JSON file missing traceEvents array";
-
-            std::cout << "✓ Profiler profiler trace saved to: " << output_file << "\n";
-            std::cout << "✓ JSON file validated (size: " << json_content.size() << " bytes)\n";
+            RECORD_USER_SCOPE("kineto_fft_simulation");
+            auto signal = generate_test_signal(256);
+            EXPECT_EQ(signal.size(), 256U);
         }
-
-        EXPECT_TRUE(true);
-        return;
     }
 
-    // Kineto is available - use combined profiling approach
-    std::cout << "Kineto profiler registered - using combined Kineto + Profiler profiling\n";
+    auto profiler_result = profiler::profiler_impl::disableProfiler();
+    ASSERT_NE(profiler_result, nullptr);
 
-    // Start Profiler profiler session for hierarchical CPU profiling
-    profiler_options opts;
-    opts.enable_timing_ = true;
-    opts.output_format_ = profiler_options::output_format_enum::JSON;
-
-    profiler_session session(opts);
-    session.start();
-
-    // Prepare Kineto trace with CPU activities
-    std::set<libkineto::ActivityType> activities;
-    activities.insert(libkineto::ActivityType::CPU_OP);
-    profiler::profiler_impl::kineto_prepare_trace(activities);
-
-    // Start Kineto profiling
-    profiler::profiler_impl::kineto_start_trace();
-    std::cout << "Combined profiling started (Kineto + Profiler)\n";
-
-    // Profile heavy computational workloads with hierarchical scopes
+    const auto& events = profiler_result->events();
+    if (events.empty())
     {
-        PROFILER_PROFILE_SCOPE("kineto_matrix_operations");
-
-        const size_t matrix_size = 50;  // Smaller for faster execution
-        auto         matrix_a    = generate_test_matrix(matrix_size, matrix_size);
-        auto         matrix_b    = generate_test_matrix(matrix_size, matrix_size);
-
-        for (int i = 0; i < 2; ++i)
-        {
-            PROFILER_PROFILE_SCOPE("kineto_matrix_multiply_" + std::to_string(i));
-            auto result = matrix_multiply(matrix_a, matrix_b);
-            EXPECT_EQ(result.size(), matrix_size);
-        }
+        GTEST_SKIP() << "Kineto backend produced no CPU events in this environment";
     }
 
+    const auto* outer  = find_kineto_event(events, "kineto_heavy_workload");
+    const auto* matrix = find_kineto_event(events, "kineto_matrix_operations");
+    const auto* monte  = find_kineto_event(events, "kineto_monte_carlo");
+    ASSERT_NE(outer, nullptr);
+    ASSERT_NE(matrix, nullptr);
+    ASSERT_NE(monte, nullptr);
+    EXPECT_GT(outer->durationNs(), 0U);
+    EXPECT_GE(outer->durationNs(), matrix->durationNs());
+
+    if (!profiler_result->event_tree().empty())
     {
-        PROFILER_PROFILE_SCOPE("kineto_sorting_operations");
-
-        const size_t        array_size = 10000;
-        std::vector<double> test_data(array_size);
-
-        std::random_device                     rd;
-        std::mt19937                           gen(rd());
-        std::uniform_real_distribution<double> dis(0.0, 1000.0);
-
-        for (size_t i = 0; i < array_size; ++i)
-        {
-            test_data[i] = dis(gen);
-        }
-
-        {
-            PROFILER_PROFILE_SCOPE("kineto_merge_sort");
-            auto data_copy = test_data;
-            merge_sort(data_copy, 0, data_copy.size() - 1);
-            EXPECT_TRUE(std::is_sorted(data_copy.begin(), data_copy.end()));
-        }
+        profiler::profiler_impl::hotspot_report const hotspot(*profiler_result);
+        std::cout << "\n=== Kineto heavy-function hotspot report ===\n";
+        std::cout << "--- Operator table ---\n" << hotspot.table();
+        std::cout << "\n--- Top-down call tree ---\n" << hotspot.top_down_tree();
+        std::cout << "\n--- Bottom-up hotspots ---\n" << hotspot.bottom_up_hotspots();
+        std::cout << std::flush;
     }
 
-    // Stop both profilers
-    session.stop();
-    std::unique_ptr<libkineto::ActivityTraceInterface> trace(
-        static_cast<libkineto::ActivityTraceInterface*>(
-            profiler::profiler_impl::kineto_stop_trace()));
+    const std::string trace_filename = "kineto_heavy_function_trace.json";
+    profiler_result->save(trace_filename);
 
-    std::cout << "Combined profiling completed\n";
+    std::ifstream json_file(trace_filename);
+    ASSERT_TRUE(json_file.good()) << "Failed to create Kineto JSON output file";
+    std::stringstream buffer;
+    buffer << json_file.rdbuf();
+    const std::string json_content = buffer.str();
+    json_file.close();
 
-    // Save Profiler trace (hierarchical CPU profiling with drill-down)
-    std::string const profiler_output_file = "kineto_heavy_function_trace.json";
-    session.write_chrome_trace(profiler_output_file);
+    EXPECT_NE(json_content.find("\"traceEvents\""), std::string::npos)
+        << "JSON file missing traceEvents array";
+    EXPECT_GT(json_content.size(), 100U) << "JSON should contain meaningful content";
 
-    // Save Kineto trace (GPU-related CPU operations)
-    std::string const kineto_output_file = "kineto_heavy_function_kineto_only.json";
-
-    if (trace)
-    {
-        trace->save(kineto_output_file);
-        std::cout << "✓ Kineto trace saved to: " << kineto_output_file << "\n";
-    }
-
-    // Verify Profiler JSON file (primary output with drill-down capability)
-    std::ifstream json_file(profiler_output_file);
-    EXPECT_TRUE(json_file.good()) << "Failed to create Profiler JSON output file";
-
-    if (json_file.good())
-    {
-        // Read and validate JSON structure
-        std::stringstream buffer;
-        buffer << json_file.rdbuf();
-        std::string const json_content = buffer.str();
-
-        // Validate Chrome Trace Event format
-        EXPECT_TRUE(json_content.find("\"traceEvents\"") != std::string::npos)
-            << "JSON file missing traceEvents array";
-
-        // Verify hierarchical scopes are present
-        EXPECT_TRUE(json_content.find("kineto_matrix_operations") != std::string::npos)
-            << "JSON missing matrix operations scope";
-
-        EXPECT_TRUE(json_content.find("kineto_sorting_operations") != std::string::npos)
-            << "JSON missing sorting operations scope";
-
-        EXPECT_TRUE(json_content.find("kineto_merge_sort") != std::string::npos)
-            << "JSON missing merge sort scope";
-
-        // Verify event types for drill-down (B/E for begin/end or X for complete events)
-        bool has_event_types = json_content.find("\"ph\"") != std::string::npos;
-        EXPECT_TRUE(has_event_types) << "JSON missing event phase markers";
-
-        std::cout << "✓ Profiler trace saved to: " << profiler_output_file << "\n";
-        std::cout << "✓ JSON file validated (size: " << json_content.size() << " bytes)\n";
-        std::cout << "✓ Hierarchical scopes verified for drill-down capability\n";
-
-        std::cout << "\n=== Drill-Down Visualization Instructions ===\n";
-        std::cout << "The trace file supports full hierarchical drill-down in profiling tools:\n\n";
-
-        std::cout << "1. Chrome DevTools (chrome://tracing):\n";
-        std::cout << "   - Open Chrome browser\n";
-        std::cout << "   - Navigate to chrome://tracing\n";
-        std::cout << "   - Click 'Load' and select: " << profiler_output_file << "\n";
-        std::cout << "   - Use W/S to zoom in/out, A/D to pan\n";
-        std::cout << "   - Click on events to see details and nested scopes\n\n";
-
-        std::cout << "2. Perfetto UI (https://ui.perfetto.dev):\n";
-        std::cout << "   - Visit https://ui.perfetto.dev\n";
-        std::cout << "   - Click 'Open trace file'\n";
-        std::cout << "   - Select: " << profiler_output_file << "\n";
-        std::cout << "   - Explore hierarchical timeline with drill-down\n\n";
-
-        std::cout << "3. Expected Drill-Down Structure:\n";
-        std::cout << "   ├─ kineto_matrix_operations (parent scope)\n";
-        std::cout << "   │  ├─ kineto_matrix_multiply_0 (nested scope)\n";
-        std::cout << "   │  └─ kineto_matrix_multiply_1 (nested scope)\n";
-        std::cout << "   └─ kineto_sorting_operations (parent scope)\n";
-        std::cout << "      └─ kineto_merge_sort (nested scope)\n\n";
-
-        std::cout << "Note: Kineto-only trace (" << kineto_output_file
-                  << ") contains GPU-related CPU operations.\n";
-        std::cout << "      Profiler trace (" << profiler_output_file
-                  << ") contains full hierarchical CPU profiling.\n";
-    }
+    std::remove(trace_filename.c_str());
 }
+
 #endif  // PROFILER_HAS_KINETO
 
 // ============================================================================
@@ -1369,195 +832,7 @@ PROFILERTEST(Profiler, itt_api_heavy_function_profiling)
 // ============================================================================
 // COMBINED KINETO + ITT PROFILING TEST
 // ============================================================================
-// Test combining both Kineto and ITT profiling in a single session
-//
-// This demonstrates how to use both profiling technologies together:
-// - Kineto captures CPU/GPU activity and generates JSON traces
-// - ITT provides annotations for Intel VTune profiling
-// - Profiler profiler session captures hierarchical scope information
-//
-// OUTPUT: Multiple JSON trace files that can be viewed in different tools
-// ============================================================================
-
-#if PROFILER_HAS_KINETO && PROFILER_HAS_ITT
-
-// Suppress MSVC warnings for Kineto headers
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4100)  // unreferenced formal parameter
-#pragma warning(disable : 4245)  // signed/unsigned mismatch
-#endif
-
-#include <libkineto.h>
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
-#include "bespoke/itt/itt_wrapper.h"
-#include "bespoke/kineto/kineto_shim.h"
-
-PROFILERTEST(Profiler, combined_kineto_itt_heavy_function_profiling)
-{
-    std::cout << "\n=== Combined Kineto + ITT Profiling Test ===\n";
-
-    // Initialize Kineto profiler
-    profiler::profiler_impl::kineto_init(false, true);
-
-    if (!profiler::profiler_impl::kineto_is_profiler_registered())
-    {
-        std::cout << "Kineto profiler not registered - skipping combined test\n";
-        EXPECT_TRUE(true);
-        return;
-    }
-
-    // Initialize ITT profiler (creates global Profiler domain)
-    profiler::profiler_impl::itt_init();
-
-    // Check if ITT is available
-    bool const itt_available = (profiler::profiler_impl::itt_get_domain() != nullptr);
-
-    if (!itt_available)
-    {
-        std::cout << "ITT API domain creation failed - skipping combined test\n";
-        EXPECT_TRUE(true);
-        return;
-    }
-
-    std::cout << "✓ Kineto profiler initialized\n";
-    std::cout << "✓ ITT domain created: Profiler\n";
-
-    // Prepare Kineto trace
-    std::set<libkineto::ActivityType> activities;
-    activities.insert(libkineto::ActivityType::CPU_OP);
-    profiler::profiler_impl::kineto_prepare_trace(activities);
-
-    // Start Kineto profiling
-    profiler::profiler_impl::kineto_start_trace();
-
-    // Also start Profiler profiler session
-    profiler_options opts;
-    opts.enable_timing_               = true;
-    opts.enable_memory_tracking_      = true;
-    opts.enable_statistical_analysis_ = true;
-    opts.enable_thread_safety_        = true;
-    opts.output_format_               = profiler_options::output_format_enum::JSON;
-
-    profiler_session session(opts);
-    session.start();
-
-    std::cout << "✓ All profilers started\n";
-
-    // Profile combined workload with all three profiling systems
-    {
-        profiler::profiler_impl::itt_range_push("combined_workload");
-        PROFILER_PROFILE_SCOPE("combined_profiling_workload");
-
-        // Matrix operations
-        {
-            profiler::profiler_impl::itt_range_push("matrix_computation");
-            PROFILER_PROFILE_SCOPE("combined_matrix_operations");
-
-            const size_t matrix_size = 50;
-            auto         matrix_a    = generate_test_matrix(matrix_size, matrix_size);
-            auto         matrix_b    = generate_test_matrix(matrix_size, matrix_size);
-
-            auto result = matrix_multiply(matrix_a, matrix_b);
-            EXPECT_EQ(result.size(), matrix_size);
-
-            profiler::profiler_impl::itt_range_pop();
-        }
-
-        // Monte Carlo simulation
-        {
-            profiler::profiler_impl::itt_range_push("monte_carlo_computation");
-            PROFILER_PROFILE_SCOPE("combined_monte_carlo");
-
-            const size_t num_samples = 500000;
-            double       pi_estimate = estimate_pi_monte_carlo(num_samples);
-
-            EXPECT_GT(pi_estimate, 3.0);
-            EXPECT_LT(pi_estimate, 3.3);
-
-            std::cout << "Monte Carlo Pi estimate: " << pi_estimate << "\n";
-
-            profiler::profiler_impl::itt_range_pop();
-        }
-
-        profiler::profiler_impl::itt_range_pop();
-    }
-
-    // Stop all profilers
-    session.stop();
-
-    std::unique_ptr<libkineto::ActivityTraceInterface> kineto_trace(
-        static_cast<libkineto::ActivityTraceInterface*>(
-            profiler::profiler_impl::kineto_stop_trace()));
-
-    std::cout << "✓ All profilers stopped\n";
-
-    // Export Kineto trace
-    std::string const kineto_combined_file = "combined_kineto_trace.json";
-    if (kineto_trace)
-    {
-        kineto_trace->save(kineto_combined_file);
-        std::cout << "✓ Kineto trace saved to: " << kineto_combined_file << "\n";
-
-        // Verify Kineto JSON
-        std::ifstream kineto_json(kineto_combined_file);
-        EXPECT_TRUE(kineto_json.good()) << "Failed to create Kineto JSON file";
-
-        if (kineto_json.good())
-        {
-            std::stringstream buffer;
-            buffer << kineto_json.rdbuf();
-            std::string const content = buffer.str();
-
-            EXPECT_GT(content.size(), 100) << "Kineto JSON file too small";
-            std::cout << "✓ Kineto JSON validated (size: " << content.size() << " bytes)\n";
-        }
-    }
-
-    // Export Profiler profiler trace
-    std::string const profiler_combined_file = "combined_profiler_trace.json";
-    session.write_chrome_trace(profiler_combined_file);
-    std::cout << "✓ Profiler trace saved to: " << profiler_combined_file << "\n";
-
-    // Verify Profiler JSON
-    std::ifstream profiler_json(profiler_combined_file);
-    EXPECT_TRUE(profiler_json.good()) << "Failed to create Profiler JSON file";
-
-    if (profiler_json.good())
-    {
-        std::stringstream buffer;
-        buffer << profiler_json.rdbuf();
-        std::string const content = buffer.str();
-
-        EXPECT_TRUE(content.find("\"traceEvents\"") != std::string::npos)
-            << "Profiler JSON missing trace structure";
-        EXPECT_TRUE(content.find("combined_profiling_workload") != std::string::npos)
-            << "Profiler JSON missing profiling scopes";
-
-        EXPECT_GT(content.size(), 100) << "Profiler JSON file too small";
-        std::cout << "✓ Profiler JSON validated (size: " << content.size() << " bytes)\n";
-    }
-
-    std::cout << "\n=== Combined Profiling Test Summary ===\n";
-    std::cout << "✓ Kineto profiling: " << kineto_combined_file << "\n";
-    std::cout << "✓ Profiler profiling: " << profiler_combined_file << "\n";
-    std::cout << "✓ ITT annotations: Available in VTune profiler\n";
-    std::cout << "\nViewing options:\n";
-    std::cout << "  1. Chrome Tracing (both JSON files):\n";
-    std::cout << "     - Open chrome://tracing\n";
-    std::cout << "     - Load either JSON file\n";
-    std::cout << "  2. Perfetto UI (both JSON files):\n";
-    std::cout << "     - Visit https://ui.perfetto.dev\n";
-    std::cout << "     - Open either JSON file\n";
-    std::cout << "  3. Profiler Profiler (Kineto trace):\n";
-    std::cout << "     - python -m profiler.profiler.viewer " << kineto_combined_file << "\n";
-    std::cout << "  4. Intel VTune (ITT annotations):\n";
-    std::cout << "     - vtune -collect hotspots -app ./CoreCxxTests.exe\n";
-    std::cout << "     - Look for 'ProfilerCombinedProfilingTest' domain\n";
-}
-
-#endif  // PROFILER_HAS_KINETO && PROFILER_HAS_ITT
+// Backends are mutually exclusive (PROFILER_HAS_KINETO vs PROFILER_HAS_ITT),
+// so a combined Kineto+ITT case cannot compile. Use
+// Profiler.kineto_heavy_function_profiling above for Kineto and the ITT block
+// when PROFILER_HAS_ITT=1.

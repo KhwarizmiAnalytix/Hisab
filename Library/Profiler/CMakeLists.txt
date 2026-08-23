@@ -3,19 +3,21 @@
 # CMakeLists.txt
 #
 # Activity tracing, timing primitives, and pluggable profiler-backend support (Kineto, Intel
-# ITT/VTune, Native).
+# ITT/VTune) layered on top of an always-on native (traceme/xplane) pipeline.
 #
 # Public compile definitions: PROFILER_HAS_KINETO=1/0  — Kineto (PyTorch-compatible) backend active
-# PROFILER_HAS_ITT=1/0     — Intel ITT/VTune backend active PROFILER_HAS_NATIVE=1/0  — Lightweight
-# standalone native backend active
+# PROFILER_HAS_ITT=1/0     — Intel ITT/VTune backend active (mutually exclusive with Kineto)
+# The native (traceme/xplane) pipeline is always compiled — no PROFILER_HAS_NATIVE gate.
 # =============================================================================
 cmake_minimum_required(VERSION 3.16)
 
 # --- Early-exit gate --- When PROFILER_INCLUDE_GATE_ONLY=ON, only set PROFILER_ENABLE_KINETO and
 # return early so the root can gate ThirdParty/Kineto before add_subdirectory runs.
 if(PROFILER_INCLUDE_GATE_ONLY)
-  set(PROFILER_BACKEND "KINETO" CACHE STRING "Profiler backend. Options: KINETO, NATIVE, ITT")
-  set_property(CACHE PROFILER_BACKEND PROPERTY STRINGS KINETO NATIVE ITT)
+  set(PROFILER_BACKEND "KINETO" CACHE STRING
+                                      "Profiler instrumentation backend. Options: KINETO, ITT"
+  )
+  set_property(CACHE PROFILER_BACKEND PROPERTY STRINGS KINETO ITT)
   if(PROFILER_BACKEND STREQUAL "KINETO")
     set(PROFILER_ENABLE_KINETO ON)
   else()
@@ -32,7 +34,8 @@ endif()
 include(lto)
 quarisma_lto_compute_default(_lto_default PROFILE SUPPORT)
 set(PROFILER_LTO_MODE "${_lto_default}"
-    CACHE STRING "LTO mode for Profiler: off | thin | full | ipo | auto")
+    CACHE STRING "LTO mode for Profiler: off | thin | full | ipo | auto"
+)
 set_property(CACHE PROFILER_LTO_MODE PROPERTY STRINGS off thin full ipo auto)
 
 # Coverage instrumentation — activates -fprofile-instr-generate / --coverage compiler flags for
@@ -91,32 +94,29 @@ set(PROFILER_CACHE_BACKEND "none"
 set_property(CACHE PROFILER_CACHE_BACKEND PROPERTY STRINGS none ccache sccache buildcache)
 mark_as_advanced(PROFILER_CACHE_BACKEND)
 
-# Backend selector — the single control point for profiler backend choice. Derived booleans
-# (PROFILER_ENABLE_KINETO etc.) are set immediately below. KINETO — full PyTorch-compatible activity
-# tracing (default) ITT    — Intel Instrumentation and Tracing Technology / VTune NATIVE —
-# lightweight standalone backend with no external dependencies
-set(PROFILER_BACKEND "KINETO" CACHE STRING "Profiler backend. Options: KINETO, NATIVE, ITT")
-set_property(CACHE PROFILER_BACKEND PROPERTY STRINGS KINETO NATIVE ITT)
-if(NOT PROFILER_BACKEND MATCHES "^(KINETO|NATIVE|ITT)$")
-  message(
-    FATAL_ERROR "Invalid PROFILER_BACKEND '${PROFILER_BACKEND}'. Valid options: KINETO, NATIVE, ITT"
-  )
+# Backend selector — the single control point for the *instrumentation* backend layered on top of
+# the always-on native profiler (traceme/xplane/host_tracer/profiler_session — see Section 2 and
+# the unconditional source-discovery block below). Derived booleans (PROFILER_ENABLE_KINETO etc.)
+# are set immediately below. KINETO — full PyTorch-compatible activity tracing (default) ITT    —
+# Intel Instrumentation and Tracing Technology / VTune
+set(PROFILER_BACKEND "KINETO" CACHE STRING "Profiler instrumentation backend. Options: KINETO, ITT")
+set_property(CACHE PROFILER_BACKEND PROPERTY STRINGS KINETO ITT)
+if(NOT PROFILER_BACKEND MATCHES "^(KINETO|ITT)$")
+  message(FATAL_ERROR "Invalid PROFILER_BACKEND '${PROFILER_BACKEND}'. Valid options: KINETO, ITT")
 endif()
 
 # Derive mutually-exclusive enable booleans from the backend selector.
 if(PROFILER_BACKEND STREQUAL "KINETO")
   set(PROFILER_ENABLE_KINETO ON)
   set(PROFILER_ENABLE_ITT OFF)
-  set(PROFILER_ENABLE_NATIVE_PROFILER OFF)
-elseif(PROFILER_BACKEND STREQUAL "ITT")
+else()
   set(PROFILER_ENABLE_KINETO OFF)
   set(PROFILER_ENABLE_ITT ON)
-  set(PROFILER_ENABLE_NATIVE_PROFILER OFF)
-elseif(PROFILER_BACKEND STREQUAL "NATIVE")
-  set(PROFILER_ENABLE_KINETO OFF)
-  set(PROFILER_ENABLE_ITT OFF)
-  set(PROFILER_ENABLE_NATIVE_PROFILER ON)
 endif()
+
+# Native pipeline (traceme/xplane/host_tracer/profiler_session) is always compiled alongside
+# whichever of Kineto/ITT is selected above — it is no longer a backend choice.
+set(PROFILER_ENABLE_NATIVE_PROFILER ON)
 
 # C++ standard — applied to every TU in this module via CMAKE_CXX_STANDARD.
 set(PROFILER_CXX_STANDARD "20" CACHE STRING "C++ standard for Profiler. Options: 11 14 17 20 23")
@@ -125,28 +125,28 @@ if(NOT PROFILER_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
   message(FATAL_ERROR "PROFILER_CXX_STANDARD must be one of: 11 14 17 20 23")
 endif()
 
-# --- Section 2: PROFILER_ENABLE_* → PROFILER_HAS_* compile definitions --- Exactly one HAS_* will
-# be 1; the others 0.
+# --- Section 2: PROFILER_ENABLE_* → PROFILER_HAS_* compile definitions --- Exactly one of
+# KINETO/ITT will be 1, the other 0. Native (traceme/xplane) is always compiled (see
+# PROFILER_ENABLE_NATIVE_PROFILER above) and needs no HAS_* gate.
 set(PROFILER_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS})
 
 if(PROFILER_ENABLE_KINETO)
   # Kineto — full PyTorch-compatible activity-tracing and timeline recording.
-  list(APPEND PROFILER_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=1 PROFILER_HAS_ITT=0
-       PROFILER_HAS_NATIVE=0
-  )
-elseif(PROFILER_ENABLE_ITT)
+  list(APPEND PROFILER_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=1 PROFILER_HAS_ITT=0)
+else()
   # ITT/VTune — Intel instrumentation API; integrates with VTune Amplifier.
-  list(APPEND PROFILER_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=0 PROFILER_HAS_ITT=1
-       PROFILER_HAS_NATIVE=0
-  )
-elseif(PROFILER_ENABLE_NATIVE_PROFILER)
-  # Native — lightweight standalone backend; no external library dependency.
-  list(APPEND PROFILER_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=0 PROFILER_HAS_ITT=0
-       PROFILER_HAS_NATIVE=1
-  )
+  list(APPEND PROFILER_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=0 PROFILER_HAS_ITT=1)
 endif()
 
 list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS ${PROFILER_COMPILE_DEFINITIONS})
+
+# Native Metal GPU tracer (command-buffer GPUStartTime → `/device:GPU:N`). Independent of
+# Kineto/CUPTI. Matches Memory's MEMORY_GPU_BACKEND=metal gate.
+set(PROFILER_HAS_METAL 0)
+if(APPLE AND MEMORY_GPU_BACKEND STREQUAL "metal")
+  set(PROFILER_HAS_METAL 1)
+endif()
+list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_HAS_METAL=${PROFILER_HAS_METAL})
 
 # --- Section 3: CMake module includes --- Order: introspection → toolchain helpers →
 # coverage/sanitizer → LTO/linker.
@@ -200,7 +200,50 @@ if(PROFILER_ENABLE_KINETO)
     set(LIBKINETO_NOCUPTI OFF CACHE STRING "" FORCE)
     message(STATUS "Using Kineto with CUPTI support")
   endif()
-  if(NOT QUARISMA_ENABLE_ROCM)
+
+  # CUDA runtime + NVTX for the profiler's own CUDA event-fallback stub
+  # (bespoke/base/cuda.cpp, used when full CUPTI activity tracing isn't
+  # available) and for the PROFILER_HAS_CUDA guard in
+  # bespoke/kineto/profiler_kineto.h -- independent of the CUPTI gate above.
+  set(PROFILER_HAS_CUDA 0)
+  if(MEMORY_GPU_BACKEND STREQUAL "cuda")
+    find_package(CUDAToolkit QUIET)
+    if(CUDAToolkit_FOUND)
+      set(PROFILER_HAS_CUDA 1)
+      list(APPEND PROFILER_DEPENDENCY_LIBS CUDA::cudart)
+      if(TARGET CUDA::nvToolsExt)
+        list(APPEND PROFILER_DEPENDENCY_LIBS CUDA::nvToolsExt)
+      endif()
+      message(STATUS "Profiler: CUDA Toolkit found -- enabling PROFILER_HAS_CUDA")
+    else()
+      message(STATUS "Profiler: MEMORY_GPU_BACKEND=cuda but CUDA Toolkit was not found by "
+                     "find_package(CUDAToolkit) -- PROFILER_HAS_CUDA stays disabled"
+      )
+    endif()
+  endif()
+  list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_HAS_CUDA=${PROFILER_HAS_CUDA})
+
+  # HIP runtime for the profiler's own event-fallback stub (bespoke/base/cuda.cpp,
+  # generalized to also serve HIP via bespoke/base/gpu_runtime.h) and for the
+  # PROFILER_HAS_HIP guard in bespoke/kineto/profiler_kineto.h -- independent of
+  # the Roctracer gate below. Mirrors the PROFILER_HAS_CUDA block above; mutually
+  # exclusive with it since MEMORY_GPU_BACKEND only ever selects one GPU vendor.
+  set(PROFILER_HAS_HIP 0)
+  if(MEMORY_GPU_BACKEND STREQUAL "hip")
+    find_package(hip QUIET)
+    if(hip_FOUND)
+      set(PROFILER_HAS_HIP 1)
+      list(APPEND PROFILER_DEPENDENCY_LIBS hip::host)
+      message(STATUS "Profiler: HIP found -- enabling PROFILER_HAS_HIP")
+    else()
+      message(STATUS "Profiler: MEMORY_GPU_BACKEND=hip but find_package(hip) failed -- "
+                     "PROFILER_HAS_HIP stays disabled"
+      )
+    endif()
+  endif()
+  list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_HAS_HIP=${PROFILER_HAS_HIP})
+
+  if(NOT PROFILER_HAS_HIP)
     set(LIBKINETO_NOROCTRACER ON CACHE STRING "" FORCE)
   else()
     set(LIBKINETO_NOROCTRACER OFF CACHE STRING "" FORCE)
@@ -283,8 +326,14 @@ if(PROFILER_ENABLE_ITT)
 endif()
 
 # --- Runtime library wiring ---
+# Kineto's subtree builds fmt as target `fmt` (not `Fmt::fmt`). Profiler TUs
+# such as profiler_kineto.cpp call fmt::print(stderr, ...), which needs the
+# compiled FILE* vprint symbol. With coverage/Debug that symbol is not always
+# pulled through libkineto.a alone, so link fmt whenever either alias exists.
 if(TARGET Fmt::fmt)
   list(APPEND PROFILER_DEPENDENCY_LIBS Fmt::fmt)
+elseif(TARGET fmt)
+  list(APPEND PROFILER_DEPENDENCY_LIBS fmt)
 endif()
 if(PROFILER_ENABLE_KINETO AND TARGET Kineto::kineto)
   list(APPEND PROFILER_DEPENDENCY_LIBS Kineto::kineto)
@@ -300,6 +349,43 @@ file(GLOB common_util_headers LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR
 file(GLOB common_util_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/common/*.cpp")
 list(APPEND profiler_headers ${common_util_headers})
 list(APPEND profiler_sources ${common_util_sources})
+
+# Native pipeline — always compiled (traceme/xplane/host_tracer/profiler_session), independent of
+# and alongside whichever of Kineto/ITT is selected below.
+file(GLOB_RECURSE native_headers LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/native/*.h")
+file(GLOB_RECURSE native_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/native/*.cpp")
+list(APPEND profiler_headers ${native_headers})
+list(APPEND profiler_sources ${native_sources})
+if(PROFILER_HAS_METAL)
+  enable_language(OBJCXX)
+  set(CMAKE_OBJCXX_STANDARD ${PROFILER_CXX_STANDARD})
+  set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
+  find_library(PROFILER_METAL_FRAMEWORK Metal REQUIRED)
+  find_library(PROFILER_FOUNDATION_FRAMEWORK Foundation REQUIRED)
+  file(GLOB_RECURSE profiler_mm LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/native/*.mm")
+  list(APPEND profiler_sources ${profiler_mm})
+  set_source_files_properties(
+    ${profiler_mm} PROPERTIES COMPILE_OPTIONS "-fobjc-arc;-Wno-deprecated-declarations"
+  )
+  list(APPEND PROFILER_DEPENDENCY_LIBS ${PROFILER_METAL_FRAMEWORK} ${PROFILER_FOUNDATION_FRAMEWORK})
+  message(STATUS "Native profiler: Metal GPU tracer enabled (PROFILER_HAS_METAL=1)")
+
+  # Kineto/ITT-side Metal fallback stub (bespoke/base/metal.mm), reusing the
+  # PROFILER_HAS_METAL gate and OBJCXX/framework setup above -- registers into
+  # the generic PrivateUse1 ProfilerStubs slot (see bespoke/base/base.h), not a
+  # new device_enum value. bespoke/base/ is otherwise *.cpp-only compiled by
+  # the Kineto/ITT blocks below, so the .mm file is appended here directly.
+  file(GLOB_RECURSE profiler_kineto_mm LIST_DIRECTORIES false
+       "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/base/*.mm"
+  )
+  list(APPEND profiler_sources ${profiler_kineto_mm})
+  set_source_files_properties(
+    ${profiler_kineto_mm} PROPERTIES COMPILE_OPTIONS "-fobjc-arc;-Wno-deprecated-declarations"
+  )
+endif()
+message(
+  STATUS "Native profiler pipeline: always included (traceme/xplane/host_tracer/profiler_session)"
+)
 
 # Kineto backend — base/ is shared infrastructure between Kineto and ITT.
 if(PROFILER_ENABLE_KINETO)
@@ -323,32 +409,45 @@ if(PROFILER_ENABLE_KINETO)
   message(STATUS "Kineto profiler enabled: including base, kineto, and common sources")
 endif()
 
-# Native backend — standalone, no external dependencies.
-if(PROFILER_ENABLE_NATIVE_PROFILER)
-  file(GLOB_RECURSE native_headers LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/native/*.h")
-  file(GLOB_RECURSE native_sources LIST_DIRECTORIES false
-       "${CMAKE_CURRENT_SOURCE_DIR}/native/*.cpp"
-  )
-  list(APPEND profiler_headers ${native_headers})
-  list(APPEND profiler_sources ${native_sources})
-  message(STATUS "Native profiler enabled: including native sources (standalone)")
-endif()
-
 # ITT backend — base/ is shared with Kineto; guard against double-inclusion.
 if(PROFILER_ENABLE_ITT)
   if(NOT PROFILER_ENABLE_KINETO)
-    file(GLOB_RECURSE itt_base_headers LIST_DIRECTORIES false
-         "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/base/*.h"
-         "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/common/*.h"
-         "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/kineto/kineto_shim.h"
+    # profiler_kineto.{h,cpp} is the shared enableProfiler/disableProfiler
+    # orchestration layer for every backend (Kineto, ITT, NVTX, PRIVATEUSE1) --
+    # its ITT dispatch branch is internally guarded by #if PROFILER_HAS_ITT and
+    # does not touch libkineto. kineto_client_interface.* is Kineto-ondemand-only
+    # (its body is wholly `#if PROFILER_HAS_KINETO`) but is harmlessly inert
+    # when compiled without it, so it is included too for parity with the Kineto
+    # backend's file list.
+    file(
+      GLOB_RECURSE itt_base_headers
+      LIST_DIRECTORIES false
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/base/*.h"
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/common/*.h"
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/kineto/kineto_shim.h"
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/kineto/profiler_kineto.h"
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/kineto/kineto_client_interface.h"
     )
-    file(GLOB_RECURSE itt_base_sources LIST_DIRECTORIES false
-         "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/base/*.cpp"
-         "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/common/*.cpp"
-         "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/kineto/kineto_shim.cpp"
+    file(
+      GLOB_RECURSE itt_base_sources
+      LIST_DIRECTORIES false
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/base/*.cpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/common/*.cpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/kineto/kineto_shim.cpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/kineto/profiler_kineto.cpp"
+      "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/kineto/kineto_client_interface.cpp"
     )
     list(APPEND profiler_headers ${itt_base_headers})
     list(APPEND profiler_sources ${itt_base_sources})
+    # Without Kineto, nothing builds fmt's compiled sources (Kineto's own
+    # vendored build normally does this as a side effect via FMT_SOURCE_DIR).
+    # Profiler's bespoke/common/*.cpp files (collection.cpp, util.cpp,
+    # profiler_kineto.cpp) use fmt
+    # unconditionally, so fall back to fmt's header-only mode for this
+    # target specifically -- scoped to Profiler's own compile definitions so
+    # it cannot affect Core/Logging's separate (also header-only) fmt setup
+    # or Kineto's compiled one.
+    set(PROFILER_NEEDS_FMT_HEADER_ONLY ON)
   endif()
   file(GLOB_RECURSE itt_headers LIST_DIRECTORIES false
        "${CMAKE_CURRENT_SOURCE_DIR}/bespoke/itt/*.h"
@@ -381,6 +480,10 @@ else()
 endif()
 
 add_library(Profiler::Profiler ALIAS Profiler)
+
+if(PROFILER_NEEDS_FMT_HEADER_ONLY)
+  target_compile_definitions(Profiler PRIVATE FMT_HEADER_ONLY=1)
+endif()
 
 quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -420,6 +523,30 @@ if(PROFILER_DEPENDENCY_LIBS)
   message(STATUS "Profiler: linked dependencies: ${PROFILER_DEPENDENCY_LIBS}")
 endif()
 
+# Xcode does not archive a static library whose only inputs are
+# $<TARGET_OBJECTS:...> (kineto is kineto_base + kineto_api objects, no
+# compile units of its own), and it also does not treat that .a as a
+# target link dependency. Give kineto a dummy source so Libtool runs, then
+# wait for it before linking Profiler (same pattern as mimalloc on Core).
+if(PROFILER_ENABLE_KINETO AND TARGET kineto)
+  if(CMAKE_GENERATOR STREQUAL "Xcode")
+    set(_kineto_xcode_dummy "${CMAKE_CURRENT_BINARY_DIR}/kineto_xcode_dummy.cpp")
+    if(NOT EXISTS "${_kineto_xcode_dummy}")
+      file(WRITE "${_kineto_xcode_dummy}"
+           "/* Xcode requires a source file to archive object-only static libs. */\n"
+      )
+    endif()
+    target_sources(kineto PRIVATE "${_kineto_xcode_dummy}")
+    if(TARGET kineto_base)
+      add_dependencies(kineto kineto_base)
+    endif()
+    if(TARGET kineto_api)
+      add_dependencies(kineto kineto_api)
+    endif()
+  endif()
+  add_dependencies(Profiler kineto)
+endif()
+
 if(PROFILER_ENABLE_CLANGTIDY)
   include(clang_tidy)
   quarisma_target_clang_tidy(Profiler ${PROFILER_ENABLE_FIX})
@@ -454,7 +581,11 @@ endif()
 
 message("")
 message("******** Profiler module (CMake flags) ********")
-message("  Backend          : ${PROFILER_BACKEND}")
+message("  Instrumentation backend : ${PROFILER_BACKEND}")
+message("  Native profiler  : ON (always compiled)")
+message("  CUDA fallback    : ${PROFILER_HAS_CUDA}")
+message("  HIP fallback     : ${PROFILER_HAS_HIP}")
+message("  Metal GPU tracer : ${PROFILER_HAS_METAL}")
 message("  Cxx standard     : ${PROFILER_CXX_STANDARD}")
 message("  Cache            : ${PROFILER_ENABLE_CACHE}")
 message("  Cache backend    : ${PROFILER_CACHE_BACKEND}")

@@ -33,6 +33,10 @@
 
 #include "common/parallel_tools_impl.h"
 
+#if PARALLEL_HAS_PROFILER
+#include "common/instrumentation.h"
+#endif
+
 namespace parallel
 {
 namespace detail
@@ -150,6 +154,9 @@ void parallel_thread_pool::run_job(
     // Execute the job with exception safety
     try
     {
+#if PARALLEL_HAS_PROFILER
+        RECORD_USER_SCOPE("parallel::thread_pool::run_job");
+#endif
         function();
     }
     catch (const std::exception& e)

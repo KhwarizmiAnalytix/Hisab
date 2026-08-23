@@ -34,18 +34,19 @@ limitations under the License.
 
 #include "native/utils/time_utils.h"
 
-#include <chrono>
 #include <thread>
+
+#include "native/tracing/traceme.h"
 
 namespace profiler::profiler_impl
 {
 
 int64_t get_current_time_nanos()
 {
-    // Use steady_clock to guarantee monotonic progression for duration math
-    auto now      = std::chrono::steady_clock::now();
-    auto duration = now.time_since_epoch();
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
+    // Delegate to the same monotonic clock as traceme.h's get_current_time_nanos() so this
+    // shares a single clock source with the rest of the native profiling pipeline, rather than
+    // maintaining an independent (and previously slightly different) implementation.
+    return profiler::get_current_time_nanos();
 }
 
 void sleep_for_nanos(int64_t ns)

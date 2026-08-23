@@ -875,11 +875,11 @@ using void_t = std::void_t<>;
 //
 // When building on Apple platforms without these definitions, this block
 // injects them as using aliases to the corresponding <cstdint> types.
-// The __DEFINED_DARWIN_TYPES guard prevents double-definition if the SDK
-// header that normally defines them is also included.
+// The QUARISMA_DEFINED_DARWIN_TYPES_ guard prevents double-definition if the
+// SDK header that normally defines them is also included.
 // ============================================================================
-#if defined(__APPLE__) && !defined(__DEFINED_DARWIN_TYPES)
-#define __DEFINED_DARWIN_TYPES
+#if defined(__APPLE__) && !defined(QUARISMA_DEFINED_DARWIN_TYPES_)
+#define QUARISMA_DEFINED_DARWIN_TYPES_
 using __uint32_t = std::uint32_t;
 using __uint64_t = std::uint64_t;
 using __int32_t  = std::int32_t;
