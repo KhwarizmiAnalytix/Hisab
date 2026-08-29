@@ -34,9 +34,7 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
 
     # TestTensorGpu.cpp: processed by nvcc to instantiate GPU expression-template kernels.
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
-      set_source_files_properties(
-        "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp" PROPERTIES LANGUAGE CUDA
-      )
+      vectorization_tag_gpu_expression_sources("${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
     endif()
   endif()
 endif()
@@ -53,9 +51,7 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "hip")
   unset(_hip_test_src)
   list(REMOVE_ITEM test_sources "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
   if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
-    set_source_files_properties(
-      "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp" PROPERTIES LANGUAGE HIP
-    )
+    vectorization_tag_gpu_expression_sources("${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
   endif()
   message(STATUS "VectorizationCxxTests: HIP GPU tests split out of host executable "
                  "(Test*.cu, TestTensorGpu.cpp) — mixed CXX+HIP leaks --offload-arch"
@@ -451,18 +447,15 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
 
     set(_bench_is_gpu FALSE)
     set(_bench_gpu_lang "")
-    if(bench_name STREQUAL "BenchmarkTensorGpu" AND VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
-      set(_bench_is_gpu TRUE)
-      set(_bench_gpu_lang "CUDA")
-      # Processed by nvcc to instantiate GPU expression-template kernels
+    if(bench_name STREQUAL "BenchmarkTensorGpu")
+      # Processed by nvcc/hipcc to instantiate GPU expression-template kernels
       # (same treatment as TestTensorGpu.cpp in VectorizationCxxTests above).
-      set_source_files_properties("${_bench_source}" PROPERTIES LANGUAGE CUDA)
-    elseif(bench_name STREQUAL "BenchmarkTensorGpu" AND VECTORIZATION_GPU_BACKEND STREQUAL "hip")
-      set(_bench_is_gpu TRUE)
-      set(_bench_gpu_lang "HIP")
-      # Processed by hipcc to instantiate GPU expression-template kernels
-      # (same treatment as TestTensorGpu.cpp in VectorizationCxxTests above).
-      set_source_files_properties("${_bench_source}" PROPERTIES LANGUAGE HIP)
+      vectorization_tag_gpu_expression_sources(
+        "${_bench_source}" RESULT_LANGUAGE _bench_gpu_lang
+      )
+      if(_bench_gpu_lang)
+        set(_bench_is_gpu TRUE)
+      endif()
     endif()
 
     add_executable(${target_name} "${_bench_source}")

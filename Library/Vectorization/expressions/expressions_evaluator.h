@@ -71,6 +71,39 @@ VECTORIZATION_FUNCTION_ATTRIBUTE void unroll(F&& f) noexcept
 
 struct expressions_evaluator
 {
+private:
+    // Shared by run()/fill() once their GPU/Metal dispatch branches (if compiled in) have
+    // returned without handling rhs: only a CPU destination should still reach this point.
+    // Catches the case where this TU wasn't compiled by nvcc/hipcc (or VECTORIZATION_HAS_METAL
+    // is off), so the dispatch branch above was compiled out entirely and a device destination
+    // would otherwise fall through silently into the CPU path, dereferencing a device pointer
+    // as host memory.
+    template <typename T>
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE static void check_cpu_reachable(
+        T const& rhs, const char* caller)
+    {
+        VECTORIZATION_CHECK(
+            rhs.device() == device_enum::CPU,
+            "{}: destination device() is not CPU, and no GPU/Metal dispatch handled it in this "
+            "translation unit (CUDA/HIP require compiling with nvcc/hipcc; Metal requires "
+            "VECTORIZATION_HAS_METAL)",
+            caller);
+    }
+
+    // Matches the equivalent source-operand check in store_operand() (expression_interface.h):
+    // every destination path below -- CPU SIMD store as well as the GPU/Metal kernels -- assumes
+    // a packed buffer.
+    template <typename T>
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE static void check_contiguous(
+        T const& rhs, const char* caller)
+    {
+        VECTORIZATION_CHECK(
+            rhs.is_contiguous(),
+            "{}: destination must be contiguous; call contiguous() first",
+            caller);
+    }
+
+public:
     //================================================================================================
     // `stream` is forwarded to run_gpu when rhs is a CUDA/HIP tensor, launching the fused
     // expression kernel on that stream instead of the default stream (nullptr = default
@@ -79,13 +112,17 @@ struct expressions_evaluator
     template <typename E, typename T>
     VECTORIZATION_HOST_FUNCTION_ATTRIBUTE static void run(
         E const& expr, T& rhs, gpu_stream_t stream = nullptr)
-
     {
         VECTORIZATION_CHECK(
             expr.size() == rhs.size(),
             "expression has different size {} than destination {}",
             expr.size(),
             rhs.size());
+        // Every destination path below -- CPU SIMD store as well as the GPU/Metal kernels
+        // dispatched next -- assumes a packed buffer, matching the equivalent source-operand
+        // check in store_operand().
+        VECTORIZATION_CHECK(
+            rhs.is_contiguous(), "expressions_evaluator::run: destination must be contiguous");
 
 #if (VECTORIZATION_HAS_CUDA && defined(__CUDACC__)) || (VECTORIZATION_HAS_HIP && defined(__HIPCC__))
         if (rhs.device() == device_enum::CUDA || rhs.device() == device_enum::HIP)
@@ -121,6 +158,7 @@ struct expressions_evaluator
             }
         }
 #endif
+        check_cpu_reachable(rhs, "expressions_evaluator::run");
         (void)stream;
 
         auto*  data = rhs.begin();
@@ -260,8 +298,13 @@ struct expressions_evaluator
     // `stream` is forwarded to fill_gpu when rhs is a CUDA/HIP tensor (see run() above).
     template <typename S, typename T>
     VECTORIZATION_HOST_FUNCTION_ATTRIBUTE static void fill(
-        S value, T& rhs, gpu_stream_t stream = nullptr) noexcept
+        S value, T& rhs, gpu_stream_t stream = nullptr)
     {
+        // See the matching check in run() above: every destination path below assumes a
+        // packed buffer.
+        VECTORIZATION_CHECK(
+            rhs.is_contiguous(), "expressions_evaluator::fill: destination must be contiguous");
+
 #if (VECTORIZATION_HAS_CUDA && defined(__CUDACC__)) || (VECTORIZATION_HAS_HIP && defined(__HIPCC__))
         if (rhs.device() == device_enum::CUDA || rhs.device() == device_enum::HIP)
         {
@@ -285,6 +328,7 @@ struct expressions_evaluator
             }
         }
 #endif
+        check_cpu_reachable(rhs, "expressions_evaluator::fill");
         (void)stream;
 
         auto*  data = rhs.begin();

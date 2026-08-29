@@ -362,6 +362,38 @@ else()
   )
 endif()
 
+# vectorization_tag_gpu_expression_sources(<files...> [RESULT_LANGUAGE <var>])
+#
+# A .cpp that composes and evaluates a vectorization expression against a CUDA/HIP tensor
+# (`c = a + b`) instantiates the templated __global__ kernel in expressions_evaluator_gpu.h
+# for that exact expression type, so it must be compiled in device-language mode
+# (CMake source LANGUAGE CUDA/HIP) for __CUDACC__/__HIPCC__ to be defined and that dispatch
+# branch to actually compile in — otherwise it silently falls through to the CPU path (see
+# expressions_evaluator.h's check_cpu_reachable()). GPU backend selection is a single,
+# whole-build, mutually exclusive choice (VECTORIZATION_GPU_BACKEND), so a file tagged this
+# way still compiles its CPU fallback path unconditionally in the same object; this is purely
+# additive over plain CXX, never a second/duplicate compile of the file.
+#
+# Centralizes the if(cuda)/elseif(hip) pairing so call sites (Testing/Cxx/CMakeLists.txt:
+# TestTensorGpu.cpp, BenchmarkTensorGpu.cpp) don't each re-derive it. A no-op for backend
+# "none"/"metal": Metal is ordinary Objective-C++ gated by VECTORIZATION_HAS_METAL, not
+# __CUDACC__/__HIPCC__, so it needs no device-language tagging. Pass RESULT_LANGUAGE <var> to
+# receive "CUDA"/"HIP"/"" when a caller needs to branch further on which one was applied.
+function(vectorization_tag_gpu_expression_sources)
+  cmake_parse_arguments(_vtg "" "RESULT_LANGUAGE" "" ${ARGN})
+  set(_vtg_lang "")
+  if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
+    set_source_files_properties(${_vtg_UNPARSED_ARGUMENTS} PROPERTIES LANGUAGE CUDA)
+    set(_vtg_lang "CUDA")
+  elseif(VECTORIZATION_GPU_BACKEND STREQUAL "hip")
+    set_source_files_properties(${_vtg_UNPARSED_ARGUMENTS} PROPERTIES LANGUAGE HIP)
+    set(_vtg_lang "HIP")
+  endif()
+  if(_vtg_RESULT_LANGUAGE)
+    set(${_vtg_RESULT_LANGUAGE} "${_vtg_lang}" PARENT_SCOPE)
+  endif()
+endfunction()
+
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_SVML)
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_SLEEF)
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_ACCELERATE)

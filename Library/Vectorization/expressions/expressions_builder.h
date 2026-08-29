@@ -152,7 +152,15 @@ MACRO_EXPRESSION_FUNCTION_2_ARG(copysign);
 
 //================================================================================================
 #define MACRO_EXPRESSION_FUNCTION_3_ARG_(op, ref)                                        \
-    template <typename LHS, typename MHS, typename RHS>                                  \
+    template <                                                                           \
+        typename LHS,                                                                    \
+        typename MHS,                                                                    \
+        typename RHS,                                                                    \
+        std::enable_if_t<                                                                \
+            vectorization::is_expression<LHS>::value ||                                  \
+                vectorization::is_expression<MHS>::value ||                              \
+                vectorization::is_expression<RHS>::value,                                \
+            bool> = true>                                                                \
     VECTORIZATION_FUNCTION_ATTRIBUTE auto op(LHS ref lhs, MHS ref mhs, RHS ref rhs)      \
     {                                                                                    \
         return vectorization::                                                           \
@@ -162,7 +170,15 @@ MACRO_EXPRESSION_FUNCTION_2_ARG(copysign);
 
 #define MACRO_EXPRESSION_FUNCTION_3_ARG(op)                                              \
     MACRO_EXPRESSION_FUNCTION_3_ARG_(op, const&);                                        \
-    template <typename LHS, typename MHS, typename RHS>                                  \
+    template <                                                                           \
+        typename LHS,                                                                    \
+        typename MHS,                                                                    \
+        typename RHS,                                                                    \
+        std::enable_if_t<                                                                \
+            vectorization::is_expression<LHS>::value ||                                  \
+                vectorization::is_expression<MHS>::value ||                              \
+                vectorization::is_expression<RHS>::value,                                \
+            bool> = true>                                                                \
     VECTORIZATION_FUNCTION_ATTRIBUTE auto op(LHS&& lhs, MHS&& mhs, RHS&& rhs)            \
     {                                                                                    \
         return vectorization::                                                           \

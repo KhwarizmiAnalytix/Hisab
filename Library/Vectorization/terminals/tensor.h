@@ -629,14 +629,14 @@ public:
         return *this;
     }
 
-    // Not instrumented with PROFILER_RECORD_USER_SCOPE unlike the other assignment overloads
-    // above: RecordFunction construction/dispatch can throw (e.g. std::bad_alloc),
-    // which would escape this noexcept function and call std::terminate() -- the
-    // same hazard the constructor comment above already documents for allocation
-    // failures.
+    // Not noexcept: fill() can throw (e.g. destination device()/contiguity check
+    // failure) -- same rationale as the constructor comment above.
     template <typename T2, std::enable_if_t<std::is_fundamental<T2>::value, bool> = true>
-    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor& operator=(T2 value) noexcept
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE tensor& operator=(T2 value)
     {
+#if VECTORIZATION_HAS_PROFILER
+        PROFILER_RECORD_USER_SCOPE("vectorization::tensor::assign_scalar");
+#endif
         evaluator::template fill<value_t, tensor>(static_cast<value_t>(value), *this);
         return *this;
     }
@@ -1524,18 +1524,35 @@ private:
         }
         numel_ = total;
 
-        contiguous_ = sizes_and_strides_.stride_at_unchecked(n - 1) == 1;
-        if (contiguous_)
+        // Matches PyTorch's TensorImpl::compute_contiguous(): a size-1 dimension's stride is
+        // never read by any valid index (its only index is 0), so it must not gate
+        // contiguity -- only dimensions with size > 1 are checked against the running
+        // expected packed stride. permute()/t() copy strides verbatim rather than
+        // recomputing them, so a singleton axis can end up next to a different neighbor
+        // than the one its stride was originally canonical for, while the tensor is still
+        // genuinely flat-indexable (data[i] for i in [0, numel_) valid). An empty tensor
+        // (numel_ == 0) is unconditionally contiguous, same as the rank-0 case above.
+        if (numel_ == 0)
         {
-            for (int i = static_cast<int>(n) - 2; i >= 0; --i)
+            contiguous_ = true;
+        }
+        else
+        {
+            contiguous_             = true;
+            int64_t expected_stride = 1;
+            for (int i = static_cast<int>(n) - 1; i >= 0; --i)
             {
-                if (sizes_and_strides_.stride_at_unchecked(i) !=
-                    sizes_and_strides_.stride_at_unchecked(i + 1) *
-                        sizes_and_strides_.size_at_unchecked(i + 1))
+                const int64_t size_i = sizes_and_strides_.size_at_unchecked(i);
+                if (size_i == 1)
+                {
+                    continue;
+                }
+                if (sizes_and_strides_.stride_at_unchecked(i) != expected_stride)
                 {
                     contiguous_ = false;
                     break;
                 }
+                expected_stride *= size_i;
             }
         }
 

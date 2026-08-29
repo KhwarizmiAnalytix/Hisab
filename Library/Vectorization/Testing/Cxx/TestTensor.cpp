@@ -342,6 +342,23 @@ void test_tensor()
         EXPECT_EQ(permuted.data(), volume.data());
     }
 
+    // permute() moving a size-1 axis must not spuriously break contiguity: a singleton
+    // dimension's stride is never read by any valid index, so relocating it can't change
+    // whether the tensor is genuinely flat-indexable (data[i] for i in [0, numel)).
+    // Regression for recompute_cpu_simd_alignment_state() requiring every dimension's
+    // stride -- including size-1 ones -- to satisfy the packed-stride recurrence, instead
+    // of skipping size-1 dimensions like PyTorch's compute_contiguous() does.
+    {
+        tensor_t vol(dims_t{4, 1, 5});
+        EXPECT_TRUE(vol.is_contiguous());
+        auto moved = vol.permute(dims_t{1, 0, 2});
+        EXPECT_EQ(moved.dimension(0), 1u);
+        EXPECT_EQ(moved.dimension(1), 4u);
+        EXPECT_EQ(moved.dimension(2), 5u);
+        EXPECT_TRUE(moved.is_contiguous());
+        EXPECT_EQ(moved.data(), vol.data());
+    }
+
     // view(): reinterprets shape with new contiguous strides, shares data
     {
         tensor_t v(12u);
@@ -554,6 +571,34 @@ void test_tensor()
         }
     }
 
+    // Assigning an expression into a non-contiguous destination must fail loudly
+    // rather than silently write through the raw pointer as if it were packed
+    // (expressions_evaluator::run/fill hard-check the destination).
+    {
+        tensor_t m(2u, 3u);
+        for (size_t i = 0; i < 2; ++i)
+        {
+            for (size_t j = 0; j < 3; ++j)
+            {
+                m.at(i, j) = static_cast<T>(i + j);
+            }
+        }
+        auto tv = m.t();
+        EXPECT_FALSE(tv.is_contiguous());
+
+        // Contiguous sources, non-contiguous destination: isolates the destination
+        // check in expressions_evaluator::run() from the (pre-existing) source check
+        // in store_operand().
+        tensor_t a = m.contiguous();
+        tensor_t b = m.contiguous();
+        EXPECT_TRUE(a.is_contiguous());
+        EXPECT_TRUE(b.is_contiguous());
+
+        logging::set_exception_mode(logging::exception_mode::THROW);
+        EXPECT_THROW({ tv = a + b; }, logging::exception);
+        EXPECT_THROW({ tv = T(1); }, logging::exception);
+    }
+
     // linspace n==1; empty 2-D initializer
     {
         tensor_t one(T(4), T(9), 1u);
@@ -655,6 +700,169 @@ void test_tensor()
         tensor_t ex = exp(a);
         EXPECT_EQ(ex.size(), 4u);
         EXPECT_NEAR(static_cast<T>(ex[0]), std::exp(T(3)), T(1e-4));
+    }
+
+    // -----------------------------------------------------------------------
+    // Contiguity semantics -- see Docs/vectorization_tensor_contiguity.md.
+    // A tensor is "contiguous" here iff data()[i] for i in [0,size()) matches
+    // the row-major element i (the flat-indexing invariant CPU SIMD/scalar
+    // loops rely on). A size-1 dimension's stride is never read by any valid
+    // index, so it must not gate contiguity (matches PyTorch's
+    // TensorImpl::compute_contiguous()).
+    // -----------------------------------------------------------------------
+
+    // Fresh construction is always contiguous, at any rank.
+    {
+        tensor_t v(5u);
+        EXPECT_TRUE(v.is_contiguous());
+        tensor_t m(dims_t{3, 4});
+        EXPECT_TRUE(m.is_contiguous());
+        tensor_t vol(dims_t{2, 3, 4});
+        EXPECT_TRUE(vol.is_contiguous());
+    }
+
+    // A size-0 dimension makes the tensor unconditionally contiguous (same
+    // convention as rank-0): there is no element that could be out of place.
+    {
+        tensor_t empty_dim(dims_t{0, 5});
+        EXPECT_EQ(empty_dim.size(), 0u);
+        EXPECT_TRUE(empty_dim.is_contiguous());
+    }
+
+    // Copy construction/assignment recomputes contiguity from the copied
+    // shape/strides -- it mirrors the source, it is not always true.
+    {
+        tensor_t m(dims_t{3, 4});
+        tensor_t transposed = m.t();
+        EXPECT_FALSE(transposed.is_contiguous());
+
+        tensor_t copy_ctor(transposed);
+        EXPECT_FALSE(copy_ctor.is_contiguous());
+
+        tensor_t copy_assign;
+        copy_assign = transposed;
+        EXPECT_FALSE(copy_assign.is_contiguous());
+
+        tensor_t contiguous_src(dims_t{3, 4});
+        tensor_t copy_of_contiguous(contiguous_src);
+        EXPECT_TRUE(copy_of_contiguous.is_contiguous());
+    }
+
+    // Move construction/assignment: the moved-to tensor mirrors the source's
+    // (cached, not recomputed) flag; the moved-from tensor resets to its
+    // default empty/contiguous state.
+    {
+        tensor_t m(dims_t{3, 4});
+        tensor_t transposed = m.t();
+        EXPECT_FALSE(transposed.is_contiguous());
+
+        tensor_t moved(std::move(transposed));
+        EXPECT_FALSE(moved.is_contiguous());
+        EXPECT_TRUE(transposed.is_contiguous());  // moved-from: reset to empty/contiguous
+        EXPECT_EQ(transposed.size(), 0u);
+
+        tensor_t move_target;
+        move_target = std::move(moved);
+        EXPECT_FALSE(move_target.is_contiguous());
+        EXPECT_TRUE(moved.is_contiguous());
+    }
+
+    // t(): a genuine rank-2 transpose is non-contiguous; transposing a
+    // vector-shaped (N,1) tensor to (1,N) stays contiguous -- the size-1
+    // dimension carries no memory-layout information either way. This is the
+    // simplest instance of the bug shape fixed this session (see the
+    // "permute() moving a size-1 axis" regression test above).
+    {
+        tensor_t mat(dims_t{2, 3});
+        EXPECT_TRUE(mat.is_contiguous());
+        EXPECT_FALSE(mat.t().is_contiguous());
+
+        tensor_t col(dims_t{5, 1});
+        EXPECT_TRUE(col.is_contiguous());
+        tensor_t row = col.t();
+        EXPECT_EQ(row.dimension(0), 1u);
+        EXPECT_EQ(row.dimension(1), 5u);
+        EXPECT_TRUE(row.is_contiguous());
+        EXPECT_EQ(row.data(), col.data());
+    }
+
+    // permute(): the identity permutation is always contiguous; reordering
+    // real (size>1) axes generally is not.
+    {
+        tensor_t vol(dims_t{2, 3, 4});
+        EXPECT_TRUE(vol.permute(dims_t{0, 1, 2}).is_contiguous());
+        EXPECT_FALSE(vol.permute(dims_t{2, 0, 1}).is_contiguous());
+        EXPECT_FALSE(vol.permute(dims_t{1, 0, 2}).is_contiguous());
+    }
+
+    // view()/reshape(): always produce freshly-built canonical strides, so
+    // the result is always contiguous (both require a contiguous source).
+    {
+        tensor_t v(12u);
+        EXPECT_TRUE(v.view(dims_t{3, 4}).is_contiguous());
+        EXPECT_TRUE(v.reshape(dims_t{2, 2, 3}).is_contiguous());
+    }
+
+    // slice(): whether the result stays contiguous depends on which
+    // dimension is sliced and how -- not simply "slicing implies
+    // non-contiguous". See Docs/vectorization_tensor_contiguity.md #4 for the
+    // full case table this mirrors.
+    {
+        tensor_t m(dims_t{4, 5});
+        EXPECT_TRUE(m.is_contiguous());
+
+        // Full no-op slice: identical to the source.
+        EXPECT_TRUE(m.slice(0, 0, 4, 1).is_contiguous());
+
+        // Contiguous sub-range of whole outer rows: still a packed block.
+        EXPECT_TRUE(m.slice(0, 1, 3, 1).is_contiguous());
+
+        // Outer dim sliced down to a single row: that size-1 result
+        // dimension is skipped, leaving one packed inner row.
+        EXPECT_TRUE(m.slice(0, 1, 2, 1).is_contiguous());
+
+        // Sub-range of the inner dimension: each row now leaves a real gap.
+        EXPECT_FALSE(m.slice(1, 0, 3, 1).is_contiguous());
+
+        // Inner dim sliced down to a single column: the outer dimension's
+        // stride (5) no longer equals the expected packed stride (1) --
+        // genuine stride-5 gaps between the selected elements. Contrast with
+        // the single-row case above: collapsing to size 1 is not itself
+        // sufficient for contiguity, only for exempting that one dimension.
+        EXPECT_FALSE(m.slice(1, 1, 2, 1).is_contiguous());
+
+        // Strided slice (step > 1): introduces gaps.
+        EXPECT_FALSE(m.slice(1, 0, 5, 2).is_contiguous());
+
+        // Slicing to an empty result: unconditionally contiguous (numel==0).
+        auto empty_slice = m.slice(0, 2, 2, 1);
+        EXPECT_EQ(empty_slice.size(), 0u);
+        EXPECT_TRUE(empty_slice.is_contiguous());
+    }
+
+    // clone(): always a freshly packed, contiguous copy, regardless of
+    // whether the source was contiguous.
+    {
+        tensor_t m(dims_t{3, 4});
+        tensor_t transposed = m.t();
+        EXPECT_FALSE(transposed.is_contiguous());
+        tensor_t cloned = transposed.clone();
+        EXPECT_TRUE(cloned.is_contiguous());
+        EXPECT_NE(cloned.data(), transposed.data());
+    }
+
+    // contiguous(): borrows (same pointer) when already contiguous, clones
+    // (new pointer) otherwise; the result is always contiguous either way.
+    {
+        tensor_t m(dims_t{3, 4});
+        tensor_t already = m.contiguous();
+        EXPECT_TRUE(already.is_contiguous());
+        EXPECT_EQ(already.data(), m.data());
+
+        tensor_t transposed = m.t();
+        tensor_t packed     = transposed.contiguous();
+        EXPECT_TRUE(packed.is_contiguous());
+        EXPECT_NE(packed.data(), transposed.data());
     }
 
     // -----------------------------------------------------------------------
