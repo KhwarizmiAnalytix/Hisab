@@ -1,10 +1,10 @@
 # Blacklist third party libraries from invoking sanitizer errors
-src:@QUARISMA_SOURCE_DIR@/ThirdParty/*
+src:@XSIGMA_SOURCE_DIR@/ThirdParty/*
 
 # Workaround for Clang 20.1.0 compiler crash with AddressSanitizer
 # Issue: Compiler crashes during various optimization passes when instrumenting
 # complex C++ template instantiations and STL containers with AddressSanitizer
-# This is a known compiler bug in Clang 20.1.0, not an issue with the Quarisma code
+# This is a known compiler bug in Clang 20.1.0, not an issue with the XSigma code
 # TODO: Remove these entries when upgrading to a stable Clang version
 
 # Crash in Live DEBUG_VALUE analysis pass on hash table operations

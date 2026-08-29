@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,21 +13,21 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #include <gtest/gtest.h>  // for Test, TestInfo (ptr only)
 
 #include <vector>
 
-#include "CoreTest.h"       // for END_TEST, QUARISMATEST
+#include "CoreTest.h"       // for END_TEST, XSIGMATEST
 #include "util/cpu_info.h"  // for cpu_info
 
-QUARISMATEST(CPUinfo, CPUinfo)
+XSIGMATEST(CPUinfo, CPUinfo)
 {
-    quarisma::cpu_info::initialize();
-    quarisma::cpu_info::info();
+    xsigma::cpu_info::initialize();
+    xsigma::cpu_info::info();
     END_TEST();
 }
 
@@ -35,7 +35,7 @@ QUARISMATEST(CPUinfo, CPUinfo)
 // CPU Cache Information Tests
 // ============================================================================
 
-QUARISMATEST(CPUinfo, cpuinfo_cache_retrieval)
+XSIGMATEST(CPUinfo, cpuinfo_cache_retrieval)
 {
     // Test cpuinfo_cach function to retrieve cache sizes
     std::ptrdiff_t l1       = 0;
@@ -44,8 +44,8 @@ QUARISMATEST(CPUinfo, cpuinfo_cache_retrieval)
     std::ptrdiff_t l3_count = 0;
 
     // Call the function to retrieve cache information
-    quarisma::cpu_info::initialize();
-    quarisma::cpu_info::cpuinfo_cach(l1, l2, l3, l3_count);
+    xsigma::cpu_info::initialize();
+    xsigma::cpu_info::cpuinfo_cach(l1, l2, l3, l3_count);
 
     // Verify that cache sizes are non-negative
     EXPECT_GE(l1, 0);
@@ -75,7 +75,7 @@ QUARISMATEST(CPUinfo, cpuinfo_cache_retrieval)
     END_TEST();
 }
 
-QUARISMATEST(CPUinfo, cpuinfo_cache_consistency)
+XSIGMATEST(CPUinfo, cpuinfo_cache_consistency)
 {
     // Test that multiple calls return consistent results
     std::ptrdiff_t l1_first       = 0;
@@ -83,15 +83,15 @@ QUARISMATEST(CPUinfo, cpuinfo_cache_consistency)
     std::ptrdiff_t l3_first       = 0;
     std::ptrdiff_t l3_count_first = 0;
 
-    quarisma::cpu_info::initialize();
-    quarisma::cpu_info::cpuinfo_cach(l1_first, l2_first, l3_first, l3_count_first);
+    xsigma::cpu_info::initialize();
+    xsigma::cpu_info::cpuinfo_cach(l1_first, l2_first, l3_first, l3_count_first);
 
     std::ptrdiff_t l1_second       = 0;
     std::ptrdiff_t l2_second       = 0;
     std::ptrdiff_t l3_second       = 0;
     std::ptrdiff_t l3_count_second = 0;
 
-    quarisma::cpu_info::cpuinfo_cach(l1_second, l2_second, l3_second, l3_count_second);
+    xsigma::cpu_info::cpuinfo_cach(l1_second, l2_second, l3_second, l3_count_second);
 
     // Results should be consistent across multiple calls
     EXPECT_EQ(l1_first, l1_second);
@@ -102,7 +102,7 @@ QUARISMATEST(CPUinfo, cpuinfo_cache_consistency)
     END_TEST();
 }
 
-QUARISMATEST(CPUinfo, cpuinfo_cache_hierarchy)
+XSIGMATEST(CPUinfo, cpuinfo_cache_hierarchy)
 {
     // Test cache hierarchy: L1 < L2 < L3
     std::ptrdiff_t l1       = 0;
@@ -110,8 +110,8 @@ QUARISMATEST(CPUinfo, cpuinfo_cache_hierarchy)
     std::ptrdiff_t l3       = 0;
     std::ptrdiff_t l3_count = 0;
 
-    quarisma::cpu_info::initialize();
-    quarisma::cpu_info::cpuinfo_cach(l1, l2, l3, l3_count);
+    xsigma::cpu_info::initialize();
+    xsigma::cpu_info::cpuinfo_cach(l1, l2, l3, l3_count);
 
     // If all caches are present, verify hierarchy
     if (l1 > 0 && l2 > 0)

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Configuration loader for Quarisma linters.
+Configuration loader for XSigma linters.
 
-This module provides utilities to load and access the Quarisma linter configuration
+This module provides utilities to load and access the XSigma linter configuration
 from the YAML configuration file. It handles cross-platform path resolution and
 provides convenient access to configuration values.
 
-Organization: QuarismaAnalyitix
-Project: Quarisma
+Organization: XSigmaAnalyitix
+Project: XSigma
 """
 
 from __future__ import annotations
@@ -24,13 +24,13 @@ except ImportError:
 
 def get_config_path() -> Path:
     """
-    Get the path to the Quarisma linter configuration file.
+    Get the path to the XSigma linter configuration file.
     
     Returns:
-        Path: Absolute path to quarisma_linter_config.yaml
+        Path: Absolute path to xsigma_linter_config.yaml
     """
     config_dir = Path(__file__).parent.absolute()
-    config_file = config_dir / "quarisma_linter_config.yaml"
+    config_file = config_dir / "xsigma_linter_config.yaml"
     return config_file
 
 
@@ -48,7 +48,7 @@ def get_repo_root() -> Path:
 
 def load_config() -> dict[str, Any]:
     """
-    Load the Quarisma linter configuration from YAML file.
+    Load the XSigma linter configuration from YAML file.
     
     Returns:
         dict: Configuration dictionary
@@ -178,7 +178,7 @@ def get_ordered_set_import() -> str:
     ordered_set_config = config.get("ordered_set", {})
     return ordered_set_config.get(
         "import_statement",
-        "from quarisma.utils._ordered_set import OrderedSet\n\n"
+        "from xsigma.utils._ordered_set import OrderedSet\n\n"
     )
 
 

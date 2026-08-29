@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,16 +13,16 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #pragma once
 
 #include <algorithm>
 #include <cstdint>
-#include <span>
 
+#include "common/span.h"
 #include "common/vectorization_export.h"
 #include "common/vectorization_macros.h"
 
@@ -206,15 +206,15 @@ public:
 
     sizes_iterator sizes_end() noexcept { return sizes_begin() + size(); }
 
-    std::span<const int64_t> sizes_arrayref() const noexcept { return {sizes_data(), size()}; }
+    span<const int64_t> sizes_arrayref() const noexcept { return {sizes_data(), size()}; }
 
-    void set_sizes(std::span<const int64_t> newSizes)
+    void set_sizes(span<const int64_t> newSizes)
     {
         resize(newSizes.size());
         std::copy(newSizes.begin(), newSizes.end(), sizes_begin());
     }
 
-    void set_strides(std::span<const int64_t> strides)
+    void set_strides(span<const int64_t> strides)
     {
         VECTORIZATION_CHECK(strides.size() == size());
         std::copy(strides.begin(), strides.end(), strides_begin());
@@ -272,7 +272,7 @@ public:
 
     strides_iterator strides_end() noexcept { return strides_begin() + size(); }
 
-    std::span<const int64_t> strides_arrayref() const noexcept { return {strides_data(), size()}; }
+    span<const int64_t> strides_arrayref() const noexcept { return {strides_data(), size()}; }
 
     // Size accessors.
     int64_t size_at(size_t idx) const noexcept

@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #pragma once
@@ -71,15 +71,9 @@ struct simd<float>
 
     VECTORIZATION_SIMD_METHOD simd_t loadu(const value_t* addr) { return _mm_loadu_ps(addr); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE store(simd_t from, value_t* to)
-    {
-        _mm_store_ps(to, from);
-    }
+    VECTORIZATION_SIMD_RETURN_TYPE store(simd_t from, value_t* to) { _mm_store_ps(to, from); }
 
-    VECTORIZATION_SIMD_RETURN_TYPE storeu(simd_t from, value_t* to)
-    {
-        _mm_storeu_ps(to, from);
-    }
+    VECTORIZATION_SIMD_RETURN_TYPE storeu(simd_t from, value_t* to) { _mm_storeu_ps(to, from); }
 
     template <
         typename scalar_t,
@@ -197,10 +191,7 @@ struct simd<float>
 
     VECTORIZATION_SIMD_METHOD simd_t neg(simd_t x) { return _mm_xor_ps(x, sign_mask); }
 
-    VECTORIZATION_FORCE_INLINE static double accumulate(simd_t x)
-    {
-        return _mm_accumulate_ps(x);
-    }
+    VECTORIZATION_FORCE_INLINE static double accumulate(simd_t x) { return _mm_accumulate_ps(x); }
 
     VECTORIZATION_FORCE_INLINE static value_t hmax(simd_t x) { return _mm_hmax_ps(x); }
 
@@ -394,8 +385,8 @@ struct simd<float>
         return simd_half_t(_mm_set1_ps(*from));
     }
 
-    VECTORIZATION_SIMD_METHOD simd_half_t fma(
-        const simd_half_t& x, const simd_half_t& y, const simd_half_t& z)
+    VECTORIZATION_SIMD_METHOD simd_half_t
+    fma(const simd_half_t& x, const simd_half_t& y, const simd_half_t& z)
     {
 #ifdef __FMA__
         return simd_half_t(_mm_fmadd_ps(x.v, y.v, z.v));

@@ -1,24 +1,8 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
- *
- * This file is part of Quarisma and is licensed under a dual-license model:
- *
- *   - Open-source License (GPLv3):
- *       Free for personal, academic, and research use under the terms of
- *       the GNU General Public License v3.0 or later.
- *
- *   - Commercial License:
- *       A commercial license is required for proprietary, closed-source,
- *       or SaaS usage. Contact us to obtain a commercial agreement.
- *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
  */
-
-// Test that quarismaLogger::GetThreadName is unaffected by concurrent accesses
-// and usage of quarismaLogger::Init()
 
 #include <atomic>
 #include <string>
@@ -27,52 +11,34 @@
 #include "LoggingTest.h"
 #include "logger/logger.h"
 
-// Control the order of operations between the threads
-std::atomic_bool wait1;
-std::atomic_bool wait2;
-
-void Thread1()
+TEST(Logger, thread_name_is_per_thread)
 {
-    const std::string threaName = "T1";
-    while (!wait1.load()) {}
+    std::atomic_bool t1_ready{false};
+    std::atomic_bool t2_ready{false};
+    std::string      t1_seen;
+    std::string      t2_seen;
 
-    logging::logger::SetThreadName(threaName);
-
-    wait2.store(true);
-
-    if (logging::logger::GetThreadName() != threaName)
-    {
-        LOGGING_LOG(ERROR, "Name mismatch !");
-    }
-}
-
-void Thread2()
-{
-    const std::string threaName = "T2";
-    logging::logger::SetThreadName(threaName);
-
-    wait1.store(true);
-    while (!wait2.load()) {}
-
-    logging::logger::Init();
-
-    if (logging::logger::GetThreadName() != threaName)
-    {
-        LOGGING_LOG(ERROR, "Name mismatch !");
-    }
-}
-
-LOGGINGTEST(Logger, thread_name)
-{
-    LOGGING_UNUSED int    arg     = 0;
-    LOGGING_UNUSED char** arg_str = nullptr;
-
-    wait1.store(false);
-    wait2.store(false);
-    std::thread t1(Thread1);
-    std::thread t2(Thread2);
+    std::thread t1(
+        [&]()
+        {
+            logging::logger::set_thread_name("T1");
+            t1_ready.store(true);
+            while (!t2_ready.load()) {}
+            t1_seen = logging::logger::get_thread_name();
+        });
+    std::thread t2(
+        [&]()
+        {
+            logging::logger::set_thread_name("T2");
+            t2_ready.store(true);
+            while (!t1_ready.load()) {}
+            logging::logger::init();
+            t2_seen = logging::logger::get_thread_name();
+        });
 
     t1.join();
     t2.join();
-    END_TEST();
+
+    EXPECT_EQ(t1_seen, "T1");
+    EXPECT_EQ(t2_seen, "T2");
 }

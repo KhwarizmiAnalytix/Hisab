@@ -1,4 +1,4 @@
-# cmake-format configuration for Quarisma
+# cmake-format configuration for XSigma
 # Aligns with .clang-format and project coding standards
 # See: https://cmake-format.readthedocs.io/
 #
@@ -124,13 +124,13 @@ markup:
 
   # Disable comment markup/reflow so "# =====...=====" rulers stay on their own line and the next
   # "# ..." line (titles, instructions) is not merged onto the ruler or reflowed into paragraph text.
-  # cmakelang only auto-preserves rulers that start with hashruler_min_length '#' chars; Quarisma
+  # cmakelang only auto-preserves rulers that start with hashruler_min_length '#' chars; XSigma
   # uses "# =" dividers, which otherwise get parsed as plain comments and joined with following lines.
   enable_markup: false
 
 # Options affecting listfile parsing
 parse:
-  # Additional custom commands (none for Quarisma currently)
+  # Additional custom commands (none for XSigma currently)
   additional_commands: {}
 
   # Override configurations per-command where available

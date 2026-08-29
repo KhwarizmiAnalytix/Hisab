@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #include "calibration/qa_calibrator.h"
@@ -81,8 +81,7 @@ std::optional<zabr_params> qa_calibrator::calibrate(
     double        gamma,
     int           polish_iters) const
 {
-    if (!ready_ || market_vols == nullptr ||
-        n_vols != static_cast<std::size_t>(k_smile_points) ||
+    if (!ready_ || market_vols == nullptr || n_vols != static_cast<std::size_t>(k_smile_points) ||
         qa_zabr_weights::k_n_features != k_smile_points + 4)
     {
         return std::nullopt;
@@ -98,7 +97,7 @@ std::optional<zabr_params> qa_calibrator::calibrate(
     }
 
     std::vector<double> features(static_cast<std::size_t>(qa_zabr_weights::k_n_features));
-    const auto n_smile = static_cast<std::size_t>(k_smile_points);
+    const auto          n_smile = static_cast<std::size_t>(k_smile_points);
     for (std::size_t i = 0; i < n_smile; ++i)
     {
         if (!std::isfinite(market_vols[i]) || market_vols[i] <= 0.0)
@@ -114,8 +113,8 @@ std::optional<zabr_params> qa_calibrator::calibrate(
 
     for (std::size_t i = 0; i < static_cast<std::size_t>(qa_zabr_weights::k_n_features); ++i)
     {
-        features[i] = (features[i] - qa_zabr_weights::k_input_mean[i]) /
-                      qa_zabr_weights::k_input_std[i];
+        features[i] =
+            (features[i] - qa_zabr_weights::k_input_mean[i]) / qa_zabr_weights::k_input_std[i];
     }
 
     double raw[3] = {0.0, 0.0, 0.0};
@@ -144,8 +143,8 @@ std::optional<zabr_params> qa_calibrator::calibrate(
     {
         return out;
     }
-    const auto polished = calibrate_zabr(
-        market_vols, n_vols, forward, expiry, beta, gamma, &out, polish_iters);
+    const auto polished =
+        calibrate_zabr(market_vols, n_vols, forward, expiry, beta, gamma, &out, polish_iters);
     if (!polished.has_value() || !is_valid(polished->params, forward, expiry))
     {
         return out;

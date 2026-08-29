@@ -16,9 +16,15 @@ struct PushPRIVATEUSE1CallbacksStub
     PushPRIVATEUSE1CallbacksStub& operator=(PushPRIVATEUSE1CallbacksStub&&)      = default;
     ~PushPRIVATEUSE1CallbacksStub()                                              = default;
 
+    explicit operator bool() const noexcept { return push_privateuse1_callbacks_fn != nullptr; }
+
     template <typename... ArgTypes>
     void operator()(ArgTypes&&... args)
     {
+        if (push_privateuse1_callbacks_fn == nullptr)
+        {
+            return;
+        }
         return (*push_privateuse1_callbacks_fn)(std::forward<ArgTypes>(args)...);
     }
 

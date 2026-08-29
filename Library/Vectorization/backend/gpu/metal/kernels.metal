@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,15 +13,15 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
-// Fixed, hand-written Metal kernel set — the "starter" op surface for the Metal GPU
-// backend (see Library/Vectorization/expressions/expressions_evaluator_metal.h for the
-// host-side expression-tree lowering that dispatches these). float-only: MSL has no
-// double type on any Apple GPU. One thread per element; buffer argument order is always
-// (inputs..., out, n).
+// Fixed, hand-written Metal kernels for fill, reductions, and metal_backend::dispatch()
+// tests. Expression trees such as `x = y + a + 5*d` are emitted as one fused MSL kernel
+// at runtime (see expressions_evaluator_metal.h) — there is no per-node lowering.
+// float-only: MSL has no double type on any Apple GPU. One thread per element; buffer
+// argument order is always (inputs..., out, n).
 //
 // This source is embedded into the Vectorization library as a C++ string at CMake
 // configure time (see the "Metal GPU backend" block in CMakeLists.txt) and compiled at

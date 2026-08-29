@@ -1,4 +1,4 @@
-# UndefinedBehaviorSanitizer Suppressions for Quarisma
+# UndefinedBehaviorSanitizer Suppressions for XSigma
 # ===================================================
 # This file contains suppressions for UndefinedBehaviorSanitizer to handle known false positives
 # and issues in third-party libraries that cannot be easily fixed.
@@ -77,5 +77,5 @@ signed-integer-overflow:*experimental*profiler*
 alignment:*Test*
 signed-integer-overflow:*Test*
 
-# Suppress known issues in specific Quarisma components
+# Suppress known issues in specific XSigma components
 # (Add specific suppressions as they are discovered during testing)

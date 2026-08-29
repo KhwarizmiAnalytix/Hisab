@@ -59,16 +59,18 @@ cc_library(
         "//conditions:default": ["@magic_enum//:magic_enum"],
     }) + select({
         "//bazel:logging_glog": ["@glog//:glog"],
-        "//bazel:logging_spdlog": ["@spdlog//:spdlog"],
-        "//bazel:logging_native": [],
         "//bazel:logging_loguru": ["@loguru//:loguru"],
-        "//conditions:default": ["@loguru//:loguru"],
+        "//bazel:logging_native": [],
+        "//bazel:logging_spdlog": ["@spdlog//:spdlog"],
+        "//conditions:default": ["@spdlog//:spdlog"],
     }),
     alwayslink = False,
     visibility = [
         "//Library/Logging:__pkg__",
         "//Library/Core:__pkg__",
         "//Library/Memory:__pkg__",
+        "//Library/Vectorization:__pkg__",
+        "//Library/Profiler:__pkg__",
     ],
 )
 

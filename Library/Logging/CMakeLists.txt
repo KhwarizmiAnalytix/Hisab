@@ -2,25 +2,28 @@
 # Library/Logging —
 # CMakeLists.txt
 #
-# Structured log levels, back-trace capture, and pluggable backend support (Loguru, GLog, Native).
+# Structured log levels, back-trace capture, and pluggable backend support
+# (spdlog default, Loguru, GLog, Native).
 #
-# Public compile definitions: LOGGING_HAS_LOGURU=1/0  — Loguru backend active LOGGING_HAS_GLOG=1/0 —
-# GLog backend active LOGGING_HAS_NATIVE=1/0  — Native (fmt-based) backend active
+# Public compile definitions: LOGGING_HAS_SPDLOG=1/0 — spdlog backend active
+# LOGGING_HAS_LOGURU=1/0 — Loguru backend active LOGGING_HAS_GLOG=1/0 —
+# GLog backend active LOGGING_HAS_NATIVE=1/0 — Native (fmt-based) backend active
 # =============================================================================
 cmake_minimum_required(VERSION 3.16)
 
 # --- Section 1: Feature flags (LOGGING_ENABLE_*) and backend selector ---
-set(LOGGING_BACKEND "LOGURU" CACHE STRING
-                                   "Logging backend to use. Options are NATIVE, LOGURU, GLOG, or SPDLOG"
+set(LOGGING_BACKEND "SPDLOG"
+    CACHE STRING "Logging backend to use. Options are NATIVE, LOGURU, GLOG, or SPDLOG"
 )
 set_property(CACHE LOGGING_BACKEND PROPERTY STRINGS NATIVE LOGURU GLOG SPDLOG)
 
 # Link-Time Optimization — disabled when LOGGING_ENABLE_COVERAGE or LOGGING_ENABLE_SANITIZER is ON
 # (LTO conflicts with instrumentation / sanitizers).
 include(lto)
-quarisma_lto_compute_default(_lto_default PROFILE SUPPORT)
-set(LOGGING_LTO_MODE "${_lto_default}"
-    CACHE STRING "LTO mode for Logging: off | thin | full | ipo | auto")
+xsigma_lto_compute_default(_lto_default PROFILE SUPPORT)
+set(LOGGING_LTO_MODE "${_lto_default}" CACHE STRING
+                                             "LTO mode for Logging: off | thin | full | ipo | auto"
+)
 set_property(CACHE LOGGING_LTO_MODE PROPERTY STRINGS off thin full ipo auto)
 
 # Coverage instrumentation — activates -fprofile-instr-generate / --coverage compiler flags for
@@ -38,6 +41,9 @@ option(LOGGING_ENABLE_GTEST "Enable GoogleTest for Logging" ON)
 
 # Google Benchmark integration for Logging micro-benchmarks.
 option(LOGGING_ENABLE_BENCHMARK "Enable Google Benchmark for Logging" ON)
+
+# magic_enum — enum ↔ string helpers in util/string_util.h
+option(LOGGING_ENABLE_MAGICENUM "Enable magic_enum static reflection for Logging" ON)
 
 # Icecream distributed compilation launcher (rarely needed; hidden by default).
 option(LOGGING_ENABLE_ICECC "Use Icecream (icecc) distributed compiler for Logging" OFF)
@@ -60,11 +66,7 @@ set(LOGGING_SANITIZER_TYPE "address"
 )
 set_property(CACHE LOGGING_SANITIZER_TYPE PROPERTY STRINGS address undefined thread memory leak)
 mark_as_advanced(LOGGING_ENABLE_SANITIZER LOGGING_SANITIZER_TYPE)
-option(
-  LOGGING_ENABLE_SPELL
-  "Enable spell checking with automatic corrections for Logging (WARNING: modifies source files)"
-  OFF
-)
+option(LOGGING_ENABLE_SPELL "Enable check-only spell checking for Logging" OFF)
 mark_as_advanced(LOGGING_ENABLE_SPELL)
 option(LOGGING_ENABLE_VALGRIND "Execute Logging test suite with Valgrind" OFF)
 mark_as_advanced(LOGGING_ENABLE_VALGRIND)
@@ -106,11 +108,27 @@ elseif(LOGGING_BACKEND STREQUAL "NATIVE")
   )
 elseif(LOGGING_BACKEND STREQUAL "SPDLOG")
   # spdlog — header-only, fast, feature-rich backend with colored output and async support.
-  list(APPEND LOGGING_COMPILE_DEFINITIONS LOGGING_HAS_LOGURU=0 LOGGING_HAS_GLOG=0
-       LOGGING_HAS_NATIVE=0 LOGGING_HAS_SPDLOG=1 SPDLOG_FMT_EXTERNAL=1
+  list(
+    APPEND
+    LOGGING_COMPILE_DEFINITIONS
+    LOGGING_HAS_LOGURU=0
+    LOGGING_HAS_GLOG=0
+    LOGGING_HAS_NATIVE=0
+    LOGGING_HAS_SPDLOG=1
+    SPDLOG_FMT_EXTERNAL=1
+  )
+else()
+  message(
+    FATAL_ERROR
+      "LOGGING_BACKEND must be one of: NATIVE, LOGURU, GLOG, SPDLOG (got '${LOGGING_BACKEND}')"
   )
 endif()
 list(APPEND LOGGING_DEPENDENCY_COMPILE_DEFINITIONS ${LOGGING_COMPILE_DEFINITIONS})
+if(LOGGING_ENABLE_MAGICENUM)
+  list(APPEND LOGGING_DEPENDENCY_COMPILE_DEFINITIONS LOGGING_HAS_MAGICENUM=1)
+else()
+  list(APPEND LOGGING_DEPENDENCY_COMPILE_DEFINITIONS LOGGING_HAS_MAGICENUM=0)
+endif()
 
 # --- Section 3: CMake module includes --- Order: introspection → toolchain helpers →
 # coverage/sanitizer → LTO/linker.
@@ -155,6 +173,7 @@ set(BUILD_BENCHMARKS OFF CACHE BOOL "Disable benchmarks for third-party librarie
 
 # loguru-specific options
 set(LOGURU_BUILD_EXAMPLES OFF CACHE BOOL "Disable loguru examples" FORCE)
+set(LOGURU_BUILD_TESTS OFF CACHE BOOL "Disable loguru tests" FORCE)
 # set(LOGURU_USE_FMTLIB ON CACHE BOOL "Enable fmtlib formatting in loguru" FORCE)
 set(LOGURU_WITH_STREAMS ON CACHE BOOL "Enable streams in loguru" FORCE)
 
@@ -164,8 +183,16 @@ set(WITH_GFLAGS OFF CACHE BOOL "Disable gflags dependency for glog" FORCE)
 set(WITH_GTEST OFF CACHE BOOL "Disable gtest for glog" FORCE)
 set(WITH_GMOCK OFF CACHE BOOL "Disable gmock for glog" FORCE)
 
+# spdlog-specific options (used if LIBRARY_TYPE is not HEADER_ONLY)
+set(SPDLOG_BUILD_TESTS OFF CACHE BOOL "Disable spdlog tests" FORCE)
+set(SPDLOG_BUILD_TESTS_HO OFF CACHE BOOL "Disable spdlog header-only tests" FORCE)
+set(SPDLOG_BUILD_EXAMPLE OFF CACHE BOOL "Disable spdlog examples" FORCE)
+set(SPDLOG_BUILD_BENCH OFF CACHE BOOL "Disable spdlog benchmarks" FORCE)
+
 # fmt — Logging uses fmt directly and is processed before Core, so we initialise fmt here. Core's
+# fmt is also brought in by Logging; when building the full tree this
 # identical add_third_party_library(fmt...) call is a no-op (processed flag).
+# XSIGMA_TARGETS is the keyword of the vendored ThirdParty helper — do not rename.
 set(FMT_TEST OFF CACHE BOOL "Disable fmt tests" FORCE)
 set(FMT_DOC OFF CACHE BOOL "Disable fmt documentation" FORCE)
 set(FMT_INSTALL OFF CACHE BOOL "Disable fmt install" FORCE)
@@ -179,7 +206,7 @@ add_third_party_library(
   "${_tpdir}/fmt"
   ALIASES
   "fmt::fmt-header-only"
-  QUARISMA_TARGETS
+  XSIGMA_TARGETS
   "Fmt::fmt=fmt::fmt-header-only|fmt::fmt|fmt"
   INCLUDE_DIR
   "${_tpdir}/fmt/include"
@@ -190,6 +217,26 @@ add_third_party_library(
 # fmt is used by Logging source files directly; Fmt::fmt is not available here (it is created by
 # Core, which is processed after Logging).
 list(APPEND LOGGING_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/fmt/include")
+if(LOGGING_ENABLE_MAGICENUM)
+  set(MAGIC_ENUM_OPT_BUILD_EXAMPLES OFF CACHE BOOL "Disable magic_enum examples" FORCE)
+  set(MAGIC_ENUM_OPT_BUILD_TESTS OFF CACHE BOOL "Disable magic_enum tests" FORCE)
+  add_third_party_library(
+    magic_enum
+    CONDITION
+    LOGGING_ENABLE_MAGICENUM
+    LIBRARY_TYPE
+    HEADER_ONLY
+    SOURCE_DIR
+    "${_tpdir}/magic_enum"
+    XSIGMA_TARGETS
+    "MagicEnum::magic_enum=magic_enum"
+    INCLUDE_DIR
+    "${_tpdir}/magic_enum/include"
+    AUTO_ADD_TO_DEPENDENCIES
+    OFF
+  )
+  list(APPEND LOGGING_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/magic_enum/include")
+endif()
 if(LOGGING_BACKEND STREQUAL "LOGURU")
   add_third_party_library(
     loguru
@@ -200,7 +247,7 @@ if(LOGGING_BACKEND STREQUAL "LOGURU")
     FILTER_FLAGS
     "-flto=thin"
     "-flto=full"
-    QUARISMA_TARGETS
+    XSIGMA_TARGETS
     "Loguru::loguru=loguru::loguru|loguru"
     INCLUDE_DIR
     "${_tpdir}/loguru"
@@ -225,7 +272,7 @@ if(LOGGING_BACKEND STREQUAL "GLOG")
     FILTER_FLAGS
     "-flto=thin"
     "-flto=full"
-    QUARISMA_TARGETS
+    XSIGMA_TARGETS
     "Glog::glog=glog::glog|glog"
     INCLUDE_DIR
     "${_tpdir}/glog/src"
@@ -243,7 +290,7 @@ if(LOGGING_BACKEND STREQUAL "SPDLOG")
     HEADER_ONLY
     SOURCE_DIR
     "${_tpdir}/spdlog"
-    QUARISMA_TARGETS
+    XSIGMA_TARGETS
     "Spdlog::spdlog=spdlog::spdlog|spdlog"
     INCLUDE_DIR
     "${_tpdir}/spdlog/include"
@@ -270,18 +317,18 @@ list(FILTER logging_headers EXCLUDE REGEX ".*/Testing/.*")
 set(CMAKE_CXX_STANDARD ${LOGGING_CXX_STANDARD})
 
 add_library(Logging ${logging_sources} ${logging_headers})
-quarisma_target_apply_lto(Logging LOGGING)
+xsigma_target_apply_lto(Logging LOGGING)
 if(LOGGING_ENABLE_SANITIZER)
-  quarisma_configure_sanitizer(LOGGING)
+  xsigma_configure_sanitizer(LOGGING)
 endif()
-quarisma_find_linker(${LOGGING_LINKER_CHOICE} Logging LOGGING_LTO_MODE)
-quarisma_target_apply_cache(Logging LOGGING_ENABLE_CACHE LOGGING_CACHE_BACKEND)
-quarisma_target_optional_icecc(Logging LOGGING_ENABLE_ICECC)
+xsigma_find_linker(${LOGGING_LINKER_CHOICE} Logging LOGGING_LTO_MODE)
+xsigma_target_apply_cache(Logging LOGGING_ENABLE_CACHE LOGGING_CACHE_BACKEND)
+xsigma_target_optional_icecc(Logging LOGGING_ENABLE_ICECC)
 
 if(BUILD_SHARED_LIBS)
   target_compile_definitions(Logging PUBLIC LOGGING_SHARED_DEFINE PRIVATE LOGGING_BUILDING_DLL)
-  if(COMMAND quarisma_set_target_output_directories)
-    quarisma_set_target_output_directories(Logging)
+  if(COMMAND xsigma_set_target_output_directories)
+    xsigma_set_target_output_directories(Logging)
   endif()
 else()
   target_compile_definitions(Logging PUBLIC LOGGING_STATIC_DEFINE)
@@ -289,7 +336,7 @@ endif()
 
 add_library(Logging::Logging ALIAS Logging)
 
-quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
+xsigma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 
 set_target_properties(
   Logging PROPERTIES CXX_STANDARD ${LOGGING_CXX_STANDARD} CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS
@@ -309,9 +356,7 @@ if(WIN32
    AND LOGGING_BACKEND STREQUAL "SPDLOG"
 )
   target_compile_options(
-    Logging
-    PRIVATE
-      $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>,$<CONFIG:MinSizeRel>>:-O1>
+    Logging PRIVATE $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>,$<CONFIG:MinSizeRel>>:-O1>
   )
 endif()
 
@@ -325,11 +370,7 @@ configure_file(
 target_include_directories(
   Logging
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/logger>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Testing>
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/Testing>
-         $<INSTALL_INTERFACE:include>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/logger> $<INSTALL_INTERFACE:include/Logging>
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
@@ -339,6 +380,9 @@ endif()
 
 if(TARGET Fmt::fmt)
   list(APPEND LOGGING_DEPENDENCY_LIBS Fmt::fmt)
+endif()
+if(TARGET MagicEnum::magic_enum)
+  list(APPEND LOGGING_DEPENDENCY_LIBS MagicEnum::magic_enum)
 endif()
 if(TARGET Loguru::loguru)
   list(APPEND LOGGING_DEPENDENCY_LIBS Loguru::loguru)
@@ -352,12 +396,12 @@ endif()
 
 if(LOGGING_ENABLE_CLANGTIDY)
   include(clang_tidy)
-  quarisma_target_clang_tidy(Logging ${LOGGING_ENABLE_FIX})
+  xsigma_target_clang_tidy(Logging ${LOGGING_ENABLE_FIX})
 endif()
 
 if(LOGGING_ENABLE_IWYU)
   include(iwyu)
-  quarisma_apply_iwyu(Logging)
+  xsigma_apply_iwyu(Logging)
 endif()
 
 if(LOGGING_DEPENDENCY_LIBS)
@@ -382,7 +426,24 @@ install(
   INCLUDES
   DESTINATION include
 )
-install(FILES ${logging_headers} DESTINATION include/Logging/Logging COMPONENT Development)
+install(
+  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/common"
+  DESTINATION include/Logging
+  FILES_MATCHING
+  PATTERN "*.h"
+)
+install(
+  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/logger"
+  DESTINATION include/Logging
+  FILES_MATCHING
+  PATTERN "*.h"
+)
+install(
+  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/util"
+  DESTINATION include/Logging
+  FILES_MATCHING
+  PATTERN "*.h"
+)
 
 # --- Testing ---
 if(LOGGING_ENABLE_TESTING)
@@ -390,23 +451,24 @@ if(LOGGING_ENABLE_TESTING)
 endif()
 
 if(LOGGING_ENABLE_VALGRIND AND LOGGING_ENABLE_TESTING)
-  quarisma_apply_valgrind_timeouts()
+  xsigma_apply_valgrind_timeouts()
 endif()
 
 get_property(_logging_summary_backend CACHE LOGGING_BACKEND PROPERTY VALUE)
 message("")
 message("******** Logging module (CMake flags) ********")
-message("  Backend          : ${_logging_summary_backend} (options: LOGURU, GLOG, NATIVE, SPDLOG)")
+message("  Backend          : ${_logging_summary_backend} (options: SPDLOG, LOGURU, GLOG, NATIVE)")
 message("  Cxx standard     : ${LOGGING_CXX_STANDARD}")
 message("  Cache            : ${LOGGING_ENABLE_CACHE}")
 message("  Cache backend    : ${LOGGING_CACHE_BACKEND}")
 message("  Icecc            : ${LOGGING_ENABLE_ICECC}")
-quarisma_print_lto_linker_summary(LOGGING)
+xsigma_print_lto_linker_summary(LOGGING)
 message("  Coverage         : ${LOGGING_ENABLE_COVERAGE}")
 message("  Testing          : ${LOGGING_ENABLE_TESTING}")
 message("  Examples         : ${LOGGING_ENABLE_EXAMPLES}")
 message("  Gtest            : ${LOGGING_ENABLE_GTEST}")
 message("  Benchmark        : ${LOGGING_ENABLE_BENCHMARK}")
+message("  Magic enum       : ${LOGGING_ENABLE_MAGICENUM}")
 message("  Clang-tidy       : ${LOGGING_ENABLE_CLANGTIDY}")
 message("  Fix              : ${LOGGING_ENABLE_FIX}")
 message("  Iwyu             : ${LOGGING_ENABLE_IWYU}")

@@ -2,22 +2,22 @@
 
 #include "common/macros.h"
 
-#ifndef QUARISMA_CHECK
-#define QUARISMA_CHECK(cond, ...)
+#ifndef XSIGMA_CHECK
+#define XSIGMA_CHECK(cond, ...)
 #endif
 
-#ifndef QUARISMA_CHECK_DEBUG
-#define QUARISMA_CHECK_DEBUG(cond, ...)
+#ifndef XSIGMA_CHECK_DEBUG
+#define XSIGMA_CHECK_DEBUG(cond, ...)
 #endif
 
-#ifndef QUARISMA_CHECK_DEBUG
-#define QUARISMA_CHECK_DEBUG(cond, ...)
+#ifndef XSIGMA_CHECK_DEBUG
+#define XSIGMA_CHECK_DEBUG(cond, ...)
 #endif
 
-#ifndef QUARISMA_THROW
-#define QUARISMA_THROW(format_str, ...)
+#ifndef XSIGMA_THROW
+#define XSIGMA_THROW(format_str, ...)
 #endif
 
-#ifndef QUARISMA_NOT_IMPLEMENTED
-#define QUARISMA_NOT_IMPLEMENTED(format_str, ...)
+#ifndef XSIGMA_NOT_IMPLEMENTED
+#define XSIGMA_NOT_IMPLEMENTED(format_str, ...)
 #endif

@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #include "calibration/zabr_calibrator.h"
@@ -29,13 +29,13 @@ namespace models
 namespace
 {
 
-constexpr int    k_dim         = 3;
+constexpr int    k_dim          = 3;
 constexpr int    k_default_iter = 80;
-constexpr double k_alpha_min   = 1.0e-4;
-constexpr double k_alpha_max   = 2.0;
-constexpr double k_nu_min      = 1.0e-4;
-constexpr double k_nu_max      = 5.0;
-constexpr double k_rho_cap     = 0.999;
+constexpr double k_alpha_min    = 1.0e-4;
+constexpr double k_alpha_max    = 2.0;
+constexpr double k_nu_min       = 1.0e-4;
+constexpr double k_nu_max       = 5.0;
+constexpr double k_rho_cap      = 0.999;
 
 struct packed_x
 {
@@ -61,8 +61,8 @@ zabr_params unpack(const packed_x& x, double beta, double gamma)
 packed_x pack(const zabr_params& p)
 {
     packed_x x;
-    x.log_alpha   = std::log(std::max(p.alpha, k_alpha_min));
-    x.log_nu      = std::log(std::max(p.nu, k_nu_min));
+    x.log_alpha    = std::log(std::max(p.alpha, k_alpha_min));
+    x.log_nu       = std::log(std::max(p.nu, k_nu_min));
     const double r = std::min(std::max(p.rho, -k_rho_cap), k_rho_cap);
     x.artanh_rho   = 0.5 * std::log((1.0 + r) / (1.0 - r));
     return x;
@@ -156,9 +156,8 @@ std::optional<zabr_calibration_result> calibrate_zabr(
     }
 
     packed_x start = pack(guess);
-    auto     eval  = [&](const std::array<double, k_dim>& a) {
-        return rmse_vols(from_array(a), forward, expiry, beta, gamma, market_vols, n_vols);
-    };
+    auto     eval  = [&](const std::array<double, k_dim>& a)
+    { return rmse_vols(from_array(a), forward, expiry, beta, gamma, market_vols, n_vols); };
 
     const int n_iter = (max_iter < 0) ? k_default_iter : max_iter;
 
@@ -166,13 +165,13 @@ std::optional<zabr_calibration_result> calibrate_zabr(
     // polishes (initial + max_iter <= 24) use a tighter simplex.
     std::array<std::array<double, k_dim>, k_dim + 1> simplex{};
     std::array<double, k_dim + 1>                    scores{};
-    simplex[0] = to_array(start);
-    const bool local_polish = (initial != nullptr) && (n_iter <= 24);
-    const double scale      = local_polish ? 0.05 : 0.15;
-    const std::array<double, k_dim> step = {scale, scale, scale * 4.0 / 3.0};
+    simplex[0]                                   = to_array(start);
+    const bool                      local_polish = (initial != nullptr) && (n_iter <= 24);
+    const double                    scale        = local_polish ? 0.05 : 0.15;
+    const std::array<double, k_dim> step         = {scale, scale, scale * 4.0 / 3.0};
     for (std::size_t i = 0; i < static_cast<std::size_t>(k_dim); ++i)
     {
-        simplex[i + 1]    = simplex[0];
+        simplex[i + 1] = simplex[0];
         simplex[i + 1][i] += step[i];
     }
     for (int i = 0; i <= k_dim; ++i)
@@ -187,12 +186,14 @@ std::optional<zabr_calibration_result> calibrate_zabr(
         {
             order[static_cast<std::size_t>(i)] = i;
         }
-        std::sort(order.begin(), order.end(), [&](int a, int b) {
-            return scores[static_cast<std::size_t>(a)] < scores[static_cast<std::size_t>(b)];
-        });
+        std::sort(
+            order.begin(),
+            order.end(),
+            [&](int a, int b)
+            { return scores[static_cast<std::size_t>(a)] < scores[static_cast<std::size_t>(b)]; });
 
-        const int best_i  = order[0];
-        const int worst_i = order[k_dim];
+        const int best_i   = order[0];
+        const int worst_i  = order[k_dim];
         const int second_i = order[k_dim - 1];
         if (scores[static_cast<std::size_t>(worst_i)] - scores[static_cast<std::size_t>(best_i)] <
             1.0e-8)
@@ -230,9 +231,9 @@ std::optional<zabr_calibration_result> calibrate_zabr(
             auto expand = centroid;
             for (int d = 0; d < k_dim; ++d)
             {
-                expand[static_cast<std::size_t>(d)] =
-                    centroid[static_cast<std::size_t>(d)] +
-                    2.0 * (reflect[static_cast<std::size_t>(d)] - centroid[static_cast<std::size_t>(d)]);
+                expand[static_cast<std::size_t>(d)] = centroid[static_cast<std::size_t>(d)] +
+                                                      2.0 * (reflect[static_cast<std::size_t>(d)] -
+                                                             centroid[static_cast<std::size_t>(d)]);
             }
             const double f_exp = eval(expand);
             if (f_exp < f_ref)
@@ -253,13 +254,14 @@ std::optional<zabr_calibration_result> calibrate_zabr(
         }
         else
         {
-            auto contract = centroid;
+            auto         contract = centroid;
             const double coeff = (f_ref < scores[static_cast<std::size_t>(worst_i)]) ? 0.5 : -0.5;
             for (int d = 0; d < k_dim; ++d)
             {
                 const double dir =
                     (coeff > 0.0)
-                        ? (reflect[static_cast<std::size_t>(d)] - centroid[static_cast<std::size_t>(d)])
+                        ? (reflect[static_cast<std::size_t>(d)] -
+                           centroid[static_cast<std::size_t>(d)])
                         : (simplex[static_cast<std::size_t>(worst_i)][static_cast<std::size_t>(d)] -
                            centroid[static_cast<std::size_t>(d)]);
                 contract[static_cast<std::size_t>(d)] =
@@ -279,8 +281,10 @@ std::optional<zabr_calibration_result> calibrate_zabr(
                     for (int d = 0; d < k_dim; ++d)
                     {
                         simplex[static_cast<std::size_t>(idx)][static_cast<std::size_t>(d)] =
-                            0.5 * (simplex[static_cast<std::size_t>(best_i)][static_cast<std::size_t>(d)] +
-                                   simplex[static_cast<std::size_t>(idx)][static_cast<std::size_t>(d)]);
+                            0.5 *
+                            (simplex[static_cast<std::size_t>(best_i)]
+                                    [static_cast<std::size_t>(d)] +
+                             simplex[static_cast<std::size_t>(idx)][static_cast<std::size_t>(d)]);
                     }
                     scores[static_cast<std::size_t>(idx)] =
                         eval(simplex[static_cast<std::size_t>(idx)]);

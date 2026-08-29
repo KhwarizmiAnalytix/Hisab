@@ -19,7 +19,7 @@ build-backend = "setuptools.build_meta"
 [dependency-groups]
 dev = [
     # This list should be kept in sync with the requirements-build.txt
-    # in Quarisma root until the project fully migrates to pyproject.toml
+    # in XSigma root until the project fully migrates to pyproject.toml
     # after which this can be removed as it is already specified in the
     # [build-system] section
     "setuptools>=70.1.0,<80.0",  # setuptools develop deprecated on 80.0
@@ -33,7 +33,7 @@ dev = [
     "typing-extensions>=4.10.0",
 
     # This list should be kept in sync with the requirements.txt in
-    # Quarisma root until the project fully migrates to pyproject.toml
+    # XSigma root until the project fully migrates to pyproject.toml
     "build[uv]",
     "expecttest>=0.3.0",
     "filelock",
@@ -51,8 +51,8 @@ dev = [
 
 
 [project]
-name = "quarisma"
-description = "Quarisma: High-Performance Computational Library"
+name = "xsigma"
+description = "XSigma: High-Performance Computational Library"
 readme = "README.md"
 requires-python = ">=3.10"
 # TODO: change to `license = "BSD-3-Clause"` and enable PEP 639 after pinning setuptools>=77
@@ -60,8 +60,8 @@ requires-python = ">=3.10"
 # TOML-table-based license deprecated in setuptools>=77, and the deprecation warning will be changed
 # to an error on 2026.02.18. See also: https://github.com/pypa/setuptools/issues/4903
 license = "GPL-3.0-or-later"
-authors = [{ name = "Quarisma", email = "support@quarisma.co.uk" }]
-keywords = ["quarisma", "quantitative", "library"]
+authors = [{ name = "XSigma", email = "support@xsigma.co.uk" }]
+keywords = ["xsigma", "quantitative", "library"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -89,11 +89,11 @@ dynamic = [
 ]
 
 [project.urls]
-Homepage = "https://quarisma.co.uk"
-Repository = "https://https://github.com/QuarismaAnalyitix/Quarisma"
-Documentation = "https://quarisma.co.uk/docs"
-"Issue Tracker" = "https://github.com/QuarismaAnalyitix/Quarisma/issues"
-Forum = "https://discuss.quarisma.co.uk"
+Homepage = "https://xsigma.co.uk"
+Repository = "https://github.com/KhwarizmiAnalytix/XSigma"
+Documentation = "https://xsigma.co.uk/docs"
+"Issue Tracker" = "https://github.com/KhwarizmiAnalytix/XSigma/issues"
+Forum = "https://discuss.xsigma.co.uk"
 
 [project.optional-dependencies]
 dev = [
@@ -116,7 +116,7 @@ exclude = ["ThirdParty*", "Cmake*", "Scripts*", "tmp_ci_logs*", "build_*", "*exp
 # Linter tools #################################################################
 
 [tool.isort]
-src_paths = ["Quarisma"]
+src_paths = ["XSigma"]
 extra_standard_library = ["typing_extensions"]
 skip_gitignore = true
 skip_glob = ["ThirdParty/*", "**/experimental/*", "**/Experimental/*"]
@@ -296,4 +296,5 @@ keep-runtime-typing = true
 ]
 
 [tool.codespell]
-ignore-words = "Tools/linter/dictionary.txt"
+ignore-words = "Scripts/suppressions/spell_suppressions.txt"
+skip = ".git,.augment,.github,.vscode,build,Build,Cmake,ThirdParty,third_party,3rdparty,*ThirdParty*,*third_party*,*3rdparty*"

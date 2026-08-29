@@ -1,6 +1,6 @@
 """Uploads a new binary to s3 and updates its hash in the config file.
 
-You'll need to have appropriate credentials on the Quarisma AWS buckets, see:
+You'll need to have appropriate credentials on the XSigma AWS buckets, see:
 https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html#configuration
 for how to configure them.
 """

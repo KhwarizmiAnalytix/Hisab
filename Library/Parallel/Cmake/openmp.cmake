@@ -1,5 +1,5 @@
 # =============================================================================
-# Quarisma OpenMP
+# XSigma OpenMP
 # (Open Multi-Processing) Configuration Module
 
 # This module configures OpenMP for parallel processing support. It detects OpenMP availability and

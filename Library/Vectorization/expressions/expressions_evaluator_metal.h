@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #pragma once
@@ -24,20 +24,21 @@
 // header for host AND device, so run_gpu<E,T> can instantiate one fused kernel per
 // expression-tree type E. Metal's shader compiler (MSL) is a separate toolchain with no
 // such unified pass — .metal source never sees tensor<T>/the expression templates at
-// all (see backend/gpu/metal/kernels.metal). Instead:
+// all (see backend/gpu/metal/kernels.metal).
 //
-//   * A small, fixed set of hand-written .metal kernels covers the starter op surface
-//     (fill, add/sub/mul/div/fma, sqrt/exp/log/sin/cos/tanh/fabs/neg) — see
-//     backend/gpu/metal/metal_dispatch.h.
-//   * This file is ordinary host C++ (compiled by clang++, not a device pass) that
-//     walks an arbitrary expression tree's *type* at compile time (via function-template
-//     overloading on the exact node shape — unary_expression<LHS,EVALUATOR>,
-//     binary_expression<LHS,RHS,EVALUATOR>, trinary_expression<...>, or a tensor<float>
-//     leaf) and lowers it to a *sequence* of fixed-kernel dispatches through temporary
-//     buffers, rather than one fused kernel. No fusion; correctness over performance for
-//     this starter backend (see the Metal backend design notes for the full rationale
-//     and the explicit follow-up list — comparisons, gather/scatter, cdf/inv_cdf, and
-//     the rest of the ~40-op simd<T> surface are not covered here).
+// Fusion: this file walks the expression tree on the host and emits one MSL kernel
+// whose body is the whole tree (`out[tid] = y[tid] + a[tid] + 5.0 * d[tid]`). That
+// source is compiled once via newLibraryWithSource: and cached, then dispatched as a
+// single kernel — the same fused model as run_gpu, without per-node temps. Element-wise
+// in-place (`a = a + b`) is safe because each thread reads and writes only index tid.
+// There is no unfused per-node lowering: an unsupported op or a tree that exceeds the
+// Metal buffer limit throws.
+//
+// Supported fused ops: the full expression-template set except cdf/inv_cdf (MSL has
+// no erf/erfinv). Arithmetic, comparisons, if_else, min/max/pow/hypot/copysign, and
+// the metal_stdlib unaries all emit into one kernel. Scalar fill uses dispatch_fill.
+// kernels.metal still holds fill/reduce and the named kernels used by
+// metal_backend::dispatch() tests.
 //
 // float-only: MSL has no double type on any Apple GPU. memory::allocator<double> already
 // throws at allocation time for device_enum::METAL (see Library/Memory/allocator.h), so
@@ -50,11 +51,14 @@
 
 #include <cstddef>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 
 #include "allocator.h"
 #include "backend/gpu/metal/metal_dispatch.h"
+#include "common/data_view.h"
 #include "common/device.h"
+#include "expressions/expression_interface.h"
 
 namespace vectorization
 {
@@ -62,39 +66,19 @@ namespace metal_detail
 {
 using metal_alloc_t = memory::allocator<float>;
 
-inline float* alloc_temp(std::size_t n)
-{
-    return metal_alloc_t::allocate(n, memory::device_enum::METAL);
-}
-
-inline void free_temp(float*& ptr)
-{
-    metal_alloc_t::free(ptr, memory::device_enum::METAL);
-}
-
-// A lowered operand: either a real tensor's own storage (is_temp=false, never freed
-// here — the tensor owns it) or a freshly allocated intermediate result that the
-// caller must release once consumed.
-struct metal_value
-{
-    float* ptr;
-    bool   is_temp;
-};
-
 // Maps an expression-functor evaluator type (add_evaluator, sin_evaluator, ...) to the
-// .metal kernel name it dispatches to.
+// MSL function/operator name used in the fused kernel body.
 //
 // This is deliberately NOT a compile-time rejection (e.g. static_assert in the primary
 // template) for unsupported ops: expressions_evaluator::run<E,T> is instantiated for
 // every expression type E ever used with T=tensor<float> ANYWHERE in the codebase,
 // regardless of which device a given tensor actually uses at runtime (the device()
 // check inside run() is a runtime `if`, not `if constexpr`) — e.g. plain CPU code doing
-// `out = min(a, b);` on tensor<float> would force-instantiate metal_kernel_traits<
-// min_evaluator> even though no METAL tensor is involved. A hard compile-time error
+// `out = cdf(a);` on tensor<float> would force-instantiate metal_kernel_traits<
+// cdf_evaluator> even though no METAL tensor is involved. A hard compile-time error
 // here would therefore break unrelated CPU-only code using an op outside the Metal
-// starter set. Instead, is_supported is checked via `if constexpr` in metal_lower
-// (below) and unsupported ops throw std::runtime_error only if genuinely reached at
-// runtime with a METAL-device tensor.
+// set. metal_expr_fusable is false for those ops, and run_metal throws
+// std::runtime_error only if genuinely reached at runtime with a METAL-device tensor.
 template <typename EVALUATOR>
 struct metal_kernel_traits
 {
@@ -102,142 +86,403 @@ struct metal_kernel_traits
     static constexpr const char* name         = nullptr;
 };
 
-#define VECTORIZATION_METAL_KERNEL(EVAL, NAME)          \
-    template <>                                         \
-    struct metal_kernel_traits<EVAL>                     \
+#define VECTORIZATION_METAL_KERNEL(EVAL, NAME)            \
+    template <>                                           \
+    struct metal_kernel_traits<EVAL>                      \
     {                                                     \
         static constexpr bool        is_supported = true; \
         static constexpr const char* name         = NAME; \
     };
 
-VECTORIZATION_METAL_KERNEL(add_evaluator, "add")
-VECTORIZATION_METAL_KERNEL(sub_evaluator, "sub")
-VECTORIZATION_METAL_KERNEL(mul_evaluator, "mul")
-VECTORIZATION_METAL_KERNEL(div_evaluator, "div")
+VECTORIZATION_METAL_KERNEL(add_evaluator, "+")
+VECTORIZATION_METAL_KERNEL(sub_evaluator, "-")
+VECTORIZATION_METAL_KERNEL(mul_evaluator, "*")
+VECTORIZATION_METAL_KERNEL(div_evaluator, "/")
+VECTORIZATION_METAL_KERNEL(madd_evaluator, "+")
+VECTORIZATION_METAL_KERNEL(msub_evaluator, "-")
+VECTORIZATION_METAL_KERNEL(mmul_evaluator, "*")
+VECTORIZATION_METAL_KERNEL(mdiv_evaluator, "/")
+VECTORIZATION_METAL_KERNEL(min_evaluator, "min")
+VECTORIZATION_METAL_KERNEL(max_evaluator, "max")
+VECTORIZATION_METAL_KERNEL(pow_evaluator, "pow")
+VECTORIZATION_METAL_KERNEL(hypot_evaluator, "hypot")
+VECTORIZATION_METAL_KERNEL(copysign_evaluator, "copysign")
+VECTORIZATION_METAL_KERNEL(cmpgt_evaluator, ">")
+VECTORIZATION_METAL_KERNEL(cmplt_evaluator, "<")
+VECTORIZATION_METAL_KERNEL(cmpge_evaluator, ">=")
+VECTORIZATION_METAL_KERNEL(cmple_evaluator, "<=")
+VECTORIZATION_METAL_KERNEL(cmpeq_evaluator, "==")
+VECTORIZATION_METAL_KERNEL(cmpne_evaluator, "!=")
+#if VECTORIZATION_VECTORIZED
+VECTORIZATION_METAL_KERNEL(land_evaluator, "&&")
+VECTORIZATION_METAL_KERNEL(lor_evaluator, "||")
+VECTORIZATION_METAL_KERNEL(lxor_evaluator, "!=")
+#endif
 VECTORIZATION_METAL_KERNEL(fma_evaluator, "fma")
+VECTORIZATION_METAL_KERNEL(if_else_evaluator, "select")
+VECTORIZATION_METAL_KERNEL(fabs_evaluator, "fabs")
+VECTORIZATION_METAL_KERNEL(floor_evaluator, "floor")
+VECTORIZATION_METAL_KERNEL(ceil_evaluator, "ceil")
+VECTORIZATION_METAL_KERNEL(trunc_evaluator, "trunc")
 VECTORIZATION_METAL_KERNEL(sqrt_evaluator, "sqrt")
+VECTORIZATION_METAL_KERNEL(sqr_evaluator, "sqr")
 VECTORIZATION_METAL_KERNEL(exp_evaluator, "exp")
+VECTORIZATION_METAL_KERNEL(expm1_evaluator, "expm1")
+VECTORIZATION_METAL_KERNEL(exp2_evaluator, "exp2")
 VECTORIZATION_METAL_KERNEL(log_evaluator, "log")
+VECTORIZATION_METAL_KERNEL(log1p_evaluator, "log1p")
+VECTORIZATION_METAL_KERNEL(log2_evaluator, "log2")
+VECTORIZATION_METAL_KERNEL(log10_evaluator, "log10")
 VECTORIZATION_METAL_KERNEL(sin_evaluator, "sin")
 VECTORIZATION_METAL_KERNEL(cos_evaluator, "cos")
+VECTORIZATION_METAL_KERNEL(tan_evaluator, "tan")
+VECTORIZATION_METAL_KERNEL(asin_evaluator, "asin")
+VECTORIZATION_METAL_KERNEL(acos_evaluator, "acos")
+VECTORIZATION_METAL_KERNEL(atan_evaluator, "atan")
+VECTORIZATION_METAL_KERNEL(sinh_evaluator, "sinh")
+VECTORIZATION_METAL_KERNEL(cosh_evaluator, "cosh")
 VECTORIZATION_METAL_KERNEL(tanh_evaluator, "tanh")
-VECTORIZATION_METAL_KERNEL(fabs_evaluator, "fabs")
+VECTORIZATION_METAL_KERNEL(asinh_evaluator, "asinh")
+VECTORIZATION_METAL_KERNEL(acosh_evaluator, "acosh")
+VECTORIZATION_METAL_KERNEL(atanh_evaluator, "atanh")
+VECTORIZATION_METAL_KERNEL(cbrt_evaluator, "cbrt")
+VECTORIZATION_METAL_KERNEL(invsqrt_evaluator, "rsqrt")
 VECTORIZATION_METAL_KERNEL(neg_evaluator, "neg")
+VECTORIZATION_METAL_KERNEL(lnot_evaluator, "lnot")
 
 #undef VECTORIZATION_METAL_KERNEL
 
-// ---------------------------------------------------------------------------
-// metal_lower — recursively lowers an expression (sub)tree into a sequence of fixed
-// kernel dispatches, returning the buffer holding its result. Overloaded (not
-// specialized) on the exact node type so LHS/RHS/MHS/EVALUATOR fall out of normal
-// template argument deduction, the same way expression_loader::evaluate dispatches
-// polymorphically per node type (expression_interface_loader.h) rather than manually
-// destructuring types.
-// ---------------------------------------------------------------------------
-
-// Leaf: a real tensor operand — its own storage is used directly, no copy. Templated
-// (rather than a plain inline function) purely so its body — which calls tensor<float>
-// member functions — is only type-checked once instantiated: this header is included
-// from expressions_evaluator.h partway through expressions.h's aggregation, before
-// terminals/tensor.h has defined the tensor<T> class body (only forward-declared at
-// that point), so a non-template function referencing t.data() here would fail with
-// "implicit instantiation of undefined template" immediately at parse time.
-template <bool Clone>
-metal_value metal_lower(tensor<float, Clone> const& t, std::size_t /*n*/)
+template <typename T, typename = void>
+struct metal_expr_fusable : std::false_type
 {
+};
+
+template <typename V>
+struct metal_expr_fusable<memory::data_view<V>>
+    : std::bool_constant<std::is_same_v<std::remove_cv_t<V>, float>>
+{
+};
+
+template <typename V>
+struct metal_expr_fusable<tensor<V>> : std::bool_constant<std::is_same_v<V, float>>
+{
+};
+
+template <typename S>
+struct metal_expr_fusable<S, std::enable_if_t<std::is_fundamental<S>::value>> : std::true_type
+{
+};
+
+template <typename L, typename Ev>
+struct metal_expr_fusable<unary_expression<L, Ev>>
+    : std::bool_constant<
+          metal_kernel_traits<Ev>::is_supported &&
+          metal_expr_fusable<stored_operand_t<vectorization::remove_cvref_t<L>>>::value>
+{
+};
+
+template <typename L, typename R, typename Ev>
+struct metal_expr_fusable<binary_expression<L, R, Ev>>
+    : std::bool_constant<
+          metal_kernel_traits<Ev>::is_supported &&
+          metal_expr_fusable<stored_operand_t<vectorization::remove_cvref_t<L>>>::value &&
+          metal_expr_fusable<stored_operand_t<vectorization::remove_cvref_t<R>>>::value>
+{
+};
+
+template <typename L, typename M, typename R, typename Ev>
+struct metal_expr_fusable<trinary_expression<L, M, R, Ev>>
+    : std::bool_constant<
+          metal_kernel_traits<Ev>::is_supported &&
+          metal_expr_fusable<stored_operand_t<vectorization::remove_cvref_t<L>>>::value &&
+          metal_expr_fusable<stored_operand_t<vectorization::remove_cvref_t<M>>>::value &&
+          metal_expr_fusable<stored_operand_t<vectorization::remove_cvref_t<R>>>::value>
+{
+};
+
+// Host-side plan for one fused MSL kernel. Pointers/scalars are runtime;
+// `body` is the MSL expression (`in0[tid]+c0*in1[tid]`).
+struct metal_fuse_state
+{
+    static constexpr int kMaxSlots = 29;
+    void const*          buffers[kMaxSlots]{};
+    float                scalars[kMaxSlots]{};
+    int                  n_buffers{0};
+    int                  n_scalars{0};
+    std::string          body;
+    bool                 ok{true};
+};
+
+inline void metal_fuse_fail(metal_fuse_state& st)
+{
+    st.ok = false;
+}
+
+template <typename Value>
+void metal_fuse_emit(memory::data_view<Value> const& t, metal_fuse_state& st)
+{
+    if (!st.ok || st.n_buffers >= metal_fuse_state::kMaxSlots)
+    {
+        metal_fuse_fail(st);
+        return;
+    }
     VECTORIZATION_CHECK_DEBUG(
         t.device() == memory::device_enum::METAL,
         "Metal expression mixes a non-METAL tensor operand");
-    return {const_cast<float*>(t.data()), false};
+    st.body += "in";
+    st.body += std::to_string(st.n_buffers);
+    st.body += "[tid]";
+    st.buffers[st.n_buffers++] = t.data();
 }
 
-// Scalar broadcast (e.g. `2.0f * a`): materialize into a temp buffer via fill, then
-// treat identically to a tensor operand. Trades one extra kernel launch for zero extra
-// kernel variants (no add_scalar_float etc.) — acceptable for the starter set.
-template <typename S, std::enable_if_t<std::is_fundamental<S>::value, bool> = true>
-metal_value metal_lower(S value, std::size_t n)
+template <typename Value>
+void metal_fuse_emit(tensor<Value> const& t, metal_fuse_state& st)
 {
-    float* buf = alloc_temp(n);
-    metal_backend::dispatch_fill(buf, static_cast<float>(value), n);
-    return {buf, true};
+    if (!st.ok || st.n_buffers >= metal_fuse_state::kMaxSlots)
+    {
+        metal_fuse_fail(st);
+        return;
+    }
+    VECTORIZATION_CHECK_DEBUG(
+        t.device() == memory::device_enum::METAL,
+        "Metal expression mixes a non-METAL tensor operand");
+    st.body += "in";
+    st.body += std::to_string(st.n_buffers);
+    st.body += "[tid]";
+    st.buffers[st.n_buffers++] = t.data();
+}
+
+template <typename S, std::enable_if_t<std::is_fundamental<S>::value, bool> = true>
+void metal_fuse_emit(S value, metal_fuse_state& st)
+{
+    if (!st.ok || st.n_scalars >= metal_fuse_state::kMaxSlots)
+    {
+        metal_fuse_fail(st);
+        return;
+    }
+    st.body += "c";
+    st.body += std::to_string(st.n_scalars);
+    st.scalars[st.n_scalars++] = static_cast<float>(value);
 }
 
 template <typename LHS, typename EVALUATOR>
-metal_value metal_lower(unary_expression<LHS, EVALUATOR> const& e, std::size_t n)
+void metal_fuse_emit(unary_expression<LHS, EVALUATOR> const& e, metal_fuse_state& st);
+template <typename LHS, typename RHS, typename EVALUATOR>
+void metal_fuse_emit(binary_expression<LHS, RHS, EVALUATOR> const& e, metal_fuse_state& st);
+template <typename LHS, typename MHS, typename RHS, typename EVALUATOR>
+void metal_fuse_emit(trinary_expression<LHS, MHS, RHS, EVALUATOR> const& e, metal_fuse_state& st);
+
+template <typename E>
+std::string metal_fuse_snapshot(E const& e, metal_fuse_state& st)
 {
-    if constexpr (metal_kernel_traits<EVALUATOR>::is_supported)
+    std::size_t const mark = st.body.size();
+    metal_fuse_emit(e, st);
+    std::string piece = st.body.substr(mark);
+    st.body.resize(mark);
+    return piece;
+}
+
+template <typename LHS, typename EVALUATOR>
+void metal_fuse_emit(unary_expression<LHS, EVALUATOR> const& e, metal_fuse_state& st)
+{
+    if constexpr (!metal_kernel_traits<EVALUATOR>::is_supported)
     {
-        metal_value src = metal_lower(e.rhs(), n);
-
-        float*      dst   = alloc_temp(n);
-        const void* ins[] = {src.ptr};
-        metal_backend::dispatch(metal_kernel_traits<EVALUATOR>::name, ins, 1, dst, n);
-
-        if (src.is_temp)
-            free_temp(src.ptr);
-        return {dst, true};
+        metal_fuse_fail(st);
+        return;
+    }
+    if constexpr (std::is_same_v<EVALUATOR, neg_evaluator>)
+    {
+        st.body += "(-(";
+        metal_fuse_emit(e.rhs(), st);
+        st.body += "))";
+    }
+    else if constexpr (std::is_same_v<EVALUATOR, lnot_evaluator>)
+    {
+        st.body += "float(!bool(";
+        metal_fuse_emit(e.rhs(), st);
+        st.body += "))";
+    }
+    else if constexpr (std::is_same_v<EVALUATOR, sqr_evaluator>)
+    {
+        std::string const x = metal_fuse_snapshot(e.rhs(), st);
+        st.body += '(';
+        st.body += x;
+        st.body += '*';
+        st.body += x;
+        st.body += ')';
+    }
+    else if constexpr (std::is_same_v<EVALUATOR, expm1_evaluator>)
+    {
+        st.body += "(exp(";
+        metal_fuse_emit(e.rhs(), st);
+        st.body += ")-1.0)";
+    }
+    else if constexpr (std::is_same_v<EVALUATOR, log1p_evaluator>)
+    {
+        st.body += "log(1.0+(";
+        metal_fuse_emit(e.rhs(), st);
+        st.body += "))";
+    }
+    else if constexpr (std::is_same_v<EVALUATOR, cbrt_evaluator>)
+    {
+        std::string const x = metal_fuse_snapshot(e.rhs(), st);
+        st.body += "copysign(pow(fabs(";
+        st.body += x;
+        st.body += "),0.3333333333333333),";
+        st.body += x;
+        st.body += ')';
     }
     else
     {
-        throw std::runtime_error(
-            "Metal backend: operator has no Metal kernel (starter set only: fill, "
-            "add/sub/mul/div/fma, sqrt/exp/log/sin/cos/tanh/fabs/neg)");
+        st.body += metal_kernel_traits<EVALUATOR>::name;
+        st.body += "(";
+        metal_fuse_emit(e.rhs(), st);
+        st.body += ")";
     }
 }
 
 template <typename LHS, typename RHS, typename EVALUATOR>
-metal_value metal_lower(binary_expression<LHS, RHS, EVALUATOR> const& e, std::size_t n)
+void metal_fuse_emit(binary_expression<LHS, RHS, EVALUATOR> const& e, metal_fuse_state& st)
 {
-    if constexpr (metal_kernel_traits<EVALUATOR>::is_supported)
+    if constexpr (!metal_kernel_traits<EVALUATOR>::is_supported)
     {
-        metal_value lhs = metal_lower(e.lhs(), n);
-        metal_value rhs = metal_lower(e.rhs(), n);
-
-        float*      dst   = alloc_temp(n);
-        const void* ins[] = {lhs.ptr, rhs.ptr};
-        metal_backend::dispatch(metal_kernel_traits<EVALUATOR>::name, ins, 2, dst, n);
-
-        if (lhs.is_temp)
-            free_temp(lhs.ptr);
-        if (rhs.is_temp)
-            free_temp(rhs.ptr);
-        return {dst, true};
+        metal_fuse_fail(st);
+        return;
+    }
+    constexpr bool arith =
+        std::is_same_v<EVALUATOR, add_evaluator> || std::is_same_v<EVALUATOR, madd_evaluator> ||
+        std::is_same_v<EVALUATOR, sub_evaluator> || std::is_same_v<EVALUATOR, msub_evaluator> ||
+        std::is_same_v<EVALUATOR, mul_evaluator> || std::is_same_v<EVALUATOR, mmul_evaluator> ||
+        std::is_same_v<EVALUATOR, div_evaluator> || std::is_same_v<EVALUATOR, mdiv_evaluator>;
+    constexpr bool cmp =
+        std::is_same_v<EVALUATOR, cmpgt_evaluator> || std::is_same_v<EVALUATOR, cmplt_evaluator> ||
+        std::is_same_v<EVALUATOR, cmpge_evaluator> || std::is_same_v<EVALUATOR, cmple_evaluator> ||
+        std::is_same_v<EVALUATOR, cmpeq_evaluator> || std::is_same_v<EVALUATOR, cmpne_evaluator>;
+#if VECTORIZATION_VECTORIZED
+    constexpr bool logic = std::is_same_v<EVALUATOR, land_evaluator> ||
+                           std::is_same_v<EVALUATOR, lor_evaluator> ||
+                           std::is_same_v<EVALUATOR, lxor_evaluator>;
+#else
+    constexpr bool logic = false;
+#endif
+    if constexpr (arith || cmp)
+    {
+        if constexpr (cmp)
+        {
+            st.body += "float(";
+        }
+        else
+        {
+            st.body += '(';
+        }
+        metal_fuse_emit(e.lhs(), st);
+        st.body += metal_kernel_traits<EVALUATOR>::name;
+        metal_fuse_emit(e.rhs(), st);
+        st.body += ')';
+    }
+    else if constexpr (logic)
+    {
+        st.body += "float(bool(";
+        metal_fuse_emit(e.lhs(), st);
+        st.body += ')';
+        st.body += metal_kernel_traits<EVALUATOR>::name;
+        st.body += "bool(";
+        metal_fuse_emit(e.rhs(), st);
+        st.body += "))";
+    }
+    else if constexpr (std::is_same_v<EVALUATOR, hypot_evaluator>)
+    {
+        std::string const a = metal_fuse_snapshot(e.lhs(), st);
+        std::string const b = metal_fuse_snapshot(e.rhs(), st);
+        st.body += "sqrt((";
+        st.body += a;
+        st.body += '*';
+        st.body += a;
+        st.body += ")+(";
+        st.body += b;
+        st.body += '*';
+        st.body += b;
+        st.body += "))";
     }
     else
     {
-        throw std::runtime_error(
-            "Metal backend: operator has no Metal kernel (starter set only: fill, "
-            "add/sub/mul/div/fma, sqrt/exp/log/sin/cos/tanh/fabs/neg)");
+        st.body += metal_kernel_traits<EVALUATOR>::name;
+        st.body += '(';
+        metal_fuse_emit(e.lhs(), st);
+        st.body += ',';
+        metal_fuse_emit(e.rhs(), st);
+        st.body += ')';
     }
 }
 
 template <typename LHS, typename MHS, typename RHS, typename EVALUATOR>
-metal_value metal_lower(trinary_expression<LHS, MHS, RHS, EVALUATOR> const& e, std::size_t n)
+void metal_fuse_emit(trinary_expression<LHS, MHS, RHS, EVALUATOR> const& e, metal_fuse_state& st)
 {
-    if constexpr (metal_kernel_traits<EVALUATOR>::is_supported)
+    if constexpr (!metal_kernel_traits<EVALUATOR>::is_supported)
     {
-        metal_value lhs = metal_lower(e.lhs(), n);
-        metal_value mhs = metal_lower(e.mhs(), n);
-        metal_value rhs = metal_lower(e.rhs(), n);
-
-        float*      dst   = alloc_temp(n);
-        const void* ins[] = {lhs.ptr, mhs.ptr, rhs.ptr};
-        metal_backend::dispatch(metal_kernel_traits<EVALUATOR>::name, ins, 3, dst, n);
-
-        if (lhs.is_temp)
-            free_temp(lhs.ptr);
-        if (mhs.is_temp)
-            free_temp(mhs.ptr);
-        if (rhs.is_temp)
-            free_temp(rhs.ptr);
-        return {dst, true};
+        metal_fuse_fail(st);
+        return;
+    }
+    if constexpr (std::is_same_v<EVALUATOR, fma_evaluator>)
+    {
+        st.body += "fma(";
+        metal_fuse_emit(e.lhs(), st);
+        st.body += ',';
+        metal_fuse_emit(e.mhs(), st);
+        st.body += ',';
+        metal_fuse_emit(e.rhs(), st);
+        st.body += ')';
+    }
+    else if constexpr (std::is_same_v<EVALUATOR, if_else_evaluator>)
+    {
+        // MSL select(falseVal, trueVal, cond) — if_else(mask, true, false).
+        st.body += "select(";
+        metal_fuse_emit(e.rhs(), st);
+        st.body += ',';
+        metal_fuse_emit(e.mhs(), st);
+        st.body += ",bool(";
+        metal_fuse_emit(e.lhs(), st);
+        st.body += "))";
     }
     else
     {
-        throw std::runtime_error(
-            "Metal backend: operator has no Metal kernel (starter set only: fill, "
-            "add/sub/mul/div/fma, sqrt/exp/log/sin/cos/tanh/fabs/neg)");
+        metal_fuse_fail(st);
     }
+}
+
+inline std::string metal_fuse_source(metal_fuse_state const& st)
+{
+    std::string src = "#include <metal_stdlib>\nusing namespace metal;\nkernel void fused_float(\n";
+    int         idx = 0;
+    for (int i = 0; i < st.n_buffers; ++i)
+    {
+        src += "  device const float* in";
+        src += std::to_string(i);
+        src += " [[buffer(";
+        src += std::to_string(idx++);
+        src += ")]],\n";
+    }
+    for (int j = 0; j < st.n_scalars; ++j)
+    {
+        src += "  constant float& c";
+        src += std::to_string(j);
+        src += " [[buffer(";
+        src += std::to_string(idx++);
+        src += ")]],\n";
+    }
+    src += "  device float* out [[buffer(";
+    src += std::to_string(idx++);
+    src += ")]],\n  constant uint& n [[buffer(";
+    src += std::to_string(idx);
+    src += ")]],\n  uint tid [[thread_position_in_grid]])\n{\n  if (tid < n)\n    out[tid] = ";
+    src += st.body;
+    src += ";\n}\n";
+    return src;
+}
+
+inline bool metal_fuse_fits(metal_fuse_state const& st)
+{
+    return st.ok && (st.n_buffers + st.n_scalars + 2) <= 31;
 }
 
 }  // namespace metal_detail
@@ -251,26 +496,40 @@ metal_value metal_lower(trinary_expression<LHS, MHS, RHS, EVALUATOR> const& e, s
 template <typename E, typename T>
 void run_metal(E const& expr, T& rhs)
 {
-    using RE                  = vectorization::remove_cvref_t<E>;
-    const std::size_t n       = rhs.size();
+    using RE            = vectorization::remove_cvref_t<E>;
+    const std::size_t n = rhs.size();
 
     if constexpr (vectorization::is_base_expression<RE>::value)
     {
-        // Plain tensor-to-tensor assignment (`c = a;`) — direct copy, no kernel needed.
-        metal_detail::metal_alloc_t::copy(
-            expr.data(), n, rhs.data(), memory::device_enum::METAL, memory::device_enum::METAL);
+        if (expr.data() != rhs.data())
+        {
+            metal_detail::metal_alloc_t::copy(
+                expr.data(), n, rhs.data(), memory::device_enum::METAL, memory::device_enum::METAL);
+        }
+        return;
+    }
+
+    static_assert(
+        vectorization::is_pure_expression<RE>::value,
+        "run_metal: expression is neither a tensor leaf nor a unary/binary/trinary node");
+
+    if constexpr (metal_detail::metal_expr_fusable<RE>::value)
+    {
+        metal_detail::metal_fuse_state st;
+        metal_detail::metal_fuse_emit(expr, st);
+        if (!metal_detail::metal_fuse_fits(st))
+        {
+            throw std::runtime_error("Metal fused kernel exceeds the device buffer limit");
+        }
+        std::string const src = metal_detail::metal_fuse_source(st);
+        metal_backend::dispatch_fused(
+            src, st.buffers, st.n_buffers, st.scalars, st.n_scalars, rhs.data(), n);
     }
     else
     {
-        static_assert(
-            vectorization::is_pure_expression<RE>::value,
-            "run_metal: expression is neither a tensor leaf nor a unary/binary/trinary node");
-
-        metal_detail::metal_value result = metal_detail::metal_lower(expr, n);
-        metal_detail::metal_alloc_t::copy(
-            result.ptr, n, rhs.data(), memory::device_enum::METAL, memory::device_enum::METAL);
-        if (result.is_temp)
-            metal_detail::free_temp(result.ptr);
+        throw std::runtime_error(
+            "Metal backend: operator has no fused Metal kernel (cdf/inv_cdf are "
+            "unsupported; MSL has no erf/erfinv)");
     }
 }
 

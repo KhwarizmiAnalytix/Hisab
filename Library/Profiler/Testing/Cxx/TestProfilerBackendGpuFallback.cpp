@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 /*
@@ -81,10 +81,8 @@ PROFILERTEST(BackendGpuFallback, cuda_or_hip_fallback_round_trips_elapsed_time)
     }
 
     {
-        RECORD_USER_SCOPE(kGpuFallbackScope);
-        for (volatile int spin = 0; spin < 100000; ++spin)
-        {
-        }
+        PROFILER_RECORD_USER_SCOPE(kGpuFallbackScope);
+        for (volatile int spin = 0; spin < 100000; ++spin) {}
     }
 
     auto profiler_result = profiler::profiler_impl::disableProfiler();

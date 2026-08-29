@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #include "native/analysis/hotspot_report.h"
@@ -116,7 +116,7 @@ std::string format_ns(uint64_t ns)
 
 std::string format_table_time(uint64_t ns)
 {
-    const double us = static_cast<double>(ns) / 1000.0;
+    const double       us = static_cast<double>(ns) / 1000.0;
     std::ostringstream oss;
     oss.setf(std::ios::fixed);
     oss.precision(3);
@@ -335,13 +335,7 @@ std::string hotspot_report::table(const std::string& sort_by, size_t row_limit) 
     }
 
     const std::vector<std::string> headers{
-        "Name",
-        "Self CPU %",
-        "Self CPU",
-        "CPU total %",
-        "CPU total",
-        "CPU time avg",
-        "# of Calls"};
+        "Name", "Self CPU %", "Self CPU", "CPU total %", "CPU total", "CPU time avg", "# of Calls"};
 
     auto separator_line = [&]()
     {
@@ -374,7 +368,7 @@ std::string hotspot_report::table(const std::string& sort_by, size_t row_limit) 
 
     for (size_t i = 0; i < shown; ++i)
     {
-        const auto&              entry = rows[i];
+        const auto&                    entry = rows[i];
         const std::vector<std::string> cells{
             entry.name,
             format_percent(entry.self_time_ns, self_cpu_total),

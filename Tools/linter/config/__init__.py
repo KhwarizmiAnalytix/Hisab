@@ -1,12 +1,12 @@
 """
-Quarisma Linter Configuration Package
+XSigma Linter Configuration Package
 
-This package provides configuration management for Quarisma linters.
+This package provides configuration management for XSigma linters.
 It centralizes hardcoded paths and settings used by various linters,
 allowing for easier maintenance and cross-platform compatibility.
 
-Organization: QuarismaAnalyitix
-Project: Quarisma
+Organization: XSigmaAnalyitix
+Project: XSigma
 """
 
 from .config_loader import (

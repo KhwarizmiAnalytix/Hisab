@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 /* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
@@ -605,8 +605,8 @@ public:
     // Using these overloads guarantees names are unique.
     // WARNING: If calling any of these overloads, do not call the integer one
     // above on the same instance.
-    PROFILER_API x_stat_metadata* get_or_create_stat_metadata(  // NOLINT(bugprone-derived-method-shadowing-base-method)
-        std::string_view name);
+    // NOLINTNEXTLINE(bugprone-derived-method-shadowing-base-method)
+    PROFILER_API x_stat_metadata* get_or_create_stat_metadata(std::string_view name);
     PROFILER_API x_stat_metadata* get_or_create_stat_metadata(std::string&& name);
     x_stat_metadata*              get_or_create_stat_metadata(const char* name)
     {

@@ -6,8 +6,10 @@
 cmake_minimum_required(VERSION 3.16)
 
 include(lto)
-quarisma_lto_compute_default(_lto_default PROFILE SUPPORT)
-set(MODELS_LTO_MODE "${_lto_default}" CACHE STRING "LTO mode for Models: off | thin | full | ipo | auto")
+xsigma_lto_compute_default(_lto_default PROFILE SUPPORT)
+set(MODELS_LTO_MODE "${_lto_default}" CACHE STRING
+                                            "LTO mode for Models: off | thin | full | ipo | auto"
+)
 set_property(CACHE MODELS_LTO_MODE PROPERTY STRINGS off thin full ipo auto)
 
 option(MODELS_ENABLE_COVERAGE "Enable coverage instrumentation for Models" OFF)
@@ -32,15 +34,13 @@ set(MODELS_SANITIZER_TYPE "address"
 )
 set_property(CACHE MODELS_SANITIZER_TYPE PROPERTY STRINGS address undefined thread memory leak)
 mark_as_advanced(MODELS_ENABLE_SANITIZER MODELS_SANITIZER_TYPE)
-option(
-  MODELS_ENABLE_SPELL
-  "Enable spell checking with automatic corrections for Models (WARNING: modifies source files)"
-  OFF
-)
+option(MODELS_ENABLE_SPELL "Enable check-only spell checking for Models" OFF)
 mark_as_advanced(MODELS_ENABLE_SPELL)
 option(MODELS_ENABLE_VALGRIND "Execute Models test suite with Valgrind" OFF)
 mark_as_advanced(MODELS_ENABLE_VALGRIND)
-set(MODELS_LINKER_CHOICE "default" CACHE STRING "Linker for Models: default, lld, mold, gold, lld-link")
+set(MODELS_LINKER_CHOICE "default" CACHE STRING
+                                         "Linker for Models: default, lld, mold, gold, lld-link"
+)
 set_property(CACHE MODELS_LINKER_CHOICE PROPERTY STRINGS default lld mold gold lld-link)
 mark_as_advanced(MODELS_LINKER_CHOICE)
 set(MODELS_CACHE_BACKEND "none"
@@ -91,18 +91,18 @@ list(FILTER models_headers EXCLUDE REGEX ".*/Testing/.*")
 list(FILTER models_sources EXCLUDE REGEX ".*/Testing/.*")
 
 add_library(Models ${models_sources} ${models_headers})
-quarisma_target_apply_lto(Models MODELS)
+xsigma_target_apply_lto(Models MODELS)
 if(MODELS_ENABLE_SANITIZER)
-  quarisma_configure_sanitizer(MODELS)
+  xsigma_configure_sanitizer(MODELS)
 endif()
-quarisma_find_linker(${MODELS_LINKER_CHOICE} Models MODELS_LTO_MODE)
-quarisma_target_apply_cache(Models MODELS_ENABLE_CACHE MODELS_CACHE_BACKEND)
-quarisma_target_optional_icecc(Models MODELS_ENABLE_ICECC)
+xsigma_find_linker(${MODELS_LINKER_CHOICE} Models MODELS_LTO_MODE)
+xsigma_target_apply_cache(Models MODELS_ENABLE_CACHE MODELS_CACHE_BACKEND)
+xsigma_target_optional_icecc(Models MODELS_ENABLE_ICECC)
 
 if(BUILD_SHARED_LIBS)
   target_compile_definitions(Models PUBLIC MODELS_SHARED_DEFINE PRIVATE MODELS_BUILDING_DLL)
-  if(COMMAND quarisma_set_target_output_directories)
-    quarisma_set_target_output_directories(Models)
+  if(COMMAND xsigma_set_target_output_directories)
+    xsigma_set_target_output_directories(Models)
   endif()
 else()
   target_compile_definitions(Models PUBLIC MODELS_STATIC_DEFINE)
@@ -110,7 +110,7 @@ endif()
 
 add_library(Models::Models ALIAS Models)
 
-quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
+xsigma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 
 set_target_properties(
   Models PROPERTIES CXX_STANDARD ${MODELS_CXX_STANDARD} CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF
@@ -139,11 +139,11 @@ configure_file(
 
 if(MODELS_ENABLE_CLANGTIDY)
   include(clang_tidy)
-  quarisma_target_clang_tidy(Models ${MODELS_ENABLE_FIX})
+  xsigma_target_clang_tidy(Models ${MODELS_ENABLE_FIX})
 endif()
 if(MODELS_ENABLE_IWYU)
   include(iwyu)
-  quarisma_apply_iwyu(Models)
+  xsigma_apply_iwyu(Models)
 endif()
 
 install(
@@ -161,7 +161,7 @@ if(MODELS_ENABLE_TESTING)
   add_subdirectory(Testing/Cxx)
 endif()
 if(MODELS_ENABLE_VALGRIND AND MODELS_ENABLE_TESTING)
-  quarisma_apply_valgrind_timeouts()
+  xsigma_apply_valgrind_timeouts()
 endif()
 
 message("")
@@ -170,7 +170,7 @@ message("  Cxx standard     : ${MODELS_CXX_STANDARD}")
 message("  Cache            : ${MODELS_ENABLE_CACHE}")
 message("  Cache backend    : ${MODELS_CACHE_BACKEND}")
 message("  Icecc            : ${MODELS_ENABLE_ICECC}")
-quarisma_print_lto_linker_summary(MODELS)
+xsigma_print_lto_linker_summary(MODELS)
 message("  Coverage         : ${MODELS_ENABLE_COVERAGE}")
 message("  Testing          : ${MODELS_ENABLE_TESTING}")
 message("  Gtest            : ${MODELS_ENABLE_GTEST}")

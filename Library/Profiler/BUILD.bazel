@@ -1,6 +1,7 @@
 # =============================================================================
 # Profiler Profiler Library (matches Library/Profiler/CMakeLists.txt backend splits)
 # =============================================================================
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load("//bazel:profiler.bzl", "profiler_copts", "profiler_defines", "profiler_linkopts")
 
 package(default_visibility = ["//visibility:public"])
@@ -109,11 +110,10 @@ filegroup(
 # cc_library srcs don't accept .mm without rules_apple. Copy to a .cc suffix and compile
 # as Objective-C++ in a dedicated target so ARC copts don't leak onto plain C++ TUs
 # (same split as //Library/Memory:memory_metal_objcxx).
-genrule(
+copy_file(
     name = "metal_gpu_probe_objcxx",
-    srcs = ["native/gpu/metal_gpu_probe.mm"],
-    outs = ["native/gpu/metal_gpu_probe_mm.cc"],
-    cmd = "cp $< $@",
+    src = "native/gpu/metal_gpu_probe.mm",
+    out = "native/gpu/metal_gpu_probe_mm.cc",
 )
 
 cc_library(
@@ -149,12 +149,11 @@ cc_library(
 # device_enum value. Kept separate from profiler_metal_objcxx above: that
 # target's hdrs deliberately exclude bespoke/** (it's scoped to the native
 # Metal probe), so this stub needs its own bespoke-scoped header set. Same
-# genrule-to-.cc technique as metal_gpu_probe_objcxx.
-genrule(
+# copy_file .mm→.cc technique as metal_gpu_probe_objcxx.
+copy_file(
     name = "metal_stub_objcxx",
-    srcs = ["bespoke/base/metal.mm"],
-    outs = ["bespoke/base/metal_mm.cc"],
-    cmd = "cp $< $@",
+    src = "bespoke/base/metal.mm",
+    out = "bespoke/base/metal_mm.cc",
 )
 
 cc_library(

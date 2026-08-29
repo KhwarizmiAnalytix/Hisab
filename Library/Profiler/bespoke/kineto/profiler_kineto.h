@@ -92,7 +92,9 @@ struct PROFILER_VISIBILITY ProfilerResult
 
     const std::vector<experimental_event_t>& event_tree() const { return event_tree_; }
 
-    PROFILER_API void save(const std::string& path);
+    // Writes libkineto Chrome Trace JSON. Returns false when there is no
+    // trace (NVTX/ITT/PRIVATEUSE1, or disable without a matching enable).
+    PROFILER_API bool save(const std::string& path);
 
 private:
     uint64_t                 trace_start_ns_ = 0;

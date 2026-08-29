@@ -1,5 +1,5 @@
 # =============================================================================
-# Quarisma Main
+# XSigma Main
 # CMake Configuration
 # =============================================================================
 # Third-party deps: ThirdParty/CMakeLists.txt. Feature flags → compile defs:
@@ -23,9 +23,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Library/Memory/Cmake"
 include(xcode_toolchain)
 
 project(
-  Quarisma
+  XSigma
   VERSION 1.0.0
-  DESCRIPTION "Quarisma High-Performance Computing Library"
+  DESCRIPTION "XSigma High-Performance Computing Library"
   LANGUAGES CXX C
 )
 
@@ -64,6 +64,39 @@ if(DEFINED CORE_ENABLE_VALGRIND
 endif()
 include(CTest)
 
+# Our Library/*/Testing suites call add_test() regardless of BUILD_TESTING.
+# Keep CTest enabled, then turn BUILD_TESTING off so vendored ThirdParty/
+# CMakeLists (fmt, glog, kineto, cpuinfo, mimalloc, googletest, …) do not
+# register or build their own tests. Do not edit anything under ThirdParty/.
+enable_testing()
+set(BUILD_TESTING OFF CACHE BOOL "Disable testing for third-party libraries" FORCE)
+set(BUILD_EXAMPLES OFF CACHE BOOL "Disable examples for third-party libraries" FORCE)
+set(BUILD_BENCHMARKS OFF CACHE BOOL "Disable benchmarks for third-party libraries" FORCE)
+set(FMT_TEST OFF CACHE BOOL "Disable fmt tests" FORCE)
+set(FMT_DOC OFF CACHE BOOL "Disable fmt documentation" FORCE)
+set(gtest_build_tests OFF CACHE BOOL "Disable Google Test's own tests" FORCE)
+set(gtest_build_samples OFF CACHE BOOL "Disable Google Test samples" FORCE)
+set(gmock_build_tests OFF CACHE BOOL "Disable Google Mock's own tests" FORCE)
+set(INSTALL_GTEST OFF CACHE BOOL "Disable Google Test install" FORCE)
+set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "Disable Google Benchmark tests" FORCE)
+set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "Disable Google Benchmark gtest tests" FORCE)
+set(CPUINFO_BUILD_UNIT_TESTS OFF CACHE BOOL "Disable cpuinfo unit tests" FORCE)
+set(CPUINFO_BUILD_MOCK_TESTS OFF CACHE BOOL "Disable cpuinfo mock tests" FORCE)
+set(CPUINFO_BUILD_BENCHMARKS OFF CACHE BOOL "Disable cpuinfo benchmarks" FORCE)
+set(MI_BUILD_TESTS OFF CACHE BOOL "Disable mimalloc tests" FORCE)
+set(KINETO_BUILD_TESTS OFF CACHE BOOL "Disable Kineto tests" FORCE)
+set(SLEEF_BUILD_TESTS OFF CACHE BOOL "Disable SLEEF tests" FORCE)
+set(LOGURU_BUILD_TESTS OFF CACHE BOOL "Disable loguru tests" FORCE)
+set(LOGURU_BUILD_EXAMPLES OFF CACHE BOOL "Disable loguru examples" FORCE)
+set(SPDLOG_BUILD_TESTS OFF CACHE BOOL "Disable spdlog tests" FORCE)
+set(SPDLOG_BUILD_TESTS_HO OFF CACHE BOOL "Disable spdlog header-only tests" FORCE)
+set(SPDLOG_BUILD_EXAMPLE OFF CACHE BOOL "Disable spdlog examples" FORCE)
+set(SPDLOG_BUILD_BENCH OFF CACHE BOOL "Disable spdlog benchmarks" FORCE)
+set(WITH_GTEST OFF CACHE BOOL "Disable glog gtest" FORCE)
+set(WITH_GMOCK OFF CACHE BOOL "Disable glog gmock" FORCE)
+set(MAGIC_ENUM_OPT_BUILD_TESTS OFF CACHE BOOL "Disable magic_enum tests" FORCE)
+set(MAGIC_ENUM_OPT_BUILD_EXAMPLES OFF CACHE BOOL "Disable magic_enum examples" FORCE)
+
 # Always use bundled googletest — external shared gtest (e.g. from conda) causes rpath failures at
 # runtime because its dylib install path is not in our test executables' rpath.
 set(CMAKE_DISABLE_FIND_PACKAGE_GTest TRUE)
@@ -74,7 +107,17 @@ set(PROJECT_VERSION "${PROJECT_VERSION}")
 
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
+# User-facing name. ThirdParty/CMakeLists.txt still declares XSIGMA_ENABLE_EXTERNAL
+# (vendored — do not edit). Keep the two cache entries in sync.
+option(XSIGMA_ENABLE_EXTERNAL "Use external copies of third party libraries by default" ON)
+set(XSIGMA_ENABLE_EXTERNAL "${XSIGMA_ENABLE_EXTERNAL}"
+    CACHE BOOL "Vendored ThirdParty option; set XSIGMA_ENABLE_EXTERNAL instead" FORCE
+)
+
 add_subdirectory(ThirdParty)
+
+# ThirdParty may have flipped the vendored option; publish it under the project name.
+set(XSIGMA_ENABLE_EXTERNAL "${XSIGMA_ENABLE_EXTERNAL}")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
@@ -82,20 +125,20 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
 
 # Optional: build only one Library/* module and its CMake dependencies (see Scripts/setup.py
 # --project.NAME). When empty or unset, all Library/* projects are enabled (full monolith).
-# setup.py always passes -DQUARISMA_LIBRARY_PROJECT=... so omitting --project.* resets any prior
+# setup.py always passes -DXSIGMA_LIBRARY_PROJECT=... so omitting --project.* resets any prior
 # single-library configure.
-set(QUARISMA_LIBRARY_PROJECT
+set(XSIGMA_LIBRARY_PROJECT
     ""
     CACHE
       STRING
       "If non-empty: only this Library module and deps (Logging|Memory|Vectorization|Core|Parallel|Profiler|Models). Empty: all Library/* (default)."
 )
 
-string(TOLOWER "${QUARISMA_LIBRARY_PROJECT}" _quarisma_libproj_lc)
+string(TOLOWER "${XSIGMA_LIBRARY_PROJECT}" _xsigma_libproj_lc)
 
-set(_quarisma_lib_order
+set(_xsigma_lib_order
     Logging
-    # Profiler has no CMake dependency on any other Quarisma library (only
+    # Profiler has no CMake dependency on any other XSigma library (only
     # third-party fmt/kineto/itt/cuda), so it can build early. It must come
     # before Memory/Vectorization/Parallel: each optionally links
     # Profiler::Profiler when it exists (see e.g. Library/Memory/CMakeLists.txt's
@@ -109,53 +152,48 @@ set(_quarisma_lib_order
     Models
 )
 
-if(_quarisma_libproj_lc STREQUAL "")
-  foreach(_lib IN LISTS _quarisma_lib_order)
+if(_xsigma_libproj_lc STREQUAL "")
+  foreach(_lib IN LISTS _xsigma_lib_order)
     add_subdirectory(Library/${_lib})
   endforeach()
 else()
-  if(_quarisma_libproj_lc STREQUAL "logging")
-    set(_quarisma_lib_enabled Logging)
-  elseif(_quarisma_libproj_lc STREQUAL "memory")
-    # Memory only — no Library/Logging. Memory supports MEMORY_ENABLE_LOGGING=OFF (no logger headers).
-    set(MEMORY_ENABLE_LOGGING OFF CACHE BOOL "Link Memory with the Logging library when available"
-                                        FORCE
+  if(_xsigma_libproj_lc STREQUAL "logging")
+    set(_xsigma_lib_enabled Logging)
+  elseif(_xsigma_libproj_lc STREQUAL "memory")
+    # Memory always links Logging::Logging.
+    set(_xsigma_lib_enabled Logging Memory)
+  elseif(_xsigma_libproj_lc STREQUAL "vectorization")
+    set(MEMORY_ENABLE_TESTING OFF CACHE BOOL "Skip Memory tests when building Vectorization" FORCE)
+    set(MEMORY_ENABLE_BENCHMARK OFF CACHE BOOL "Skip Memory benchmarks when building Vectorization"
+                                          FORCE
     )
-    set(_quarisma_lib_enabled Memory)
-  elseif(_quarisma_libproj_lc STREQUAL "vectorization")
-    set(MEMORY_ENABLE_TESTING OFF CACHE BOOL "Link Memory with the Logging library when available"
-                                        FORCE
-    )
-    set(MEMORY_ENABLE_BENCHMARK OFF
-        CACHE BOOL "Link Memory with the Logging library when available" FORCE
-    )
-    set(_quarisma_lib_enabled Memory Vectorization Profiler)
-  elseif(_quarisma_libproj_lc STREQUAL "core")
-    set(_quarisma_lib_enabled Parallel Profiler Logging Memory Vectorization Core)
-  elseif(_quarisma_libproj_lc STREQUAL "parallel")
-    set(_quarisma_lib_enabled Parallel Profiler)
-  elseif(_quarisma_libproj_lc STREQUAL "profiler")
-    set(_quarisma_lib_enabled Profiler)
-  elseif(_quarisma_libproj_lc STREQUAL "models")
-    set(_quarisma_lib_enabled Models)
+    set(_xsigma_lib_enabled Logging Memory Vectorization Profiler)
+  elseif(_xsigma_libproj_lc STREQUAL "core")
+    set(_xsigma_lib_enabled Parallel Profiler Logging Memory Vectorization Core)
+  elseif(_xsigma_libproj_lc STREQUAL "parallel")
+    set(_xsigma_lib_enabled Parallel Profiler)
+  elseif(_xsigma_libproj_lc STREQUAL "profiler")
+    set(_xsigma_lib_enabled Profiler)
+  elseif(_xsigma_libproj_lc STREQUAL "models")
+    set(_xsigma_lib_enabled Models)
   else()
     message(
       FATAL_ERROR
-        "QUARISMA_LIBRARY_PROJECT='${QUARISMA_LIBRARY_PROJECT}' is invalid. "
+        "XSIGMA_LIBRARY_PROJECT='${XSIGMA_LIBRARY_PROJECT}' is invalid. "
         "Use one of: Logging, Memory, Vectorization, Core, Parallel, Profiler, Models, or leave empty for all."
     )
   endif()
 
-  message(STATUS "Quarisma: single-library mode — enabling: ${_quarisma_lib_enabled}")
+  message(STATUS "XSigma: single-library mode — enabling: ${_xsigma_lib_enabled}")
 
-  foreach(_lib IN LISTS _quarisma_lib_order)
-    if(_lib IN_LIST _quarisma_lib_enabled)
+  foreach(_lib IN LISTS _xsigma_lib_order)
+    if(_lib IN_LIST _xsigma_lib_enabled)
       add_subdirectory(Library/${_lib})
     endif()
   endforeach()
 endif()
 
-quarisma_clang_windows_gtest_workaround()
+xsigma_clang_windows_gtest_workaround()
 
 include(summary)
 print_configuration_summary()

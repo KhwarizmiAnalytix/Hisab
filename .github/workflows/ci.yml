@@ -1,6 +1,6 @@
-name: Quarisma CI - Streamlined Testing Pipeline
+name: XSigma CI - Streamlined Testing Pipeline
 
-# This CI pipeline provides comprehensive testing for Quarisma across multiple platforms and configurations.
+# This CI pipeline provides comprehensive testing for XSigma across multiple platforms and configurations.
 # Key features:
 # - C++17 baseline testing across all platforms (Ubuntu, Windows, macOS)
 # - Selective C++20/C++23 testing with specific TBB/CUDA combinations
@@ -18,7 +18,7 @@ on:
 
 env:
   BUILD_TYPE: Release
-  CACHE_VERSION: v2  # Incremented due to workflow restructuring
+  CACHE_VERSION: v3  # v3: invalidate caches from the Hisab repo rename (absolute CMakeCache paths)
   SCCACHE_VERSION: "0.7.7"  # Version of sccache to use
   BUILDCACHE_VERSION: "0.33.0"  # Version of buildcache to use on Windows
 
@@ -89,7 +89,7 @@ jobs:
           #   generator: Ninja
           #   cache_path: ~/AppData/Local/Temp/chocolatey
 
-          - name: "Windows C++17 Release - NATIVE - CUDA:OFF"
+          - name: "Windows C++17 Release - NATIVE - TBB:OFF"
             os: windows-latest
             build_type: Release
             cxx_std: 17
@@ -100,6 +100,54 @@ jobs:
             compiler_cxx: clang
             generator: Ninja
             cache_path: ~/AppData/Local/Temp/chocolatey
+
+          - name: "Windows C++17 Debug - LOGURU - TBB:ON"
+            os: windows-latest
+            build_type: Debug
+            cxx_std: 17
+            logging_backend: LOGURU
+            tbb_enabled: ON
+            cuda_enabled: OFF
+            compiler_c: clang
+            compiler_cxx: clang
+            generator: Ninja
+            cache_path: ~/AppData/Local/Temp/chocolatey
+
+          - name: "Windows C++20 Release - LOGURU - TBB:OFF"
+            os: windows-latest
+            build_type: Release
+            cxx_std: 20
+            logging_backend: LOGURU
+            tbb_enabled: OFF
+            cuda_enabled: OFF
+            compiler_c: clang
+            compiler_cxx: clang
+            generator: Ninja
+            cache_path: ~/AppData/Local/Temp/chocolatey
+
+          - name: "Ubuntu C++17 Release - GCC - TBB:ON"
+            os: ubuntu-latest
+            build_type: Release
+            cxx_std: 17
+            logging_backend: LOGURU
+            tbb_enabled: ON
+            cuda_enabled: OFF
+            compiler_c: gcc
+            compiler_cxx: gcc
+            generator: Ninja
+            cache_path: ~/.cache
+
+          - name: "Ubuntu C++17 Release - SPDLOG - TBB:ON"
+            os: ubuntu-latest
+            build_type: Release
+            cxx_std: 17
+            logging_backend: SPDLOG
+            tbb_enabled: ON
+            cuda_enabled: OFF
+            compiler_c: clang
+            compiler_cxx: clang
+            generator: Ninja
+            cache_path: ~/.cache
 
           # macOS C++17 - Debug and Release with TBB variants
           - name: "macOS C++17 Debug - LOGURU - TBB:ON"
@@ -219,7 +267,6 @@ jobs:
         key: ${{ runner.os }}-deps-${{ env.CACHE_VERSION }}-${{ hashFiles('**/CMakeLists.txt', 'ThirdParty/**') }}
         restore-keys: |
           ${{ runner.os }}-deps-${{ env.CACHE_VERSION }}-
-          ${{ runner.os }}-deps-
 
     # ===== Install Dependencies Using Scripts =====
     - name: Install dependencies (Ubuntu)
@@ -238,7 +285,11 @@ jobs:
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        & .\.github\workflows\install\install-deps-windows.ps1 -WithTbb
+        if ("${{ matrix.tbb_enabled }}" -eq "ON") {
+          & .\.github\workflows\install\install-deps-windows.ps1 -WithTbb
+        } else {
+          & .\.github\workflows\install\install-deps-windows.ps1
+        }
 
     - name: Setup macOS linker environment
       if: runner.os == 'macOS'
@@ -394,7 +445,13 @@ jobs:
 
     - name: Test (Unix/macOS)
       if: runner.os != 'Windows'
-      run: ctest --test-dir "$BUILD_DIR" --output-on-failure -j 2
+      run: |
+        # Vendored libsvml.so needs libintlc.so.5; the .so has no RPATH, so
+        # GCC (which auto-enables ThirdParty SVML) fails without this.
+        if [ -f ThirdParty/svml/unix/lib/libintlc.so.5 ]; then
+          export LD_LIBRARY_PATH="${PWD}/ThirdParty/svml/unix/lib:${BUILD_DIR}/lib:${LD_LIBRARY_PATH:-}"
+        fi
+        ctest --test-dir "$BUILD_DIR" --output-on-failure -j 2
 
     - name: Configure and Build (Windows)
       if: runner.os == 'Windows'
@@ -422,12 +479,15 @@ jobs:
           -DPARALLEL_ENABLE_TBB=${{ matrix.tbb_enabled }} `
           -DMEMORY_ENABLE_TBB=${{ matrix.tbb_enabled }} `
           -DMEMORY_ENABLE_CUDA=${{ matrix.cuda_enabled }}
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
         # Build
         cmake --build "$buildDir" -j 2
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
         # Run tests
         ctest --test-dir "$buildDir" --output-on-failure -j 2
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
     - name: Verify Build Configuration
       shell: bash
@@ -695,6 +755,9 @@ jobs:
           # Add leak sanitizer only for Ubuntu where it's supported
           - os: ubuntu-latest
             sanitizer: leak
+          # MemorySanitizer is Clang-only and needs an instrumented libc++; Ubuntu only
+          - os: ubuntu-latest
+            sanitizer: memory
 
     steps:
     - name: Checkout repository
@@ -781,6 +844,8 @@ jobs:
           -DPARALLEL_SANITIZER_TYPE=${{ matrix.sanitizer }} \
           -DPROFILER_ENABLE_SANITIZER=ON \
           -DPROFILER_SANITIZER_TYPE=${{ matrix.sanitizer }} \
+          -DMODELS_ENABLE_SANITIZER=ON \
+          -DMODELS_SANITIZER_TYPE=${{ matrix.sanitizer }} \
           -DBUILD_TESTING=ON \
           -DPARALLEL_ENABLE_TBB=ON \
           -DMEMORY_ENABLE_TBB=ON \
@@ -813,7 +878,12 @@ jobs:
 
     - name: Run Tests with ${{ matrix.sanitizer }} Sanitizer
       working-directory: ${{ github.workspace }}/build
-      run: ctest --output-on-failure -j 2
+      run: |
+        if [ "${{ matrix.sanitizer }}" = "memory" ]; then
+          echo "MSAN is compile-only on hosted runners (uninstrumented libstdc++)."
+          exit 0
+        fi
+        ctest --output-on-failure -j 2
 
     - name: Upload sanitizer results
       if: failure()
@@ -891,6 +961,29 @@ jobs:
             backend_label: KINETO
             extra_cmake_flags: "-DPROFILER_BACKEND=KINETO"
 
+          - project: Logging
+            external: "ON"
+            backend_label: SPDLOG
+            extra_cmake_flags: "-DLOGGING_BACKEND=SPDLOG"
+
+          - project: Vectorization
+            external: "ON"
+            backend_label: default
+            extra_cmake_flags: ""
+          - project: Vectorization
+            external: "OFF"
+            backend_label: default
+            extra_cmake_flags: ""
+
+          - project: Models
+            external: "ON"
+            backend_label: default
+            extra_cmake_flags: ""
+          - project: Models
+            external: "OFF"
+            backend_label: default
+            extra_cmake_flags: ""
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -923,7 +1016,8 @@ jobs:
           -DCMAKE_C_COMPILER=clang \
           -DCMAKE_CXX_COMPILER=clang++ \
           -DCMAKE_CXX_STANDARD=17 \
-          -DQUARISMA_ENABLE_EXTERNAL=${{ matrix.external }} \
+          -DXSIGMA_ENABLE_EXTERNAL=${{ matrix.external }} \
+          -DXSIGMA_LIBRARY_PROJECT=${{ matrix.project }} \
           -DBUILD_TESTING=ON \
           -DCORE_ENABLE_BENCHMARK=OFF \
           -DMEMORY_ENABLE_BENCHMARK=OFF \
@@ -953,8 +1047,11 @@ jobs:
   # ============================================================================
   # Vectorization SIMD backend matrix (SSE, AVX-512, NEON, SVE)
   # x86 jobs: ubuntu-latest. AArch64 jobs: ubuntu-24.04-arm (requires public repo
-  # or appropriate org plan for hosted ARM runners). CMake may fall back to
-  # VECTORIZATION_CPU_BACKEND=no if the requested ISA is unsupported on the runner.
+  # or appropriate org plan for hosted ARM runners). AVX-512 is compiled whenever
+  # the toolchain accepts -mavx512f; tests run only if the CPU has avx512f
+  # (Scripts/helpers/cpu_isa.py). ubuntu-latest typically compiles but does not
+  # execute AVX-512. CMake may still fall back to VECTORIZATION_CPU_BACKEND=no
+  # if the compiler itself cannot emit the requested ISA.
   # ============================================================================
   vectorization-simd-backend-tests:
     name: "Vectorization ${{ matrix.vectorization_type }} — ${{ matrix.os }}"
@@ -964,7 +1061,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - vectorization_type: no
+            os: ubuntu-latest
           - vectorization_type: sse
+            os: ubuntu-latest
+          - vectorization_type: avx
+            os: ubuntu-latest
+          - vectorization_type: avx2
             os: ubuntu-latest
           - vectorization_type: avx512
             os: ubuntu-latest
@@ -1005,7 +1108,7 @@ jobs:
           -DCMAKE_C_COMPILER=clang \
           -DCMAKE_CXX_COMPILER=clang++ \
           -DCMAKE_CXX_STANDARD=17 \
-          -DVECTORIZATION_TYPE=${{ matrix.vectorization_type }} \
+          -DVECTORIZATION_CPU_BACKEND=${{ matrix.vectorization_type }} \
           -DLOGGING_BACKEND=NATIVE \
           -DBUILD_TESTING=ON \
           -DCORE_ENABLE_BENCHMARK=OFF \
@@ -1025,6 +1128,12 @@ jobs:
       working-directory: ${{ github.workspace }}/build
       shell: bash
       run: |
+        if [ "${{ matrix.vectorization_type }}" = "avx512" ]; then
+          if ! python3 "${{ github.workspace }}/Scripts/helpers/cpu_isa.py" avx512; then
+            echo "AVX-512 build succeeded; this CPU has no avx512f. Skipping test execution."
+            exit 0
+          fi
+        fi
         regex="Vectorization"
         if ctest -N -R "$regex" | grep -q "Total Tests: 0"; then
           echo "No tests matched '$regex'; running full suite."
@@ -1233,12 +1342,12 @@ jobs:
           -DCMAKE_CXX_COMPILER=clang++ \
           -DLOGGING_BACKEND=LOGURU \
           -DBUILD_TESTING=ON \
-          -DCORE_ENABLE_BENCHMARK=OFF \
-          -DMEMORY_ENABLE_BENCHMARK=OFF \
-          -DLOGGING_ENABLE_BENCHMARK=OFF \
-          -DVECTORIZATION_ENABLE_BENCHMARK=OFF \
-          -DPARALLEL_ENABLE_BENCHMARK=OFF \
-          -DPROFILER_ENABLE_BENCHMARK=OFF \
+          -DCORE_ENABLE_BENCHMARK=ON \
+          -DMEMORY_ENABLE_BENCHMARK=ON \
+          -DLOGGING_ENABLE_BENCHMARK=ON \
+          -DVECTORIZATION_ENABLE_BENCHMARK=ON \
+          -DPARALLEL_ENABLE_BENCHMARK=ON \
+          -DPROFILER_ENABLE_BENCHMARK=ON \
           -DCORE_ENABLE_LTO=ON \
           -DMEMORY_ENABLE_LTO=ON \
           -DLOGGING_ENABLE_LTO=ON \
@@ -1320,7 +1429,6 @@ jobs:
         key: ${{ runner.os }}-sccache-baseline-${{ env.CACHE_VERSION }}-${{ hashFiles('**/CMakeLists.txt', 'ThirdParty/**') }}
         restore-keys: |
           ${{ runner.os }}-sccache-baseline-${{ env.CACHE_VERSION }}-
-          ${{ runner.os }}-sccache-baseline-
 
     # ===== Ubuntu Dependencies =====
     - name: Install dependencies (Ubuntu)
@@ -1441,7 +1549,6 @@ jobs:
         key: ${{ runner.os }}-sccache-enabled-${{ env.CACHE_VERSION }}-${{ hashFiles('**/CMakeLists.txt', 'ThirdParty/**') }}
         restore-keys: |
           ${{ runner.os }}-sccache-enabled-${{ env.CACHE_VERSION }}-
-          ${{ runner.os }}-sccache-enabled-
 
     - name: Cache sccache directory
       uses: actions/cache@v4
@@ -1741,6 +1848,11 @@ jobs:
       with:
         python-version: '3.x'
 
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install colorama==0.4.6
+
     - name: Smoke-test Scripts/setup.py --help
       shell: pwsh
       run: |
@@ -1788,6 +1900,11 @@ jobs:
       with:
         python-version: '3.x'
 
+    - name: Install Python dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install colorama==0.4.6
+
     - name: Bazel build + test (default config)
       working-directory: Scripts
       run: python3 setup_bazel.py config.build.test
@@ -1826,9 +1943,108 @@ jobs:
       with:
         python-version: '3.x'
 
+    - name: Install Python dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install colorama==0.4.6
+
     - name: Bazel build + test (TBB)
       working-directory: Scripts
       run: python3 setup_bazel.py config.build.test.tbb
+
+  # ============================================================================
+  # Bazel Project + Backend Matrix
+  # Mirrors the CMake project-flag-backend-tests job's project/backend coverage via
+  # Scripts/setup_bazel.py --project.NAME. XSIGMA_ENABLE_EXTERNAL has no Bazel
+  # equivalent (setup_bazel.py warns and no-ops on the "external" token -- see
+  # Docs/BAZEL_USER_GUIDE.md), so each project/backend combination appears once
+  # here instead of twice.
+  # ============================================================================
+  bazel-project-flag-backend-tests:
+    name: "Bazel Project Matrix - ${{ matrix.project }} - ${{ matrix.backend_label }}"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: core
+            backend_label: default
+            extra_config: ""
+          - project: memory
+            backend_label: default
+            extra_config: ""
+          - project: logging
+            backend_label: LOGURU
+            extra_config: logging_loguru
+          - project: logging
+            backend_label: NATIVE
+            extra_config: logging_native
+          - project: logging
+            backend_label: GLOG
+            extra_config: logging_glog
+          - project: parallel
+            backend_label: std
+            extra_config: parallel.std
+          - project: parallel
+            backend_label: openmp
+            extra_config: parallel.openmp
+          - project: parallel
+            backend_label: tbb
+            extra_config: parallel.tbb
+          - project: profiler
+            backend_label: ITT
+            extra_config: profiler_itt
+          - project: profiler
+            backend_label: KINETO
+            extra_config: profiler_kineto
+          - project: logging
+            backend_label: SPDLOG
+            extra_config: logging_spdlog
+          - project: vectorization
+            backend_label: default
+            extra_config: ""
+          - project: models
+            backend_label: default
+            extra_config: ""
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Setup Bazel
+      uses: bazel-contrib/setup-bazel@0.8.1
+      with:
+        bazelisk-cache: true
+        disk-cache: bazel-project-${{ matrix.project }}-${{ matrix.backend_label }}-${{ env.CACHE_VERSION }}
+        repository-cache: true
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install Python dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install colorama==0.4.6
+
+    - name: Install OpenMP (Bazel openmp backend)
+      if: matrix.backend_label == 'openmp'
+      run: sudo apt-get update && sudo apt-get install -y libomp-dev
+
+    - name: Bazel build + test (${{ matrix.project }} / ${{ matrix.backend_label }})
+      working-directory: Scripts
+      shell: bash
+      run: |
+        if [ -n "${{ matrix.extra_config }}" ]; then
+          python3 setup_bazel.py config.build.test.${{ matrix.extra_config }} --project.${{ matrix.project }}
+        else
+          python3 setup_bazel.py config.build.test --project.${{ matrix.project }}
+        fi
 
   # ============================================================================
   # Bazel Vectorization SIMD Backend Matrix
@@ -1845,7 +2061,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - vectorization_type: no
+            os: ubuntu-latest
           - vectorization_type: sse
+            os: ubuntu-latest
+          - vectorization_type: avx
+            os: ubuntu-latest
+          - vectorization_type: avx2
             os: ubuntu-latest
           - vectorization_type: avx512
             os: ubuntu-latest
@@ -1873,9 +2095,25 @@ jobs:
       with:
         python-version: '3.x'
 
+    - name: Install Python dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install colorama==0.4.6
+
+    # AVX-512 still compiles on ubuntu-latest. Hosted runners often list
+    # avx512f in cpuinfo but SIGILL on the instructions; skip the test run
+    # unless Scripts/helpers/cpu_isa.py reports avx512f (same as CMake).
     - name: Bazel build + test (Vectorization ${{ matrix.vectorization_type }})
       working-directory: Scripts
-      run: python3 setup_bazel.py config.build.test.${{ matrix.vectorization_type }} --project.vectorization
+      run: |
+        if [ "${{ matrix.vectorization_type }}" = "avx512" ]; then
+          if ! python3 "${{ github.workspace }}/Scripts/helpers/cpu_isa.py" avx512; then
+            echo "AVX-512 compile-only: this CPU has no usable avx512f."
+            python3 setup_bazel.py config.build.avx512 --project.vectorization
+            exit 0
+          fi
+        fi
+        python3 setup_bazel.py config.build.test.${{ matrix.vectorization_type }} --project.vectorization
 
   # ============================================================================
   # Bazel Metal Tests — macOS only
@@ -1906,9 +2144,648 @@ jobs:
       with:
         python-version: '3.x'
 
+    - name: Install Python dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install colorama==0.4.6
+
     - name: Bazel build + test (Metal)
       working-directory: Scripts
       run: python3 setup_bazel.py config.build.test.metal
+
+  # ============================================================================
+  # CMake GPU backends — CUDA / HIP / Metal
+  # Hosted runners have no NVIDIA/AMD GPU. CUDA/HIP jobs compile the GPU path
+  # and run the CPU test suite; device tests GTEST_SKIP when cudaGetDeviceCount
+  # is 0. Metal runs on real macOS GPU hardware.
+  # ============================================================================
+  cmake-gpu-backend-tests:
+    name: "CMake GPU - ${{ matrix.backend }} — ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - backend: cuda
+            os: ubuntu-latest
+            extra_cmake: "-DMEMORY_GPU_BACKEND=cuda -DVECTORIZATION_GPU_BACKEND=cuda"
+          - backend: hip
+            os: ubuntu-latest
+            extra_cmake: "-DMEMORY_GPU_BACKEND=hip -DVECTORIZATION_GPU_BACKEND=hip -DCMAKE_HIP_ARCHITECTURES=gfx90a -DPROJECT_HIP_ARCH_OPTIONS=gfx90a"
+          - backend: metal
+            os: macos-latest
+            extra_cmake: "-DMEMORY_GPU_BACKEND=metal -DVECTORIZATION_GPU_BACKEND=metal"
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install dependencies (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        chmod +x .github/workflows/install/install-deps-ubuntu.sh
+        extra=""
+        if [ "${{ matrix.backend }}" = "cuda" ]; then extra="--with-cuda"; fi
+        if [ "${{ matrix.backend }}" = "hip" ]; then extra="--with-hip"; fi
+        ./.github/workflows/install/install-deps-ubuntu.sh --with-tbb $extra
+
+    - name: Install dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        chmod +x .github/workflows/install/install-deps-macos.sh
+        ./.github/workflows/install/install-deps-macos.sh --with-tbb
+
+    - name: Setup macOS linker environment
+      if: runner.os == 'macOS'
+      run: |
+        echo "LDFLAGS=-L/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib" >> $GITHUB_ENV
+        echo "CPPFLAGS=-I/opt/homebrew/opt/llvm/include" >> $GITHUB_ENV
+        echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
+
+    - name: Configure (CMake ${{ matrix.backend }})
+      shell: bash
+      run: |
+        cmake -B build \
+          -C .github/cmake/configure_cache.cmake \
+          -S . \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_C_COMPILER=clang \
+          -DCMAKE_CXX_COMPILER=clang++ \
+          -DCMAKE_CXX_STANDARD=17 \
+          -DLOGGING_BACKEND=NATIVE \
+          -DBUILD_TESTING=ON \
+          -DCORE_ENABLE_BENCHMARK=OFF \
+          -DMEMORY_ENABLE_BENCHMARK=OFF \
+          -DLOGGING_ENABLE_BENCHMARK=OFF \
+          -DVECTORIZATION_ENABLE_BENCHMARK=OFF \
+          -DPARALLEL_ENABLE_BENCHMARK=OFF \
+          -DPROFILER_ENABLE_BENCHMARK=OFF \
+          -DPARALLEL_ENABLE_TBB=ON \
+          -DMEMORY_ENABLE_TBB=ON \
+          ${{ matrix.extra_cmake }}
+
+    - name: Build
+      run: cmake --build build -j 2
+
+    - name: Test
+      working-directory: ${{ github.workspace }}/build
+      run: |
+        # Toolkit install has no NVIDIA driver; DT_NEEDED libcuda.so.1 must
+        # resolve to the CUDA stub (often under targets/.../lib/stubs, and
+        # often named only libcuda.so until a .so.1 symlink is created).
+        stubs=""
+        for d in \
+            /usr/local/cuda/lib64/stubs \
+            /usr/local/cuda/targets/x86_64-linux/lib/stubs \
+            /usr/local/cuda-12.6/lib64/stubs \
+            /usr/local/cuda-12.6/targets/x86_64-linux/lib/stubs; do
+          if [ -e "${d}/libcuda.so" ] || [ -e "${d}/libcuda.so.1" ]; then
+            stubs="${d}"
+            break
+          fi
+        done
+        if [ -n "${stubs}" ]; then
+          if [ -e "${stubs}/libcuda.so" ] && [ ! -e "${stubs}/libcuda.so.1" ]; then
+            ln -sf libcuda.so "${stubs}/libcuda.so.1" 2>/dev/null \
+              || sudo ln -sf libcuda.so "${stubs}/libcuda.so.1"
+          fi
+          export LD_LIBRARY_PATH="${stubs}:${LD_LIBRARY_PATH:-}"
+        fi
+        rocm_lib="${ROCM_PATH:-${HIP_PATH:-/opt/rocm}}/lib"
+        if [ -d "${rocm_lib}" ]; then
+          export LD_LIBRARY_PATH="${rocm_lib}:${LD_LIBRARY_PATH:-}"
+        fi
+        if [ -f "${{ github.workspace }}/ThirdParty/svml/unix/lib/libintlc.so.5" ]; then
+          export LD_LIBRARY_PATH="${{ github.workspace }}/ThirdParty/svml/unix/lib:${LD_LIBRARY_PATH:-}"
+        fi
+        ctest --output-on-failure -j 2
+
+    - name: Upload GPU CMake logs
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: cmake-gpu-${{ matrix.backend }}-logs
+        path: |
+          build/Testing/Temporary/LastTest.log
+          build/**/*.log
+
+  # ============================================================================
+  # Bazel CUDA / HIP (compile + test; device tests skip without a GPU)
+  # ============================================================================
+  bazel-cuda-tests:
+    name: "Bazel CUDA - Ubuntu"
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Install CUDA toolkit
+      run: |
+        chmod +x .github/workflows/install/install-cuda-ubuntu.sh
+        .github/workflows/install/install-cuda-ubuntu.sh
+
+    - name: Setup Bazel
+      uses: bazel-contrib/setup-bazel@0.8.1
+      with:
+        bazelisk-cache: true
+        disk-cache: bazel-ubuntu-cuda-${{ env.CACHE_VERSION }}
+        repository-cache: true
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install Python dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install colorama==0.4.6
+
+    - name: Bazel build + test (CUDA)
+      working-directory: Scripts
+      env:
+        LD_LIBRARY_PATH: /usr/local/cuda/lib64/stubs:/usr/local/cuda/targets/x86_64-linux/lib/stubs:${{ env.LD_LIBRARY_PATH }}
+      run: python3 setup_bazel.py config.build.test.cuda
+
+  bazel-hip-tests:
+    name: "Bazel HIP - Ubuntu"
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Install HIP toolkit
+      run: |
+        chmod +x .github/workflows/install/install-hip-ubuntu.sh
+        .github/workflows/install/install-hip-ubuntu.sh
+
+    - name: Setup Bazel
+      uses: bazel-contrib/setup-bazel@0.8.1
+      with:
+        bazelisk-cache: true
+        disk-cache: bazel-ubuntu-hip-${{ env.CACHE_VERSION }}
+        repository-cache: true
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install Python dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install colorama==0.4.6
+
+    - name: Bazel build + test (HIP)
+      working-directory: Scripts
+      run: python3 setup_bazel.py config.build.test.hip
+
+  # ============================================================================
+  # CMake Metal is covered by cmake-gpu-backend-tests (macos). This job is the
+  # CMake counterpart to bazel-metal-tests, scoped to Memory+Vectorization
+  # packet-size / SLEEF / Accelerate / shared / NUMA / memkind / mimalloc-off.
+  # ============================================================================
+  feature-flag-tests:
+    name: "Feature - ${{ matrix.name }}"
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "NUMA"
+            os: ubuntu-latest
+            extra_cmake: "-DMEMORY_ENABLE_NUMA=ON"
+            extra_deps: ""
+          - name: "memkind"
+            os: ubuntu-latest
+            extra_cmake: "-DMEMORY_ENABLE_MEMKIND=ON"
+            extra_deps: "--with-memkind"
+          - name: "mimalloc-OFF"
+            os: ubuntu-latest
+            extra_cmake: "-DMEMORY_ENABLE_MIMALLOC=OFF"
+            extra_deps: ""
+          - name: "mimalloc-stats"
+            os: ubuntu-latest
+            extra_cmake: "-DMEMORY_ENABLE_MIMALLOC=ON -DMEMORY_ENABLE_MIMALLOC_STATS=ON"
+            extra_deps: ""
+          - name: "shared-libs"
+            os: ubuntu-latest
+            extra_cmake: "-DBUILD_SHARED_LIBS=ON"
+            extra_deps: ""
+          - name: "magic_enum-OFF"
+            os: ubuntu-latest
+            extra_cmake: "-DCORE_ENABLE_MAGICENUM=OFF"
+            extra_deps: ""
+          - name: "examples"
+            os: ubuntu-latest
+            extra_cmake: "-DCORE_ENABLE_EXAMPLES=ON -DMEMORY_ENABLE_EXAMPLES=ON -DLOGGING_ENABLE_EXAMPLES=ON -DVECTORIZATION_ENABLE_EXAMPLES=ON -DPARALLEL_ENABLE_EXAMPLES=ON -DPROFILER_ENABLE_EXAMPLES=ON -DMODELS_ENABLE_EXAMPLES=ON"
+            extra_deps: ""
+          - name: "packet-size-8"
+            os: ubuntu-latest
+            extra_cmake: "-DVECTORIZATION_PACKET_SIZE=8 -DVECTORIZATION_CPU_BACKEND=avx2"
+            extra_deps: ""
+          - name: "sleef"
+            os: ubuntu-24.04-arm
+            extra_cmake: "-DVECTORIZATION_ENABLE_SLEEF=ON -DVECTORIZATION_CPU_BACKEND=neon"
+            extra_deps: ""
+          - name: "accelerate"
+            os: macos-latest
+            extra_cmake: "-DVECTORIZATION_ENABLE_ACCELERATE=ON -DVECTORIZATION_CPU_BACKEND=neon"
+            extra_deps: ""
+          - name: "lto-thin"
+            os: ubuntu-latest
+            extra_cmake: "-DCORE_LTO_MODE=thin -DMEMORY_LTO_MODE=thin -DLOGGING_LTO_MODE=thin -DVECTORIZATION_LTO_MODE=thin -DPARALLEL_LTO_MODE=thin -DPROFILER_LTO_MODE=thin"
+            extra_deps: ""
+          - name: "lto-full"
+            os: ubuntu-latest
+            extra_cmake: "-DCORE_LTO_MODE=full -DMEMORY_LTO_MODE=full -DLOGGING_LTO_MODE=full -DVECTORIZATION_LTO_MODE=full -DPARALLEL_LTO_MODE=full -DPROFILER_LTO_MODE=full"
+            extra_deps: ""
+          - name: "ccache"
+            os: ubuntu-latest
+            extra_cmake: "-DCORE_CACHE_BACKEND=ccache -DMEMORY_CACHE_BACKEND=ccache -DLOGGING_CACHE_BACKEND=ccache -DVECTORIZATION_CACHE_BACKEND=ccache -DPARALLEL_CACHE_BACKEND=ccache -DPROFILER_CACHE_BACKEND=ccache"
+            extra_deps: ""
+          - name: "linker-lld"
+            os: ubuntu-latest
+            extra_cmake: "-DCORE_LINKER_CHOICE=lld -DMEMORY_LINKER_CHOICE=lld -DLOGGING_LINKER_CHOICE=lld -DVECTORIZATION_LINKER_CHOICE=lld -DPARALLEL_LINKER_CHOICE=lld -DPROFILER_LINKER_CHOICE=lld"
+            extra_deps: ""
+          - name: "memory-profiler-off"
+            os: ubuntu-latest
+            extra_cmake: "-DMEMORY_ENABLE_PROFILER=OFF"
+            extra_deps: ""
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install dependencies (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        chmod +x .github/workflows/install/install-deps-ubuntu.sh
+        ./.github/workflows/install/install-deps-ubuntu.sh --with-tbb ${{ matrix.extra_deps }}
+
+    - name: Install dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        chmod +x .github/workflows/install/install-deps-macos.sh
+        ./.github/workflows/install/install-deps-macos.sh --with-tbb
+
+    - name: Setup macOS linker environment
+      if: runner.os == 'macOS'
+      run: |
+        echo "LDFLAGS=-L/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib" >> $GITHUB_ENV
+        echo "CPPFLAGS=-I/opt/homebrew/opt/llvm/include" >> $GITHUB_ENV
+        echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
+
+    - name: Configure
+      shell: bash
+      run: |
+        cmake -B build \
+          -C .github/cmake/configure_cache.cmake \
+          -S . \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_C_COMPILER=clang \
+          -DCMAKE_CXX_COMPILER=clang++ \
+          -DCMAKE_CXX_STANDARD=17 \
+          -DLOGGING_BACKEND=LOGURU \
+          -DBUILD_TESTING=ON \
+          -DCORE_ENABLE_BENCHMARK=OFF \
+          -DMEMORY_ENABLE_BENCHMARK=OFF \
+          -DLOGGING_ENABLE_BENCHMARK=OFF \
+          -DVECTORIZATION_ENABLE_BENCHMARK=OFF \
+          -DPARALLEL_ENABLE_BENCHMARK=OFF \
+          -DPROFILER_ENABLE_BENCHMARK=OFF \
+          -DPARALLEL_ENABLE_TBB=ON \
+          -DMEMORY_ENABLE_TBB=ON \
+          ${{ matrix.extra_cmake }}
+
+    - name: Build
+      run: cmake --build build -j 2
+
+    - name: Test
+      working-directory: ${{ github.workspace }}/build
+      run: ctest --output-on-failure -j 2
+
+  # ============================================================================
+  # Windows Visual Studio 2022 generator + Bazel Windows build
+  # ============================================================================
+  windows-vs22-tests:
+    name: "Windows VS2022 - C++17 Release"
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      shell: pwsh
+      run: |
+        & .\.github\workflows\install\install-deps-windows.ps1
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Setup MSVC environment
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: amd64
+
+    - name: Configure (MSVC)
+      shell: pwsh
+      run: |
+        $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+        if (-not (Test-Path $vswhere)) {
+          throw "vswhere.exe not found; Visual Studio Installer is missing on this runner"
+        }
+        $vs17 = (& $vswhere -latest -products * -version "[17.0,18.0)" `
+          -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+          -property installationPath)
+        if ($vs17) {
+          $vsInstance = ([string]$vs17).Trim()
+          Write-Host "Using Visual Studio 2022 at $vsInstance"
+          cmake -B build -S . `
+            -G "Visual Studio 17 2022" -A x64 `
+            "-DCMAKE_GENERATOR_INSTANCE=$vsInstance" `
+            -DCMAKE_CXX_STANDARD=17 `
+            -DLOGGING_BACKEND=NATIVE `
+            -DBUILD_TESTING=ON `
+            -DPARALLEL_ENABLE_TBB=OFF `
+            -DMEMORY_ENABLE_TBB=OFF `
+            -DCORE_ENABLE_BENCHMARK=OFF `
+            -DMEMORY_ENABLE_BENCHMARK=OFF `
+            -DLOGGING_ENABLE_BENCHMARK=OFF `
+            -DVECTORIZATION_ENABLE_BENCHMARK=OFF `
+            -DPARALLEL_ENABLE_BENCHMARK=OFF `
+            -DPROFILER_ENABLE_BENCHMARK=OFF
+        } else {
+          # windows-latest now ships VS 18 Enterprise; CMake's "Visual Studio 17 2022"
+          # generator cannot target it. Ninja + the MSVC env from msvc-dev-cmd covers
+          # the same toolchain without depending on a matching VS generator name.
+          Write-Host "VS 2022 not found; configuring Ninja with the active MSVC toolchain"
+          cmake -B build -S . `
+            -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_CXX_STANDARD=17 `
+            -DLOGGING_BACKEND=NATIVE `
+            -DBUILD_TESTING=ON `
+            -DPARALLEL_ENABLE_TBB=OFF `
+            -DMEMORY_ENABLE_TBB=OFF `
+            -DCORE_ENABLE_BENCHMARK=OFF `
+            -DMEMORY_ENABLE_BENCHMARK=OFF `
+            -DLOGGING_ENABLE_BENCHMARK=OFF `
+            -DVECTORIZATION_ENABLE_BENCHMARK=OFF `
+            -DPARALLEL_ENABLE_BENCHMARK=OFF `
+            -DPROFILER_ENABLE_BENCHMARK=OFF
+        }
+
+    - name: Build
+      run: cmake --build build --config Release -j 2
+
+    - name: Test
+      working-directory: ${{ github.workspace }}/build
+      run: ctest --output-on-failure --build-config Release -j 2
+
+  bazel-windows-tests:
+    name: "Bazel - Windows"
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Setup Bazel
+      uses: bazel-contrib/setup-bazel@0.8.1
+      with:
+        bazelisk-cache: true
+        disk-cache: bazel-windows-default-${{ env.CACHE_VERSION }}
+        repository-cache: true
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install colorama==0.4.6
+
+    - name: Bazel build + test (default config)
+      working-directory: Scripts
+      shell: pwsh
+      run: python setup_bazel.py config.build.test
+
+  # ============================================================================
+  # Static analysis — clang-tidy (check only) + Valgrind
+  # ============================================================================
+  clang-tidy-tests:
+    name: "clang-tidy"
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      run: |
+        chmod +x .github/workflows/install/install-deps-ubuntu.sh
+        ./.github/workflows/install/install-deps-ubuntu.sh --with-tbb
+
+    - name: Configure with clang-tidy
+      run: |
+        cmake -B build \
+          -C .github/cmake/configure_cache.cmake \
+          -S . \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_C_COMPILER=clang \
+          -DCMAKE_CXX_COMPILER=clang++ \
+          -DCMAKE_CXX_STANDARD=17 \
+          -DLOGGING_BACKEND=NATIVE \
+          -DBUILD_TESTING=ON \
+          -DCORE_ENABLE_CLANGTIDY=ON \
+          -DMEMORY_ENABLE_CLANGTIDY=ON \
+          -DLOGGING_ENABLE_CLANGTIDY=ON \
+          -DVECTORIZATION_ENABLE_CLANGTIDY=ON \
+          -DPARALLEL_ENABLE_CLANGTIDY=ON \
+          -DPROFILER_ENABLE_CLANGTIDY=ON \
+          -DMODELS_ENABLE_CLANGTIDY=ON \
+          -DCORE_ENABLE_BENCHMARK=OFF \
+          -DMEMORY_ENABLE_BENCHMARK=OFF \
+          -DLOGGING_ENABLE_BENCHMARK=OFF \
+          -DVECTORIZATION_ENABLE_BENCHMARK=OFF \
+          -DPARALLEL_ENABLE_BENCHMARK=OFF \
+          -DPROFILER_ENABLE_BENCHMARK=OFF
+
+    - name: Build (clang-tidy runs as part of compile)
+      run: cmake --build build -j 2
+
+  valgrind-tests:
+    name: "Valgrind"
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      run: |
+        chmod +x .github/workflows/install/install-deps-ubuntu.sh
+        ./.github/workflows/install/install-deps-ubuntu.sh --with-tbb
+        sudo apt-get install -y valgrind
+
+    - name: Configure with Valgrind
+      run: |
+        cmake -B build \
+          -C .github/cmake/configure_cache.cmake \
+          -S . \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_C_COMPILER=clang \
+          -DCMAKE_CXX_COMPILER=clang++ \
+          -DCMAKE_CXX_STANDARD=17 \
+          -DLOGGING_BACKEND=NATIVE \
+          -DBUILD_TESTING=ON \
+          -DMEMORY_ENABLE_MIMALLOC=OFF \
+          -DCORE_ENABLE_VALGRIND=ON \
+          -DMEMORY_ENABLE_VALGRIND=ON \
+          -DLOGGING_ENABLE_VALGRIND=ON \
+          -DVECTORIZATION_ENABLE_VALGRIND=ON \
+          -DPARALLEL_ENABLE_VALGRIND=ON \
+          -DPROFILER_ENABLE_VALGRIND=ON \
+          -DMODELS_ENABLE_VALGRIND=ON \
+          -DCORE_ENABLE_BENCHMARK=OFF \
+          -DMEMORY_ENABLE_BENCHMARK=OFF \
+          -DLOGGING_ENABLE_BENCHMARK=OFF \
+          -DVECTORIZATION_ENABLE_BENCHMARK=OFF \
+          -DPARALLEL_ENABLE_BENCHMARK=OFF \
+          -DPROFILER_ENABLE_BENCHMARK=OFF
+
+    - name: Build
+      run: cmake --build build -j 2
+
+    - name: Test under Valgrind
+      working-directory: ${{ github.workspace }}/build
+      run: ctest --output-on-failure -j 1
+
+  cppcheck-tests:
+    name: "cppcheck"
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      run: |
+        chmod +x .github/workflows/install/install-deps-ubuntu.sh
+        ./.github/workflows/install/install-deps-ubuntu.sh --with-tbb
+        sudo apt-get install -y cppcheck
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install Python dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install colorama==0.4.6 psutil==6.1.1
+
+    - name: Configure, build, and run cppcheck
+      working-directory: Scripts
+      run: python3 setup.py config.build.cppcheck.ninja.clang
+
+  # ============================================================================
+  # Bazel feature-flag counterparts (NUMA, AVX2, GCC, MSAN).
+  # SLEEF is CMake-only until Bazel grows a native SLEEF codegen path.
+  # ============================================================================
+  bazel-feature-flag-tests:
+    name: "Bazel Feature - ${{ matrix.name }}"
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "numa"
+            os: ubuntu-latest
+            extra: "numa"
+          # Bazel --config=sleef requires a prior CMake SLEEF build
+          # (see @@sleef_cmake//:sleef_missing). Covered by CMake Feature - sleef.
+          - name: "avx2"
+            os: ubuntu-latest
+            extra: "avx2"
+          - name: "gcc"
+            os: ubuntu-latest
+            extra: "gcc"
+          - name: "msan"
+            os: ubuntu-latest
+            extra: "msan"
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Setup Bazel
+      uses: bazel-contrib/setup-bazel@0.8.1
+      with:
+        bazelisk-cache: true
+        disk-cache: bazel-feature-${{ matrix.name }}-${{ env.CACHE_VERSION }}
+        repository-cache: true
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install Python dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install colorama==0.4.6
+
+    - name: Install NUMA headers
+      if: matrix.name == 'numa'
+      run: sudo apt-get update && sudo apt-get install -y libnuma-dev
+
+    - name: Bazel build + test (${{ matrix.name }})
+      working-directory: Scripts
+      run: |
+        if [ "${{ matrix.name }}" = "msan" ]; then
+          echo "MSAN is compile-only on hosted runners (uninstrumented libstdc++)."
+          python3 setup_bazel.py config.build.msan
+          exit 0
+        fi
+        python3 setup_bazel.py config.build.test.${{ matrix.extra }}
 
   # ============================================================================
   # CI Success Summary
@@ -1930,8 +2807,19 @@ jobs:
       - windows-cli-smoke
       - bazel-build-matrix
       - bazel-tbb-tests
+      - bazel-project-flag-backend-tests
       - bazel-vectorization-simd-tests
       - bazel-metal-tests
+      - cmake-gpu-backend-tests
+      - bazel-cuda-tests
+      - bazel-hip-tests
+      - feature-flag-tests
+      - windows-vs22-tests
+      - bazel-windows-tests
+      - clang-tidy-tests
+      - valgrind-tests
+      - cppcheck-tests
+      - bazel-feature-flag-tests
     runs-on: ubuntu-latest
     if: always()
 
@@ -1952,8 +2840,19 @@ jobs:
         echo "Windows CLI Smoke: ${{ needs.windows-cli-smoke.result }}"
         echo "Bazel Build Matrix: ${{ needs.bazel-build-matrix.result }}"
         echo "Bazel TBB Tests: ${{ needs.bazel-tbb-tests.result }}"
+        echo "Bazel Project Flag + Backend Tests: ${{ needs.bazel-project-flag-backend-tests.result }}"
         echo "Bazel Vectorization SIMD Tests: ${{ needs.bazel-vectorization-simd-tests.result }}"
         echo "Bazel Metal Tests: ${{ needs.bazel-metal-tests.result }}"
+        echo "CMake GPU Backends: ${{ needs.cmake-gpu-backend-tests.result }}"
+        echo "Bazel CUDA Tests: ${{ needs.bazel-cuda-tests.result }}"
+        echo "Bazel HIP Tests: ${{ needs.bazel-hip-tests.result }}"
+        echo "Feature Flag Tests: ${{ needs.feature-flag-tests.result }}"
+        echo "Windows VS2022: ${{ needs.windows-vs22-tests.result }}"
+        echo "Bazel Windows: ${{ needs.bazel-windows-tests.result }}"
+        echo "clang-tidy: ${{ needs.clang-tidy-tests.result }}"
+        echo "Valgrind: ${{ needs.valgrind-tests.result }}"
+        echo "cppcheck: ${{ needs.cppcheck-tests.result }}"
+        echo "Bazel Feature Flags: ${{ needs.bazel-feature-flag-tests.result }}"
         echo ""
 
         # Check if any required job failed
@@ -2004,12 +2903,56 @@ jobs:
           echo "ERROR: Bazel TBB tests failed"
           exit 1
         fi
+        if [ "${{ needs.bazel-project-flag-backend-tests.result }}" != "success" ]; then
+          echo "ERROR: Bazel project flag + backend tests failed"
+          exit 1
+        fi
         if [ "${{ needs.bazel-vectorization-simd-tests.result }}" != "success" ]; then
           echo "ERROR: Bazel Vectorization SIMD tests failed"
           exit 1
         fi
         if [ "${{ needs.bazel-metal-tests.result }}" != "success" ]; then
           echo "ERROR: Bazel Metal tests failed"
+          exit 1
+        fi
+        if [ "${{ needs.cmake-gpu-backend-tests.result }}" != "success" ]; then
+          echo "ERROR: CMake GPU backend tests failed"
+          exit 1
+        fi
+        if [ "${{ needs.bazel-cuda-tests.result }}" != "success" ]; then
+          echo "ERROR: Bazel CUDA tests failed"
+          exit 1
+        fi
+        if [ "${{ needs.bazel-hip-tests.result }}" != "success" ]; then
+          echo "ERROR: Bazel HIP tests failed"
+          exit 1
+        fi
+        if [ "${{ needs.feature-flag-tests.result }}" != "success" ]; then
+          echo "ERROR: Feature flag tests failed"
+          exit 1
+        fi
+        if [ "${{ needs.windows-vs22-tests.result }}" != "success" ]; then
+          echo "ERROR: Windows VS2022 tests failed"
+          exit 1
+        fi
+        if [ "${{ needs.bazel-windows-tests.result }}" != "success" ]; then
+          echo "ERROR: Bazel Windows tests failed"
+          exit 1
+        fi
+        if [ "${{ needs.clang-tidy-tests.result }}" != "success" ]; then
+          echo "ERROR: clang-tidy tests failed"
+          exit 1
+        fi
+        if [ "${{ needs.valgrind-tests.result }}" != "success" ]; then
+          echo "ERROR: Valgrind tests failed"
+          exit 1
+        fi
+        if [ "${{ needs.cppcheck-tests.result }}" != "success" ]; then
+          echo "ERROR: cppcheck tests failed"
+          exit 1
+        fi
+        if [ "${{ needs.bazel-feature-flag-tests.result }}" != "success" ]; then
+          echo "ERROR: Bazel feature flag tests failed"
           exit 1
         fi
 
@@ -2029,7 +2972,7 @@ jobs:
 # 3. compiler-version-tests-gcc: GCC version testing (GCC 8-13 with C++17/20/23)
 # 4. tbb-specific-tests: TBB functionality testing (Unix/macOS only)
 # 4. sanitizer-tests: Memory/thread safety testing (Unix/macOS only)
-# 5. vectorization-simd-backend-tests: VECTORIZATION_CPU_BACKEND sse/avx512 on ubuntu-latest; neon/sve on ubuntu-24.04-arm
+# 5. vectorization-simd-backend-tests: VECTORIZATION_CPU_BACKEND sse/avx512 on ubuntu-latest (avx512 tests run only if the CPU has avx512f); neon/sve on ubuntu-24.04-arm
 # 6. optimization-flags-test: Compiler optimization testing
 # 7. benchmark-tests: Performance regression testing (non-blocking)
 # 8. sccache-baseline-tests: Build performance baseline without sccache (all platforms)
@@ -2037,13 +2980,16 @@ jobs:
 # 10. bazel-build-matrix: Bazel build+test via Scripts/setup_bazel.py, default config
 #     (Ubuntu + macOS; Windows Bazel is smoke-tested only, see windows-cli-smoke)
 # 11. bazel-tbb-tests: Bazel build+test with --config=tbb (Ubuntu + macOS)
-# 12. bazel-vectorization-simd-tests: Bazel Vectorization SIMD tier matrix, mirrors
+# 12. bazel-project-flag-backend-tests: Bazel project/backend matrix, mirrors
+#     project-flag-backend-tests via --project.NAME (Ubuntu only; no Bazel
+#     equivalent for the XSIGMA_ENABLE_EXTERNAL dimension)
+# 13. bazel-vectorization-simd-tests: Bazel Vectorization SIMD tier matrix, mirrors
 #     vectorization-simd-backend-tests but through Bazel (--define vectorization_type=X)
-# 13. bazel-metal-tests: Bazel build+test with Metal GPU backend (macOS only, real GPU)
-# 14. ci-success: Aggregates results from all jobs
+# 14. bazel-metal-tests: Bazel build+test with Metal GPU backend (macOS only, real GPU)
+# 15. ci-success: Aggregates results from all jobs
 #
 # ## Bazel Jobs:
-# - All four Bazel jobs run through Scripts/setup_bazel.py (never `bazel` directly),
+# - All five Bazel jobs run through Scripts/setup_bazel.py (never `bazel` directly),
 #   mirroring the CMake jobs' use of Scripts/setup.py.
 # - bazel-contrib/setup-bazel@0.8.1 installs bazelisk (reading .bazelversion) and
 #   provides disk/repository caching.
@@ -2090,7 +3036,7 @@ jobs:
 # 3. Add result checking logic in the ci-success job
 #
 # ## Cache Management:
-# - Cache keys use CACHE_VERSION (currently v2) - increment when dependencies change significantly
+# - Cache keys use CACHE_VERSION (currently v3) - increment when dependencies change significantly
 # - Each job type has its own cache namespace to avoid conflicts
 #
 # ## Troubleshooting Common Issues:

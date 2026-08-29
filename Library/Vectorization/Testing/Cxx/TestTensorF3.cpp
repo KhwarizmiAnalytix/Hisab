@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -40,8 +40,7 @@ struct tensor_abs_tol_ternary<double>
 };
 
 template <typename T>
-void expect_tensor_near_elementwise(
-    tensor<T> const& got, std::vector<T> const& ref, T abs_tol)
+void expect_tensor_near_elementwise(tensor<T> const& got, std::vector<T> const& ref, T abs_tol)
 {
     ASSERT_EQ(got.size(), ref.size());
     for (std::size_t i = 0; i < ref.size(); ++i)
@@ -62,7 +61,7 @@ void fill_uniform(std::vector<T>& v, std::mt19937& gen, T lo, T hi)
 template <typename T>
 void test_tensor_ternary_vs_std()
 {
-    using tensor_t = tensor<T>;
+    using tensor_t      = tensor<T>;
     std::size_t const n = (2U << 8U) + 7U;
     std::mt19937      gen(13021u);
     T const           tol = tensor_abs_tol_ternary<T>::fma_tol;

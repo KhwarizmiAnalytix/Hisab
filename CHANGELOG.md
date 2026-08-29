@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2025-11-02
 
 ### Added
-- Initial release of Quarisma quantitative analysis library
+- Initial release of XSigma quantitative analysis library
 - High-performance CPU and GPU computing support with CUDA and HIP backends
 - Cross-platform compatibility (Windows, Linux, macOS)
 - Modern CMake build system (3.16+) with flexible configuration options
@@ -98,5 +98,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Linting system with multiple adapters
 - Compiler warning enforcement (-Wall -Wextra for GCC/Clang, /W4 for MSVC)
 
-[Unreleased]: https://github.com/QuarismaAnalyitix/Quarisma/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/QuarismaAnalyitix/Quarisma/releases/tag/v1.0.0
+[Unreleased]: https://github.com/KhwarizmiAnalytix/XSigma/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/KhwarizmiAnalytix/XSigma/releases/tag/v1.0.0

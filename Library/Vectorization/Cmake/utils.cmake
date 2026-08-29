@@ -34,8 +34,8 @@ if(EXISTS "/etc/os-release")
 endif()
 
 # ---[ Apply platform-specific optimization flags after compiler validation
-if(COMMAND quarisma_apply_platform_flags)
-  quarisma_apply_platform_flags()
+if(COMMAND xsigma_apply_platform_flags)
+  xsigma_apply_platform_flags()
 endif()
 
 # ---[ Check if std::exception_ptr is supported.
@@ -68,16 +68,16 @@ if(NOT TMP_NEED_TO_TURN_OFF_DEPRECATION_WARNING AND NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated")
 endif()
 
-string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _quarisma_vec_proc)
-if(_quarisma_vec_proc MATCHES "^(x86_64|amd64|i686|i386)$")
-  set(_quarisma_vec_is_x86 TRUE)
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _xsigma_vec_proc)
+if(_xsigma_vec_proc MATCHES "^(x86_64|amd64|i686|i386)$")
+  set(_xsigma_vec_is_x86 TRUE)
 else()
-  set(_quarisma_vec_is_x86 FALSE)
+  set(_xsigma_vec_is_x86 FALSE)
 endif()
-if(_quarisma_vec_proc MATCHES "^(aarch64|arm64)$")
-  set(_quarisma_vec_is_aarch64 TRUE)
+if(_xsigma_vec_proc MATCHES "^(aarch64|arm64)$")
+  set(_xsigma_vec_is_aarch64 TRUE)
 else()
-  set(_quarisma_vec_is_aarch64 FALSE)
+  set(_xsigma_vec_is_aarch64 FALSE)
 endif()
 
 if(NOT INTERN_BUILD_MOBILE)
@@ -86,43 +86,43 @@ if(NOT INTERN_BUILD_MOBILE)
   set(HAS_NEON 0)
   set(HAS_SVE 0)
 
-  if(_quarisma_vec_is_x86)
-  # ---[ Check if the compiler has SSE support.
-  cmake_push_check_state(RESET)
-  if(MSVC)
-    set(CMAKE_REQUIRED_FLAGS "/arch:SSE2")
-  else()
-    set(CMAKE_REQUIRED_FLAGS "-msse -msse2")
-  endif()
-  check_cxx_source_compiles(
-    "#include <immintrin.h>
+  if(_xsigma_vec_is_x86)
+    # ---[ Check if the compiler has SSE support.
+    cmake_push_check_state(RESET)
+    if(MSVC)
+      set(CMAKE_REQUIRED_FLAGS "/arch:SSE2")
+    else()
+      set(CMAKE_REQUIRED_FLAGS "-msse -msse2")
+    endif()
+    check_cxx_source_compiles(
+      "#include <immintrin.h>
       int main() {
         __m128 a, b;
         a = _mm_set1_ps (1);
         _mm_add_ps(a, a);
         return 0;
       }"
-    TMP_COMPILER_SUPPORTS_SSE_EXTENSIONS
-  )
-  if(TMP_COMPILER_SUPPORTS_SSE_EXTENSIONS)
-    message("--Current compiler supports sse extension.")
-    if(VECTORIZATION_CPU_BACKEND STREQUAL "sse")
-      set(HAS_SSE 1)
-      set(VECTORIZATION ON)
-      set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+      TMP_COMPILER_SUPPORTS_SSE_EXTENSIONS
+    )
+    if(TMP_COMPILER_SUPPORTS_SSE_EXTENSIONS)
+      message("--Current compiler supports sse extension.")
+      if(VECTORIZATION_CPU_BACKEND STREQUAL "sse")
+        set(HAS_SSE 1)
+        set(VECTORIZATION ON)
+        set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+      endif()
     endif()
-  endif()
-  cmake_pop_check_state()
+    cmake_pop_check_state()
 
-  # ---[ Check if the compiler has AVX support.
-  cmake_push_check_state(RESET)
-  if(MSVC)
-    set(CMAKE_REQUIRED_FLAGS "/arch:AVX /D__F16C__")
-  else()
-    set(CMAKE_REQUIRED_FLAGS "-mavx -mf16c")
-  endif()
-  check_cxx_source_compiles(
-    "#include <immintrin.h>
+    # ---[ Check if the compiler has AVX support.
+    cmake_push_check_state(RESET)
+    if(MSVC)
+      set(CMAKE_REQUIRED_FLAGS "/arch:AVX /D__F16C__")
+    else()
+      set(CMAKE_REQUIRED_FLAGS "-mavx -mf16c")
+    endif()
+    check_cxx_source_compiles(
+      "#include <immintrin.h>
       int main() {
         __m256 a, b;
         a = _mm256_set1_ps (1);
@@ -130,27 +130,27 @@ if(NOT INTERN_BUILD_MOBILE)
         _mm256_add_ps (a,a);
         return 0;
       }"
-    TMP_COMPILER_SUPPORTS_AVX_EXTENSIONS
-  )
-  if(TMP_COMPILER_SUPPORTS_AVX_EXTENSIONS)
-    message("--Current compiler supports avx extension.")
-    if(VECTORIZATION_CPU_BACKEND STREQUAL "avx")
-      set(HAS_AVX 1)
-      set(VECTORIZATION ON)
-      set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+      TMP_COMPILER_SUPPORTS_AVX_EXTENSIONS
+    )
+    if(TMP_COMPILER_SUPPORTS_AVX_EXTENSIONS)
+      message("--Current compiler supports avx extension.")
+      if(VECTORIZATION_CPU_BACKEND STREQUAL "avx")
+        set(HAS_AVX 1)
+        set(VECTORIZATION ON)
+        set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+      endif()
     endif()
-  endif()
-  cmake_pop_check_state()
+    cmake_pop_check_state()
 
-  # ---[ Check if the compiler has AVX2 support.
-  cmake_push_check_state(RESET)
-  if(MSVC)
-    set(CMAKE_REQUIRED_FLAGS "/arch:AVX2 /D__F16C__")
-  else()
-    set(CMAKE_REQUIRED_FLAGS "-mavx2 -mf16c")
-  endif()
-  check_cxx_source_compiles(
-    "#include <immintrin.h>
+    # ---[ Check if the compiler has AVX2 support.
+    cmake_push_check_state(RESET)
+    if(MSVC)
+      set(CMAKE_REQUIRED_FLAGS "/arch:AVX2 /D__F16C__")
+    else()
+      set(CMAKE_REQUIRED_FLAGS "-mavx2 -mf16c")
+    endif()
+    check_cxx_source_compiles(
+      "#include <immintrin.h>
       int main() {
         __m256i a, b;
         a = _mm256_set1_epi8 (1);
@@ -160,28 +160,32 @@ if(NOT INTERN_BUILD_MOBILE)
         _mm256_extract_epi64(x, 0); // we rely on this in our AVX2 code
         return 0;
       }"
-    TMP_COMPILER_SUPPORTS_AVX2_EXTENSIONS
-  )
-  if(TMP_COMPILER_SUPPORTS_AVX2_EXTENSIONS)
-    message("--Current compiler supports avx2 extension.")
-    if(VECTORIZATION_CPU_BACKEND STREQUAL "avx2")
-      set(HAS_AVX2 1)
-      set(VECTORIZATION ON)
-      set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+      TMP_COMPILER_SUPPORTS_AVX2_EXTENSIONS
+    )
+    if(TMP_COMPILER_SUPPORTS_AVX2_EXTENSIONS)
+      message("--Current compiler supports avx2 extension.")
+      if(VECTORIZATION_CPU_BACKEND STREQUAL "avx2")
+        set(HAS_AVX2 1)
+        set(VECTORIZATION ON)
+        set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+      endif()
     endif()
-  endif()
-  cmake_pop_check_state()
+    cmake_pop_check_state()
 
-  # ---[ Check if the compiler has AVX512 support.
-  cmake_push_check_state(RESET)
-  if(MSVC)
-    # /arch:AVX512 implies __AVX512F__, __AVX512CD__, __AVX512BW__, __AVX512DQ__, __AVX512VL__
-    set(CMAKE_REQUIRED_FLAGS "/arch:AVX512 /D__F16C__")
-  else()
-    set(CMAKE_REQUIRED_FLAGS "-mavx512f -mavx512dq -mavx512vl -mavx512bw -mavx512cd -mf16c")
-  endif()
-  check_cxx_source_compiles(
-    "#if defined(_MSC_VER)
+    # ---[ Check if the compiler has AVX512 support.
+    # Compile-only: do not change this to check_cxx_source_runs(). Hosted CI
+    # (ubuntu-latest) can emit AVX-512 but typically has no avx512f silicon; a
+    # run-time compile probe would disable the backend. Test *execution* is
+    # gated separately by Scripts/helpers/cpu_isa.py.
+    cmake_push_check_state(RESET)
+    if(MSVC)
+      # /arch:AVX512 implies __AVX512F__, __AVX512CD__, __AVX512BW__, __AVX512DQ__, __AVX512VL__
+      set(CMAKE_REQUIRED_FLAGS "/arch:AVX512 /D__F16C__")
+    else()
+      set(CMAKE_REQUIRED_FLAGS "-mavx512f -mavx512dq -mavx512vl -mavx512bw -mavx512cd -mf16c")
+    endif()
+    check_cxx_source_compiles(
+      "#if defined(_MSC_VER)
      #include <intrin.h>
      #else
      #include <immintrin.h>
@@ -201,27 +205,27 @@ if(NOT INTERN_BUILD_MOBILE)
        __mmask16 m = _mm512_cmp_epi32_mask(a, a, _MM_CMPINT_EQ);
        __m512i r = _mm512_andnot_si512(a, a);
      }"
-    TMP_COMPILER_SUPPORTS_AVX512_EXTENSIONS
-  )
-  if(TMP_COMPILER_SUPPORTS_AVX512_EXTENSIONS)
-    message("--Current compiler supports avx512f extension.")
-    if(VECTORIZATION_CPU_BACKEND STREQUAL "avx512")
-      set(HAS_AVX512 1)
-      set(VECTORIZATION ON)
-      set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+      TMP_COMPILER_SUPPORTS_AVX512_EXTENSIONS
+    )
+    if(TMP_COMPILER_SUPPORTS_AVX512_EXTENSIONS)
+      message("--Current compiler supports avx512f extension.")
+      if(VECTORIZATION_CPU_BACKEND STREQUAL "avx512")
+        set(HAS_AVX512 1)
+        set(VECTORIZATION ON)
+        set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+      endif()
     endif()
-  endif()
-  cmake_pop_check_state()
+    cmake_pop_check_state()
 
-  # ---[ Check if the compiler has FMA support.
-  cmake_push_check_state(RESET)
-  if(MSVC)
-    set(CMAKE_REQUIRED_FLAGS "${VECTORIZATION_COMPILER_FLAGS} /D__FMA__")
-  else()
-    set(CMAKE_REQUIRED_FLAGS "${VECTORIZATION_COMPILER_FLAGS} -mfma")
-  endif()
-  check_cxx_source_compiles(
-    "#if defined(_MSC_VER)
+    # ---[ Check if the compiler has FMA support.
+    cmake_push_check_state(RESET)
+    if(MSVC)
+      set(CMAKE_REQUIRED_FLAGS "${VECTORIZATION_COMPILER_FLAGS} /D__FMA__")
+    else()
+      set(CMAKE_REQUIRED_FLAGS "${VECTORIZATION_COMPILER_FLAGS} -mfma")
+    endif()
+    check_cxx_source_compiles(
+      "#if defined(_MSC_VER)
      #include <intrin.h>
      #else
      #include <immintrin.h>
@@ -234,76 +238,80 @@ if(NOT INTERN_BUILD_MOBILE)
         a = _mm_fmadd_ps(a,b,b);
         return 0;
       }"
-    TMP_COMPILER_SUPPORTS_FMA_EXTENSIONS
-  )
-  if(TMP_COMPILER_SUPPORTS_FMA_EXTENSIONS)
-    message("--Current compiler supports fma extension.")
-    # Only apply -mfma when an x86 CPU SIMD backend is actually selected. Unlike the
-    # SSE/AVX/AVX2/AVX512 probes above (each gated on its own VECTORIZATION_CPU_BACKEND
-    # match), this check used to run unconditionally and would set VECTORIZATION_COMPILER_FLAGS
-    # even for VECTORIZATION_CPU_BACKEND=no, leaking -mfma into every consumer (including
-    # CUDA/HIP device-compiler host passes, which don't use CPU SIMD at all).
-    if(NOT VECTORIZATION_CPU_BACKEND STREQUAL "no")
-      set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
-    endif()
-  endif()
-  cmake_pop_check_state()
-
-  endif()  # _quarisma_vec_is_x86
-
-  if(_quarisma_vec_is_x86)
-  # ---[ Check if the compiler has SVML support.
-  cmake_push_check_state(RESET)
-  set(CMAKE_REQUIRED_FLAGS "${VECTORIZATION_COMPILER_FLAGS}")
-  check_cxx_source_compiles(
-    "#if defined(_MSC_VER)
-	 #include <intrin.h>
-	 #else
-	 #include <immintrin.h>
-	 #endif
-
-	  int main() {
-		__m256 a, b;
-		a = _mm256_setzero_ps();
-		b = _mm256_exp_ps(a);
-		b = _mm256_cos_ps(a);
-		b = _mm256_tanh_ps(a);
-		return 0;
-	  }"
-    TMP_COMPILER_SUPPORTS_SVML_EXTENSIONS)
-
-  if(NOT TMP_COMPILER_SUPPORTS_SVML_EXTENSIONS AND VECTORIZATION AND NOT VECTORIZATION_ENABLE_SLEEF)
-    message(
-        WARNING
-      "--Current compiler does not supports SVML functoins. Turn ON VECTORIZATION_ENABLE_SVML"
+      TMP_COMPILER_SUPPORTS_FMA_EXTENSIONS
     )
-    set(VECTORIZATION_ENABLE_SVML ON CACHE BOOL "Enable Intel SVML short vector math library" FORCE)
-  endif()
-  cmake_pop_check_state()
+    if(TMP_COMPILER_SUPPORTS_FMA_EXTENSIONS)
+      message("--Current compiler supports fma extension.")
+      # Only apply -mfma when an x86 CPU SIMD backend is actually selected. Unlike the
+      # SSE/AVX/AVX2/AVX512 probes above (each gated on its own VECTORIZATION_CPU_BACKEND
+      # match), this check used to run unconditionally and would set VECTORIZATION_COMPILER_FLAGS
+      # even for VECTORIZATION_CPU_BACKEND=no, leaking -mfma into every consumer (including
+      # CUDA/HIP device-compiler host passes, which don't use CPU SIMD at all).
+      if(NOT VECTORIZATION_CPU_BACKEND STREQUAL "no")
+        set(VECTORIZATION_COMPILER_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+      endif()
+    endif()
+    cmake_pop_check_state()
 
-  # Locate ThirdParty SVML binaries when the flag is ON.
-  if(VECTORIZATION_ENABLE_SVML)
-    find_package(SVML QUIET)
-    if(SVML_FOUND)
-      message("--SVML: ThirdParty package found.")
-    else()
+  endif() # _xsigma_vec_is_x86
+
+  if(_xsigma_vec_is_x86)
+    # ---[ Check if the compiler has SVML support.
+    cmake_push_check_state(RESET)
+    set(CMAKE_REQUIRED_FLAGS "${VECTORIZATION_COMPILER_FLAGS}")
+    check_cxx_source_compiles(
+      "#if defined(_MSC_VER)
+     #include <intrin.h>
+     #else
+     #include <immintrin.h>
+     #endif
+
+      int main() {
+        __m256 a, b;
+        a = _mm256_setzero_ps();
+        b = _mm256_exp_ps(a);
+        b = _mm256_cos_ps(a);
+        b = _mm256_tanh_ps(a);
+        return 0;
+      }"
+      TMP_COMPILER_SUPPORTS_SVML_EXTENSIONS
+    )
+
+    if(NOT TMP_COMPILER_SUPPORTS_SVML_EXTENSIONS AND VECTORIZATION AND NOT
+                                                                       VECTORIZATION_ENABLE_SLEEF
+    )
       message(
         WARNING
-          "--VECTORIZATION_ENABLE_SVML=ON but ThirdParty SVML binaries were not found. "
-          "Ensure ThirdParty/svml/ contains the required libraries."
+          "--Current compiler does not supports SVML functoins. Turn ON VECTORIZATION_ENABLE_SVML"
+      )
+      set(VECTORIZATION_ENABLE_SVML ON CACHE BOOL "Enable Intel SVML short vector math library"
+                                             FORCE
       )
     endif()
-  endif()
+    cmake_pop_check_state()
 
-  endif()  # _quarisma_vec_is_x86 (SVML)
+    # Locate ThirdParty SVML binaries when the flag is ON.
+    if(VECTORIZATION_ENABLE_SVML)
+      find_package(SVML QUIET)
+      if(SVML_FOUND)
+        message("--SVML: ThirdParty package found.")
+      else()
+        message(
+          WARNING "--VECTORIZATION_ENABLE_SVML=ON but ThirdParty SVML binaries were not found. "
+                  "Ensure ThirdParty/svml/ contains the required libraries."
+        )
+      endif()
+    endif()
 
-  if(_quarisma_vec_is_aarch64)
+  endif() # _xsigma_vec_is_x86 (SVML)
+
+  if(_xsigma_vec_is_aarch64)
     # ---[ AArch64 NEON — probe armv8.2-a first (Cortex-A75+, Neoverse N1, Apple A12+),
     # fall back to baseline armv8-a so the binary runs on older targets.
     cmake_push_check_state(RESET)
     if(NOT MSVC)
-      check_cxx_compiler_flag("-march=armv8.2-a" _quarisma_vec_neon_armv82)
-      if(_quarisma_vec_neon_armv82)
+      check_cxx_compiler_flag("-march=armv8.2-a" _xsigma_vec_neon_armv82)
+      if(_xsigma_vec_neon_armv82)
         set(CMAKE_REQUIRED_FLAGS "-march=armv8.2-a")
       else()
         set(CMAKE_REQUIRED_FLAGS "-march=armv8-a")
@@ -328,7 +336,8 @@ if(NOT INTERN_BUILD_MOBILE)
       endif()
     else()
       set(VECTORIZATION_ENABLE_SLEEF OFF
-          CACHE BOOL "Enable SLEEF (auto-enabled: Accelerate unavailable on non-Apple)" FORCE)
+          CACHE BOOL "Enable SLEEF (auto-enabled: Accelerate unavailable on non-Apple)" FORCE
+      )
 
     endif()
     cmake_pop_check_state()
@@ -338,7 +347,8 @@ if(NOT INTERN_BUILD_MOBILE)
     cmake_push_check_state(RESET)
     if(NOT MSVC)
       set(CMAKE_REQUIRED_FLAGS
-          "-march=armv8-a+sve -msve-vector-bits=${VECTORIZATION_SVE_VECTOR_BITS}")
+          "-march=armv8-a+sve -msve-vector-bits=${VECTORIZATION_SVE_VECTOR_BITS}"
+      )
     endif()
     check_cxx_source_compiles(
       "#include <arm_sve.h>
@@ -351,7 +361,8 @@ if(NOT INTERN_BUILD_MOBILE)
     )
     if(TMP_COMPILER_SUPPORTS_ARM_SVE128 AND VECTORIZATION_CPU_BACKEND STREQUAL "sve")
       message("--Current compiler supports AArch64 SVE "
-              "(${VECTORIZATION_SVE_VECTOR_BITS}-bit vector length).")
+              "(${VECTORIZATION_SVE_VECTOR_BITS}-bit vector length)."
+      )
       set(HAS_SVE 1)
       set(VECTORIZATION ON)
       if(NOT MSVC)
@@ -384,23 +395,27 @@ if(NOT INTERN_BUILD_MOBILE)
       cmake_pop_check_state()
       if(TMP_ACCELERATE_VFORCE_SUPPORTED)
         message(STATUS "Accelerate vForce (vvexpf/vvsinf/vvcosf/vvlogf): supported -- "
-                       "auto-enabling VECTORIZATION_ENABLE_ACCELERATE.")
+                       "auto-enabling VECTORIZATION_ENABLE_ACCELERATE."
+        )
         set(VECTORIZATION_ENABLE_ACCELERATE ON
-            CACHE BOOL "Enable Apple Accelerate vForce (auto-enabled)" FORCE)
+            CACHE BOOL "Enable Apple Accelerate vForce (auto-enabled)" FORCE
+        )
       else()
-        message(STATUS
-          "Accelerate vForce (vvexpf/vvsinf/vvcosf/vvlogf): NOT supported -- "
-          "auto-enabling VECTORIZATION_ENABLE_SLEEF.")
+        message(STATUS "Accelerate vForce (vvexpf/vvsinf/vvcosf/vvlogf): NOT supported -- "
+                       "auto-enabling VECTORIZATION_ENABLE_SLEEF."
+        )
         set(VECTORIZATION_ENABLE_SLEEF ON
-            CACHE BOOL "Enable SLEEF (auto-enabled: Accelerate vForce unavailable)" FORCE)
+            CACHE BOOL "Enable SLEEF (auto-enabled: Accelerate vForce unavailable)" FORCE
+        )
       endif()
     elseif(NOT APPLE AND HAS_NEON AND NOT VECTORIZATION_ENABLE_SLEEF)
       # Non-Apple AArch64 never has Accelerate; enable SLEEF automatically.
-      message(STATUS
-        "Non-Apple AArch64 detected: Accelerate vForce unavailable -- "
-        "auto-enabling VECTORIZATION_ENABLE_SLEEF.")
+      message(STATUS "Non-Apple AArch64 detected: Accelerate vForce unavailable -- "
+                     "auto-enabling VECTORIZATION_ENABLE_SLEEF."
+      )
       set(VECTORIZATION_ENABLE_SLEEF ON
-          CACHE BOOL "Enable SLEEF (auto-enabled: Accelerate unavailable on non-Apple)" FORCE)
+          CACHE BOOL "Enable SLEEF (auto-enabled: Accelerate unavailable on non-Apple)" FORCE
+      )
     endif()
 
   endif()

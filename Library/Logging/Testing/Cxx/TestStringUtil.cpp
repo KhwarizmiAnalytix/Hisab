@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 /**
@@ -24,7 +24,7 @@
  * This file contains extensive tests for all string utility functions
  * including edge cases, error conditions, and performance validation.
  *
- * @author Quarisma Development Team
+ * @author XSigma Development Team
  * @version 2.0
  * @date 2024
  */
@@ -38,7 +38,7 @@
 #include <string_view>  // for string_view
 #include <vector>       // for vector, _Vector_const_iterato
 
-#include "LoggingTest.h"            // for END_TEST, LOGGINGTEST
+#include "LoggingTest.h"
 #include "common/logging_macros.h"  // for LOGGING_UNUSED
 #include "util/string_util.h"  // for is_float, is_integer, exclude_file_extension, file_extension, strip_basename
 
@@ -292,6 +292,9 @@ void testDemangleFunction()
     // This is platform-dependent, so we just verify it doesn't crash
     std::string demangled_complex = logging::demangle("_Z1gv");
     EXPECT_FALSE(demangled_complex.empty());
+#if LOGGING_HAS_CXA_DEMANGLE
+    EXPECT_EQ(demangled_complex, "g()");
+#endif
 
     // Regression test: demangle() must not strip spaces out of multi-word
     // fundamental type names. "unsigned int" is not a valid mangled symbol,
@@ -419,8 +422,7 @@ void testAllFunctions()
 
 }  // namespace logging
 
-LOGGINGTEST(StringUtil, test)
+TEST(StringUtil, test)
 {
     logging::testAllFunctions();
-    END_TEST();
 }

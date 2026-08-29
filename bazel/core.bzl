@@ -1,17 +1,17 @@
-load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_enzyme_copts", "quarisma_enzyme_linkopts", "quarisma_linkopts")
+load("//bazel:xsigma.bzl", "xsigma_copts", "xsigma_defines", "xsigma_enzyme_copts", "xsigma_enzyme_linkopts", "xsigma_linkopts")
 
 # C++ standard for Core — mirrors CMake CORE_CXX_STANDARD (default: 20)
 CORE_CXX_STD = "c++20"
 
 def core_copts():
-    return quarisma_copts(cxx_std = CORE_CXX_STD)
+    return xsigma_copts(cxx_std = CORE_CXX_STD)
 
 def core_defines():
     """Returns compile definitions for Library/Core.
 
     Mirrors Library/Core/CMakeLists.txt CORE_HAS_* and CORE_* flags.
     """
-    defines = quarisma_defines()
+    defines = xsigma_defines()
 
     # SIMD instruction-set tokens — CORE_SSE/AVX/AVX2/AVX512. CMake sets these from
     # PROJECT_SSE/AVX/AVX2/AVX512 (Cmake/tools/utils.cmake), which mirror whichever single
@@ -108,10 +108,10 @@ def core_defines():
     return defines
 
 def core_linkopts():
-    return quarisma_linkopts()
+    return xsigma_linkopts()
 
 def core_enzyme_copts():
-    return quarisma_enzyme_copts()
+    return xsigma_enzyme_copts()
 
 def core_enzyme_linkopts():
-    return quarisma_enzyme_linkopts()
+    return xsigma_enzyme_linkopts()

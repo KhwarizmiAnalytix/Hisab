@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Quarisma Valgrind CTest Runner
+# XSigma Valgrind CTest Runner
 # =============================================================================
 # This script runs CTest with Valgrind memory checking.
 #
@@ -56,9 +56,9 @@ print_header() {
     echo -e "${CYAN}========================================${NC}"
 }
 
-# Extract Quarisma-specific stack trace information from Valgrind logs
-# This function identifies function names and source locations from the quarisma namespace
-extract_quarisma_stack_trace() {
+# Extract XSigma-specific stack trace information from Valgrind logs
+# This function identifies function names and source locations from the xsigma namespace
+extract_xsigma_stack_trace() {
     local log_file="$1"
     local issue_type="$2"  # "definitely lost", "Invalid read", etc.
 
@@ -96,16 +96,16 @@ extract_quarisma_stack_trace() {
     ' "$log_file"
 }
 
-# Parse stack trace line to extract Quarisma function and source location
-# Input format: "==12345==    by 0x123456: quarisma::namespace::function() (file.cpp:123)"
+# Parse stack trace line to extract XSigma function and source location
+# Input format: "==12345==    by 0x123456: xsigma::namespace::function() (file.cpp:123)"
 parse_stack_frame() {
     local frame="$1"
 
     # Extract the part after the address
     local info="${frame#*: }"
 
-    # Check if this is an Quarisma frame (contains quarisma:: or .cpp/.h file)
-    if [[ "$info" =~ quarisma:: ]] || [[ "$info" =~ \.(cxx|h|hpp|cc|cpp)\: ]]; then
+    # Check if this is an XSigma frame (contains xsigma:: or .cpp/.h file)
+    if [[ "$info" =~ xsigma:: ]] || [[ "$info" =~ \.(cxx|h|hpp|cc|cpp)\: ]]; then
         # Extract function name (everything before the opening paren)
         local func="${info%%(*}"
 
@@ -118,14 +118,14 @@ parse_stack_frame() {
     fi
 }
 
-# Extract all Quarisma frames from a stack trace block
-extract_quarisma_frames() {
+# Extract all XSigma frames from a stack trace block
+extract_xsigma_frames() {
     local log_file="$1"
     local issue_type="$2"
 
     # Get the stack trace for this issue
     local stack_trace
-    stack_trace=$(extract_quarisma_stack_trace "$log_file" "$issue_type" | grep -E "at 0x|by 0x")
+    stack_trace=$(extract_xsigma_stack_trace "$log_file" "$issue_type" | grep -E "at 0x|by 0x")
 
     # Process each frame
     while IFS= read -r frame; do
@@ -240,7 +240,7 @@ generate_valgrind_report() {
     # Initialize report
     {
         echo "================================================================================"
-        echo "Quarisma Valgrind Memory Analysis Report"
+        echo "XSigma Valgrind Memory Analysis Report"
         echo "================================================================================"
         echo "Generated: $(date '+%Y-%m-%d %H:%M:%S')"
         echo "Build Directory: $build_dir"
@@ -313,14 +313,14 @@ generate_valgrind_report() {
 
                 echo "Leak #$leak_count: $bytes bytes in $blocks block(s)"
 
-                # Try to extract Quarisma-specific stack trace information
+                # Try to extract XSigma-specific stack trace information
                 # Look for the allocation site in the log
                 local alloc_site=$(grep -A 20 "loss record $record of" "$memcheck_logs" 2>/dev/null | \
-                                  grep -E "quarisma::" | head -1)
+                                  grep -E "xsigma::" | head -1)
 
                 if [[ -n "$alloc_site" ]]; then
-                    # Extract function name (everything between quarisma:: and the opening paren)
-                    local func=$(echo "$alloc_site" | sed -n 's/.*\(quarisma::[^(]*\).*/\1/p')
+                    # Extract function name (everything between xsigma:: and the opening paren)
+                    local func=$(echo "$alloc_site" | sed -n 's/.*\(xsigma::[^(]*\).*/\1/p')
                     if [[ -n "$func" ]]; then
                         echo "  Allocated by: $func"
                     fi
@@ -366,12 +366,12 @@ generate_valgrind_report() {
             sort | uniq -c | sort -rn | head -20
             echo ""
 
-            echo "Quarisma-Specific Locations:"
+            echo "XSigma-Specific Locations:"
             echo "-------------------------"
-            # Extract stack traces and filter for Quarisma code
+            # Extract stack traces and filter for XSigma code
             # Look both before and after the Invalid read/write line
             grep -B 10 -A 10 "Invalid read\|Invalid write" $memcheck_logs 2>/dev/null | \
-            grep -E "quarisma::|\.cpp:|\.h:" | head -20
+            grep -E "xsigma::|\.cpp:|\.h:" | head -20
 
             echo ""
             echo "Full Stack Traces (first 30 frames):"
@@ -397,12 +397,12 @@ generate_valgrind_report() {
             echo "Total Uninitialized Value Errors: $uninit_count"
             echo ""
 
-            echo "Quarisma-Specific Locations:"
+            echo "XSigma-Specific Locations:"
             echo "-------------------------"
-            # Extract stack traces and filter for Quarisma code
+            # Extract stack traces and filter for XSigma code
             # Look both before and after the Use of uninitialised value line
             grep -B 10 -A 10 "Use of uninitialised value" $memcheck_logs 2>/dev/null | \
-            grep -E "quarisma::|\.cpp:|\.h:" | head -20
+            grep -E "xsigma::|\.cpp:|\.h:" | head -20
 
             echo ""
             echo "Sample Stack Traces (first 20 frames):"
@@ -683,7 +683,7 @@ determine_test_status() {
 main() {
     local exit_code=0
 
-    print_header "Quarisma Valgrind Memory Check"
+    print_header "XSigma Valgrind Memory Check"
 
     # Step 1: Platform compatibility check
     check_platform_compatibility

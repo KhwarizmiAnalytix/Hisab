@@ -1,8 +1,8 @@
 # =============================================================================
-# Quarisma
+# XSigma
 # Compiler-Cache Configuration Module
 #
-# Provides quarisma_target_apply_cache() — a per-target compiler-cache setter. Each Library module
+# Provides xsigma_target_apply_cache() — a per-target compiler-cache setter. Each Library module
 # declares its own XXX_ENABLE_CACHE / XXX_CACHE_BACKEND and calls this function after add_library()
 # so that compiler caches are scoped to individual targets rather than globally overriding
 # CMAKE_*_COMPILER_LAUNCHER.
@@ -14,11 +14,11 @@
 # =============================================================================
 # include_guard(GLOBAL)
 
-# quarisma_target_apply_cache(<target> <enable_var> <backend_var>) enable_var  – boolean CACHE
+# xsigma_target_apply_cache(<target> <enable_var> <backend_var>) enable_var  – boolean CACHE
 # variable controlling whether caching is active (e.g. LOGGING_ENABLE_CACHE) backend_var – string
 # CACHE variable selecting the cache program (e.g. LOGGING_CACHE_BACKEND:
 # none|ccache|sccache|buildcache)
-function(quarisma_target_apply_cache target_name enable_var backend_var)
+function(xsigma_target_apply_cache target_name enable_var backend_var)
   if(NOT ${enable_var})
     message(STATUS "  -cache: ${target_name}: DISABLED")
     return()
@@ -38,7 +38,7 @@ function(quarisma_target_apply_cache target_name enable_var backend_var)
   endif()
 
   string(TOUPPER "${_backend}" _backend_upper)
-  set(_cache_var "QUARISMA_${_backend_upper}_PROGRAM")
+  set(_cache_var "XSIGMA_${_backend_upper}_PROGRAM")
 
   if(NOT DEFINED ${_cache_var} OR ${_cache_var} STREQUAL "")
     find_program(${_cache_var} NAMES ${_backend})

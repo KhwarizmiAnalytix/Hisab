@@ -1,7 +1,7 @@
-# Quarisma Linter
+# XSigma Linter
 
 ## Overview
-The `Tools/linter` package hosts Quarisma's lint and formatting toolchain. It
+The `Tools/linter` package hosts XSigma's lint and formatting toolchain. It
 collects thin adapter scripts that wrap external tools, along with shared
 Python helpers that let every adapter participate in the repository's
 `lintrunner` workflow. The suite keeps code style consistent, enforces project
@@ -13,7 +13,7 @@ would otherwise require bespoke shell scripting.
 | --- | --- |
 | `Tools/linter/__init__.py` | Marks the package as importable so adapters can share helpers. |
 | `Tools/linter/README.md` | High-level documentation (this file). |
-| `Tools/linter/dictionary.txt` | Shared allow-list for `codespell`; keep it sorted and deduplicated. |
+| `Scripts/suppressions/spell_suppressions.txt` | Shared codespell ignore-words list; keep it sorted and deduplicated. |
 | `Tools/linter/adapters/` | Individual adapter entrypoints plus the shared `_linter` framework. |
 | `Tools/linter/adapters/_linter/` | Tokeniser, parser, and CLI scaffolding for Python-focused adapters. |
 | `Tools/linter/adapters/README.md` | Adapter authoring checklist (protocol, dry-run behaviour, etc.). |
@@ -36,7 +36,7 @@ The adapter directory contains one script per lint code (for example
   and `no_workflows_on_fork` harden GitHub Actions configuration.
 - **Repository policy**: `set_linter`, `docstring_linter`, `header_only_linter`,
   `testowners_linter`, `test_device_bias_linter`, and `test_has_main_linter`
-  encode Quarisma-specific conventions.
+  encode XSigma-specific conventions.
 - **Infrastructure helpers**: `pip_init.py`, `s3_init.py`, `update_s3.py`, and
   `clang_tidy/generate_build_files.py` provision third-party binaries and prepare
   compilation databases.
@@ -597,8 +597,8 @@ CMake formatting configuration. Key settings:
 - `enable_sort`: Enable argument sorting (default: true)
 - `autosort`: Automatically sort arguments (default: false)
 
-### Tools/linter/dictionary.txt
-Shared dictionary for `codespell`. Add words that should not be flagged as misspellings.
+### Scripts/suppressions/spell_suppressions.txt
+Shared ignore-words list for `codespell` (CMake `spell` token, lintrunner `CODESPELL`, and `.codespellrc`). Add one word per line; keep the file sorted and deduplicated. Do not edit `Cmake/tools/spell.cmake` for new exclusions.
 
 ## CMake Format Integration
 

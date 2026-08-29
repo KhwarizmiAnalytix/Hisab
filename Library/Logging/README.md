@@ -1,15 +1,20 @@
 # Logging (`Library/Logging`)
 
-**Structured logging**: levels, lazy evaluation, back traces, and a pluggable backend — **Loguru** (default in CMake), **glog**, or **native** (fmt-based).
+**Structured logging**: levels, lazy evaluation, back traces, and a pluggable backend —
+**spdlog** (default), **Loguru**, **glog**, or **native** (fmt-based).
 
 ## Layout
 
 - `CMakeLists.txt` — `LOGGING_BACKEND`, `LOGGING_ENABLE_*`.
 - `BUILD.bazel` — `//Library/Logging:Logging`; backend deps from `select`.
-- `logger/` — public headers and implementation.
-- `Testing/Cxx/` — unit tests.
+- `logger/` — public logger facade, verbosity enum, back traces.
+- `util/` — exceptions, env helpers, string utilities, lazy values.
+- `Testing/Cxx/` — unit tests and `BenchmarkLogger.cpp`.
 
----
+Public C++ namespace: `logging`. Macros: `LOGGING_LOG_*`, `LOGGING_CHECK`, `LOGGING_THROW`.
+
+Memory, Vectorization, and Core always link this library. `MEMORY_LOG_*` and
+`VECTORIZATION_LOGF` / `VECTORIZATION_CHECK` / `VECTORIZATION_THROW` forward here.
 
 ## CMake options
 
@@ -17,53 +22,60 @@
 
 | CMake variable | Default | Values |
 |----------------|---------|--------|
-| `LOGGING_BACKEND` | `LOGURU` | `NATIVE`, `LOGURU`, `GLOG` — exactly one `LOGGING_HAS_*=1` |
+| `LOGGING_BACKEND` | `SPDLOG` | `NATIVE`, `LOGURU`, `GLOG`, `SPDLOG` — exactly one `LOGGING_HAS_*=1` |
+
+Unknown values fail configure (`FATAL_ERROR`).
 
 ### Feature and toolchain
 
 | CMake variable | Default | Summary |
 |----------------|---------|---------|
-| `LOGGING_ENABLE_LTO` | OFF | LTO |
-| `LOGGING_ENABLE_COVERAGE` | OFF | Coverage |
+| `LOGGING_ENABLE_MAGICENUM` | ON | `LOGGING_HAS_MAGICENUM` for enum ↔ string helpers |
 | `LOGGING_ENABLE_TESTING` | ON | Tests |
-| `LOGGING_ENABLE_EXAMPLES` | OFF | Examples |
 | `LOGGING_ENABLE_GTEST` | ON | GoogleTest |
-| `LOGGING_ENABLE_BENCHMARK` | ON | Google Benchmark |
-| `LOGGING_ENABLE_ICECC` / `LOGGING_ENABLE_CACHE` / `LOGGING_ENABLE_CLANGTIDY` / `LOGGING_ENABLE_FIX` / `LOGGING_ENABLE_IWYU` / `LOGGING_ENABLE_SANITIZER` / `LOGGING_ENABLE_SPELL` / `LOGGING_ENABLE_VALGRIND` | see `CMakeLists.txt` | Tooling |
-
-### `CACHE STRING`
-
-| CMake variable | Default | Notes |
-|----------------|---------|-------|
-| `LOGGING_CXX_STANDARD` | 20 | `11`–`23` |
-| `LOGGING_SANITIZER_TYPE` | address | if sanitizer ON |
-| `LOGGING_LINKER_CHOICE` | default | linker selection |
-| `LOGGING_CACHE_BACKEND` | none | ccache / sccache / buildcache |
-
----
+| `LOGGING_ENABLE_BENCHMARK` | ON | `benchmark_logging_logger` |
+| Other `LOGGING_ENABLE_*` | see `CMakeLists.txt` | LTO, coverage, sanitizers, cache, … |
 
 ## Bazel flags
 
 Starlark: [`bazel/logging.bzl`](../../bazel/logging.bzl).
 
-### Backend (`logging_backend`)
+| Define | Effect |
+|--------|--------|
+| *(unset)* | spdlog |
+| `logging_backend=glog\|loguru\|native\|spdlog` | Matching `LOGGING_HAS_*` |
+| `disable_magic_enum` | `LOGGING_HAS_MAGICENUM=0` |
 
-| Define | `config_setting` | `LOGGING_HAS_*` |
-|--------|------------------|-----------------|
-| *(unset)* | default branch | Loguru = 1 |
-| `logging_backend=glog` | `//bazel:logging_glog` | Glog = 1 |
-| `logging_backend=native` | `//bazel:logging_native` | Native = 1 |
-| `logging_backend=loguru` | `//bazel:logging_loguru` | Explicit Loguru (same as default) |
+Use `--config=logging_spdlog` (default), `logging_loguru`, `logging_glog`, or
+`logging_native` from `.bazelrc`.
 
-Use `--config=logging_glog`, `logging_loguru`, or `logging_native` from `.bazelrc`.
+## Public API (abridged)
 
-### Other
+```cpp
+#include "logger/logger.h"
+#include "util/logging_exception.h"
 
-| Mechanism | Effect |
-|-----------|--------|
-| `logging_enable_benchmark` | Default ON in root `.bazelrc` (CMake parity); benchmark targets live under `Testing/Cxx/BUILD.bazel` |
-| `enable_gtest` | Project-wide; affects other libraries’ `HAS_GTEST` — Logging tests use gtest deps directly |
+logging::logger::init();
+logging::logger::set_stderr_verbosity(logging::logger_verbosity_enum::VERBOSITY_INFO);
+logging::logger::log_to_file("app.log", logging::logger::file_mode::truncate,
+                             logging::logger_verbosity_enum::VERBOSITY_INFO);
 
-### CMake-only
+LOGGING_LOG_INFO("started {}", name);
+LOGGING_CHECK(ptr != nullptr, "ptr was null");
+```
 
-`LOGGING_CXX_STANDARD` → `c++20` in `logging.bzl`. LTO, coverage, sanitizers, clang-tidy, linker/cache, spell, Valgrind, Icecream — **CMake only**.
+`LOGGING_LOG_FATAL` and `exception_mode::LOG_FATAL` abort the process after emitting the message.
+
+Environment: `LOGGING_EXCEPTION_MODE=THROW|LOG_FATAL`.
+
+## Benchmarks
+
+```bash
+cd Scripts
+python3 setup.py config.build.ninja.clang.release.benchmark --project.logging
+# from repo root:
+build_ninja_project_logging_logging_spdlog/bin/benchmark_logging_logger --benchmark_min_time=0.5s
+```
+
+Reconfigure with `--logging=LOGURU|GLOG|NATIVE` to compare backends. Numbers and
+methodology: [Docs/readme/logging.md](../../Docs/readme/logging.md).

@@ -1,15 +1,17 @@
 # =============================================================================
-# Quarisma Spell
+# XSigma Spell
 # Checking Configuration Module
 
-# This module configures codespell for automated spell checking and correction. WARNING: When
-# enabled, automatically modifies source files to fix spelling errors.
+# This module configures codespell as a check-only build step. Misspellings fail the
+# build; sources are never rewritten. ThirdParty trees are skipped.
 #
 # Usage in each module's CMakeLists.txt:
 #
-# option(XXX_ENABLE_SPELL "Enable spell checking with automatic corrections for XXX (WARNING:
-# modifies source files)" OFF) mark_as_advanced(XXX_ENABLE_SPELL) ... if(XXX_ENABLE_SPELL)
-# include(spell) endif()
+# option(XXX_ENABLE_SPELL "Enable spell checking for XXX" OFF)
+# mark_as_advanced(XXX_ENABLE_SPELL)
+# if(XXX_ENABLE_SPELL)
+#   include(spell)
+# endif()
 
 # Skip spell checking for third-party libraries
 get_filename_component(_spell_dir_name "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
@@ -50,22 +52,26 @@ Or set ${_spell_dir_name}_ENABLE_SPELL=OFF to disable spell checking"
 else()
   message(STATUS "Found codespell: ${CODESPELL_EXECUTABLE}")
 
-  # Check if .codespellrc configuration file exists
-  set(CODESPELL_CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/.codespellrc")
   set(_spell_args)
+  set(_spell_ignore_file "${CMAKE_SOURCE_DIR}/Scripts/suppressions/spell_suppressions.txt")
+  if(NOT EXISTS "${_spell_ignore_file}")
+    message(FATAL_ERROR "Spell suppression file not found: ${_spell_ignore_file}")
+  endif()
+  list(APPEND _spell_args "--ignore-words=${_spell_ignore_file}")
+  message(STATUS "Using spell suppression file: ${_spell_ignore_file}")
 
+  # Always skip vendored trees. `ThirdParty` alone only matches a directory
+  # *entry* during os.walk; `*ThirdParty*` also matches full paths if codespell
+  # is pointed at a ThirdParty file or the walk starts inside that tree.
+  set(_spell_skip
+      ".git,.augment,.github,.vscode,build,Build,Cmake,ThirdParty,third_party,3rdparty,*ThirdParty*,*third_party*,*3rdparty*"
+  )
+  list(APPEND _spell_args "--skip=${_spell_skip}")
+
+  set(CODESPELL_CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/.codespellrc")
   if(EXISTS ${CODESPELL_CONFIG_FILE})
     message(STATUS "Using codespell configuration: ${CODESPELL_CONFIG_FILE}")
-    # codespell automatically reads .codespellrc from the current directory
-  else()
-    # Default configuration if no .codespellrc exists
-    list(APPEND _spell_args "--skip=.git,.augment,.github,.vscode,build,Build,Cmake,ThirdParty"
-         "--ignore-words-list=ThirdParty,OT"
-    )
   endif()
-
-  # Add write-changes flag for automatic corrections
-  list(APPEND _spell_args "--write-changes")
 
   # Target names are unique per module directory to avoid conflicts
   string(TOLOWER "${_spell_dir_name}" _spell_dir_lower)
@@ -74,7 +80,7 @@ else()
     spell_check_${_spell_dir_lower}
     COMMAND ${CODESPELL_EXECUTABLE} ${_spell_args} ${CMAKE_CURRENT_SOURCE_DIR}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Running spell check for ${_spell_dir_name} with automatic corrections..."
+    COMMENT "Running spell check for ${_spell_dir_name}..."
     VERBATIM
   )
 
@@ -86,13 +92,11 @@ else()
     VERBATIM
   )
 
-  message(
-    WARNING
-      "${_spell_dir_name}_ENABLE_SPELL is ON: codespell will modify source files directly to fix "
-      "spelling errors. Ensure you have committed your changes before building."
-  )
+  message(STATUS "${_spell_dir_name}_ENABLE_SPELL is ON: codespell is check-only (no --write-changes)")
 endif()
 
 unset(_spell_dir_name)
 unset(_spell_dir_lower)
 unset(_spell_args)
+unset(_spell_ignore_file)
+unset(_spell_skip)

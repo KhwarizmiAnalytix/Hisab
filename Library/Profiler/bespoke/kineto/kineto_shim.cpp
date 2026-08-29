@@ -3,6 +3,7 @@
 #include <type_traits>
 
 #include "bespoke/common/collection.h"
+#include "common/profiler_macros.h"
 
 #if PROFILER_HAS_KINETO
 #include <libkineto.h>
@@ -27,7 +28,6 @@ const std::set<libkineto::ActivityType> kCpuTypes{
     libkineto::ActivityType::CPU_INSTANT_EVENT,
     libkineto::ActivityType::USER_ANNOTATION,
     libkineto::ActivityType::EXTERNAL_CORRELATION,
-    libkineto::ActivityType::XPU_RUNTIME,
     libkineto::ActivityType::CUDA_RUNTIME,
     libkineto::ActivityType::CUDA_DRIVER,
     libkineto::ActivityType::PYTHON_FUNCTION,
@@ -44,21 +44,6 @@ const std::set<libkineto::ActivityType> kCudaTypes = {
     libkineto::ActivityType::CUDA_RUNTIME,
     libkineto::ActivityType::CUDA_DRIVER,
     libkineto::ActivityType::OVERHEAD,
-};
-const std::set<libkineto::ActivityType> kXpuTypes = {
-    libkineto::ActivityType::GPU_MEMCPY,
-    libkineto::ActivityType::GPU_MEMSET,
-    libkineto::ActivityType::CONCURRENT_KERNEL,
-    // XPU_RUNTIME appears in both kCpuTypes and kXpuTypes.
-    libkineto::ActivityType::XPU_RUNTIME,
-};
-const std::set<libkineto::ActivityType> kMtiaTypes = {
-    libkineto::ActivityType::MTIA_CCP_EVENTS,
-    libkineto::ActivityType::MTIA_RUNTIME,
-    libkineto::ActivityType::MTIA_INSIGHT,
-};
-const std::set<libkineto::ActivityType> hpuTypes = {
-    libkineto::ActivityType::HPU_OP,
 };
 const std::set<libkineto::ActivityType> kPrivateUse1Types = {
     libkineto::ActivityType::GPU_MEMCPY,
@@ -175,18 +160,15 @@ ActivityTraceWrapper::operator bool() const
 #endif  // PROFILER_HAS_KINETO
 }
 
-void ActivityTraceWrapper::save(const std::string& path)
+void ActivityTraceWrapper::save(PROFILER_UNUSED const std::string& path)
 {
 #if PROFILER_HAS_KINETO
-    // PROFILER_CHECK(!saved_, "Trace is already saved.");
-    // cppcheck-suppress unknownMacro
-    // PROFILER_CHECK(trace_ != nullptr, "Missing trace.")
+    if (saved_ || trace_ == nullptr)
+    {
+        return;
+    }
     trace_->save(path);
     saved_ = true;
-#else
-    PROFILER_THROW(
-        "Saving a trace requires using profiler.profiler with Kineto support "
-        "(PROFILER_HAS_KINETO=1)");
 #endif  // PROFILER_HAS_KINETO
 }
 
@@ -311,19 +293,8 @@ void prepareTrace(
     {
         k_activities.insert(kCpuTypes.begin(), kCpuTypes.end());
     }
-    if (activities.count(profiler::profiler_impl::ActivityType::XPU) > 0)  //NOLINT
-    {
-        k_activities.insert(kXpuTypes.begin(), kXpuTypes.end());
-    }
-    if (activities.count(profiler::profiler_impl::ActivityType::MTIA) > 0)  //NOLINT
-    {
-        k_activities.insert(kMtiaTypes.begin(), kMtiaTypes.end());
-    }
-    if (activities.count(profiler::profiler_impl::ActivityType::HPU) > 0)  //NOLINT
-    {
-        k_activities.insert(hpuTypes.begin(), hpuTypes.end());
-    }
-    if (activities.count(profiler::profiler_impl::ActivityType::CUDA) > 0)  //NOLINT
+    if (activities.count(profiler::profiler_impl::ActivityType::CUDA) > 0 ||
+        activities.count(profiler::profiler_impl::ActivityType::HIP) > 0)  //NOLINT
     {
         k_activities.insert(kCudaTypes.begin(), kCudaTypes.end());
         if (config.enable_cuda_sync_events || get_cuda_sync_enabled())
@@ -335,7 +306,7 @@ void prepareTrace(
     {
         k_activities.insert(libkineto::ActivityType::COLLECTIVE_COMM);
     }
-    if (activities.count(profiler::profiler_impl::ActivityType::PrivateUse1) > 0)  //NOLINT
+    if (activities.count(profiler::profiler_impl::ActivityType::Metal) > 0)  //NOLINT
     {
         k_activities.insert(kPrivateUse1Types.begin(), kPrivateUse1Types.end());
     }

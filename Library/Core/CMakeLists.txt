@@ -27,9 +27,10 @@ cmake_minimum_required(VERSION 3.16)
 # Link-Time Optimization — disabled when CORE_ENABLE_COVERAGE or CORE_ENABLE_SANITIZER is ON (LTO
 # conflicts with profiling instrumentation and typical sanitizer workflows).
 include(lto)
-quarisma_lto_compute_default(_lto_default PROFILE PERFORMANCE)
-set(CORE_LTO_MODE "${_lto_default}"
-    CACHE STRING "LTO mode for Core: off | thin | full | ipo | auto")
+xsigma_lto_compute_default(_lto_default PROFILE PERFORMANCE)
+set(CORE_LTO_MODE "${_lto_default}" CACHE STRING
+                                          "LTO mode for Core: off | thin | full | ipo | auto"
+)
 set_property(CACHE CORE_LTO_MODE PROPERTY STRINGS off thin full ipo auto)
 
 # Coverage instrumentation — activates -fprofile-instr-generate / --coverage compiler flags for
@@ -95,10 +96,7 @@ set(CORE_SANITIZER_TYPE "address"
 )
 set_property(CACHE CORE_SANITIZER_TYPE PROPERTY STRINGS address undefined thread memory leak)
 mark_as_advanced(CORE_ENABLE_SANITIZER CORE_SANITIZER_TYPE)
-option(CORE_ENABLE_SPELL
-       "Enable spell checking with automatic corrections for Core (WARNING: modifies source files)"
-       OFF
-)
+option(CORE_ENABLE_SPELL "Enable check-only spell checking for Core" OFF)
 mark_as_advanced(CORE_ENABLE_SPELL)
 option(CORE_ENABLE_VALGRIND "Execute Core test suite with Valgrind" OFF)
 mark_as_advanced(CORE_ENABLE_VALGRIND)
@@ -188,7 +186,7 @@ list(APPEND CORE_DEPENDENCY_COMPILE_DEFINITIONS ${CORE_COMPILE_DEFINITIONS})
 # (Cmake/tools/, Cmake/flags/) b2) Sanitizer (LTO already cleared before first include() when
 # enabled) c) Core-owned feature finders — compression, MKL, Enzyme d) Coverage gate — must follow
 # Enzyme (see note below); must run before LTO/linker e) LTO + linker — IPO must reflect
-# coverage/sanitizer before quarisma_find_linker()
+# coverage/sanitizer before xsigma_find_linker()
 #
 # Coverage + Enzyme conflict: -fprofile-instr-generate inserts integer profile-counter stores into
 # each function.  Enzyme's LLVM pass cannot differentiate integer arithmetic and aborts with "cannot
@@ -307,7 +305,7 @@ add_third_party_library(
   "${_tpdir}/fmt"
   ALIASES
   "fmt::fmt-header-only"
-  QUARISMA_TARGETS
+  XSIGMA_TARGETS
   "Fmt::fmt=fmt::fmt-header-only|fmt::fmt|fmt"
   INCLUDE_DIR
   "${_tpdir}/fmt/include"
@@ -333,7 +331,7 @@ add_third_party_library(
   FILTER_FLAGS
   "-flto=thin"
   "-flto=full"
-  QUARISMA_TARGETS
+  XSIGMA_TARGETS
   "Cpuinfo::cpuinfo=cpuinfo::cpuinfo|cpuinfo"
   INCLUDE_DIR
   "${_tpdir}/cpuinfo/include"
@@ -362,7 +360,7 @@ if(CORE_ENABLE_MAGICENUM)
     HEADER_ONLY
     SOURCE_DIR
     "${_tpdir}/magic_enum"
-    QUARISMA_TARGETS
+    XSIGMA_TARGETS
     "MagicEnum::magic_enum=magic_enum"
     INCLUDE_DIR
     "${_tpdir}/magic_enum/include"
@@ -373,9 +371,9 @@ if(CORE_ENABLE_MAGICENUM)
 endif()
 
 # =============================================================================
-set(quarisma_headers "")
-set(quarisma_sources "")
-set(quarisma_templates "")
+set(xsigma_headers "")
+set(xsigma_sources "")
+set(xsigma_templates "")
 
 # Per-module override — propagates to all targets in this directory scope, including test targets in
 # Testing/Cxx.  CMAKE_CXX_STANDARD_REQUIRED and CMAKE_CXX_EXTENSIONS are set globally in the root
@@ -384,17 +382,17 @@ set(CMAKE_CXX_STANDARD ${CORE_CXX_STANDARD})
 
 file(GLOB_RECURSE headers LIST_DIRECTORIES false
      "${CMAKE_CURRENT_SOURCE_DIR}/util/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/common/*.h"
-     "${CMAKE_CURRENT_SOURCE_DIR}/c17/*.h" ${quarisma_headers}
+     "${CMAKE_CURRENT_SOURCE_DIR}/c17/*.h" ${xsigma_headers}
 )
 
 file(GLOB_RECURSE sources LIST_DIRECTORIES false
      "${CMAKE_CURRENT_SOURCE_DIR}/common/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/util/*.cpp"
-     "${CMAKE_CURRENT_SOURCE_DIR}/c17/*.h" ${quarisma_sources}
+     "${CMAKE_CURRENT_SOURCE_DIR}/c17/*.h" ${xsigma_sources}
 )
 
 file(GLOB_RECURSE templates LIST_DIRECTORIES false
      "${CMAKE_CURRENT_SOURCE_DIR}/util/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/common/*.hxx"
-     ${quarisma_templates}
+     ${xsigma_templates}
 )
 
 # Compression sources are included only when Snappy is selected (case-insensitive).
@@ -410,32 +408,32 @@ endif()
 # Target definition
 # =============================================================================
 add_library(Core ${sources} ${headers} ${templates})
-quarisma_target_apply_lto(Core CORE)
+xsigma_target_apply_lto(Core CORE)
 if(CORE_ENABLE_SANITIZER)
-  quarisma_configure_sanitizer(CORE)
+  xsigma_configure_sanitizer(CORE)
 endif()
-quarisma_find_linker(${CORE_LINKER_CHOICE} Core CORE_LTO_MODE)
-quarisma_target_apply_cache(Core CORE_ENABLE_CACHE CORE_CACHE_BACKEND)
-quarisma_target_optional_icecc(Core CORE_ENABLE_ICECC)
+xsigma_find_linker(${CORE_LINKER_CHOICE} Core CORE_LTO_MODE)
+xsigma_target_apply_cache(Core CORE_ENABLE_CACHE CORE_CACHE_BACKEND)
+xsigma_target_optional_icecc(Core CORE_ENABLE_ICECC)
 
 if(BUILD_SHARED_LIBS)
-  target_compile_definitions(Core PUBLIC QUARISMA_SHARED_DEFINE PRIVATE QUARISMA_BUILDING_DLL)
-  if(COMMAND quarisma_set_target_output_directories)
-    quarisma_set_target_output_directories(Core)
+  target_compile_definitions(Core PUBLIC XSIGMA_SHARED_DEFINE PRIVATE XSIGMA_BUILDING_DLL)
+  if(COMMAND xsigma_set_target_output_directories)
+    xsigma_set_target_output_directories(Core)
   endif()
 else()
-  target_compile_definitions(Core PUBLIC QUARISMA_STATIC_DEFINE)
+  target_compile_definitions(Core PUBLIC XSIGMA_STATIC_DEFINE)
 endif()
 
-add_library(Quarisma::Core ALIAS Core)
+add_library(XSigma::Core ALIAS Core)
 add_library(Core::Core ALIAS Core)
 
 if(CORE_ENABLE_IWYU)
   include(iwyu)
-  quarisma_apply_iwyu(Core)
+  xsigma_apply_iwyu(Core)
 endif()
 
-quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
+xsigma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 
 message(STATUS "Compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}, std++=${CORE_CXX_STANDARD}")
@@ -484,8 +482,7 @@ endif()
 
 if(CORE_ENABLE_CLANGTIDY)
   include(clang_tidy)
-  quarisma_target_clang_tidy(Core ${CORE_ENABLE_FIX})
-  set_source_files_properties(PROPERTIES SKIP_LINTING ON)
+  xsigma_target_clang_tidy(Core ${CORE_ENABLE_FIX})
 endif()
 
 if(CORE_DEPENDENCY_LIBS)
@@ -511,19 +508,19 @@ endif()
 # =============================================================================
 install(
   TARGETS Core
-  EXPORT QuarismaTargets
+  EXPORT XSigmaTargets
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
   INCLUDES
   DESTINATION include
 )
-install(FILES ${headers} DESTINATION include/Quarisma/Core COMPONENT Development)
+install(FILES ${headers} DESTINATION include/XSigma/Core COMPONENT Development)
 install(
-  FILES "${CMAKE_CURRENT_BINARY_DIR}/quarisma_version_macros.h"
-        "${CMAKE_CURRENT_BINARY_DIR}/quarisma_threads.h"
+  FILES "${CMAKE_CURRENT_BINARY_DIR}/xsigma_version_macros.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/xsigma_threads.h"
         "${CMAKE_CURRENT_BINARY_DIR}/Testing/CoreTest.h"
-  DESTINATION include/Quarisma/Core
+  DESTINATION include/XSigma/Core
   COMPONENT Development
 )
 
@@ -535,7 +532,7 @@ if(CORE_ENABLE_TESTING)
 endif()
 
 if(CORE_ENABLE_VALGRIND AND CORE_ENABLE_TESTING)
-  quarisma_apply_valgrind_timeouts()
+  xsigma_apply_valgrind_timeouts()
 endif()
 
 message("")
@@ -551,7 +548,7 @@ message("  Cxx standard         : ${CORE_CXX_STANDARD}")
 message("  Cache                : ${CORE_ENABLE_CACHE}")
 message("  Cache backend        : ${CORE_CACHE_BACKEND}")
 message("  Icecc                : ${CORE_ENABLE_ICECC}")
-quarisma_print_lto_linker_summary(CORE)
+xsigma_print_lto_linker_summary(CORE)
 message("  Coverage             : ${CORE_ENABLE_COVERAGE}")
 message("  Testing              : ${CORE_ENABLE_TESTING}")
 message("  Examples             : ${CORE_ENABLE_EXAMPLES}")

@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #include <algorithm>
@@ -29,12 +29,12 @@
 #include "util/flat_hash.h"
 #include "util/hash_util.h"
 
-using namespace quarisma;
+using namespace xsigma;
 
 template <typename T>
-using quarisma_set = flat_hash_set<T>;
+using xsigma_set = flat_hash_set<T>;
 template <typename K, typename V, typename H = std::hash<K>>
-using quarisma_map = flat_hash_map<K, V, H>;
+using xsigma_map = flat_hash_map<K, V, H>;
 
 // ============================================================================
 // Basic hash_combine Tests
@@ -45,7 +45,7 @@ using quarisma_map = flat_hash_map<K, V, H>;
  *
  * Covers: hash_combine with various types, seed modification
  */
-QUARISMATEST(HashUtil, hash_util_basic_combine)
+XSIGMATEST(HashUtil, hash_util_basic_combine)
 {
     // Test hash_combine with integers
     std::size_t seed1 = 0;
@@ -84,7 +84,7 @@ QUARISMATEST(HashUtil, hash_util_basic_combine)
  *
  * Covers: specialized hash_combine for size_t values
  */
-QUARISMATEST(HashUtil, hash_util_combine_size_t)
+XSIGMATEST(HashUtil, hash_util_combine_size_t)
 {
     // Test size_t specialization
     std::size_t seed1 = 0;
@@ -116,7 +116,7 @@ QUARISMATEST(HashUtil, hash_util_combine_size_t)
  *
  * Covers: hash_pair with various types, consistency
  */
-QUARISMATEST(HashUtil, hash_util_pair)
+XSIGMATEST(HashUtil, hash_util_pair)
 {
     // Test hash_pair with integers
     auto        pair1 = std::make_pair(1, 2);
@@ -159,7 +159,7 @@ QUARISMATEST(HashUtil, hash_util_pair)
  *
  * Covers: hash_range with various containers, empty ranges
  */
-QUARISMATEST(HashUtil, hash_util_range)
+XSIGMATEST(HashUtil, hash_util_range)
 {
     // Test hash_range with vector
     std::vector<int> vec1  = {1, 2, 3, 4, 5};
@@ -202,7 +202,7 @@ QUARISMATEST(HashUtil, hash_util_range)
  *
  * Covers: hash_values with multiple types, order sensitivity
  */
-QUARISMATEST(HashUtil, hash_util_values)
+XSIGMATEST(HashUtil, hash_util_values)
 {
     // Test hash_values with single value
     std::size_t hash1 = hash_values(42);
@@ -245,7 +245,7 @@ QUARISMATEST(HashUtil, hash_util_values)
  *
  * Covers: zero values, negative values, extreme values
  */
-QUARISMATEST(HashUtil, hash_util_edge_cases)
+XSIGMATEST(HashUtil, hash_util_edge_cases)
 {
     // Test with zero
     //auto hash1 = hash_values(0);
@@ -280,7 +280,7 @@ QUARISMATEST(HashUtil, hash_util_edge_cases)
  *
  * Covers: collision resistance, distribution uniformity
  */
-QUARISMATEST(HashUtil, hash_util_distribution)
+XSIGMATEST(HashUtil, hash_util_distribution)
 {
     // Test that sequential values produce well-distributed hashes
     std::set<std::size_t> hashes;
@@ -308,7 +308,7 @@ QUARISMATEST(HashUtil, hash_util_distribution)
  *
  * Covers: cross-platform consistency, fixed-width types
  */
-QUARISMATEST(HashUtil, hash_util_platform_independence)
+XSIGMATEST(HashUtil, hash_util_platform_independence)
 {
     // Use fixed-width types for platform independence
     std::size_t hash1 = hash_values(int32_t(42), int64_t(1000));
@@ -334,10 +334,10 @@ QUARISMATEST(HashUtil, hash_util_platform_independence)
  *
  * Covers: unordered_map, unordered_set with custom hash
  */
-QUARISMATEST(HashUtil, hash_util_container_integration)
+XSIGMATEST(HashUtil, hash_util_container_integration)
 {
     // Test std::pair as key in unordered_map (uses our hash specialization)
-    quarisma_map<std::pair<int, int>, std::string> map1;
+    xsigma_map<std::pair<int, int>, std::string> map1;
     map1[std::make_pair(1, 2)] = "one-two";
     map1[std::make_pair(3, 4)] = "three-four";
 
@@ -346,7 +346,7 @@ QUARISMATEST(HashUtil, hash_util_container_integration)
     EXPECT_EQ(map1.size(), 2);
 
     // Test with string pairs
-    quarisma_map<std::pair<std::string, std::string>, int> map2;
+    xsigma_map<std::pair<std::string, std::string>, int> map2;
     map2[std::make_pair(std::string("hello"), std::string("world"))] = 1;
     map2[std::make_pair(std::string("foo"), std::string("bar"))]     = 2;
 
@@ -376,7 +376,7 @@ QUARISMATEST(HashUtil, hash_util_container_integration)
  *
  * Covers: performance, scalability
  */
-QUARISMATEST(HashUtil, hash_util_performance)
+XSIGMATEST(HashUtil, hash_util_performance)
 {
     // Test hashing performance with many values
     const int                iterations = 10000;
@@ -414,7 +414,7 @@ QUARISMATEST(HashUtil, hash_util_performance)
  *
  * Covers: collision detection, hash quality
  */
-QUARISMATEST(HashUtil, hash_util_collision_resistance)
+XSIGMATEST(HashUtil, hash_util_collision_resistance)
 {
     // Test with similar values
     std::unordered_set<std::size_t> hashes;
@@ -456,7 +456,7 @@ QUARISMATEST(HashUtil, hash_util_collision_resistance)
  *
  * Covers: nested containers, custom types
  */
-QUARISMATEST(HashUtil, hash_util_complex_types)
+XSIGMATEST(HashUtil, hash_util_complex_types)
 {
     // Test with nested pairs
     using NestedPair   = std::pair<std::pair<int, int>, std::pair<int, int>>;
@@ -488,7 +488,7 @@ QUARISMATEST(HashUtil, hash_util_complex_types)
  *
  * Covers: deterministic behavior, repeatability
  */
-QUARISMATEST(HashUtil, hash_util_consistency)
+XSIGMATEST(HashUtil, hash_util_consistency)
 {
     // Test that same input always produces same output
     const int   test_runs      = 100;

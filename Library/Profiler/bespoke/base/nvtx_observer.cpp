@@ -73,10 +73,6 @@ static std::unique_ptr<profiler::ObserverContext> enterNVTX(const profiler::Reco
 void pushNVTXCallbacks(
     const ProfilerConfig& config, const std::unordered_set<profiler::RecordScope>& scopes)
 {
-    // PROFILER_CHECK(
-    // profiler::profiler_impl::impl::cudaStubs()->enabled(),
-    // "Can't use NVTX profiler - Profiler was compiled without CUDA");
-
     profiler::thread_local_debug_info::_push(
         profiler::DebugInfoKind::PROFILER_STATE, std::make_shared<NVTXThreadLocalState>(config));
 

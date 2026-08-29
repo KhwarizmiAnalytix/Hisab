@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #include "backend/gpu/metal/metal_dispatch.h"
@@ -117,7 +117,7 @@ id<MTLComputePipelineState> pipeline_for(const std::string& function_name)
 
 id<MTLBuffer> buffer_for(const void* host_ptr)
 {
-    void* handle = memory::metal::mtl_buffer_handle(const_cast<void*>(host_ptr));
+    void* handle = memory::metal::mtl_buffer_handle(host_ptr);
     if (handle == nullptr)
     {
         throw std::invalid_argument("Metal dispatch: pointer is not a tracked METAL allocation");
@@ -127,7 +127,7 @@ id<MTLBuffer> buffer_for(const void* host_ptr)
 
 NSUInteger buffer_offset_for(const void* host_ptr)
 {
-    return static_cast<NSUInteger>(memory::metal::mtl_buffer_offset(const_cast<void*>(host_ptr)));
+    return static_cast<NSUInteger>(memory::metal::mtl_buffer_offset(host_ptr));
 }
 
 std::size_t next_pow2(std::size_t n)
@@ -201,6 +201,41 @@ void run(
     record_completed_command_buffer(event_name, cb);
 }
 
+id<MTLComputePipelineState> pipeline_for_fused_source(std::string const& source)
+{
+    std::lock_guard<std::mutex> lock(pipeline_cache_mutex());
+    auto&                       cache = pipeline_cache();
+    auto                        it    = cache.find(source);
+    if (it != cache.end())
+    {
+        return it->second;
+    }
+
+    NSString*      src = [NSString stringWithUTF8String:source.c_str()];
+    NSError*       err = nil;
+    id<MTLLibrary> lib = [device() newLibraryWithSource:src options:nil error:&err];
+    if (lib == nil)
+    {
+        throw std::runtime_error(
+            "Metal fused kernel compile failed: " +
+            std::string([[err localizedDescription] UTF8String]));
+    }
+    id<MTLFunction> fn = [lib newFunctionWithName:@"fused_float"];
+    if (fn == nil)
+    {
+        throw std::runtime_error("Metal fused kernel function fused_float not found");
+    }
+    id<MTLComputePipelineState> pso = [device() newComputePipelineStateWithFunction:fn error:&err];
+    if (pso == nil)
+    {
+        throw std::runtime_error(
+            "Metal fused pipeline creation failed: " +
+            std::string([[err localizedDescription] UTF8String]));
+    }
+    cache.emplace(source, pso);
+    return pso;
+}
+
 }  // namespace
 
 bool device_available()
@@ -262,6 +297,44 @@ void dispatch_fill(void* out_buffer, float value, std::size_t n_elems)
         "fill_float");
 }
 
+void dispatch_fused(
+    std::string const& kernel_source,
+    const void* const* in_buffers,
+    int                n_in,
+    float const*       scalars,
+    int                n_scalars,
+    void*              out_buffer,
+    std::size_t        n_elems)
+{
+    if (n_elems == 0)
+    {
+        return;
+    }
+
+    id<MTLComputePipelineState> pso = pipeline_for_fused_source(kernel_source);
+    uint32_t                    n32 = static_cast<uint32_t>(n_elems);
+
+    run(
+        pso,
+        ^(id<MTLComputeCommandEncoder> enc) {
+          int idx = 0;
+          for (int i = 0; i < n_in; ++i)
+          {
+              [enc setBuffer:buffer_for(in_buffers[i])
+                      offset:buffer_offset_for(in_buffers[i])
+                     atIndex:idx++];
+          }
+          for (int j = 0; j < n_scalars; ++j)
+          {
+              [enc setBytes:&scalars[j] length:sizeof(float) atIndex:idx++];
+          }
+          [enc setBuffer:buffer_for(out_buffer) offset:buffer_offset_for(out_buffer) atIndex:idx++];
+          [enc setBytes:&n32 length:sizeof(n32) atIndex:idx];
+        },
+        n_elems,
+        "fused_float");
+}
+
 float reduce_sum(const void* buffer, std::size_t n_elems)
 {
     if (n_elems == 0)
@@ -280,10 +353,13 @@ float reduce_sum(const void* buffer, std::size_t n_elems)
             ") — this is a single-threadgroup reduction only, see kernels.metal");
     }
 
-    // One-element shared-storage output buffer, read back directly via its host pointer
-    // (MTLResourceStorageModeShared — no explicit device->host copy needed).
-    using metal_alloc_t = memory::allocator<float>;
-    float* out_ptr      = metal_alloc_t::allocate(1, memory::device_enum::METAL);
+    // Process-lifetime 1-float scratch. Allocating 1 float through the caching
+    // allocator would otherwise reserve a 2 MiB small segment on every call.
+    using metal_alloc_t           = memory::allocator<float>;
+    static float*         out_ptr = nullptr;
+    static std::once_flag scratch_once;
+    std::call_once(
+        scratch_once, []() { out_ptr = metal_alloc_t::allocate(1, memory::device_enum::METAL); });
 
     uint32_t n32 = static_cast<uint32_t>(n_elems);
 
@@ -304,16 +380,13 @@ float reduce_sum(const void* buffer, std::size_t n_elems)
 
     if (cb.status == MTLCommandBufferStatusError)
     {
-        metal_alloc_t::free(out_ptr, memory::device_enum::METAL);
         throw std::runtime_error(
             "Metal reduce_sum dispatch failed: " +
             std::string([[cb.error localizedDescription] UTF8String]));
     }
     record_completed_command_buffer("reduce_sum_float", cb);
 
-    float result = *out_ptr;
-    metal_alloc_t::free(out_ptr, memory::device_enum::METAL);
-    return result;
+    return *out_ptr;
 }
 
 }  // namespace vectorization::metal_backend

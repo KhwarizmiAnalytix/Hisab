@@ -1,5 +1,5 @@
 # BUILD file for Loguru logging library
-# This file is part of the Quarisma project and provides build rules for the
+# This file is part of the XSigma project and provides build rules for the
 # third-party Loguru library without modifying the submodule itself.
 # See .augment/rules/ThirdParty.md for third-party integration guidelines.
 

@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #include "model/zabr.h"
@@ -78,16 +78,10 @@ bool is_valid(const zabr_params& params, double forward, double expiry)
 }
 
 std::optional<double> sabr_black_vol(
-    double forward,
-    double strike,
-    double expiry,
-    double alpha,
-    double beta,
-    double rho,
-    double nu)
+    double forward, double strike, double expiry, double alpha, double beta, double rho, double nu)
 {
-    if (!is_finite_positive(forward) || !is_finite_positive(strike) || !is_finite_positive(expiry) ||
-        !is_finite_positive(alpha) || !is_finite_positive(nu))
+    if (!is_finite_positive(forward) || !is_finite_positive(strike) ||
+        !is_finite_positive(expiry) || !is_finite_positive(alpha) || !is_finite_positive(nu))
     {
         return std::nullopt;
     }
@@ -100,14 +94,14 @@ std::optional<double> sabr_black_vol(
         return std::nullopt;
     }
 
-    rho                    = clamp_rho(rho);
+    rho                     = clamp_rho(rho);
     const double one_m_beta = 1.0 - beta;
     const double f_pow      = std::pow(forward, one_m_beta);
 
-    auto time_corr = [&](double fk_1m_beta, double fk_half) {
+    auto time_corr = [&](double fk_1m_beta, double fk_half)
+    {
         return (one_m_beta * one_m_beta / 24.0) * alpha * alpha / fk_1m_beta +
-               0.25 * rho * beta * nu * alpha / fk_half +
-               (2.0 - 3.0 * rho * rho) / 24.0 * nu * nu;
+               0.25 * rho * beta * nu * alpha / fk_half + (2.0 - 3.0 * rho * rho) / 24.0 * nu * nu;
     };
 
     if (std::abs(forward - strike) <= k_atm_rel * forward)
@@ -134,13 +128,13 @@ std::optional<double> sabr_black_vol(
         {
             return std::nullopt;
         }
-        const double numer = std::sqrt(inner) + z - rho;
+        const double number = std::sqrt(inner) + z - rho;
         const double denom = 1.0 - rho;
-        if (numer <= k_min_positive || denom <= k_min_positive)
+        if (number <= k_min_positive || denom <= k_min_positive)
         {
             return std::nullopt;
         }
-        const double x = std::log(numer / denom);
+        const double x = std::log(number / denom);
         if (std::abs(x) <= k_min_positive)
         {
             return std::nullopt;
@@ -148,12 +142,12 @@ std::optional<double> sabr_black_vol(
         z_over_x = z / x;
     }
 
-    const double log2      = log_fk * log_fk;
-    const double geom_corr = 1.0 + (one_m_beta * one_m_beta / 24.0) * log2 +
-                             (one_m_beta * one_m_beta * one_m_beta * one_m_beta / 1920.0) * log2 * log2;
-    const double corr =
-        time_corr(std::pow(fk, one_m_beta), fk_pow);
-    const double vol = (alpha / (fk_pow * geom_corr)) * z_over_x * (1.0 + corr * expiry);
+    const double log2 = log_fk * log_fk;
+    const double geom_corr =
+        1.0 + (one_m_beta * one_m_beta / 24.0) * log2 +
+        (one_m_beta * one_m_beta * one_m_beta * one_m_beta / 1920.0) * log2 * log2;
+    const double corr = time_corr(std::pow(fk, one_m_beta), fk_pow);
+    const double vol  = (alpha / (fk_pow * geom_corr)) * z_over_x * (1.0 + corr * expiry);
     if (!std::isfinite(vol) || vol <= 0.0)
     {
         return std::nullopt;
@@ -162,10 +156,7 @@ std::optional<double> sabr_black_vol(
 }
 
 std::optional<double> zabr_black_vol(
-    double             forward,
-    double             strike,
-    double             expiry,
-    const zabr_params& params)
+    double forward, double strike, double expiry, const zabr_params& params)
 {
     if (!is_valid(params, forward, expiry))
     {
@@ -177,16 +168,11 @@ std::optional<double> zabr_black_vol(
     {
         return std::nullopt;
     }
-    return sabr_black_vol(
-        forward, strike, expiry, params.alpha, params.beta, params.rho, nu_eff);
+    return sabr_black_vol(forward, strike, expiry, params.alpha, params.beta, params.rho, nu_eff);
 }
 
 bool zabr_smile(
-    double             forward,
-    double             expiry,
-    const zabr_params& params,
-    double*            vols,
-    std::size_t        n_vols)
+    double forward, double expiry, const zabr_params& params, double* vols, std::size_t n_vols)
 {
     if (vols == nullptr || n_vols != static_cast<std::size_t>(k_smile_points))
     {

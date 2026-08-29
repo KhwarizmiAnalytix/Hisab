@@ -18,7 +18,7 @@ cmake_minimum_required(VERSION 3.16)
 # Link-Time Optimization — disabled when PARALLEL_ENABLE_COVERAGE or PARALLEL_ENABLE_SANITIZER is ON
 # (LTO conflicts with instrumentation / sanitizers).
 include(lto)
-quarisma_lto_compute_default(_lto_default PROFILE PERFORMANCE)
+xsigma_lto_compute_default(_lto_default PROFILE PERFORMANCE)
 set(PARALLEL_LTO_MODE "${_lto_default}"
     CACHE STRING "LTO mode for Parallel: off | thin | full | ipo | auto"
 )
@@ -61,11 +61,7 @@ set(PARALLEL_SANITIZER_TYPE "address"
 )
 set_property(CACHE PARALLEL_SANITIZER_TYPE PROPERTY STRINGS address undefined thread memory leak)
 mark_as_advanced(PARALLEL_ENABLE_SANITIZER PARALLEL_SANITIZER_TYPE)
-option(
-  PARALLEL_ENABLE_SPELL
-  "Enable spell checking with automatic corrections for Parallel (WARNING: modifies source files)"
-  OFF
-)
+option(PARALLEL_ENABLE_SPELL "Enable check-only spell checking for Parallel" OFF)
 mark_as_advanced(PARALLEL_ENABLE_SPELL)
 option(PARALLEL_ENABLE_VALGRIND "Execute Parallel test suite with Valgrind" OFF)
 mark_as_advanced(PARALLEL_ENABLE_VALGRIND)
@@ -163,7 +159,7 @@ else()
 endif()
 
 # Profiler presence — detected from the CMake target; not a user option. Lets
-# the thread pool call the always-safe RECORD_USER_SCOPE shim from Profiler's
+# the thread pool call the always-safe PROFILER_RECORD_USER_SCOPE shim from Profiler's
 # common/instrumentation.h (Docs/profiler/profiler.md, Instrumentation)
 # without depending on which PROFILER_BACKEND was selected.
 if(TARGET Profiler::Profiler)
@@ -218,18 +214,18 @@ endif()
 
 # --- Target definition ---
 add_library(Parallel ${parallel_sources} ${parallel_headers})
-quarisma_target_apply_lto(Parallel PARALLEL)
+xsigma_target_apply_lto(Parallel PARALLEL)
 if(PARALLEL_ENABLE_SANITIZER)
-  quarisma_configure_sanitizer(PARALLEL)
+  xsigma_configure_sanitizer(PARALLEL)
 endif()
-quarisma_find_linker(${PARALLEL_LINKER_CHOICE} Parallel PARALLEL_LTO_MODE)
-quarisma_target_apply_cache(Parallel PARALLEL_ENABLE_CACHE PARALLEL_CACHE_BACKEND)
-quarisma_target_optional_icecc(Parallel PARALLEL_ENABLE_ICECC)
+xsigma_find_linker(${PARALLEL_LINKER_CHOICE} Parallel PARALLEL_LTO_MODE)
+xsigma_target_apply_cache(Parallel PARALLEL_ENABLE_CACHE PARALLEL_CACHE_BACKEND)
+xsigma_target_optional_icecc(Parallel PARALLEL_ENABLE_ICECC)
 
 if(BUILD_SHARED_LIBS)
   target_compile_definitions(Parallel PUBLIC PARALLEL_SHARED_DEFINE PRIVATE PARALLEL_BUILDING_DLL)
-  if(COMMAND quarisma_set_target_output_directories)
-    quarisma_set_target_output_directories(Parallel)
+  if(COMMAND xsigma_set_target_output_directories)
+    xsigma_set_target_output_directories(Parallel)
   endif()
 else()
   target_compile_definitions(Parallel PUBLIC PARALLEL_STATIC_DEFINE)
@@ -237,7 +233,7 @@ endif()
 
 add_library(Parallel::Parallel ALIAS Parallel)
 
-quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
+xsigma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 
 set_target_properties(
   Parallel PROPERTIES CXX_STANDARD ${PARALLEL_CXX_STANDARD} CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS
@@ -273,12 +269,12 @@ endif()
 
 if(PARALLEL_ENABLE_CLANGTIDY)
   include(clang_tidy)
-  quarisma_target_clang_tidy(Parallel ${PARALLEL_ENABLE_FIX})
+  xsigma_target_clang_tidy(Parallel ${PARALLEL_ENABLE_FIX})
 endif()
 
 if(PARALLEL_ENABLE_IWYU)
   include(iwyu)
-  quarisma_apply_iwyu(Parallel)
+  xsigma_apply_iwyu(Parallel)
 endif()
 
 if(PARALLEL_DEPENDENCY_LIBS)
@@ -309,7 +305,7 @@ if(PARALLEL_ENABLE_TESTING)
 endif()
 
 if(PARALLEL_ENABLE_VALGRIND AND PARALLEL_ENABLE_TESTING)
-  quarisma_apply_valgrind_timeouts()
+  xsigma_apply_valgrind_timeouts()
 endif()
 
 message("")
@@ -325,7 +321,7 @@ message("  Cxx standard     : ${PARALLEL_CXX_STANDARD}")
 message("  Cache            : ${PARALLEL_ENABLE_CACHE}")
 message("  Cache backend    : ${PARALLEL_CACHE_BACKEND}")
 message("  Icecc            : ${PARALLEL_ENABLE_ICECC}")
-quarisma_print_lto_linker_summary(PARALLEL)
+xsigma_print_lto_linker_summary(PARALLEL)
 message("  Coverage         : ${PARALLEL_ENABLE_COVERAGE}")
 message("  Testing          : ${PARALLEL_ENABLE_TESTING}")
 message("  Examples         : ${PARALLEL_ENABLE_EXAMPLES}")

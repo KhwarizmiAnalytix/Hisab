@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #include <gtest/gtest.h>
@@ -28,40 +28,42 @@
 // Compile-time checks: these fire at build time if a macro is broken
 // ============================================================================
 
-// QUARISMA_ALIGNMENT must be a power of two and >= 16
-static_assert(QUARISMA_ALIGNMENT >= 16, "QUARISMA_ALIGNMENT must be at least 16");
-static_assert((QUARISMA_ALIGNMENT & (QUARISMA_ALIGNMENT - 1)) == 0,
-              "QUARISMA_ALIGNMENT must be a power of two");
+// XSIGMA_ALIGNMENT must be a power of two and >= 16
+static_assert(XSIGMA_ALIGNMENT >= 16, "XSIGMA_ALIGNMENT must be at least 16");
+static_assert(
+    (XSIGMA_ALIGNMENT & (XSIGMA_ALIGNMENT - 1)) == 0, "XSIGMA_ALIGNMENT must be a power of two");
 
-// QUARISMA_COMPILE_TIME_MAX_GPUS must be positive
-static_assert(QUARISMA_COMPILE_TIME_MAX_GPUS > 0, "QUARISMA_COMPILE_TIME_MAX_GPUS must be > 0");
+// XSIGMA_COMPILE_TIME_MAX_GPUS must be positive
+static_assert(XSIGMA_COMPILE_TIME_MAX_GPUS > 0, "XSIGMA_COMPILE_TIME_MAX_GPUS must be > 0");
 
 // PROJECT_HAS_THREE_WAY_COMPARISON must be 0 or 1
-static_assert(PROJECT_HAS_THREE_WAY_COMPARISON == 0 || PROJECT_HAS_THREE_WAY_COMPARISON == 1,
-              "PROJECT_HAS_THREE_WAY_COMPARISON must be 0 or 1");
+static_assert(
+    PROJECT_HAS_THREE_WAY_COMPARISON == 0 || PROJECT_HAS_THREE_WAY_COMPARISON == 1,
+    "PROJECT_HAS_THREE_WAY_COMPARISON must be 0 or 1");
 
 // PROJECT_HAS_CXA_DEMANGLE must be 0 or 1
-static_assert(PROJECT_HAS_CXA_DEMANGLE == 0 || PROJECT_HAS_CXA_DEMANGLE == 1,
-              "PROJECT_HAS_CXA_DEMANGLE must be 0 or 1");
+static_assert(
+    PROJECT_HAS_CXA_DEMANGLE == 0 || PROJECT_HAS_CXA_DEMANGLE == 1,
+    "PROJECT_HAS_CXA_DEMANGLE must be 0 or 1");
 
 // ============================================================================
 // Token-pasting macros
 // ============================================================================
 
-QUARISMATEST(Macros, Concatenate)
+XSIGMATEST(Macros, Concatenate)
 {
-    // QUARISMA_CONCATENATE must paste two tokens into one identifier
-    int QUARISMA_CONCATENATE(foo, Bar) = 42;
+    // XSIGMA_CONCATENATE must paste two tokens into one identifier
+    int XSIGMA_CONCATENATE(foo, Bar) = 42;
     EXPECT_EQ(fooBar, 42);
 
     END_TEST();
 }
 
-QUARISMATEST(Macros, AnonymousVariable)
+XSIGMATEST(Macros, AnonymousVariable)
 {
-    // Two QUARISMA_ANONYMOUS_VARIABLE calls in the same scope must produce distinct names
-    int QUARISMA_ANONYMOUS_VARIABLE(anon) = 1;
-    int QUARISMA_ANONYMOUS_VARIABLE(anon) = 2;
+    // Two XSIGMA_ANONYMOUS_VARIABLE calls in the same scope must produce distinct names
+    int XSIGMA_ANONYMOUS_VARIABLE(anon) = 1;
+    int XSIGMA_ANONYMOUS_VARIABLE(anon) = 2;
     // If the two variables had the same name this would not compile.
     // The test just verifies compilation succeeded and both values exist.
     EXPECT_EQ(1, 1);
@@ -73,21 +75,21 @@ QUARISMATEST(Macros, AnonymousVariable)
 // Alignment macro
 // ============================================================================
 
-QUARISMATEST(Macros, AlignmentValue)
+XSIGMATEST(Macros, AlignmentValue)
 {
-#ifdef QUARISMA_MOBILE
-    EXPECT_EQ(QUARISMA_ALIGNMENT, static_cast<size_t>(16));
+#ifdef XSIGMA_MOBILE
+    EXPECT_EQ(XSIGMA_ALIGNMENT, static_cast<size_t>(16));
 #else
-    EXPECT_EQ(QUARISMA_ALIGNMENT, static_cast<size_t>(64));
+    EXPECT_EQ(XSIGMA_ALIGNMENT, static_cast<size_t>(64));
 #endif
 
     END_TEST();
 }
 
-QUARISMATEST(Macros, AlignMacro)
+XSIGMATEST(Macros, AlignMacro)
 {
-    // QUARISMA_ALIGN must make a variable honour the requested alignment
-    QUARISMA_ALIGN(64) char buf[64];
+    // XSIGMA_ALIGN must make a variable honour the requested alignment
+    XSIGMA_ALIGN(64) char buf[64];
     EXPECT_EQ(reinterpret_cast<uintptr_t>(buf) % 64, static_cast<uintptr_t>(0));
 
     END_TEST();
@@ -97,11 +99,11 @@ QUARISMATEST(Macros, AlignMacro)
 // Branch-prediction macros
 // ============================================================================
 
-QUARISMATEST(Macros, Likely)
+XSIGMATEST(Macros, Likely)
 {
     bool value = true;
     bool result;
-    if QUARISMA_LIKELY(value)
+    if XSIGMA_LIKELY (value)
         result = true;
     else
         result = false;
@@ -110,11 +112,11 @@ QUARISMATEST(Macros, Likely)
     END_TEST();
 }
 
-QUARISMATEST(Macros, Unlikely)
+XSIGMATEST(Macros, Unlikely)
 {
     bool value = false;
     bool result;
-    if QUARISMA_UNLIKELY(value)
+    if XSIGMA_UNLIKELY (value)
         result = true;
     else
         result = false;
@@ -128,51 +130,51 @@ QUARISMATEST(Macros, Unlikely)
 // function definition below would not compile)
 // ============================================================================
 
-static QUARISMA_FORCE_INLINE int forceinline_add(int a, int b)
+static XSIGMA_FORCE_INLINE int forceinline_add(int a, int b)
 {
     return a + b;
 }
 
-QUARISMATEST(Macros, ForceInline)
+XSIGMATEST(Macros, ForceInline)
 {
     EXPECT_EQ(forceinline_add(2, 3), 5);
 
     END_TEST();
 }
 
-static QUARISMA_NOINLINE int noinline_add(int a, int b)
+static XSIGMA_NOINLINE int noinline_add(int a, int b)
 {
     return a + b;
 }
 
-QUARISMATEST(Macros, NoInline)
+XSIGMATEST(Macros, NoInline)
 {
     EXPECT_EQ(noinline_add(10, 20), 30);
 
     END_TEST();
 }
 
-// QUARISMA_COLD on a rarely-called helper
-static QUARISMA_COLD int cold_add(int a, int b)
+// XSIGMA_COLD on a rarely-called helper
+static XSIGMA_COLD int cold_add(int a, int b)
 {
     return a + b;
 }
 
-QUARISMATEST(Macros, Cold)
+XSIGMATEST(Macros, Cold)
 {
     EXPECT_EQ(cold_add(1, 1), 2);
 
     END_TEST();
 }
 
-// QUARISMA_VECTORCALL (calling-convention, no-op on non-MSVC)
+// XSIGMA_VECTORCALL (calling-convention, no-op on non-MSVC)
 // Note: __vectorcall must appear after the return type on MSVC.
-static int QUARISMA_VECTORCALL vectorcall_mul(int a, int b)
+static int XSIGMA_VECTORCALL vectorcall_mul(int a, int b)
 {
     return a * b;
 }
 
-QUARISMATEST(Macros, VectorCall)
+XSIGMATEST(Macros, VectorCall)
 {
     EXPECT_EQ(vectorcall_mul(3, 4), 12);
 
@@ -183,12 +185,12 @@ QUARISMATEST(Macros, VectorCall)
 // Sanitizer / attribute macros (compile-time only)
 // ============================================================================
 
-static QUARISMA_NO_SANITIZE_MEMORY int sanitizer_fn(int x)
+static XSIGMA_NO_SANITIZE_MEMORY int sanitizer_fn(int x)
 {
     return x + 1;
 }
 
-QUARISMATEST(Macros, NoSanitizeMemory)
+XSIGMATEST(Macros, NoSanitizeMemory)
 {
     EXPECT_EQ(sanitizer_fn(41), 42);
 
@@ -199,25 +201,25 @@ QUARISMATEST(Macros, NoSanitizeMemory)
 // CUDA function-type macros (no-ops on CPU builds)
 // ============================================================================
 
-QUARISMA_CUDA_FUNCTION_TYPE static int cuda_fn(int x)
+XSIGMA_CUDA_FUNCTION_TYPE static int cuda_fn(int x)
 {
     return x * 2;
 }
 
-QUARISMATEST(Macros, CudaFunctionType)
+XSIGMATEST(Macros, CudaFunctionType)
 {
     EXPECT_EQ(cuda_fn(5), 10);
 
     END_TEST();
 }
 
-// QUARISMA_FUNCTION_ATTRIBUTE
-QUARISMA_FUNCTION_ATTRIBUTE static int fn_attr(int x)
+// XSIGMA_FUNCTION_ATTRIBUTE
+XSIGMA_FUNCTION_ATTRIBUTE static int fn_attr(int x)
 {
     return x - 1;
 }
 
-QUARISMATEST(Macros, FunctionAttribute)
+XSIGMATEST(Macros, FunctionAttribute)
 {
     EXPECT_EQ(fn_attr(10), 9);
 
@@ -228,15 +230,15 @@ QUARISMATEST(Macros, FunctionAttribute)
 // Integer type macros
 // ============================================================================
 
-QUARISMATEST(Macros, IntegerTypes)
+XSIGMATEST(Macros, IntegerTypes)
 {
-    quarisma_int  i = -1LL;
-    quarisma_long u = 1ULL;
+    xsigma_int  i = -1LL;
+    xsigma_long u = 1ULL;
 
-    EXPECT_EQ(sizeof(quarisma_int), sizeof(long long int));
-    EXPECT_EQ(sizeof(quarisma_long), sizeof(unsigned long long int));
-    EXPECT_LT(i, static_cast<quarisma_int>(0));
-    EXPECT_GT(u, static_cast<quarisma_long>(0));
+    EXPECT_EQ(sizeof(xsigma_int), sizeof(long long int));
+    EXPECT_EQ(sizeof(xsigma_long), sizeof(unsigned long long int));
+    EXPECT_LT(i, static_cast<xsigma_int>(0));
+    EXPECT_GT(u, static_cast<xsigma_long>(0));
 
     END_TEST();
 }
@@ -245,15 +247,15 @@ QUARISMATEST(Macros, IntegerTypes)
 // Attribute-detection macros
 // ============================================================================
 
-QUARISMATEST(Macros, HaveAttribute)
+XSIGMATEST(Macros, HaveAttribute)
 {
-    // QUARISMA_HAVE_ATTRIBUTE must expand to 0 or 1 (works in expressions on all compilers)
-    constexpr int attr_val = QUARISMA_HAVE_ATTRIBUTE(unused);
+    // XSIGMA_HAVE_ATTRIBUTE must expand to 0 or 1 (works in expressions on all compilers)
+    constexpr int attr_val = XSIGMA_HAVE_ATTRIBUTE(unused);
     EXPECT_TRUE(attr_val == 0 || attr_val == 1);
 
-    // QUARISMA_HAVE_CPP_ATTRIBUTE wraps __has_cpp_attribute which is preprocessor-only on MSVC;
+    // XSIGMA_HAVE_CPP_ATTRIBUTE wraps __has_cpp_attribute which is preprocessor-only on MSVC;
     // evaluate it at preprocessing time to avoid C2065 on MSVC.
-#if QUARISMA_HAVE_CPP_ATTRIBUTE(nodiscard)
+#if XSIGMA_HAVE_CPP_ATTRIBUTE(nodiscard)
     constexpr int cpp_attr_val = 1;
 #else
     constexpr int cpp_attr_val = 0;
@@ -264,15 +266,15 @@ QUARISMATEST(Macros, HaveAttribute)
 }
 
 // ============================================================================
-// QUARISMA_NODISCARD
+// XSIGMA_NODISCARD
 // ============================================================================
 
-QUARISMA_NODISCARD static int nodiscard_fn()
+XSIGMA_NODISCARD static int nodiscard_fn()
 {
     return 42;
 }
 
-QUARISMATEST(Macros, Nodiscard)
+XSIGMATEST(Macros, Nodiscard)
 {
     int val = nodiscard_fn();
     EXPECT_EQ(val, 42);
@@ -281,12 +283,12 @@ QUARISMATEST(Macros, Nodiscard)
 }
 
 // ============================================================================
-// QUARISMA_UNUSED
+// XSIGMA_UNUSED
 // ============================================================================
 
-QUARISMATEST(Macros, Unused)
+XSIGMATEST(Macros, Unused)
 {
-    QUARISMA_UNUSED int unused_var = 99;
+    XSIGMA_UNUSED int unused_var = 99;
     // Suppress unused-variable warning; test simply verifies the attribute compiles.
     EXPECT_EQ(unused_var, 99);
 
@@ -294,12 +296,12 @@ QUARISMATEST(Macros, Unused)
 }
 
 // ============================================================================
-// QUARISMA_USED
+// XSIGMA_USED
 // ============================================================================
 
-static QUARISMA_USED int used_global = 7;
+static XSIGMA_USED int used_global = 7;
 
-QUARISMATEST(Macros, Used)
+XSIGMATEST(Macros, Used)
 {
     EXPECT_EQ(used_global, 7);
 
@@ -307,15 +309,15 @@ QUARISMATEST(Macros, Used)
 }
 
 // ============================================================================
-// QUARISMA_FUNCTION_CONSTEXPR
+// XSIGMA_FUNCTION_CONSTEXPR
 // ============================================================================
 
-QUARISMA_FUNCTION_CONSTEXPR static int constexpr_square(int x)
+XSIGMA_FUNCTION_CONSTEXPR static int constexpr_square(int x)
 {
     return x * x;
 }
 
-QUARISMATEST(Macros, FunctionConstexpr)
+XSIGMATEST(Macros, FunctionConstexpr)
 {
     EXPECT_EQ(constexpr_square(5), 25);
 
@@ -323,15 +325,15 @@ QUARISMATEST(Macros, FunctionConstexpr)
 }
 
 // ============================================================================
-// QUARISMA_ASM_COMMENT (no-op on non-GCC/Clang x86/arm)
+// XSIGMA_ASM_COMMENT (no-op on non-GCC/Clang x86/arm)
 // ============================================================================
 
 static void asm_comment_fn()
 {
-    QUARISMA_ASM_COMMENT("test marker");
+    XSIGMA_ASM_COMMENT("test marker");
 }
 
-QUARISMATEST(Macros, AsmComment)
+XSIGMATEST(Macros, AsmComment)
 {
     asm_comment_fn();  // just verifies it compiles and doesn't crash
     EXPECT_TRUE(true);
@@ -340,16 +342,16 @@ QUARISMATEST(Macros, AsmComment)
 }
 
 // ============================================================================
-// QUARISMA_RESTRICT
+// XSIGMA_RESTRICT
 // ============================================================================
 
-static void restrict_copy(int* QUARISMA_RESTRICT dst, const int* QUARISMA_RESTRICT src, int n)
+static void restrict_copy(int* XSIGMA_RESTRICT dst, const int* XSIGMA_RESTRICT src, int n)
 {
     for (int i = 0; i < n; ++i)
         dst[i] = src[i];
 }
 
-QUARISMATEST(Macros, Restrict)
+XSIGMATEST(Macros, Restrict)
 {
     int src[4] = {1, 2, 3, 4};
     int dst[4] = {};
@@ -361,22 +363,22 @@ QUARISMATEST(Macros, Restrict)
 }
 
 // ============================================================================
-// QUARISMA_SIMD_RETURN_TYPE
+// XSIGMA_SIMD_RETURN_TYPE
 // ============================================================================
 
-// QUARISMA_SIMD_RETURN_TYPE expands to a static void function with optional
+// XSIGMA_SIMD_RETURN_TYPE expands to a static void function with optional
 // force-inline + vectorcall in release builds.
 namespace
 {
 struct SimdTestHelper
 {
-    QUARISMA_SIMD_RETURN_TYPE run(int* out, int val) { *out = val; }
+    XSIGMA_SIMD_RETURN_TYPE run(int* out, int val) { *out = val; }
 };
 }  // namespace
 
-QUARISMATEST(Macros, SimdReturnType)
+XSIGMATEST(Macros, SimdReturnType)
 {
-    int out = 0;
+    int            out = 0;
     SimdTestHelper h;
     h.run(&out, 77);
     EXPECT_EQ(out, 77);
@@ -385,15 +387,15 @@ QUARISMATEST(Macros, SimdReturnType)
 }
 
 // ============================================================================
-// QUARISMA_DELETE_CLASS
+// XSIGMA_DELETE_CLASS
 // ============================================================================
 
-QUARISMATEST(Macros, DeleteClass)
+XSIGMATEST(Macros, DeleteClass)
 {
     // Verify that DeletedClass is not default-constructible, copyable, or movable.
     struct DeletedClass
     {
-        QUARISMA_DELETE_CLASS(DeletedClass)
+        XSIGMA_DELETE_CLASS(DeletedClass)
     };
     EXPECT_FALSE(std::is_default_constructible_v<DeletedClass>);
     EXPECT_FALSE(std::is_copy_constructible_v<DeletedClass>);
@@ -403,16 +405,16 @@ QUARISMATEST(Macros, DeleteClass)
 }
 
 // ============================================================================
-// QUARISMA_DELETE_COPY_AND_MOVE
+// XSIGMA_DELETE_COPY_AND_MOVE
 // ============================================================================
 
-QUARISMATEST(Macros, DeleteCopyAndMove)
+XSIGMATEST(Macros, DeleteCopyAndMove)
 {
     struct NoCopyMove
     {
         NoCopyMove()  = default;
         ~NoCopyMove() = default;
-        QUARISMA_DELETE_COPY_AND_MOVE(NoCopyMove)
+        XSIGMA_DELETE_COPY_AND_MOVE(NoCopyMove)
     };
     EXPECT_FALSE(std::is_copy_constructible_v<NoCopyMove>);
     EXPECT_FALSE(std::is_copy_assignable_v<NoCopyMove>);
@@ -423,16 +425,16 @@ QUARISMATEST(Macros, DeleteCopyAndMove)
 }
 
 // ============================================================================
-// QUARISMA_DELETE_COPY
+// XSIGMA_DELETE_COPY
 // ============================================================================
 
-QUARISMATEST(Macros, DeleteCopy)
+XSIGMATEST(Macros, DeleteCopy)
 {
     struct NoCopy
     {
         NoCopy()  = default;
         ~NoCopy() = default;
-        QUARISMA_DELETE_COPY(NoCopy)
+        XSIGMA_DELETE_COPY(NoCopy)
     };
     EXPECT_FALSE(std::is_copy_constructible_v<NoCopy>);
     EXPECT_FALSE(std::is_copy_assignable_v<NoCopy>);
@@ -447,7 +449,7 @@ QUARISMATEST(Macros, DeleteCopy)
 // MACRO_CORE_TYPE_ID_NAME
 // ============================================================================
 
-QUARISMATEST(Macros, TypeIdName)
+XSIGMATEST(Macros, TypeIdName)
 {
     const char* name = MACRO_CORE_TYPE_ID_NAME(int);
     EXPECT_NE(name, nullptr);
@@ -465,7 +467,7 @@ static void MACRO_CORE_PRINTF_FORMAT(1, 2) printf_fmt_fn(const char* fmt, ...)
     (void)fmt;
 }
 
-QUARISMATEST(Macros, PrintfFormat)
+XSIGMATEST(Macros, PrintfFormat)
 {
     printf_fmt_fn("%d", 1);
     EXPECT_TRUE(true);
@@ -474,17 +476,17 @@ QUARISMATEST(Macros, PrintfFormat)
 }
 
 // ============================================================================
-// QUARISMA_PRINTF_ATTRIBUTE (same attribute, different spelling)
+// XSIGMA_PRINTF_ATTRIBUTE (same attribute, different spelling)
 // ============================================================================
 
-static void QUARISMA_PRINTF_ATTRIBUTE(1, 2) quarisma_printf_fn(const char* fmt, ...)
+static void XSIGMA_PRINTF_ATTRIBUTE(1, 2) xsigma_printf_fn(const char* fmt, ...)
 {
     (void)fmt;
 }
 
-QUARISMATEST(Macros, PrintfAttribute)
+XSIGMATEST(Macros, PrintfAttribute)
 {
-    quarisma_printf_fn("%s", "ok");
+    xsigma_printf_fn("%s", "ok");
     EXPECT_TRUE(true);
 
     END_TEST();
@@ -494,7 +496,7 @@ QUARISMATEST(Macros, PrintfAttribute)
 // Thread-safety annotation macros (compile-time only)
 // ============================================================================
 
-#if QUARISMA_HAVE_ATTRIBUTE(capability)
+#if XSIGMA_HAVE_ATTRIBUTE(capability)
 // Only define the annotated class when the capability attribute is available
 // (i.e. Clang with thread-safety analysis), otherwise the annotations are
 // silently dropped via the empty macro expansions and we just skip.
@@ -504,10 +506,10 @@ struct FakeMutex
     void unlock() {}
 };
 static FakeMutex gMutex;
-static int       QUARISMA_GUARDED_BY(gMutex) gGuardedValue = 0;
+static int       XSIGMA_GUARDED_BY(gMutex) gGuardedValue = 0;
 #endif
 
-QUARISMATEST(Macros, ThreadSafetyAnnotations)
+XSIGMATEST(Macros, ThreadSafetyAnnotations)
 {
     // These macros expand to attributes or nothing at all; the only
     // meaningful check is that the translation unit compiled successfully.
@@ -517,15 +519,15 @@ QUARISMATEST(Macros, ThreadSafetyAnnotations)
 }
 
 // ============================================================================
-// QUARISMA_LIFETIME_BOUND
+// XSIGMA_LIFETIME_BOUND
 // ============================================================================
 
-static const int& identity_ref(const int& x QUARISMA_LIFETIME_BOUND)
+static const int& identity_ref(const int& x XSIGMA_LIFETIME_BOUND)
 {
     return x;
 }
 
-QUARISMATEST(Macros, LifetimeBound)
+XSIGMATEST(Macros, LifetimeBound)
 {
     int        val = 123;
     const int& ref = identity_ref(val);
@@ -535,12 +537,12 @@ QUARISMATEST(Macros, LifetimeBound)
 }
 
 // ============================================================================
-// QUARISMA_CONST_INIT
+// XSIGMA_CONST_INIT
 // ============================================================================
 
-QUARISMA_CONST_INIT static int const_init_val = 10;
+XSIGMA_CONST_INIT static int const_init_val = 10;
 
-QUARISMATEST(Macros, ConstInit)
+XSIGMATEST(Macros, ConstInit)
 {
     EXPECT_EQ(const_init_val, 10);
 
@@ -548,15 +550,15 @@ QUARISMATEST(Macros, ConstInit)
 }
 
 // ============================================================================
-// QUARISMA_NO_THREAD_SAFETY_ANALYSIS
+// XSIGMA_NO_THREAD_SAFETY_ANALYSIS
 // ============================================================================
 
-static QUARISMA_NO_THREAD_SAFETY_ANALYSIS void no_tsa_fn(int& x)
+static XSIGMA_NO_THREAD_SAFETY_ANALYSIS void no_tsa_fn(int& x)
 {
     x = 42;
 }
 
-QUARISMATEST(Macros, NoThreadSafetyAnalysis)
+XSIGMATEST(Macros, NoThreadSafetyAnalysis)
 {
     int val = 0;
     no_tsa_fn(val);
@@ -566,10 +568,10 @@ QUARISMATEST(Macros, NoThreadSafetyAnalysis)
 }
 
 // ============================================================================
-// QUARISMA_EXCLUSIVE_LOCKS_REQUIRED / QUARISMA_LOCKS_EXCLUDED (compile only)
+// XSIGMA_EXCLUSIVE_LOCKS_REQUIRED / XSIGMA_LOCKS_EXCLUDED (compile only)
 // ============================================================================
 
-QUARISMATEST(Macros, LockAnnotations)
+XSIGMATEST(Macros, LockAnnotations)
 {
     // Macros expand to empty or to Clang thread-safety attributes; the only
     // check is that the file compiled without errors.
@@ -582,7 +584,7 @@ QUARISMATEST(Macros, LockAnnotations)
 // Three-way comparison detection
 // ============================================================================
 
-QUARISMATEST(Macros, ThreeWayComparison)
+XSIGMATEST(Macros, ThreeWayComparison)
 {
 #if __cplusplus >= 202002L
     EXPECT_EQ(PROJECT_HAS_THREE_WAY_COMPARISON, 1);
@@ -594,15 +596,15 @@ QUARISMATEST(Macros, ThreeWayComparison)
 }
 
 // ============================================================================
-// QUARISMA_NORETURN (compile-time only: applying it to a real noreturn fn)
+// XSIGMA_NORETURN (compile-time only: applying it to a real noreturn fn)
 // ============================================================================
 
-static QUARISMA_NORETURN void always_throw()
+static XSIGMA_NORETURN void always_throw()
 {
     throw std::runtime_error("always_throw");
 }
 
-QUARISMATEST(Macros, Noreturn)
+XSIGMATEST(Macros, Noreturn)
 {
     EXPECT_THROW(always_throw(), std::runtime_error);
 

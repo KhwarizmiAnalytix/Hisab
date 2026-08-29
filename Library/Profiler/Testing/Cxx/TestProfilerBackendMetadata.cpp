@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,13 +13,13 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 /*
  * Profiles a plain, non-tensor function with structured metadata via
- * RECORD_FUNCTION_WITH_METADATA + record_function_metadata_builder, and
+ * PROFILER_RECORD_FUNCTION_WITH_METADATA + record_function_metadata_builder, and
  * checks that KinetoEvent::extraMeta() round-trips the key-value pairs.
  * This is the generic replacement for PyTorch's tensor/IValue-shaped
  * op-argument recording (deleted as part of the tensor-independence pass --
@@ -79,8 +79,8 @@ PROFILERTEST(BackendMetadata, record_function_with_metadata_round_trips)
 
     const std::set<profiler::profiler_impl::ActivityType> activities{
         profiler::profiler_impl::ActivityType::CPU};
-    // RECORD_FUNCTION_WITH_METADATA creates a FUNCTION-scope guard (mirroring
-    // RECORD_FUNCTION, not RECORD_USER_SCOPE) -- the callback registration
+    // PROFILER_RECORD_FUNCTION_WITH_METADATA creates a FUNCTION-scope guard (mirroring
+    // PROFILER_RECORD_FUNCTION, not PROFILER_RECORD_USER_SCOPE) -- the callback registration
     // must match or begin_op() never fires.
     const std::unordered_set<profiler::RecordScope> scopes{profiler::RecordScope::FUNCTION};
 
@@ -96,7 +96,7 @@ PROFILERTEST(BackendMetadata, record_function_with_metadata_round_trips)
 
     long long result = 0;
     {
-        RECORD_FUNCTION_WITH_METADATA(guard, kMetadataScope);
+        PROFILER_RECORD_FUNCTION_WITH_METADATA(guard, kMetadataScope);
         profiler::record_function_metadata_builder(guard, kMetadataScope)
             .with_metadata("m", static_cast<int64_t>(64))
             .with_metadata("n", static_cast<int64_t>(64))

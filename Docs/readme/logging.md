@@ -1,266 +1,160 @@
-# Quarisma Logging System
+# XSigma Logging System
 
 ## Overview
 
-Quarisma provides a flexible logging system with multiple backend options to suit different use cases and performance requirements. The logging backend can be selected at compile time to optimize for your specific needs.
+`Library/Logging` is a compile-time pluggable logging facade. The public
+C++ namespace is `logging`. Include paths are relative to `Library/Logging`
+(`logger/logger.h`, `util/logging_exception.h`).
 
-## Logging Backends
+Select a backend at configure time with `setup.py --logging=SPDLOG|LOGURU|GLOG|NATIVE`
+(default **SPDLOG**). Application source does not change when you switch backends.
 
-### LOGURU (Default)
+Memory, Vectorization, and Core **always** link `Logging::Logging`. There is
+no `MEMORY_HAS_LOGGING` / `VECTORIZATION_HAS_LOGGING` opt-out: `MEMORY_LOG_*`
+and `VECTORIZATION_LOGF` / `VECTORIZATION_CHECK` / `VECTORIZATION_THROW`
+forward to the Logging macros.
 
-**Features:**
-- Full-featured logging with scopes and callbacks
-- Advanced formatting and filtering
-- Thread-safe logging
-- Minimal performance overhead
-- Rich output formatting
+The library is **host/CPU only**. Do not call these macros from `__device__` code.
 
-**Use when:**
-- You need advanced logging features
-- You want detailed diagnostic information
-- Performance is not critical
+## Backends
 
-**Configuration:**
+| Backend | When to use | Notes |
+|---------|-------------|--------|
+| **SPDLOG** (default) | Fast sinks, colored stderr, file + callback | Best throughput in the comparison below. No process signal handlers |
+| **LOGURU** | Development and full-featured diagnostics | Scopes, callbacks, files, optional signal traces |
+| **GLOG** | Google-style severity logging | Callbacks are not supported; signal handlers honor `enable_unsafe_signal_handler` |
+| **NATIVE** | Minimal dependency (fmt only) | stderr + files + callbacks; `LOGGING_LOG_FATAL` still aborts |
+
 ```bash
 cd Scripts
-python setup.py config.build.ninja.clang --logging.loguru
+python3 setup.py config.build.ninja.clang                  # SPDLOG (default)
+python3 setup.py config.build.ninja.clang --logging=LOGURU
+python3 setup.py config.build.ninja.clang --logging=GLOG
+python3 setup.py config.build.ninja.clang --logging=NATIVE
 ```
 
-### GLOG
+## Performance comparison
 
-**Features:**
-- Google's production-grade logging library
-- Minimal overhead
-- Efficient file rotation
-- Thread-safe logging
-- Proven in production systems
+Backends are exclusive at compile time, so the comparison is four Release
+binaries of the same `benchmark_logging_logger` target. Source:
+`Library/Logging/Testing/Cxx/BenchmarkLogger.cpp`.
 
-**Use when:**
-- You need production-grade logging
-- You want minimal dependencies
-- Performance is important
-
-**Configuration:**
 ```bash
 cd Scripts
-python setup.py config.build.ninja.clang --logging.glog
+python3 setup.py config.build.ninja.clang.release.benchmark --project.logging --logging=SPDLOG
+# binary: build_ninja_project_logging_logging_spdlog/bin/benchmark_logging_logger
+# then reconfigure with --logging=LOGURU|GLOG|NATIVE (separate build dirs)
 ```
 
-### NATIVE
+Run the binary **without** `--benchmark_min_time=0.01s` (that filter is only
+for ctest). Suggested: `--benchmark_min_time=0.5s`.
 
-**Features:**
-- Minimal native implementation
-- Zero external dependencies
-- Lightweight and fast
-- Basic logging functionality
-- Suitable for embedded systems
+### What is measured
 
-**Use when:**
-- You need minimal dependencies
-- You want maximum performance
-- You only need basic logging
+| Benchmark | Meaning |
+|-----------|---------|
+| `DisabledInfo` | `VERBOSITY_OFF` + `LOGGING_LOG_INFO` — cost of the cutoff check (no emit) |
+| `FileLiteral` | Enabled `INFO` to a temp file, literal string (stderr redirected to `/dev/null`) |
+| `FileFormatted` | Enabled `INFO` to a temp file, two format arguments |
+| `CallbackDiscard` | Enabled `INFO` to a no-op callback (not available on glog) |
 
-**Configuration:**
-```bash
-cd Scripts
-python setup.py config.build.ninja.clang --logging.native
-```
+### Results
 
-## Logging Levels
+Apple Silicon (14-core), Clang 22.1.2, Release, `--benchmark_min_time=0.5s`,
+26 Aug 2026. Values are **CPU ns / log** (lower is better). Re-run locally
+before treating this as a ranking on your hardware.
 
-Quarisma supports standard logging levels:
+| Benchmark | SPDLOG | NATIVE | GLOG | LOGURU |
+|-----------|--------|--------|------|--------|
+| DisabledInfo (1 thread) | 1.22 | 0.94 | 1.04 | 1.15 |
+| FileLiteral | **561** | 594 | 1006 | 2155 |
+| FileFormatted | **622** | 712 | 1069 | 2267 |
+| CallbackDiscard | **560** | 596 | n/a | 1017 |
 
-| Level | Description | Use Case |
-|-------|-------------|----------|
-| **TRACE** | Most detailed information | Development debugging |
-| **DEBUG** | Detailed diagnostic information | Development and testing |
-| **INFO** | General informational messages | Normal operation |
-| **WARN** | Warning messages | Potential issues |
-| **ERROR** | Error messages | Error conditions |
-| **CRITICAL** | Critical error messages | Fatal errors |
-| **OFF** | Disable logging | Production optimization |
+**SPDLOG** is fastest on every enabled path (file and callback), which is why
+it is the default. Disabled-path cost is ~1 ns for all backends because
+`LOGGING_LOG` checks `get_current_verbosity_cutoff()` before formatting.
+Glog has no callback sink; that row is skipped. Loguru pays extra for
+preamble/scopes on the emit path.
+
+## Logging levels
+
+`logger_verbosity_enum`: `OFF`, `FATAL`, `ERROR`, `WARNING`, `INFO`, `TRACE`/`MAX`.
+A message is emitted when its verbosity is less than or equal to the current cutoff
+(`logger::get_current_verbosity_cutoff()`). Format arguments are not evaluated when
+the level is disabled.
+
+`LOGGING_LOG_FATAL` logs at `FATAL` and then calls `std::abort()`.
 
 ## Configuration
 
-### Environment Variables
-
-Control logging behavior through environment variables:
-
-```bash
-# Set logging level
-export QUARISMA_LOG_LEVEL=DEBUG
-
-# Set log file location
-export QUARISMA_LOG_FILE=/var/log/quarisma.log
-
-# Enable verbose logging
-export QUARISMA_LOG_VERBOSE=1
-```
-
-### Programmatic Configuration
-
-Configure logging in your code:
+### Programmatic
 
 ```cpp
-#include <quarisma/logging/logger.h>
+#include "logger/logger.h"
 
-// Set logging level
-quarisma::logging::set_level(quarisma::logging::Level::DEBUG);
-
-// Set log file
-quarisma::logging::set_file("/path/to/logfile.log");
-
-// Enable/disable console output
-quarisma::logging::enable_console(true);
-```
-
-### Configuration File
-
-Create a logging configuration file (optional):
-
-```yaml
-# quarisma_logging.yaml
-logging:
-  level: DEBUG
-  file: /var/log/quarisma.log
-  console: true
-  format: "[%Y-%m-%d %H:%M:%S] [%l] %v"
-  max_file_size: 10485760  # 10MB
-  max_files: 5
-```
-
-## Usage Examples
-
-### Basic Logging
-
-```cpp
-#include <quarisma/logging/logger.h>
-
-int main() {
-    QUARISMA_LOG_INFO("Application started");
-    QUARISMA_LOG_DEBUG("Debug information");
-    QUARISMA_LOG_WARN("Warning message");
-    QUARISMA_LOG_ERROR("Error occurred");
-    return 0;
-}
-```
-
-### Conditional Logging
-
-```cpp
-if (QUARISMA_LOG_ENABLED(DEBUG)) {
-    QUARISMA_LOG_DEBUG("Expensive debug operation: {}", expensive_function());
-}
-```
-
-### Scoped Logging
-
-```cpp
+int main(int argc, char* argv[])
 {
-    auto scope = QUARISMA_LOG_SCOPE("function_name");
-    QUARISMA_LOG_INFO("Inside function");
-    // Scope automatically logs exit
+    logging::logger::set_enable_unsafe_signal_handler(false);  // optional
+    logging::logger::init(argc, argv);  // parses -v <level>
+    logging::logger::set_stderr_verbosity(logging::logger_verbosity_enum::VERBOSITY_INFO);
+    logging::logger::set_thread_name("main");
+    logging::logger::log_to_file(
+        "/tmp/xsigma.log",
+        logging::logger::file_mode::truncate,
+        logging::logger_verbosity_enum::VERBOSITY_INFO);
 }
 ```
 
-### Formatted Logging
+### Environment
+
+| Variable | Values | Effect |
+|----------|--------|--------|
+| `LOGGING_EXCEPTION_MODE` | `THROW` (default) or `LOG_FATAL` | `LOGGING_THROW` / `LOGGING_CHECK` either throw `logging::exception` or log FATAL and abort |
+
+There is no YAML config file and no `XSIGMA_LOG_*` environment variables.
+
+## Usage
 
 ```cpp
-QUARISMA_LOG_INFO("Processing item {} of {}", current, total);
-QUARISMA_LOG_ERROR("Failed to open file: {}", filename);
+#include "logger/logger.h"
+#include "util/logging_exception.h"
+
+LOGGING_LOG_INFO("Application started");
+LOGGING_LOG_DEBUG(INFO, "debug only in non-NDEBUG builds");
+LOGGING_LOG_WARNING("Low memory: {} MB remaining", free_mb);
+LOGGING_LOG_ERROR("Failed to open file: {}", filename);
+
+LOGGING_LOG_IF(ERROR, ptr == nullptr, "Pointer is null");
+
+{
+    LOGGING_LOG_SCOPE_FUNCTION(INFO);
+    LOGGING_LOG_INFO("Inside function");
+}
+
+LOGGING_CHECK(x > 0, "x must be positive, got {}", x);
+LOGGING_THROW("Invalid state: {}", state_name);
 ```
 
-## Performance Considerations
+Consumers:
 
-### Logging Overhead
+```cpp
+// Memory
+MEMORY_LOG_INFO("allocated {} bytes", n);
 
-| Backend | Overhead | Best For |
-|---------|----------|----------|
-| LOGURU | Low | Development and debugging |
-| GLOG | Very Low | Production systems |
-| NATIVE | Minimal | Embedded and performance-critical |
-
-### Optimization Tips
-
-1. **Use appropriate log levels** - Set to WARN or ERROR in production
-2. **Avoid expensive operations in log messages** - Use conditional logging
-3. **Use NATIVE backend** for performance-critical code
-4. **Disable console output** in production for better performance
-5. **Use file rotation** to manage log file sizes
-
-## Backend-Specific Features
-
-### LOGURU Features
-
-- Colored console output
-- Automatic stack traces on errors
-- Custom formatters
-- Callback functions
-- Thread names
-
-### GLOG Features
-
-- Automatic log rotation
-- Severity-based file splitting
-- Efficient memory usage
-- Google-style formatting
-
-### NATIVE Features
-
-- Minimal memory footprint
-- No external dependencies
-- Fast logging operations
-- Simple configuration
-
-## Troubleshooting
-
-### Logs not appearing
-
-1. Check logging level is set correctly
-2. Verify console output is enabled
-3. Check file permissions if writing to file
-4. Ensure logger is initialized before use
-
-### Performance issues
-
-1. Reduce logging level (set to WARN or ERROR)
-2. Switch to NATIVE backend
-3. Disable console output
-4. Use conditional logging for expensive operations
-
-### File size growing too large
-
-1. Enable log rotation
-2. Reduce logging level
-3. Implement log cleanup policies
-4. Use file size limits
-
-## Migration Between Backends
-
-To switch logging backends:
-
-```bash
-# From LOGURU to GLOG
-cd Scripts
-python setup.py config.build.ninja.clang --logging.glog
-
-# From GLOG to NATIVE
-cd Scripts
-python setup.py config.build.ninja.clang --logging.native
+// Vectorization (host only)
+VECTORIZATION_LOGF(INFO, "packet size {}", VECTORIZATION_PACKET_SIZE);
+VECTORIZATION_CHECK(ok, "eval failed");
 ```
 
-No code changes are required - the logging API remains consistent across backends.
+## Exception backtraces
 
-## Best Practices
+`logging::exception` captures a stack trace unless
+`logging::back_trace::set_stack_trace_on_error(0)` was called. Construction
+does not log; the catcher decides whether to print `e.what()`.
 
-1. **Use appropriate levels** - DEBUG for development, INFO for normal operation, WARN/ERROR for issues
-2. **Include context** - Log relevant variables and state information
-3. **Avoid logging sensitive data** - Don't log passwords, tokens, or personal information
-4. **Use structured logging** - Include timestamps, thread IDs, and function names
-5. **Monitor log files** - Implement log rotation and cleanup
-6. **Test logging** - Verify logging works in your deployment environment
+## Related documentation
 
-## Related Documentation
-
-- **[Setup Guide](setup.md)** - How to configure logging backend during build
-- **[Code Quality Tools](../README.md#code-quality-and-analysis-tools)** - Other analysis tools
+- [Library/Logging/README.md](../../Library/Logging/README.md) — CMake/Bazel flags
+- [Setup Guide](setup.md) — configuring the backend during build
+- [PROJECT_DEPENDENCIES.md](../PROJECT_DEPENDENCIES.md) — who links Logging

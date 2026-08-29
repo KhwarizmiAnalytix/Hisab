@@ -6,10 +6,10 @@
 #include "CoreTest.h"
 #include "common/intrusive_ptr.h"
 
-using quarisma::intrusive_ptr;
-using quarisma::intrusive_ptr_target;
-using quarisma::make_intrusive;
-using quarisma::weak_intrusive_ptr;
+using xsigma::intrusive_ptr;
+using xsigma::intrusive_ptr_target;
+using xsigma::make_intrusive;
+using xsigma::weak_intrusive_ptr;
 
 #ifndef _MSC_VER
 #pragma GCC diagnostic ignored "-Wpragmas"
@@ -1573,7 +1573,7 @@ weak_intrusive_ptr<T> make_weak_only(Args&&... args)
     auto intrusive = make_intrusive<T>(std::forward<Args>(args)...);
     return weak_intrusive_ptr<T>(intrusive);
 }
-template <class T, class NullType = quarisma::detail::intrusive_target_default_null_type<T>>
+template <class T, class NullType = xsigma::detail::intrusive_target_default_null_type<T>>
 weak_intrusive_ptr<T, NullType> make_invalid_weak()
 {
     return weak_intrusive_ptr<T, NullType>(intrusive_ptr<T, NullType>());

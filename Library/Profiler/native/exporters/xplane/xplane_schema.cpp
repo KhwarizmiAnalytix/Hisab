@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 /* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
@@ -664,8 +664,10 @@ const char             kXProfMetadataTransfers[]       = "transfers";
 const char             kXProfMetadataBufferSize[]      = "buffer_size";
 
 // String constants for threadpool_listener
-const std::string_view kThreadpoolListenerRecord      = "ThreadpoolListener::Record";
-const std::string_view kThreadpoolListenerStartRegion = "ThreadpoolListener::StartRegion";
-const std::string_view kThreadpoolListenerStopRegion  = "ThreadpoolListener::StopRegion";
-const std::string_view kThreadpoolListenerRegion      = "ThreadpoolListener::Region";
+PROFILER_API const std::string_view kThreadpoolListenerRecord = "ThreadpoolListener::Record";
+PROFILER_API const std::string_view kThreadpoolListenerStartRegion =
+    "ThreadpoolListener::StartRegion";
+PROFILER_API const std::string_view kThreadpoolListenerStopRegion =
+    "ThreadpoolListener::StopRegion";
+const std::string_view kThreadpoolListenerRegion = "ThreadpoolListener::Region";
 }  // namespace profiler

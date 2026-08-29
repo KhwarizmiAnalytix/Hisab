@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #pragma once
@@ -98,12 +98,16 @@ extern "C"
 
 #if defined(_MSC_VER)
 
-#define SVML_FUNCTION_ONE_ARG(op)                                                           \
-    VECTORIZATION_FORCE_INLINE __m512 VECTORIZATION_VECTORCALL _mm512_##op##_ps(__m512 x)   \
-    { return reinterpret_cast<__m512(VECTORIZATION_VECTORCALL*)(__m512)>(svml_ps(op))(x); } \
-                                                                                            \
-    VECTORIZATION_FORCE_INLINE __m512d VECTORIZATION_VECTORCALL _mm512_##op##_pd(__m512d x) \
-    { return reinterpret_cast<__m512d(VECTORIZATION_VECTORCALL*)(__m512d)>(svml_pd(op))(x); }
+#define SVML_FUNCTION_ONE_ARG(op)                                                             \
+    VECTORIZATION_FORCE_INLINE __m512 VECTORIZATION_VECTORCALL _mm512_##op##_ps(__m512 x)     \
+    {                                                                                         \
+        return reinterpret_cast<__m512(VECTORIZATION_VECTORCALL*)(__m512)>(svml_ps(op))(x);   \
+    }                                                                                         \
+                                                                                              \
+    VECTORIZATION_FORCE_INLINE __m512d VECTORIZATION_VECTORCALL _mm512_##op##_pd(__m512d x)   \
+    {                                                                                         \
+        return reinterpret_cast<__m512d(VECTORIZATION_VECTORCALL*)(__m512d)>(svml_pd(op))(x); \
+    }
 
 #define SVML_FUNCTION_TWO_ARGS(op)                                                               \
     VECTORIZATION_FORCE_INLINE __m512 VECTORIZATION_VECTORCALL _mm512_##op##_ps(                 \
@@ -124,19 +128,27 @@ extern "C"
 
 #define SVML_FUNCTION_ONE_ARG(op)                                                           \
     VECTORIZATION_FORCE_INLINE __m512 VECTORIZATION_VECTORCALL _mm512_##op##_ps(__m512 x)   \
-    { return svml_ps(op)(x); }                                                              \
+    {                                                                                       \
+        return svml_ps(op)(x);                                                              \
+    }                                                                                       \
                                                                                             \
     VECTORIZATION_FORCE_INLINE __m512d VECTORIZATION_VECTORCALL _mm512_##op##_pd(__m512d x) \
-    { return svml_pd(op)(x); }
+    {                                                                                       \
+        return svml_pd(op)(x);                                                              \
+    }
 
 #define SVML_FUNCTION_TWO_ARGS(op)                                                \
     VECTORIZATION_FORCE_INLINE __m512 VECTORIZATION_VECTORCALL _mm512_##op##_ps(  \
         __m512 x, __m512 y)                                                       \
-    { return svml_ps(op)(x, y); }                                                 \
+    {                                                                             \
+        return svml_ps(op)(x, y);                                                 \
+    }                                                                             \
                                                                                   \
     VECTORIZATION_FORCE_INLINE __m512d VECTORIZATION_VECTORCALL _mm512_##op##_pd( \
         __m512d x, __m512d y)                                                     \
-    { return svml_pd(op)(x, y); }
+    {                                                                             \
+        return svml_pd(op)(x, y);                                                 \
+    }
 
 #endif  // defined(_MSC_VER)
 

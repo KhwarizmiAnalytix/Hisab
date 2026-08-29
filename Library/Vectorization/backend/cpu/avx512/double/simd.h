@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #pragma once
@@ -359,7 +359,8 @@ struct simd<double>
     // {a0, a0  a0, a0, a1, a1, a1, a1}
     VECTORIZATION_FORCE_INLINE static simd_t ploadquad(const double* from)
     {
-        return _mm512_set_pd(from[1], from[1], from[1], from[1], from[0], from[0], from[0], from[0]);
+        return _mm512_set_pd(
+            from[1], from[1], from[1], from[1], from[0], from[0], from[0], from[0]);
     }
 
     VECTORIZATION_FORCE_INLINE static simd_half_t loadu_half(const value_t* from)
@@ -377,8 +378,8 @@ struct simd<double>
         return _mm256_add_pd(x, y);
     }
 
-    VECTORIZATION_SIMD_METHOD simd_half_t fma(
-        const simd_half_t& x, const simd_half_t& y, const simd_half_t& z)
+    VECTORIZATION_SIMD_METHOD simd_half_t
+    fma(const simd_half_t& x, const simd_half_t& y, const simd_half_t& z)
     {
 #ifdef __FMA__
         return _mm256_fmadd_pd(x, y, z);
@@ -507,4 +508,3 @@ struct simd<double>
         }
     }
 };
-

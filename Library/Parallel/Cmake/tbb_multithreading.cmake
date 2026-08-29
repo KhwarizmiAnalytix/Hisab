@@ -1,5 +1,5 @@
 # =============================================================================
-# Quarisma Intel TBB -
+# XSigma Intel TBB -
 # Multithreading Backend (Threading Building Blocks) Parallel Task Scheduling
 
 # This module configures Intel TBB as the parallel task scheduling backend. It is activated when
@@ -96,23 +96,22 @@ if(NOT PROJECT_TBB_FORCE_BUILD_FROM_SOURCE)
           "\n"
           "RECOMMENDED INSTALLATION METHODS:\n"
           "\n"
-          "1. Using vcpkg (recommended):\n"
+          "1. CI / official binaries (recommended):\n"
+          "   .github/workflows/install/install-deps-windows.ps1 -WithTbb\n"
+          "   (downloads oneTBB Windows binaries and sets TBB_ROOT)\n"
+          "\n"
+          "2. Using vcpkg:\n"
           "   vcpkg install tbb:x64-windows\n"
-          "   \n"
-          "   Then configure with:\n"
           "   -DCMAKE_TOOLCHAIN_FILE=[vcpkg root]/scripts/buildsystems/vcpkg.cmake\n"
           "\n"
-          "2. Using Chocolatey:\n"
-          "   choco install tbb\n"
-          "\n"
           "3. Manual installation:\n"
-          "   - Download from: https://github.com/oneapi-src/oneTBB/releases\n"
-          "   - Extract and set TBB_ROOT environment variable to installation path\n"
+          "   - Download from: https://github.com/uxlfoundation/oneTBB/releases\n"
+          "   - Extract and set TBB_ROOT / TBB_DIR (lib/cmake/tbb)\n"
           "\n"
           "4. Alternative: Use Visual Studio (MSVC) compiler instead of Clang:\n"
           "   python setup.py config.ninja.vs22.test.tbb\n"
           "\n"
-          "For more information, see: https://github.com/oneapi-src/oneTBB\n"
+          "For more information, see: https://github.com/uxlfoundation/oneTBB\n"
           "================================================================================\n"
       )
     endif()

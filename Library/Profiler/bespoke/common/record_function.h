@@ -343,22 +343,26 @@ PROFILER_API StepCallbacks getStepCallbacks(RecordScope scope);
 
 PROFILER_API std::optional<StepCallbacks> getStepCallbacksUnlessEmpty(RecordScope scope);
 
-#define RECORD_FUNCTION_WITH_SCOPE(scope, fn) \
-    profiler::RecordFunction guard(scope);    \
-    if (guard.isActive())                     \
-    {                                         \
-        guard.before(fn);                     \
+// PROFILER_RECORD_* (not RECORD_*) so these do not collide with LibTorch's
+// ATen/record_function.h macros of the same unprefixed names.
+#define PROFILER_RECORD_FUNCTION_WITH_SCOPE(scope, fn) \
+    profiler::RecordFunction guard(scope);             \
+    if (guard.isActive())                              \
+    {                                                  \
+        guard.before(fn);                              \
     }
 
-#define RECORD_FUNCTION(fn, ...) RECORD_FUNCTION_WITH_SCOPE(profiler::RecordScope::FUNCTION, fn)
+#define PROFILER_RECORD_FUNCTION(fn) \
+    PROFILER_RECORD_FUNCTION_WITH_SCOPE(profiler::RecordScope::FUNCTION, fn)
 
-#define RECORD_USER_SCOPE(fn) RECORD_FUNCTION_WITH_SCOPE(profiler::RecordScope::USER_SCOPE, fn)
+#define PROFILER_RECORD_USER_SCOPE(fn) \
+    PROFILER_RECORD_FUNCTION_WITH_SCOPE(profiler::RecordScope::USER_SCOPE, fn)
 
 /**
  * @brief Fluent builder for attaching structured metadata to a RecordFunction
  * guard, e.g.:
  *
- *   RECORD_FUNCTION_WITH_METADATA(guard, "gemm")
+ *   PROFILER_RECORD_FUNCTION_WITH_METADATA(guard, "gemm")
  *       .with_metadata("m", m).with_metadata("n", n).with_metadata("k", k);
  *
  * Values are stringified into the same key/value map surfaced via
@@ -415,11 +419,11 @@ private:
     std::string_view name_;
 };
 
-// Declares `guard_name` (scope: the enclosing block, like RECORD_FUNCTION)
+// Declares `guard_name` (scope: the enclosing block, like PROFILER_RECORD_FUNCTION)
 // without starting it. Chain record_function_metadata_builder(guard_name, fn)
 // .with_metadata(...) immediately after to attach metadata and start it --
 // see the class comment above for why start is deferred to the builder.
-#define RECORD_FUNCTION_WITH_METADATA(guard_name, fn) \
+#define PROFILER_RECORD_FUNCTION_WITH_METADATA(guard_name, fn) \
     profiler::RecordFunction guard_name(profiler::RecordScope::FUNCTION)
 
 /**

@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  *
  * Portions of this code are based on VTK (Visualization Toolkit):
 
@@ -24,6 +24,7 @@
 #include "threaded_callback_queue.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <iterator>
 
 //=============================================================================
@@ -59,6 +60,9 @@ private:
         {
             queue_->condition_variable_.wait(lock, [this] { return !this->on_hold(); });
         }
+
+        // try_invoke() leaves nullptr holes for tasks it already ran.
+        queue_->pop_front_nullptr();
 
         if (!this->can_continue())
         {
@@ -163,19 +167,25 @@ void threaded_callback_queue::set_number_of_threads(int number_of_threads)
             {
                 {
                     std::unique_lock<std::mutex> lock(thread_id_to_index_mutex_);
-                    std::atomic_int&             thread_index =
-                        *thread_id_to_index_.at(std::this_thread::get_id());
-                    if (thread_index && thread_index >= number_of_threads)
+                    auto self = thread_id_to_index_.find(std::this_thread::get_id());
+                    if (self != thread_id_to_index_.end())
                     {
-                        std::atomic_int& thread0_index =
-                            *thread_id_to_index_.at(threads_[0].get_id());
-                        lock.unlock();
+                        std::atomic_int& thread_index = *self->second;
+                        if (thread_index && thread_index >= number_of_threads)
+                        {
+                            auto t0 = thread_id_to_index_.find(threads_[0].get_id());
+                            if (t0 != thread_id_to_index_.end())
+                            {
+                                std::atomic_int& thread0_index = *t0->second;
+                                lock.unlock();
 
-                        std::swap(threads_[thread_index], threads_[0]);
+                                std::swap(threads_[thread_index], threads_[0]);
 
-                        const int tmp = thread0_index;
-                        thread0_index.exchange(thread_index);
-                        thread_index = tmp;
+                                const int tmp = thread0_index;
+                                thread0_index.exchange(thread_index);
+                                thread_index = tmp;
+                            }
+                        }
                     }
                 }
 
@@ -246,8 +256,10 @@ void threaded_callback_queue::signal_dependent_shared_futures(shared_future_base
     if (!invokers_to_launch.empty())
     {
         const std::scoped_lock lock(mutex_);
-        size_t index = invoker_queue_.empty() ? static_cast<size_t>(invokers_to_launch.size())
-                                              : invoker_queue_.front()->invoker_index_;
+        this->pop_front_nullptr();
+        std::int64_t index = invoker_queue_.empty()
+                                 ? static_cast<std::int64_t>(invokers_to_launch.size())
+                                 : this->front_invoker_index();
         for (shared_future_base_pointer& inv : invokers_to_launch)
         {
             assert(
@@ -279,6 +291,8 @@ bool threaded_callback_queue::try_invoke(shared_future_base* invoker)
 
             const std::scoped_lock lock(mutex_);
 
+            this->pop_front_nullptr();
+
             if (invoker_queue_.empty())
             {
                 return false;
@@ -291,9 +305,18 @@ bool threaded_callback_queue::try_invoke(shared_future_base* invoker)
                 return false;
             }
 
-            const size_t index = invoker->invoker_index_ - invoker_queue_.front()->invoker_index_;
+            const std::int64_t index =
+                invoker->invoker_index_ - invoker_queue_.front()->invoker_index_;
 
-            const shared_future_base_pointer& result = invoker_queue_[index];
+            // A negative index means another worker already picked this invoker
+            // (VTK checks vtkIdType < 0). Unsigned wrap used to index off the
+            // deque and corrupt later mutexes.
+            if (index < 0 || static_cast<std::size_t>(index) >= invoker_queue_.size())
+            {
+                return false;
+            }
+
+            shared_future_base_pointer& result = invoker_queue_[static_cast<std::size_t>(index)];
 
             if (result.get() != invoker)
             {
@@ -304,6 +327,14 @@ bool threaded_callback_queue::try_invoke(shared_future_base* invoker)
             {
                 invoker_queue_.pop_front();
                 this->pop_front_nullptr();
+            }
+            else
+            {
+                // Hole so a worker does not pop and re-run a task that
+                // wait() already executed. Re-running after the caller has
+                // destroyed captured stack state throws
+                // "mutex lock failed: Invalid argument" on macOS libc++.
+                result.reset();
             }
             invoker->status_.store(RUNNING, std::memory_order_release);
             return true;

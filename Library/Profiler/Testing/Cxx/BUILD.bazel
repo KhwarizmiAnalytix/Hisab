@@ -40,6 +40,9 @@ cc_test(
         "USE_GTEST",
         "_VARIADIC_MAX=10",
         "PROFILER_HAS_GTEST=1",
+        # LibTorch is CMake-only (setup.py `torch` token). Keep the heavy-function
+        # PyTorch profiler path compiled out under Bazel.
+        "PROFILER_HAS_LIBTORCH=0",
     ],
     includes = ["."],
     linkopts = profiler_linkopts(),

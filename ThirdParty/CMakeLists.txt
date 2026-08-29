@@ -1,10 +1,10 @@
 # =============================================================================
-# Quarisma Third-Party Dependency Management
+# XSigma Third-Party Dependency Management
 # =============================================================================
-# This file manages all third-party dependencies for Quarisma, handling both bundled and
-# external (system-installed) libraries via the QUARISMA_ENABLE_EXTERNAL flag. The
-# add_third_party_library() function automatically populates QUARISMA_DEPENDENCY_LIBS and
-# QUARISMA_DEPENDENCY_INCLUDE_DIRS, which are propagated to the main build system.
+# This file manages all third-party dependencies for XSigma, handling both bundled and
+# external (system-installed) libraries via the XSIGMA_ENABLE_EXTERNAL flag. The
+# add_third_party_library() function automatically populates XSIGMA_DEPENDENCY_LIBS and
+# XSIGMA_DEPENDENCY_INCLUDE_DIRS, which are propagated to the main build system.
 # =============================================================================
 
 cmake_minimum_required(VERSION 3.16)
@@ -14,8 +14,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # External Library Usage Flag Controls whether external copies of third-party libraries are used by
 # default. When enabled, prefers external library versions over bundled versions.
-option(QUARISMA_ENABLE_EXTERNAL "Use external copies of third party libraries by default" ON)
-mark_as_advanced(QUARISMA_ENABLE_EXTERNAL)
+option(XSIGMA_ENABLE_EXTERNAL "Use external copies of third party libraries by default" ON)
+mark_as_advanced(XSIGMA_ENABLE_EXTERNAL)
 
 # Configure Visual Studio folder structure to match file system
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -23,8 +23,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Path to this ThirdParty directory — used by library modules that call
 # add_third_party_library() with absolute SOURCE_DIR / INCLUDE_DIR paths.
-set(QUARISMA_THIRDPARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH
-    "Root directory of Quarisma's bundled third-party sources" FORCE)
+set(XSIGMA_THIRDPARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH
+    "Root directory of XSigma's bundled third-party sources" FORCE)
 
 # =============================================================================
 # Helper Functions for Third-Party Library Management
@@ -169,13 +169,13 @@ function(_set_third_party_folder_properties name binary_dir)
 endfunction()
 
 # -----------------------------------------------------------------------------
-# quarisma_clang_windows_gtest_workaround
+# xsigma_clang_windows_gtest_workaround
 # -----------------------------------------------------------------------------
 # Clang 22+ can crash (frontend ICE) compiling gtest-all.cc with global -gcodeview and -O3 on
 # Windows. -g0 on the gtest targets only overrides -gcodeview for those TUs (same approach as
 # optional per-TU workarounds for heavy test translation units). Call once after all Library/* trees that
 # may add googletest have been processed (root CMakeLists.txt).
-function(quarisma_clang_windows_gtest_workaround)
+function(xsigma_clang_windows_gtest_workaround)
   if(NOT WIN32)
     return()
   endif()
@@ -235,7 +235,7 @@ endfunction()
 # -----------------------------------------------------------------------------
 # Creates namespaced aliases for third-party library targets.
 # This provides a consistent interface for linking against third-party libraries
-# throughout the Quarisma project.
+# throughout the XSigma project.
 #
 # The function handles multiple scenarios:
 # 1. Target with namespace alias (e.g., fmt::fmt) - resolves the actual target
@@ -243,7 +243,7 @@ endfunction()
 # 3. Multiple possible target names - tries each in order
 #
 # Parameters:
-#   quarisma_targets - List of namespaced target specifications in format:
+#   xsigma_targets - List of namespaced target specifications in format:
 #                    "Xxx::name=target1|target2|..."
 #                    where target1, target2, etc. are tried in order
 #
@@ -254,13 +254,13 @@ endfunction()
 #   )
 #
 function(_create_third_party_interface_targets)
-    set(quarisma_targets ${ARGN})
+    set(xsigma_targets ${ARGN})
 
-    if(NOT quarisma_targets)
+    if(NOT xsigma_targets)
         return()
     endif()
 
-    foreach(target_spec ${quarisma_targets})
+    foreach(target_spec ${xsigma_targets})
         # Parse the specification: "Xxx::name=target1|target2|..."
         string(REPLACE "=" ";" spec_parts "${target_spec}")
         list(LENGTH spec_parts spec_parts_len)
@@ -270,12 +270,12 @@ function(_create_third_party_interface_targets)
             continue()
         endif()
 
-        list(GET spec_parts 0 quarisma_name)
+        list(GET spec_parts 0 xsigma_name)
         list(GET spec_parts 1 source_targets)
 
         # Check if namespaced target already exists
-        if(TARGET ${quarisma_name})
-            message(STATUS "Target ${quarisma_name} already exists, skipping")
+        if(TARGET ${xsigma_name})
+            message(STATUS "Target ${xsigma_name} already exists, skipping")
             continue()
         endif()
 
@@ -291,21 +291,21 @@ function(_create_third_party_interface_targets)
                 if(is_imported)
                     # For IMPORTED targets, create an INTERFACE library that links to it
                     # (ALIAS targets cannot alias IMPORTED targets)
-                    add_library(${quarisma_name} INTERFACE IMPORTED GLOBAL)
-                    target_link_libraries(${quarisma_name} INTERFACE ${source_target})
-                    message(STATUS "Created ${quarisma_name} -> ${source_target} (INTERFACE wrapper for IMPORTED target)")
+                    add_library(${xsigma_name} INTERFACE IMPORTED GLOBAL)
+                    target_link_libraries(${xsigma_name} INTERFACE ${source_target})
+                    message(STATUS "Created ${xsigma_name} -> ${source_target} (INTERFACE wrapper for IMPORTED target)")
                 else()
                     # Check if source target is an alias and resolve it
                     get_target_property(aliased_target ${source_target} ALIASED_TARGET)
 
                     if(aliased_target)
                         # Source is an alias, create alias to the actual target
-                        add_library(${quarisma_name} ALIAS ${aliased_target})
-                        message(STATUS "Created ${quarisma_name} -> ${source_target} (resolved to ${aliased_target})")
+                        add_library(${xsigma_name} ALIAS ${aliased_target})
+                        message(STATUS "Created ${xsigma_name} -> ${source_target} (resolved to ${aliased_target})")
                     else()
                         # Source is a real target, create alias directly
-                        add_library(${quarisma_name} ALIAS ${source_target})
-                        message(STATUS "Created ${quarisma_name} -> ${source_target}")
+                        add_library(${xsigma_name} ALIAS ${source_target})
+                        message(STATUS "Created ${xsigma_name} -> ${source_target}")
                     endif()
                 endif()
 
@@ -315,7 +315,7 @@ function(_create_third_party_interface_targets)
         endforeach()
 
         if(NOT target_created)
-            message(WARNING "Could not create alias ${quarisma_name}: none of the source targets exist (${source_targets})")
+            message(WARNING "Could not create alias ${xsigma_name}: none of the source targets exist (${source_targets})")
         endif()
     endforeach()
 endfunction()
@@ -337,7 +337,7 @@ endfunction()
 #   CONDITION <variable>        - CMake variable that must be true to add the library
 #   LIBRARY_TYPE <type>         - Type of library: STATIC, SHARED, DEFAULT, or HEADER_ONLY
 #                                 HEADER_ONLY: Creates INTERFACE library target with include dirs
-#                                 Supports ALIASES and QUARISMA_TARGETS for header-only libraries
+#                                 Supports ALIASES and XSIGMA_TARGETS for header-only libraries
 #   LIBRARY_TYPE_VAR <var>      - CMake variable name for library-specific control
 #                                 Example: MI_BUILD_STATIC for mimalloc
 #                                 Note: Not applicable for HEADER_ONLY libraries
@@ -353,14 +353,14 @@ endfunction()
 #   ALIASES <aliases...>        - List of alias names to create for the library
 #                                 Example: "fmt::fmt-header-only" for fmt library
 #                                 Supported for all library types including HEADER_ONLY
-#   QUARISMA_TARGETS <specs...>   - List of namespaced target specifications
+#   XSIGMA_TARGETS <specs...>   - List of namespaced target specifications
 #                                 Format: "Xxx::name=target1|target2|..."
 #                                 Example: "Fmt::fmt=fmt::fmt-header-only|fmt"
 #                                 Supported for all library types including HEADER_ONLY
-#   INCLUDE_DIR <path>          - Include directory path to add to QUARISMA_DEPENDENCY_INCLUDE_DIRS
+#   INCLUDE_DIR <path>          - Include directory path to add to XSIGMA_DEPENDENCY_INCLUDE_DIRS
 #                                 Path is relative to CMAKE_CURRENT_SOURCE_DIR (ThirdParty/)
 #                                 Example: "fmt/include" for fmt library
-#   AUTO_ADD_TO_DEPENDENCIES    - Boolean flag to automatically add to QUARISMA_DEPENDENCY_LIBS
+#   AUTO_ADD_TO_DEPENDENCIES    - Boolean flag to automatically add to XSIGMA_DEPENDENCY_LIBS
 #                                 Default: ON (automatically adds Xxx::name target)
 #   EXCLUDE_FROM_ALL            - If set, add_subdirectory(... EXCLUDE_FROM_ALL) for the bundled lib
 #   BINARY_DIR <path>           - Out-of-tree build dir for add_subdirectory (absolute, or relative to
@@ -371,7 +371,7 @@ endfunction()
 #       LIBRARY_TYPE STATIC
 #       FILTER_FLAGS "-fno-exceptions" "-Werror"
 #       ALIASES "fmt::fmt"
-#       QUARISMA_TARGETS "Fmt::fmt=fmt::fmt|fmt"
+#       XSIGMA_TARGETS "Fmt::fmt=fmt::fmt|fmt"
 #   )
 #
 #   add_third_party_library(kineto
@@ -388,7 +388,7 @@ function(add_third_party_library name)
         TPL                                                           # Prefix
         "DISABLE_WARNINGS;AUTO_ADD_TO_DEPENDENCIES;EXCLUDE_FROM_ALL" # Options (boolean flags)
         "SOURCE_DIR;EXTERNAL_NAME;CONDITION;LIBRARY_TYPE;LIBRARY_TYPE_VAR;INCLUDE_DIR;BINARY_DIR" # One-value keywords
-        "FILTER_FLAGS;EXTRA_FLAGS;ALIASES;QUARISMA_TARGETS"             # Multi-value keywords
+        "FILTER_FLAGS;EXTRA_FLAGS;ALIASES;XSIGMA_TARGETS"             # Multi-value keywords
         ${ARGN}                                                       # Arguments to parse
     )
 
@@ -434,8 +434,8 @@ function(add_third_party_library name)
     # -------------------------------------------------------------------------
     # Step 1: Check if already processed to avoid duplicates
     # -------------------------------------------------------------------------
-    get_property(QUARISMA_${name}_PROCESSED GLOBAL PROPERTY QUARISMA_${name}_PROCESSED)
-    if(QUARISMA_${name}_PROCESSED)
+    get_property(XSIGMA_${name}_PROCESSED GLOBAL PROPERTY XSIGMA_${name}_PROCESSED)
+    if(XSIGMA_${name}_PROCESSED)
         message(STATUS "Third-party library ${name} already processed, skipping")
         return()
     endif()
@@ -481,17 +481,17 @@ function(add_third_party_library name)
             message(STATUS "Created alias: ${name}::${name} -> ${name}")
         endif()
 
-        # Add to QUARISMA_DEPENDENCY_LIBS so it can be linked against
-        get_property(_temp_libs GLOBAL PROPERTY _QUARISMA_DEPENDENCY_LIBS)
+        # Add to XSIGMA_DEPENDENCY_LIBS so it can be linked against
+        get_property(_temp_libs GLOBAL PROPERTY _XSIGMA_DEPENDENCY_LIBS)
         list(APPEND _temp_libs ${name}::${name})
-        set_property(GLOBAL PROPERTY _QUARISMA_DEPENDENCY_LIBS "${_temp_libs}")
-        message(STATUS "Dependency: ${name}::${name} added to QUARISMA_DEPENDENCY_LIBS (header-only)")
+        set_property(GLOBAL PROPERTY _XSIGMA_DEPENDENCY_LIBS "${_temp_libs}")
+        message(STATUS "Dependency: ${name}::${name} added to XSIGMA_DEPENDENCY_LIBS (header-only)")
 
         # Add include directory to global include paths for project-wide access
-        get_property(_temp_includes GLOBAL PROPERTY _QUARISMA_DEPENDENCY_INCLUDE_DIRS)
+        get_property(_temp_includes GLOBAL PROPERTY _XSIGMA_DEPENDENCY_INCLUDE_DIRS)
         list(APPEND _temp_includes "${_tpl_abs_include_dir}")
-        set_property(GLOBAL PROPERTY _QUARISMA_DEPENDENCY_INCLUDE_DIRS "${_temp_includes}")
-        message(STATUS "Dependency: ${TPL_INCLUDE_DIR} added to QUARISMA_DEPENDENCY_INCLUDE_DIRS (header-only)")
+        set_property(GLOBAL PROPERTY _XSIGMA_DEPENDENCY_INCLUDE_DIRS "${_temp_includes}")
+        message(STATUS "Dependency: ${TPL_INCLUDE_DIR} added to XSIGMA_DEPENDENCY_INCLUDE_DIRS (header-only)")
 
         # =====================================================================
         # Create library aliases if requested (supported for HEADER_ONLY)
@@ -501,21 +501,21 @@ function(add_third_party_library name)
         endif()
 
         # =====================================================================
-        # Create Quarisma:: namespace interface targets if requested (supported for HEADER_ONLY)
+        # Create XSigma:: namespace interface targets if requested (supported for HEADER_ONLY)
         # =====================================================================
-        if(TPL_QUARISMA_TARGETS)
-            _create_third_party_interface_targets("${TPL_QUARISMA_TARGETS}")
+        if(TPL_XSIGMA_TARGETS)
+            _create_third_party_interface_targets("${TPL_XSIGMA_TARGETS}")
         endif()
 
         # Early return - no further processing needed for header-only libraries
-        set_property(GLOBAL PROPERTY QUARISMA_${name}_PROCESSED TRUE)
+        set_property(GLOBAL PROPERTY XSIGMA_${name}_PROCESSED TRUE)
         return()
     endif()
 
     # -------------------------------------------------------------------------
     # Step 4: Try to find external library first if requested
     # -------------------------------------------------------------------------
-    if(QUARISMA_ENABLE_EXTERNAL)
+    if(XSIGMA_ENABLE_EXTERNAL)
         find_package(${TPL_EXTERNAL_NAME} QUIET GLOBAL)
         if(${TPL_EXTERNAL_NAME}_FOUND OR ${name}_FOUND)
             message(STATUS "================================================================")
@@ -544,9 +544,9 @@ function(add_third_party_library name)
 
             message(STATUS "================================================================")
 
-            # Create namespaced target using QUARISMA_TARGETS if provided, otherwise use default pattern
-            if(TPL_QUARISMA_TARGETS)
-                _create_third_party_interface_targets("${TPL_QUARISMA_TARGETS}")
+            # Create namespaced target using XSIGMA_TARGETS if provided, otherwise use default pattern
+            if(TPL_XSIGMA_TARGETS)
+                _create_third_party_interface_targets("${TPL_XSIGMA_TARGETS}")
             else()
                 _create_third_party_interface_targets(
                     "${name}::${name}=${name}::${name}-header-only||${name}::${name}|${name}|${name}-static"
@@ -555,23 +555,23 @@ function(add_third_party_library name)
 
             # Automatically populate dependency lists if requested (default: ON)
             if(TARGET ${name}::${name})
-                # Add to QUARISMA_DEPENDENCY_LIBS using global property
-                get_property(_temp_libs GLOBAL PROPERTY _QUARISMA_DEPENDENCY_LIBS)
+                # Add to XSIGMA_DEPENDENCY_LIBS using global property
+                get_property(_temp_libs GLOBAL PROPERTY _XSIGMA_DEPENDENCY_LIBS)
                 list(APPEND _temp_libs ${name}::${name})
-                set_property(GLOBAL PROPERTY _QUARISMA_DEPENDENCY_LIBS "${_temp_libs}")
-                message(STATUS "Dependency: ${name}::${name} added to QUARISMA_DEPENDENCY_LIBS (external)")
+                set_property(GLOBAL PROPERTY _XSIGMA_DEPENDENCY_LIBS "${_temp_libs}")
+                message(STATUS "Dependency: ${name}::${name} added to XSIGMA_DEPENDENCY_LIBS (external)")
             endif()
 
             # Add include directory if specified (external path from find_package)
             if(DEFINED ${name}_INCLUDE_DIR)
                 # Fall back to the include directory set by find_package
-                get_property(_temp_includes GLOBAL PROPERTY _QUARISMA_DEPENDENCY_INCLUDE_DIRS)
+                get_property(_temp_includes GLOBAL PROPERTY _XSIGMA_DEPENDENCY_INCLUDE_DIRS)
                 list(APPEND _temp_includes ${${name}_INCLUDE_DIR})
-                set_property(GLOBAL PROPERTY _QUARISMA_DEPENDENCY_INCLUDE_DIRS "${_temp_includes}")
-                message(STATUS "Dependency: ${${name}_INCLUDE_DIR} added to QUARISMA_DEPENDENCY_INCLUDE_DIRS (external)")
+                set_property(GLOBAL PROPERTY _XSIGMA_DEPENDENCY_INCLUDE_DIRS "${_temp_includes}")
+                message(STATUS "Dependency: ${${name}_INCLUDE_DIR} added to XSIGMA_DEPENDENCY_INCLUDE_DIRS (external)")
             endif()
 
-            set_property(GLOBAL PROPERTY QUARISMA_${name}_PROCESSED TRUE)
+            set_property(GLOBAL PROPERTY XSIGMA_${name}_PROCESSED TRUE)
             return()
         endif()
     endif()
@@ -744,39 +744,39 @@ function(add_third_party_library name)
             # -------------------------------------------------------------------------
             # Step 11: Create namespaced interface targets if requested
             # -------------------------------------------------------------------------
-            if(TPL_QUARISMA_TARGETS)
-                _create_third_party_interface_targets("${TPL_QUARISMA_TARGETS}")
+            if(TPL_XSIGMA_TARGETS)
+                _create_third_party_interface_targets("${TPL_XSIGMA_TARGETS}")
             endif()
 
             # -------------------------------------------------------------------------
             # Step 12: Automatically populate dependency lists
             # -------------------------------------------------------------------------
-            # This step automatically adds the library to QUARISMA_DEPENDENCY_LIBS and
-            # QUARISMA_DEPENDENCY_INCLUDE_DIRS if requested (default: ON)
+            # This step automatically adds the library to XSIGMA_DEPENDENCY_LIBS and
+            # XSIGMA_DEPENDENCY_INCLUDE_DIRS if requested (default: ON)
 
             if(TPL_AUTO_ADD_TO_DEPENDENCIES)
                 # Check if the namespaced target was created
                 if(TARGET ${name}::${name})
-                    # Add to QUARISMA_DEPENDENCY_LIBS using global property
+                    # Add to XSIGMA_DEPENDENCY_LIBS using global property
                     # We use global properties because PARENT_SCOPE doesn't update the variable
                     # in the current scope, so subsequent function calls wouldn't see the changes
-                    get_property(_temp_libs GLOBAL PROPERTY _QUARISMA_DEPENDENCY_LIBS)
+                    get_property(_temp_libs GLOBAL PROPERTY _XSIGMA_DEPENDENCY_LIBS)
                     list(APPEND _temp_libs ${name}::${name})
-                    set_property(GLOBAL PROPERTY _QUARISMA_DEPENDENCY_LIBS "${_temp_libs}")
-                    message(STATUS "Dependency: ${name}::${name} added to QUARISMA_DEPENDENCY_LIBS")
+                    set_property(GLOBAL PROPERTY _XSIGMA_DEPENDENCY_LIBS "${_temp_libs}")
+                    message(STATUS "Dependency: ${name}::${name} added to XSIGMA_DEPENDENCY_LIBS")
                 endif()
 
                 # Add include directory if specified
                 if(DEFINED TPL_INCLUDE_DIR)
-                    # Add to QUARISMA_DEPENDENCY_INCLUDE_DIRS using global property
-                    get_property(_temp_includes GLOBAL PROPERTY _QUARISMA_DEPENDENCY_INCLUDE_DIRS)
+                    # Add to XSIGMA_DEPENDENCY_INCLUDE_DIRS using global property
+                    get_property(_temp_includes GLOBAL PROPERTY _XSIGMA_DEPENDENCY_INCLUDE_DIRS)
                     list(APPEND _temp_includes "${_tpl_abs_include_dir}")
-                    set_property(GLOBAL PROPERTY _QUARISMA_DEPENDENCY_INCLUDE_DIRS "${_temp_includes}")
-                    message(STATUS "Dependency: ${_tpl_abs_include_dir} added to QUARISMA_DEPENDENCY_INCLUDE_DIRS")
+                    set_property(GLOBAL PROPERTY _XSIGMA_DEPENDENCY_INCLUDE_DIRS "${_temp_includes}")
+                    message(STATUS "Dependency: ${_tpl_abs_include_dir} added to XSIGMA_DEPENDENCY_INCLUDE_DIRS")
                 endif()
             endif()
 
-            set_property(GLOBAL PROPERTY QUARISMA_${name}_PROCESSED TRUE)
+            set_property(GLOBAL PROPERTY XSIGMA_${name}_PROCESSED TRUE)
         else()
             message(WARNING "Third-party library ${name} not found (expected ${lib_cmakelists_path})")
         endif()
@@ -805,7 +805,7 @@ endfunction()
 # =============================================================================
 # GoogleTest — bundled via add_third_party_library (shared by all */Testing/Cxx)
 # =============================================================================
-function(quarisma_add_googletest)
+function(xsigma_add_googletest)
     set(BUILD_GMOCK OFF CACHE BOOL "Disable Google Mock" FORCE)
     set(INSTALL_GTEST OFF CACHE BOOL "Disable Google Test install" FORCE)
     set(gtest_build_samples OFF CACHE BOOL "Disable Google Test samples" FORCE)
@@ -815,13 +815,13 @@ function(quarisma_add_googletest)
     endif()
     add_third_party_library(
         googletest
-        SOURCE_DIR "${QUARISMA_THIRDPARTY_DIR}/googletest"
+        SOURCE_DIR "${XSIGMA_THIRDPARTY_DIR}/googletest"
         BINARY_DIR "${CMAKE_BINARY_DIR}/ThirdParty/googletest_build"
         EXTERNAL_NAME GTest
         LIBRARY_TYPE STATIC
         EXCLUDE_FROM_ALL
         AUTO_ADD_TO_DEPENDENCIES OFF
-        QUARISMA_TARGETS
+        XSIGMA_TARGETS
             "Gtest::gtest=GTest::gtest|gtest"
             "Gtest::gtest_main=GTest::gtest_main|gtest_main"
     )
@@ -841,5 +841,5 @@ endfunction()
 #   Library/Logging    → fmt, loguru, glog, spdlog
 #   Library/Memory     → mimalloc
 #   Library/Profiler   → kineto, ITT
-#   */Testing/Cxx      → quarisma_add_googletest(), google-benchmark
+#   */Testing/Cxx      → xsigma_add_googletest(), google-benchmark
 # =============================================================================

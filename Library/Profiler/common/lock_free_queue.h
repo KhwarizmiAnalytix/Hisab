@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 /* Copyright 2024 The TensorFlow Authors. All Rights Reserved.
@@ -311,7 +311,7 @@ public:
     private:
         friend class BlockedQueue;
         Iterator(BlockedQueue* queue, BlockedQueue::Block* block, size_t index)
-            : queue_(queue), block_(block), index_(index){};
+            : queue_(queue), block_(block), index_(index) {};
         BlockedQueue*        queue_ = nullptr;
         BlockedQueue::Block* block_ = nullptr;
         size_t               index_ = 0;

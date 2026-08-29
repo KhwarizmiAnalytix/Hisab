@@ -110,7 +110,7 @@ public:
     // Observers
     constexpr size_type size() const noexcept { return size_; }
     constexpr size_type size_bytes() const noexcept { return size_ * sizeof(element_type); }
-    QUARISMA_NODISCARD constexpr bool empty() const noexcept { return size_ == 0; }
+    XSIGMA_NODISCARD constexpr bool empty() const noexcept { return size_ == 0; }
 
     // Subviews
     constexpr span<element_type> first(size_type count) const

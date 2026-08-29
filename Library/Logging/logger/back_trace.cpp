@@ -7,13 +7,15 @@
 
 #include <fmt/format.h>
 
+#include <atomic>
 #include <cstdlib>
-#include <functional>
+#include <memory>
+#include <mutex>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <vector>
 
-#include "common/logging_pointer.h"
 #include "util/string_util.h"
 
 // Platform-specific includes
@@ -50,6 +52,7 @@ struct FrameInformation
     /// offset into the function's machine code at which the function's body
     /// starts, i.e. skipping the "prologue" that handles stack manipulation and
     /// other calling convention things.
+    // cppcheck-suppress unusedStructMember
     std::string offset_into_function;
     /// NOTE: In debugger parlance, the "object file" refers to the ELF file that
     /// the symbol originates from, i.e. either an executable or a library.
@@ -137,6 +140,11 @@ std::optional<FrameInformation> parse_frame_information(const std::string& frame
 
 namespace logging::back_trace
 {
+namespace
+{
+std::atomic<bool> g_capture_on_error{true};
+}
+
 // ============================================================================
 // Public API Implementation
 // ============================================================================
@@ -181,14 +189,18 @@ std::vector<stack_frame> capture(const backtrace_options& options)
 
     callstack.resize(captured);
 
-    // Initialize symbol handler (thread-safe)
-    static bool symbol_handler_initialized = false;
-    if (!symbol_handler_initialized)
-    {
-        SymSetOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS | SYMOPT_LOAD_LINES);
-        SymInitialize(GetCurrentProcess(), nullptr, TRUE);
-        symbol_handler_initialized = true;
-    }
+    // Initialize symbol handler once; DbgHelp is process-global and not thread-safe.
+    static std::once_flag symbol_once;
+    static std::mutex     dbghelp_mutex;
+    std::call_once(
+        symbol_once,
+        []()
+        {
+            SymSetOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS | SYMOPT_LOAD_LINES);
+            SymInitialize(GetCurrentProcess(), nullptr, TRUE);
+        });
+
+    const std::scoped_lock dbghelp_lock(dbghelp_mutex);
 
     // Resolve symbols
     HANDLE            process     = GetCurrentProcess();
@@ -273,13 +285,13 @@ std::vector<stack_frame> capture(const backtrace_options& options)
             return;
         }
 #ifdef __APPLE__
-        malloc_zone_t* zone = malloc_zone_from_ptr(static_cast<const void*>(p));
+        malloc_zone_t* zone = malloc_zone_from_ptr(reinterpret_cast<const void*>(p));
         if (zone != nullptr)
         {
-            malloc_zone_free(zone, static_cast<void*>(p));
+            malloc_zone_free(zone, reinterpret_cast<void*>(p));
         }
 #else
-        ::free(p);
+        ::free(reinterpret_cast<void*>(p));
 #endif
     };
     std::unique_ptr<char*, decltype(backtrace_free)> const raw_symbols(
@@ -425,9 +437,12 @@ bool is_supported()
 
 void set_stack_trace_on_error(int enable)
 {
-    // Placeholder for future implementation
-    // Could integrate with signal handlers or exception hooks
-    (void)enable;
+    g_capture_on_error.store(enable != 0, std::memory_order_relaxed);
+}
+
+bool capture_on_error()
+{
+    return g_capture_on_error.load(std::memory_order_relaxed);
 }
 
 }  // namespace logging::back_trace

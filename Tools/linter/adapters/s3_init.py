@@ -16,17 +16,17 @@ from pathlib import Path
 HOST_PLATFORM = platform.system()
 HOST_PLATFORM_ARCH = platform.system() + "-" + platform.processor()
 
-# Quarisma directory root
+# XSigma directory root
 try:
     result = subprocess.run(
         ["git", "rev-parse", "--show-toplevel"],
         stdout=subprocess.PIPE,
         check=True,
     )
-    QUARISMA_ROOT = result.stdout.decode("utf-8").strip()
+    XSIGMA_ROOT = result.stdout.decode("utf-8").strip()
 except subprocess.CalledProcessError:
     # If git is not installed, compute repo root as 3 folders up from this file
-    QUARISMA_ROOT = str(Path(__file__).absolute().parents[3])
+    XSIGMA_ROOT = str(Path(__file__).absolute().parents[3])
 
 DRY_RUN = False
 

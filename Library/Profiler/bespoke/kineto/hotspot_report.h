@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #pragma once
@@ -33,7 +33,7 @@ namespace profiler::profiler_impl
 
 /**
  * @brief One aggregated hotspot: every call site sharing the same
- * RECORD_FUNCTION/RECORD_USER_SCOPE name, merged the way VTune's "Bottom-up"
+ * PROFILER_RECORD_FUNCTION/PROFILER_RECORD_USER_SCOPE name, merged the way VTune's "Bottom-up"
  * view merges samples by function.
  */
 struct PROFILER_VISIBILITY hotspot_entry
@@ -53,7 +53,7 @@ struct PROFILER_VISIBILITY hotspot_entry
  * from the RecordFunction event tree captured by a Kineto profiling session.
  *
  * Unlike VTune's own sampling-based views, this is instrumentation-based:
- * nodes come from RECORD_FUNCTION/RECORD_USER_SCOPE scopes rather than PC
+ * nodes come from PROFILER_RECORD_FUNCTION/PROFILER_RECORD_USER_SCOPE scopes rather than PC
  * samples, so self/total time is exact for whatever call sites were
  * annotated, and the "call stack" for a hotspot is the RecordFunction parent
  * chain rather than a symbolized native stack trace.

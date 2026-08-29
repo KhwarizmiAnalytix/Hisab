@@ -1,4 +1,4 @@
-Quarisma Bazel Build System - Created Files Summary
+XSigma Bazel Build System - Created Files Summary
 ==================================================
 
 Core Configuration Files:
@@ -12,7 +12,7 @@ Core Configuration Files:
 Helper Configuration:
 --------------------
 ✓ bazel/BUILD.bazel            - Config settings (config_setting definitions)
-✓ bazel/quarisma.bzl             - Helper functions (quarisma_copts, quarisma_defines, quarisma_linkopts)
+✓ bazel/xsigma.bzl             - Helper functions (xsigma_copts, xsigma_defines, xsigma_linkopts)
 
 Library Build Files:
 -------------------
@@ -69,16 +69,16 @@ CMake to Bazel Mapping:
 CMake Option                          →  Bazel Equivalent
 ---------------------------------------------------------
 -DCMAKE_BUILD_TYPE=Release           →  --config=release
--DQUARISMA_VECTORIZATION_TYPE=avx2     →  --config=avx2
--DQUARISMA_ENABLE_LTO=ON               →  --config=lto
+-DVECTORIZATION_CPU_BACKEND=avx2       →  --config=avx2
+-DPROJECT_ENABLE_LTO=ON               →  --config=lto
 -DMEMORY_ENABLE_MIMALLOC=ON          →  --config=mimalloc
--DQUARISMA_ENABLE_MAGICENUM=ON         →  --config=magic_enum
--DQUARISMA_ENABLE_KINETO=ON            →  --config=kineto
--DQUARISMA_ENABLE_TBB=ON               →  --config=tbb
--DMEMOY_ENABLE_CUDA=ON              →  --config=cuda
--DQUARISMA_ENABLE_GTEST=ON             →  --config=gtest
--DQUARISMA_LU_PIVOTING=ON              →  --config=lu_pivoting
--DQUARISMA_SOBOL_1111=ON               →  --config=sobol_1111
+-DCORE_ENABLE_MAGICENUM=ON         →  --config=magic_enum
+-DXSIGMA_ENABLE_KINETO=ON            →  --config=kineto
+-DMEMORY_ENABLE_TBB=ON               →  --config=tbb
+-DMEMORY_GPU_BACKEND=cuda            →  --config=cuda
+-DENABLE_GTEST=ON             →  --config=gtest
+-DXSIGMA_LU_PIVOTING=ON              →  --config=lu_pivoting
+-DXSIGMA_SOBOL_1111=ON               →  --config=sobol_1111
 
 Quick Usage Examples:
 ====================

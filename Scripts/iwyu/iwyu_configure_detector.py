@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-IWYU Configure Header Detector for Quarisma Project
+IWYU Configure Header Detector for XSigma Project
 
-This script analyzes C++ source files to detect usage of QUARISMA_HAS_* macros
+This script analyzes C++ source files to detect usage of XSIGMA_HAS_* macros
 and automatically suggests including "common/configure.h" when needed.
 
-It works in conjunction with IWYU to provide enhanced analysis for Quarisma-specific
+It works in conjunction with IWYU to provide enhanced analysis for XSigma-specific
 patterns and generates detailed logging of the analysis process.
 
-Note: Feature flags use QUARISMA_HAS_* in C++ code (e.g., QUARISMA_HAS_CUDA)
-      while CMake uses QUARISMA_ENABLE_* (e.g., MEMOY_ENABLE_CUDA)
+Note: Feature flags use XSIGMA_HAS_* in C++ code (e.g., XSIGMA_HAS_CUDA)
+      while CMake uses XSIGMA_ENABLE_* (e.g., MEMOY_ENABLE_CUDA)
 """
 
 import argparse
@@ -21,21 +21,21 @@ from pathlib import Path
 from typing import Any, Optional
 
 
-class QuarismaConfigureDetector:
-    """Detects files that need common/configure.h based on QUARISMA_HAS_* usage."""
+class XSigmaConfigureDetector:
+    """Detects files that need common/configure.h based on XSIGMA_HAS_* usage."""
 
-    # Pattern to match QUARISMA_HAS_* macros in various forms
-    QUARISMA_PATTERNS = [
-        r"QUARISMA_NUMA_ENABLED",
-        r"QUARISMA_VECTORIZED",
-        r"#QUARISMA_COMPRESSION_TYPE_SNAPPY",
+    # Pattern to match XSIGMA_HAS_* macros in various forms
+    XSIGMA_PATTERNS = [
+        r"XSIGMA_NUMA_ENABLED",
+        r"XSIGMA_VECTORIZED",
+        r"#XSIGMA_COMPRESSION_TYPE_SNAPPY",
     ]
 
     # Pattern to detect if common/configure.h is already included
     CONFIGURE_INCLUDE_PATTERN = r'#include\s+[<"]common/configure\.h[>"]'
 
     # C++ file extensions to analyze
-    CPP_EXTENSIONS = {".h", ".hxx", ".hpp", ".cpp", ".cpp", ".cc", ".c"}
+    CPP_EXTENSIONS = {".h", ".hxx", ".hpp", ".cpp", ".cc", ".c"}
 
     def __init__(self, log_file: Optional[str] = None):
         """Initialize the detector with optional logging."""
@@ -64,15 +64,15 @@ class QuarismaConfigureDetector:
 
         self.logger = logging.getLogger(__name__)
 
-    def extract_quarisma_macros(self, content: str) -> set[str]:
-        """Extract all QUARISMA_HAS_* macros found in the content."""
+    def extract_xsigma_macros(self, content: str) -> set[str]:
+        """Extract all XSIGMA_HAS_* macros found in the content."""
         macros = set()
 
-        for pattern in self.QUARISMA_PATTERNS:
+        for pattern in self.XSIGMA_PATTERNS:
             matches = re.findall(pattern, content, re.MULTILINE)
             for match in matches:
                 # Extract just the macro name from the match
-                macro_match = re.search(r"QUARISMA_HAS_\w+", match)
+                macro_match = re.search(r"XSIGMA_HAS_\w+", match)
                 if macro_match:
                     macros.add(macro_match.group())
 
@@ -112,7 +112,7 @@ class QuarismaConfigureDetector:
             return 0
 
     def analyze_file(self, file_path: Path) -> dict[str, Any]:
-        """Analyze a single file for QUARISMA_ENABLE_* usage."""
+        """Analyze a single file for XSIGMA_ENABLE_* usage."""
         result = {
             "file": str(file_path),
             "needs_configure": False,
@@ -127,8 +127,8 @@ class QuarismaConfigureDetector:
                 content = f.read()
                 lines = content.splitlines()
 
-            # Extract QUARISMA macros
-            macros = self.extract_quarisma_macros(content)
+            # Extract XSIGMA macros
+            macros = self.extract_xsigma_macros(content)
             result["macros_found"] = macros
 
             # Check if configure.h is already included
@@ -141,7 +141,7 @@ class QuarismaConfigureDetector:
                 insertion_point = self.find_include_insertion_point(lines)
                 result["suggestion"] = {
                     "line": insertion_point,
-                    "include": '',
+                    "include": "",
                 }
 
         except Exception as e:
@@ -185,7 +185,7 @@ class QuarismaConfigureDetector:
         """Generate a comprehensive analysis report."""
         report_lines = [
             "=" * 80,
-            "Quarisma Configure Header Analysis Report",
+            "XSigma Configure Header Analysis Report",
             "=" * 80,
             f"Analysis completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
             f"Total files analyzed: {self.files_analyzed}",
@@ -223,7 +223,7 @@ class QuarismaConfigureDetector:
         if all_macros:
             report_lines.extend(
                 [
-                    "ALL QUARISMA_ENABLE_* MACROS FOUND:",
+                    "ALL XSIGMA_ENABLE_* MACROS FOUND:",
                     "-" * 40,
                 ]
             )
@@ -239,7 +239,7 @@ class QuarismaConfigureDetector:
 def main() -> None:
     """Main entry point for the configure detector."""
     parser = argparse.ArgumentParser(
-        description="Detect Quarisma files that need common/configure.h"
+        description="Detect XSigma files that need common/configure.h"
     )
     parser.add_argument("directory", type=Path, help="Directory to analyze")
     parser.add_argument(
@@ -262,7 +262,7 @@ def main() -> None:
         sys.exit(1)
 
     # Initialize detector
-    detector = QuarismaConfigureDetector(log_file=args.log_file)
+    detector = XSigmaConfigureDetector(log_file=args.log_file)
 
     # Analyze directory
     detector.logger.info("Starting analysis of %s", args.directory)

@@ -1,7 +1,7 @@
 #!/bin/bash
-# Quarisma CI - Ubuntu/Linux Dependency Installation Script
-# This script installs all required dependencies for building Quarisma on Ubuntu/Linux
-# Usage: ./install-deps-ubuntu.sh [--with-cuda] [--with-tbb]
+# XSigma CI - Ubuntu/Linux Dependency Installation Script
+# This script installs all required dependencies for building XSigma on Ubuntu/Linux
+# Usage: ./install-deps-ubuntu.sh [--with-cuda] [--with-hip] [--with-tbb] [--with-memkind]
 
 set -e  # Exit on error
 
@@ -31,7 +31,9 @@ log_error() {
 
 # Parse command line arguments
 WITH_CUDA=false
+WITH_HIP=false
 WITH_TBB=false
+WITH_MEMKIND=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -39,8 +41,32 @@ while [[ $# -gt 0 ]]; do
             WITH_CUDA=true
             shift
             ;;
+        --with-hip)
+            WITH_HIP=true
+            shift
+            ;;
         --with-tbb)
             WITH_TBB=true
+            shift
+            ;;
+        --with-memkind)
+            WITH_MEMKIND=true
+            shift
+            ;;
+        --with-cuda=ON|--with-cuda=true)
+            WITH_CUDA=true
+            shift
+            ;;
+        --with-cuda=OFF|--with-cuda=false)
+            WITH_CUDA=false
+            shift
+            ;;
+        --with-tbb=ON|--with-tbb=true)
+            WITH_TBB=true
+            shift
+            ;;
+        --with-tbb=OFF|--with-tbb=false)
+            WITH_TBB=false
             shift
             ;;
         *)
@@ -53,6 +79,12 @@ done
 log_info "Starting Ubuntu/Linux dependency installation..."
 log_info "CUDA support: $WITH_CUDA"
 log_info "TBB support: $WITH_TBB"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if command -v python3 >/dev/null 2>&1; then
+    log_info "Sanitizing cached ThirdParty CMake trees (workspace path check)..."
+    python3 "${SCRIPT_DIR}/sanitize_thirdparty_cache.py" || log_warning "ThirdParty cache sanitize skipped"
+fi
 
 # Update package manager
 log_info "Updating package manager..."
@@ -128,12 +160,40 @@ if [ "$WITH_TBB" = true ]; then
         }
 fi
 
-# CUDA Toolkit (optional)
+# Extra Linux-only feature libraries
+log_info "Installing optional feature libraries (OpenMP, memkind, clang-tidy, ccache)..."
+sudo apt-get install -y \
+    libomp-dev \
+    ccache \
+    clang-tidy \
+    clang-tools \
+    || log_warning "Some optional feature packages failed to install"
+
+if [ "$WITH_MEMKIND" = true ]; then
+    log_info "Installing memkind..."
+    sudo apt-get install -y libmemkind-dev || log_warning "libmemkind-dev not available"
+fi
+
+# CUDA Toolkit (optional) — compile-only on hosted runners (no GPU)
 if [ "$WITH_CUDA" = true ]; then
-    log_info "Installing CUDA Toolkit..."
-    # CUDA installation is complex and platform-specific
-    # For CI, we typically use pre-installed CUDA or skip it
-    log_warning "CUDA installation skipped - typically pre-installed in CI environment"
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if [ -f "${SCRIPT_DIR}/install-cuda-ubuntu.sh" ]; then
+        chmod +x "${SCRIPT_DIR}/install-cuda-ubuntu.sh"
+        "${SCRIPT_DIR}/install-cuda-ubuntu.sh"
+    else
+        log_warning "install-cuda-ubuntu.sh not found; skipping CUDA toolkit install"
+    fi
+fi
+
+# HIP / ROCm (optional) — compile-only on hosted runners (no GPU)
+if [ "$WITH_HIP" = true ]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if [ -f "${SCRIPT_DIR}/install-hip-ubuntu.sh" ]; then
+        chmod +x "${SCRIPT_DIR}/install-hip-ubuntu.sh"
+        "${SCRIPT_DIR}/install-hip-ubuntu.sh"
+    else
+        log_warning "install-hip-ubuntu.sh not found; skipping HIP toolkit install"
+    fi
 fi
 
 # Python dependencies
@@ -147,4 +207,4 @@ pip3 install colorama==0.4.6 psutil==6.1.1 || {
 }
 
 log_success "Ubuntu/Linux dependency installation completed successfully!"
-log_info "You can now build Quarisma using: python Scripts/setup.py ninja clang config build test"
+log_info "You can now build XSigma using: python Scripts/setup.py ninja clang config build test"

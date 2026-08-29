@@ -41,7 +41,7 @@
 #define SKA_NOINLINE(...) __VA_ARGS__ __attribute__((noinline))
 #endif
 
-namespace quarisma
+namespace xsigma
 {
 struct prime_number_hash_policy;
 struct power_of_two_hash_policy;
@@ -1738,9 +1738,9 @@ public:
 template <typename T>
 struct power_of_two_std_hash : std::hash<T>
 {
-    typedef quarisma::power_of_two_hash_policy hash_policy;
+    typedef xsigma::power_of_two_hash_policy hash_policy;
 };
-}  // namespace quarisma
+}  // namespace xsigma
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #pragma warning(pop)

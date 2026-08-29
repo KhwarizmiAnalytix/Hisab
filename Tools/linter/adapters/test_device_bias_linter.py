@@ -96,7 +96,7 @@ class DeviceBiasVisitor(ast.NodeVisitor):
                 return True
         return False
 
-    # check device = "cuda" or quarisma.device("cuda")
+    # check device = "cuda" or xsigma.device("cuda")
     def _check_keyword_device(self, subnode: ast.keyword, msg_prefix: str) -> None:
         if subnode.arg != "device":
             return
@@ -118,7 +118,7 @@ class DeviceBiasVisitor(ast.NodeVisitor):
             ):
                 self.record(
                     val,
-                    f"{msg_prefix} quarisma.device('{val.args[0].value}'), suggest to use quarisma.device(GPU_TYPE)",
+                    f"{msg_prefix} xsigma.device('{val.args[0].value}'), suggest to use xsigma.device(GPU_TYPE)",
                 )
 
     # check .cuda() or .to("cuda")
@@ -151,14 +151,14 @@ class DeviceBiasVisitor(ast.NodeVisitor):
                     isinstance(func, ast.Attribute)
                     and func.attr == "device"
                     and isinstance(func.value, ast.Name)
-                    and func.value.id == "quarisma"
+                    and func.value.id == "xsigma"
                     and ctx_expr.args
                     and isinstance(ctx_expr.args[0], ast.Constant)
                     and any(bias in ctx_expr.args[0].value for bias in DEVICE_BIAS)
                 ):
                     self.record(
                         ctx_expr,
-                        f"{msg_prefix} `with quarisma.device('{ctx_expr.args[0].value}')`, suggest to use quarisma.device(GPU_TYPE)",
+                        f"{msg_prefix} `with xsigma.device('{ctx_expr.args[0].value}')`, suggest to use xsigma.device(GPU_TYPE)",
                     )
 
     def _check_node(self, node: ast.AST, msg_prefix: str) -> None:

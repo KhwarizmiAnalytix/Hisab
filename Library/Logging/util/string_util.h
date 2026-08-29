@@ -1,12 +1,12 @@
 /**
  * @file string_util.h
- * @brief Comprehensive string utility functions for the Quarisma Core library
+ * @brief Comprehensive string utility functions for the XSigma Core library
  *
  * This header provides a collection of high-performance string manipulation,
  * conversion, and utility functions designed for financial computing applications.
  * All functions are optimized for performance and thread-safety where applicable.
  *
- * @author Quarisma Development Team
+ * @author XSigma Development Team
  * @version 2.0
  * @date 2024
  */
@@ -24,7 +24,8 @@
 #include <sstream>      // for ostream, ostringstream, stringstream
 #include <string>       // for string, allocator, char_traits, stoi, to_string
 #include <string_view>  // for string_view
-#include <vector>       // for vector
+#include <typeinfo>
+#include <vector>  // for vector
 
 #include "common/logging_export.h"  // for LOGGING_API, LOGGING_VISIBILITY
 #include "common/logging_macros.h"  // LOGGING_FORCE_INLINE
@@ -51,9 +52,9 @@ namespace logging
  * @endcode
  */
 template <typename E>
-inline std::string_view enum_to_string(E x)
+inline std::string enum_to_string(E x)
 {
-    return magic_enum::enum_name(x);
+    return std::string(magic_enum::enum_name(x));
 }
 
 /**
@@ -75,12 +76,6 @@ E string_to_enum(std::string_view str)
     return magic_enum::enum_cast<E>(str, magic_enum::case_insensitive).value();
 }
 }  // namespace logging
-
-namespace logging
-{
-using namespace logging;
-namespace strings = logging::strings;
-}  // namespace logging
 #else
 namespace logging
 {
@@ -88,16 +83,13 @@ namespace logging
  * @brief Convert an enum value to its numeric string representation (fallback)
  * @tparam E The enum type
  * @param x The enum value to convert
- * @return String view containing the numeric representation
+ * @return String containing the numeric representation
  * @note This is a fallback implementation when magic_enum is not available
- * @warning Uses logging_thread_local storage for performance
  */
 template <typename E>
-inline std::string_view enum_to_string(E x)
+inline std::string enum_to_string(E x)
 {
-    static thread_local std::string buffer;
-    buffer = std::to_string(static_cast<int>(x));
-    return buffer;
+    return std::to_string(static_cast<int>(x));
 }
 
 /**
@@ -153,7 +145,7 @@ template <typename T>
 inline const char* demangle_type()
 {
 #ifdef __GXX_RTTI
-    static const auto& name = *(new std::string(demangle(typeid(T).name())));
+    static const std::string name = demangle(typeid(T).name());
     return name.c_str();
 #else   // __GXX_RTTI
     return "(RTTI disabled, cannot show name)";

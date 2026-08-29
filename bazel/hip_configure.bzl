@@ -11,8 +11,9 @@ ROCm runtime as a plain cc_library -- the same shape as cuda_configure.bzl's
 :cudart -- is sufficient; no device-code compilation support is needed here.
 
 Priority:
-  1. ROCM_PATH or HIP_PATH (environment)
-  2. Linux: /opt/rocm
+  1. ROCM_PATH or HIP_PATH (environment), ignored if the path is /usr
+     (dirname of the apt hipcc alternatives wrapper) or lacks HIP headers
+  2. Linux: /opt/rocm, then /opt/rocm-*
 
 Not verified against a real ROCm install (none available in this repo's
 development environment) -- verified only for the not-found fail-fast path,
@@ -23,13 +24,45 @@ def _is_windows(repository_ctx):
     name = repository_ctx.os.name.lower()
     return name == "windows" or name.startswith("win")
 
+def _is_bogus_rocm_root(path):
+    # /usr/bin/hipcc is an alternatives wrapper; dirname(hipcc) => /usr is not an SDK.
+    return path in ("/usr", "/usr/local", "/")
+
+def _is_rocm_sdk(repository_ctx, root):
+    """True if `root` looks like a ROCm install (headers or hip-config.cmake)."""
+    if not root or _is_bogus_rocm_root(root):
+        return False
+    if not repository_ctx.path(root).exists:
+        return False
+    markers = (
+        "/include/hip/hip_runtime.h",
+        "/lib/cmake/hip/hip-config.cmake",
+        "/lib64/cmake/hip/hip-config.cmake",
+        "/hip/lib/cmake/hip/hip-config.cmake",
+        "/hip/include/hip/hip_runtime.h",
+    )
+    for suffix in markers:
+        if repository_ctx.path(root + suffix).exists:
+            return True
+    return False
+
 def _resolve_rocm_path(repository_ctx):
+    candidates = []
     env = repository_ctx.os.environ.get("ROCM_PATH") or repository_ctx.os.environ.get("HIP_PATH")
     if env:
-        return env.replace("\\", "/").strip().rstrip("/")
+        candidates.append(env.replace("\\", "/").strip().rstrip("/"))
+    candidates.append("/opt/rocm")
 
-    if repository_ctx.path("/opt/rocm").exists:
-        return "/opt/rocm"
+    opt = repository_ctx.path("/opt")
+    if opt.exists:
+        for d in opt.readdir():
+            name = d.basename
+            if name.startswith("rocm"):
+                candidates.append("/opt/" + name)
+
+    for root in candidates:
+        if _is_rocm_sdk(repository_ctx, root):
+            return root
     return None
 
 _SETUP_HINT = (
@@ -57,21 +90,26 @@ cc_library(
 )
 """.format(message = repr(_SETUP_HINT))
 
-_FOUND_BUILD_FILE = """\
+_FOUND_BUILD_TEMPLATE = """\
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "hip",
     srcs = glob([
         "rocm/lib/libamdhip64.so*",
+        "rocm/lib/libroctx64.so*",
+        "rocm/lib/libroctracer64.so*",
+        "rocm/lib64/libamdhip64.so*",
+        "rocm/lib64/libroctx64.so*",
+        "rocm/hip/lib/libamdhip64.so*",
     ], allow_empty = True),
     hdrs = glob([
-        "rocm/include/**/*.h",
-        "rocm/include/**/*.hpp",
+        {hdr_globs}
     ], allow_empty = True),
     includes = [
-        "rocm/include",
+        {includes}
     ],
+    defines = ["__HIP_PLATFORM_AMD__=1"],
     linkopts = ["-Wl,-rpath,$$ORIGIN"],
 )
 """
@@ -92,7 +130,28 @@ def _hip_configure_impl(repository_ctx):
         return
 
     repository_ctx.symlink(root, "rocm")
-    repository_ctx.file("BUILD.bazel", _FOUND_BUILD_FILE)
+
+    hdr_globs = []
+    includes = []
+    for rel in ("include", "hip/include"):
+        if repository_ctx.path(rocm_path + "/" + rel).exists:
+            hdr_globs.append('"rocm/' + rel + '/**/*.h"')
+            hdr_globs.append('"rocm/' + rel + '/**/*.hpp"')
+            includes.append('"rocm/' + rel + '"')
+    for rel in ("include/roctracer", "include/hip"):
+        if repository_ctx.path(rocm_path + "/" + rel).exists:
+            includes.append('"rocm/' + rel + '"')
+    if not hdr_globs:
+        repository_ctx.file("BUILD.bazel", _MISSING_BUILD_FILE)
+        return
+
+    repository_ctx.file(
+        "BUILD.bazel",
+        _FOUND_BUILD_TEMPLATE.format(
+            hdr_globs = ",\n        ".join(hdr_globs),
+            includes = ",\n        ".join(includes),
+        ),
+    )
 
 hip_configure = repository_rule(
     implementation = _hip_configure_impl,

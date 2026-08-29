@@ -1,5 +1,3 @@
-
-
 # Make sure Crun is linked in with the native compiler; it is not used by default for shared
 # libraries and is required for things like Java to work.
 if(CMAKE_SYSTEM MATCHES "SunOS.*")
@@ -20,7 +18,7 @@ endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   message(STATUS "Emscripten: enabling WebAssembly exception handling (-fwasm-exceptions)")
-  # Enable exceptions because QUARISMA and third party code rely on C++ exceptions. Allow C++ to
+  # Enable exceptions because XSigma and third party code rely on C++ exceptions. Allow C++ to
   # catch exceptions. Emscripten disables it by default due to high overhead. Generate helper
   # functions to get stack traces for uncaught exceptions
   string(APPEND CMAKE_CXX_FLAGS " -fwasm-exceptions")
@@ -28,24 +26,24 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   string(APPEND CMAKE_EXE_LINKER_FLAGS " -fwasm-exceptions -sEXCEPTION_STACK_TRACES=1")
   string(APPEND CMAKE_SHARED_LINKER_FLAGS " -fwasm-exceptions -sEXCEPTION_STACK_TRACES=1")
   string(APPEND CMAKE_MODULE_LINKER_FLAGS " -fwasm-exceptions -sEXCEPTION_STACK_TRACES=1")
-  # Consumers linking to QUARISMA also need to add the exception flag.
-  if(TARGET QUARISMAplatform)
-    target_link_options(QUARISMAplatform INTERFACE "-fwasm-exceptions" "-sEXCEPTION_STACK_TRACES=1")
+  # Consumers linking to XSigma also need to add the exception flag.
+  if(TARGET XSigmaPlatform)
+    target_link_options(XSigmaPlatform INTERFACE "-fwasm-exceptions" "-sEXCEPTION_STACK_TRACES=1")
   endif()
   if(PROJECT_WEBASSEMBLY_THREADS)
     message(STATUS "Emscripten: enabling pthreads (-pthread -Wno-pthreads-mem-growth)")
     # Remove after https://github.com/WebAssembly/design/issues/1271 is closed Set Wno flag globally
-    # because even though the flag is added in QUARISMACompilerWarningFlags.cmake, wrapping tools do
-    # not link with `QUARISMAplatform`
+    # because even though the flag is added in XSigmaCompilerWarningFlags.cmake, wrapping tools do
+    # not link with `XSigmaPlatform`
     string(APPEND CMAKE_CXX_FLAGS " -pthread -Wno-pthreads-mem-growth")
     string(APPEND CMAKE_C_FLAGS " -pthread -Wno-pthreads-mem-growth")
     string(APPEND CMAKE_EXE_LINKER_FLAGS " -pthread")
     string(APPEND CMAKE_SHARED_LINKER_FLAGS " -pthread")
     string(APPEND CMAKE_MODULE_LINKER_FLAGS " -pthread")
-    # Consumers linking to QUARISMA also need to add the pthread flag.
-    if(TARGET QUARISMAplatform)
-      target_compile_options(QUARISMAplatform INTERFACE "-pthread" "-Wno-pthreads-mem-growth")
-      target_link_options(QUARISMAplatform INTERFACE "-pthread")
+    # Consumers linking to XSigma also need to add the pthread flag.
+    if(TARGET XSigmaPlatform)
+      target_compile_options(XSigmaPlatform INTERFACE "-pthread" "-Wno-pthreads-mem-growth")
+      target_link_options(XSigmaPlatform INTERFACE "-pthread")
     endif()
   endif()
   if(PROJECT_WEBASSEMBLY_64_BIT)
@@ -55,10 +53,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     string(APPEND CMAKE_EXE_LINKER_FLAGS " -sMEMORY64=1")
     string(APPEND CMAKE_SHARED_LINKER_FLAGS " -sMEMORY64=1")
     string(APPEND CMAKE_MODULE_LINKER_FLAGS " -sMEMORY64=1")
-    # Consumers linking to QUARISMA also need to add the memory64 flag.
-    if(TARGET QUARISMAplatform)
-      target_compile_options(QUARISMAplatform INTERFACE "-sMEMORY64=1")
-      target_link_options(QUARISMAplatform INTERFACE "-sMEMORY64=1")
+    # Consumers linking to XSigma also need to add the memory64 flag.
+    if(TARGET XSigmaPlatform)
+      target_compile_options(XSigmaPlatform INTERFACE "-sMEMORY64=1")
+      target_link_options(XSigmaPlatform INTERFACE "-sMEMORY64=1")
     endif()
   endif()
 endif()
@@ -153,7 +151,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "PGI")
   string(APPEND CMAKE_CXX_FLAGS " --diag_suppress=236")
 
   # --diag_suppress=381 is for redundant semi-colons used in macros This needs to propagate to
-  # anything that includes QUARISMA headers
+  # anything that includes XSigma headers
   string(APPEND CMAKE_CXX_FLAGS " --diag_suppress=381")
 endif()
 
@@ -250,18 +248,18 @@ if(APPLE)
   message(STATUS "Applying macOS LLVM linker options")
 
   if(DEFINED PROJECT_LLVM_INSTALL_PREFIX AND PROJECT_LLVM_INSTALL_PREFIX)
-    set(_quarisma_llvm_prefix "${PROJECT_LLVM_INSTALL_PREFIX}")
+    set(_xsigma_llvm_prefix "${PROJECT_LLVM_INSTALL_PREFIX}")
   elseif(EXISTS "/opt/homebrew/opt/llvm/lib")
-    set(_quarisma_llvm_prefix "/opt/homebrew/opt/llvm")
+    set(_xsigma_llvm_prefix "/opt/homebrew/opt/llvm")
   elseif(EXISTS "/usr/local/opt/llvm/lib")
-    set(_quarisma_llvm_prefix "/usr/local/opt/llvm")
+    set(_xsigma_llvm_prefix "/usr/local/opt/llvm")
   else()
-    set(_quarisma_llvm_prefix "/opt/homebrew/opt/llvm")
+    set(_xsigma_llvm_prefix "/opt/homebrew/opt/llvm")
   endif()
 
   set(LLVM_LINK_FLAGS
-      -L${_quarisma_llvm_prefix}/lib/c++ -L${_quarisma_llvm_prefix}/lib
-      -Wl,-rpath,${_quarisma_llvm_prefix}/lib/c++ -Wl,-rpath,${_quarisma_llvm_prefix}/lib
+      -L${_xsigma_llvm_prefix}/lib/c++ -L${_xsigma_llvm_prefix}/lib
+      -Wl,-rpath,${_xsigma_llvm_prefix}/lib/c++ -Wl,-rpath,${_xsigma_llvm_prefix}/lib
   )
 
   # Add each flag only if not already included
@@ -279,7 +277,7 @@ if(UNIX AND NOT APPLE)
   include(CheckCXXSourceCompiles)
 
   # Append flag to CMAKE_CXX_FLAGS and CMAKE_C_FLAGS if both compilers accept it.
-  macro(_quarisma_add_compile_flag _flag)
+  macro(_xsigma_add_compile_flag _flag)
     string(MAKE_C_IDENTIFIER "${_flag}" _id)
     check_cxx_compiler_flag("${_flag}" _CXX_HAS${_id})
     check_c_compiler_flag("${_flag}" _C_HAS${_id})
@@ -293,7 +291,7 @@ if(UNIX AND NOT APPLE)
 
   # Append flag to all linker flag variables if the linker accepts it. Uses
   # CMAKE_REQUIRED_LINK_OPTIONS (CMake >= 3.14) since check_linker_flag needs 3.18.
-  macro(_quarisma_add_linker_flag _flag)
+  macro(_xsigma_add_linker_flag _flag)
     string(MAKE_C_IDENTIFIER "${_flag}" _id)
     set(CMAKE_REQUIRED_LINK_OPTIONS "${_flag}")
     check_cxx_source_compiles("int main(){}" _LINKER_HAS${_id})
@@ -306,13 +304,13 @@ if(UNIX AND NOT APPLE)
   endmacro()
 
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-    _quarisma_add_compile_flag("-fPIC")
-    _quarisma_add_compile_flag("-pipe")
+    _xsigma_add_compile_flag("-fPIC")
+    _xsigma_add_compile_flag("-pipe")
   endif()
 
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    _quarisma_add_compile_flag("-fcolor-diagnostics")
+    _xsigma_add_compile_flag("-fcolor-diagnostics")
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    _quarisma_add_compile_flag("-fdiagnostics-color=always")
+    _xsigma_add_compile_flag("-fdiagnostics-color=always")
   endif()
 endif()

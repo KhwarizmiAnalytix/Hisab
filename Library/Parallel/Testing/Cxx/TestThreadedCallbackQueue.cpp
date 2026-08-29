@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -11,6 +11,8 @@
 #include <chrono>
 #include <functional>
 #include <iostream>
+#include <memory>
+#include <mutex>
 #include <string>
 #include <thread>
 
@@ -145,11 +147,10 @@ bool TestSharedFutures()
     bool retVal = true;
     while (--N && retVal)
     {
-        auto queue = std::make_unique<threaded_callback_queue>();
-        queue->set_number_of_threads(4);
-
         std::atomic_int count(0);
         std::mutex      mutex;
+        auto            queue = std::make_unique<threaded_callback_queue>();
+        queue->set_number_of_threads(4);
 
         auto f = [&count, &mutex](std::string& s, int low)
         {
@@ -204,6 +205,11 @@ bool TestSharedFutures()
         {
             retVal &= queue->get(future);
         }
+
+        // Join workers before `mutex` / `count` go out of scope. Captured
+        // by the pushed lambdas; destroying the queue last used to re-run
+        // wait()-completed tasks against a dead mutex.
+        queue.reset();
     }
 
     return retVal;
@@ -218,5 +224,7 @@ PARALLELTEST(TestThreadedCallbackQueue, Test)
     parallel::RunThreads(2, 8);
 
     parallel::RunThreads(8, 2);
+
+    EXPECT_TRUE(retVal);
 }
 }  // namespace parallel

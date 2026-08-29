@@ -1,6 +1,6 @@
 # Compiler Caching Guide
 
-Quarisma supports multiple compiler cache types to significantly improve build performance, especially for incremental builds and CI/CD pipelines.
+XSigma supports multiple compiler cache types to significantly improve build performance, especially for incremental builds and CI/CD pipelines.
 
 ## Table of Contents
 
@@ -103,7 +103,7 @@ Compiler caching stores compilation results to avoid recompiling unchanged code.
 
 - No compiler caching
 - Useful for testing or when cache causes issues
-- Default value in Quarisma
+- Default value in XSigma
 
 ## Installation
 
@@ -217,13 +217,13 @@ python setup.py config.build.ninja.clang.none
 
 ```bash
 # Select cache type
-cmake -DQUARISMA_CACHE_TYPE=ccache ..
-cmake -DQUARISMA_CACHE_TYPE=sccache ..
-cmake -DQUARISMA_CACHE_TYPE=buildcache ..
-cmake -DQUARISMA_CACHE_TYPE=none ..
+cmake -DPROJECT_CACHE_BACKEND=ccache ..
+cmake -DPROJECT_CACHE_BACKEND=sccache ..
+cmake -DPROJECT_CACHE_BACKEND=buildcache ..
+cmake -DPROJECT_CACHE_BACKEND=none ..
 
 # Disable caching entirely
-cmake -DQUARISMA_ENABLE_CACHE=OFF ..
+cmake -DPROJECT_ENABLE_CACHE=OFF ..
 ```
 
 ### Environment Variables
@@ -329,7 +329,7 @@ export BUILDCACHE_MAX_CACHE_SIZE=10G
 1. Verify installation: `which ccache` / `which sccache` / `which buildcache`
 2. Ensure tool is in PATH
 3. Check CMake output for specific error messages
-4. Reconfigure: `cmake --fresh -DQUARISMA_CACHE_TYPE=ccache ..`
+4. Reconfigure: `cmake --fresh -DPROJECT_CACHE_BACKEND=ccache ..`
 
 ### Cache misses
 

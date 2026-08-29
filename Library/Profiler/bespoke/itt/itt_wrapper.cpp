@@ -1,7 +1,7 @@
 /*
- * Quarisma ITT API Wrapper Implementation
+ * XSigma ITT API Wrapper Implementation
  *
- * Provides C++ wrapper functions for Intel ITT API, aligned with Quarisma's
+ * Provides C++ wrapper functions for Intel ITT API, aligned with XSigma's
  * implementation for feature parity.
  */
 

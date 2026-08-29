@@ -1,6 +1,6 @@
-# Bazel build guide (Quarisma)
+# Bazel build guide (XSigma)
 
-This document describes how Quarisma is built with **Bazel**, how that lines up with **CMake** and `Scripts/setup.py`, and what you need if you treat a **single `Library/*` tree** as its own repository.
+This document describes how XSigma is built with **Bazel**, how that lines up with **CMake** and `Scripts/setup.py`, and what you need if you treat a **single `Library/*` tree** as its own repository.
 
 ## Prerequisites
 
@@ -33,7 +33,7 @@ Full CLI reference: `python Scripts/setup_bazel.py --help`.
 
 ## How Bazel maps to CMake / `setup.py`
 
-`Scripts/setup.py` drives **CMake** with a large `QuarismaFlags` surface (per-module fan-out of `*_ENABLE_*` options). `Scripts/setup_bazel.py` translates a **deliberately similar** token language into Bazel `--config=…` flags and occasional `--define=<cmake-aligned-key>=…` values (e.g. `core_enable_mkl`, `memory_enable_cuda`, `vectorization_type`).
+`Scripts/setup.py` drives **CMake** with a large `XSigmaFlags` surface (per-module fan-out of `*_ENABLE_*` options). `Scripts/setup_bazel.py` translates a **deliberately similar** token language into Bazel `--config=…` flags and occasional `--define=<cmake-aligned-key>=…` values (e.g. `core_enable_mkl`, `memory_enable_cuda`, `vectorization_type`).
 
 ### Feature parity (high level)
 
@@ -47,7 +47,7 @@ Full CLI reference: `python Scripts/setup_bazel.py --help`.
 | MKL, CUDA, HIP | `mkl`, `cuda`, `hip` | `--config=mkl` / `cuda` / `hip` (+ platform toolchains for CUDA) |
 | NUMA / memkind | `numa`, `memkind` | `--config=numa` / `memkind` |
 | mimalloc / magic_enum | Defaults ON in CMake; tokens flip | mimalloc: **`memory_enable_mimalloc=true`** in root `.bazelrc` + link `@mimalloc` by default (`memory.bzl`); opt out `--define=memory_enable_mimalloc=false`. magic_enum: Starlark defaults; `--config=magic_enum` if needed |
-| Logging backend | `native` / `loguru` / `glog`, `--logging.*` | `--config=logging_native` / `logging_loguru` / `logging_glog` |
+| Logging backend | `spdlog` (default) / `native` / `loguru` / `glog`, `--logging.*` | `--config=logging_spdlog` / `logging_native` / `logging_loguru` / `logging_glog` |
 | Profiler | `profiler.kineto` / `itt` (instrumentation backend only; native traceme/xplane pipeline always compiles), Xcode→itt | `--config=kineto` / `itt`; Xcode defaults to itt in `setup_bazel.py` (Kineto unsupported under Xcode) |
 | Sanitizers | `--sanitizer.*` CMake names | `--config=asan` / `tsan` / `ubsan` / `msan` / `lsan` or same `--sanitizer.*` long flags |
 | GoogleTest | Default ON; token `gtest` **disables** | `--config=gtest` added by default; `gtest` token → `--define=enable_gtest=false` |
@@ -55,7 +55,7 @@ Full CLI reference: `python Scripts/setup_bazel.py --help`.
 | Shared libs | Token `static` → `BUILD_SHARED_LIBS=ON` (shared) | `--define=build_shared_libs=true` |
 | Enzyme | `enzyme` + LLVM plugin | `--config=enzyme` + `-fpass-plugin` from `setup_bazel.py` or `.bazelrc.user` |
 | Compiler cache / linker / IWYU / clang-tidy fix / icecc / cppcheck / valgrind / spell | Per-target CMake options | **Not modeled** in Bazel; tokens warn in `setup_bazel.py` (use Bazel remote cache / CI instead) |
-| `external` third-party layout | `QUARISMA_ENABLE_EXTERNAL` | **CMake-only** today |
+| `external` third-party layout | `XSIGMA_ENABLE_EXTERNAL` | **CMake-only** today |
 
 When something is marked **CMake-only**, the Bazel graph may still build the same code paths using vendored `ThirdParty/` and `WORKSPACE.bazel` deps—the **developer workflow** flag simply has no Starlark equivalent yet.
 
@@ -77,7 +77,7 @@ This avoids the pitfall where `--sanitizer.address` was previously split incorre
 | `WORKSPACE.bazel` | Legacy workspace roots for vendored/http third parties (needed with `build --enable_workspace` for Bazel 8). |
 | `.bazelrc` | Global `--config` definitions (build types, sanitizers, feature defines). |
 | `.bazelrc.user` | Optional local machine overrides (not committed). |
-| `bazel/` | `BUILD.bazel` `config_setting`s + `*.bzl` helpers (`quarisma.bzl`, `core.bzl`, `memory.bzl`, …). |
+| `bazel/` | `BUILD.bazel` `config_setting`s + `*.bzl` helpers (`xsigma.bzl`, `core.bzl`, `memory.bzl`, …). |
 | `Library/<Module>/BUILD.bazel` | Targets for Core, Logging, Memory, Parallel, Profiler. |
 | `ThirdParty/` | `BUILD` glue, local `cpuinfo`, patches, and http_archive `build_file` references. |
 
@@ -87,7 +87,7 @@ Each `Library/<Name>/BUILD.bazel` is written to pull **module policy** from `//b
 
 However, a **standalone Git repository** for e.g. only `Library/Core` still needs you to **vendor or redeclare**:
 
-1. **`bazel/`** — at minimum `quarisma.bzl`, `core.bzl`, and the `config_setting` targets those `select()` branches depend on (or trim unused branches).
+1. **`bazel/`** — at minimum `xsigma.bzl`, `core.bzl`, and the `config_setting` targets those `select()` branches depend on (or trim unused branches).
 2. **Third-party labels** — today `Core` depends on `@fmt`, `@magic_enum//`, `//ThirdParty/cpuinfo`, `//Library/Logging`, `//Library/Memory`, etc. A split repo must replace those with `MODULE.bazel` deps or local `new_local_repository` paths.
 3. **Root wiring** — `MODULE.bazel`, `WORKSPACE.bazel` (if you still need vendored archives), and a root `BUILD.bazel` if you want a package boundary at the repo root.
 4. **`//Library/...` paths** — either keep the same directory layout (`Library/Core/...`) in the new repo or run a mechanical rename of labels and `load()` paths.
@@ -96,7 +96,7 @@ There is **no single-button “extract”**; the codebase is structured so the *
 
 **Suggested checklist for a split:**
 
-- [ ] Copy `bazel/quarisma.bzl`, `bazel/core.bzl`, `bazel/BUILD.bazel` (subset), and any `select()` configs you actually use.
+- [ ] Copy `bazel/xsigma.bzl`, `bazel/core.bzl`, `bazel/BUILD.bazel` (subset), and any `select()` configs you actually use.
 - [ ] Replace `deps = ["//Library/Logging:logging_lib", …]` with your packaging story (submodules, published artifacts, or copied trees).
 - [ ] Provide `MODULE.bazel` with the same `bazel_dep` versions or pin your own.
 - [ ] Re-run `bazel build //Library/Core:core_lib` (or the new equivalent label) with `--enable_workspace` if you still rely on `WORKSPACE.bazel`.
@@ -125,7 +125,7 @@ bazel coverage //Library/... --combined_report=lcov --config=clang --config=debu
 
 - **“Another command is running” / stuck server** — use the `batch` token in `setup_bazel.py` or run `bazel shutdown` before `--batch` invocations (see `.bazelrc` comments).
 - **Enzyme** — requires Clang and a discoverable LLVM plugin; `setup_bazel.py` searches common paths or honors `ENZYME_PLUGIN_PATH` (mirrors CMake’s enzyme discovery).
-- **MSVC and `/std:c++`** — global `--cxxopt=-std=c++20` is not MSVC syntax; per-target `quarisma_copts()` in `bazel/quarisma.bzl` applies `/std:c++20` on Windows.
+- **MSVC and `/std:c++`** — global `--cxxopt=-std=c++20` is not MSVC syntax; per-target `xsigma_copts()` in `bazel/xsigma.bzl` applies `/std:c++20` on Windows.
 
 ## See also
 

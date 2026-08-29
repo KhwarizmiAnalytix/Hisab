@@ -52,3 +52,10 @@
 #if (PROFILER_HAS_KINETO + PROFILER_HAS_ITT) > 1
 #error "PROFILER_HAS_KINETO and PROFILER_HAS_ITT are mutually exclusive. Only one may equal 1."
 #endif
+
+#ifndef PROFILER_HAS_NVTX
+#define PROFILER_HAS_NVTX 0
+#endif
+#ifndef PROFILER_HAS_ROCTX
+#define PROFILER_HAS_ROCTX 0
+#endif

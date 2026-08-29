@@ -109,7 +109,7 @@ def check_file(
                 replacement=None,
                 description=(
                     "clang-format timed out while trying to process a file. "
-                    "Please report an issue in quarisma/quarisma with the "
+                    "Please report an issue in xsigma/xsigma with the "
                     "label 'module: lint'"
                 ),
             )

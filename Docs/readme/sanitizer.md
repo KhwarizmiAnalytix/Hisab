@@ -1,8 +1,8 @@
-# Quarisma Sanitizer System
+# XSigma Sanitizer System
 
 ## Overview
 
-The Quarisma project includes a simplified sanitizer system for memory debugging and analysis. This system provides runtime instrumentation to detect various types of bugs and memory issues during development and testing.
+The XSigma project includes a simplified sanitizer system for memory debugging and analysis. This system provides runtime instrumentation to detect various types of bugs and memory issues during development and testing.
 
 ## Supported Sanitizers
 
@@ -46,19 +46,19 @@ Enable sanitizers using CMake options:
 
 ```bash
 # Enable AddressSanitizer
-cmake -B build -S . -DQUARISMA_ENABLE_SANITIZER=ON -DQUARISMA_SANITIZER_TYPE=address
+cmake -B build -S . -DPROJECT_ENABLE_SANITIZER=ON -DPROJECT_SANITIZER_TYPE=address
 
 # Enable UndefinedBehaviorSanitizer
-cmake -B build -S . -DQUARISMA_ENABLE_SANITIZER=ON -DQUARISMA_SANITIZER_TYPE=undefined
+cmake -B build -S . -DPROJECT_ENABLE_SANITIZER=ON -DPROJECT_SANITIZER_TYPE=undefined
 
 # Enable ThreadSanitizer
-cmake -B build -S . -DQUARISMA_ENABLE_SANITIZER=ON -DQUARISMA_SANITIZER_TYPE=thread
+cmake -B build -S . -DPROJECT_ENABLE_SANITIZER=ON -DPROJECT_SANITIZER_TYPE=thread
 
 # Enable MemorySanitizer (Linux only)
-cmake -B build -S . -DQUARISMA_ENABLE_SANITIZER=ON -DQUARISMA_SANITIZER_TYPE=memory
+cmake -B build -S . -DPROJECT_ENABLE_SANITIZER=ON -DPROJECT_SANITIZER_TYPE=memory
 
 # Enable LeakSanitizer
-cmake -B build -S . -DQUARISMA_ENABLE_SANITIZER=ON -DQUARISMA_SANITIZER_TYPE=leak
+cmake -B build -S . -DPROJECT_ENABLE_SANITIZER=ON -DPROJECT_SANITIZER_TYPE=leak
 ```
 
 ### Setup Script Usage
@@ -81,7 +81,7 @@ python setup.py config.build.test.ninja.clang --sanitizer-type=undefined
 ## Architecture
 
 ### Target Scope
-- **Main Library Only** - Sanitizers instrument only the main Quarisma library code
+- **Main Library Only** - Sanitizers instrument only the main XSigma library code
 - **Third-party Exclusion** - Third-party dependencies are excluded to prevent Windows linker mismatches
 - **Suppression Files** - Runtime suppressions handle known false positives in third-party code
 
@@ -144,8 +144,8 @@ if(WIN32)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 
     # Apply minimal sanitizer flags globally
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=${QUARISMA_SANITIZER_TYPE}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=${QUARISMA_SANITIZER_TYPE}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=${PROJECT_SANITIZER_TYPE}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=${PROJECT_SANITIZER_TYPE}")
 endif()
 ```
 

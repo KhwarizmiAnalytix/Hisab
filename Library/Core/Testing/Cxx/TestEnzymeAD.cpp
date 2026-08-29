@@ -2,7 +2,7 @@
  * @file TestEnzymeAD.cpp
  * @brief Test Enzyme Automatic Differentiation Integration
  *
- * This file demonstrates the integration of Enzyme AD with Quarisma.
+ * This file demonstrates the integration of Enzyme AD with XSigma.
  * Enzyme provides high-performance automatic differentiation for C/C++ code.
  *
  * Test Coverage:
@@ -16,7 +16,7 @@
  * - Cache/alias sensitivity (__restrict__ vs aliased pointers)
  * - Forward-mode with pointer-based loop functions
  * - Batch mode differentiation (__enzyme_batch)
- * - Integration with Quarisma test framework
+ * - Integration with XSigma test framework
  */
 
 #include <cmath>
@@ -357,7 +357,7 @@ void compute_loops(float* a, float* b, float* ret)
 /**
  * @brief Test reverse-mode AD on square function
  */
-QUARISMATEST(EnzymeAD, ReverseMode_Square)
+XSIGMATEST(EnzymeAD, ReverseMode_Square)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Enzyme Reverse-Mode AD: Square Function\n";
@@ -393,7 +393,7 @@ QUARISMATEST(EnzymeAD, ReverseMode_Square)
 /**
  * @brief Test reverse-mode AD on cubic function
  */
-QUARISMATEST(EnzymeAD, ReverseMode_Cubic)
+XSIGMATEST(EnzymeAD, ReverseMode_Cubic)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Enzyme Reverse-Mode AD: Cubic Function\n";
@@ -429,7 +429,7 @@ QUARISMATEST(EnzymeAD, ReverseMode_Cubic)
 /**
  * @brief Test reverse-mode AD on exponential function
  */
-QUARISMATEST(EnzymeAD, ReverseMode_Exponential)
+XSIGMATEST(EnzymeAD, ReverseMode_Exponential)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Enzyme Reverse-Mode AD: Exponential Function\n";
@@ -465,7 +465,7 @@ QUARISMATEST(EnzymeAD, ReverseMode_Exponential)
 /**
  * @brief Test reverse-mode AD on multivariate function
  */
-QUARISMATEST(EnzymeAD, ReverseMode_Multivariate)
+XSIGMATEST(EnzymeAD, ReverseMode_Multivariate)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Enzyme Reverse-Mode AD: Multivariate Function\n";
@@ -514,7 +514,7 @@ QUARISMATEST(EnzymeAD, ReverseMode_Multivariate)
 /**
  * @brief Test reverse-mode AD on Rosenbrock function
  */
-QUARISMATEST(EnzymeAD, ReverseMode_Rosenbrock)
+XSIGMATEST(EnzymeAD, ReverseMode_Rosenbrock)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Enzyme Reverse-Mode AD: Rosenbrock Function\n";
@@ -568,7 +568,7 @@ QUARISMATEST(EnzymeAD, ReverseMode_Rosenbrock)
 /**
  * @brief Test forward-mode AD on square function
  */
-QUARISMATEST(EnzymeAD, ForwardMode_Square)
+XSIGMATEST(EnzymeAD, ForwardMode_Square)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Enzyme Forward-Mode AD: Square Function\n";
@@ -606,7 +606,7 @@ QUARISMATEST(EnzymeAD, ForwardMode_Square)
 /**
  * @brief Test forward-mode AD on cubic function
  */
-QUARISMATEST(EnzymeAD, ForwardMode_Cubic)
+XSIGMATEST(EnzymeAD, ForwardMode_Cubic)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Enzyme Forward-Mode AD: Cubic Function\n";
@@ -644,7 +644,7 @@ QUARISMATEST(EnzymeAD, ForwardMode_Cubic)
 /**
  * @brief Test numerical accuracy of Enzyme AD
  */
-QUARISMATEST(EnzymeAD, NumericalAccuracy)
+XSIGMATEST(EnzymeAD, NumericalAccuracy)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Enzyme AD: Numerical Accuracy Test\n";
@@ -693,7 +693,7 @@ QUARISMATEST(EnzymeAD, NumericalAccuracy)
  * For uniform input in[i] = x: S = n*x, so grad_in[i] = (n*x - n*x) / (n*x)^2 = 0.
  * The test verifies this zero-gradient case and that the primal output is correct.
  */
-QUARISMATEST(EnzymeAD, Tutorial2_VectorNormalization)
+XSIGMATEST(EnzymeAD, Tutorial2_VectorNormalization)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Tutorial 2: Vector Normalization\n";
@@ -755,7 +755,7 @@ QUARISMATEST(EnzymeAD, Tutorial2_VectorNormalization)
  * This test uses the default annotation (all active), then verifies the
  * gradient values match the analytical result.
  */
-QUARISMATEST(EnzymeAD, Tutorial3_DotProduct_AllActive)
+XSIGMATEST(EnzymeAD, Tutorial3_DotProduct_AllActive)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Tutorial 3: Dot Product (all active)\n";
@@ -800,7 +800,7 @@ QUARISMATEST(EnzymeAD, Tutorial3_DotProduct_AllActive)
  * When A is constant, Enzyme skips computing gradA.  Only gradB and grad_C
  * are produced.  This is the second pass shown in the tutorial.
  */
-QUARISMATEST(EnzymeAD, Tutorial3_DotProduct_ConstA)
+XSIGMATEST(EnzymeAD, Tutorial3_DotProduct_ConstA)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Tutorial 3: Dot Product (A constant)\n";
@@ -858,7 +858,7 @@ QUARISMATEST(EnzymeAD, Tutorial3_DotProduct_ConstA)
  * The tolerance is loose (1e-3) because Q_rsqrt is only an approximation
  * of 1/sqrt and the custom gradient propagates that approximation error.
  */
-QUARISMATEST(EnzymeAD, Tutorial4_InvMag_CustomGradient)
+XSIGMATEST(EnzymeAD, Tutorial4_InvMag_CustomGradient)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Tutorial 4: Inverse Magnitude (custom gradient)\n";
@@ -906,7 +906,7 @@ QUARISMATEST(EnzymeAD, Tutorial4_InvMag_CustomGradient)
  *
  * At a = 2.0: expected gradient = 1 / (1 + 2) = 1/3.
  */
-QUARISMATEST(EnzymeAD, Tutorial5_FunctionAliasing)
+XSIGMATEST(EnzymeAD, Tutorial5_FunctionAliasing)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Tutorial 5: Function Aliasing (log1p-like)\n";
@@ -946,7 +946,7 @@ QUARISMATEST(EnzymeAD, Tutorial5_FunctionAliasing)
  * cache intermediate values.  The gradient is still correct; only performance
  * differs from the restrict version.
  */
-QUARISMATEST(EnzymeAD, Tutorial6_SquareCopy_Aliased)
+XSIGMATEST(EnzymeAD, Tutorial6_SquareCopy_Aliased)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Tutorial 6: squareCopy gradient (aliased)\n";
@@ -990,7 +990,7 @@ QUARISMATEST(EnzymeAD, Tutorial6_SquareCopy_Aliased)
  * __restrict__ pointers.  Enzyme can use a recompute strategy instead of
  * caching, potentially improving performance on large arrays.
  */
-QUARISMATEST(EnzymeAD, Tutorial6_SquareCopy_Restrict)
+XSIGMATEST(EnzymeAD, Tutorial6_SquareCopy_Restrict)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Tutorial 6: squareCopy gradient (__restrict__)\n";
@@ -1043,7 +1043,7 @@ QUARISMATEST(EnzymeAD, Tutorial6_SquareCopy_Restrict)
  * After the call, `dret` holds the directional derivative and `ret` holds
  * the primal output.
  */
-QUARISMATEST(EnzymeAD, Tutorial7_ForwardMode_Loops)
+XSIGMATEST(EnzymeAD, Tutorial7_ForwardMode_Loops)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Tutorial 7: Forward-Mode AD with Loops\n";
@@ -1084,9 +1084,9 @@ QUARISMATEST(EnzymeAD, Tutorial7_ForwardMode_Loops)
 /**
  * @brief Placeholder test when Enzyme is disabled
  */
-QUARISMATEST(EnzymeAD, EnzymeNotEnabled)
+XSIGMATEST(EnzymeAD, EnzymeNotEnabled)
 {
-    GTEST_SKIP() << "Enzyme AD is not enabled. Configure with -DQUARISMA_ENABLE_ENZYME=ON";
+    GTEST_SKIP() << "Enzyme AD is not enabled. Configure with -DCORE_ENABLE_ENZYME=ON";
 }
 
 #endif  // CORE_HAS_ENZYME
@@ -1098,7 +1098,7 @@ QUARISMATEST(EnzymeAD, EnzymeNotEnabled)
 /**
  * @brief Test that Enzyme compile definition is set correctly
  */
-QUARISMATEST(EnzymeAD, CompileDefinition)
+XSIGMATEST(EnzymeAD, CompileDefinition)
 {
     std::cout << "\n========================================\n";
     std::cout << "  Enzyme Configuration Check\n";

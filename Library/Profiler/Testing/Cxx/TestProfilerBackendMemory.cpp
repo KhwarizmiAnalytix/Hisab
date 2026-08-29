@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 /*
@@ -133,6 +133,19 @@ bool has_memory_event_with_bytes(
     return false;
 }
 
+bool has_named_event(
+    const std::vector<profiler::profiler_impl::KinetoEvent>& events, const char* name)
+{
+    for (const auto& event : events)
+    {
+        if (event.name() == name)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 }  // namespace
 
 PROFILERTEST(BackendMemory, kineto_profiles_memory)
@@ -160,16 +173,21 @@ PROFILERTEST(BackendMemory, kineto_profiles_memory)
     }
 
     // report_memory_usage's cheap early-out gate (also used directly by the
-    // Memory library's caching allocators to skip an expensive stats
-    // snapshot -- see Library/Memory/gpu/caching_allocator_profiler_report.h)
+    // Memory library's caching allocators and CPU reporter)
     // should agree with the session actually being memory-profiling-enabled.
     EXPECT_TRUE(profiler::memory_profiling_active());
 
     size_t total_allocated = 0;
     {
-        RECORD_USER_SCOPE(kMemoryScope);
+        PROFILER_RECORD_USER_SCOPE(kMemoryScope);
         void* ptr = allocate_and_report(kAllocBytes, &total_allocated);
         free_and_report(ptr, kAllocBytes, &total_allocated);
+        profiler::report_out_of_memory(
+            static_cast<int64_t>(kAllocBytes),
+            total_allocated,
+            total_allocated,
+            static_cast<int16_t>(profiler::device_enum::CPU),
+            /*device_index=*/-1);
     }
 
     auto profiler_result = profiler::profiler_impl::disableProfiler();
@@ -186,6 +204,8 @@ PROFILERTEST(BackendMemory, kineto_profiles_memory)
         << "expected allocation [memory] event of " << kAllocBytes << " bytes";
     EXPECT_TRUE(has_memory_event_with_bytes(events, -static_cast<int64_t>(kAllocBytes)))
         << "expected deallocation [memory] event of -" << kAllocBytes << " bytes";
+    EXPECT_TRUE(has_named_event(events, "[OutOfMemory]"))
+        << "expected [OutOfMemory] instant event from report_out_of_memory";
 }
 
 #endif  // PROFILER_HAS_KINETO
@@ -262,7 +282,7 @@ PROFILERTEST(BackendMemory, itt_profiles_memory)
 
     size_t total_allocated = 0;
     {
-        RECORD_USER_SCOPE(kMemoryScope);
+        PROFILER_RECORD_USER_SCOPE(kMemoryScope);
         profiler::profiler_impl::itt_range_push(kMemoryScope);
         void* ptr = allocate_and_report(kAllocBytes, &total_allocated);
         free_and_report(ptr, kAllocBytes, &total_allocated);
@@ -301,7 +321,7 @@ PROFILERTEST(BackendMemory, nvtx_profiles_memory)
 
     size_t total_allocated = 0;
     {
-        RECORD_USER_SCOPE(kMemoryScope);
+        PROFILER_RECORD_USER_SCOPE(kMemoryScope);
         void* ptr = allocate_and_report(kAllocBytes, &total_allocated);
         free_and_report(ptr, kAllocBytes, &total_allocated);
     }

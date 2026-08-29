@@ -1,6 +1,6 @@
-# Quarisma CMake tools (`Cmake/tools`)
+# XSigma CMake tools (`Cmake/tools`)
 
-This directory holds **CMake modules** (`.cmake` files) that extend the Quarisma build: developer tooling, diagnostics, faster linking, compiler caches, and Xcode integration. They are loaded by name via CMake’s `include()` after the project prepends this folder to `CMAKE_MODULE_PATH`.
+This directory holds **CMake modules** (`.cmake` files) that extend the XSigma build: developer tooling, diagnostics, faster linking, compiler caches, and Xcode integration. They are loaded by name via CMake’s `include()` after the project prepends this folder to `CMAKE_MODULE_PATH`.
 
 **Location in the build:** the top-level `CMakeLists.txt` does:
 
@@ -20,7 +20,7 @@ Modules are then included as `include(<name>)` (e.g. `include(cache)`), not `inc
 | [`summary.cmake`](#summarycmake) | `print_configuration_summary()` — human-readable configure report |
 | [`cache.cmake`](#cachecmake) | Per-target compiler launchers (`ccache`, `sccache`, `buildcache`) |
 | [`helper_macros.cmake`](#helper_macroscmake) | IDE source groups, Icecream launcher, naming helper |
-| [`lto.cmake`](#ltocmake) | Per-target LTO (`quarisma_target_apply_lto`) + `quarisma_find_linker` (fast / LTO-safe linkers) |
+| [`lto.cmake`](#ltocmake) | Per-target LTO (`xsigma_target_apply_lto`) + `xsigma_find_linker` (fast / LTO-safe linkers) |
 | [`coverage.cmake`](#coveragecmake) | Compiler flags for GCC/Clang/MSVC coverage workflows |
 | [`sanitize.cmake`](#sanitizecmake) | Per-module ASan/UBSan/TSan/MSan/LSan via `*build` interface targets |
 | [`clang_tidy.cmake`](#clang_tidycmake) | `clang-tidy` on targets; optional fix mode |
@@ -51,7 +51,7 @@ If LLVM is missing or the toolchain is not registered, the module falls back to 
 
 **API:** `print_configuration_summary()`
 
-**Purpose:** Prints a **global** configure summary: CMake and compiler identity, default C++ standard, toolchain flags, build type, top-level compile definitions, paths, `BUILD_SHARED_LIBS`, and `QUARISMA_ENABLE_EXTERNAL`. Per-library CMake flags are printed at the end of each `Library/*/CMakeLists.txt`.
+**Purpose:** Prints a **global** configure summary: CMake and compiler identity, default C++ standard, toolchain flags, build type, top-level compile definitions, paths, `BUILD_SHARED_LIBS`, and `XSIGMA_ENABLE_EXTERNAL`. Per-library CMake flags are printed at the end of each `Library/*/CMakeLists.txt`.
 
 **Note:** Call `print_configuration_summary()` once after all `add_subdirectory(Library/...)` calls (see root `CMakeLists.txt`).
 
@@ -59,13 +59,13 @@ If LLVM is missing or the toolchain is not registered, the module falls back to 
 
 ## `cache.cmake`
 
-**API:** `quarisma_target_apply_cache(<target> <enable_var> <backend_var>)`
+**API:** `xsigma_target_apply_cache(<target> <enable_var> <backend_var>)`
 
 **Purpose:** Applies a **per-target** `CXX_COMPILER_LAUNCHER` / `C_COMPILER_LAUNCHER` (and `CUDA_COMPILER_LAUNCHER` when CUDA is enabled) instead of globally overriding `CMAKE_*_COMPILER_LAUNCHER`.
 
 **Backends:** `none`, `ccache`, `sccache`, `buildcache` (validated; invalid values are fatal).
 
-**Discovery:** For a backend `foo`, looks up cache variable `QUARISMA_FOO_PROGRAM`; if unset/empty, uses `find_program` for `foo`.
+**Discovery:** For a backend `foo`, looks up cache variable `XSIGMA_FOO_PROGRAM`; if unset/empty, uses `find_program` for `foo`.
 
 **Typical use:** Each library module defines `XXX_ENABLE_CACHE` and `XXX_CACHE_BACKEND`, then calls this after `add_library()` for that module’s targets.
 
@@ -73,15 +73,15 @@ If LLVM is missing or the toolchain is not registered, the module falls back to 
 
 ## `helper_macros.cmake`
 
-### `quarisma_module_create_filters(name)`
+### `xsigma_module_create_filters(name)`
 
 Recursively globs common source extensions under `CMAKE_CURRENT_SOURCE_DIR` and assigns **Visual Studio / Xcode `source_group`** paths derived from `name`, so IDE trees mirror directory layout. Computes a list of include-style paths (currently not applied via `include_directories` in the macro).
 
-### `quarisma_target_optional_icecc(target_name enable_var)`
+### `xsigma_target_optional_icecc(target_name enable_var)`
 
 If `enable_var` is true, sets C/C++ compiler launcher to **Icecream** (`icecc`) when found. Errors if the target does not exist.
 
-### `quarisma_module_remove_underscores(name_in name_out)`
+### `xsigma_module_remove_underscores(name_in name_out)`
 
 String transform: split on `_`, capitalize each segment’s first letter, concatenate, then force the **first character of the whole string to lowercase** (camelCase-style output in `name_out`).
 
@@ -89,9 +89,9 @@ String transform: split on `_`, capitalize each segment’s first letter, concat
 
 ## `lto.cmake`
 
-**API:** `quarisma_lto_compute_default`, `quarisma_target_apply_lto`, `quarisma_find_linker` — see the module header in `lto.cmake`.
+**API:** `xsigma_lto_compute_default`, `xsigma_target_apply_lto`, `xsigma_find_linker` — see the module header in `lto.cmake`.
 
-**Linker helper:** `quarisma_find_linker(<linker_choice> <target> [<PREFIX>_LTO_MODE])` with `linker_choice` = `default` or `mold` / `lld` / `gold` / `lld-link`. Chooses an **LTO-compatible** linker when LTO is on (e.g. `ld.lld` for Clang ThinLTO on Linux), and fast linkers when LTO is off. Windows **cl** / **clang-cl** use the MSVC link stack; **GNU Clang** uses `-fuse-ld=lld` like Unix.
+**Linker helper:** `xsigma_find_linker(<linker_choice> <target> [<PREFIX>_LTO_MODE])` with `linker_choice` = `default` or `mold` / `lld` / `gold` / `lld-link`. Chooses an **LTO-compatible** linker when LTO is on (e.g. `ld.lld` for Clang ThinLTO on Linux), and fast linkers when LTO is off. Windows **cl** / **clang-cl** use the MSVC link stack; **GNU Clang** uses `-fuse-ld=lld` like Unix.
 
 ---
 
@@ -112,7 +112,7 @@ Unsupported compilers get a warning only.
 
 ## `sanitize.cmake`
 
-**API:** `quarisma_configure_sanitizer(<MODULE_NAME>)`
+**API:** `xsigma_configure_sanitizer(<MODULE_NAME>)`
 
 **Expects:** Cache variables `<MODULE_NAME>_ENABLE_SANITIZER` and `<MODULE_NAME>_SANITIZER_TYPE` (e.g. `address`, `undefined`, `thread`, `memory`, `leak`), and an interface target named `<module_name>build` (lowercase module prefix + `build`), e.g. `loggingbuild` for `LOGGING`.
 
@@ -134,7 +134,7 @@ Adapted from smtk (Kitware).
 
 **API:**
 
-- `quarisma_target_clang_tidy(target_name enable_fix)` — sets `C_CLANG_TIDY` / `CXX_CLANG_TIDY`. If `enable_fix` is true, adds `-fix-errors -fix` and treats warnings as errors (`-warnings-as-errors=*`). **Fix mode rewrites sources.**
+- `xsigma_target_clang_tidy(target_name enable_fix)` — sets `C_CLANG_TIDY` / `CXX_CLANG_TIDY`. If `enable_fix` is true, adds `-fix-errors -fix` and treats warnings as errors (`-warnings-as-errors=*`). **Fix mode rewrites sources.**
 - `disable_clang_tidy_for_target(target_name)` — clears those properties.
 
 ---
@@ -152,8 +152,8 @@ Adapted from smtk (Kitware).
 
 **API:**
 
-- `quarisma_create_iwyu_wrapper(target_name lang [extra_args...])` — writes `${CMAKE_BINARY_DIR}/iwyu_wrapper_<target>_<lang>.cmake` that runs IWYU and appends stdout/stderr to `iwyu.log`.
-- `quarisma_apply_iwyu(target_name)` — skips ThirdParty-like source trees; sets `CXX_INCLUDE_WHAT_YOU_USE` / `C_INCLUDE_WHAT_YOU_USE` to `cmake -P` the wrapper scripts (adds MSVC/STL compatibility defines for CXX/C).
+- `xsigma_create_iwyu_wrapper(target_name lang [extra_args...])` — writes `${CMAKE_BINARY_DIR}/iwyu_wrapper_<target>_<lang>.cmake` that runs IWYU and appends stdout/stderr to `iwyu.log`.
+- `xsigma_apply_iwyu(target_name)` — skips ThirdParty-like source trees; sets `CXX_INCLUDE_WHAT_YOU_USE` / `C_INCLUDE_WHAT_YOU_USE` to `cmake -P` the wrapper scripts (adds MSVC/STL compatibility defines for CXX/C).
 
 ---
 
@@ -172,7 +172,7 @@ Adapted from smtk (Kitware).
 
 **`CMAKE_MEMORYCHECK_COMMAND_OPTIONS`:** memcheck with full leak info, origins, FD tracking, verbose output, XML + log under `${CMAKE_BINARY_DIR}/Testing/Temporary/`, error exit code 1, suppression generation, and optional **`Scripts/suppressions/valgrind_suppression.txt`** if it exists.
 
-**API:** `quarisma_apply_valgrind_timeouts()` — multiplies each registered test’s `TIMEOUT` in the current directory by `PROJECT_VALGRIND_TIMEOUT_MULTIPLIER`, or sets `CTEST_TEST_TIMEOUT` if unset. Call after tests are defined.
+**API:** `xsigma_apply_valgrind_timeouts()` — multiplies each registered test’s `TIMEOUT` in the current directory by `PROJECT_VALGRIND_TIMEOUT_MULTIPLIER`, or sets `CTEST_TEST_TIMEOUT` if unset. Call after tests are defined.
 
 **Running:** e.g. `ctest -T memcheck` (standard CMake workflow).
 
@@ -187,8 +187,9 @@ Adapted from smtk (Kitware).
 **Behavior when active:**
 
 - `find_program(CODESPELL_EXECUTABLE codespell ...)` — not found is **fatal** with install instructions.
-- If `.codespellrc` exists in the module directory, relies on it; else passes default `--skip`/`--ignore-words-list`/`--check-hidden=no`.
-- Always adds **`--write-changes`** (mutates sources on disk).
+- Always passes **`--skip`** globs that exclude `ThirdParty` / `third_party` / `3rdparty` (directory names and full paths).
+- Always passes **`--ignore-words=Scripts/suppressions/spell_suppressions.txt`**. Add excluded words there (one per line, sorted), not in `spell.cmake`.
+- Check-only: does **not** pass `--write-changes`.
 - Adds `spell_check_<dir>` and **`spell_check_build_<dir>`** (`ALL`) custom targets so spell check can run on every build.
 
 Emits a **WARNING** that enabling spell check can modify files; commit before building.
@@ -199,10 +200,10 @@ Emits a **WARNING** that enabling spell check can modify files; commit before bu
 
 Library `CMakeLists.txt` files generally:
 
-1. `include(cache)` early, then call `quarisma_target_apply_cache` per target.
-2. `include(lto)` and `quarisma_find_linker(...)` (same module as LTO) where linker choice is configured.
-3. Conditionally `include(coverage)`, `include(sanitize)` + `quarisma_configure_sanitizer`, `include(clang_tidy)`, `include(iwyu)`, `include(spell)`, `include(valgrind)` behind options.
-4. After tests exist, optionally `quarisma_apply_valgrind_timeouts()`.
+1. `include(cache)` early, then call `xsigma_target_apply_cache` per target.
+2. `include(lto)` and `xsigma_find_linker(...)` (same module as LTO) where linker choice is configured.
+3. Conditionally `include(coverage)`, `include(sanitize)` + `xsigma_configure_sanitizer`, `include(clang_tidy)`, `include(iwyu)`, `include(spell)`, `include(valgrind)` behind options.
+4. After tests exist, optionally `xsigma_apply_valgrind_timeouts()`.
 5. Optionally emit a **module CMake flag summary** (inline `message(...)` blocks at the end of the file).
 
 The root project includes `xcode_toolchain` before `project()`, and `include(summary)` plus `print_configuration_summary()` after all library subdirectories for the global report.

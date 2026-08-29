@@ -5,6 +5,7 @@ import concurrent.futures
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
 from enum import Enum
@@ -14,10 +15,20 @@ from typing import NamedTuple
 
 REPO_ROOT = Path(__file__).absolute().parents[3]
 PYPROJECT = REPO_ROOT / "pyproject.toml"
-DICTIONARY = REPO_ROOT / "Tools" / "linter" / "dictionary.txt"
+DICTIONARY = REPO_ROOT / "Scripts" / "suppressions" / "spell_suppressions.txt"
+
+# codespell uses sysexits EX_DATAERR (65) when it reports misspellings.
+_CODESPELL_FOUND_ISSUES = 65
+
+# "path:line: word ==> suggestion[, suggestion]"
+_HIT_RE = re.compile(
+    r"^(?P<path>.*):(?P<line>\d+):\s+(?P<word>\S+)\s+==>\s+(?P<suggestions>.+)$"
+)
+
+_THIRD_PARTY_DIR_NAMES = frozenset({"thirdparty", "third_party", "3rdparty"})
 
 FORBIDDEN_WORDS = {
-    "multipy",  # project quarisma/multipy is dead  # codespell:ignore multipy
+    "multipy",  # project xsigma/multipy is dead  # codespell:ignore multipy
 }
 
 
@@ -49,8 +60,9 @@ def format_error_message(
     if message is None and error is not None:
         message = (
             f"Failed due to {error.__class__.__name__}:\n{error}\n"
-            "Please either fix the error or add the word(s) to the dictionary file.\n"
-            "HINT: all-lowercase words in the dictionary can cover all case variations."
+            "Please either fix the error or add the word(s) to "
+            "Scripts/suppressions/spell_suppressions.txt.\n"
+            "HINT: all-lowercase words in the suppression file can cover all case variations."
         )
     return LintMessage(
         path=filename,
@@ -65,55 +77,100 @@ def format_error_message(
     )
 
 
-def run_codespell(path: Path) -> str:
-    try:
-        return subprocess.check_output(
-            [
-                sys.executable,
-                "-m",
-                "codespell_lib",
-                "--toml",
-                str(PYPROJECT),
-                str(path),
-            ],
-            stderr=subprocess.STDOUT,
-            text=True,
-            encoding="utf-8",
+def is_third_party_path(path: Path) -> bool:
+    """True for any path under ThirdParty / third_party / 3rdparty."""
+    return any(part.lower() in _THIRD_PARTY_DIR_NAMES for part in path.parts)
+
+
+def run_codespell(path: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "codespell_lib",
+            "--toml",
+            str(PYPROJECT),
+            str(path),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+    )
+
+
+def parse_codespell_hits(filename: str, output: str) -> list[LintMessage]:
+    messages: list[LintMessage] = []
+    for raw_line in output.splitlines():
+        match = _HIT_RE.match(raw_line)
+        if match is None:
+            continue
+        word = match.group("word")
+        suggestions = match.group("suggestions").strip()
+        messages.append(
+            LintMessage(
+                path=filename,
+                line=int(match.group("line")),
+                char=None,
+                code="CODESPELL",
+                severity=LintSeverity.ERROR,
+                name="spelling error",
+                original=None,
+                replacement=None,
+                description=f"{word} ==> {suggestions}",
+            )
         )
-    except subprocess.CalledProcessError as exc:
-        raise ValueError(exc.output) from exc
+    return messages
 
 
 def check_file(filename: str) -> list[LintMessage]:
     path = Path(filename).absolute()
+    if path.resolve() == DICTIONARY.resolve() or is_third_party_path(path):
+        return []
     try:
-        run_codespell(path)
+        proc = run_codespell(path)
     except Exception as err:
         return [format_error_message(filename, err)]
+
+    output = f"{proc.stdout or ''}{proc.stderr or ''}"
+    messages = parse_codespell_hits(filename, output)
+    if messages:
+        return messages
+    if proc.returncode not in (0, _CODESPELL_FOUND_ISSUES):
+        return [
+            format_error_message(
+                filename,
+                message=output.strip() or f"codespell exited with {proc.returncode}",
+            )
+        ]
     return []
 
 
 def check_dictionary(filename: str) -> list[LintMessage]:
-    """Check the dictionary file for duplicates."""
+    """Check the suppression file for duplicates and sort order."""
     path = Path(filename).absolute()
     try:
-        words = path.read_text(encoding="utf-8").splitlines()
+        words = [
+            line
+            for line in path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
         words_set = set(words)
         if len(words) != len(words_set):
-            raise ValueError("The dictionary file contains duplicate entries.")
+            raise ValueError("The suppression file contains duplicate entries.")
         # pyrefly: ignore  # no-matching-overload
         uncased_words = list(map(str.lower, words))
         if uncased_words != sorted(uncased_words):
             raise ValueError(
-                "The dictionary file is not sorted alphabetically (case-insensitive)."
+                "The suppression file is not sorted alphabetically (case-insensitive)."
             )
         for forbidden_word in sorted(
             FORBIDDEN_WORDS & (words_set | set(uncased_words))
         ):
             raise ValueError(
-                f"The dictionary file contains a forbidden word: {forbidden_word!r}. "
-                "Please remove it from the dictionary file and use 'codespell:ignore' "
-                "inline comment instead."
+                f"The suppression file contains a forbidden word: {forbidden_word!r}. "
+                "Please remove it from Scripts/suppressions/spell_suppressions.txt and use "
+                "'codespell:ignore' inline comment instead."
             )
     except Exception as err:
         return [format_error_message(str(filename), err)]

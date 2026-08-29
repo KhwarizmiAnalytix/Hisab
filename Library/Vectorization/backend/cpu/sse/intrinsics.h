@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #pragma once
@@ -104,24 +104,28 @@ VECTORIZATION_FORCE_INLINE double _mm_hmin_pd(__m128d a) noexcept
     return _mm_cvtsd_f64(_mm_min_sd(a, _mm_unpackhi_pd(a, a)));
 }
 
-VECTORIZATION_FORCE_INLINE __m128 VECTORIZATION_VECTORCALL _mm_signcopy_ps(__m128 x, __m128 sign) noexcept
+VECTORIZATION_FORCE_INLINE __m128 VECTORIZATION_VECTORCALL
+_mm_signcopy_ps(__m128 x, __m128 sign) noexcept
 {
     const __m128 mask0 = _mm_set1_ps(-0.F);
     return _mm_or_ps(_mm_and_ps(sign, mask0), _mm_andnot_ps(mask0, x));
 }
 
-VECTORIZATION_FORCE_INLINE __m128d VECTORIZATION_VECTORCALL _mm_signcopy_pd(__m128d x, __m128d sign) noexcept
+VECTORIZATION_FORCE_INLINE __m128d VECTORIZATION_VECTORCALL
+_mm_signcopy_pd(__m128d x, __m128d sign) noexcept
 {
     const __m128d mask0 = _mm_set1_pd(-0.);
     return _mm_or_pd(_mm_and_pd(sign, mask0), _mm_andnot_pd(mask0, x));
 }
 
-VECTORIZATION_FORCE_INLINE __m128 VECTORIZATION_VECTORCALL _mm_gather_ps(float const* from, int stride) noexcept
+VECTORIZATION_FORCE_INLINE __m128 VECTORIZATION_VECTORCALL
+_mm_gather_ps(float const* from, int stride) noexcept
 {
     return _mm_set_ps(from[3 * stride], from[2 * stride], from[stride], from[0]);
 }
 
-VECTORIZATION_FORCE_INLINE __m128d VECTORIZATION_VECTORCALL _mm_gather_pd(double const* from, int stride) noexcept
+VECTORIZATION_FORCE_INLINE __m128d VECTORIZATION_VECTORCALL
+_mm_gather_pd(double const* from, int stride) noexcept
 {
     return _mm_set_pd(from[stride], from[0]);
 }

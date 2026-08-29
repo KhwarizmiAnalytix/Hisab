@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #pragma once
@@ -27,7 +27,7 @@
 // ============================================================================
 // Section 1: Minimum Compiler Version Guards
 //
-// Quarisma requires C++17 features (if-constexpr, structured bindings,
+// XSigma requires C++17 features (if-constexpr, structured bindings,
 // std::optional, etc.). These #error directives abort compilation immediately
 // when a known-too-old compiler is detected, giving a clear diagnostic
 // instead of cryptic template errors later.
@@ -37,30 +37,30 @@
 //   Clang : >= 5.0            →  first Clang with full C++17 core language
 // ============================================================================
 #if defined(_MSC_VER) && _MSC_VER < 1910  // VS2017 15.0 minimum for C++17
-#error QUARISMA requires MSVC++ 15.0 (Visual Studio 2017) or newer for C++17 support
+#error XSIGMA requires MSVC++ 15.0 (Visual Studio 2017) or newer for C++17 support
 #endif
 
 #if !defined(__clang__) && defined(__GNUC__) && \
     (__GNUC__ < 7 || (__GNUC__ == 7 && __GNUC_MINOR__ < 1))  // GCC 7.1+ for C++17
-#error QUARISMA requires GCC 7.1 or newer for C++17 support
+#error XSIGMA requires GCC 7.1 or newer for C++17 support
 #endif
 
 #if defined(__clang__) && (__clang_major__ < 5)  // Clang 5.0+ for C++17
-#error QUARISMA requires Clang 5.0 or newer for C++17 support
+#error XSIGMA requires Clang 5.0 or newer for C++17 support
 #endif
 
 // Shared portable macro body with Library/Logging/common/logging_macros.h and
 // Library/Memory/common/memory_macros.h (one ODR expansion per TU).
-#ifndef QUARISMA_PORTABLE_MACROS_INCLUDED_
-#define QUARISMA_PORTABLE_MACROS_INCLUDED_
+#ifndef XSIGMA_PORTABLE_MACROS_INCLUDED_
+#define XSIGMA_PORTABLE_MACROS_INCLUDED_
 
 // ============================================================================
 // Section 2: Memory Alignment Constant
 //
-// QUARISMA_ALIGNMENT controls the default byte boundary used for heap
+// XSIGMA_ALIGNMENT controls the default byte boundary used for heap
 // allocations and SIMD buffers.
 //
-//   Mobile builds (QUARISMA_MOBILE defined):
+//   Mobile builds (XSIGMA_MOBILE defined):
 //     16 bytes — satisfies ARM NEON (AArch32 / AArch64) and x86 SSE.
 //
 //   Desktop / server builds (default):
@@ -70,14 +70,14 @@
 // The value is an inline constexpr so it participates in constant-expression
 // evaluation (e.g. static_assert, template arguments) without ODR issues.
 // ============================================================================
-#ifdef QUARISMA_MOBILE
+#ifdef XSIGMA_MOBILE
 // Use 16-byte alignment on mobile
 // - ARM NEON AArch32 and AArch64
 // - x86[-64] < AVX
-inline constexpr size_t QUARISMA_ALIGNMENT = 16;
+inline constexpr size_t XSIGMA_ALIGNMENT = 16;
 #else
 // Use 64-byte alignment should be enough for computation up to AVX512.
-inline constexpr size_t QUARISMA_ALIGNMENT = 64;
+inline constexpr size_t XSIGMA_ALIGNMENT = 64;
 #endif
 
 // ============================================================================
@@ -86,7 +86,7 @@ inline constexpr size_t QUARISMA_ALIGNMENT = 64;
 // C++11 introduced the standard 'alignas' keyword. MSVC versions before 2015
 // (< 1900) do not support it and require __declspec(align(N)) instead.
 //
-// QUARISMA_ALIGN(N) abstracts this difference:
+// XSIGMA_ALIGN(N) abstracts this difference:
 //   - MSVC < 2015      : __declspec(align(N))
 //   - MSVC >= 2015     : standard alignas(N)  (preferred path)
 //   - GCC              : __attribute__((aligned(N)))
@@ -95,7 +95,7 @@ inline constexpr size_t QUARISMA_ALIGNMENT = 64;
 //                         expected to pass the GCC-compatible flags)
 //
 // Usage:
-//   QUARISMA_ALIGN(64) float buffer[1024];
+//   XSIGMA_ALIGN(64) float buffer[1024];
 // ============================================================================
 #if defined(_MSC_VER)
 #if (_MSC_VER < 1900)
@@ -103,19 +103,19 @@ inline constexpr size_t QUARISMA_ALIGNMENT = 64;
 #ifdef alignas
 // This check can be removed when verified that for all other versions alignas
 // works as requested
-#error "QUARISMA error: alignas already defined"
+#error "XSIGMA error: alignas already defined"
 #else
 #define alignas(alignment) __declspec(align(alignment))
 #endif
 #endif
 
 #ifdef alignas
-#define QUARISMA_ALIGN(alignment) alignas(alignment)
+#define XSIGMA_ALIGN(alignment) alignas(alignment)
 #else
-#define QUARISMA_ALIGN(alignment) __declspec(align(alignment))
+#define XSIGMA_ALIGN(alignment) __declspec(align(alignment))
 #endif
 #elif defined(__GNUC__)
-#define QUARISMA_ALIGN(alignment) __attribute__((aligned(alignment)))
+#define XSIGMA_ALIGN(alignment) __attribute__((aligned(alignment)))
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
 #endif
 
@@ -133,29 +133,29 @@ inline constexpr size_t QUARISMA_ALIGNMENT = 64;
 //   - Unknown         : empty    (safe fallback, no optimization hint)
 //
 // Usage:
-//   void copy(float* QUARISMA_RESTRICT dst, const float* QUARISMA_RESTRICT src, int n);
+//   void copy(float* XSIGMA_RESTRICT dst, const float* XSIGMA_RESTRICT src, int n);
 // ============================================================================
 #if defined(_MSC_VER)
-#define QUARISMA_RESTRICT __restrict
+#define XSIGMA_RESTRICT __restrict
 #elif defined(__cplusplus)
 // C++ doesn't have standard restrict, use compiler extensions
 #if defined(__GNUC__) || defined(__clang__)
-#define QUARISMA_RESTRICT __restrict__
+#define XSIGMA_RESTRICT __restrict__
 #else
-#define QUARISMA_RESTRICT
+#define XSIGMA_RESTRICT
 #endif
 #elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
 // C99 and later
-#define QUARISMA_RESTRICT restrict
+#define XSIGMA_RESTRICT restrict
 #else
 // Fallback for older compilers
-#define QUARISMA_RESTRICT
+#define XSIGMA_RESTRICT
 #endif
 
 // ============================================================================
 // Section 6: GPU Count Constant
 //
-// QUARISMA_COMPILE_TIME_MAX_GPUS sets the upper bound on how many GPU devices
+// XSIGMA_COMPILE_TIME_MAX_GPUS sets the upper bound on how many GPU devices
 // the library will ever manage in a single process. It is used to size
 // fixed-length arrays and bitmasks that track per-device state, avoiding
 // dynamic allocation in hot paths.
@@ -163,18 +163,18 @@ inline constexpr size_t QUARISMA_ALIGNMENT = 64;
 // 16 covers all current multi-GPU workstations and most HPC nodes; raise it
 // if a target system has more devices.
 // ============================================================================
-inline constexpr int QUARISMA_COMPILE_TIME_MAX_GPUS = 16;
+inline constexpr int XSIGMA_COMPILE_TIME_MAX_GPUS = 16;
 
 // ============================================================================
 // Section 7: Calling Convention and Forced-Inline Hints
 //
-// QUARISMA_VECTORCALL
+// XSIGMA_VECTORCALL
 //   On MSVC, __vectorcall passes up to six floating-point / SIMD arguments in
 //   XMM/YMM registers instead of on the stack, reducing prologue overhead for
 //   SIMD-heavy kernels.  On every other compiler the macro is empty because
 //   the ABI already passes vector arguments in registers by default.
 //
-// QUARISMA_FORCE_INLINE
+// XSIGMA_FORCE_INLINE
 //   Instructs the compiler to always inline the marked function, even when
 //   normal heuristics would reject it (e.g. in debug or at -O1).
 //   - MSVC            : __forceinline
@@ -187,24 +187,24 @@ inline constexpr int QUARISMA_COMPILE_TIME_MAX_GPUS = 16;
 // Compiler priority: MSVC → ICC → Clang → GCC → generic.
 // ============================================================================
 #if defined(_MSC_VER)
-#define QUARISMA_VECTORCALL __vectorcall
-#define QUARISMA_FORCE_INLINE __forceinline
+#define XSIGMA_VECTORCALL __vectorcall
+#define XSIGMA_FORCE_INLINE __forceinline
 
 #elif defined(__INTEL_COMPILER)
-#define QUARISMA_VECTORCALL
-#define QUARISMA_FORCE_INLINE inline __attribute__((always_inline))
+#define XSIGMA_VECTORCALL
+#define XSIGMA_FORCE_INLINE inline __attribute__((always_inline))
 
 #elif defined(__clang__)
-#define QUARISMA_VECTORCALL
-#define QUARISMA_FORCE_INLINE inline __attribute__((always_inline))
+#define XSIGMA_VECTORCALL
+#define XSIGMA_FORCE_INLINE inline __attribute__((always_inline))
 
 #elif defined(__GNUC__)
-#define QUARISMA_VECTORCALL
-#define QUARISMA_FORCE_INLINE inline __attribute__((always_inline))
+#define XSIGMA_VECTORCALL
+#define XSIGMA_FORCE_INLINE inline __attribute__((always_inline))
 
 #else
-#define QUARISMA_VECTORCALL
-#define QUARISMA_FORCE_INLINE inline
+#define XSIGMA_VECTORCALL
+#define XSIGMA_FORCE_INLINE inline
 #endif
 
 // ============================================================================
@@ -213,7 +213,7 @@ inline constexpr int QUARISMA_COMPILE_TIME_MAX_GPUS = 16;
 // These attributes help the compiler (and the CPU's branch predictor) lay out
 // code more efficiently by marking functions that are rarely or never reached.
 //
-// QUARISMA_NORETURN
+// XSIGMA_NORETURN
 //   Marks a function that never returns (e.g. fatal error handlers, functions
 //   that always throw).  Allows the compiler to omit the return path and
 //   suppress false "control reaches end of non-void function" warnings.
@@ -221,14 +221,14 @@ inline constexpr int QUARISMA_COMPILE_TIME_MAX_GPUS = 16;
 //   - MSVC                      : __declspec(noreturn)
 //   - Fallback                  : empty (safe but loses the optimization)
 //
-// QUARISMA_NOINLINE
+// XSIGMA_NOINLINE
 //   Prevents inlining of the marked function.  Useful for error-handling
 //   paths that should not bloat hot-path code, or for functions that must
 //   appear as distinct symbols in profiler output.
 //   - GCC / Clang : __attribute__((noinline))
 //   - Others      : empty
 //
-// QUARISMA_COLD
+// XSIGMA_COLD
 //   Tells the compiler the function is called rarely (e.g. init/teardown,
 //   error paths).  The optimizer moves its code away from hot-path code,
 //   improving I-cache utilization and branch-prediction for the common case.
@@ -240,29 +240,29 @@ inline constexpr int QUARISMA_COMPILE_TIME_MAX_GPUS = 16;
 // ============================================================================
 #if (defined(__GNUC__) || defined(__APPLE__)) && !defined(SWIG)
 // Compiler supports GCC-style attributes
-#define QUARISMA_NORETURN __attribute__((noreturn))
-#define QUARISMA_NOINLINE __attribute__((noinline))
-#define QUARISMA_COLD __attribute__((cold))
+#define XSIGMA_NORETURN __attribute__((noreturn))
+#define XSIGMA_NOINLINE __attribute__((noinline))
+#define XSIGMA_COLD __attribute__((cold))
 #elif defined(_MSC_VER)
 // Non-GCC equivalents
-#define QUARISMA_NORETURN __declspec(noreturn)
-#define QUARISMA_NOINLINE
-#define QUARISMA_COLD
+#define XSIGMA_NORETURN __declspec(noreturn)
+#define XSIGMA_NOINLINE
+#define XSIGMA_COLD
 #else
 // Non-GCC equivalents
-#define QUARISMA_NORETURN
-#define QUARISMA_NOINLINE
-#define QUARISMA_COLD
+#define XSIGMA_NORETURN
+#define XSIGMA_NOINLINE
+#define XSIGMA_COLD
 #endif
 
 // ============================================================================
 // Section 9: SIMD Kernel Return-Type Helper
 //
-// QUARISMA_SIMD_RETURN_TYPE is a convenience macro for declaring SIMD
+// XSIGMA_SIMD_RETURN_TYPE is a convenience macro for declaring SIMD
 // processing functions that return void.
 //
 //   Release builds (NDEBUG defined):
-//     Expands to:  QUARISMA_FORCE_INLINE static void QUARISMA_VECTORCALL
+//     Expands to:  XSIGMA_FORCE_INLINE static void XSIGMA_VECTORCALL
 //     The function is inlined and uses the vectorcall ABI (MSVC) so that
 //     SIMD arguments are passed in registers.
 //
@@ -271,12 +271,12 @@ inline constexpr int QUARISMA_COMPILE_TIME_MAX_GPUS = 16;
 //     No forced inlining, making the function debuggable step-by-step.
 //
 // Usage:
-//   QUARISMA_SIMD_RETURN_TYPE AddPackets(const __m256& a, const __m256& b, __m256& out);
+//   XSIGMA_SIMD_RETURN_TYPE AddPackets(const __m256& a, const __m256& b, __m256& out);
 // ============================================================================
 #ifdef NDEBUG
-#define QUARISMA_SIMD_RETURN_TYPE QUARISMA_FORCE_INLINE static void QUARISMA_VECTORCALL
+#define XSIGMA_SIMD_RETURN_TYPE XSIGMA_FORCE_INLINE static void XSIGMA_VECTORCALL
 #else
-#define QUARISMA_SIMD_RETURN_TYPE static void
+#define XSIGMA_SIMD_RETURN_TYPE static void
 #endif
 
 // ============================================================================
@@ -285,40 +285,40 @@ inline constexpr int QUARISMA_COMPILE_TIME_MAX_GPUS = 16;
 // When compiling with nvcc (CUDA) or hipcc (HIP), functions that run on the
 // GPU must be annotated so the device compiler generates GPU code for them.
 //
-// QUARISMA_CUDA_DEVICE        : __device__  — callable only from GPU code
-// QUARISMA_CUDA_HOST          : __host__    — callable only from CPU code
-// QUARISMA_CUDA_FUNCTION_TYPE : __host__ __device__  — compiled for both;
+// XSIGMA_CUDA_DEVICE        : __device__  — callable only from GPU code
+// XSIGMA_CUDA_HOST          : __host__    — callable only from CPU code
+// XSIGMA_CUDA_FUNCTION_TYPE : __host__ __device__  — compiled for both;
 //                               lets a single implementation be shared
 //                               between CPU unit tests and GPU kernels.
 //
 // Outside CUDA/HIP all three expand to nothing, so the same source compiles
 // as plain C++ without any changes.
 //
-// QUARISMA_FUNCTION_ATTRIBUTE combines QUARISMA_CUDA_FUNCTION_TYPE with
-// QUARISMA_FORCE_INLINE (release) or just QUARISMA_CUDA_FUNCTION_TYPE
+// XSIGMA_FUNCTION_ATTRIBUTE combines XSIGMA_CUDA_FUNCTION_TYPE with
+// XSIGMA_FORCE_INLINE (release) or just XSIGMA_CUDA_FUNCTION_TYPE
 // (debug), giving the standard decoration for math utility functions that
 // must work on both host and device.
 // ============================================================================
 #if defined(__CUDACC__) || defined(__HIPCC__)
-#define QUARISMA_CUDA_DEVICE __device__
-#define QUARISMA_CUDA_HOST __host__
-#define QUARISMA_CUDA_FUNCTION_TYPE __host__ __device__
+#define XSIGMA_CUDA_DEVICE __device__
+#define XSIGMA_CUDA_HOST __host__
+#define XSIGMA_CUDA_FUNCTION_TYPE __host__ __device__
 #else
-#define QUARISMA_CUDA_DEVICE
-#define QUARISMA_CUDA_HOST
-#define QUARISMA_CUDA_FUNCTION_TYPE
+#define XSIGMA_CUDA_DEVICE
+#define XSIGMA_CUDA_HOST
+#define XSIGMA_CUDA_FUNCTION_TYPE
 #endif
 
 #ifdef NDEBUG
-#define QUARISMA_FUNCTION_ATTRIBUTE QUARISMA_FORCE_INLINE QUARISMA_CUDA_FUNCTION_TYPE
+#define XSIGMA_FUNCTION_ATTRIBUTE XSIGMA_FORCE_INLINE XSIGMA_CUDA_FUNCTION_TYPE
 #else
-#define QUARISMA_FUNCTION_ATTRIBUTE QUARISMA_CUDA_FUNCTION_TYPE
+#define XSIGMA_FUNCTION_ATTRIBUTE XSIGMA_CUDA_FUNCTION_TYPE
 #endif
 
 // ============================================================================
 // Section 11: Inline Assembly Comment
 //
-// QUARISMA_ASM_COMMENT(X) injects a comment string directly into the
+// XSIGMA_ASM_COMMENT(X) injects a comment string directly into the
 // compiler's assembly output.  This is purely a developer/profiling aid:
 //
 //   - It acts as a zero-cost "fence" that prevents the compiler from
@@ -331,47 +331,47 @@ inline constexpr int QUARISMA_COMPILE_TIME_MAX_GPUS = 16;
 // On all other platforms it expands to nothing.
 //
 // Usage:
-//   QUARISMA_ASM_COMMENT("begin matrix multiply kernel");
+//   XSIGMA_ASM_COMMENT("begin matrix multiply kernel");
 // ============================================================================
 #if defined(__GNUC__) && \
     (defined(__i386__) || defined(__x86_64__) || defined(__arm__) || defined(__aarch64__))
-#define QUARISMA_ASM_COMMENT(X) __asm__("#" X)
+#define XSIGMA_ASM_COMMENT(X) __asm__("#" X)
 #else
-#define QUARISMA_ASM_COMMENT(X)
+#define XSIGMA_ASM_COMMENT(X)
 #endif
 
 // ============================================================================
 // Section 12: Token-Pasting / Unique-Name Helpers
 //
-// QUARISMA_CONCATENATE_IMPL(s1, s2)
+// XSIGMA_CONCATENATE_IMPL(s1, s2)
 //   The inner macro that performs the actual ## token paste.  It must be a
-//   separate macro from QUARISMA_CONCATENATE so that macro arguments are
+//   separate macro from XSIGMA_CONCATENATE so that macro arguments are
 //   fully expanded before pasting (standard C preprocessor two-step).
 //
-// QUARISMA_CONCATENATE(s1, s2)
+// XSIGMA_CONCATENATE(s1, s2)
 //   Public API — paste two already-expanded tokens into one identifier.
-//   Example:  QUARISMA_CONCATENATE(my_, var)  →  my_var
+//   Example:  XSIGMA_CONCATENATE(my_, var)  →  my_var
 //
-// QUARISMA_UID
+// XSIGMA_UID
 //   A unique integer token within a translation unit.
 //   Prefers __COUNTER__ (GCC/Clang/MSVC extension; increments each time it
 //   is used) over __LINE__ (same value for two macros on the same line).
 //
-// QUARISMA_ANONYMOUS_VARIABLE(str)
-//   Creates a unique identifier by appending QUARISMA_UID to a given prefix.
+// XSIGMA_ANONYMOUS_VARIABLE(str)
+//   Creates a unique identifier by appending XSIGMA_UID to a given prefix.
 //   Typical use: declaring RAII guard variables that must not clash:
 //
-//     auto QUARISMA_ANONYMOUS_VARIABLE(guard) = makeScopedLock(mutex);
+//     auto XSIGMA_ANONYMOUS_VARIABLE(guard) = makeScopedLock(mutex);
 // ============================================================================
-#define QUARISMA_CONCATENATE_IMPL(s1, s2) s1##s2
-#define QUARISMA_CONCATENATE(s1, s2) QUARISMA_CONCATENATE_IMPL(s1, s2)
+#define XSIGMA_CONCATENATE_IMPL(s1, s2) s1##s2
+#define XSIGMA_CONCATENATE(s1, s2) XSIGMA_CONCATENATE_IMPL(s1, s2)
 
 #ifdef __COUNTER__
-#define QUARISMA_UID __COUNTER__
-#define QUARISMA_ANONYMOUS_VARIABLE(str) QUARISMA_CONCATENATE(str, __COUNTER__)
+#define XSIGMA_UID __COUNTER__
+#define XSIGMA_ANONYMOUS_VARIABLE(str) XSIGMA_CONCATENATE(str, __COUNTER__)
 #else
-#define QUARISMA_UID __LINE__
-#define QUARISMA_ANONYMOUS_VARIABLE(str) QUARISMA_CONCATENATE(str, __LINE__)
+#define XSIGMA_UID __LINE__
+#define XSIGMA_ANONYMOUS_VARIABLE(str) XSIGMA_CONCATENATE(str, __LINE__)
 #endif
 
 // ============================================================================
@@ -405,7 +405,7 @@ inline constexpr int QUARISMA_COMPILE_TIME_MAX_GPUS = 16;
 // ============================================================================
 // Section 14: MemorySanitizer Suppression
 //
-// QUARISMA_NO_SANITIZE_MEMORY suppresses MemorySanitizer (MSan) reports for
+// XSIGMA_NO_SANITIZE_MEMORY suppresses MemorySanitizer (MSan) reports for
 // the marked function.  MSan intercepts memory reads and flags use of
 // uninitialised memory; some low-level or hardware-interfacing routines
 // intentionally read "uninitialised" bytes (e.g. reading padding, working
@@ -415,16 +415,16 @@ inline constexpr int QUARISMA_COMPILE_TIME_MAX_GPUS = 16;
 //   All other builds        : empty  (no runtime cost, no behavioural change)
 //
 // Usage:
-//   QUARISMA_NO_SANITIZE_MEMORY void ReadHardwareBuffer(void* buf, size_t n);
+//   XSIGMA_NO_SANITIZE_MEMORY void ReadHardwareBuffer(void* buf, size_t n);
 // ============================================================================
 #if defined(__clang__)
 #if __has_feature(memory_sanitizer)
-#define QUARISMA_NO_SANITIZE_MEMORY __attribute__((no_sanitize_memory))
+#define XSIGMA_NO_SANITIZE_MEMORY __attribute__((no_sanitize_memory))
 #else
-#define QUARISMA_NO_SANITIZE_MEMORY
+#define XSIGMA_NO_SANITIZE_MEMORY
 #endif  // __has_feature(memory_sanitizer)
 #else
-#define QUARISMA_NO_SANITIZE_MEMORY
+#define XSIGMA_NO_SANITIZE_MEMORY
 #endif  // __clang__
 
 // ============================================================================
@@ -438,27 +438,27 @@ inline constexpr int QUARISMA_COMPILE_TIME_MAX_GPUS = 16;
 //   human-readable name.
 //   Example: MACRO_CORE_TYPE_ID_NAME(float)  →  "f"  (GCC/Clang)
 //
-// QUARISMA_DELETE_CLASS(type)
+// XSIGMA_DELETE_CLASS(type)
 //   Deletes all six special member functions of a class:
 //     default constructor, copy constructor, copy assignment,
 //     move constructor, move assignment, destructor.
 //   Use for classes that should never be instantiated at all (pure
 //   namespace-like utility classes, tag types, etc.).
 //
-// QUARISMA_DELETE_COPY_AND_MOVE(type)
+// XSIGMA_DELETE_COPY_AND_MOVE(type)
 //   Deletes the four copy/move special members while leaving constructor and
 //   destructor intact.  Switches to private access before the deletions and
 //   back to public afterwards, enforcing the common pattern where
 //   non-copyable/non-movable types keep their access specifiers tidy.
 //   Use for singleton-like resources (device handles, loggers, allocators).
 //
-// QUARISMA_DELETE_COPY(type)
+// XSIGMA_DELETE_COPY(type)
 //   Deletes only the copy constructor and copy assignment operator, leaving
 //   move semantics available.  Use for move-only resource wrappers.
 // ============================================================================
 #define MACRO_CORE_TYPE_ID_NAME(x) typeid(x).name()
 
-#define QUARISMA_DELETE_CLASS(type)          \
+#define XSIGMA_DELETE_CLASS(type)            \
     type()                         = delete; \
     type(const type&)              = delete; \
     type& operator=(const type& a) = delete; \
@@ -466,7 +466,7 @@ inline constexpr int QUARISMA_COMPILE_TIME_MAX_GPUS = 16;
     type& operator=(type&&)        = delete; \
     ~type()                        = delete;
 
-#define QUARISMA_DELETE_COPY_AND_MOVE(type)  \
+#define XSIGMA_DELETE_COPY_AND_MOVE(type)    \
 private:                                     \
     type(const type&)              = delete; \
     type& operator=(const type& a) = delete; \
@@ -475,7 +475,7 @@ private:                                     \
                                              \
 public:
 
-#define QUARISMA_DELETE_COPY(type)           \
+#define XSIGMA_DELETE_COPY(type)             \
     type(const type&)              = delete; \
     type& operator=(const type& a) = delete;
 
@@ -507,11 +507,11 @@ public:
 // ============================================================================
 // Section 17: void_t Utility (C++17 Detection Idiom)
 //
-// quarisma::void_t<Ts...> maps any list of well-formed types to void.
+// xsigma::void_t<Ts...> maps any list of well-formed types to void.
 // It is the standard building block for SFINAE-based type-trait detection.
 //
 // Although std::void_t is available in C++17, the alias is kept here so
-// that internal templates can use the quarisma:: namespace consistently
+// that internal templates can use the xsigma:: namespace consistently
 // without needing a std:: qualifier.
 //
 // Example — detect whether T has a ::value_type member:
@@ -519,20 +519,20 @@ public:
 //   struct has_value_type : std::false_type {};
 //
 //   template <typename T>
-//   struct has_value_type<T, quarisma::void_t<typename T::value_type>>
+//   struct has_value_type<T, xsigma::void_t<typename T::value_type>>
 //       : std::true_type {};
 // ============================================================================
-namespace quarisma
+namespace xsigma
 {
 template <typename...>
 using void_t = std::void_t<>;
-}  // namespace quarisma
+}  // namespace xsigma
 
 // ============================================================================
 // Section 18: Portable Integer Type Aliases
 //
-// quarisma_int  : a signed 64-bit integer
-// quarisma_long : an unsigned 64-bit integer
+// xsigma_int  : a signed 64-bit integer
+// xsigma_long : an unsigned 64-bit integer
 //
 // On MSVC (excluding Intel ICC which mimics GCC) the standard typedefs
 // for 64-bit integers use the Microsoft-specific __int64 / unsigned __int64
@@ -542,22 +542,22 @@ using void_t = std::void_t<>;
 // These aliases avoid scattering #ifdef _MSC_VER throughout arithmetic code.
 // ============================================================================
 #if (!defined(__INTEL_COMPILER)) & defined(_MSC_VER)
-#define quarisma_int __int64
-#define quarisma_long unsigned __int64
+#define xsigma_int __int64
+#define xsigma_long unsigned __int64
 #else
-#define quarisma_int long long int
-#define quarisma_long unsigned long long int
+#define xsigma_int long long int
+#define xsigma_long unsigned long long int
 #endif
 
 // ============================================================================
 // Section 19: Compiler Attribute Detection Helpers
 //
-// QUARISMA_HAVE_CPP_ATTRIBUTE(x)
+// XSIGMA_HAVE_CPP_ATTRIBUTE(x)
 //   Wraps __has_cpp_attribute(x) — the standard C++20 way to test for a
 //   specific [[attribute]].  Falls back to 0 on compilers that do not
 //   support __has_cpp_attribute.
 //
-// QUARISMA_HAVE_ATTRIBUTE(x)
+// XSIGMA_HAVE_ATTRIBUTE(x)
 //   Wraps __has_attribute(x) — the GCC/Clang extension for testing
 //   __attribute__((x)) support.  Falls back to 0 on other compilers.
 //
@@ -566,27 +566,27 @@ using void_t = std::void_t<>;
 // rather than causing a compiler error.
 //
 // Example:
-//   #if QUARISMA_HAVE_ATTRIBUTE(noinline)
+//   #if XSIGMA_HAVE_ATTRIBUTE(noinline)
 //   #define MY_NOINLINE __attribute__((noinline))
 //   #endif
 // ============================================================================
 #if defined(__cplusplus) && defined(__has_cpp_attribute)
-#define QUARISMA_HAVE_CPP_ATTRIBUTE(x) __has_cpp_attribute(x)
+#define XSIGMA_HAVE_CPP_ATTRIBUTE(x) __has_cpp_attribute(x)
 #else
-#define QUARISMA_HAVE_CPP_ATTRIBUTE(x) 0
+#define XSIGMA_HAVE_CPP_ATTRIBUTE(x) 0
 #endif
 
 #ifdef __has_attribute
-#define QUARISMA_HAVE_ATTRIBUTE(x) __has_attribute(x)
+#define XSIGMA_HAVE_ATTRIBUTE(x) __has_attribute(x)
 #else
-#define QUARISMA_HAVE_ATTRIBUTE(x) 0
+#define XSIGMA_HAVE_ATTRIBUTE(x) 0
 #endif
 
 // ============================================================================
 // Section 20: Branch Prediction Hints
 //
-// QUARISMA_LIKELY(expr)   — expr is expected to be true most of the time
-// QUARISMA_UNLIKELY(expr) — expr is expected to be false most of the time
+// XSIGMA_LIKELY(expr)   — expr is expected to be true most of the time
+// XSIGMA_UNLIKELY(expr) — expr is expected to be false most of the time
 //
 // Wrapping a condition with these macros lets the compiler lay out the hot
 // path as fall-through code and push the cold path into a separate basic
@@ -595,7 +595,7 @@ using void_t = std::void_t<>;
 //
 // Three tiers of implementation:
 //   C++20 [[likely]] / [[unlikely]] attributes (standard, no cast needed):
-//     if (QUARISMA_LIKELY(x > 0)) { ... }
+//     if (XSIGMA_LIKELY(x > 0)) { ... }
 //     expands to: if ((x > 0) [[likely]]) { ... }
 //
 //   GCC / Clang / ICC __builtin_expect (most common path):
@@ -606,25 +606,25 @@ using void_t = std::void_t<>;
 //     No-op — the condition is passed through unchanged.
 //
 // Usage:
-//   if (QUARISMA_LIKELY(ptr != nullptr)) { fast_path(); }
-//   if (QUARISMA_UNLIKELY(error))        { handle_error(); }
+//   if (XSIGMA_LIKELY(ptr != nullptr)) { fast_path(); }
+//   if (XSIGMA_UNLIKELY(error))        { handle_error(); }
 // ============================================================================
-#if __cplusplus >= 202002L && QUARISMA_HAVE_CPP_ATTRIBUTE(likely) && \
-    QUARISMA_HAVE_CPP_ATTRIBUTE(unlikely)
-#define QUARISMA_LIKELY(expr) (expr) [[likely]]
-#define QUARISMA_UNLIKELY(expr) (expr) [[unlikely]]
+#if __cplusplus >= 202002L && XSIGMA_HAVE_CPP_ATTRIBUTE(likely) && \
+    XSIGMA_HAVE_CPP_ATTRIBUTE(unlikely)
+#define XSIGMA_LIKELY(expr) (expr) [[likely]]
+#define XSIGMA_UNLIKELY(expr) (expr) [[unlikely]]
 #elif defined(__GNUC__) || defined(__ICL) || defined(__clang__)
-#define QUARISMA_LIKELY(expr) (__builtin_expect(static_cast<bool>(expr), 1))
-#define QUARISMA_UNLIKELY(expr) (__builtin_expect(static_cast<bool>(expr), 0))
+#define XSIGMA_LIKELY(expr) (__builtin_expect(static_cast<bool>(expr), 1))
+#define XSIGMA_UNLIKELY(expr) (__builtin_expect(static_cast<bool>(expr), 0))
 #else
-#define QUARISMA_LIKELY(expr) (expr)
-#define QUARISMA_UNLIKELY(expr) (expr)
+#define XSIGMA_LIKELY(expr) (expr)
+#define XSIGMA_UNLIKELY(expr) (expr)
 #endif
 
 // ============================================================================
 // Section 21: Conditional constexpr for C++20
 //
-// QUARISMA_FUNCTION_CONSTEXPR marks a function as constexpr only when
+// XSIGMA_FUNCTION_CONSTEXPR marks a function as constexpr only when
 // compiling in C++20 or later mode.
 //
 // Motivation: some functions cannot be constexpr in C++17 (e.g. they call
@@ -633,18 +633,18 @@ using void_t = std::void_t<>;
 // under both standard versions without #ifdef clutter at every declaration.
 //
 // Usage:
-//   QUARISMA_FUNCTION_CONSTEXPR int Clamp(int v, int lo, int hi);
+//   XSIGMA_FUNCTION_CONSTEXPR int Clamp(int v, int lo, int hi);
 // ============================================================================
 #if __cplusplus >= 202002L
-#define QUARISMA_FUNCTION_CONSTEXPR constexpr
+#define XSIGMA_FUNCTION_CONSTEXPR constexpr
 #else
-#define QUARISMA_FUNCTION_CONSTEXPR
+#define XSIGMA_FUNCTION_CONSTEXPR
 #endif
 
 // ============================================================================
 // Section 22: [[nodiscard]] Portability
 //
-// QUARISMA_NODISCARD applies the [[nodiscard]] attribute on C++17 and later,
+// XSIGMA_NODISCARD applies the [[nodiscard]] attribute on C++17 and later,
 // causing the compiler to emit a warning when the return value of a marked
 // function is silently discarded.
 //
@@ -655,18 +655,18 @@ using void_t = std::void_t<>;
 // On pre-C++17 compilers the macro expands to nothing (silent no-op).
 //
 // Usage:
-//   QUARISMA_NODISCARD Status Allocate(size_t bytes, void** out);
+//   XSIGMA_NODISCARD Status Allocate(size_t bytes, void** out);
 // ============================================================================
 #if __cplusplus >= 201703L
-#define QUARISMA_NODISCARD [[nodiscard]]
+#define XSIGMA_NODISCARD [[nodiscard]]
 #else
-#define QUARISMA_NODISCARD
+#define XSIGMA_NODISCARD
 #endif
 
 // ============================================================================
 // Section 23: Suppress Unused-Variable / Unused-Parameter Warnings
 //
-// QUARISMA_UNUSED suppresses compiler warnings about variables or function
+// XSIGMA_UNUSED suppresses compiler warnings about variables or function
 // parameters that are intentionally left unreferenced (e.g. in debug-only
 // code guarded by #ifdef, or in virtual overrides that ignore some params).
 //
@@ -675,7 +675,7 @@ using void_t = std::void_t<>;
 //   MSVC            : __pragma(warning(suppress : 4100))
 //   Fallback        : empty
 //
-// QUARISMA_USED is the complementary macro: it forces the linker to retain
+// XSIGMA_USED is the complementary macro: it forces the linker to retain
 // a symbol even if it appears unreferenced.
 //   GCC / Clang with __has_attribute(used) : __attribute__((__used__))
 //   MSVC / others                          : empty
@@ -683,35 +683,35 @@ using void_t = std::void_t<>;
 //   from assembly or loaded at runtime.
 //
 // Usage:
-//   void Foo(int x, QUARISMA_UNUSED int debug_hint) { ... }
-//   static QUARISMA_USED CallbackTable kTable[] = { ... };
+//   void Foo(int x, XSIGMA_UNUSED int debug_hint) { ... }
+//   static XSIGMA_USED CallbackTable kTable[] = { ... };
 // ============================================================================
 #if __cplusplus >= 201703L
-#define QUARISMA_UNUSED [[maybe_unused]]
+#define XSIGMA_UNUSED [[maybe_unused]]
 #elif defined(__GNUC__) || defined(__clang__)
 // For GCC or Clang: use __attribute__
-#define QUARISMA_UNUSED __attribute__((unused))
+#define XSIGMA_UNUSED __attribute__((unused))
 #elif defined(_MSC_VER)
 // For MSVC
-#define QUARISMA_UNUSED __pragma(warning(suppress : 4100))
+#define XSIGMA_UNUSED __pragma(warning(suppress : 4100))
 #else
 // Fallback for other compilers
-#define QUARISMA_UNUSED
+#define XSIGMA_UNUSED
 #endif
 
 // Check for MSVC first, then Clang/GCC
 #if defined(_MSC_VER)
 // MSVC doesn't support __attribute__((used))
 // Use __pragma(comment(linker, "/include:symbol")) or just leave empty
-#define QUARISMA_USED
+#define XSIGMA_USED
 #elif defined(__has_attribute)
 #if __has_attribute(used)
-#define QUARISMA_USED __attribute__((__used__))
+#define XSIGMA_USED __attribute__((__used__))
 #else
-#define QUARISMA_USED
+#define XSIGMA_USED
 #endif
 #else
-#define QUARISMA_USED
+#define XSIGMA_USED
 #endif
 
 // ============================================================================
@@ -719,8 +719,8 @@ using void_t = std::void_t<>;
 //
 // PROJECT_HAS_CXA_DEMANGLE is 1 when the platform provides
 // __cxa_demangle() (from <cxxabi.h>), which converts a compiler-mangled
-// C++ symbol name (e.g. "_ZN9quarisma3FooEv") into a human-readable form
-// ("quarisma::Foo()").  Used by stack-trace and diagnostic utilities.
+// C++ symbol name (e.g. "_ZN9xsigma3FooEv") into a human-readable form
+// ("xsigma::Foo()").  Used by stack-trace and diagnostic utilities.
 //
 // Rules:
 //   0 — Android on x86/x86-64 (known to be missing)
@@ -739,12 +739,12 @@ using void_t = std::void_t<>;
 #endif
 
 // ============================================================================
-// Section 25: Printf-Format Attribute (QUARISMA naming convention)
+// Section 25: Printf-Format Attribute (XSIGMA naming convention)
 //
-// QUARISMA_PRINTF_ATTRIBUTE(format_index, first_to_check) is the
-// QUARISMA-prefixed counterpart to MACRO_CORE_PRINTF_FORMAT (Section 16).
+// XSIGMA_PRINTF_ATTRIBUTE(format_index, first_to_check) is the
+// project-prefixed counterpart to MACRO_CORE_PRINTF_FORMAT (Section 16).
 // It applies __attribute__((format(printf, ...))) only when the compiler
-// actually supports it (checked via QUARISMA_HAVE_ATTRIBUTE from Section 19),
+// actually supports it (checked via XSIGMA_HAVE_ATTRIBUTE from Section 19),
 // making it safer than an unconditional __attribute__ use.
 //
 //   format_index    : 1-based position of the format string argument
@@ -752,13 +752,13 @@ using void_t = std::void_t<>;
 //
 // Example:
 //   void Warn(int level, const char* fmt, ...)
-//       QUARISMA_PRINTF_ATTRIBUTE(2, 3);
+//       XSIGMA_PRINTF_ATTRIBUTE(2, 3);
 // ============================================================================
-#if QUARISMA_HAVE_ATTRIBUTE(format)
-#define QUARISMA_PRINTF_ATTRIBUTE(format_index, first_to_check) \
+#if XSIGMA_HAVE_ATTRIBUTE(format)
+#define XSIGMA_PRINTF_ATTRIBUTE(format_index, first_to_check) \
     __attribute__((format(printf, format_index, first_to_check)))
 #else
-#define QUARISMA_PRINTF_ATTRIBUTE(format_index, first_to_check)
+#define XSIGMA_PRINTF_ATTRIBUTE(format_index, first_to_check)
 #endif
 
 // ============================================================================
@@ -769,56 +769,55 @@ using void_t = std::void_t<>;
 // data.  When TSA is not available (GCC, MSVC, older Clang) all macros
 // expand to nothing, so the annotations are zero-cost at runtime.
 //
-// QUARISMA_NO_THREAD_SAFETY_ANALYSIS
+// XSIGMA_NO_THREAD_SAFETY_ANALYSIS
 //   Opt a function out of TSA entirely.  Use sparingly for lock-free
 //   primitives or functions where TSA produces false positives.
 //
-// QUARISMA_GUARDED_BY(x)
+// XSIGMA_GUARDED_BY(x)
 //   Declares that the annotated variable must only be accessed while
 //   holding mutex x.
-//   Example:  int count_ QUARISMA_GUARDED_BY(mutex_);
+//   Example:  int count_ XSIGMA_GUARDED_BY(mutex_);
 //
-// QUARISMA_EXCLUSIVE_LOCKS_REQUIRED(...)
+// XSIGMA_EXCLUSIVE_LOCKS_REQUIRED(...)
 //   Documents that the caller must hold the listed mutexes exclusively
 //   (write locks) before calling the annotated function.
 //
-// QUARISMA_LOCKS_EXCLUDED(...)
+// XSIGMA_LOCKS_EXCLUDED(...)
 //   Documents that the caller must NOT hold the listed mutexes when calling
 //   the annotated function (prevents self-deadlock for non-reentrant locks).
 //
 // Usage:
-//   void Increment() QUARISMA_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-//   void Reset()     QUARISMA_LOCKS_EXCLUDED(mutex_);
+//   void Increment() XSIGMA_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+//   void Reset()     XSIGMA_LOCKS_EXCLUDED(mutex_);
 // ============================================================================
-#if QUARISMA_HAVE_ATTRIBUTE(no_thread_safety_analysis)
-#define QUARISMA_NO_THREAD_SAFETY_ANALYSIS __attribute__((no_thread_safety_analysis))
+#if XSIGMA_HAVE_ATTRIBUTE(no_thread_safety_analysis)
+#define XSIGMA_NO_THREAD_SAFETY_ANALYSIS __attribute__((no_thread_safety_analysis))
 #else
-#define QUARISMA_NO_THREAD_SAFETY_ANALYSIS
+#define XSIGMA_NO_THREAD_SAFETY_ANALYSIS
 #endif
 
-#if QUARISMA_HAVE_ATTRIBUTE(guarded_by)
-#define QUARISMA_GUARDED_BY(x) __attribute__((guarded_by(x)))
+#if XSIGMA_HAVE_ATTRIBUTE(guarded_by)
+#define XSIGMA_GUARDED_BY(x) __attribute__((guarded_by(x)))
 #else
-#define QUARISMA_GUARDED_BY(x)
+#define XSIGMA_GUARDED_BY(x)
 #endif
 
-#if QUARISMA_HAVE_ATTRIBUTE(exclusive_locks_required)
-#define QUARISMA_EXCLUSIVE_LOCKS_REQUIRED(...) \
-    __attribute__((exclusive_locks_required(__VA_ARGS__)))
+#if XSIGMA_HAVE_ATTRIBUTE(exclusive_locks_required)
+#define XSIGMA_EXCLUSIVE_LOCKS_REQUIRED(...) __attribute__((exclusive_locks_required(__VA_ARGS__)))
 #else
-#define QUARISMA_EXCLUSIVE_LOCKS_REQUIRED(...)
+#define XSIGMA_EXCLUSIVE_LOCKS_REQUIRED(...)
 #endif
 
-#if QUARISMA_HAVE_ATTRIBUTE(locks_excluded)
-#define QUARISMA_LOCKS_EXCLUDED(...) __attribute__((locks_excluded(__VA_ARGS__)))
+#if XSIGMA_HAVE_ATTRIBUTE(locks_excluded)
+#define XSIGMA_LOCKS_EXCLUDED(...) __attribute__((locks_excluded(__VA_ARGS__)))
 #else
-#define QUARISMA_LOCKS_EXCLUDED(...)
+#define XSIGMA_LOCKS_EXCLUDED(...)
 #endif
 
 // ============================================================================
 // Section 27: Lifetime-Bound Annotation
 //
-// QUARISMA_LIFETIME_BOUND marks a function parameter (or implicit *this) to
+// XSIGMA_LIFETIME_BOUND marks a function parameter (or implicit *this) to
 // indicate that the returned reference / pointer must not outlive the
 // argument.  This lets the compiler warn when the caller stores the result
 // in a variable that will outlast the temporary argument.
@@ -830,23 +829,23 @@ using void_t = std::void_t<>;
 //   empty                     — all other compilers
 //
 // Example:
-//   std::string_view AsView(const std::string& s QUARISMA_LIFETIME_BOUND);
+//   std::string_view AsView(const std::string& s XSIGMA_LIFETIME_BOUND);
 //   // Warn if caller does: auto sv = AsView(std::string("tmp"));
 // ============================================================================
-#if QUARISMA_HAVE_CPP_ATTRIBUTE(clang::lifetimebound)
-#define QUARISMA_LIFETIME_BOUND [[clang::lifetimebound]]
-#elif QUARISMA_HAVE_CPP_ATTRIBUTE(msvc::lifetimebound)
-#define QUARISMA_LIFETIME_BOUND [[msvc::lifetimebound]]
-#elif QUARISMA_HAVE_ATTRIBUTE(lifetimebound)
-#define QUARISMA_LIFETIME_BOUND __attribute__((lifetimebound))
+#if XSIGMA_HAVE_CPP_ATTRIBUTE(clang::lifetimebound)
+#define XSIGMA_LIFETIME_BOUND [[clang::lifetimebound]]
+#elif XSIGMA_HAVE_CPP_ATTRIBUTE(msvc::lifetimebound)
+#define XSIGMA_LIFETIME_BOUND [[msvc::lifetimebound]]
+#elif XSIGMA_HAVE_ATTRIBUTE(lifetimebound)
+#define XSIGMA_LIFETIME_BOUND __attribute__((lifetimebound))
 #else
-#define QUARISMA_LIFETIME_BOUND
+#define XSIGMA_LIFETIME_BOUND
 #endif
 
 // ============================================================================
 // Section 28: Constant-Initialisation Annotation
 //
-// QUARISMA_CONST_INIT applies [[clang::require_constant_initialization]]
+// XSIGMA_CONST_INIT applies [[clang::require_constant_initialization]]
 // to a variable, ensuring it is initialised at compile time (i.e. its
 // initialiser is a constant expression).  This prevents the "static
 // initialisation order fiasco" for global / static-local variables and
@@ -857,12 +856,12 @@ using void_t = std::void_t<>;
 // compile-time guarantee).
 //
 // Usage:
-//   QUARISMA_CONST_INIT static Config kDefaultConfig = { ... };
+//   XSIGMA_CONST_INIT static Config kDefaultConfig = { ... };
 // ============================================================================
-#if QUARISMA_HAVE_CPP_ATTRIBUTE(clang::require_constant_initialization)
-#define QUARISMA_CONST_INIT [[clang::require_constant_initialization]]
+#if XSIGMA_HAVE_CPP_ATTRIBUTE(clang::require_constant_initialization)
+#define XSIGMA_CONST_INIT [[clang::require_constant_initialization]]
 #else
-#define QUARISMA_CONST_INIT
+#define XSIGMA_CONST_INIT
 #endif
 
 // ============================================================================
@@ -875,11 +874,11 @@ using void_t = std::void_t<>;
 //
 // When building on Apple platforms without these definitions, this block
 // injects them as using aliases to the corresponding <cstdint> types.
-// The QUARISMA_DEFINED_DARWIN_TYPES_ guard prevents double-definition if the
+// The XSIGMA_DEFINED_DARWIN_TYPES_ guard prevents double-definition if the
 // SDK header that normally defines them is also included.
 // ============================================================================
-#if defined(__APPLE__) && !defined(QUARISMA_DEFINED_DARWIN_TYPES_)
-#define QUARISMA_DEFINED_DARWIN_TYPES_
+#if defined(__APPLE__) && !defined(XSIGMA_DEFINED_DARWIN_TYPES_)
+#define XSIGMA_DEFINED_DARWIN_TYPES_
 using __uint32_t = std::uint32_t;
 using __uint64_t = std::uint64_t;
 using __int32_t  = std::int32_t;
@@ -890,12 +889,12 @@ using __int8_t   = std::int8_t;
 using __int16_t  = std::int16_t;
 #endif
 
-#endif  // QUARISMA_PORTABLE_MACROS_INCLUDED_
+#endif  // XSIGMA_PORTABLE_MACROS_INCLUDED_
 
-// Section 3: Core links QUARISMA_API from export.h (outside portable block).
+// Section 3: Core links XSIGMA_API from export.h (outside portable block).
 #include "export.h"
 
 #ifndef XSIGMA_CORE_NAMESPACE_ALIAS_DEFINED
 #define XSIGMA_CORE_NAMESPACE_ALIAS_DEFINED
-namespace core = quarisma;
+namespace core = xsigma;
 #endif

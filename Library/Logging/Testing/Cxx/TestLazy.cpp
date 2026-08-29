@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,11 +13,12 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -30,7 +31,7 @@ using namespace logging;
 // Basic optimistic_lazy Tests
 // ============================================================================
 
-LOGGINGTEST(Lazy, Test)
+TEST(Lazy, Test)
 {
     {
         optimistic_lazy<int> lazy_int;
@@ -54,8 +55,6 @@ LOGGINGTEST(Lazy, Test)
 
         // Test that both references point to same object
         EXPECT_EQ(&value1, &value2);
-
-        END_TEST();
     }
 
     {
@@ -70,8 +69,6 @@ LOGGINGTEST(Lazy, Test)
         EXPECT_EQ(vec.size(), 3);
         EXPECT_EQ(vec[0], 1);
         EXPECT_EQ(vec[2], 3);
-
-        END_TEST();
     }
 
     // ============================================================================
@@ -90,8 +87,6 @@ LOGGINGTEST(Lazy, Test)
         // Re-initialize with different value
         int& value2 = lazy_int.ensure([]() { return 99; });
         EXPECT_EQ(value2, 99);
-
-        END_TEST();
     }
 
     {
@@ -110,8 +105,6 @@ LOGGINGTEST(Lazy, Test)
         const int& value2 = lazy_val.get();
         EXPECT_EQ(value2, 42);
         EXPECT_EQ(&value1, &value2);
-
-        END_TEST();
     }
 
     {
@@ -128,8 +121,6 @@ LOGGINGTEST(Lazy, Test)
         precomputed_lazy_value<std::string> lazy_str(std::string("Hello"));
         const std::string&                  str = lazy_str.get();
         EXPECT_EQ(str, "Hello");
-
-        END_TEST();
     }
 
     // ============================================================================
@@ -145,8 +136,6 @@ LOGGINGTEST(Lazy, Test)
         optimistic_lazy<int> lazy_zero;
         int&                 zero = lazy_zero.ensure([]() { return 0; });
         EXPECT_EQ(zero, 0);
-
-        END_TEST();
     }
 
     // ============================================================================
@@ -161,8 +150,6 @@ LOGGINGTEST(Lazy, Test)
         optimistic_lazy<int> lazy_copy(lazy_original);
         int&                 value2 = lazy_copy.ensure([]() { return 99; });
         EXPECT_EQ(value2, 42);  // Should have copied the value
-
-        END_TEST();
     }
 
     {
@@ -174,8 +161,6 @@ LOGGINGTEST(Lazy, Test)
         optimistic_lazy<int> lazy_moved(std::move(lazy_original));
         int&                 value2 = lazy_moved.ensure([]() { return 99; });
         EXPECT_EQ(value2, 42);
-
-        END_TEST();
     }
 
     {
@@ -187,8 +172,6 @@ LOGGINGTEST(Lazy, Test)
         lazy_copy   = lazy_original;
         int& value2 = lazy_copy.ensure([]() { return 99; });
         EXPECT_EQ(value2, 42);
-
-        END_TEST();
     }
 
     {
@@ -200,8 +183,6 @@ LOGGINGTEST(Lazy, Test)
         lazy_moved  = std::move(lazy_original);
         int& value2 = lazy_moved.ensure([]() { return 99; });
         EXPECT_EQ(value2, 42);
-
-        END_TEST();
     }
 
     {
@@ -213,8 +194,6 @@ LOGGINGTEST(Lazy, Test)
         lazy        = lazy;
         int& value2 = lazy.ensure([]() { return 99; });
         EXPECT_EQ(value2, 42);
-
-        END_TEST();
     }
 
     // ============================================================================
@@ -228,8 +207,6 @@ LOGGINGTEST(Lazy, Test)
             int& value = lazy.ensure([]() { return 42; });
             EXPECT_EQ(value, 42);
         });
-
-        END_TEST();
     }
 
     {
@@ -246,8 +223,6 @@ LOGGINGTEST(Lazy, Test)
             int& value = lazy.ensure([i]() { return i * 10; });
             EXPECT_EQ(value, i * 10);
         }
-
-        END_TEST();
     }
 
     // ============================================================================
@@ -269,8 +244,6 @@ LOGGINGTEST(Lazy, Test)
         EXPECT_EQ(obj.value, 0);
         EXPECT_EQ(obj.name, "default");
         EXPECT_EQ(obj.data.size(), 3);
-
-        END_TEST();
     }
 
     // ============================================================================
@@ -286,8 +259,6 @@ LOGGINGTEST(Lazy, Test)
         std::unique_ptr<lazy_value<int>> lazy_ptr = std::make_unique<test_lazy_value>();
         const int&                       value    = lazy_ptr->get();
         EXPECT_EQ(value, 42);
-
-        END_TEST();
     }
 
     {
@@ -295,8 +266,6 @@ LOGGINGTEST(Lazy, Test)
             std::make_unique<precomputed_lazy_value<int>>(99);
         const int& value = lazy_ptr->get();
         EXPECT_EQ(value, 99);
-
-        END_TEST();
     }
 
     // ============================================================================
@@ -318,8 +287,6 @@ LOGGINGTEST(Lazy, Test)
         EXPECT_EQ(vec.size(), 10000);
         EXPECT_EQ(vec[0], 0);
         EXPECT_EQ(vec[9999], 9999);
-
-        END_TEST();
     }
 
     {
@@ -334,7 +301,5 @@ LOGGINGTEST(Lazy, Test)
         // and we can try again with a working factory
         int& value = lazy.ensure([]() { return 42; });
         EXPECT_EQ(value, 42);
-
-        END_TEST();
     }
 }

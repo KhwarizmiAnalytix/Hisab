@@ -6,8 +6,9 @@
 # If the compile succeeds (e.g. Intel compiler with native SVML), it is OFF.
 #
 # This repository rule runs one probe per SIMD tier (Unix host) with the same
-# flags as bazel/vectorization.bzl vectorization_simd_copts. Windows assumes
-# third-party SVML is needed (typical MSVC/clang-cl).
+# flags as bazel/vectorization.bzl vectorization_simd_copts. Windows MSVC (VS 2022
+# 17.8+ / VS 18) already provides _mm256_exp_ps and friends as compiler
+# intrinsics; wrapping them is C2169. Mirror CMake: HAS_SVML stays off.
 # =============================================================================
 
 def _is_windows(repository_ctx):
@@ -79,6 +80,9 @@ def _svml_configure_impl(repository_ctx):
     needed = {t: True for t in _TIER_UNIX_FLAGS}
 
     if _is_windows(repository_ctx):
+        # Do not wrap Intel SVML symbols: modern MSVC ships the same names as
+        # intrinsics, and cl.exe is typically not on PATH for a reliable probe.
+        needed = {t: False for t in _TIER_UNIX_FLAGS}
         _write_config(repository_ctx, needed)
         return
 

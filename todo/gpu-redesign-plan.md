@@ -1,12 +1,24 @@
 # GPU Implementation Redesign & Plan
 
+> **Stale for Memory (August 2026).** HIP shares the CUDA caching-allocator TU;
+> Metal has a matching segment cache. Ownership is `data_ptr` + `data_view`.
+> Do not treat HIP as “raw hipMalloc” or reintroduce the deleted device
+> manager / pool / tracking layers. Current Memory status:
+> [`Docs/memory_design.md`](../Docs/memory_design.md) §10.
+>
+> **Stale for Vectorization (August 2026).** Metal expression fusion landed
+> (one JIT MSL kernel per assignment). Remaining work is launch-contract
+> unification, not unfused lowering. Current status:
+> [`Docs/vectorization_backends.md`](../Docs/vectorization_backends.md).
+
 Proposed architecture and implementation plan for CUDA, HIP, and Metal in XSigma.
 
-> **Goal:** Move from compile-time, CUDA-centric GPU support to a runtime-polymorphic
-> backend architecture that gives CUDA, HIP, and Metal the same allocator, stream, and
-> expression evaluation capabilities, while keeping the codebase small and auditable.
+> **Goal (historical):** Move from compile-time, CUDA-centric GPU support to a
+> runtime-polymorphic backend architecture that gives CUDA, HIP, and Metal the
+> same allocator, stream, and expression evaluation capabilities.
 
-Baseline defects are tracked in `Docs/CUDA_HIP_REMEDIATION_PLAN.md`.
+Older baseline defects: `Docs/CUDA_HIP_REMEDIATION_PLAN.md` (also superseded
+for Memory).
 
 ---
 
@@ -17,7 +29,7 @@ Baseline defects are tracked in `Docs/CUDA_HIP_REMEDIATION_PLAN.md`.
 | `memory::allocator<T>` is broken for HIP | Uses raw `cudaMalloc`/`cudaMemcpy` guarded by `MEMORY_HAS_CUDA`; HIP tensors throw at runtime |
 | `cuda_caching_allocator` is CUDA-only | Throws on non-CUDA; no HIP caching allocator |
 | Streams/transfers are CUDA-only and use detached `std::thread`s | High latency, race conditions, no HIP/Metal stream support |
-| Metal lowers expressions to fixed kernels + temp buffers | No fusion, extra copies, synchronous dispatch |
+| Metal expression eval (historical) lowered to fixed kernels + temps | **Done:** fused JIT MSL. Dispatch is still synchronous (`waitUntilCompleted`) |
 | Device manager, memory pool, resource tracker are CUDA-only | No HIP runtime support in Memory library |
 | All GPU tests are CUDA-named; no active GPU CI | CUDA-only validation; HIP/Metal untested in CI |
 
@@ -27,8 +39,8 @@ Key files implicated:
 - `Library/Memory/helper/memory_allocator.cpp` — correct low-level CUDA/HIP dispatch (bypassed by the above)
 - `Library/Memory/gpu/cuda_caching_allocator.{h,cpp}` — CUDA-only caching allocator
 - `Library/Memory/gpu/gpu_device_manager.cpp`, `gpu_memory_transfer.cpp`, `gpu_memory_pool.cpp` — CUDA-only
-- `Library/Vectorization/expressions/expressions_evaluator_metal.h` — fixed-kernel, temp-buffer Metal dispatch
-- `Library/Vectorization/backend/gpu/metal/metal_dispatch.mm` — fully synchronous (`waitUntilCompleted`)
+- `Library/Vectorization/expressions/expressions_evaluator_metal.h` — fused MSL emit + `run_metal`
+- `Library/Vectorization/backend/gpu/metal/metal_dispatch.mm` — fused dispatch; still synchronous (`waitUntilCompleted`)
 
 ---
 
@@ -76,12 +88,11 @@ A single `gpu_stream`/`gpu_event` type that wraps `cudaStream_t` / `hipStream_t`
 
 ### 2.5 Metal fusion strategy
 
-Move Metal from fixed-kernel dispatch to expression-tree fusion using runtime-generated
-MSL source, similar to how CUDA/HIP fuse templates at compile time.
-
-- **Current:** Metal lowers expressions to a sequence of fixed kernels through temp buffers.
-- **Proposed:** Generate one MSL kernel per expression-tree type at runtime (cached by
-  type hash).
+**Landed.** Metal walks the expression tree, JIT-compiles one MSL kernel
+(cached by source), and dispatches it. Named kernels remain for fill,
+`reduce_sum`, and tests. Open Vectorization work is aligning `run_metal` with
+`run_gpu` (stream, pointer signature, reductions, errors) — see
+[`Docs/vectorization_backends.md`](../Docs/vectorization_backends.md).
 
 ### 2.6 Testing and CI discipline
 

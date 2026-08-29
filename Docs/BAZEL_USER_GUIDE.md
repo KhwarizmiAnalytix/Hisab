@@ -1,8 +1,8 @@
-# Quarisma Bazel User Guide
+# XSigma Bazel User Guide
 
-**Comprehensive guide to building Quarisma with Bazel**
+**Comprehensive guide to building XSigma with Bazel**
 
-This document consolidates all Bazel-related documentation for the Quarisma project, providing a complete reference for building, testing, and configuring Quarisma using the Bazel build system.
+This document consolidates all Bazel-related documentation for the XSigma project, providing a complete reference for building, testing, and configuring XSigma using the Bazel build system.
 
 ---
 
@@ -26,9 +26,9 @@ This document consolidates all Bazel-related documentation for the Quarisma proj
 
 ### What is Bazel?
 
-Bazel is a fast, scalable, multi-language build system developed by Google. Quarisma supports both CMake and Bazel build systems, providing flexibility for different development workflows and CI/CD environments.
+Bazel is a fast, scalable, multi-language build system developed by Google. XSigma supports both CMake and Bazel build systems, providing flexibility for different development workflows and CI/CD environments.
 
-### Why Use Bazel for Quarisma?
+### Why Use Bazel for XSigma?
 
 **Advantages of Bazel:**
 1. **Incremental builds** - Only rebuilds what changed
@@ -52,7 +52,7 @@ Bazel is a fast, scalable, multi-language build system developed by Google. Quar
 - Existing CMake workflows
 - Package management with vcpkg/Conan
 
-> **Note**: Both build systems are fully supported and maintained. Bazel defaults match CMake defaults (LOGURU for logging, native profiler backend). Both produce equivalent binaries.
+> **Note**: Both build systems are fully supported and maintained. Bazel defaults match CMake defaults (SPDLOG for logging, native profiler backend). Both produce equivalent binaries.
 
 ---
 
@@ -390,7 +390,7 @@ python Scripts/setup_bazel.py build.release.vs22
 
 ### Shared vs Static Libraries
 
-By default, Quarisma builds static libraries. To build shared libraries:
+By default, XSigma builds static libraries. To build shared libraries:
 
 ```bash
 bazel build --define=build_shared_libs=true //...
@@ -603,7 +603,7 @@ python setup.py config.build.test.ninja.clang.debug.coverage
 
 ## Third-Party Dependencies
 
-Quarisma uses a conditional compilation pattern where each library is controlled by its own per-library `<LIB>_ENABLE_XXX` options in CMake (e.g. `PARALLEL_ENABLE_SANITIZER`, `MEMORY_ENABLE_TBB`, `CORE_ENABLE_MAGICENUM`) — there is no single global `QUARISMA_ENABLE_XXX` prefix. In Bazel, dependencies are managed through the `WORKSPACE.bazel` / `MODULE.bazel` files and controlled via `--config` / `--define` flags using the same lowercase per-library convention (`parallel_enable_sanitizer`, `memory_enable_tbb`, `core_enable_magic_enum`).
+XSigma uses a conditional compilation pattern where each library is controlled by its own per-library `<LIB>_ENABLE_XXX` options in CMake (e.g. `PARALLEL_ENABLE_SANITIZER`, `MEMORY_ENABLE_TBB`, `CORE_ENABLE_MAGICENUM`) — there is no single global `XSIGMA_ENABLE_XXX` prefix. In Bazel, dependencies are managed through the `WORKSPACE.bazel` / `MODULE.bazel` files and controlled via `--config` / `--define` flags using the same lowercase per-library convention (`parallel_enable_sanitizer`, `memory_enable_tbb`, `core_enable_magic_enum`).
 
 ### Dependency Categories
 
@@ -702,7 +702,7 @@ Both build systems are fully supported and offer different advantages. This sect
 | **Learning Curve** | Moderate | Steep | CMake is more familiar to most developers |
 | **Build Speed** | Fast | Very Fast | Bazel excels at large codebases |
 | **Remote Caching** | Manual | Built-in | Bazel supports remote caching natively |
-| **Default Backends** | LOGURU/KINETO | LOGURU/NATIVE | Both use LOGURU for logging |
+| **Default Backends** | SPDLOG/KINETO | SPDLOG/NATIVE | Both use SPDLOG for logging |
 
 ### Common Build Commands
 
@@ -725,7 +725,7 @@ Both build systems are fully supported and offer different advantages. This sect
 
 ### Feature Flags Mapping
 
-CMake options are per-library prefixed (`PARALLEL_*`, `MEMORY_*`, `CORE_*`, `VECTORIZATION_*`, `LOGGING_*`, `PROFILER_*`) — there is no single global `QUARISMA_*` option. Bazel's `--define` keys mirror those names lowercased. Verified directly against the current `Library/*/CMakeLists.txt` and `bazel/*.bzl`/`.bazelrc`:
+CMake options are per-library prefixed (`PARALLEL_*`, `MEMORY_*`, `CORE_*`, `VECTORIZATION_*`, `LOGGING_*`, `PROFILER_*`) — there is no single global `XSIGMA_*` option. Bazel's `--define` keys mirror those names lowercased. Verified directly against the current `Library/*/CMakeLists.txt` and `bazel/*.bzl`/`.bazelrc`:
 
 | Feature | CMake Option | Bazel Equivalent |
 |---------|--------------|------------------|
@@ -751,9 +751,9 @@ CMake options are per-library prefixed (`PARALLEL_*`, `MEMORY_*`, `CORE_*`, `VEC
 
 | Backend | CMake Option | Bazel Equivalent |
 |---------|--------------|------------------|
-| **Loguru** (default) | `-DLOGGING_BACKEND=LOGURU` | `--config=logging_loguru` |
+| **spdlog** (default) | `-DLOGGING_BACKEND=SPDLOG` | `--config=logging_spdlog` |
+| **Loguru** | `-DLOGGING_BACKEND=LOGURU` | `--config=logging_loguru` |
 | **glog** | `-DLOGGING_BACKEND=GLOG` | `--config=logging_glog` |
-| **spdlog** | `-DLOGGING_BACKEND=SPDLOG` | `--config=logging_spdlog` |
 | **Native** | `-DLOGGING_BACKEND=NATIVE` | `--config=logging_native` |
 
 ### Profiler Backend Mapping
@@ -895,7 +895,7 @@ A complete audit compared every `Library/*/CMakeLists.txt` against its `BUILD.ba
 - Parallel: `PARALLEL_BUILDING_DLL` moved to `local_defines`; redundant `-lpthread` removed; per-backend test-file excludes added; the single hardcoded benchmark target replaced with a glob-driven per-file loop.
 - Profiler: ITT backend was missing `bespoke/kineto/kineto_shim.{h,cpp}` (needed unconditionally by `bespoke/common/collection.*`); stray `PROFILER_HAS_CUDA/HIP` test-only defines removed (CMake never defines them anywhere); dead `includes=["kineto"]` path removed.
 - Vectorization: `benchmark_simdunary` pointed at a nonexistent file (fixed to 4 correctly-named per-file targets, matching CMake's `benchmark_<suffix>` naming); the `vectorization_type=no` hdrs glob excluded all of `backend/**` instead of just the ISA-specific subdirs, dropping the shared `backend/simd.h` dispatcher.
-- Shared: `quarisma_copts()` was missing `/WX` (MSVC) and `-include cstdlib` (non-MSVC) that every library's CMakeLists.txt applies (Memory opts out of the latter, matching its own Clang-specific CMake exception).
+- Shared: `xsigma_copts()` was missing `/WX` (MSVC) and `-include cstdlib` (non-MSVC) that every library's CMakeLists.txt applies (Memory opts out of the latter, matching its own Clang-specific CMake exception).
 
 **New toolchain wiring (structural gaps — CMake features with previously no Bazel path at all), all verified with real builds/tests on this machine:**
 - **OpenMP** (`bazel/openmp_configure.bzl`, new): host compiler probe (plain `-fopenmp`, or Homebrew `libomp` on macOS), wired into `parallel_copts()`/`parallel_linkopts()`. Verified: `bazel test --define parallel_backend=openmp //Library/Parallel/...` links and runs against a real `libomp.dylib`.
@@ -921,7 +921,7 @@ A complete audit compared every `Library/*/CMakeLists.txt` against its `BUILD.ba
 4. **Logging's Clang-on-Windows `-O1` SPDLOG ICE workaround** (`CMakeLists.txt:306-316`) has no Bazel equivalent — no Windows machine available to verify, no existing compiler-id `config_setting` to key off, and the failure mode if hit is a loud compiler crash at build time, not a silent correctness bug.
 5. **A latent ODR-adjacent scoping issue in `Library/Parallel/tools/parallel_tools.h`'s OpenMP threadprivate mechanism**, flagged during code review: the "already initialized" flag is a single namespace-scope variable shared by *every* `Functor` type dispatched from the same TU, unlike the TBB backend (a member of a per-functor struct) or the Native backend (a `thread_local` local, one copy per template instantiation). A shared, non-test-local functor type driven through OpenMP `parallel_for` from two different `.cpp` files could see toolchain-dependent COMDAT-selection behavior. Pre-existing (not introduced by the Bazel-alignment work), low-probability, not fixed this session.
 6. **Minor duplication across the new `bazel/*_configure.bzl` repository rules** (`hip_configure.bzl`, `openmp_configure.bzl`), flagged during code review: `_is_windows()` and the "fail with an actionable message" `genrule`+`cc_library` template are now each copy-pasted 3-4 times across `svml_configure.bzl`/`cuda_configure.bzl`/`sleef_configure.bzl`/`hip_configure.bzl`/`openmp_configure.bzl`. A shared `bazel/repo_rule_utils.bzl` would remove the duplication; not done this session (style/maintenance, not correctness).
-7. **This document had drifted significantly** before the first pass (stale `QUARISMA_*`-prefixed CMake option names, a fictional "GPU Allocation Strategy" table, a wrong `.bazelversion` reference, a `File Structure` tree describing a nonexistent `third_party/` directory) — the comparison tables and file tree were corrected then, but sections outside the comparison (Getting Started, Sanitizers, Coverage, etc.) were never audited and may have similar drift.
+7. **This document had drifted significantly** before the first pass (stale `XSIGMA_*`-prefixed CMake option names, a fictional "GPU Allocation Strategy" table, a wrong `.bazelversion` reference, a `File Structure` tree describing a nonexistent `third_party/` directory) — the comparison tables and file tree were corrected then, but sections outside the comparison (Getting Started, Sanitizers, Coverage, etc.) were never audited and may have similar drift.
 8. **The bzlmod migration is incomplete beyond googletest.** `MODULE.bazel` declares `bazel_dep`s for a handful of libraries alongside `WORKSPACE.bazel`'s legacy declarations for everything vendored under `ThirdParty/`. This hybrid (`build --enable_workspace`) is Bazel's documented transitional pattern, not a bug, but Bazel 9 removes WORKSPACE support entirely, so it's worth a deliberate decision on how far the migration should go.
 
 ### Alignment plan
@@ -947,7 +947,7 @@ Understanding the Bazel build structure helps you navigate and modify the build 
 ### File Structure
 
 ```
-Quarisma/
+XSigma/
 ├── WORKSPACE.bazel              # Legacy-WORKSPACE deps (vendored ThirdParty/ + a few http_archive)
 ├── MODULE.bazel                 # Bzlmod deps (rules_cc, googletest, abseil, gflags, re2, ...)
 ├── MODULE.bazel.lock            # Bzlmod resolution lockfile
@@ -958,7 +958,7 @@ Quarisma/
 │
 ├── bazel/                       # Bazel helper files
 │   ├── BUILD.bazel              # config_setting definitions (mirror CMake --define keys)
-│   ├── quarisma.bzl             # Shared helper functions (copts, defines, linkopts)
+│   ├── xsigma.bzl             # Shared helper functions (copts, defines, linkopts)
 │   ├── core.bzl / memory.bzl / parallel.bzl / logging.bzl / profiler.bzl / vectorization.bzl
 │   │                             # Per-library copts/defines, mirroring each Library/*/CMakeLists.txt
 │   ├── vectorization_settings.bzl  # SIMD-tier × OS config_setting generation
@@ -987,7 +987,7 @@ Quarisma/
 
 **Example:**
 ```python
-workspace(name = "quarisma")
+workspace(name = "xsigma")
 
 http_archive(
     name = "fmt",
@@ -1036,20 +1036,20 @@ build:avx2 --copt=-mfma
 build:mimalloc --define=memory_enable_mimalloc=true
 ```
 
-#### 4. bazel/quarisma.bzl
+#### 4. bazel/xsigma.bzl
 
 - Provides reusable functions for compiler flags and defines
 - Equivalent to CMake functions in `Cmake/tools/*.cmake`
 
 **Example:**
 ```python
-def quarisma_copts():
+def xsigma_copts():
     return ["-Wall", "-Wextra", "-Wpedantic"]
 
-def quarisma_defines():
+def xsigma_defines():
     return select({
-        "//bazel:enable_cuda": ["MEMOY_ENABLE_CUDA", "QUARISMA_HAS_CUDA=1"],
-        "//conditions:default": ["QUARISMA_HAS_CUDA=0"],
+        "//bazel:enable_cuda": ["MEMORY_GPU_BACKEND", "XSIGMA_HAS_CUDA=1"],
+        "//conditions:default": ["XSIGMA_HAS_CUDA=0"],
     })
 ```
 
@@ -1094,7 +1094,7 @@ cc_library(
 
 **CMake Equivalent:**
 ```cmake
-if(MEMOY_ENABLE_CUDA)
+if(MEMORY_GPU_BACKEND)
     target_sources(Core PRIVATE gpu/*.cpp)
 endif()
 ```
@@ -1515,9 +1515,9 @@ When adding new source files:
 
 ## Support and Resources
 
-### Quarisma Documentation
+### XSigma Documentation
 
-- [Quarisma README](../README.md) - Project overview and quick start
+- [XSigma README](../README.md) - Project overview and quick start
 - [Build Configuration](readme/build/build-configuration.md) - CMake build configuration
 - [Third-Party Dependencies](readme/third-party-dependencies.md) - Dependency management
 - [Sanitizer Guide](readme/sanitizer.md) - Runtime instrumentation
@@ -1546,7 +1546,7 @@ For issues with the Bazel build:
 - `.bazelrc` - Build configurations
 - `.bazelversion` - Bazel version (7.0.0)
 - `bazel/BUILD.bazel` - Config settings
-- `bazel/quarisma.bzl` - Helper functions
+- `bazel/xsigma.bzl` - Helper functions
 - `Library/*/BUILD.bazel` - Library build files
 - `third_party/*.BUILD` - Third-party dependencies
 
@@ -1556,7 +1556,7 @@ For issues with the Bazel build:
 
 This guide has covered:
 
-1. **Overview** - Introduction to Bazel and its benefits for Quarisma
+1. **Overview** - Introduction to Bazel and its benefits for XSigma
 2. **Getting Started** - Installation and quick start guide
 3. **Build Flags** - Comprehensive list of all build configurations
 4. **Sanitizers** - Memory and threading issue detection
@@ -1573,4 +1573,4 @@ Both CMake and Bazel build systems are fully supported and produce equivalent bi
 
 **Last Updated:** 2025-11-23
 **Bazel Version:** 7.0.0
-**Quarisma Version:** 1.0.0
+**XSigma Version:** 1.0.0

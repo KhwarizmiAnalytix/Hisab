@@ -15,7 +15,7 @@
 #include "util/core_exception.h"
 //#include "util/complex.h"
 
-namespace quarisma
+namespace xsigma
 {
 
 // NOTE: hash_combine and SHA1 hashing is based on implementation from Boost
@@ -55,7 +55,7 @@ inline size_t hash_combine(size_t seed, size_t value)
 //   secure, but are the standard hash for generating unique ids.
 // Usage:
 //   // Let 'code' be a std::string
-//   quarisma::sha1 sha1_hash{code};
+//   xsigma::sha1 sha1_hash{code};
 //   const auto hash_code = sha1_hash.str();
 // TODO: Compare vs OpenSSL and/or CryptoPP implementations
 struct sha1
@@ -197,7 +197,7 @@ private:
             }
             else
             {
-                QUARISMA_CHECK(false, "sha1 too many bytes");
+                XSIGMA_CHECK(false, "sha1 too many bytes");
             }
         }
     }
@@ -287,13 +287,13 @@ constexpr uint64_t twang_mix64(uint64_t key) noexcept
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// quarisma::hash implementation
+// xsigma::hash implementation
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace _hash_detail
 {
 
-// Use template argument deduction to shorten calls to quarisma::hash
+// Use template argument deduction to shorten calls to xsigma::hash
 template <typename T>
 size_t simple_get_hash(const T& o);
 
@@ -373,9 +373,9 @@ struct hash<std::pair<T1, T2>>
 };
 
 // template <typename T>
-// struct hash<quarisma::array_ref<T>>
+// struct hash<xsigma::array_ref<T>>
 // {
-//     size_t operator()(quarisma::array_ref<T> v) const
+//     size_t operator()(xsigma::array_ref<T> v) const
 //     {
 //         size_t seed = 0;
 //         for (const auto& elem : v)
@@ -390,14 +390,14 @@ struct hash<std::pair<T1, T2>>
 // template <typename T>
 // struct hash<std::vector<T>>
 // {
-//     size_t operator()(const std::vector<T>& v) const { return hash<quarisma::array_ref<T>>()(v); }
+//     size_t operator()(const std::vector<T>& v) const { return hash<xsigma::array_ref<T>>()(v); }
 // };
 
 // Specialization for device_option
 template <>
-struct hash<quarisma::device_option>
+struct hash<xsigma::device_option>
 {
-    size_t operator()(const quarisma::device_option& opt) const
+    size_t operator()(const xsigma::device_option& opt) const
     {
         return hash_combine(
             _hash_detail::simple_get_hash(opt.type()), _hash_detail::simple_get_hash(opt.index()));
@@ -410,13 +410,13 @@ namespace _hash_detail
 template <typename T>
 size_t simple_get_hash(const T& o)
 {
-    return quarisma::hash<T>()(o);
+    return xsigma::hash<T>()(o);
 }
 
 }  // namespace _hash_detail
 
 // Use this function to actually hash multiple things in one line.
-// Dispatches to quarisma::hash, so it can hash containers.
+// Dispatches to xsigma::hash, so it can hash containers.
 // Example:
 //
 // static size_t hash(const MyStruct& s) {
@@ -425,15 +425,15 @@ size_t simple_get_hash(const T& o)
 template <typename... Types>
 size_t get_hash(const Types&... args)
 {
-    return quarisma::hash<decltype(std::tie(args...))>()(std::tie(args...));
+    return xsigma::hash<decltype(std::tie(args...))>()(std::tie(args...));
 }
 
-// Specialization for quarisma::complex
+// Specialization for xsigma::complex
 //template <typename T>
-//struct hash<quarisma::complex<T>> {
-//  size_t operator()(const quarisma::complex<T>& c) const {
+//struct hash<xsigma::complex<T>> {
+//  size_t operator()(const xsigma::complex<T>& c) const {
 //    return get_hash(c.real(), c.imag());
 //  }
 //};
 
-}  // namespace quarisma
+}  // namespace xsigma

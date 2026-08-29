@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -20,9 +20,9 @@
 #include <type_traits>
 #include <utility>
 
-#include "common/vectorization_macros.h"
 #include "backend/simd.h"
 #include "common/scalar_helper_functions.h"
+#include "common/vectorization_macros.h"
 
 namespace vectorization
 {
@@ -41,8 +41,7 @@ double scalar_as_double(value_t x)
 }
 
 template <typename value_t, std::size_t N>
-void fill_uniform(
-    std::array<value_t, N>& xs, std::mt19937& gen, value_t lo, value_t hi)
+void fill_uniform(std::array<value_t, N>& xs, std::mt19937& gen, value_t lo, value_t hi)
 {
     std::uniform_real_distribution<value_t> dist(lo, hi);
     for (auto& x : xs)
@@ -53,9 +52,8 @@ template <typename value_t, std::size_t N>
 void fill_open_unit_interval(std::array<value_t, N>& xs, std::mt19937& gen)
 {
     std::uniform_real_distribution<value_t> dist(0, 1);
-    value_t const margin = std::max(
-        std::numeric_limits<value_t>::epsilon() * value_t(1000),
-        value_t(1e-7));
+    value_t const                           margin =
+        std::max(std::numeric_limits<value_t>::epsilon() * value_t(1000), value_t(1e-7));
     for (auto& x : xs)
     {
         x = dist(gen);
@@ -65,23 +63,20 @@ void fill_open_unit_interval(std::array<value_t, N>& xs, std::mt19937& gen)
 
 template <typename value_t, typename FillXs, typename SimdOp, typename RefOp>
 void unary_random_vs_std(
-    char const* case_tag,
-    value_t tolerance,
-    FillXs&& fill_xs,
-    SimdOp&& simd_op,
-    RefOp&& ref_op)
+    char const* case_tag, value_t tolerance, FillXs&& fill_xs, SimdOp&& simd_op, RefOp&& ref_op)
 {
     constexpr std::size_t n = simd<value_t>::size;
     using simd_t            = typename simd<value_t>::simd_t;
 
     std::array<value_t, n> xs{};
     std::array<value_t, n> out{};
-    std::mt19937 gen(5489u);
+    std::mt19937           gen(5489u);
 
     for (int trial = 0; trial < kRandomTrials; ++trial)
     {
-        SCOPED_TRACE(::testing::Message()
-                     << "failing_function=" << case_tag << " trial=" << trial << " (unary vs std)");
+        SCOPED_TRACE(
+            ::testing::Message() << "failing_function=" << case_tag << " trial=" << trial
+                                 << " (unary vs std)");
         fill_xs(xs, gen);
         simd_t a = simd<value_t>::loadu(xs.data());
         simd_t c = simd<value_t>::setzero();
@@ -105,18 +100,17 @@ void unary_random_vs_std(
 template <typename value_t, typename SimdUnary, typename RefUnary>
 void unary_uniform_vs_std(
     char const* case_tag,
-    value_t tolerance,
-    value_t lo,
-    value_t hi,
+    value_t     tolerance,
+    value_t     lo,
+    value_t     hi,
     SimdUnary&& simd_op,
-    RefUnary&& ref_op)
+    RefUnary&&  ref_op)
 {
     unary_random_vs_std<value_t>(
         case_tag,
         tolerance,
-        [=](std::array<value_t, simd<value_t>::size>& xs, std::mt19937& gen) {
-            fill_uniform(xs, gen, lo, hi);
-        },
+        [=](std::array<value_t, simd<value_t>::size>& xs, std::mt19937& gen)
+        { fill_uniform(xs, gen, lo, hi); },
         std::forward<SimdUnary>(simd_op),
         std::forward<RefUnary>(ref_op));
 }
@@ -388,9 +382,8 @@ void test_inv_cdf(value_t tolerance)
     unary_random_vs_std<value_t>(
         XSIGMA_SIMD_UNARY_TAG(value_t, inv_cdf),
         tolerance,
-        [](std::array<value_t, simd<value_t>::size>& xs, std::mt19937& gen) {
-            fill_open_unit_interval(xs, gen);
-        },
+        [](std::array<value_t, simd<value_t>::size>& xs, std::mt19937& gen)
+        { fill_open_unit_interval(xs, gen); },
         [](simd_t a, simd_t& c) { c = simd<value_t>::inv_cdf(a); },
         [](value_t x) { return std::inv_cdf(x); });
 }
@@ -429,7 +422,7 @@ void test_all_simd_f1_svml(value_t tolerance)
 VECTORIZATIONTEST(Math, SimdF1Svml)
 {
     using namespace vectorization::simd_tests;
-    constexpr float kSimdTolF  = 0.0007f;
+    constexpr float  kSimdTolF = 0.0007f;
     constexpr double kSimdTolD = 5.e-12;
     test_all_simd_f1_svml<float>(kSimdTolF);
     test_all_simd_f1_svml<double>(kSimdTolD);

@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 /* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
@@ -40,6 +40,7 @@ limitations under the License.
 #include <vector>
 
 #include "common/flat_hash.h"
+#include "common/profiler_export.h"
 #include "native/exporters/xplane/xplane.h"
 #include "native/exporters/xplane/xplane_visitor.h"
 
@@ -138,7 +139,7 @@ public:
 // (descending) so nested events are sorted from outer to innermost.
 void sort_xplane(xplane* plane);
 // Sorts each plane of the x_space.
-void sort_x_space(x_space* space);
+PROFILER_API void sort_x_space(x_space* space);
 
 // Functor that compares xevents for sorting by timespan.
 struct xevents_comparator
@@ -173,14 +174,14 @@ void NormalizeTimestamps(x_space* space, uint64_t start_time_ns);
 // event level stats are merged. If src_plane and dst_plane both have the same
 // line, which have different start timestamps, we will normalize the events
 // offset timestamp correspondingly.
-void MergePlanes(const xplane& src_plane, xplane* dst_plane);
+PROFILER_API void MergePlanes(const xplane& src_plane, xplane* dst_plane);
 
 // Merges each plane with a src_planes, into the dst_plane.
-void MergePlanes(const std::vector<const xplane*>& src_planes, xplane* dst_plane);
+PROFILER_API void MergePlanes(const std::vector<const xplane*>& src_planes, xplane* dst_plane);
 
 // Plane's start timestamp is defined as the minimum of all lines' start
 // timestamps. If zero line exists, return 0;
-int64_t GetStartTimestampNs(const xplane& plane);
+PROFILER_API int64_t GetStartTimestampNs(const xplane& plane);
 
 // Returns true if there are no XEvents.
 PROFILER_API bool IsEmpty(const x_space& space);

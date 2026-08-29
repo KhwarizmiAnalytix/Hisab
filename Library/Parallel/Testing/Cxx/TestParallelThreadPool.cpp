@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -50,7 +50,8 @@ PARALLELTEST(ParallelThreadPool, singleton_lifecycle_and_state)
     EXPECT_FALSE(pool1.is_parallel_scope());
 
     // Test 3: Thread ID should be external_thread_id (1)
-    EXPECT_EQ(pool1.get_thread_id(), detail::parallel_impl::parallel_thread_pool::external_thread_id);
+    EXPECT_EQ(
+        pool1.get_thread_id(), detail::parallel_impl::parallel_thread_pool::external_thread_id);
 
     // Test 4: Thread count should be reasonable
     size_t count = pool1.thread_count();

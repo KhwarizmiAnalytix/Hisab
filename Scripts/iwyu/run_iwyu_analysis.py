@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-IWYU Analysis Runner for Quarisma Project
+IWYU Analysis Runner for XSigma Project
 Runs IWYU analysis on source files and captures output to log file.
 """
 
@@ -150,7 +150,7 @@ def run_iwyu_on_file(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Run IWYU analysis on Quarisma source files"
+        description="Run IWYU analysis on XSigma source files"
     )
     parser.add_argument(
         "--source-dir", required=True, help="Source directory to analyze"
@@ -193,7 +193,7 @@ def main():
         "-Xiwyu",
         "--quoted_includes_first",
         "-Xiwyu",
-        "--transitive_includes_only"
+        "--transitive_includes_only",
     ]
 
     if args.mapping_file and os.path.exists(args.mapping_file):

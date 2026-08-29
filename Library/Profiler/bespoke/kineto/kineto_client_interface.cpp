@@ -1,10 +1,12 @@
+#include "bespoke/kineto/kineto_client_interface.h"
+
 #if PROFILER_HAS_KINETO
 //#include <Profiler/Context.h>
-#include "bespoke/kineto/kineto_client_interface.h"
 
 #include <libkineto.h>
 
 #include <chrono>
+#include <cstdlib>
 #include <thread>
 
 #include "bespoke/kineto/profiler_kineto.h"
@@ -93,7 +95,7 @@ void global_kineto_init()
     if (envar != nullptr)
     {
         libkineto_init(
-            /*cpuOnly=*/!(profiler::hasGPU() /*|| profiler::hasXPU() || profiler::hasMTIA()*/),
+            /*cpuOnly=*/!(profiler::hasGPU()),
             /*logOnError=*/true);
         libkineto::api().suppressLogMessages();
     }
@@ -117,4 +119,14 @@ struct RegisterLibKinetoClient
 #endif
 
 }  // namespace profiler
+
+#else  // !PROFILER_HAS_KINETO
+
+namespace profiler
+{
+
+void global_kineto_init() {}
+
+}  // namespace profiler
+
 #endif  // PROFILER_HAS_KINETO

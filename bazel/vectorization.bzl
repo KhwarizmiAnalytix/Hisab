@@ -5,7 +5,7 @@
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@vectorization_svml_autodetect//:config.bzl", "SVML_NEEDED_AVX", "SVML_NEEDED_AVX2", "SVML_NEEDED_AVX512", "SVML_NEEDED_SSE")
-load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
+load("//bazel:xsigma.bzl", "xsigma_copts", "xsigma_defines", "xsigma_linkopts")
 
 VECTORIZATION_CXX_STD = "c++20"
 
@@ -21,7 +21,7 @@ def _vectorization_target_copts():
 
 def vectorization_copts():
     """Compiler options: C++ standard + ISA flags (tests/benchmarks; matches their CMake flags)."""
-    return quarisma_copts(cxx_std = VECTORIZATION_CXX_STD) + vectorization_simd_copts()
+    return xsigma_copts(cxx_std = VECTORIZATION_CXX_STD) + vectorization_simd_copts()
 
 def vectorization_library_copts():
     """vectorization_copts() plus MSVC /WX and Unix -include cstdlib (CMake Vectorization target only)."""
@@ -79,7 +79,14 @@ def vectorization_simd_copts():
     for os_suffix in ("linux_aarch64", "macos_aarch64", "windows_aarch64"):
         d["//bazel:vec_neon_%s" % os_suffix] = arm_neon
         d["//bazel:vec_sve_%s" % os_suffix] = arm_sve
+    # HAS_SVE is set from these config_settings; copts must follow or SVE
+    # headers compile without -msve-vector-bits=128.
+    d["//bazel:vectorization_type_sve"] = arm_sve
+    d["//bazel:vectorization_type_sve_aarch64"] = arm_sve
     d["//bazel:cpu_aarch64"] = arm_neon
+    # Unset vectorization_type does not match vec_*_win; vec_*_win specializes
+    # this constraint when the type *is* set, so both can coexist.
+    d["@platforms//os:windows"] = msvc["avx2"]
     d["//conditions:default"] = unix["avx2"]
     return select(d)
 
@@ -99,18 +106,17 @@ def _svml_autodetect_defines():
     })
 
 def vectorization_svml_defines():
-    """SVML define: force on/off via --define, else autodetect (utils.cmake parity)."""
-    # Use the (vectorization_type × OS) config_setting_groups so matches are unambiguous
-    # (Bazel requires exactly one matching key in a select()).
+    """SVML define: force on/off via --define, else autodetect (utils.cmake parity).
+
+    Windows is a single OS key (not vec_*_win): default CI does not set
+    vectorization_type, and MSVC already provides the SVML names as intrinsics.
+    """
     return selects.with_or({
         ("//bazel:enable_svml",): ["VECTORIZATION_HAS_SVML=1"],
         ("//bazel:disable_svml", "//bazel:vectorization_type_no", "//bazel:vectorization_type_neon", "//bazel:vectorization_type_sve"): ["VECTORIZATION_HAS_SVML=0"],
-        # Windows toolchains provide vector-math intrinsics in headers; do not require SVML.
-        "//bazel:vec_no_win": ["VECTORIZATION_HAS_SVML=0"],
-        "//bazel:vec_sse_win": ["VECTORIZATION_HAS_SVML=0"],
-        "//bazel:vec_avx_win": ["VECTORIZATION_HAS_SVML=0"],
-        "//bazel:vec_avx2_win": ["VECTORIZATION_HAS_SVML=0"],
-        "//bazel:vec_avx512_win": ["VECTORIZATION_HAS_SVML=0"],
+        # MSVC provides vector-math as compiler intrinsics (C2169 if wrapped). Covers the
+        # default config where vectorization_type is unset and vec_*_win does not match.
+        "@platforms//os:windows": ["VECTORIZATION_HAS_SVML=0"],
         "//bazel:vec_no_linux": ["VECTORIZATION_HAS_SVML=0"],
         "//bazel:vec_sse_linux": _svml_macro(SVML_NEEDED_SSE),
         "//bazel:vec_avx_linux": _svml_macro(SVML_NEEDED_AVX),
@@ -129,11 +135,7 @@ def vectorization_svml_deps():
     return selects.with_or({
         ("//bazel:enable_svml",): ["@svml//:SVML"],
         ("//bazel:disable_svml", "//bazel:vectorization_type_no", "//bazel:vectorization_type_neon", "//bazel:vectorization_type_sve"): [],
-        ("//bazel:vec_no_win", "//bazel:vec_no_win_aarch64"): [],
-        ("//bazel:vec_sse_win", "//bazel:vec_sse_win_aarch64"): [],
-        ("//bazel:vec_avx_win", "//bazel:vec_avx_win_aarch64"): [],
-        ("//bazel:vec_avx2_win", "//bazel:vec_avx2_win_aarch64"): [],
-        ("//bazel:vec_avx512_win", "//bazel:vec_avx512_win_aarch64"): [],
+        "@platforms//os:windows": [],
         ("//bazel:vec_no_linux", "//bazel:vec_no_linux_aarch64"): [],
         ("//bazel:vec_sse_linux", "//bazel:vec_sse_linux_aarch64"): ["@svml//:SVML"] if SVML_NEEDED_SSE else [],
         ("//bazel:vec_avx_linux", "//bazel:vec_avx_linux_aarch64"): ["@svml//:SVML"] if SVML_NEEDED_AVX else [],
@@ -167,7 +169,7 @@ def vectorization_defines():
     """Preprocessor defines for SIMD tier, optional SVML, Memory/Logging."""
     # Chain selects + lists (Starlark: cannot .append onto a select).
     return (
-        quarisma_defines()
+        xsigma_defines()
         # Each tier is paired with its "_aarch64" counterpart (same defines, plus the aarch64
         # constraint) via selects.with_or(): on an aarch64 host, the paired setting is a strict
         # superset of "cpu_aarch64" below, so Bazel's select() picks it over the arch-based
@@ -320,8 +322,6 @@ def vectorization_defines():
             ],
         })
         + [
-            "VECTORIZATION_HAS_MEMORY=1",
-            "VECTORIZATION_HAS_LOGGING=1",
             "VECTORIZATION_HAS_PROFILER=1",
         ]
     )
@@ -353,7 +353,7 @@ def vectorization_packet_size_define():
     })
 
 def vectorization_linkopts():
-    return quarisma_linkopts() + select({
+    return xsigma_linkopts() + select({
         # Mirrors CMakeLists.txt:784-786 (if(VECTORIZATION_ENABLE_ACCELERATE AND APPLE)).
         "//bazel:vec_accelerate_macos": ["-framework", "Accelerate"],
         "//conditions:default": [],

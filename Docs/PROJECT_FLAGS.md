@@ -1,4 +1,4 @@
-# Quarisma — Project CMake Flags Reference
+# XSigma — Project CMake Flags Reference
 
 ## Scope definitions
 
@@ -20,6 +20,8 @@ These survive between `cmake` invocations and can be overridden with `-DFLAG=val
 | `BUILD_SHARED_LIBS` | `ON` | [CMakeLists.txt](../CMakeLists.txt) | Build shared libraries (`.so` / `.dll`). Drives `BUILD_SHARED_LIBS`. |
 | `BUILD_TESTING` | `ON` | [CMakeLists.txt](../CMakeLists.txt) | Enable test subdirectories for all modules. Values: `ON`, `OFF`, `WANT`. |
 | `PROJECT_ENABLE_EXAMPLES` | `OFF` | [CMakeLists.txt](../CMakeLists.txt) | Build programs under `Examples/`. |
+| `XSIGMA_ENABLE_EXTERNAL` | `ON` | [CMakeLists.txt](../CMakeLists.txt) | Prefer system third-party libraries. Mapped onto the vendored `XSIGMA_ENABLE_EXTERNAL` option inside `ThirdParty/` (do not edit that tree). |
+| `XSIGMA_LIBRARY_PROJECT` | empty | [CMakeLists.txt](../CMakeLists.txt) | If set, configure only that `Library/*` module and its CMake deps (`setup.py --project.NAME`). |
 
 ### Vectorization
 
@@ -133,9 +135,9 @@ These are set with plain `set()` (no CACHE). They are derived from detection pro
 | Flag | Set in | Description |
 |---|---|---|
 | `PROJECT_SANITIZER` | [tools/sanitize.cmake](../Cmake/tools/sanitize.cmake) | Resolved copy of `PROJECT_SANITIZER_TYPE` stored as a CACHE STRING, used to build the `-fsanitize=` flag. |
-| `QUARISMA_CCACHE_PROGRAM` | [tools/cache.cmake](../Cmake/tools/cache.cmake) | Path to the found `ccache` executable. Lazily populated on first `quarisma_target_apply_cache()` call that uses `ccache`. |
-| `QUARISMA_SCCACHE_PROGRAM` | [tools/cache.cmake](../Cmake/tools/cache.cmake) | Path to the found `sccache` executable. Lazily populated on first `quarisma_target_apply_cache()` call that uses `sccache`. |
-| `QUARISMA_BUILDCACHE_PROGRAM` | [tools/cache.cmake](../Cmake/tools/cache.cmake) | Path to the found `buildcache` executable. Lazily populated on first `quarisma_target_apply_cache()` call that uses `buildcache`. |
+| `XSIGMA_CCACHE_PROGRAM` | [tools/cache.cmake](../Cmake/tools/cache.cmake) | Path to the found `ccache` executable. Lazily populated on first `xsigma_target_apply_cache()` call that uses `ccache`. |
+| `XSIGMA_SCCACHE_PROGRAM` | [tools/cache.cmake](../Cmake/tools/cache.cmake) | Path to the found `sccache` executable. Lazily populated on first `xsigma_target_apply_cache()` call that uses `sccache`. |
+| `XSIGMA_BUILDCACHE_PROGRAM` | [tools/cache.cmake](../Cmake/tools/cache.cmake) | Path to the found `buildcache` executable. Lazily populated on first `xsigma_target_apply_cache()` call that uses `buildcache`. |
 
 ### Experimental feature marker
 

@@ -1,12 +1,14 @@
 # Project dependencies
 
-Inter-library links for Quarisma (`Library/*`). Third-party packages are
+Inter-library links for XSigma (`Library/*`). Third-party packages are
 summarized here and detailed in
 [readme/third-party-dependencies.md](readme/third-party-dependencies.md).
 
 CMake optional edges are `TARGET Xxx::Xxx` checks (or `MEMORY_ENABLE_*`).
 Bazel hard-links the same edges. There is **no cycle**: Profiler must not
-depend on Memory or Core.
+depend on Memory or Core. Logging is a **required** dependency of Memory,
+Vectorization, and Core. Memory is a **required** dependency of Vectorization
+and Core.
 
 ## Graphs
 
@@ -34,11 +36,11 @@ flowchart TB
     Core
   end
 
-  Memory -.->|MEMORY_HAS_LOGGING| Logging
+  Memory --> Logging
   Memory -.->|MEMORY_HAS_PROFILER| Profiler
   Parallel -.->|PARALLEL_HAS_PROFILER| Profiler
-  Vectorization -.->|VECTORIZATION_HAS_LOGGING| Logging
-  Vectorization -.->|VECTORIZATION_HAS_MEMORY| Memory
+  Vectorization --> Logging
+  Vectorization --> Memory
   Vectorization -.->|VECTORIZATION_HAS_PROFILER| Profiler
   Core --> Logging
   Core --> Memory
@@ -52,8 +54,8 @@ flowchart TB
 ```
 
 In a **full CMake configure** or **any Bazel build**, the dashed edges are
-present (defaults ON / targets exist). `--project.memory` drops both Memory
-edges. `--project.profiler` builds Profiler alone.
+present (defaults ON / targets exist). `--project.memory` still builds Logging
+(required) and drops the Profiler edge. `--project.profiler` builds Profiler alone.
 
 `Models` has no `Library/*` link.
 
@@ -88,7 +90,7 @@ flowchart LR
 
 ### `--project.NAME` scopes
 
-What `QUARISMA_LIBRARY_PROJECT` actually `add_subdirectory`s (not the
+What `XSIGMA_LIBRARY_PROJECT` actually `add_subdirectory`s (not the
 link graph — only these modules exist in that configure):
 
 ```mermaid
@@ -100,10 +102,11 @@ flowchart TB
     P1[Profiler]
   end
   subgraph memory["--project.memory"]
-    M1[Memory]
+    M1[Memory] --> Lmem[Logging]
   end
   subgraph vectorization["--project.vectorization"]
-    V2[Vectorization] --> M2[Memory]
+    V2[Vectorization] --> L2[Logging]
+    V2 --> M2[Memory]
     V2 --> P2[Profiler]
   end
   subgraph parallel["--project.parallel"]
@@ -150,8 +153,8 @@ Vendored trees live under `ThirdParty/` — do not edit them. See
 |---|---|---|---|
 | **Logging** | Log backends (native / loguru / glog / spdlog) | none | — |
 | **Profiler** | Native XPlane + Kineto/ITT | none | `PROFILER_HAS_KINETO` / `PROFILER_HAS_ITT`; `PROFILER_HAS_METAL` / `CUDA` / `HIP` |
-| **Memory** | Allocators, GPU pools | Logging, Profiler | `MEMORY_HAS_LOGGING`, `MEMORY_HAS_PROFILER` |
-| **Vectorization** | SIMD / GPU packets | Logging, Memory, Profiler | `VECTORIZATION_HAS_LOGGING`, `VECTORIZATION_HAS_MEMORY`, `VECTORIZATION_HAS_PROFILER` |
+| **Memory** | Allocators, GPU pools | Logging, Profiler | `MEMORY_HAS_PROFILER` |
+| **Vectorization** | SIMD / GPU packets | Logging, Memory, Profiler | `VECTORIZATION_HAS_PROFILER` |
 | **Core** | Legacy computational core | Logging, Memory | (inherits Memory’s Profiler link when Memory has it) |
 | **Parallel** | Thread pools / TBB / OpenMP | Profiler | `PARALLEL_HAS_PROFILER` |
 | **Models** | SABR/ZABR + QA calibrator | none | — |
@@ -165,9 +168,9 @@ Vendored trees live under `ThirdParty/` — do not edit them. See
   `Profiler::Profiler` exists.
 - Bazel always defines `MEMORY_HAS_PROFILER=1` (Memory always `deps` Profiler).
 
-`MEMORY_HAS_LOGGING` is the same pattern with `MEMORY_ENABLE_LOGGING`
-(default **ON**). `--project.memory` forces `MEMORY_ENABLE_LOGGING=OFF` so
-Memory can configure without Logging.
+Logging is **required**: Memory always links `Logging::Logging`. There is no
+`MEMORY_ENABLE_LOGGING` / `MEMORY_HAS_LOGGING` opt-out. `--project.memory`
+configures Logging + Memory.
 
 ### Vectorization / Parallel gates
 
@@ -176,29 +179,29 @@ already created:
 
 | Macro | 1 when |
 |---|---|
-| `VECTORIZATION_HAS_MEMORY` | `Memory::Memory` exists |
-| `VECTORIZATION_HAS_LOGGING` | `Logging::Logging` exists |
 | `VECTORIZATION_HAS_PROFILER` | `Profiler::Profiler` exists |
 | `PARALLEL_HAS_PROFILER` | `Profiler::Profiler` exists |
 
-Bazel always links those edges.
+Logging and Memory are **required** for Vectorization (`FATAL_ERROR` if
+`Logging::Logging` or `Memory::Memory` is missing). There is no
+`VECTORIZATION_HAS_LOGGING` or `VECTORIZATION_HAS_MEMORY` gate.
 
 ## CMake configure order
 
-Root `CMakeLists.txt` `_quarisma_lib_order`:
+Root `CMakeLists.txt` `_xsigma_lib_order`:
 
-1. Logging  
-2. Profiler  
-3. Memory  
-4. Vectorization  
-5. Core  
-6. Parallel  
-7. Models  
+1. Logging
+2. Profiler
+3. Memory
+4. Vectorization
+5. Core
+6. Parallel
+7. Models
 
 Profiler is early on purpose so `TARGET Profiler::Profiler` is true when
 Memory, Vectorization, and Parallel run.
 
-### `--project.NAME` / `QUARISMA_LIBRARY_PROJECT`
+### `--project.NAME` / `XSIGMA_LIBRARY_PROJECT`
 
 Only the listed modules are `add_subdirectory`’d (order above still
 applies):
@@ -207,15 +210,15 @@ applies):
 |---|---|
 | `logging` | Logging |
 | `profiler` | Profiler |
-| `memory` | Memory (`MEMORY_ENABLE_LOGGING=OFF`) |
-| `vectorization` | Memory, Vectorization, Profiler |
+| `memory` | Logging, Memory |
+| `vectorization` | Logging, Memory, Vectorization, Profiler |
 | `parallel` | Parallel, Profiler |
 | `core` | Parallel, Profiler, Logging, Memory, Vectorization, Core |
 | `models` | Models |
 | *(empty)* | all seven |
 
-`--project.memory` therefore has `MEMORY_HAS_PROFILER=0` and
-`MEMORY_HAS_LOGGING=0`. `--project.profiler` does not build Memory.
+`--project.memory` therefore has `MEMORY_HAS_PROFILER=0` (Profiler is not
+configured) and always has Logging. `--project.profiler` does not build Memory.
 
 ## Third-party (by library)
 
@@ -223,7 +226,7 @@ Always-vendored under `ThirdParty/` — do not edit those trees.
 
 | Library | Typical third-party / system deps |
 |---|---|
-| Logging | fmt; one of loguru / glog / spdlog (`LOGGING_BACKEND`) |
+| Logging | fmt; one of spdlog / loguru / glog (`LOGGING_BACKEND`, default **SPDLOG**) |
 | Profiler | fmt; kineto **or** ittapi; CUDA / HIP / Metal+Foundation when that GPU backend is on |
 | Memory | fmt, cpuinfo; optional mimalloc, tbbmalloc, numa, CUDA / HIP / Metal |
 | Vectorization | Logging/Memory/Profiler as above; optional SLEEF, SVML, MKL, Accelerate, LibTorch (tests), CUDA / HIP / Metal |
@@ -236,9 +239,9 @@ enabled).
 
 ## Bazel notes
 
-- Package graph matches the mermaid diagram; optional CMake edges are
-  unconditional `deps` (Logging, Profiler on Memory; Profiler on Parallel;
-  Logging+Memory+Profiler on Vectorization).
+- Package graph matches the mermaid diagram. CMake optional edges (Profiler on
+  Memory/Vectorization/Parallel) are unconditional `deps` in Bazel. Logging and
+  Memory are required for Vectorization in both build systems.
 - Profiler `BUILD.bazel` must **not** take `//Library/Core` or
   `//Library/Memory` — that would cycle with Memory → Profiler.
 - Metal / CUDA / HIP are `select()`s on `--define=memory_enable_*` /
@@ -247,7 +250,7 @@ enabled).
 
 ## Related docs
 
-- [PROJECT_FLAGS.md](PROJECT_FLAGS.md) — CMake cache flags  
-- [readme/third-party-dependencies.md](readme/third-party-dependencies.md) — vendored packages  
-- [profiler/profiler.md](profiler/profiler.md) — Profiler instrumentation and `HAS_PROFILER` call sites  
-- [BAZEL_USER_GUIDE.md](BAZEL_USER_GUIDE.md) — Bazel configs and known gaps  
+- [PROJECT_FLAGS.md](PROJECT_FLAGS.md) — CMake cache flags
+- [readme/third-party-dependencies.md](readme/third-party-dependencies.md) — vendored packages
+- [profiler/profiler.md](profiler/profiler.md) — Profiler instrumentation and `HAS_PROFILER` call sites
+- [BAZEL_USER_GUIDE.md](BAZEL_USER_GUIDE.md) — Bazel configs and known gaps

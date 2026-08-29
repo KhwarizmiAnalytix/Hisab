@@ -17,6 +17,8 @@ hotspot, including GPU CUPTI): see
 Keep CMake `TestFiles` and Bazel `_PROFILER_COMMON_TESTS` in sync:
 
 - `TestProfilerBackendFunction.cpp` / `TestProfilerBackendMemory.cpp` — Kineto, ITT, NVTX
+- `TestProfilerBackendMetadata.cpp` — Kineto event metadata / extra fields
+- `TestProfilerBackendGpuFallback.cpp` / `TestProfilerBackendMetal.cpp` — CUDA/HIP event fallback and Metal stub
 - `TestProfilerBackendOutput.cpp` / `TestProfilerChromeTraceHierarchical.cpp` — native reports and Chrome
 - `TestProfilerXPlanePipeline.cpp` / `TestProfilerThreadpoolTracing.cpp` — XSpace / tracing e2e
 - `TestProfilerNativeHotspot.cpp` / `TestHotspotReport.cpp` — native vs Kineto hotspots
@@ -48,7 +50,7 @@ choice. `PROFILER_BACKEND` only selects the *instrumentation* backend layered al
 
 | CMake variable | Default | Summary |
 |----------------|---------|---------|
-| `PROFILER_ENABLE_LTO` | OFF | LTO |
+| `PROFILER_LTO_MODE` | `off` (or `auto` when LTO is requested) | LTO: `off` / `thin` / `full` / `ipo` / `auto` |
 | `PROFILER_ENABLE_COVERAGE` | OFF | Coverage |
 | `PROFILER_ENABLE_TESTING` | ON | Tests |
 | `PROFILER_ENABLE_EXAMPLES` | OFF | Examples under `Examples/Profiling` |

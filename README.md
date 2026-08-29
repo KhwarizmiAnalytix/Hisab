@@ -1,21 +1,21 @@
-# Quarisma
+# XSigma
 
-[![CI Status](https://github.com/QuarismaAnalyitix/Quarisma/actions/workflows/ci.yml/badge.svg)](https://github.com/QuarismaAnalyitix/Quarisma/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/QuarismaAnalyitix/Quarisma/branch/main/graph/badge.svg)](https://codecov.io/gh/QuarismaAnalyitix/Quarisma)
+[![CI Status](https://github.com/KhwarizmiAnalytix/XSigma/actions/workflows/ci.yml/badge.svg)](https://github.com/KhwarizmiAnalytix/XSigma/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/KhwarizmiAnalytix/XSigma/branch/main/graph/badge.svg)](https://codecov.io/gh/KhwarizmiAnalytix/XSigma)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/11420/badge)](https://www.bestpractices.dev/projects/11420)
 [![License: GPL-3.0 or Commercial](https://img.shields.io/badge/License-GPL--3.0%20or%20Commercial-blue.svg)](LICENSE)
 
 > **Note**: The OpenSSF badge above links to the live Best Practices status for this project.
 ## Project Introduction
 
-**Quarisma** is a modern, high-performance quantitative analysis library designed for both CPU and GPU computing. Built with a production-ready C++ foundation and dual build system support (CMake and Bazel), Quarisma provides cross-platform compatibility, advanced optimization capabilities, and flexible dependency management for demanding computational workloads.
+**XSigma** is a modern, high-performance quantitative analysis library designed for both CPU and GPU computing. Built with a production-ready C++ foundation and dual build system support (CMake and Bazel), XSigma provides cross-platform compatibility, advanced optimization capabilities, and flexible dependency management for demanding computational workloads.
 
 ### Key Features
 
 - **High-Performance Computing** - Optimized for CPU and GPU acceleration
 - **Cross-Platform Compatibility** - Windows, Linux, and macOS support
 - **Dual Build System Support** - CMake 3.16+ and Bazel with feature parity and consistent defaults
-- **Advanced Optimization** - Link-Time Optimization (LTO), vectorization (SSE/AVX/AVX2/AVX-512), and compiler-specific flags
+- **Advanced Optimization** - Link-Time Optimization (LTO), vectorization (SSE/AVX/AVX2/AVX-512/NEON/SVE), and compiler-specific flags
 - **Flexible Logging System** - Three backend options (LOGURU, GLOG, NATIVE) with configurable levels
 - **Comprehensive Testing & Analysis** - Sanitizers, code coverage analysis, static analysis tools, and memory profiling
 - **Production-Ready** - Thoroughly tested across multiple platforms and compilers
@@ -23,7 +23,7 @@
 ## Table of Contents
 
 - [Project Introduction](#project-introduction)
-- [Obtaining Quarisma](#obtaining-quarisma)
+- [Obtaining XSigma](#obtaining-xsigma)
 - [Build Optimizations](#build-optimizations)
 - [Analysis Tools](#analysis-tools)
 - [Third-Party Dependencies](#third-party-dependencies)
@@ -36,11 +36,11 @@
 - [Contributing](#contributing)
 - [License](#license)
 
-## Obtaining Quarisma
+## Obtaining XSigma
 
 ### Download and Installation
 
-Quarisma is available through multiple channels:
+XSigma is available through multiple channels:
 
 #### From GitHub (Recommended)
 
@@ -48,8 +48,8 @@ Clone the repository directly from GitHub:
 
 ```bash
 # Clone the repository
-git clone https://github.com/QuarismaAnalyitix/Quarisma.git
-cd Quarisma
+git clone https://github.com/KhwarizmiAnalytix/XSigma.git
+cd XSigma
 
 # Initialize Git submodules for third-party dependencies
 git submodule update --init --recursive
@@ -60,7 +60,7 @@ pip install -r requirements.txt
 
 ### System Requirements
 
-Quarisma requires the following minimum versions:
+XSigma requires the following minimum versions:
 
 - **Build System** (choose one or both):
   - **CMake** 3.16 or later
@@ -74,7 +74,7 @@ Quarisma requires the following minimum versions:
 
 ### Quick Start: Building from Source
 
-After cloning and installing dependencies, follow these platform-specific instructions to build Quarisma:
+After cloning and installing dependencies, follow these platform-specific instructions to build XSigma:
 
 #### Understanding setup.py Flags
 
@@ -87,7 +87,7 @@ The `setup.py` script uses a standardized flag ordering convention to organize b
 ##### Profiler selection
 
 The native traceme/xplane profiler pipeline is always compiled. Use the `--profiler.<backend>` flag
-(where `<backend>` is `kineto` or `itt`) to control `QUARISMA_PROFILER_TYPE` and choose which
+(where `<backend>` is `kineto` or `itt`) to control `PROFILER_BACKEND` and choose which
 instrumentation backend is layered on top of it. Example:
 
 ```bash
@@ -164,9 +164,9 @@ cmake --build . --config Release --parallel %NUMBER_OF_PROCESSORS%
 
 ### Building with Bazel
 
-Quarisma supports **both CMake and Bazel** build systems, providing flexibility for different development workflows and CI/CD environments. The Bazel build system offers fast incremental builds, hermetic builds, and excellent caching capabilities.
+XSigma supports **both CMake and Bazel** build systems, providing flexibility for different development workflows and CI/CD environments. The Bazel build system offers fast incremental builds, hermetic builds, and excellent caching capabilities.
 
-> **Note**: Both build systems are fully supported and maintained. Bazel defaults match CMake defaults where applicable (for example LOGURU for logging). The native traceme/xplane profiler pipeline is always compiled; the **instrumentation backend layered on top defaults to Kineto** in both CMake (`QUARISMA_PROFILER_TYPE=KINETO`) and Bazel (no `itt` config). Enable the **ITT** backend with CMake `-DQUARISMA_PROFILER_TYPE=ITT` or `python setup.py ... --profiler.itt`, and with Bazel `--config=itt` (or `--define=profiler_enable_itt=true`).
+> **Note**: Both build systems are fully supported and maintained. Bazel defaults match CMake defaults where applicable (for example SPDLOG for logging). The native traceme/xplane profiler pipeline is always compiled; the **instrumentation backend layered on top defaults to Kineto** in both CMake (`PROFILER_BACKEND=KINETO`) and Bazel (no `itt` config). Enable the **ITT** backend with CMake `-DPROFILER_BACKEND=ITT` or `python setup.py ... --profiler.itt`, and with Bazel `--config=itt` (or `--define=profiler_enable_itt=true`).
 
 #### Prerequisites
 
@@ -411,7 +411,7 @@ The build system displays a comprehensive configuration summary before building:
 
 ```
 ================================================================================
-QUARISMA BAZEL BUILD CONFIGURATION SUMMARY
+XSIGMA BAZEL BUILD CONFIGURATION SUMMARY
 ================================================================================
 
 Build Configuration:
@@ -421,12 +421,12 @@ Build Configuration:
 
 Feature Flags:
   MEMORY_ENABLE_MIMALLOC         OFF
-  QUARISMA_ENABLE_MAGIC_ENUM       OFF
-  QUARISMA_ENABLE_TBB              ON
-  QUARISMA_ENABLE_OPENMP           OFF
-  MEMOY_ENABLE_CUDA             OFF
-  QUARISMA_ENABLE_HIP              OFF
-  QUARISMA_ENABLE_LTO              OFF
+  CORE_ENABLE_MAGICENUM       OFF
+  MEMORY_ENABLE_TBB              ON
+  PARALLEL_ENABLE_OPENMP           OFF
+  MEMORY_GPU_BACKEND             OFF
+  MEMORY_GPU_BACKEND              OFF
+  PROJECT_ENABLE_LTO              OFF
 
 Logging Backend:
   Backend:           LOGURU
@@ -451,7 +451,7 @@ Both build systems are fully supported and offer different advantages:
 | **IDE Integration** | Excellent | Good | CMake has broader IDE support |
 | **Learning Curve** | Moderate | Steep | CMake is more familiar to most developers |
 | **Build Speed** | Fast | Very Fast | Bazel excels at large codebases |
-| **Default Backends** | LOGURU/KINETO | LOGURU/NATIVE | Both use LOGURU for logging |
+| **Default Backends** | SPDLOG/KINETO | SPDLOG/NATIVE | Both use SPDLOG for logging |
 
 **When to use CMake:**
 - IDE integration is critical
@@ -468,12 +468,12 @@ Both build systems are fully supported and offer different advantages:
 
 For detailed information about the `setup.py` script, available CMake flags, and advanced configuration options, see:
 
-📖 **[Setup Guide](Docs/readme/setup.md)** - Comprehensive guide to setup.py and all QUARISMA CMake flags
+📖 **[Setup Guide](Docs/readme/setup.md)** - Comprehensive guide to setup.py and all XSigma CMake flags
 
 ## Build Optimizations
 ### Cache Build Systems
 
-Quarisma supports multiple compiler caching systems to dramatically speed up incremental builds. Each caching solution is optimized for specific use cases:
+XSigma supports multiple compiler caching systems to dramatically speed up incremental builds. Each caching solution is optimized for specific use cases:
 
 #### BuildCache (Windows)
 
@@ -580,7 +580,7 @@ Linker optimization is handled automatically by the build system. No additional 
 
 ### Runtime Analysis
 
-Quarisma includes comprehensive runtime analysis tools for detecting memory errors, data races, and undefined behavior:
+XSigma includes comprehensive runtime analysis tools for detecting memory errors, data races, and undefined behavior:
 
 #### Sanitizers
 
@@ -662,7 +662,7 @@ python setup.py config.build.ninja.clang.iwyu
 
 ### Linting System
 
-Quarisma uses a comprehensive linting framework to maintain code quality and consistency across the codebase.
+XSigma uses a comprehensive linting framework to maintain code quality and consistency across the codebase.
 
 #### Running Linters
 
@@ -683,14 +683,14 @@ python -m lintrunner --fix
 
 The linting system is configured through:
 - **`.lintrunner.toml`** - Main linter configuration file
-- **`Tools/linter/config/quarisma_linter_config.yaml`** - Quarisma-specific paths and settings
+- **`Tools/linter/config/xsigma_linter_config.yaml`** - XSigma-specific paths and settings
 - **`Tools/linter/adapters/`** - Individual linter adapter implementations
 
 📖 **[Linter Documentation](Docs/readme/linter.md)** - Complete linter guide with configuration details and adapter documentation
 
 ### Code Coverage
 
-Generate comprehensive code coverage reports to measure test effectiveness and identify untested code paths. Quarisma supports multiple compilers (Clang, GCC, MSVC) with unified reporting.
+Generate comprehensive code coverage reports to measure test effectiveness and identify untested code paths. XSigma supports multiple compilers (Clang, GCC, MSVC) with unified reporting.
 
 #### Quick Start
 
@@ -731,7 +731,7 @@ python setup.py config.build.test.ninja.gcc.debug.coverage
 
 ## Third-Party Dependencies
 
-Quarisma uses carefully selected third-party libraries to provide robust functionality while maintaining minimal external dependencies. All dependencies are managed through Git submodules or system package managers.
+XSigma uses carefully selected third-party libraries to provide robust functionality while maintaining minimal external dependencies. All dependencies are managed through Git submodules or system package managers.
 
 ### Core Dependencies (Always Included)
 
@@ -744,14 +744,14 @@ Quarisma uses carefully selected third-party libraries to provide robust functio
 
 | Library | Purpose | CMake Flag | Default |
 |---------|---------|-----------|---------|
-| **Google Test** | Unit testing framework | `QUARISMA_ENABLE_GTEST` | ON |
-| **Benchmark** | Performance benchmarking | `QUARISMA_ENABLE_BENCHMARK` | OFF |
+| **Google Test** | Unit testing framework | `ENABLE_GTEST` | ON |
+| **Benchmark** | Performance benchmarking | `ENABLE_BENCHMARK` | OFF |
 | **Loguru** | Advanced logging backend | `LOGGING_ENABLE_LOGURU` | ON |
 | **magic_enum** | Enum reflection utilities | `CORE_ENABLE_MAGICENUM` | ON |
 | **mimalloc** | High-performance memory allocator | `MEMORY_ENABLE_MIMALLOC` | ON |
-| **TBB** | Intel Threading Building Blocks | `QUARISMA_ENABLE_TBB` | OFF |
-| **MKL** | Intel Math Kernel Library | `QUARISMA_ENABLE_MKL` | OFF |
-| **CUDA** | GPU acceleration | `MEMOY_ENABLE_CUDA` | OFF |
+| **TBB** | Intel Threading Building Blocks | `MEMORY_ENABLE_TBB` | OFF |
+| **MKL** | Intel Math Kernel Library | `CORE_ENABLE_MKL` | OFF |
+| **CUDA** | GPU acceleration | `MEMORY_GPU_BACKEND` | OFF |
 
 ### Enabling/Disabling Dependencies
 
@@ -773,24 +773,31 @@ python setup.py config.build.ninja.clang.test.magic_enum
 
 ### Logging System
 
-Quarisma provides a flexible logging system with multiple backend options to suit different use cases and performance requirements.
+XSigma provides a flexible logging system with multiple backend options to suit different use cases and performance requirements.
 
 #### Logging Backends
 
-- **LOGURU** (default) - Full-featured logging with scopes, callbacks, and advanced formatting
-- **GLOG** - Google's production-grade logging library with minimal overhead
-- **NATIVE** - Minimal native implementation with zero external dependencies
+- **SPDLOG** (default) - Fast sinks, colored stderr, file + callback
+- **LOGURU** - Full-featured logging with scopes, callbacks, and advanced formatting
+- **GLOG** - Google's production-grade logging library
+- **NATIVE** - Minimal native implementation (fmt only)
 
 #### Configuring Logging
 
 ```bash
 cd Scripts
 
+# SPDLOG is the default — no flag needed
+python setup.py config.build.test.ninja.clang
+
 # Use GLOG backend
 python setup.py config.build.test.ninja.clang --logging.GLOG
 
-# Use native logging (no dependencies)
+# Use native logging (fmt only)
 python setup.py config.build.test.ninja.clang --logging.NATIVE
+
+# Use LOGURU backend
+python setup.py config.build.test.ninja.clang --logging.LOGURU
 ```
 
 📖 **[Logging System Guide](Docs/readme/logging.md)** - Complete logging documentation with configuration examples
@@ -799,7 +806,7 @@ python setup.py config.build.test.ninja.clang --logging.NATIVE
 
 ## High-Performance Computing
 
-Quarisma provides comprehensive support for high-performance computing through CPU vectorization (SIMD), GPU acceleration (CUDA/HIP), and multithreading(TBB/native).
+XSigma provides comprehensive support for high-performance computing through CPU vectorization (SIMD), GPU acceleration (CUDA/HIP/Metal), and multithreading(TBB/native).
 
 ### Quick Start
 
@@ -821,8 +828,8 @@ python setup.py config.build.ninja.clang.release.cuda.avx2
 
 ### Features
 
-- **Vectorization (SIMD)**: SSE, AVX, AVX2, AVX-512 instruction sets (2-8x speedup)
-- **GPU Acceleration**: NVIDIA CUDA and AMD HIP support (10-100x speedup)
+- **Vectorization (SIMD)**: SSE, AVX, AVX2, AVX-512, NEON, SVE
+- **GPU Acceleration**: NVIDIA CUDA, AMD HIP, and Apple Metal
 - **Multithreading**: Intel TBB and native C++17/20 threading
 - **Flexible Combinations**: Mix and match features for optimal performance
 
@@ -830,7 +837,8 @@ python setup.py config.build.ninja.clang.release.cuda.avx2
 
 - **CPU Vectorization**: All platforms (Windows, Linux, macOS)
 - **CUDA**: Linux, Windows, macOS (with NVIDIA GPU)
-- **HIP**: Linux (primary), Windows (experimental)
+- **HIP**: Linux (primary); Windows is unsupported in this tree
+- **Metal**: macOS
 - **Multithreading**: All platforms
 
 📖 **[Read more: High-Performance Computing Guide](Docs/readme/high-performance-computing.md)** - Comprehensive guide to SIMD, GPU acceleration, and multithreading
@@ -875,7 +883,8 @@ Full cross-platform compatibility across Windows, Linux, and macOS with platform
 - **[High-Performance Computing](Docs/readme/high-performance-computing.md)** - SIMD, GPU acceleration, and multithreading
 - **[Logging System](Docs/readme/logging.md)** - Flexible logging with three backend options
 - **[Third-Party Dependencies](Docs/readme/third-party-dependencies.md)** - Dependency management and integration
-- **[Vectorization](Docs/readme/vectorization.md)** - CPU SIMD optimization (SSE, AVX, AVX2, AVX-512)
+- **[Vectorization](Docs/readme/vectorization.md)** - CPU SIMD optimization (SSE, AVX, AVX2, AVX-512, NEON, SVE)
+- **[Vectorization backends](Docs/vectorization_backends.md)** - CPU / CUDA / HIP / Metal evaluator interfaces and fusion
 - **[Sanitizers](Docs/readme/sanitizer.md)** - Memory debugging and analysis tools
 - **[Code Coverage](Docs/readme/code-coverage.md)** - Multi-compiler coverage analysis and reporting
 - **[Static Analysis](Docs/readme/static-analysis.md)** - IWYU and Cppcheck tools
@@ -968,18 +977,12 @@ The new CMake system maintains **complete backward compatibility**:
 
 ### Vectorization Configuration
 
-The vectorization system supports CPU SIMD instruction sets:
+CPU SIMD is a compile-time backend (`VECTORIZATION_CPU_BACKEND`), set from
+`setup.py` tokens: `no`, `sse`, `avx`, `avx2` (default on x86), `avx512`,
+`neon`, `sve`. GPU eval is a second selector: `--gpu_backend=none|cuda|hip|metal`.
 
-**CPU Vectorization:**
-- SSE, AVX, AVX2, AVX512 instruction sets
-- Cross-platform compiler support (MSVC, GCC, Clang)
-- Automatic detection and configuration
-
-**Configuration:**
-- Set via `QUARISMA_VECTORIZATION_TYPE` option
-- Options: `no`, `sse`, `avx`, `avx2`, `avx512`
-
-**No migration required** - all existing configurations continue to work.
+See [Docs/readme/vectorization.md](Docs/readme/vectorization.md) and
+[Docs/vectorization_backends.md](Docs/vectorization_backends.md).
 
 ## Best Practices
 
@@ -1019,7 +1022,7 @@ python setup.py config.build.test.ninja.clang.external
 
 ## Coding Standards
 
-Quarisma maintains strict coding standards to ensure code quality, consistency, and maintainability across the entire codebase. All contributions must adhere to these standards.
+XSigma maintains strict coding standards to ensure code quality, consistency, and maintainability across the entire codebase. All contributions must adhere to these standards.
 
 **Key principles:** No exceptions (use return values), RAII for resource management, smart pointers for ownership, and const correctness. Code must follow `snake_case` naming conventions, use `clang-format` for formatting, achieve 98% test coverage, use STL algorithms instead of raw loops, maintain consistent header/implementation file organization, follow builder pattern conventions, pass all clang-tidy checks, and use `auto` appropriately for clarity.
 
@@ -1031,19 +1034,19 @@ For a comprehensive guide covering naming conventions, code formatting, include 
 
 ## Providing Feedback
 
-We value your feedback and encourage you to report bugs, suggest enhancements, and share your experiences with Quarisma.
+We value your feedback and encourage you to report bugs, suggest enhancements, and share your experiences with XSigma.
 
 ### Reporting Bugs
 
 If you encounter a bug or unexpected behavior:
 
-1. **Search existing issues** - Check [GitHub Issues](https://github.com/QuarismaAnalyitix/Quarisma/issues) to see if the bug has already been reported
-2. **Create a new issue** - If not found, [open a new issue](https://github.com/QuarismaAnalyitix/Quarisma/issues/new) with:
+1. **Search existing issues** - Check [GitHub Issues](https://github.com/KhwarizmiAnalytix/XSigma/issues) to see if the bug has already been reported
+2. **Create a new issue** - If not found, [open a new issue](https://github.com/KhwarizmiAnalytix/XSigma/issues/new) with:
    - **Clear title** - Concise description of the bug
    - **Detailed description** - What you were trying to do and what went wrong
    - **Steps to reproduce** - Exact steps to reproduce the issue
    - **Expected vs. actual behavior** - What you expected vs. what actually happened
-   - **Environment details** - OS, compiler, Quarisma version, build configuration
+   - **Environment details** - OS, compiler, XSigma version, build configuration
    - **Minimal reproducible example** - Code or commands that demonstrate the issue
    - **Logs or error messages** - Any relevant output or stack traces
 
@@ -1053,8 +1056,8 @@ If you encounter a bug or unexpected behavior:
 
 To suggest a new feature or enhancement:
 
-1. **Search existing discussions** - Check [GitHub Discussions](https://github.com/QuarismaAnalyitix/Quarisma/discussions) and [Issues](https://github.com/QuarismaAnalyitix/Quarisma/issues) for similar requests
-2. **Create a discussion or issue** - [Start a discussion](https://github.com/QuarismaAnalyitix/Quarisma/discussions/new) or [open an issue](https://github.com/QuarismaAnalyitix/Quarisma/issues/new) with:
+1. **Search existing discussions** - Check [GitHub Discussions](https://github.com/KhwarizmiAnalytix/XSigma/discussions) and [Issues](https://github.com/KhwarizmiAnalytix/XSigma/issues) for similar requests
+2. **Create a discussion or issue** - [Start a discussion](https://github.com/KhwarizmiAnalytix/XSigma/discussions/new) or [open an issue](https://github.com/KhwarizmiAnalytix/XSigma/issues/new) with:
    - **Clear title** - Concise description of the feature
    - **Motivation** - Why this feature would be useful
    - **Proposed solution** - How you envision the feature working
@@ -1068,25 +1071,25 @@ To suggest a new feature or enhancement:
 
 **Do not report security vulnerabilities through public GitHub issues.** Instead:
 
-1. **Use GitHub Security Advisories** - Report privately at https://github.com/QuarismaAnalyitix/Quarisma/security/advisories/new
-2. **Email** - Send details to [security@quarisma.co.uk](mailto:security@quarisma.co.uk)
+1. **Use GitHub Security Advisories** - Report privately at https://github.com/KhwarizmiAnalytix/XSigma/security/advisories/new
+2. **Email** - Send details to [security@xsigma.co.uk](mailto:security@xsigma.co.uk)
 
 See [SECURITY.md](SECURITY.md) for complete vulnerability reporting guidelines and our response timeline.
 
 ### Communication Channels
 
-- **Bug Reports & Feature Requests**: [GitHub Issues](https://github.com/QuarismaAnalyitix/Quarisma/issues)
-- **Questions & Discussions**: [GitHub Discussions](https://github.com/QuarismaAnalyitix/Quarisma/discussions)
-- **Security Issues**: [GitHub Security Advisories](https://github.com/QuarismaAnalyitix/Quarisma/security/advisories) or [security@quarisma.co.uk](mailto:security@quarisma.co.uk)
-- **General Inquiries**: [info@quarisma.co.uk](mailto:info@quarisma.co.uk)
-- **Licensing Questions**: [licensing@quarisma.co.uk](mailto:licensing@quarisma.co.uk)
-- **Code of Conduct Violations**: [conduct@quarisma.co.uk](mailto:conduct@quarisma.co.uk)
+- **Bug Reports & Feature Requests**: [GitHub Issues](https://github.com/KhwarizmiAnalytix/XSigma/issues)
+- **Questions & Discussions**: [GitHub Discussions](https://github.com/KhwarizmiAnalytix/XSigma/discussions)
+- **Security Issues**: [GitHub Security Advisories](https://github.com/KhwarizmiAnalytix/XSigma/security/advisories) or [security@xsigma.co.uk](mailto:security@xsigma.co.uk)
+- **General Inquiries**: [info@xsigma.co.uk](mailto:info@xsigma.co.uk)
+- **Licensing Questions**: [licensing@xsigma.co.uk](mailto:licensing@xsigma.co.uk)
+- **Code of Conduct Violations**: [conduct@xsigma.co.uk](mailto:conduct@xsigma.co.uk)
 
 ---
 
 ## Contributing
 
-We welcome contributions from the community! Quarisma is built by developers like you, and we appreciate your interest in improving the project.
+We welcome contributions from the community! XSigma is built by developers like you, and we appreciate your interest in improving the project.
 
 ### Quick Start for Contributors
 
@@ -1122,7 +1125,7 @@ We welcome contributions in many areas:
 
 - **Contribution Policy** - Read [CONTRIBUTING.md](CONTRIBUTING.md) to understand our contribution policy and rights
 - **Intellectual Property** - Ensure your contribution is original or properly licensed
-- **Dual Licensing** - By contributing, you grant QuarismaAnalyitix rights to offer commercial licenses
+- **Dual Licensing** - By contributing, you grant XSigmaAnalyitix rights to offer commercial licenses
 - **No Guarantee** - Submission does not guarantee acceptance; maintainers have final authority
 
 For complete details, see [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -1135,4 +1138,4 @@ See [LICENSE](LICENSE) file for details.
 
 ---
 
-**Quarisma** - High-performance C++ library with modern CMake build system
+**XSigma** - High-performance C++ library with modern CMake build system

@@ -1,5 +1,5 @@
 # =============================================================================
-# Quarisma
+# XSigma
 # Valgrind Memory Checking Configuration Module
 
 # This module configures Valgrind memory checking for CTest. All Valgrind options and settings are
@@ -9,7 +9,7 @@
 #
 # option(XXX_ENABLE_VALGRIND "Execute XXX test suite with Valgrind" OFF)
 # mark_as_advanced(XXX_ENABLE_VALGRIND) ... if(XXX_ENABLE_VALGRIND) include(valgrind) endif() ...
-# if(XXX_ENABLE_VALGRIND AND XXX_ENABLE_TESTING) quarisma_apply_valgrind_timeouts() endif()
+# if(XXX_ENABLE_VALGRIND AND XXX_ENABLE_TESTING) xsigma_apply_valgrind_timeouts() endif()
 
 message(STATUS "Configuring Valgrind memory checking...")
 
@@ -72,25 +72,20 @@ message(STATUS "Global CTest timeout: ${CTEST_TEST_TIMEOUT} seconds")
 # Also: treat only *definite* leaks as defects, to avoid "still reachable" noise
 # (common in libstdc++/gtest/static initialization) being reported as leaks.
 set(CMAKE_MEMORYCHECK_COMMAND_OPTIONS
-    "--tool=memcheck"
-    "--leak-check=full"
-    "--show-leak-kinds=definite"
-    "--errors-for-leak-kinds=definite"
-    "--track-origins=yes"
-    "--track-fds=yes"
-    "--num-callers=50"
-    "--trace-children=yes"
-    "--error-exitcode=1"
-    "--gen-suppressions=all"
+    "--tool=memcheck" "--leak-check=full" "--show-leak-kinds=definite"
+    "--errors-for-leak-kinds=definite" "--track-origins=yes" "--track-fds=yes" "--num-callers=50"
+    "--trace-children=yes" "--error-exitcode=1" "--gen-suppressions=all"
 )
 
 # Wire options into CTest/DartConfiguration.tcl (used by `ctest -T memcheck`).
 # These must be CACHE entries for CTest to pick them up during `include(CTest)`.
-set(CTEST_MEMORYCHECK_COMMAND "${CMAKE_MEMORYCHECK_COMMAND}"
-    CACHE FILEPATH "CTest memcheck command" FORCE)
+set(CTEST_MEMORYCHECK_COMMAND "${CMAKE_MEMORYCHECK_COMMAND}" CACHE FILEPATH
+                                                                   "CTest memcheck command" FORCE
+)
 string(JOIN " " _ctest_memcheck_opts ${CMAKE_MEMORYCHECK_COMMAND_OPTIONS})
 set(CTEST_MEMORYCHECK_COMMAND_OPTIONS "${_ctest_memcheck_opts}"
-    CACHE STRING "CTest memcheck command options" FORCE)
+    CACHE STRING "CTest memcheck command options" FORCE
+)
 
 # =============================================================================
 # Suppression File
@@ -102,10 +97,13 @@ set(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE
 
 if(EXISTS "${CTEST_MEMORYCHECK_SUPPRESSIONS_FILE}")
   message(STATUS "Using Valgrind suppression file: ${CTEST_MEMORYCHECK_SUPPRESSIONS_FILE}")
-  list(APPEND CMAKE_MEMORYCHECK_COMMAND_OPTIONS "--suppressions=${CTEST_MEMORYCHECK_SUPPRESSIONS_FILE}")
+  list(APPEND CMAKE_MEMORYCHECK_COMMAND_OPTIONS
+       "--suppressions=${CTEST_MEMORYCHECK_SUPPRESSIONS_FILE}"
+  )
   set(CTEST_MEMORYCHECK_COMMAND_OPTIONS
       "${CTEST_MEMORYCHECK_COMMAND_OPTIONS} --suppressions=${CTEST_MEMORYCHECK_SUPPRESSIONS_FILE}"
-      CACHE STRING "CTest memcheck command options" FORCE)
+      CACHE STRING "CTest memcheck command options" FORCE
+  )
 else()
   message(WARNING "Valgrind suppression file not found: ${CTEST_MEMORYCHECK_SUPPRESSIONS_FILE}")
   message(WARNING "Consider creating a suppression file to filter known false positives")
@@ -130,7 +128,7 @@ message(STATUS "Use 'ctest -T memcheck' to run tests with Valgrind")
 # Call after all tests are registered in the module. Multiplies existing timeouts by
 # PROJECT_VALGRIND_TIMEOUT_MULTIPLIER.
 
-function(quarisma_apply_valgrind_timeouts)
+function(xsigma_apply_valgrind_timeouts)
   get_property(all_tests DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY TESTS)
 
   foreach(test_name ${all_tests})

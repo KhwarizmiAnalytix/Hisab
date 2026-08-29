@@ -1,6 +1,9 @@
 # Vectorization (`Library/Vectorization`)
 
-**SIMD** library: `simd<T>` register wrappers, expression templates, and backends for **SSE**, **AVX**, **AVX2**, and **AVX-512** (`backend/sse`, `backend/avx`, `backend/avx512`).
+**SIMD** library: `simd<T>` register wrappers, expression templates, CPU backends
+(**SSE**, **AVX**, **AVX2**, **AVX-512**, **NEON**, **SVE**), and one GPU evaluator
+(**CUDA**, **HIP**, or **Metal**). Evaluator contracts:
+[Docs/vectorization_backends.md](../../Docs/vectorization_backends.md).
 
 ## Layout
 
@@ -18,25 +21,28 @@
 | CMake variable | Default | Summary |
 |----------------|---------|---------|
 | `VECTORIZATION_CPU_BACKEND` | `avx2` | `no`, `sse`, `avx`, `avx2`, `avx512`, `neon`, `sve` — which CPU backend tree is compiled |
-| `VECTORIZATION_GPU_BACKEND` | `none` | `none`, `cuda`, `hip` — which GPU runtime (nvcc/hipcc) the shared `backend/gpu/{float,double}/simd.h` is compiled against; independent of `VECTORIZATION_CPU_BACKEND`, both can be active at once |
+| `VECTORIZATION_GPU_BACKEND` | `none` | `none`, `cuda`, `hip`, `metal` — which GPU runtime the evaluator compiles against; independent of `VECTORIZATION_CPU_BACKEND`, both can be active at once |
 | `VECTORIZATION_CXX_STANDARD` | `20` | `11`, `14`, `17`, `20`, `23` |
 
-### GPU backend (CUDA / HIP)
+### GPU backend (CUDA / HIP / Metal)
 
-`VECTORIZATION_GPU_BACKEND` drives a scalar (`size==1`) GPU `simd<T>` specialization (`backend/gpu/{float,double}/simd.h`, shared source for both CUDA and HIP) plus an expression-template kernel launcher (`expressions/expressions_evaluator_gpu.h`) — one CUDA/HIP thread evaluates one tensor element. `tensor<T>` dispatches to the GPU kernel path when constructed with `device_enum::CUDA` or `device_enum::HIP` (`Library/Memory/common/device.h`); both device tags are treated identically by the evaluator.
+`VECTORIZATION_GPU_BACKEND` selects the GPU evaluator compiled into the library (one per binary). CUDA and HIP share scalar (`size==1`) `simd<T>` plus `expressions_evaluator_gpu.h`. Metal JIT-compiles one MSL kernel per expression (`expressions_evaluator_metal.h`) and does not use `simd<T>`. All three fuse a pure expression into a single kernel or loop. Launch-signature gaps: [Docs/vectorization_backends.md](../../Docs/vectorization_backends.md).
+
+`tensor<T>` dispatches on `device_enum::CUDA` / `HIP` / `METAL` (`Library/Memory/common/device.h`).
 
 | CMake variable | Default | Notes |
 |----------------|---------|-------|
 | `VECTORIZATION_CUDA_ARCHITECTURES` | `75;80;86;89;90` | CUDA compute-capability list, set when `VECTORIZATION_GPU_BACKEND=cuda` |
 | `VECTORIZATION_GPU_ARCHITECTURES` | `gfx900;gfx906;gfx908;gfx90a;gfx1030;gfx1100` | HIP/ROCm `gfxXXX` target list, set when `VECTORIZATION_GPU_BACKEND=hip` |
 
-`setup.py` accepts `cuda` / `hip` as chained tokens and forwards `-DVECTORIZATION_GPU_BACKEND=...` and `-DMEMORY_GPU_BACKEND=...` together (the two libraries have independent but must-agree GPU backend selectors). Example:
+`setup.py` accepts `cuda` / `hip` / `metal` as chained tokens and forwards `-DVECTORIZATION_GPU_BACKEND=...` and `-DMEMORY_GPU_BACKEND=...` together (the two libraries have independent but must-agree GPU backend selectors). Example:
 
 ```
 python3 setup.py build.TEST.native.avx2.cuda.config --project.vectorization
+python3 setup.py build.TEST.native.avx2.config --project.vectorization --gpu_backend.metal
 ```
 
-GPU unit tests (`Testing/Cxx/TestGpuSimd.cu`, `TestTensorGpu.cpp`) and the `benchmark_tensorgpu` target build under either backend and skip themselves at runtime (`GTEST_SKIP`) when no GPU device is present. CUDA-with-Clang builds currently exclude these sources at configure time (nvcc-only texture-intrinsics incompatibility — see `Testing/Cxx/CMakeLists.txt`).
+GPU unit tests (`Testing/Cxx/TestGpuSimd.cu`, `TestTensorGpu.cpp`, `TestMetalDispatch.mm`) and the `benchmark_tensorgpu` target skip themselves at runtime (`GTEST_SKIP`) when no GPU device is present. CUDA-with-Clang builds currently exclude the CUDA sources at configure time (nvcc-only texture-intrinsics incompatibility — see `Testing/Cxx/CMakeLists.txt`).
 
 ### Feature and tooling
 
@@ -60,7 +66,9 @@ GPU unit tests (`Testing/Cxx/TestGpuSimd.cu`, `TestTensorGpu.cpp`) and the `benc
 | `VECTORIZATION_LINKER_CHOICE` | default | `default`, `lld`, `mold`, `gold`, `lld-link` |
 | `VECTORIZATION_CACHE_BACKEND` | none | `none`, `ccache`, `sccache`, `buildcache` |
 
-`VECTORIZATION_HAS_MEMORY` / `VECTORIZATION_HAS_LOGGING` are **detected** from CMake targets when building inside the full tree.
+Logging is **required** (`Logging::Logging`). Memory is **required**
+(`Memory::Memory`). There is no `VECTORIZATION_HAS_LOGGING` or
+`VECTORIZATION_HAS_MEMORY` gate.
 
 ---
 
@@ -72,7 +80,7 @@ Starlark: [`bazel/vectorization.bzl`](../../bazel/vectorization.bzl). SIMD × OS
 
 | Define | Effect |
 |--------|--------|
-| `vectorization_type` | `no` / `sse` / `avx` / `avx2` / `avx512` — selects `//bazel:vectorization_type_*`, backend globs, and `VECTORIZATION_HAS_*` / `VECTORIZATION_VECTORIZED` |
+| `vectorization_type` | `no` / `sse` / `avx` / `avx2` / `avx512` / `neon` / `sve` — selects `//bazel:vectorization_type_*`, backend globs, and `VECTORIZATION_HAS_*` / `VECTORIZATION_VECTORIZED` |
 | *(unset)* | Defaults to AVX2 behavior (`//conditions:default` in selects + `.bazelrc` sets `vectorization_type=avx2`) |
 
 Compiler ISA flags come from `vectorization_simd_copts()` (MSVC `/arch:*` or GCC/Clang `-m*`).
@@ -86,7 +94,7 @@ Compiler ISA flags come from `vectorization_simd_copts()` (MSVC `/arch:*` or GCC
 | `vectorization_enable_testing` | `false` → `//bazel:vectorization_disable_testing` — **skips** `VectorizationCxxTests` (`target_compatible_with`) |
 | `vectorization_enable_benchmark` | `false` → `//bazel:vectorization_disable_benchmark` — **skips** `benchmark_simdunary`, `benchmark_simdbinaryfn`, `benchmark_simdbinaryop`, `benchmark_simdternaryhorizontal` |
 
-Fixed in Starlark today: `VECTORIZATION_HAS_MEMORY=1`, `VECTORIZATION_HAS_LOGGING=1` (full monorepo layout).
+Fixed in Starlark today: Logging and Memory are always linked.
 
 ### Library-only copts
 

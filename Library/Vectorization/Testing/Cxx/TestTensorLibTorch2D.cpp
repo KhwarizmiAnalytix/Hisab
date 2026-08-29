@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -89,8 +89,12 @@ VECTORIZATIONTEST(LibTorch, TwoDimDouble)
 #else
 
 VECTORIZATIONTEST(LibTorch, TwoDimFloat)
-{ END_TEST(); }
+{
+    END_TEST();
+}
 VECTORIZATIONTEST(LibTorch, TwoDimDouble)
-{ END_TEST(); }
+{
+    END_TEST();
+}
 
 #endif  // VECTORIZATION_HAS_LIBTORCH

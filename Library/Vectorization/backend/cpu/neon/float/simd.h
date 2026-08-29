@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  */
@@ -12,10 +12,10 @@
 #include <cstdint>
 #include <type_traits>
 
+#include "backend/cpu/neon/svml.h"
 #include "backend/simd.h"
 #include "common/normal_cdf.h"
 #include "common/vectorization_macros.h"
-#include "backend/cpu/neon/svml.h"
 
 namespace vectorization
 {
@@ -49,10 +49,7 @@ struct simd<float>
 
     inline static uint32x4_t const sign_mask = vdupq_n_u32(0x80000000u);
 
-    VECTORIZATION_SIMD_RETURN_TYPE prefetch(const value_t* addr)
-    {
-        __builtin_prefetch(addr, 0, 3);
-    }
+    VECTORIZATION_SIMD_RETURN_TYPE prefetch(const value_t* addr) { __builtin_prefetch(addr, 0, 3); }
 
     VECTORIZATION_SIMD_METHOD simd_t load(const value_t* addr) { return vld1q_f32(addr); }
 
@@ -96,7 +93,10 @@ struct simd<float>
 
     VECTORIZATION_SIMD_METHOD simd_t max(simd_t x, simd_t y) { return vmaxq_f32(x, y); }
 
-    VECTORIZATION_SIMD_METHOD simd_t fma(simd_t x, simd_t y, simd_t z) { return vfmaq_f32(z, x, y); }
+    VECTORIZATION_SIMD_METHOD simd_t fma(simd_t x, simd_t y, simd_t z)
+    {
+        return vfmaq_f32(z, x, y);
+    }
 
     VECTORIZATION_SIMD_METHOD simd_t signcopy(simd_t x, simd_t sign)
     {
@@ -403,9 +403,13 @@ struct simd<float>
         return vld1_f32(from);
     }
 
-    VECTORIZATION_FORCE_INLINE static simd_half_t set(const value_t* from) { return vld1_dup_f32(from); }
+    VECTORIZATION_FORCE_INLINE static simd_half_t set(const value_t* from)
+    {
+        return vld1_dup_f32(from);
+    }
 
-    VECTORIZATION_SIMD_METHOD simd_half_t fma(const simd_half_t& x, const simd_half_t& y, const simd_half_t& z)
+    VECTORIZATION_SIMD_METHOD simd_half_t
+    fma(const simd_half_t& x, const simd_half_t& y, const simd_half_t& z)
     {
         return vfma_f32(z, x, y);
     }

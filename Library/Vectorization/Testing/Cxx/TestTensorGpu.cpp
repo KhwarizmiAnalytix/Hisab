@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -60,6 +60,7 @@ extern "C" int xsigma_metal_device_count();
 #include <string>
 #include <vector>
 
+#include "common/scalar_helper_functions.h"
 #include "terminals/tensor.h"
 
 namespace
@@ -68,14 +69,14 @@ namespace
 using namespace vectorization;
 
 #if VECTORIZATION_HAS_CUDA
-constexpr device_enum kActiveGpuDevice = device_enum::CUDA;
-constexpr bool         kMetalOnlyBackend = false;
+constexpr device_enum kActiveGpuDevice  = device_enum::CUDA;
+constexpr bool        kMetalOnlyBackend = false;
 #elif VECTORIZATION_HAS_HIP
-constexpr device_enum kActiveGpuDevice   = device_enum::HIP;
-constexpr bool         kMetalOnlyBackend = false;
+constexpr device_enum kActiveGpuDevice  = device_enum::HIP;
+constexpr bool        kMetalOnlyBackend = false;
 #elif VECTORIZATION_HAS_METAL
-constexpr device_enum kActiveGpuDevice   = device_enum::METAL;
-constexpr bool         kMetalOnlyBackend = true;
+constexpr device_enum kActiveGpuDevice  = device_enum::METAL;
+constexpr bool        kMetalOnlyBackend = true;
 #endif
 
 // ---- Comparison helper ---------------------------------------------------
@@ -181,6 +182,18 @@ void test_binary_ops()
         std::vector<T> ref(N);
         for (size_t i = 0; i < N; ++i)
             ref[i] = ha[i] + static_cast<T>(1);
+        expect_near_rel(result, ref, tol);
+    }
+
+    // Destination aliases a leaf (`a = a + b`): must not overwrite `a` before `b` is read.
+    {
+        tensor<T> acc(N, kActiveGpuDevice);
+        acc.copy_from_host(ha);
+        acc                   = acc + gb;
+        auto           result = acc.to_host_vector();
+        std::vector<T> ref(N);
+        for (size_t i = 0; i < N; ++i)
+            ref[i] = ha[i] + hb[i];
         expect_near_rel(result, ref, tol);
     }
 }
@@ -291,6 +304,102 @@ void test_compound()
             ref[i] = (ha[i] + hb[i]) * kAlpha;
         expect_near_rel(result, ref, tol);
     }
+
+    // y + a + 5*d — one fused kernel (Metal JIT / CUDA tree eval), no per-node temps
+    {
+        constexpr T kFive = static_cast<T>(5);
+        tensor<T>   gd(N, kActiveGpuDevice);
+        gd.copy_from_host(hb);
+        tensor<T> gx(N, kActiveGpuDevice);
+        gx                    = ga + gb + kFive * gd;
+        auto           result = gx.to_host_vector();
+        std::vector<T> ref(N);
+        for (size_t i = 0; i < N; ++i)
+            ref[i] = ha[i] + hb[i] + kFive * hb[i];
+        expect_near_rel(result, ref, tol);
+
+        tensor<T> acc(N, kActiveGpuDevice);
+        acc.copy_from_host(ha);
+        acc        = acc + gb + kFive * gd;
+        auto acc_h = acc.to_host_vector();
+        expect_near_rel(acc_h, ref, tol);
+    }
+}
+
+// Ops that used to throw on Metal (min/max/pow/floor/if_else/...) now fuse like CPU/CUDA.
+template <typename T>
+void test_fused_catalog()
+{
+    constexpr size_t N   = 1024;
+    constexpr double tol = std::is_same_v<T, float> ? 5e-4 : 1e-10;
+
+    std::vector<T> ha(N), hb(N);
+    for (size_t i = 0; i < N; ++i)
+    {
+        double t = static_cast<double>(i) / static_cast<double>(N);
+        ha[i]    = static_cast<T>(t * 2.0 - 1.0);
+        hb[i]    = static_cast<T>(t + 0.5);
+    }
+
+    tensor<T> ga(N, kActiveGpuDevice), gb(N, kActiveGpuDevice);
+    ga.copy_from_host(ha);
+    gb.copy_from_host(hb);
+
+    {
+        tensor<T> gc(N, kActiveGpuDevice);
+        gc                    = min(ga, gb);
+        auto           result = gc.to_host_vector();
+        std::vector<T> ref(N);
+        for (size_t i = 0; i < N; ++i)
+            ref[i] = std::min(ha[i], hb[i]);
+        expect_near_rel(result, ref, tol);
+    }
+    {
+        tensor<T> gc(N, kActiveGpuDevice);
+        gc                    = max(ga, gb) + ::floor(ga);
+        auto           result = gc.to_host_vector();
+        std::vector<T> ref(N);
+        for (size_t i = 0; i < N; ++i)
+            ref[i] = std::max(ha[i], hb[i]) + std::floor(ha[i]);
+        expect_near_rel(result, ref, tol);
+    }
+    {
+        tensor<T> gc(N, kActiveGpuDevice);
+        gc                    = ::pow(gb, static_cast<T>(2)) + ::hypot(ga, gb);
+        auto           result = gc.to_host_vector();
+        std::vector<T> ref(N);
+        for (size_t i = 0; i < N; ++i)
+            ref[i] = std::pow(hb[i], static_cast<T>(2)) + std::hypot(ha[i], hb[i]);
+        expect_near_rel(result, ref, tol);
+    }
+    {
+        tensor<T> gc(N, kActiveGpuDevice);
+        gc                    = ::if_else(ga > static_cast<T>(0), ga, gb);
+        auto           result = gc.to_host_vector();
+        std::vector<T> ref(N);
+        for (size_t i = 0; i < N; ++i)
+            ref[i] = ha[i] > static_cast<T>(0) ? ha[i] : hb[i];
+        expect_near_rel(result, ref, tol);
+    }
+    {
+        tensor<T> gc(N, kActiveGpuDevice);
+        gc                    = ::cbrt(ga) + ::sqr(gb) * ::invsqrt(gb);
+        auto           result = gc.to_host_vector();
+        std::vector<T> ref(N);
+        for (size_t i = 0; i < N; ++i)
+            ref[i] = std::cbrt(ha[i]) + std::sqr(hb[i]) * std::invsqrt(hb[i]);
+        expect_near_rel(result, ref, tol);
+    }
+    {
+        tensor<T> acc(N, kActiveGpuDevice);
+        acc.copy_from_host(ha);
+        acc += gb;
+        auto           result = acc.to_host_vector();
+        std::vector<T> ref(N);
+        for (size_t i = 0; i < N; ++i)
+            ref[i] = ha[i] + hb[i];
+        expect_near_rel(result, ref, tol);
+    }
 }
 
 }  // namespace
@@ -305,6 +414,109 @@ VECTORIZATIONTEST(TensorGpu, FillFloat)
     if (ndev == 0)
         GTEST_SKIP() << "No GPU device";
     test_fill<float>();
+    END_TEST();
+}
+
+VECTORIZATIONTEST(TensorGpu, StoresDeviceIndex)
+{
+    int ndev = 0;
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
+    tensor<float> t(64, kActiveGpuDevice, 0);
+    EXPECT_EQ(kActiveGpuDevice, t.device());
+    EXPECT_EQ(0, t.device_index());
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, CopyClonesIndependentStorage)
+{
+    int ndev = 0;
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
+
+    constexpr size_t N    = 64;
+    constexpr float  kVal = 1.5f;
+    tensor<float>    src(N, kActiveGpuDevice);
+    src = kVal;
+    tensor<float> dst(src);
+    EXPECT_EQ(src.device(), dst.device());
+    EXPECT_EQ(src.device_index(), dst.device_index());
+    EXPECT_NE(src.data(), dst.data());
+    expect_near_rel(dst.to_host_vector(), src.to_host_vector(), 5e-6);
+    src        = static_cast<float>(9);
+    auto src_h = src.to_host_vector();
+    auto dst_h = dst.to_host_vector();
+    for (size_t i = 0; i < N; ++i)
+        EXPECT_NEAR(dst_h[i], kVal, 5e-6f);
+    for (size_t i = 0; i < N; ++i)
+        EXPECT_NEAR(src_h[i], 9.0f, 5e-6f);
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, ExpressionCtorKeepsDevice)
+{
+    int ndev = 0;
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
+
+    constexpr size_t   N   = 64;
+    constexpr double   tol = 5e-5;
+    std::vector<float> ha, hb;
+    make_inputs(ha, hb, N);
+    tensor<float> ga(N, kActiveGpuDevice), gb(N, kActiveGpuDevice);
+    ga.copy_from_host(ha);
+    gb.copy_from_host(hb);
+    tensor<float> gc = ga + gb;
+    EXPECT_EQ(kActiveGpuDevice, gc.device());
+    EXPECT_EQ(0, gc.device_index());
+    std::vector<float> ref(N);
+    for (size_t i = 0; i < N; ++i)
+        ref[i] = ha[i] + hb[i];
+    expect_near_rel(gc.to_host_vector(), ref, tol);
+    auto cloned = gc.clone();
+    EXPECT_EQ(gc.device(), cloned.device());
+    EXPECT_NE(gc.data(), cloned.data());
+    expect_near_rel(cloned.to_host_vector(), gc.to_host_vector(), 5e-6);
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, ExpressionLeavesAliasStorage)
+{
+    int ndev = 0;
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
+
+    constexpr size_t N = 64;
+    tensor<float>    ga(N, kActiveGpuDevice), gb(N, kActiveGpuDevice);
+    ga     = 1.5f;
+    gb     = 2.5f;
+    auto e = ga + gb;
+    EXPECT_EQ(e.lhs().data(), ga.data());
+    EXPECT_EQ(e.rhs().data(), gb.data());
+    tensor<float> gc = e;
+    EXPECT_EQ(kActiveGpuDevice, gc.device());
+    std::vector<float> got = gc.to_host_vector();
+    for (size_t i = 0; i < N; ++i)
+        EXPECT_NEAR(got[i], 4.0f, 5e-6f);
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, LinspaceAndToCpu)
+{
+    int ndev = 0;
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
+
+    tensor<float> g(0.0f, 4.0f, 5u, kActiveGpuDevice);
+    EXPECT_EQ(g.device(), kActiveGpuDevice);
+    tensor<float> h = g.to_cpu();
+    EXPECT_EQ(h.device(), device_enum::CPU);
+    EXPECT_NE(h.data(), g.data());
+    EXPECT_EQ(h.size(), 5u);
+    EXPECT_NEAR(h[0], 0.0f, 5e-6f);
+    EXPECT_NEAR(h[2], 2.0f, 5e-6f);
+    EXPECT_NEAR(h[4], 4.0f, 5e-6f);
     END_TEST();
 }
 VECTORIZATIONTEST(TensorGpu, FillDouble)
@@ -379,6 +591,15 @@ VECTORIZATIONTEST(TensorGpu, CompoundFloat)
     test_compound<float>();
     END_TEST();
 }
+VECTORIZATIONTEST(TensorGpu, FusedCatalogFloat)
+{
+    int ndev = 0;
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
+    test_fused_catalog<float>();
+    END_TEST();
+}
 VECTORIZATIONTEST(TensorGpu, CompoundDouble)
 {
     if (kMetalOnlyBackend)
@@ -390,10 +611,46 @@ VECTORIZATIONTEST(TensorGpu, CompoundDouble)
     test_compound<double>();
     END_TEST();
 }
+VECTORIZATIONTEST(TensorGpu, FusedCatalogDouble)
+{
+    if (kMetalOnlyBackend)
+        GTEST_SKIP() << "Metal backend is float-only (no fp64 on Apple GPUs)";
+    int ndev = 0;
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
+    test_fused_catalog<double>();
+    END_TEST();
+}
 
 #else  // !(VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP || VECTORIZATION_HAS_METAL)
 
 VECTORIZATIONTEST(TensorGpu, FillFloat)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, StoresDeviceIndex)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, CopyClonesIndependentStorage)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, ExpressionCtorKeepsDevice)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, ExpressionLeavesAliasStorage)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, LinspaceAndToCpu)
 {
     GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
     END_TEST();
@@ -428,7 +685,17 @@ VECTORIZATIONTEST(TensorGpu, CompoundFloat)
     GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
     END_TEST();
 }
+VECTORIZATIONTEST(TensorGpu, FusedCatalogFloat)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
+    END_TEST();
+}
 VECTORIZATIONTEST(TensorGpu, CompoundDouble)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, FusedCatalogDouble)
 {
     GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
     END_TEST();

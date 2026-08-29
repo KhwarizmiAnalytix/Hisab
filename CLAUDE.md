@@ -9,11 +9,11 @@ with an alternate Bazel build. GPU support: CUDA, HIP, Metal.
 own family of `<LIB>_*`-prefixed macros for API export, visibility, and
 unused-parameter suppression (e.g. `MEMORY_API`/`MEMORY_VISIBILITY`, each
 generated into `Library/<Lib>/common/<lib>_export.h`). `Library/Core` is the
-one exception — it predates the per-library split and still uses its own
-legacy prefix instead of a `CORE_*` one; grep `Library/Core/common/macros.h`
-if you need its exact spelling. When editing a file, match that file's
-existing namespace/macro family — never import one library's macro/namespace
-prefix into another library.
+one exception — it predates the per-library split and still uses the project
+prefix (`XSIGMA_API`, `XSIGMA_VISIBILITY`, `XSIGMA_UNUSED`, … in
+`Library/Core/common/macros.h` / `export.h`) instead of a `CORE_*` one.
+When editing a file, match that file's existing namespace/macro family —
+never import one library's macro/namespace prefix into another library.
 
 ## Hard rules
 

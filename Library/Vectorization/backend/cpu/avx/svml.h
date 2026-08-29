@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #pragma once
@@ -91,12 +91,16 @@ extern "C"
 
 #if defined(_MSC_VER)
 
-#define SVML_FUNCTION_ONE_ARG(op)                                                           \
-    VECTORIZATION_FORCE_INLINE __m256 VECTORIZATION_VECTORCALL _mm256_##op##_ps(__m256 x)   \
-    { return reinterpret_cast<__m256(VECTORIZATION_VECTORCALL*)(__m256)>(svml_ps(op))(x); } \
-                                                                                            \
-    VECTORIZATION_FORCE_INLINE __m256d VECTORIZATION_VECTORCALL _mm256_##op##_pd(__m256d x) \
-    { return reinterpret_cast<__m256d(VECTORIZATION_VECTORCALL*)(__m256d)>(svml_pd(op))(x); }
+#define SVML_FUNCTION_ONE_ARG(op)                                                             \
+    VECTORIZATION_FORCE_INLINE __m256 VECTORIZATION_VECTORCALL _mm256_##op##_ps(__m256 x)     \
+    {                                                                                         \
+        return reinterpret_cast<__m256(VECTORIZATION_VECTORCALL*)(__m256)>(svml_ps(op))(x);   \
+    }                                                                                         \
+                                                                                              \
+    VECTORIZATION_FORCE_INLINE __m256d VECTORIZATION_VECTORCALL _mm256_##op##_pd(__m256d x)   \
+    {                                                                                         \
+        return reinterpret_cast<__m256d(VECTORIZATION_VECTORCALL*)(__m256d)>(svml_pd(op))(x); \
+    }
 
 #define SVML_FUNCTION_TWO_ARGS(op)                                                               \
     VECTORIZATION_FORCE_INLINE __m256 VECTORIZATION_VECTORCALL _mm256_##op##_ps(                 \
@@ -117,17 +121,25 @@ extern "C"
 
 #define SVML_FUNCTION_ONE_ARG(op)                                  \
     VECTORIZATION_FORCE_INLINE __m256 _mm256_##op##_ps(__m256 x)   \
-    { return svml_ps(op)(x); }                                     \
+    {                                                              \
+        return svml_ps(op)(x);                                     \
+    }                                                              \
                                                                    \
     VECTORIZATION_FORCE_INLINE __m256d _mm256_##op##_pd(__m256d x) \
-    { return svml_pd(op)(x); }
+    {                                                              \
+        return svml_pd(op)(x);                                     \
+    }
 
 #define SVML_FUNCTION_TWO_ARGS(op)                                            \
     VECTORIZATION_FORCE_INLINE __m256 _mm256_##op##_ps(__m256 x, __m256 y)    \
-    { return svml_ps(op)(x, y); }                                             \
+    {                                                                         \
+        return svml_ps(op)(x, y);                                             \
+    }                                                                         \
                                                                               \
     VECTORIZATION_FORCE_INLINE __m256d _mm256_##op##_pd(__m256d x, __m256d y) \
-    { return svml_pd(op)(x, y); }
+    {                                                                         \
+        return svml_pd(op)(x, y);                                             \
+    }
 
 #endif  // defined(_MSC_VER)
 
@@ -156,8 +168,62 @@ SVML_FUNCTION_ONE_ARG(cdfnorm)
 SVML_FUNCTION_ONE_ARG(cdfnorminv)
 SVML_FUNCTION_ONE_ARG(trunc)
 SVML_FUNCTION_ONE_ARG(invsqrt)
+#if defined(_MSC_VER) && !defined(NDEBUG)
+// clang-cl Debug builds mis-call Intel SVML two-arg entry points through the
+// reinterpret_cast wrapper above; scalar lane fallbacks match std::pow/hypot.
+#include <cmath>
+
+VECTORIZATION_FORCE_INLINE __m256 VECTORIZATION_VECTORCALL _mm256_pow_ps(__m256 x, __m256 y)
+{
+    alignas(32) float xs[8];
+    alignas(32) float ys[8];
+    alignas(32) float rs[8];
+    _mm256_store_ps(xs, x);
+    _mm256_store_ps(ys, y);
+    for (int i = 0; i < 8; ++i)
+        rs[i] = std::pow(xs[i], ys[i]);
+    return _mm256_load_ps(rs);
+}
+
+VECTORIZATION_FORCE_INLINE __m256d VECTORIZATION_VECTORCALL _mm256_pow_pd(__m256d x, __m256d y)
+{
+    alignas(32) double xs[4];
+    alignas(32) double ys[4];
+    alignas(32) double rs[4];
+    _mm256_store_pd(xs, x);
+    _mm256_store_pd(ys, y);
+    for (int i = 0; i < 4; ++i)
+        rs[i] = std::pow(xs[i], ys[i]);
+    return _mm256_load_pd(rs);
+}
+
+VECTORIZATION_FORCE_INLINE __m256 VECTORIZATION_VECTORCALL _mm256_hypot_ps(__m256 x, __m256 y)
+{
+    alignas(32) float xs[8];
+    alignas(32) float ys[8];
+    alignas(32) float rs[8];
+    _mm256_store_ps(xs, x);
+    _mm256_store_ps(ys, y);
+    for (int i = 0; i < 8; ++i)
+        rs[i] = std::hypot(xs[i], ys[i]);
+    return _mm256_load_ps(rs);
+}
+
+VECTORIZATION_FORCE_INLINE __m256d VECTORIZATION_VECTORCALL _mm256_hypot_pd(__m256d x, __m256d y)
+{
+    alignas(32) double xs[4];
+    alignas(32) double ys[4];
+    alignas(32) double rs[4];
+    _mm256_store_pd(xs, x);
+    _mm256_store_pd(ys, y);
+    for (int i = 0; i < 4; ++i)
+        rs[i] = std::hypot(xs[i], ys[i]);
+    return _mm256_load_pd(rs);
+}
+#else
 SVML_FUNCTION_TWO_ARGS(pow)
 SVML_FUNCTION_TWO_ARGS(hypot)
+#endif
 
 #undef SVML_FUNCTION_TWO_ARGS_HA
 #undef SVML_FUNCTION_TWO_ARGS

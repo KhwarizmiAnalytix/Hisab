@@ -1,5 +1,5 @@
-Quarisma: High-Performance Computational Library
-Copyright (c) 2025 QuarismaAnalyitix
+XSigma: High-Performance Computational Library
+Copyright (c) 2025 XSigmaAnalyitix
 
 Dual License Model
 ------------------
@@ -13,22 +13,22 @@ This project is licensed under a dual-licensing scheme:
 
    See: LICENSES/GPL-3.0-or-later.txt
 
-2. Commercial License (Quarisma Commercial License):
+2. Commercial License (XSigma Commercial License):
    A separate commercial license is available for organizations and
    individuals who wish to use this software in proprietary, closed-source,
    or SaaS applications without being subject to the copyleft provisions
    of the GPL.
 
-   See: LICENSES/Quarisma-Commercial.txt
+   See: LICENSES/XSigma-Commercial.txt
 
-You may choose which license applies to your use of Quarisma.
+You may choose which license applies to your use of XSigma.
 
-SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Quarisma-Commercial
+SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-XSigma-Commercial
 
 -------------------------------------------------------------------------------
 Contact
 -------------------------------------------------------------------------------
 For commercial licensing inquiries, please contact:
 
-  Email: licensing@quarisma.co.uk
-  Website: https://www.quarisma.co.uk
+  Email: licensing@xsigma.co.uk
+  Website: https://www.xsigma.co.uk

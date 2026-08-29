@@ -1,11 +1,11 @@
 /*
- * Quarisma ITT API Wrapper
+ * XSigma ITT API Wrapper
  *
  * This header provides C++ wrapper functions for Intel Instrumentation and
- * Tracing Technology (ITT) API, aligned with Quarisma's implementation.
+ * Tracing Technology (ITT) API, aligned with XSigma's implementation.
  *
  * Features:
- * - Global ITT domain for Quarisma
+ * - Global ITT domain for XSigma
  * - Task range annotations (push/pop)
  * - Event markers
  * - Thread-safe operations

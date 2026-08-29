@@ -11,3 +11,7 @@ ThirdParty/kineto/libkineto/third_party/dynolog
 ThirdParty/kineto/libkineto/third_party/fmt
 ThirdParty/glog/bazel/example
 ThirdParty/magic_enum/test
+
+# Host-side Python tooling; no Bazel packages. Listing this directory can fail
+# on Docker bind-mounts after a bazel server restart ("No such file or directory").
+Tools

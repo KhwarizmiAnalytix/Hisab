@@ -15,7 +15,7 @@ template <typename, typename...>
 class class_;
 }
 
-namespace quarisma
+namespace xsigma
 {
 class intrusive_ptr_target;
 namespace raw
@@ -142,7 +142,7 @@ inline uint32_t atomic_weakcount_decrement(std::atomic<uint64_t>& combined_refco
 // intrusive_ptr for you!
 
 // NOLINTNEXTLINE(cppcoreguidelines-virtual-class-destructor)
-class QUARISMA_VISIBILITY intrusive_ptr_target
+class XSIGMA_VISIBILITY intrusive_ptr_target
 {
     // Note [Weak references for intrusive refcounting]
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -153,7 +153,7 @@ class QUARISMA_VISIBILITY intrusive_ptr_target
     //      plus one more if refcount > 0
     //    An invariant: refcount > 0  =>  weakcount > 0
     //
-    //  - quarisma::StorageImpl stays live as long as there are any strong
+    //  - xsigma::StorageImpl stays live as long as there are any strong
     //    or weak pointers to it (weakcount > 0, since strong
     //    references count as a +1 to weakcount)
     //
@@ -162,7 +162,7 @@ class QUARISMA_VISIBILITY intrusive_ptr_target
     //  - Once refcount == 0, it can never again be > 0 (the transition
     //    from > 0 to == 0 is monotonic)
     //
-    //  - When you access quarisma::StorageImpl via a weak pointer, you must
+    //  - When you access xsigma::StorageImpl via a weak pointer, you must
     //    atomically increment the use count, if it is greater than 0.
     //    If it is not, you must report that the storage is dead.
     //
@@ -206,7 +206,7 @@ protected:
 #pragma GCC diagnostic ignored "-Wterminate"
 #pragma GCC diagnostic ignored "-Wexceptions"
 #endif
-        QUARISMA_CHECK_DEBUG(
+        XSIGMA_CHECK_DEBUG(
             // Second condition is there to accommodate
             // unsafe_adapt_non_heap_allocated: since we are doing our own
             // deallocation in that case, it is correct for each
@@ -221,7 +221,7 @@ protected:
             "Tried to destruct an intrusive_ptr_target that still has intrusive_ptr to it; "
             "refcount was ",
             refcount());
-        QUARISMA_CHECK_DEBUG(
+        XSIGMA_CHECK_DEBUG(
             // See ~intrusive_ptr for optimization that will frequently result in 1
             // at destruction time.
             weakcount() == 1 || weakcount() == 0 ||
@@ -324,9 +324,10 @@ private:
     {
         if (target_ != NullType::singleton())
         {
-            QUARISMA_UNUSED uint32_t new_refcount = detail::atomic_refcount_increment(target_->combined_refcount_);
-            QUARISMA_CHECK_DEBUG(
-                new_refcount != 1, 
+            XSIGMA_UNUSED uint32_t new_refcount =
+                detail::atomic_refcount_increment(target_->combined_refcount_);
+            XSIGMA_CHECK_DEBUG(
+                new_refcount != 1,
                 "intrusive_ptr: Cannot increase refcount after it reached zero.");
         }
     }
@@ -390,7 +391,7 @@ private:
             // (On x86_64, a store with memory_order_relaxed generates a plain old
             // `mov`, whereas an atomic increment does a lock-prefixed `add`, which is
             // much more expensive: https://godbolt.org/z/eKPzj8.)
-            QUARISMA_CHECK_DEBUG(
+            XSIGMA_CHECK_DEBUG(
                 target_->combined_refcount_.load(std::memory_order_relaxed) == 0,
                 "intrusive_ptr: Newly-created target had non-zero refcounts. Does its "
                 "constructor do something strange like incref or create an "
@@ -548,7 +549,7 @@ public:
    */
     static intrusive_ptr reclaim(TTarget* owning_ptr)
     {
-        QUARISMA_CHECK_DEBUG(
+        XSIGMA_CHECK_DEBUG(
             owning_ptr == NullType::singleton() || owning_ptr->refcount() == 0 ||
                 owning_ptr->weakcount(),
             "TTarget violates the invariant that refcount > 0  =>  weakcount > 0");
@@ -641,7 +642,7 @@ public:
     static intrusive_ptr unsafe_reclaim_from_nonowning(TTarget* raw_ptr)
     {
         // See Note [Stack allocated intrusive_ptr_target safety]
-        QUARISMA_CHECK_DEBUG(
+        XSIGMA_CHECK_DEBUG(
             raw_ptr == NullType::singleton() || raw_ptr->refcount() > 0,
             "intrusive_ptr: Can only reclaim pointers that are owned by someone");
         auto ptr = reclaim(raw_ptr);  // doesn't increase refcount
@@ -715,10 +716,10 @@ inline bool operator!=(std::nullptr_t, const intrusive_ptr<TTarget2, NullType2>&
     return !operator==(nullptr, rhs);
 }
 template <typename T>
-struct MaybeOwnedTraits<quarisma::intrusive_ptr<T>>
+struct MaybeOwnedTraits<xsigma::intrusive_ptr<T>>
 {
-    using owned_type  = quarisma::intrusive_ptr<T>;
-    using borrow_type = quarisma::intrusive_ptr<T>;
+    using owned_type  = xsigma::intrusive_ptr<T>;
+    using borrow_type = xsigma::intrusive_ptr<T>;
 
     static borrow_type createBorrow(const owned_type& from)
     {
@@ -776,9 +777,9 @@ private:
     {
         if (target_ != NullType::singleton())
         {
-            QUARISMA_UNUSED uint32_t new_weakcount =
+            XSIGMA_UNUSED uint32_t new_weakcount =
                 detail::atomic_weakcount_increment(target_->combined_refcount_);
-            QUARISMA_CHECK_DEBUG(
+            XSIGMA_CHECK_DEBUG(
                 new_weakcount != 1,
                 "weak_intrusive_ptr: Cannot increase weakcount after it reached zero.");
         }
@@ -989,7 +990,7 @@ public:
         // if refcount > 0, weakcount must be >1 for weak references to exist.
         // see weak counting explanation at top of this file.
         // if refcount == 0, weakcount only must be >0.
-        QUARISMA_CHECK_DEBUG(
+        XSIGMA_CHECK_DEBUG(
             owning_weak_ptr == NullType::singleton() || owning_weak_ptr->weakcount() > 1 ||
                 (owning_weak_ptr->refcount() == 0 && owning_weak_ptr->weakcount() > 0),
             "weak_intrusive_ptr: Can only weak_intrusive_ptr::reclaim() owning pointers that were "
@@ -1088,24 +1089,24 @@ inline void incref(intrusive_ptr_target* self)
 inline void decref(intrusive_ptr_target* self)
 {
     // Let it die
-    quarisma::intrusive_ptr<intrusive_ptr_target>::reclaim(self);
+    xsigma::intrusive_ptr<intrusive_ptr_target>::reclaim(self);
     // NB: Caller still has 'self' pointer, but it's now invalid.
-    // If you want more safety, used the actual quarisma::intrusive_ptr class
+    // If you want more safety, used the actual xsigma::intrusive_ptr class
 }
 
 template <typename T>
 inline T* make_weak(T* self)
 {
     // NB: 'this' is a strong pointer, but we return a weak pointer
-    auto                            ptr = quarisma::intrusive_ptr<T>::reclaim(self);
-    quarisma::weak_intrusive_ptr<T> wptr(ptr);
+    auto                          ptr = xsigma::intrusive_ptr<T>::reclaim(self);
+    xsigma::weak_intrusive_ptr<T> wptr(ptr);
     ptr.release();
     return wptr.release();
 }
 
 inline uint32_t use_count(intrusive_ptr_target* self)
 {
-    auto ptr = quarisma::intrusive_ptr<intrusive_ptr_target>::reclaim(self);
+    auto ptr = xsigma::intrusive_ptr<intrusive_ptr_target>::reclaim(self);
     auto r   = ptr.use_count();
     ptr.release();
     return r;
@@ -1124,15 +1125,15 @@ inline void incref(weak_intrusive_ptr_target* self)
 inline void decref(weak_intrusive_ptr_target* self)
 {
     // Let it die
-    quarisma::weak_intrusive_ptr<intrusive_ptr_target>::reclaim(self);
+    xsigma::weak_intrusive_ptr<intrusive_ptr_target>::reclaim(self);
     // NB: You still "have" the 'self' pointer, but it's now invalid.
-    // If you want more safety, used the actual quarisma::weak_intrusive_ptr class
+    // If you want more safety, used the actual xsigma::weak_intrusive_ptr class
 }
 
 template <typename T>
 inline T* lock(T* self)
 {
-    auto wptr = quarisma::weak_intrusive_ptr<T>::reclaim(self);
+    auto wptr = xsigma::weak_intrusive_ptr<T>::reclaim(self);
     auto ptr  = wptr.lock();
     wptr.release();
     return ptr.release();
@@ -1141,7 +1142,7 @@ inline T* lock(T* self)
 // This gives the STRONG refcount of a WEAK pointer
 inline uint32_t use_count(weak_intrusive_ptr_target* self)
 {
-    auto wptr = quarisma::weak_intrusive_ptr<intrusive_ptr_target>::reclaim(self);
+    auto wptr = xsigma::weak_intrusive_ptr<intrusive_ptr_target>::reclaim(self);
     auto r    = wptr.use_count();
     wptr.release();
     return r;
@@ -1151,24 +1152,24 @@ inline uint32_t use_count(weak_intrusive_ptr_target* self)
 
 }  // namespace raw
 
-}  // namespace quarisma
+}  // namespace xsigma
 
 namespace std
 {
 // To allow intrusive_ptr and weak_intrusive_ptr inside std::unordered_map or
 // std::unordered_set, we need std::hash
 template <class TTarget, class NullType>
-struct hash<quarisma::intrusive_ptr<TTarget, NullType>>
+struct hash<xsigma::intrusive_ptr<TTarget, NullType>>
 {
-    size_t operator()(const quarisma::intrusive_ptr<TTarget, NullType>& x) const
+    size_t operator()(const xsigma::intrusive_ptr<TTarget, NullType>& x) const
     {
         return std::hash<TTarget*>()(x.get());
     }
 };
 template <class TTarget, class NullType>
-struct hash<quarisma::weak_intrusive_ptr<TTarget, NullType>>
+struct hash<xsigma::weak_intrusive_ptr<TTarget, NullType>>
 {
-    size_t operator()(const quarisma::weak_intrusive_ptr<TTarget, NullType>& x) const
+    size_t operator()(const xsigma::weak_intrusive_ptr<TTarget, NullType>& x) const
     {
         return std::hash<TTarget*>()(x._unsafe_get_target());
     }

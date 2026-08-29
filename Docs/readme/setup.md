@@ -1,8 +1,8 @@
-# Quarisma Setup Guide
+# XSigma Setup Guide
 
 ## Overview
 
-The `Scripts/setup.py` script provides a convenient interface for configuring and building Quarisma with various options. This guide explains how to use the script and documents all available CMake flags.
+The `Scripts/setup.py` script provides a convenient interface for configuring and building XSigma with various options. This guide explains how to use the script and documents all available CMake flags.
 
 ## Basic Usage
 
@@ -104,53 +104,56 @@ When multiple feature flags are used, they are concatenated:
 
 | Flag | CMake Variable | Description | Default |
 |------|----------------|-------------|---------|
-| `lto` | `QUARISMA_ENABLE_LTO` | Link-Time Optimization | ON |
-| `avx2` | `QUARISMA_VECTORIZATION_TYPE` | AVX2 vectorization | - |
-| `avx` | `QUARISMA_VECTORIZATION_TYPE` | AVX vectorization | - |
-| `avx512` | `QUARISMA_VECTORIZATION_TYPE` | AVX-512 vectorization | - |
-| `sse` | `QUARISMA_VECTORIZATION_TYPE` | SSE vectorization | - |
+| `lto` | `PROJECT_ENABLE_LTO` | Link-Time Optimization | ON |
+| `avx2` | `VECTORIZATION_CPU_BACKEND` | AVX2 vectorization | x86 default |
+| `avx` | `VECTORIZATION_CPU_BACKEND` | AVX vectorization | - |
+| `avx512` | `VECTORIZATION_CPU_BACKEND` | AVX-512 vectorization | - |
+| `sse` | `VECTORIZATION_CPU_BACKEND` | SSE vectorization | - |
+| `neon` | `VECTORIZATION_CPU_BACKEND` | AArch64 NEON | Apple Silicon default |
+| `sve` | `VECTORIZATION_CPU_BACKEND` | AArch64 SVE (128-bit) | - |
 
 ### Feature Flags
 
 | Flag | CMake Variable | Description | Default |
 |------|----------------|-------------|---------|
-| `cuda` | `MEMOY_ENABLE_CUDA` | GPU acceleration with CUDA | OFF |
-| `tbb` | `QUARISMA_ENABLE_TBB` | Intel Threading Building Blocks | OFF |
-| `mkl` | `QUARISMA_ENABLE_MKL` | Intel Math Kernel Library | OFF |
-| `numa` | `QUARISMA_ENABLE_NUMA` | NUMA support | OFF |
-| `memkind` | `QUARISMA_ENABLE_MEMKIND` | Memory kind support | OFF |
-| `external` | `QUARISMA_ENABLE_EXTERNAL` | Use external system libraries | ON |
+| `cuda` | `MEMORY_GPU_BACKEND` | GPU acceleration with CUDA | OFF |
+| `tbb` | `MEMORY_ENABLE_TBB` | Intel Threading Building Blocks | OFF |
+| `mkl` | `CORE_ENABLE_MKL` | Intel Math Kernel Library | OFF |
+| `numa` | `MEMORY_ENABLE_NUMA` | NUMA support | OFF |
+| `memkind` | `MEMORY_ENABLE_MEMKIND` | Memory kind support | OFF |
+| `external` | `XSIGMA_ENABLE_EXTERNAL` | Use external system libraries | ON |
 
 ### Testing Flags
 
 | Flag | CMake Variable | Description | Default |
 |------|----------------|-------------|---------|
 | `test` | `BUILD_TESTING` | Enable testing | ON |
-| `gtest` | `QUARISMA_ENABLE_GTEST` | Google Test framework | ON |
-| `benchmark` | `QUARISMA_ENABLE_BENCHMARK` | Benchmark library | OFF |
+| `gtest` | `ENABLE_GTEST` | Google Test framework | ON |
+| `benchmark` | `ENABLE_BENCHMARK` | Benchmark library | OFF |
 
 ### Analysis Flags
 
 | Flag | CMake Variable | Description | Default |
 |------|----------------|-------------|---------|
-| `coverage` | `QUARISMA_ENABLE_COVERAGE` | Code coverage analysis | OFF |
-| `sanitizer` | `QUARISMA_ENABLE_SANITIZER` | Enable sanitizers | OFF |
-| `sanitizer.address` | `QUARISMA_SANITIZER_TYPE` | Address Sanitizer | - |
-| `sanitizer.thread` | `QUARISMA_SANITIZER_TYPE` | Thread Sanitizer | - |
-| `sanitizer.undefined` | `QUARISMA_SANITIZER_TYPE` | Undefined Behavior Sanitizer | - |
-| `sanitizer.memory` | `QUARISMA_SANITIZER_TYPE` | Memory Sanitizer | - |
-| `valgrind` | `QUARISMA_ENABLE_VALGRIND` | Valgrind support | OFF |
-| `clangtidy` | `QUARISMA_ENABLE_CLANGTIDY` | Clang-Tidy analysis | OFF |
-| `iwyu` | `QUARISMA_ENABLE_IWYU` | Include-What-You-Use | OFF |
-| `cppcheck` | `QUARISMA_ENABLE_CPPCHECK` | Cppcheck analysis | OFF |
+| `coverage` | `PROJECT_ENABLE_COVERAGE` | Code coverage analysis | OFF |
+| `sanitizer` | `PROJECT_ENABLE_SANITIZER` | Enable sanitizers | OFF |
+| `sanitizer.address` | `PROJECT_SANITIZER_TYPE` | Address Sanitizer | - |
+| `sanitizer.thread` | `PROJECT_SANITIZER_TYPE` | Thread Sanitizer | - |
+| `sanitizer.undefined` | `PROJECT_SANITIZER_TYPE` | Undefined Behavior Sanitizer | - |
+| `sanitizer.memory` | `PROJECT_SANITIZER_TYPE` | Memory Sanitizer | - |
+| `valgrind` | `XSIGMA_ENABLE_VALGRIND` | Valgrind support | OFF |
+| `clangtidy` | `PROJECT_ENABLE_CLANGTIDY` | Clang-Tidy analysis | OFF |
+| `iwyu` | `PROJECT_ENABLE_IWYU` | Include-What-You-Use | OFF |
+| `cppcheck` | `PROJECT_ENABLE_CPPCHECK` | Cppcheck analysis | OFF |
 
 ### Logging Flags
 
 | Flag | CMake Variable | Description | Default |
 |------|----------------|-------------|---------|
-| `loguru` | `LOGGING_ENABLE_LOGURU` | Loguru logging backend | ON |
-| `logging_backend=glog` | `LOGGING_BACKEND` | Use GLOG backend | - |
-| `logging_backend=native` | `LOGGING_BACKEND` | Use native backend | - |
+| `--logging=spdlog` (default) | `LOGGING_BACKEND` | spdlog backend | SPDLOG |
+| `--logging=loguru` | `LOGGING_BACKEND` | Loguru backend | - |
+| `--logging=glog` | `LOGGING_BACKEND` | GLOG backend | - |
+| `--logging=native` | `LOGGING_BACKEND` | Native (fmt) backend | - |
 
 ### Library Flags
 
@@ -163,18 +166,18 @@ When multiple feature flags are used, they are concatenated:
 
 | Flag | CMake Variable | Description | Default |
 |------|----------------|-------------|---------|
-| `ccache` | `QUARISMA_CACHE_BACKEND` | Use ccache compiler cache | - |
-| `sccache` | `QUARISMA_CACHE_BACKEND` | Use sccache distributed cache | - |
-| `buildcache` | `QUARISMA_CACHE_BACKEND` | Use buildcache | - |
-| `none` | `QUARISMA_CACHE_BACKEND` | Disable caching | - |
+| `ccache` | `XSIGMA_CACHE_BACKEND` | Use ccache compiler cache | - |
+| `sccache` | `XSIGMA_CACHE_BACKEND` | Use sccache distributed cache | - |
+| `buildcache` | `XSIGMA_CACHE_BACKEND` | Use buildcache | - |
+| `none` | `XSIGMA_CACHE_BACKEND` | Disable caching | - |
 
 ### C++ Standard Flags
 
 | Flag | CMake Variable | Description |
 |------|----------------|-------------|
-| `cxxstd=17` | `QUARISMA_CXX_STANDARD` | C++17 standard |
-| `cxxstd=20` | `QUARISMA_CXX_STANDARD` | C++20 standard |
-| `cxxstd=23` | `QUARISMA_CXX_STANDARD` | C++23 standard |
+| `cxxstd=17` | `PROJECT_CXX_STANDARD` | C++17 standard |
+| `cxxstd=20` | `PROJECT_CXX_STANDARD` | C++20 standard |
+| `cxxstd=23` | `PROJECT_CXX_STANDARD` | C++23 standard |
 
 ## Common Build Configurations
 
@@ -251,8 +254,8 @@ For more control, use CMake directly:
 ```bash
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release \
-      -DQUARISMA_ENABLE_LTO=ON \
-      -DQUARISMA_VECTORIZATION_TYPE=avx2 \
+      -DPROJECT_ENABLE_LTO=ON \
+      -DVECTORIZATION_CPU_BACKEND=avx2 \
       ..
 cmake --build . --parallel
 ```

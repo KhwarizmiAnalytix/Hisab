@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Quarisma Bazel Build Configuration Script.
+"""XSigma Bazel Build Configuration Script.
 
-This script provides a simplified interface for building Quarisma with Bazel,
+This script provides a simplified interface for building XSigma with Bazel,
 mirroring the functionality of setup.py but using Bazel instead of CMake.
 
 Usage:
@@ -22,33 +22,53 @@ import sys
 import time
 from typing import Optional
 
-import colorama
-from colorama import Fore, Style
 
+try:
+    import colorama
 
-# Initialize colorama for cross-platform colored output
-colorama.init()
+    colorama.init()
+    COLOR_CYAN = colorama.Fore.CYAN
+    COLOR_GREEN = colorama.Fore.GREEN
+    COLOR_RED = colorama.Fore.RED
+    COLOR_WHITE = colorama.Fore.WHITE
+    COLOR_YELLOW = colorama.Fore.YELLOW
+    COLOR_RESET = colorama.Style.RESET_ALL
+except ImportError:  # Bazel CI jobs may not pip-install colorama
+    COLOR_CYAN = ""
+    COLOR_GREEN = ""
+    COLOR_RED = ""
+    COLOR_WHITE = ""
+    COLOR_YELLOW = ""
+    COLOR_RESET = ""
 
 
 def print_status(message: str, status: str = "INFO") -> None:
     """Print colored status messages."""
     colors = {
-        "INFO": Fore.CYAN,
-        "SUCCESS": Fore.GREEN,
-        "WARNING": Fore.YELLOW,
-        "ERROR": Fore.RED,
+        "INFO": COLOR_CYAN,
+        "SUCCESS": COLOR_GREEN,
+        "WARNING": COLOR_YELLOW,
+        "ERROR": COLOR_RED,
     }
-    color = colors.get(status, Fore.WHITE)
-    print(f"{color}[{status}]{Style.RESET_ALL} {message}")
+    color = colors.get(status, COLOR_WHITE)
+    print(f"{color}[{status}]{COLOR_RESET} {message}")
+
+
+_SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
+from helpers.cpu_isa import runtime_test_skip_reason
 
 
 def _find_bazel_executable() -> Optional[str]:
-    """Find bazelisk or bazel on PATH without spawning a process."""
-    # On Windows, shutil.which also resolves .exe/.cmd/.ps1 extensions
+    """Return the absolute path of bazelisk or bazel, or None."""
+    # On Windows, shutil.which also resolves .exe/.cmd/.ps1 extensions.
+    # Return the full path: CreateProcess cannot find a bare "bazelisk"
+    # when the hit is bazelisk.cmd (WinError 2).
     for cmd in ["bazelisk", "bazel"]:
         path = shutil.which(cmd)
         if path:
-            return cmd
+            return path
     return None
 
 
@@ -67,6 +87,18 @@ def get_bazel_command() -> str:
     if cmd:
         return cmd
     raise RuntimeError("Neither bazel nor bazelisk found in PATH")
+
+
+def bazel_prefix() -> list[str]:
+    """Argv prefix that can spawn Bazel on every platform.
+
+    Windows ``.cmd``/``.bat`` launchers need ``cmd /c``; CreateProcess
+    cannot execute them directly (WinError 2).
+    """
+    exe = get_bazel_command()
+    if os.name == "nt" and exe.lower().endswith((".cmd", ".bat")):
+        return ["cmd.exe", "/c", exe]
+    return [exe]
 
 
 def find_enzyme_pass_plugin() -> Optional[str]:
@@ -145,7 +177,7 @@ _CMAKE_SAN_TO_BAZEL = {
     "leak": "lsan",
 }
 
-# Library/* scope for --project.NAME / dotted project.NAME (matches CMake QUARISMA_LIBRARY_PROJECT)
+# Library/* scope for --project.NAME / dotted project.NAME (matches CMake XSIGMA_LIBRARY_PROJECT)
 _BAZEL_LIBRARY_PROJECTS = (
     "logging",
     "memory",
@@ -251,7 +283,9 @@ class BazelConfiguration:
         self.vectorization: Optional[str] = None
         self.cxx_standard: Optional[str] = None
         self.configs: list[str] = []
-        self.targets: list[str] = ["//..."]  # Default: build everything
+        self.targets: list[str] = [
+            "//Library/..."
+        ]  # Our code only; never test/build ThirdParty cc_test trees
         self.run_tests = False
         self.run_build = False
         self.run_clean = False
@@ -268,7 +302,7 @@ class BazelConfiguration:
         self.subprocess_timeout: int = 600
 
         # Default backends (matching CMake defaults)
-        self.logging_backend = "loguru"  # Default: LOGURU (matches CMake)
+        self.logging_backend = "spdlog"  # Default: SPDLOG (matches CMake)
         self.profiler_backend = "kineto"  # Default: KINETO (matches CMake)
 
         # Compiler and build tool configuration
@@ -672,8 +706,7 @@ class BazelConfiguration:
 
     def build_bazel_command(self, action: str) -> list[str]:
         """Build the Bazel command with all configurations."""
-        bazel_cmd = get_bazel_command()
-        cmd = [bazel_cmd]
+        cmd = bazel_prefix()
         if self.use_batch:
             cmd.append("--batch")
         cmd.append(action)
@@ -745,7 +778,7 @@ class BazelConfiguration:
             cmd.append(f"--define=vectorization_enable_{self.gpu_backend}=true")
 
         # Enzyme: CMake applies -fpass-plugin at compile and link for Enzyme::enzyme.
-        # Bazel only toggles QUARISMA_HAS_ENZYME; without the plugin, __enzyme_* calls are
+        # Bazel only toggles XSIGMA_HAS_ENZYME; without the plugin, __enzyme_* calls are
         # unresolved (crash at null). Restrict --per_file_copt to //Library so GCC-built
         # third-party targets never see -fpass-plugin.
         if "enzyme" in cfg_list:
@@ -822,14 +855,13 @@ class BazelConfiguration:
         """Stop the Bazel server so --batch does not warn about differing startup options."""
         if not self.use_batch:
             return
-        bazel_cmd = get_bazel_command()
         print_status(
             "Running `bazel shutdown` before `--batch` (avoids startup-option mismatch on the server).",
             "INFO",
         )
         try:
             subprocess.run(
-                [bazel_cmd, "shutdown"],
+                bazel_prefix() + ["shutdown"],
                 capture_output=True,
                 text=True,
                 timeout=120,
@@ -844,9 +876,9 @@ class BazelConfiguration:
 
     def _on_off(self, condition: bool) -> str:
         return (
-            f"{Fore.GREEN}ON{Style.RESET_ALL}"
+            f"{COLOR_GREEN}ON{COLOR_RESET}"
             if condition
-            else f"{Fore.RED}OFF{Style.RESET_ALL}"
+            else f"{COLOR_RED}OFF{COLOR_RESET}"
         )
 
     def _na(self) -> str:
@@ -879,9 +911,7 @@ class BazelConfiguration:
         cxx = self._cxx_std_display()
         has_san, san_type = self._sanitizer_info()
         lto = (
-            self.lto_mode
-            if self.lto_mode != "off"
-            else f"{Fore.RED}off{Style.RESET_ALL}"
+            self.lto_mode if self.lto_mode != "off" else f"{COLOR_RED}off{COLOR_RESET}"
         )
         coverage = self._on_off(self.run_coverage)
         testing = self._on_off(self.run_tests)
@@ -912,9 +942,7 @@ class BazelConfiguration:
             self._pf("Valgrind", self._on_off(self.valgrind), W)
 
         # ── Core ──────────────────────────────────────────────────────────────
-        print(
-            f"\n{Fore.CYAN}******** Core module (Bazel flags) ********{Style.RESET_ALL}"
-        )
+        print(f"\n{COLOR_CYAN}******** Core module (Bazel flags) ********{COLOR_RESET}")
         self._pf("Vectorization type", vec, W)
         self._pf("Sleef", self._on_off(self.enable_sleef), W)
         self._pf("Mkl", self._on_off("mkl" in self.configs), W)
@@ -929,7 +957,7 @@ class BazelConfiguration:
 
         # ── Logging ───────────────────────────────────────────────────────────
         print(
-            f"\n{Fore.CYAN}******** Logging module (Bazel flags) ********{Style.RESET_ALL}"
+            f"\n{COLOR_CYAN}******** Logging module (Bazel flags) ********{COLOR_RESET}"
         )
         self._pf("Backend", self.logging_backend.upper(), W)
         self._pf("Cxx standard", cxx, W)
@@ -937,7 +965,7 @@ class BazelConfiguration:
 
         # ── Memory ────────────────────────────────────────────────────────────
         print(
-            f"\n{Fore.CYAN}******** Memory module (Bazel flags) ********{Style.RESET_ALL}"
+            f"\n{COLOR_CYAN}******** Memory module (Bazel flags) ********{COLOR_RESET}"
         )
         self._pf("Mimalloc", self._on_off(mimalloc_on), W)
         self._pf("Memkind", na, W)
@@ -951,7 +979,7 @@ class BazelConfiguration:
 
         # ── Parallel ──────────────────────────────────────────────────────────
         print(
-            f"\n{Fore.CYAN}******** Parallel module (Bazel flags) ********{Style.RESET_ALL}"
+            f"\n{COLOR_CYAN}******** Parallel module (Bazel flags) ********{COLOR_RESET}"
         )
         self._pf("Tbb", self._on_off("tbb" in self.configs), W)
         self._pf("Openmp", self._on_off("openmp" in self.configs), W)
@@ -960,7 +988,7 @@ class BazelConfiguration:
 
         # ── Profiler ──────────────────────────────────────────────────────────
         print(
-            f"\n{Fore.CYAN}******** Profiler module (Bazel flags) ********{Style.RESET_ALL}"
+            f"\n{COLOR_CYAN}******** Profiler module (Bazel flags) ********{COLOR_RESET}"
         )
         self._pf("Backend", self.profiler_backend.upper(), W)
         self._pf("Cxx standard", cxx, W)
@@ -969,11 +997,11 @@ class BazelConfiguration:
     def print_configuration_summary(self) -> None:
         """Print a summary of the resolved build configuration to stdout."""
         print("\n" + "=" * 80)
-        print("QUARISMA BAZEL BUILD CONFIGURATION SUMMARY")
+        print("XSIGMA BAZEL BUILD CONFIGURATION SUMMARY")
         print("=" * 80)
 
         # Compiler and build tool
-        print(f"\n{Fore.CYAN}Compiler & Build Tool:{Style.RESET_ALL}")
+        print(f"\n{COLOR_CYAN}Compiler & Build Tool:{COLOR_RESET}")
         print(f"  Platform:          {self.system}")
         print(
             f"  Build Tool:        {self.build_tool.upper() if self.build_tool else 'NINJA (default)'}"
@@ -985,7 +1013,7 @@ class BazelConfiguration:
             print(f"  Visual Studio:     {self.visual_studio_version.upper()}")
 
         # Build type
-        print(f"\n{Fore.CYAN}Build Configuration:{Style.RESET_ALL}")
+        print(f"\n{COLOR_CYAN}Build Configuration:{COLOR_RESET}")
         print(f"  Build Type:        {self.build_type.upper()}")
 
         # C++ Standard
@@ -1012,7 +1040,7 @@ class BazelConfiguration:
             not self.disable_gtest
         )  # ON by default (mirrors CMake option(... ON))
 
-        print(f"\n{Fore.CYAN}Feature Flags:{Style.RESET_ALL}")
+        print(f"\n{COLOR_CYAN}Feature Flags:{COLOR_RESET}")
         flags: list[tuple[str, bool | str]] = [
             ("MEMORY_ENABLE_MIMALLOC", mimalloc_on),
             ("CORE_HAS_MAGICENUM", True),
@@ -1023,7 +1051,7 @@ class BazelConfiguration:
             ("LTO_MODE", self.lto_mode),
             ("CORE_HAS_ENZYME", "enzyme" in self.configs),
             ("VECTORIZATION_ENABLE_SLEEF", self.enable_sleef),
-            ("QUARISMA_ENABLE_GTEST", gtest_on),
+            ("XSIGMA_ENABLE_GTEST", gtest_on),
             ("BUILD_SHARED_LIBS", self.shared_libs),
             ("ENABLE_SPELL", self.spell),
             ("ENABLE_CLANGTIDY", self.clangtidy),
@@ -1041,14 +1069,14 @@ class BazelConfiguration:
                 print(f"  {flag:30} {self._on_off(state)}")
 
         # Logging / Profiler backends
-        print(f"\n{Fore.CYAN}Logging Backend:{Style.RESET_ALL}")
+        print(f"\n{COLOR_CYAN}Logging Backend:{COLOR_RESET}")
         print(f"  Backend:           {self.logging_backend.upper()}")
-        print(f"\n{Fore.CYAN}Profiler Backend:{Style.RESET_ALL}")
+        print(f"\n{COLOR_CYAN}Profiler Backend:{COLOR_RESET}")
         print(f"  Backend:           {self.profiler_backend.upper()}")
 
         # Sanitizers
         sanitizers = [c for c in self.configs if c in ["asan", "tsan", "ubsan", "msan"]]
-        print(f"\n{Fore.CYAN}Sanitizers:{Style.RESET_ALL}")
+        print(f"\n{COLOR_CYAN}Sanitizers:{COLOR_RESET}")
         if sanitizers:
             for san in sanitizers:
                 print(f"  {san.upper():30} {self._on_off(True)}")
@@ -1063,7 +1091,7 @@ class BazelConfiguration:
                 else ("coverage" if self.run_coverage else "build")
             )
             cmd = self.build_bazel_command(action)
-            print(f"\n{Fore.CYAN}Bazel Command:{Style.RESET_ALL}")
+            print(f"\n{COLOR_CYAN}Bazel Command:{COLOR_RESET}")
             print(f"  {' '.join(cmd)}")
 
         print("\n" + "=" * 80 + "\n")
@@ -1077,12 +1105,11 @@ class BazelConfiguration:
             return
 
         print_status("Cleaning Bazel build artifacts...", "INFO")
-        bazel_cmd = get_bazel_command()
 
         try:
             start_time = time.time()
             subprocess.run(
-                [bazel_cmd, "clean", "--expunge"],
+                bazel_prefix() + ["clean", "--expunge"],
                 check=True,
                 timeout=300,  # 5 minute timeout for clean operation
             )
@@ -1131,6 +1158,11 @@ class BazelConfiguration:
     def test(self) -> None:
         """Execute Bazel tests."""
         if not self.run_tests:
+            return
+
+        skip_reason = runtime_test_skip_reason(self.cpu_backend)
+        if skip_reason:
+            print_status(skip_reason, "WARNING")
             return
 
         print_status("Running Bazel tests...", "INFO")
@@ -1184,6 +1216,11 @@ class BazelConfiguration:
         if not self.run_coverage:
             return
 
+        skip_reason = runtime_test_skip_reason(self.cpu_backend)
+        if skip_reason:
+            print_status(skip_reason, "WARNING")
+            return
+
         print_status("Running Bazel coverage...", "INFO")
         self._shutdown_bazel_for_batch()
         cmd = self.build_bazel_command("coverage")
@@ -1233,10 +1270,9 @@ class BazelConfiguration:
         setup_bazel.py is normally invoked from Scripts/, not the workspace root, so a
         cwd-relative guess (e.g. "bazel-out/...") can silently miss the real path.
         """
-        bazel_cmd = get_bazel_command()
         try:
             result = subprocess.run(
-                [bazel_cmd, "info", key],
+                bazel_prefix() + ["info", key],
                 check=True,
                 capture_output=True,
                 text=True,
@@ -1298,12 +1334,11 @@ class BazelConfiguration:
 
     def _find_coverage_test_binaries(self) -> list[str]:
         """Resolve bazel-bin paths for every cc_test target covered by this run."""
-        bazel_cmd = get_bazel_command()
         targets_expr = " + ".join(self.targets)
         try:
             query_result = subprocess.run(
-                [
-                    bazel_cmd,
+                bazel_prefix()
+                + [
                     "query",
                     f"kind(cc_test, {targets_expr})",
                     "--output=label",
@@ -1311,8 +1346,8 @@ class BazelConfiguration:
                     # way build/test/coverage do. This repo has one WORKSPACE-registered
                     # repository rule (parallel_openmp, via openmp_configure() in
                     # WORKSPACE.bazel) -- loading //Library/Parallel/... without this flag
-                    # fails with "unknown repo 'parallel_openmp'", which a full-tree (//...)
-                    # query touches even though a single-library-scoped one may not.
+                    # fails with "unknown repo 'parallel_openmp'", which a full-tree
+                    # query would also hit.
                     "--enable_workspace",
                 ],
                 check=True,
@@ -1720,7 +1755,7 @@ def parse_args(args: list[str]) -> list[str]:
 
 def print_help() -> None:
     """Print usage examples and the full list of supported dotted tokens."""
-    print_status("Quarisma Bazel Build Configuration Helper", "INFO")
+    print_status("XSigma Bazel Build Configuration Helper", "INFO")
     print("\n" + "=" * 80)
     print("BAZEL BUILD SYSTEM")
     print("=" * 80)

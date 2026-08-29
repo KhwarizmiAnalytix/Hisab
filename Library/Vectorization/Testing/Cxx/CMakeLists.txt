@@ -2,7 +2,7 @@
 # Vectorization Library C++ Tests
 # =============================================================================
 
-quarisma_add_googletest()
+xsigma_add_googletest()
 
 # =============================================================================
 # VectorizationCxxTests executable
@@ -41,28 +41,25 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
   endif()
 endif()
 
-# Include HIP simd unit tests when the HIP GPU backend is active.
-# TestGpuSimd.cu / TestTensorGpu.cpp are shared CUDA+HIP sources (guarded by
-# VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP at the C++ level); here we
-# just need hipcc to actually process them. CMake's HIP language only
-# auto-detects sources by the .hip extension, so LANGUAGE HIP must be set
-# explicitly on both — including the .cu file, whose extension would
-# otherwise route it to the (unloaded) CUDA language rules.
+# HIP GPU tests must live in a separate executable. CMake applies a target's
+# HIP_ARCHITECTURES to every source in that target, so mixing LANGUAGE HIP
+# files (Test*.cu, TestTensorGpu.cpp) into VectorizationCxxTests compiles
+# host SIMD tests (TestSimdUtility.cpp etc.) with --offload-arch and fails.
 if(VECTORIZATION_GPU_BACKEND STREQUAL "hip")
   file(GLOB_RECURSE hip_test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cu")
-  list(APPEND test_sources ${hip_test_sources})
   foreach(_hip_test_src IN LISTS hip_test_sources)
     set_source_files_properties("${_hip_test_src}" PROPERTIES LANGUAGE HIP)
   endforeach()
   unset(_hip_test_src)
-
-  # TestTensorGpu.cpp: processed by hipcc to instantiate GPU expression-template kernels.
+  list(REMOVE_ITEM test_sources "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
   if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
     set_source_files_properties(
       "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp" PROPERTIES LANGUAGE HIP
     )
   endif()
-  message(STATUS "VectorizationCxxTests: HIP-specific tests (Test*.cu, TestTensorGpu.cpp) included")
+  message(STATUS "VectorizationCxxTests: HIP GPU tests split out of host executable "
+                 "(Test*.cu, TestTensorGpu.cpp) — mixed CXX+HIP leaks --offload-arch"
+  )
 endif()
 
 # Include Metal Objective-C++ unit tests when the Metal GPU backend is active. Unlike
@@ -92,8 +89,7 @@ endif()
 add_executable(VectorizationCxxTests ${test_sources})
 
 target_compile_definitions(
-  VectorizationCxxTests PRIVATE QUARISMA_HAS_GTEST=1 QUARISMA_GOOGLE_TEST USE_GTEST
-                                _VARIADIC_MAX=10
+  VectorizationCxxTests PRIVATE XSIGMA_HAS_GTEST=1 XSIGMA_GOOGLE_TEST USE_GTEST _VARIADIC_MAX=10
 )
 
 target_link_libraries(
@@ -294,22 +290,37 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND _vectorization_has_cuda_gpu_tes
 endif()
 unset(_vectorization_has_cuda_gpu_test_source)
 
-# HIP-specific properties for the test executable when any HIP source is present
-# (.cu files or .cpp files compiled as HIP via LANGUAGE HIP).
-set(_vectorization_has_hip_gpu_test_source FALSE)
-if(hip_test_sources OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
-  set(_vectorization_has_hip_gpu_test_source TRUE)
+# HIP GPU tests: own executable so host CXX tests never see --offload-arch.
+set(_vectorization_hip_gpu_sources ${hip_test_sources})
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
+  list(APPEND _vectorization_hip_gpu_sources "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
 endif()
-if(VECTORIZATION_GPU_BACKEND STREQUAL "hip" AND _vectorization_has_hip_gpu_test_source)
-  set_target_properties(
-    VectorizationCxxTests PROPERTIES HIP_ARCHITECTURES "${VECTORIZATION_GPU_ARCHITECTURES}"
+if(VECTORIZATION_GPU_BACKEND STREQUAL "hip" AND _vectorization_hip_gpu_sources)
+  add_executable(VectorizationHipCxxTests ${_vectorization_hip_gpu_sources})
+  target_compile_definitions(
+    VectorizationHipCxxTests PRIVATE XSIGMA_HAS_GTEST=1 XSIGMA_GOOGLE_TEST USE_GTEST
+                                     _VARIADIC_MAX=10
   )
+  target_link_libraries(
+    VectorizationHipCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Vectorization::Vectorization
+  )
+  if(TARGET hip::device)
+    target_link_libraries(VectorizationHipCxxTests PRIVATE hip::device)
+  endif()
+  set_target_properties(
+    VectorizationHipCxxTests PROPERTIES HIP_STANDARD ${VECTORIZATION_CXX_STANDARD}
+                                        HIP_ARCHITECTURES "${VECTORIZATION_GPU_ARCHITECTURES}"
+  )
+  add_test(NAME VectorizationHipCxxTests COMMAND VectorizationHipCxxTests
+           WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+  )
+  set_tests_properties(VectorizationHipCxxTests PROPERTIES TIMEOUT 120 LABELS "Vectorization;Unit")
   message(
     STATUS
-      "VectorizationCxxTests: HIP simd tests enabled (archs: ${VECTORIZATION_GPU_ARCHITECTURES})"
+      "VectorizationHipCxxTests: HIP simd tests enabled (archs: ${VECTORIZATION_GPU_ARCHITECTURES})"
   )
 endif()
-unset(_vectorization_has_hip_gpu_test_source)
+unset(_vectorization_hip_gpu_sources)
 
 add_test(NAME VectorizationCxxTests COMMAND VectorizationCxxTests
          WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
@@ -330,10 +341,10 @@ if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
   endif()
 endif()
 
-quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
+xsigma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 
-if(COMMAND quarisma_set_target_output_directories)
-  quarisma_set_target_output_directories(VectorizationCxxTests)
+if(COMMAND xsigma_set_target_output_directories)
+  xsigma_set_target_output_directories(VectorizationCxxTests)
 endif()
 
 message(STATUS "VectorizationCxxTests registered with CTest")
@@ -346,7 +357,7 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
   # --- Google Benchmark setup ---
   if(NOT TARGET benchmark)
     set(_bench_external_found FALSE)
-    if(QUARISMA_ENABLE_EXTERNAL)
+    if(XSIGMA_ENABLE_EXTERNAL)
       find_package(benchmark QUIET)
       if(benchmark_FOUND)
         message(STATUS "Found external Google Benchmark")
@@ -377,7 +388,7 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
       set(BENCHMARK_USE_BUNDLED_GTEST OFF CACHE BOOL "Don't use bundled gtest for benchmark" FORCE)
       set(BENCHMARK_DOWNLOAD_DEPENDENCIES OFF CACHE BOOL "Don't download dependencies" FORCE)
       add_subdirectory(
-        "${QUARISMA_THIRDPARTY_DIR}/benchmark" "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build"
+        "${XSIGMA_THIRDPARTY_DIR}/benchmark" "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build"
         EXCLUDE_FROM_ALL
       )
       _set_third_party_folder_properties(
@@ -494,8 +505,8 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
       ${target_name} PROPERTIES FOLDER "Benchmarks" OUTPUT_NAME "${target_name}"
     )
 
-    if(COMMAND quarisma_set_target_output_directories)
-      quarisma_set_target_output_directories(${target_name})
+    if(COMMAND xsigma_set_target_output_directories)
+      xsigma_set_target_output_directories(${target_name})
     else()
       set_target_properties(
         ${target_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"

@@ -6,20 +6,25 @@
 
 #if PROFILER_HAS_CUDA
 #ifndef ROCM_ON_WINDOWS
+#if PROFILER_HAS_NVTX
 #ifdef PROFILER_CUDA_USE_NVTX3
 #include <nvtx3/nvtx3.hpp>
 #else
 #include <nvToolsExt.h>
 #endif
+#endif  // PROFILER_HAS_NVTX
 #endif  // ROCM_ON_WINDOWS
 #elif PROFILER_HAS_HIP
+#if PROFILER_HAS_ROCTX
 #include <roctx.h>
+#endif
 #endif  // PROFILER_HAS_CUDA / PROFILER_HAS_HIP
 
 #include "bespoke/base/gpu_runtime.h"
 #include "bespoke/common/util.h"
 #include "common/approximate_clock.h"
 #include "common/irange.h"
+#include "common/profiler_macros.h"
 
 namespace profiler::profiler_impl::impl
 {
@@ -125,11 +130,19 @@ struct CUDAOrHIPMethods : public ProfilerStubs
 
 #if PROFILER_HAS_CUDA
 #ifndef ROCM_ON_WINDOWS
+#if PROFILER_HAS_NVTX
     void mark(const char* name) const override { ::nvtxMark(name); }
 
     void rangePush(const char* name) const override { ::nvtxRangePushA(name); }
 
     void rangePop() const override { ::nvtxRangePop(); }
+#else
+    void mark(PROFILER_UNUSED const char* name) const override {}
+
+    void rangePush(PROFILER_UNUSED const char* name) const override {}
+
+    void rangePop() const override {}
+#endif  // PROFILER_HAS_NVTX
 #else   // ROCM_ON_WINDOWS
     static void printUnavailableWarning()
     {
@@ -140,6 +153,7 @@ struct CUDAOrHIPMethods : public ProfilerStubs
     void rangePop() const override { printUnavailableWarning(); }
 #endif  // ROCM_ON_WINDOWS
 #elif PROFILER_HAS_HIP
+#if PROFILER_HAS_ROCTX
     // ROCm's marker API (ROCTX) is a different library from NVTX -- not a
     // macro-alias situation like the cuda*/hip* runtime calls above.
     void mark(const char* name) const override { ::roctxMark(name); }
@@ -147,6 +161,13 @@ struct CUDAOrHIPMethods : public ProfilerStubs
     void rangePush(const char* name) const override { ::roctxRangePushA(name); }
 
     void rangePop() const override { ::roctxRangePop(); }
+#else
+    void mark(PROFILER_UNUSED const char* name) const override {}
+
+    void rangePush(PROFILER_UNUSED const char* name) const override {}
+
+    void rangePop() const override {}
+#endif  // PROFILER_HAS_ROCTX
 #endif  // PROFILER_HAS_CUDA / PROFILER_HAS_HIP
 
     void onEachDevice(std::function<void(int)> op) const override

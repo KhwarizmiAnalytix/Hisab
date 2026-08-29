@@ -8,7 +8,7 @@
 # mode: use EnzymeConfig.cmake in the same directory, e.g. find_package(Enzyme CONFIG REQUIRED PATHS
 # "${CMAKE_SOURCE_DIR}/Cmake/packages")
 #
-# Input cache variable (Quarisma defines it in enzyme.cmake before find_package): ENZYME_PLUGIN_PATH
+# Input cache variable (XSigma defines it in enzyme.cmake before find_package): ENZYME_PLUGIN_PATH
 # - Optional explicit path to the plugin (.so/.dylib/.dll)
 #
 # Result variables: Enzyme_FOUND Enzyme_PLUGIN_LIBRARY - Path to the Enzyme plugin shared library

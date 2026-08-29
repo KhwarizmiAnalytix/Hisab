@@ -1,5 +1,3 @@
-#include "util/logging_exception.h"
-
 #include <atomic>
 #include <cstdlib>  // for getenv
 #include <functional>
@@ -10,6 +8,7 @@
 
 #include "back_trace.h"
 #include "logger/logger.h"
+#include "util/logging_exception.h"
 #include "util/string_util.h"
 
 namespace logging
@@ -118,7 +117,8 @@ exception::exception(source_location source_location, std::string msg, exception
           std::move(msg),
           std::string("Exception raised from ") + std::string(source_location.function) + " at " +
               std::string(source_location.file) + ":" + std::to_string(source_location.line) +
-              " (most recent call first):\n" + (*GetFetchStackTrace())(),
+              " (most recent call first):\n" +
+              (logging::back_trace::capture_on_error() ? (*GetFetchStackTrace())() : std::string{}),
           nullptr,
           category)
 {
@@ -134,7 +134,8 @@ exception::exception(
       backtrace_(
           std::string("Exception raised from ") + std::string(source_location.function) + " at " +
           std::string(source_location.file) + ":" + std::to_string(source_location.line) +
-          " (most recent call first):\n" + (*GetFetchStackTrace())()),
+          " (most recent call first):\n" +
+          (logging::back_trace::capture_on_error() ? (*GetFetchStackTrace())() : std::string{})),
       caller_(nullptr),
       nested_exception_(std::move(nested)),  //NOLINT
       category_(category)
@@ -194,7 +195,6 @@ void exception::refresh_what()
 {
     what_.reset();
     what_without_backtrace_ = compute_what(/*include_backtrace*/ false);
-    LOGGING_LOG_ERROR("Error message: {}", what());
 }
 
 //-----------------------------------------------------------------------------
@@ -215,7 +215,13 @@ namespace details
 {
 void check_fail(const char* func, const char* file, int line, const std::string& msg)
 {
-    throw logging::exception({func, file, line}, msg, logging::exception_category::GENERIC);
+    logging::source_location loc{func, file, line};
+    if (logging::get_exception_mode() == logging::exception_mode::THROW)
+    {
+        throw logging::exception(loc, msg, logging::exception_category::GENERIC);
+    }
+    LOGGING_LOG_FATAL("Check failed: {}", msg);
+    std::abort();
 }
 }  // namespace details
 }  // namespace logging

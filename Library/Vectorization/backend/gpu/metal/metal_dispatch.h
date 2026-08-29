@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #pragma once
@@ -30,6 +30,7 @@
 // binding with setBuffer:offset:.
 
 #include <cstddef>
+#include <string>
 
 namespace vectorization::metal_backend
 {
@@ -40,10 +41,26 @@ bool device_available();
 // corresponding .metal kernel declares its [[buffer(k)]] arguments. Synchronous
 // (waits for GPU completion before returning).
 void dispatch(
-    const char* kernel_name, const void* const* in_buffers, int n_in, void* out_buffer,
-    std::size_t n_elems);
+    const char*        kernel_name,
+    const void* const* in_buffers,
+    int                n_in,
+    void*              out_buffer,
+    std::size_t        n_elems);
 
 void dispatch_fill(void* out_buffer, float value, std::size_t n_elems);
+
+// One fused element-wise kernel compiled from `kernel_source` (MSL). Tensor
+// leaves bind as device buffers 0..n_in-1, scalars as constant buffers
+// n_in..n_in+n_scalars-1 (setBytes), then out and n. The kernel function
+// must be named fused_float. Source is compiled once and cached.
+void dispatch_fused(
+    std::string const& kernel_source,
+    const void* const* in_buffers,
+    int                n_in,
+    float const*       scalars,
+    int                n_scalars,
+    void*              out_buffer,
+    std::size_t        n_elems);
 
 // Single-threadgroup reduction (sum). Requires n_elems <= the device's
 // maxTotalThreadsPerThreadgroup (throws std::invalid_argument otherwise) — this is not

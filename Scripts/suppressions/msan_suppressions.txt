@@ -1,4 +1,4 @@
-# MemorySanitizer Suppressions for Quarisma
+# MemorySanitizer Suppressions for XSigma
 # ========================================
 # This file contains suppressions for MemorySanitizer to handle known false positives
 # and issues in third-party libraries that cannot be easily fixed.
@@ -67,7 +67,7 @@ use-of-uninitialized-value:*experimental*profiler*
 # Suppress issues in test code
 use-of-uninitialized-value:*Test*
 
-# Suppress issues in specific Quarisma components that may have
+# Suppress issues in specific XSigma components that may have
 # intentional uninitialized memory usage (e.g., performance optimizations)
 use-of-uninitialized-value:*allocator*
 use-of-uninitialized-value:*memory*pool*

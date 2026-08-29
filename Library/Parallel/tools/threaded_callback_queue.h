@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  *
  * Portions of this code are based on VTK (Visualization Toolkit):
 
@@ -45,17 +45,21 @@
 #include <atomic>              // For atomic_bool
 #include <cassert>             // For assert
 #include <condition_variable>  // For condition variable
+#include <cstdint>             // For int64_t invoker indices
 #include <deque>               // For deque
 #include <functional>          // For greater
 #include <memory>              // For unique_ptr, shared_ptr
 #include <mutex>               // For mutex
-#include <thread>              // For thread
-#include <tuple>               // For tuple
-#include <type_traits>         // For type_traits
-#include <unordered_map>       // For unordered_map
-#include <unordered_set>       // For unordered_set
-#include <utility>             // For forward
-#include <vector>              // For vector
+#if __cplusplus >= 202002L
+#include <ranges>  // For views::reverse
+#endif
+#include <thread>         // For thread
+#include <tuple>          // For tuple
+#include <type_traits>    // For type_traits
+#include <unordered_map>  // For unordered_map
+#include <unordered_set>  // For unordered_set
+#include <utility>        // For forward
+#include <vector>         // For vector
 
 #include "common/parallel_export.h"
 
@@ -120,9 +124,16 @@ public:
      */
         PARALLEL_API virtual void wait() const
         {
+            if (status_.load(std::memory_order_acquire) == READY)
+            {
+                return;
+            }
             std::unique_lock<std::mutex> lock(mutex_);
-            condition_variable_.wait(
-                lock, [this] { return status_.load(std::memory_order_relaxed) == READY; });
+            if (status_.load(std::memory_order_acquire) != READY)
+            {
+                condition_variable_.wait(
+                    lock, [this] { return status_.load(std::memory_order_acquire) == READY; });
+            }
         }
 
         friend class threaded_callback_queue;
@@ -154,8 +165,11 @@ public:
 
         /**
      * Index that is set by the invoker to this shared state.
+     * Signed so control tasks pushed to the front can use a lower index than the
+     * current front (VTK uses vtkIdType). An unsigned type wraps to a huge
+     * offset and try_invoke then indexes off the deque.
      */
-        size_t invoker_index_;
+        std::int64_t invoker_index_;
 
         /**
      * When set to true, when this invoker becomes ready, whoever picked this invoker must directly
@@ -286,6 +300,47 @@ private:
     PARALLEL_API void invoke(shared_future_base* invoker);
     PARALLEL_API bool try_invoke(shared_future_base* invoker);
 
+    /**
+     * Index of the first/last non-null queued invoker. try_invoke() can
+     * leave nullptr holes; callers must not dereference front()/back().
+    */
+    std::int64_t front_invoker_index() const
+    {
+        const auto it = std::find_if(
+            invoker_queue_.begin(),
+            invoker_queue_.end(),
+            [](const auto& inv) { return static_cast<bool>(inv); });
+        if (it != invoker_queue_.end())
+        {
+            return (*it)->invoker_index_;
+        }
+        return 0;
+    }
+    std::int64_t back_invoker_index() const
+    {
+#if __cplusplus >= 202002L
+        const auto reverse_invokers = std::views::reverse(invoker_queue_);
+        const auto it               = std::find_if(
+            reverse_invokers.begin(),
+            reverse_invokers.end(),
+            [](const auto& inv) { return static_cast<bool>(inv); });
+        if (it != reverse_invokers.end())
+        {
+            return (*it)->invoker_index_;
+        }
+#else
+        const auto it = std::find_if(
+            invoker_queue_.rbegin(),
+            invoker_queue_.rend(),
+            [](const auto& inv) { return static_cast<bool>(inv); });
+        if (it != invoker_queue_.rend())
+        {
+            return (*it)->invoker_index_;
+        }
+#endif
+        return -1;
+    }
+
     template <class FT, class... ArgsT>
     void push_control(FT&& f, ArgsT&&... args);
 
@@ -351,7 +406,7 @@ struct threaded_callback_queue::return_value_wrapper<ReturnT, false /* IsLValueR
 
     return_value_wrapper() = default;
     template <class ReturnTT>
-    return_value_wrapper(ReturnTT&& value) : value_(std::forward<ReturnTT>(value))//NOLINT
+    return_value_wrapper(ReturnTT&& value) : value_(std::forward<ReturnTT>(value))  //NOLINT
     {
     }
 
@@ -440,7 +495,10 @@ struct threaded_callback_queue::invoker_impl::invoker_helper<void>
     static void invoke(InvokerT&& invoker, shared_future<void>* future)
     {
         invoker();
-        future->status_.store(READY, std::memory_order_release);
+        {
+            std::scoped_lock<std::mutex> lock(future->mutex_);
+            future->status_.store(READY, std::memory_order_release);
+        }
         future->condition_variable_.notify_all();
     }
 };
@@ -705,7 +763,8 @@ bool threaded_callback_queue::must_wait(SharedFutureContainerT&& prior_shared_fu
     return std::any_of(
         prior_shared_futures.begin(),
         prior_shared_futures.end(),
-        [](const auto& future_item) {
+        [](const auto& future_item)
+        {
             return detail::get_raw_ptr(future_item)->status_.load(std::memory_order_acquire) !=
                    READY;
         });
@@ -819,7 +878,7 @@ void threaded_callback_queue::push_control(FT&& f, ArgsT&&... args)
     auto local_control_futures = [this, &invoker_ptr]
     {
         std::scoped_lock lock(control_mutex_);
-        auto                        result = control_futures_;
+        auto             result = control_futures_;
         control_futures_.emplace(invoker_ptr);
         return result;
     }();
@@ -839,7 +898,7 @@ void threaded_callback_queue::push_control(FT&& f, ArgsT&&... args)
 
             std::scoped_lock lock(mutex_);
             invoker_ptr->invoker_index_ =
-                invoker_queue_.empty() ? 0 : invoker_queue_.front()->invoker_index_ - 1;
+                invoker_queue_.empty() ? 0 : this->front_invoker_index() - 1;
             invoker_queue_.emplace_front(invoker_ptr);
         }
         condition_variable_.notify_one();
@@ -861,8 +920,7 @@ threaded_callback_queue::push(FT&& f, ArgsT&&... args)
 
     {
         std::scoped_lock lock(mutex_);
-        invoker_ptr->invoker_index_ =
-            invoker_queue_.empty() ? 0 : invoker_queue_.back()->invoker_index_ + 1;
+        invoker_ptr->invoker_index_ = this->back_invoker_index() + 1;
         invoker_queue_.emplace_back(invoker_ptr);
     }
 

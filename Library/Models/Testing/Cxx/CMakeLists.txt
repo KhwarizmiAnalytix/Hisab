@@ -1,7 +1,7 @@
 # =============================================================================
 # Models Library C++ Tests
 # =============================================================================
-quarisma_add_googletest()
+xsigma_add_googletest()
 
 file(GLOB_RECURSE test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cpp")
 

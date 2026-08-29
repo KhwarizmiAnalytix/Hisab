@@ -1,5 +1,5 @@
 # =============================================================================
-# Quarisma Bazel Configuration
+# XSigma Bazel Configuration
 # =============================================================================
 # Build flags, compiler options, and platform-specific settings
 # Equivalent to CMake compiler flags and build type configurations
@@ -38,7 +38,7 @@ build --experimental_repository_cache_hardlinks
 # =============================================================================
 # --cxxopt=-std=c++XX is GCC/Clang syntax only; MSVC uses /std:c++XX.
 # Each config uses --per_file_copt so the correct flag is applied per compiler.
-# The windows platform config applies /std:c++XX via quarisma_copts() per-target,
+# The windows platform config applies /std:c++XX via xsigma_copts() per-target,
 # but these configs guard against leakage when --config=cxx20 etc. are passed
 # explicitly on Windows.
 
@@ -87,7 +87,7 @@ build:lto --copt=-flto=thin
 build:lto --linkopt=-flto=thin
 
 # =============================================================================
-# Vectorization Options (equivalent to QUARISMA_VECTORIZATION_TYPE)
+# Vectorization Options (equivalent to VECTORIZATION_CPU_BACKEND)
 # =============================================================================
 
 # SSE vectorization
@@ -120,7 +120,7 @@ build:sve --define=vectorization_type=sve
 # C++ standard is NOT set here: on Linux/macOS it comes from the platform config
 # (build:linux/build:macos --cxxopt=-std=c++20); on Windows the actual compiler is
 # still cl.exe (repo_env only affects fetch), so Library targets get /std:c++20 via
-# quarisma_copts(). Putting -std=c++20 here would pass a GCC/Clang flag to cl.exe.
+# xsigma_copts(). Putting -std=c++20 here would pass a GCC/Clang flag to cl.exe.
 build:clang --repo_env=CC=clang
 build:clang --repo_env=CXX=clang++
 
@@ -134,7 +134,7 @@ build:gcc --repo_env=CC=gcc
 build:gcc --repo_env=CXX=g++
 
 # MSVC compiler configuration (uses system MSVC if available)
-# C++ standard for MSVC is set per-target via quarisma_copts() (/std:c++20).
+# C++ standard for MSVC is set per-target via xsigma_copts() (/std:c++20).
 # --cxxopt=-std=c++XX is GCC/Clang syntax; MSVC ignores it with D9002 warning.
 build:msvc --copt=/W4
 
@@ -168,7 +168,7 @@ build:linux --linkopt=-lrt
 
 # Windows specific settings (MSVC) — mirrors compiler_checks.cmake.
 # Per-module MSVC flags (/std:c++XX, /Zc:__cplusplus, /bigobj, /utf-8, /wd*, /EHsc) are set
-# per-target via quarisma_copts() in bazel/quarisma.bzl so Library targets are self-contained.
+# per-target via xsigma_copts() in bazel/xsigma.bzl so Library targets are self-contained.
 # ThirdParty/external targets need a C++17 baseline so they compile on MSVC (e.g. kineto).
 # Use --per_file_copt to apply the baseline only to those paths, not to Library.
 build:windows --per_file_copt=external/.*@/std:c++17
@@ -281,7 +281,7 @@ build:lu_pivoting --define=core_lu_pivoting=true
 build:sobol_1111 --define=core_sobol_1111=true
 
 # Enzyme AD — mirrors CMake CORE_ENABLE_ENZYME + Enzyme::enzyme interface target.
-# Enables QUARISMA_HAS_ENZYME=1 define and includes TestEnzymeAD.cpp in tests.
+# Enables XSIGMA_HAS_ENZYME=1 define and includes TestEnzymeAD.cpp in tests.
 #
 # The Enzyme LLVM plugin path cannot be auto-discovered in Bazel (CMake does this at
 # configure time via Cmake/tools/enzyme.cmake). Add --per_file_copt in .bazelrc.user,
@@ -292,7 +292,7 @@ build:sobol_1111 --define=core_sobol_1111=true
 # DO NOT use global --copt/-linkopt: third-party targets (benchmark, etc.) may use
 # GCC which rejects -fpass-plugin. --per_file_copt matches CMake's PRIVATE behaviour.
 #
-# quarisma_enzyme_copts()/quarisma_enzyme_linkopts() in //bazel:quarisma.bzl mark
+# xsigma_enzyme_copts()/xsigma_enzyme_linkopts() in //bazel:xsigma.bzl mark
 # the structural intent; the actual flag is user-supplied via .bazelrc.user.
 #
 # Scripts/setup_bazel.py with an "enzyme" token auto-discovers the plugin (same search
@@ -303,6 +303,9 @@ build:enzyme --define=core_enable_enzyme=true
 # =============================================================================
 # Testing Configuration
 # =============================================================================
+# Only //Library/... tests are invoked by Scripts/setup_bazel.py. Vendored
+# ThirdParty/ sources are built as dependencies (@fmt, @glog, @kineto, …)
+# and must not be selected as test targets.
 test --test_output=errors
 test --test_summary=detailed
 # Kill individual tests that hang (5 minutes per test)
@@ -349,8 +352,8 @@ build:logging_spdlog --define=logging_backend=spdlog
 # *ENABLE_BENCHMARK=ON (Core/Memory/Parallel/Logging/Profiler/Vectorization + umbrella enable_benchmark).
 build --define=parallel_backend=std --define=memory_enable_mimalloc=true --define=core_enable_benchmark=true --define=memory_enable_benchmark=true --define=parallel_enable_benchmark=true --define=logging_enable_benchmark=true --define=profiler_enable_benchmark=true --define=vectorization_enable_benchmark=true --define=enable_benchmark=true
 #
-# Feature defaults (mimalloc, magic_enum, KINETO profiler, LOGURU, Sobol 1111, POOL_ASYNC GPU
-# alloc) are applied in //bazel:*.bzl — plain `bazel build //...` matches root CMakeLists.txt
+# Feature defaults (mimalloc, magic_enum, KINETO profiler, SPDLOG, Sobol 1111, POOL_ASYNC GPU
+# alloc) are applied in //bazel:*.bzl — plain `bazel build //Library/...` matches root CMakeLists.txt
 # without extra --define. Opt out with e.g. --define=memory_enable_mimalloc=false / disable_sobol_1111.
 #
 # Compiler-wrapper caching (ccache/sccache/buildcache) is configured in CMake per library target via

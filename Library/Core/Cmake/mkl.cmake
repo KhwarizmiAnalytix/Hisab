@@ -1,5 +1,5 @@
 # =============================================================================
-# Quarisma Intel MKL
+# XSigma Intel MKL
 # (Math Kernel Library) Integration Module
 
 # This module provides robust MKL integration with automatic fallback support: 1. First attempts to

@@ -22,7 +22,7 @@ silently drops coverage/tests) on the other. There is no automated diff
 tool for this yet, so check by reading the relevant files side by side for
 anything touched this session:
 
-- **Library list**: root `CMakeLists.txt`'s `_quarisma_lib_order` list
+- **Library list**: root `CMakeLists.txt`'s `_xsigma_lib_order` list
   matches the libraries wired into `Scripts/setup_bazel.py`
   (`_BAZEL_LIBRARY_PACKAGE_DIR`, the `--project.NAME` valid-projects list)
   and declared in `bazel/*.bzl` / referenced from the root `BUILD.bazel`.

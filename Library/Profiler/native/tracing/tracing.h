@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #pragma once
@@ -50,8 +50,8 @@ public:
     virtual void start_region(uint64_t arg) const = 0;
     virtual void stop_region() const              = 0;
 
-    static void set_current_thread_name(const char* name);
-    static bool is_enabled();
+    PROFILER_API static void set_current_thread_name(const char* name);
+    static bool              is_enabled();
 
 private:
     friend PROFILER_API void set_event_collector(
@@ -79,11 +79,11 @@ PROFILER_API void record_event(event_category category, uint64_t arg);
 class PROFILER_VISIBILITY scoped_region
 {
 public:
-    scoped_region(event_category category, uint64_t arg);
-    explicit scoped_region(event_category category);
-    scoped_region(event_category category, std::string_view name);
-    scoped_region(scoped_region&& other) noexcept;
-    ~scoped_region();
+    PROFILER_API scoped_region(event_category category, uint64_t arg);
+    PROFILER_API explicit scoped_region(event_category category);
+    PROFILER_API scoped_region(event_category category, std::string_view name);
+    PROFILER_API scoped_region(scoped_region&& other) noexcept;
+    PROFILER_API ~scoped_region();
 
     bool is_enabled() const { return collector_ != nullptr; }
 

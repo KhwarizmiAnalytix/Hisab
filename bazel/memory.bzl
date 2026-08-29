@@ -1,4 +1,4 @@
-load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_linkopts")
+load("//bazel:xsigma.bzl", "xsigma_copts", "xsigma_defines", "xsigma_linkopts")
 
 # C++ standard for Memory — mirrors CMake MEMORY_CXX_STANDARD (default: 20)
 MEMORY_CXX_STD = "c++20"
@@ -6,15 +6,15 @@ MEMORY_CXX_STD = "c++20"
 def memory_copts():
     # cstdlib_include=False: CMake skips -include cstdlib for Memory specifically under
     # Clang (compiler-instability workaround, see Library/Memory/CMakeLists.txt); see
-    # quarisma_copts()'s docstring for why Bazel omits it unconditionally here instead.
-    return quarisma_copts(cxx_std = MEMORY_CXX_STD, cstdlib_include = False)
+    # xsigma_copts()'s docstring for why Bazel omits it unconditionally here instead.
+    return xsigma_copts(cxx_std = MEMORY_CXX_STD, cstdlib_include = False)
 
 def memory_defines():
     """Returns compile definitions for Library/Memory.
 
     Mirrors Library/Memory/CMakeLists.txt MEMORY_HAS_* flags.
     """
-    defines = quarisma_defines()
+    defines = xsigma_defines()
 
     # CUDA — MEMORY_HAS_CUDA
     defines += select({
@@ -65,4 +65,4 @@ def memory_defines():
     return defines
 
 def memory_linkopts():
-    return quarisma_linkopts()
+    return xsigma_linkopts()

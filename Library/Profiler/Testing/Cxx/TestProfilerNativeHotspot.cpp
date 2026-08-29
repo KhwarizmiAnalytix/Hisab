@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 /*
@@ -24,7 +24,7 @@
  *
  * Mirrors TestHotspotReport.cpp's nested busy-wait shape, but drives the
  * always-on native path (profiler_scope / TraceMe / XSpace) instead of
- * RECORD_USER_SCOPE + Kineto ProfilerResult.
+ * PROFILER_RECORD_USER_SCOPE + Kineto ProfilerResult.
  */
 
 #include <chrono>
@@ -111,9 +111,11 @@ PROFILERTEST(BackendNativeHotspot, self_time_excludes_children)
     ASSERT_NE(inner_a, nullptr) << "inner_a missing from native hotspots";
 
     // Outer includes children, so self < total (same invariant as Kineto TestHotspotReport).
+    // Do not compare inner_a self vs outer self: Debug instrumentation on macOS
+    // can make outer's own time larger than inner_a's 2ms busy-wait.
     EXPECT_LT(outer->self_time_ns, outer->total_time_ns);
     EXPECT_EQ(inner_a->self_time_ns, inner_a->total_time_ns);
-    EXPECT_GE(inner_a->self_time_ns, outer->self_time_ns);
+    EXPECT_GT(inner_a->self_time_ns, 0U);
 }
 
 PROFILERTEST(BackendNativeHotspot, bottom_up_sorted_by_self_time_descending)

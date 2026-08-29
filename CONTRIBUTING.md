@@ -1,6 +1,6 @@
-# Contributing to Quarisma
+# Contributing to XSigma
 
-Thank you for your interest in contributing to Quarisma! We welcome contributions from the community and are grateful for your support.
+Thank you for your interest in contributing to XSigma! We welcome contributions from the community and are grateful for your support.
 
 ## Table of Contents
 
@@ -18,20 +18,20 @@ Thank you for your interest in contributing to Quarisma! We welcome contribution
 
 ## Code of Conduct
 
-This project adheres to the Contributor Covenant [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to [conduct@quarisma.co.uk](mailto:conduct@quarisma.co.uk).
+This project adheres to the Contributor Covenant [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to [conduct@xsigma.co.uk](mailto:conduct@xsigma.co.uk).
 
 ## Contribution Policy and Control
 
 ### Welcome and Acceptance Policy
 
-**Quarisma welcomes contributions from the community**, and we are grateful for your interest in improving the project. However, it is important to understand the contribution acceptance policy and control structure:
+**XSigma welcomes contributions from the community**, and we are grateful for your interest in improving the project. However, it is important to understand the contribution acceptance policy and control structure:
 
-#### QuarismaAnalyitix Authority
+#### XSigmaAnalyitix Authority
 
-- **All contributions are subject to review and approval** by QuarismaAnalyitix maintainers
-- **QuarismaAnalyitix retains full control** over what code is accepted into the project
-- **Final decision authority** on all technical, architectural, and strategic matters rests with QuarismaAnalyitix
-- **QuarismaAnalyitix reserves the right** to refuse contributions that don't align with:
+- **All contributions are subject to review and approval** by XSigmaAnalyitix maintainers
+- **XSigmaAnalyitix retains full control** over what code is accepted into the project
+- **Final decision authority** on all technical, architectural, and strategic matters rests with XSigmaAnalyitix
+- **XSigmaAnalyitix reserves the right** to refuse contributions that don't align with:
   - Project goals and strategic direction
   - Quality standards and coding conventions
   - Architectural vision and design principles
@@ -40,40 +40,40 @@ This project adheres to the Contributor Covenant [Code of Conduct](CODE_OF_CONDU
 
 #### Contribution Rights Grant
 
-By submitting a contribution to Quarisma, you grant QuarismaAnalyitix the right to:
+By submitting a contribution to XSigma, you grant XSigmaAnalyitix the right to:
 
 - **Use, modify, or reject** your contribution at their sole discretion
-- **Incorporate** your contribution into the Quarisma codebase
+- **Incorporate** your contribution into the XSigma codebase
 - **Relicense** your contribution under commercial licenses without additional permission
 - **Modify or remove** your contribution in future versions
-- **Distribute** your contribution as part of Quarisma under both GPL-3.0-or-later and commercial licenses
+- **Distribute** your contribution as part of XSigma under both GPL-3.0-or-later and commercial licenses
 
 #### Dual Licensing and Commercial Use
 
-Quarisma operates under a **dual licensing model**:
+XSigma operates under a **dual licensing model**:
 
 - **GPL-3.0-or-later**: The public receives the software under GPL-3.0-or-later terms
-- **Commercial License**: QuarismaAnalyitix offers commercial licenses for proprietary use
+- **Commercial License**: XSigmaAnalyitix offers commercial licenses for proprietary use
 
-**By contributing, you explicitly grant QuarismaAnalyitix the ability to offer commercial licenses** for the combined work (including your contributions) **without seeking additional permission or providing compensation**.
+**By contributing, you explicitly grant XSigmaAnalyitix the ability to offer commercial licenses** for the combined work (including your contributions) **without seeking additional permission or providing compensation**.
 
-This dual licensing model is essential to Quarisma's sustainability and allows QuarismaAnalyitix to:
+This dual licensing model is essential to XSigma's sustainability and allows XSigmaAnalyitix to:
 - Fund ongoing development and maintenance
 - Provide commercial support and services
 - Offer proprietary licensing options to customers who cannot use GPL-3.0
 
 #### No Guarantee of Acceptance
 
-- **Submission does not guarantee acceptance** - QuarismaAnalyitix may reject contributions for any reason
+- **Submission does not guarantee acceptance** - XSigmaAnalyitix may reject contributions for any reason
 - **Maintainers have sole discretion** over merge decisions
 - **Community input is valued** but does not override maintainer decisions
 - **Rejected contributions** may be reconsidered if revised to meet project requirements
 
 #### Project Control and Roadmap
 
-- **QuarismaAnalyitix controls the project roadmap**, feature priorities, and release schedule
-- **Architectural decisions** are made by QuarismaAnalyitix maintainers
-- **Breaking changes** and major refactoring are at QuarismaAnalyitix's discretion
+- **XSigmaAnalyitix controls the project roadmap**, feature priorities, and release schedule
+- **Architectural decisions** are made by XSigmaAnalyitix maintainers
+- **Breaking changes** and major refactoring are at XSigmaAnalyitix's discretion
 - **Community suggestions** are welcome but not binding
 
 ### Why This Model?
@@ -84,7 +84,7 @@ This contribution model ensures:
 - **Legal clarity** for dual licensing
 - **Sustainable development** through commercial licensing revenue
 - **Clear decision-making** authority
-- **Protection** of QuarismaAnalyitix's business interests
+- **Protection** of XSigmaAnalyitix's business interests
 
 We believe this model balances **open-source collaboration** with the **business sustainability** necessary for long-term project success.
 
@@ -92,11 +92,11 @@ We believe this model balances **open-source collaboration** with the **business
 
 ### Copyright Retention
 
-**You retain copyright** to your original contributions. Quarisma does not require copyright assignment.
+**You retain copyright** to your original contributions. XSigma does not require copyright assignment.
 
 ### License Grant
 
-By submitting a contribution to Quarisma, you grant QuarismaAnalyitix a **perpetual, irrevocable, worldwide, royalty-free, non-exclusive license** to:
+By submitting a contribution to XSigma, you grant XSigmaAnalyitix a **perpetual, irrevocable, worldwide, royalty-free, non-exclusive license** to:
 
 1. **Use** your contribution in any manner
 2. **Reproduce** your contribution in any form
@@ -110,7 +110,7 @@ By submitting a contribution to Quarisma, you grant QuarismaAnalyitix a **perpet
 
 This license grant is **irrevocable** - you cannot withdraw permission after your contribution is accepted. This ensures:
 
-- **Legal certainty** for QuarismaAnalyitix and users
+- **Legal certainty** for XSigmaAnalyitix and users
 - **Business continuity** for commercial licensing
 - **Stability** of the codebase
 
@@ -118,16 +118,16 @@ This license grant is **irrevocable** - you cannot withdraw permission after you
 
 By contributing, you **waive any future claims** to:
 
-- Control how your contribution is used within Quarisma
+- Control how your contribution is used within XSigma
 - Demand removal of your contribution
 - Object to commercial licensing of your contribution
 - Seek compensation for use of your contribution
 
 ### Dual Licensing Rights
 
-You explicitly grant QuarismaAnalyitix the **exclusive right** to:
+You explicitly grant XSigmaAnalyitix the **exclusive right** to:
 
-- Offer commercial licenses for the combined work (Quarisma + your contributions)
+- Offer commercial licenses for the combined work (XSigma + your contributions)
 - Negotiate commercial licensing terms without your involvement
 - Receive all revenue from commercial licenses
 - Modify commercial licensing terms at their discretion
@@ -142,7 +142,7 @@ The public receives your contribution under **GPL-3.0-or-later** terms, ensuring
 
 ### Business Model Support
 
-This licensing model is **necessary to support Quarisma's dual licensing business model**:
+This licensing model is **necessary to support XSigma's dual licensing business model**:
 
 - Commercial licenses fund development, testing, and support
 - GPL ensures open-source availability
@@ -152,13 +152,13 @@ This licensing model is **necessary to support Quarisma's dual licensing busines
 
 You retain the right to:
 
-- **Use your own contribution** in other projects (subject to GPL if derived from Quarisma)
+- **Use your own contribution** in other projects (subject to GPL if derived from XSigma)
 - **Be credited** in CHANGELOG.md and project documentation
 - **Reference your contribution** in your portfolio or resume
 
 You do **not** retain the right to:
 
-- Control how QuarismaAnalyitix uses your contribution
+- Control how XSigmaAnalyitix uses your contribution
 - Demand removal or modification of your contribution
 - Object to commercial licensing
 - Receive compensation for commercial use
@@ -167,7 +167,7 @@ You do **not** retain the right to:
 
 ### Legal Requirements for Contributions
 
-**All contributions to Quarisma must comply with intellectual property laws and licensing requirements.** By submitting a contribution, you certify that your submission meets the following requirements:
+**All contributions to XSigma must comply with intellectual property laws and licensing requirements.** By submitting a contribution, you certify that your submission meets the following requirements:
 
 #### Original Work and Licensing
 
@@ -188,13 +188,13 @@ You do **not** retain the right to:
    - Code that belongs to your employer (unless you have explicit written permission)
 
 5. **License Compatibility**: You must ensure that any third-party code you include is:
-   - Compatible with Quarisma's dual license (GPL-3.0-or-later OR LicenseRef-Quarisma-Commercial)
+   - Compatible with XSigma's dual license (GPL-3.0-or-later OR LicenseRef-XSigma-Commercial)
    - Properly attributed with original copyright notices and license information
    - From a permissive open-source license (MIT, BSD, Apache 2.0, etc.) or GPL-compatible license
 
-6. **Legal Right to Contribute**: You must have the legal right to contribute the code under Quarisma's dual license terms, including:
+6. **Legal Right to Contribute**: You must have the legal right to contribute the code under XSigma's dual license terms, including:
    - The right to grant the GPL-3.0-or-later license to the public
-   - The right to grant QuarismaAnalyitix the ability to offer commercial licenses
+   - The right to grant XSigmaAnalyitix the ability to offer commercial licenses
 
 #### Third-Party Code Attribution
 
@@ -218,7 +218,7 @@ If your contribution includes or is based on third-party open-source code:
 
 ### Developer Certificate of Origin (DCO)
 
-By submitting a pull request to Quarisma, you certify the following:
+By submitting a pull request to XSigma, you certify the following:
 
 ```
 Developer Certificate of Origin
@@ -247,22 +247,22 @@ By making a contribution to this project, I certify that:
     this project or the open source license(s) involved.
 
 (e) I understand that this contribution will be dual-licensed under
-    GPL-3.0-or-later OR LicenseRef-Quarisma-Commercial, and I have the
+    GPL-3.0-or-later OR LicenseRef-XSigma-Commercial, and I have the
     legal right to grant both licenses.
 
-(f) I irrevocably grant QuarismaAnalyitix a perpetual, worldwide,
+(f) I irrevocably grant XSigmaAnalyitix a perpetual, worldwide,
     royalty-free, non-exclusive license to use, modify, sublicense,
     and distribute my contribution under both GPL-3.0-or-later and
     commercial licenses, without seeking additional permission or
     providing compensation.
 
-(g) I understand and agree that QuarismaAnalyitix has the exclusive
+(g) I understand and agree that XSigmaAnalyitix has the exclusive
     right to offer commercial licenses for the combined work
     (including my contributions) and to receive all revenue from
     such commercial licenses.
 
 (h) I waive any future claims to control how my contribution is used
-    within Quarisma, including the right to demand removal, object to
+    within XSigma, including the right to demand removal, object to
     commercial licensing, or seek compensation.
 ```
 
@@ -270,14 +270,14 @@ By making a contribution to this project, I certify that:
 
 #### What This Means
 
-By contributing to Quarisma, you are:
+By contributing to XSigma, you are:
 
-1. **Granting broad rights** to QuarismaAnalyitix to use your contribution in any manner
+1. **Granting broad rights** to XSigmaAnalyitix to use your contribution in any manner
 2. **Enabling commercial licensing** without additional permission or compensation
 3. **Waiving future control** over how your contribution is used within the project
-4. **Accepting** that QuarismaAnalyitix has final authority over your contribution
+4. **Accepting** that XSigmaAnalyitix has final authority over your contribution
 
-The public receives your contribution under **GPL-3.0-or-later**, while QuarismaAnalyitix can offer it under **commercial licenses** to support the project's sustainability.
+The public receives your contribution under **GPL-3.0-or-later**, while XSigmaAnalyitix can offer it under **commercial licenses** to support the project's sustainability.
 
 ### Consequences of Violations
 
@@ -293,7 +293,7 @@ Violations of these intellectual property requirements may result in:
 
 If you have any questions or concerns about intellectual property, licensing, or your right to contribute:
 
-- **Before contributing**: Contact [licensing@quarisma.co.uk](mailto:licensing@quarisma.co.uk)
+- **Before contributing**: Contact [licensing@xsigma.co.uk](mailto:licensing@xsigma.co.uk)
 - **For legal questions**: Consult your own legal counsel
 - **For license compatibility**: Review the [LICENSE](LICENSE) file and consult the [Free Software Foundation's license compatibility guide](https://www.gnu.org/licenses/license-list.html)
 
@@ -318,8 +318,8 @@ See [README.md](README.md#prerequisites) for detailed platform-specific requirem
 
 2. **Clone your fork** and initialize submodules:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/Quarisma.git
-   cd Quarisma
+   git clone https://github.com/YOUR_USERNAME/XSigma.git
+   cd XSigma
    git submodule update --init --recursive
    ```
 
@@ -392,7 +392,7 @@ See [README.md](README.md#prerequisites) for detailed platform-specific requirem
 
 ## Coding Standards
 
-Quarisma follows strict coding standards to ensure code quality, consistency, and maintainability. All contributions must adhere to these standards.
+XSigma follows strict coding standards to ensure code quality, consistency, and maintainability. All contributions must adhere to these standards.
 
 ### Core Principles
 
@@ -410,7 +410,7 @@ Quarisma follows strict coding standards to ensure code quality, consistency, an
 | Member Variable | `snake_case_` (trailing underscore) | `int count_;` |
 | Local Variable | `snake_case` | `int local_value` |
 | Constant | `kConstantName` | `const int kMaxCount = 100;` |
-| Namespace | `snake_case` | `namespace quarisma` |
+| Namespace | `snake_case` | `namespace xsigma` |
 | Enum | `snake_case` | `enum class color_type` |
 | Enum Value | `snake_case` | `color_type::dark_red` |
 
@@ -462,13 +462,13 @@ python setup.py config.build.ninja.clang.iwyu
 
 Apply these macros for correct symbol visibility:
 
-- **Functions**: Use `QUARISMA_API` before function return type
-- **Classes**: Use `QUARISMA_VISIBILITY` before `class` keyword
+- **Functions**: Use `XSIGMA_API` before function return type
+- **Classes**: Use `XSIGMA_VISIBILITY` before `class` keyword
 
 ```cpp
-class QUARISMA_VISIBILITY my_class {
+class XSIGMA_VISIBILITY my_class {
  public:
-  QUARISMA_API void do_something();
+  XSIGMA_API void do_something();
 };
 ```
 
@@ -483,7 +483,7 @@ For complete coding standards, see [`.augment/rules/coding.md`](.augment/rules/c
 
 - **MANDATORY**: Minimum **98% code coverage** required
 - Tests must be deterministic, reproducible, and isolated
-- Use the `QUARISMATEST` macro exclusively (not `TEST` or `TEST_F`)
+- Use the `XSIGMATEST` macro exclusively (not `TEST` or `TEST_F`)
 
 ### Test File Naming
 
@@ -503,22 +503,22 @@ For complete coding standards, see [`.augment/rules/coding.md`](.augment/rules/c
 
 Example:
 ```cpp
-QUARISMATEST(my_class_test, handles_valid_input) {
+XSIGMATEST(my_class_test, handles_valid_input) {
   my_class obj;
   EXPECT_TRUE(obj.do_something());
 }
 
-QUARISMATEST(my_class_test, handles_invalid_input) {
+XSIGMATEST(my_class_test, handles_invalid_input) {
   my_class obj;
   EXPECT_FALSE(obj.do_something_with(-1));
 }
 
-QUARISMATEST(my_class_test, handles_null_pointer) {
+XSIGMATEST(my_class_test, handles_null_pointer) {
   my_class obj;
   EXPECT_FALSE(obj.process(nullptr));
 }
 
-QUARISMATEST(my_class_test, handles_empty_collection) {
+XSIGMATEST(my_class_test, handles_empty_collection) {
   my_class obj;
   std::vector<int> empty;
   EXPECT_TRUE(obj.process_collection(empty));
@@ -553,9 +553,9 @@ ctest
 #### Contribution Policy Acceptance
 
 - ✅ You have read and accept the [Contribution Policy and Control](#contribution-policy-and-control)
-- ✅ You understand that QuarismaAnalyitix has final authority over acceptance/rejection
-- ✅ You grant QuarismaAnalyitix irrevocable rights as described in [Contribution Rights and Ownership](#contribution-rights-and-ownership)
-- ✅ You accept that QuarismaAnalyitix can offer commercial licenses without additional permission
+- ✅ You understand that XSigmaAnalyitix has final authority over acceptance/rejection
+- ✅ You grant XSigmaAnalyitix irrevocable rights as described in [Contribution Rights and Ownership](#contribution-rights-and-ownership)
+- ✅ You accept that XSigmaAnalyitix can offer commercial licenses without additional permission
 - ✅ You waive future claims to control how your contribution is used
 
 #### Intellectual Property Requirements
@@ -563,7 +563,7 @@ ctest
 Verify that you meet all [Intellectual Property and Originality](#intellectual-property-and-originality) requirements:
 
 - ✅ The code is your original work or properly licensed open-source code
-- ✅ You have the legal right to contribute under Quarisma's dual license
+- ✅ You have the legal right to contribute under XSigma's dual license
 - ✅ The code does not violate any copyright, patent, or trade secret
 - ✅ The code does not breach any confidentiality agreement or NDA
 - ✅ You have obtained employer permission if required
@@ -591,9 +591,9 @@ Ensure your pull request meets the following criteria:
   - [ ] CHANGELOG.md updated with changes
 
 - [ ] **Contribution Rights**:
-  - [ ] Accept QuarismaAnalyitix authority over contribution acceptance
-  - [ ] Grant irrevocable license to QuarismaAnalyitix (GPL + commercial)
-  - [ ] Accept QuarismaAnalyitix can offer commercial licenses without permission
+  - [ ] Accept XSigmaAnalyitix authority over contribution acceptance
+  - [ ] Grant irrevocable license to XSigmaAnalyitix (GPL + commercial)
+  - [ ] Accept XSigmaAnalyitix can offer commercial licenses without permission
   - [ ] Waive future claims to control contribution usage
 
 - [ ] **Intellectual Property**:
@@ -630,7 +630,7 @@ Ensure your pull request meets the following criteria:
 
 - Your contribution will be included in the next release
 - You will be credited in the CHANGELOG.md
-- Thank you for contributing to Quarisma!
+- Thank you for contributing to XSigma!
 
 ## Release Process
 
@@ -638,7 +638,7 @@ Ensure your pull request meets the following criteria:
 
 ### Versioning
 
-Quarisma follows [Semantic Versioning](https://semver.org/):
+XSigma follows [Semantic Versioning](https://semver.org/):
 
 - **MAJOR** version: Incompatible API changes
 - **MINOR** version: Backwards-compatible functionality additions
@@ -648,9 +648,9 @@ Quarisma follows [Semantic Versioning](https://semver.org/):
 
 1. **Update version numbers** in `CMakeLists.txt`:
    ```cmake
-   set(QUARISMA_MAJOR_VERSION X)
-   set(QUARISMA_MINOR_VERSION Y)
-   set(QUARISMA_BUILD_VERSION Z)
+   set(PROJECT_MAJOR_VERSION X)
+   set(PROJECT_MINOR_VERSION Y)
+   set(PROJECT_BUILD_VERSION Z)
    ```
 
 2. **Update CHANGELOG.md**:
@@ -675,7 +675,7 @@ Quarisma follows [Semantic Versioning](https://semver.org/):
    - Go to GitHub Releases page
    - Click "Draft a new release"
    - Select the tag `vX.Y.Z`
-   - Title: "Quarisma vX.Y.Z"
+   - Title: "XSigma vX.Y.Z"
    - Description: Copy from CHANGELOG.md
    - Attach release artifacts (if applicable)
    - Publish release
@@ -699,7 +699,7 @@ Quarisma follows [Semantic Versioning](https://semver.org/):
 
 - **GitHub Issues**: Bug reports and feature requests
 - **GitHub Discussions**: Questions and community discussions
-- **Email**: For private inquiries, contact [info@quarisma.co.uk](mailto:info@quarisma.co.uk)
+- **Email**: For private inquiries, contact [info@xsigma.co.uk](mailto:info@xsigma.co.uk)
 
 ### Reporting Issues
 
@@ -718,9 +718,9 @@ When reporting bugs or requesting features:
 
 - **Technical questions**: Use GitHub Discussions
 - **Security vulnerabilities**: Follow [SECURITY.md](SECURITY.md) reporting process
-- **Licensing questions**: Contact [licensing@quarisma.co.uk](mailto:licensing@quarisma.co.uk)
-- **Code of Conduct violations**: Report to [conduct@quarisma.co.uk](mailto:conduct@quarisma.co.uk)
+- **Licensing questions**: Contact [licensing@xsigma.co.uk](mailto:licensing@xsigma.co.uk)
+- **Code of Conduct violations**: Report to [conduct@xsigma.co.uk](mailto:conduct@xsigma.co.uk)
 
 ---
 
-**Thank you for contributing to Quarisma!** Your contributions help make this project better for everyone.
+**Thank you for contributing to XSigma!** Your contributions help make this project better for everyone.

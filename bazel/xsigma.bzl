@@ -1,5 +1,5 @@
 # =============================================================================
-# Quarisma Bazel Helper Functions — Project-level
+# XSigma Bazel Helper Functions — Project-level
 # =============================================================================
 # Shared compiler flags, linker options, and project-wide compile definitions.
 #
@@ -9,8 +9,8 @@
 #   bazel/models.bzl
 # =============================================================================
 
-def quarisma_copts(cxx_std = "c++20", cstdlib_include = True):
-    """Returns common compiler options for Quarisma targets.
+def xsigma_copts(cxx_std = "c++20", cstdlib_include = True):
+    """Returns common compiler options for XSigma targets.
 
     Args:
         cxx_std: C++ standard to use (default: c++20, matches CMake default).
@@ -46,7 +46,7 @@ def quarisma_copts(cxx_std = "c++20", cstdlib_include = True):
         ] + (["-include", "cstdlib"] if cstdlib_include else []),
     })
 
-def quarisma_defines():
+def xsigma_defines():
     """Returns project-wide preprocessor defines.
 
     All module-specific HAS_* flags are owned by their respective module bzl
@@ -64,8 +64,8 @@ def quarisma_defines():
         "//conditions:default": [],
     })
 
-def quarisma_linkopts():
-    """Returns common linker options for Quarisma targets."""
+def xsigma_linkopts():
+    """Returns common linker options for XSigma targets."""
     return select({
         "@platforms//os:windows": [],
         "@platforms//os:macos": [
@@ -78,7 +78,7 @@ def quarisma_linkopts():
         ],
     })
 
-def quarisma_enzyme_copts():
+def xsigma_enzyme_copts():
     """Returns Enzyme AD compile options.
 
     The -fpass-plugin=<path> flag is Clang-only; supply it via .bazelrc.user:
@@ -89,7 +89,7 @@ def quarisma_enzyme_copts():
         "//conditions:default": [],
     })
 
-def quarisma_enzyme_linkopts():
+def xsigma_enzyme_linkopts():
     """Returns Enzyme AD link options.
 
     For LTO builds add to .bazelrc.user:
@@ -100,10 +100,10 @@ def quarisma_enzyme_linkopts():
         "//conditions:default": [],
     })
 
-def quarisma_test_copts():
-    """Returns compiler options for Quarisma test targets."""
-    return quarisma_copts()
+def xsigma_test_copts():
+    """Returns compiler options for XSigma test targets."""
+    return xsigma_copts()
 
-def quarisma_test_linkopts():
-    """Returns linker options for Quarisma test targets."""
-    return quarisma_linkopts()
+def xsigma_test_linkopts():
+    """Returns linker options for XSigma test targets."""
+    return xsigma_linkopts()

@@ -12,7 +12,7 @@ namespace
 
 // `ProfilerStubs::record()` takes no command-buffer/queue reference -- it is
 // called generically from collection.cpp's begin_op()/onFunctionExit() for
-// any RECORD_FUNCTION/RECORD_USER_SCOPE scope, the same call sites CUDA's
+// any PROFILER_RECORD_FUNCTION/PROFILER_RECORD_USER_SCOPE scope, the same call sites CUDA's
 // stub uses. CUDA can turn that into a real GPU timestamp because
 // `cudaEventRecord(event, /*stream=*/nullptr)` targets CUDA's always-present
 // default stream; Metal has no equivalent implicit default queue a `record()`

@@ -3,6 +3,7 @@
 #include <fmt/format.h>
 
 #include <algorithm>
+#include <atomic>
 #include <functional>
 #include <limits>
 #include <memory>

@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #pragma once
@@ -148,30 +148,46 @@ struct expressions_evaluator
         if (i >= n)
             return;
 
-        //aligned loop (destination is aligned; source may not be, use unaligned load)
-        const size_t loop_peel = rhs.align_end();
-        if constexpr (packet > 1)
+        // Aligned destination body. Source loads are aligned only when the
+        // destination starts at a SIMD boundary and every tensor leaf is
+        // allocator-aligned; otherwise unaligned loads keep views correct.
+        const size_t loop_peel   = rhs.align_end();
+        const bool   src_aligned = cap == 0 && vectorization::expression_operands_aligned(expr);
+        auto const   aligned_dest_loops = [&](auto src_aligned_tag)
         {
-            const size_t block_end = i + ((loop_peel - i) / block) * block;
-            for (; i < block_end; i += block)
+            constexpr bool src_al = decltype(src_aligned_tag)::value;
+            if constexpr (packet > 1)
             {
-                vectorization::expression_loader<E, true, false>::prefetch(expr, i + block);
-                detail::unroll<packet>(
-                    [&](auto k)
-                    {
-                        constexpr size_t off = decltype(k)::value * length;
-                        const auto       temp =
-                            vectorization::expression_loader<E, true, false>::evaluate(
-                                expr, i + off);
-                        simd<value_t>::store(temp, &data[i + off]);
-                    });
+                const size_t block_end = i + ((loop_peel - i) / block) * block;
+                for (; i < block_end; i += block)
+                {
+                    vectorization::expression_loader<E, true, src_al>::prefetch(expr, i + block);
+                    detail::unroll<packet>(
+                        [&](auto k)
+                        {
+                            constexpr size_t off = decltype(k)::value * length;
+                            const auto       temp =
+                                vectorization::expression_loader<E, true, src_al>::evaluate(
+                                    expr, i + off);
+                            simd<value_t>::store(temp, &data[i + off]);
+                        });
+                }
             }
-        }
-        for (; i < loop_peel; i += length)
+            for (; i < loop_peel; i += length)
+            {
+                vectorization::expression_loader<E, true, src_al>::prefetch(expr, i);
+                const auto temp0 =
+                    vectorization::expression_loader<E, true, src_al>::evaluate(expr, i);
+                simd<value_t>::store(temp0, &data[i]);
+            }
+        };
+        if (src_aligned)
         {
-            vectorization::expression_loader<E, true, false>::prefetch(expr, i);
-            const auto temp0 = vectorization::expression_loader<E, true, false>::evaluate(expr, i);
-            simd<value_t>::store(temp0, &data[i]);
+            aligned_dest_loops(std::true_type{});
+        }
+        else
+        {
+            aligned_dest_loops(std::false_type{});
         }
 
         //unaligned loop
@@ -490,7 +506,8 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto hmin(EXPR&& expression) noexcept
         {
             simd_t min_packet[packet];
             detail::unroll<packet>(
-                [&](auto k) {
+                [&](auto k)
+                {
                     min_packet[decltype(k)::value] =
                         simd<value_t>::set(std::numeric_limits<value_t>::max());
                 });
@@ -575,7 +592,8 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto hmin(EXPR&& expression) noexcept
         {
             simd_t min_packet[packet];
             detail::unroll<packet>(
-                [&](auto k) {
+                [&](auto k)
+                {
                     min_packet[decltype(k)::value] =
                         simd<value_t>::set(std::numeric_limits<value_t>::max());
                 });
@@ -661,7 +679,8 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto hmax(EXPR&& expression) noexcept
         {
             simd_t max_packet[packet];
             detail::unroll<packet>(
-                [&](auto k) {
+                [&](auto k)
+                {
                     max_packet[decltype(k)::value] =
                         simd<value_t>::set(-std::numeric_limits<value_t>::max());
                 });
@@ -746,7 +765,8 @@ VECTORIZATION_FUNCTION_ATTRIBUTE auto hmax(EXPR&& expression) noexcept
         {
             simd_t max_packet[packet];
             detail::unroll<packet>(
-                [&](auto k) {
+                [&](auto k)
+                {
                     max_packet[decltype(k)::value] =
                         simd<value_t>::set(-std::numeric_limits<value_t>::max());
                 });

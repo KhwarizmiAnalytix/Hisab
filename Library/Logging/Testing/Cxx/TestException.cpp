@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #include <cstdlib>  // for setenv, unsetenv
@@ -94,7 +94,7 @@ private:
 //        edge cases (empty message, special characters)
 // ============================================================================
 
-LOGGINGTEST(Exception, basic_functionality)
+TEST(Exception, basic_functionality)
 {
     logging::set_exception_mode(logging::exception_mode::THROW);
 
@@ -153,8 +153,6 @@ LOGGINGTEST(Exception, basic_functionality)
         std::string msg(e.what());
         ASSERT_TRUE(msg.find("Special chars") != std::string::npos);
     }
-
-    END_TEST();
 }
 
 // ============================================================================
@@ -162,7 +160,7 @@ LOGGINGTEST(Exception, basic_functionality)
 // Tests: mode switching, get/set exception mode, LOG_FATAL mode behavior
 // ============================================================================
 
-LOGGINGTEST(Exception, mode_configuration)
+TEST(Exception, mode_configuration)
 {
     // Test default mode
     LOGGING_UNUSED auto default_mode = logging::get_exception_mode();
@@ -185,8 +183,6 @@ LOGGINGTEST(Exception, mode_configuration)
 
     // Verify restoration
     ASSERT_EQ(logging::get_exception_mode(), logging::exception_mode::THROW);
-
-    END_TEST();
 }
 
 // ============================================================================
@@ -195,7 +191,7 @@ LOGGINGTEST(Exception, mode_configuration)
 //        source location tracking
 // ============================================================================
 
-LOGGINGTEST(Exception, categories_and_stack_traces)
+TEST(Exception, categories_and_stack_traces)
 {
     logging::set_exception_mode(logging::exception_mode::THROW);
 
@@ -266,8 +262,6 @@ LOGGINGTEST(Exception, categories_and_stack_traces)
         ASSERT_FALSE(backtrace.empty());
         ASSERT_TRUE(backtrace.find("TestException.cpp") != std::string::npos);
     }
-
-    END_TEST();
 }
 
 // ============================================================================
@@ -275,7 +269,7 @@ LOGGINGTEST(Exception, categories_and_stack_traces)
 // Tests: exception chaining, context accumulation, nested exception access
 // ============================================================================
 
-LOGGINGTEST(Exception, chaining_and_context)
+TEST(Exception, chaining_and_context)
 {
     logging::set_exception_mode(logging::exception_mode::THROW);
 
@@ -330,8 +324,6 @@ LOGGINGTEST(Exception, chaining_and_context)
     {
         FAIL() << "Should not throw in this test";
     }
-
-    END_TEST();
 }
 
 // ============================================================================
@@ -340,7 +332,7 @@ LOGGINGTEST(Exception, chaining_and_context)
 //        memory safety (shared_ptr, copy constructor)
 // ============================================================================
 
-LOGGINGTEST(Exception, constructors_and_accessors)
+TEST(Exception, constructors_and_accessors)
 {
     logging::set_exception_mode(logging::exception_mode::THROW);
 
@@ -413,8 +405,6 @@ LOGGINGTEST(Exception, constructors_and_accessors)
         ASSERT_EQ(std::string(copy.msg()), std::string(original.msg()));
         ASSERT_EQ(copy.category(), original.category());
     }
-
-    END_TEST();
 }
 
 // ============================================================================
@@ -423,7 +413,7 @@ LOGGINGTEST(Exception, constructors_and_accessors)
 //        what_without_backtrace with empty message
 // ============================================================================
 
-LOGGINGTEST(Exception, what_methods)
+TEST(Exception, what_methods)
 {
     logging::set_exception_mode(logging::exception_mode::THROW);
 
@@ -484,8 +474,6 @@ LOGGINGTEST(Exception, what_methods)
     // Should not crash with empty message
     const char* msg_empty = ex4.what_without_backtrace();
     ASSERT_TRUE(msg_empty != nullptr);
-
-    END_TEST();
 }
 
 // ============================================================================
@@ -494,7 +482,7 @@ LOGGINGTEST(Exception, what_methods)
 //        multiple args, special characters
 // ============================================================================
 
-LOGGINGTEST(Exception, format_check_msg)
+TEST(Exception, format_check_msg)
 {
     // Test format_check_msg with no arguments
     std::string result1 = logging::details::format_check_msg("x > 0");
@@ -521,8 +509,6 @@ LOGGINGTEST(Exception, format_check_msg)
         logging::details::format_check_msg("ptr != nullptr", "Pointer was null at index {}", 3);
     ASSERT_TRUE(result5.find("Check failed: ptr != nullptr") != std::string::npos);
     ASSERT_TRUE(result5.find("Pointer was null at index 3") != std::string::npos);
-
-    END_TEST();
 }
 
 // ============================================================================
@@ -530,51 +516,15 @@ LOGGINGTEST(Exception, format_check_msg)
 // Tests: string comparison logic, idempotency, thread safety
 // ============================================================================
 
-LOGGINGTEST(Exception, init_exception_mode_from_env)
+TEST(Exception, init_exception_mode_from_env)
 {
-    // Test string comparison logic for environment variable values
-    // We can't actually test the initialization with different values in the same process,
-    // but we can verify the string comparison logic that would be used
-
-    // Test LOG_FATAL variations
-    std::string log_fatal_upper = "LOG_FATAL";
-    std::string log_fatal_lower = "log_fatal";
-    ASSERT_TRUE(log_fatal_upper == "LOG_FATAL" || log_fatal_upper == "log_fatal");
-    ASSERT_TRUE(log_fatal_lower == "LOG_FATAL" || log_fatal_lower == "log_fatal");
-
-    // Test THROW variations
-    std::string throw_upper = "THROW";
-    std::string throw_lower = "throw";
-    ASSERT_TRUE(throw_upper == "THROW" || throw_upper == "throw");
-    ASSERT_TRUE(throw_lower == "THROW" || throw_lower == "throw");
-
-    // Test invalid values
-    std::string invalid = "INVALID_MODE";
-    ASSERT_FALSE(invalid == "LOG_FATAL" || invalid == "log_fatal");
-    ASSERT_FALSE(invalid == "THROW" || invalid == "throw");
-
-    // Test empty string
-    std::string empty = "";
-    ASSERT_FALSE(empty == "LOG_FATAL" || empty == "log_fatal");
-    ASSERT_FALSE(empty == "THROW" || empty == "throw");
-
-    // Test idempotency: initialization only happens once
-    // Call init multiple times
     logging::init_exception_mode_from_env();
     auto mode1 = logging::get_exception_mode();
 
     logging::init_exception_mode_from_env();
     auto mode2 = logging::get_exception_mode();
-
-    logging::init_exception_mode_from_env();
-    auto mode3 = logging::get_exception_mode();
-
-    // All should return the same mode
     ASSERT_EQ(mode1, mode2);
-    ASSERT_EQ(mode2, mode3);
 
-    // Test thread-safety: verify the double-check locking pattern works correctly
-    // Launch multiple threads that all try to initialize
     std::vector<std::thread> threads;
     std::atomic<int>         success_count{0};
 
@@ -583,34 +533,27 @@ LOGGINGTEST(Exception, init_exception_mode_from_env)
         threads.emplace_back(
             [&success_count]()
             {
-                try
-                {
-                    logging::init_exception_mode_from_env();
-                    success_count++;
-                }
-                catch (...)
-                {
-                    // Should not throw
-                }
+                logging::init_exception_mode_from_env();
+                success_count++;
             });
     }
 
-    // Wait for all threads
     for (auto& t : threads)
     {
         t.join();
     }
 
-    // All threads should succeed
     ASSERT_EQ(success_count.load(), 10);
-
-    // Mode should be consistent
-    auto final_mode = logging::get_exception_mode();
     ASSERT_TRUE(
-        final_mode == logging::exception_mode::THROW ||
-        final_mode == logging::exception_mode::LOG_FATAL);
+        logging::get_exception_mode() == logging::exception_mode::THROW ||
+        logging::get_exception_mode() == logging::exception_mode::LOG_FATAL);
+}
 
-    END_TEST();
+TEST(Exception, log_fatal_mode_aborts)
+{
+    logging::set_exception_mode(logging::exception_mode::LOG_FATAL);
+    EXPECT_DEATH(LOGGING_THROW("fatal-mode-marker"), "");
+    logging::set_exception_mode(logging::exception_mode::THROW);
 }
 
 // ============================================================================
@@ -619,7 +562,7 @@ LOGGINGTEST(Exception, init_exception_mode_from_env)
 //        empty message, special characters
 // ============================================================================
 
-LOGGINGTEST(Exception, check_fail_basic)
+TEST(Exception, check_fail_basic)
 {
     logging::set_exception_mode(logging::exception_mode::THROW);
 
@@ -703,8 +646,6 @@ LOGGINGTEST(Exception, check_fail_basic)
         std::string msg(e.msg());
         ASSERT_TRUE(msg.find("Special chars") != std::string::npos);
     }
-
-    END_TEST();
 }
 
 // ============================================================================
@@ -713,7 +654,7 @@ LOGGINGTEST(Exception, check_fail_basic)
 //        multiline messages, various line numbers
 // ============================================================================
 
-LOGGINGTEST(Exception, check_fail_advanced)
+TEST(Exception, check_fail_advanced)
 {
     logging::set_exception_mode(logging::exception_mode::THROW);
 
@@ -794,6 +735,4 @@ LOGGINGTEST(Exception, check_fail_advanced)
             ASSERT_TRUE(backtrace.find(std::to_string(line)) != std::string::npos);
         }
     }
-
-    END_TEST();
 }

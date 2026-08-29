@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -259,13 +259,13 @@ PARALLELTEST(ParallelToolsApi, singleton_and_backend_identification)
             std::vector<std::atomic<int>> data(10);
             test_functor_internal         func(data);
 
-            api.parallel_for(5, 5, 10, func);   // empty
+            api.parallel_for(5, 5, 10, func);  // empty
             SUCCEED();
-            api.parallel_for(10, 0, 5, func);   // reversed
+            api.parallel_for(10, 0, 5, func);  // reversed
             SUCCEED();
             for (auto& elem : data)
                 elem.store(0, std::memory_order_relaxed);
-            api.parallel_for(0, 10, 0, func);   // zero grain
+            api.parallel_for(0, 10, 0, func);  // zero grain
             SUCCEED();
         }
     }

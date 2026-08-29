@@ -1,11 +1,11 @@
-# Quarisma Linter Configuration
+# XSigma Linter Configuration
 # ============================
 # This configuration file centralizes hardcoded paths and settings used by various
-# linters in the Quarisma project. This allows for easier maintenance and cross-platform
+# linters in the XSigma project. This allows for easier maintenance and cross-platform
 # compatibility by avoiding hardcoded paths scattered throughout the codebase.
 #
-# Organization: QuarismaAnalyitix
-# Project: Quarisma
+# Organization: XSigmaAnalyitix
+# Project: XSigma
 # Last Updated: 2025-10-27
 
 # Header-Only APIs Configuration
@@ -23,7 +23,7 @@ header_only:
 
 # Dynamo Registry Configuration
 # =============================
-# Defines paths for Quarisma-compatible dynamo/graph break registry
+# Defines paths for XSigma-compatible dynamo/graph break registry
 dynamo:
   # Path to the graph break registry JSON file (relative to repository root)
   graph_break_registry: "Library/Core/_dynamo/graph_break_registry.json"
@@ -36,7 +36,7 @@ dynamo:
 # Defines the import statement for OrderedSet used by set_linter
 ordered_set:
   # Import statement to use when replacing Python's built-in set
-  import_statement: "from quarisma.utils._ordered_set import OrderedSet\n\n"
+  import_statement: "from xsigma.utils._ordered_set import OrderedSet\n\n"
   
   # Error message when built-in set is detected
   error_message: "Builtin `set` is deprecated"
@@ -84,17 +84,17 @@ deploy:
   deprecated_pattern: "sys.executable == 'torch_deploy'"
   
   # Recommended replacement function
-  replacement_function: "quarisma._running_with_deploy()"
+  replacement_function: "xsigma._running_with_deploy()"
 
 # Test Device Bias Configuration
 # ==============================
 # Defines patterns for detecting device-biased test code
 test_device:
   # Pattern to detect CUDA device specification
-  cuda_pattern: "quarisma.device('cuda')"
+  cuda_pattern: "xsigma.device('cuda')"
   
   # Recommended replacement
-  replacement_pattern: "quarisma.device(GPU_TYPE)"
+  replacement_pattern: "xsigma.device(GPU_TYPE)"
 
 # Import Allowlist Configuration
 # ==============================
@@ -104,7 +104,7 @@ import_allowlist:
   - "sympy"
   - "einops"
   - "libfb"
-  - "quarisma"
+  - "xsigma"
   - "tvm"
   - "_pytest"
   - "tabulate"
@@ -124,8 +124,8 @@ import_allowlist:
 # =========================
 # Defines acceptable owner labels for test files
 test_owners:
-  # URL to fetch Quarisma labels from (for validation)
-  labels_url: "https://api.github.com/repos/QuarismaAnalyitix/Quarisma/labels"
+  # URL to fetch XSigma labels from (for validation)
+  labels_url: "https://api.github.com/repos/KhwarizmiAnalytix/XSigma/labels"
   
   # Acceptable owner label prefixes
   acceptable_prefixes:
@@ -149,7 +149,7 @@ copyright:
   proprietary_pattern: "Confidential and proprietary"
   
   # Error message for proprietary code
-  error_message: "Proprietary and confidential source code should not be contributed to Quarisma codebase"
+  error_message: "Proprietary and confidential source code should not be contributed to XSigma codebase"
 
 # Dependency Configuration
 # =======================

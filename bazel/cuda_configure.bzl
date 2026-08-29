@@ -82,6 +82,28 @@ def _cuda_configure_impl(repository_ctx):
 
     repository_ctx.symlink(root, "cuda")
 
+    # Ubuntu cuda-nvtx debs may install headers under /usr/include rather than
+    # the toolkit tree. Symlink them beside the cuda/ root (cannot write into
+    # the symlink) so @local_config_cuda//:nvtx can see nvToolsExt.h.
+    if not _is_windows(repository_ctx):
+        repository_ctx.file("nvtx_extra/.keep", "")
+        toolkit_nvtx = [
+            cuda_path + "/include/nvToolsExt.h",
+            cuda_path + "/targets/x86_64-linux/include/nvToolsExt.h",
+        ]
+        have_toolkit_nvtx = False
+        for p in toolkit_nvtx:
+            if repository_ctx.path(p).exists:
+                have_toolkit_nvtx = True
+                break
+        if not have_toolkit_nvtx:
+            usr_h = repository_ctx.path("/usr/include/nvToolsExt.h")
+            usr_nvtx3 = repository_ctx.path("/usr/include/nvtx3")
+            if usr_h.exists:
+                repository_ctx.symlink(usr_h, "nvtx_extra/nvToolsExt.h")
+            if usr_nvtx3.exists:
+                repository_ctx.symlink(usr_nvtx3, "nvtx_extra/nvtx3")
+
     if _is_windows(repository_ctx):
         build = _BUILD_CUDA_WINDOWS
     else:
@@ -146,11 +168,50 @@ cc_library(
     deps = [":cudart"],
 )
 
+# NVTX C API used by Profiler bespoke/base/cuda.cpp (nvtxMarkA / nvtxRange*).
+cc_library(
+    name = "nvtx",
+    srcs = glob([
+        "cuda/targets/x86_64-linux/lib/libnvToolsExt.so*",
+        "cuda/lib64/libnvToolsExt.so*",
+        "cuda/lib64/stubs/libnvToolsExt.so*",
+    ], allow_empty = True),
+    hdrs = glob([
+        "cuda/targets/x86_64-linux/include/nvToolsExt.h",
+        "cuda/targets/x86_64-linux/include/nvtx3/**",
+        "cuda/include/nvToolsExt.h",
+        "cuda/include/nvtx3/**",
+        "nvtx_extra/**",
+    ], allow_empty = True),
+    includes = [
+        "cuda/targets/x86_64-linux/include",
+        "cuda/include",
+        "nvtx_extra",
+    ],
+    linkopts = ["-Wl,-rpath,$$ORIGIN"],
+)
+
+# Driver API (cuMemMap / cuMemCreate) used by cuda_caching_allocator expandable
+# segments. Prefer the stub so the binary does not require libcuda.so at
+# configure time; the real driver is loaded at runtime.
+cc_library(
+    name = "cuda_driver",
+    srcs = glob([
+        "cuda/lib64/stubs/libcuda.so",
+        "cuda/targets/x86_64-linux/lib/stubs/libcuda.so",
+        "cuda/lib64/libcuda.so*",
+        "cuda/targets/x86_64-linux/lib/libcuda.so*",
+    ], allow_empty = True),
+    linkopts = ["-ldl", "-Wl,-rpath,$$ORIGIN"],
+)
+
 cc_library(
     name = "cuda",
     deps = [
         ":cudart",
         ":cupti",
+        ":nvtx",
+        ":cuda_driver",
     ],
 )
 """
@@ -184,10 +245,35 @@ cc_library(
 )
 
 cc_library(
+    name = "nvtx",
+    hdrs = glob([
+        "cuda/include/nvToolsExt.h",
+        "cuda/include/nvtx3/**",
+    ], allow_empty = True),
+    includes = ["cuda/include"],
+    srcs = glob([
+        "cuda/lib/x64/nvToolsExt64_1.lib",
+        "cuda/lib/x64/nvToolsExt.lib",
+    ], allow_empty = True),
+)
+
+cc_library(
+    name = "cuda_driver",
+    hdrs = glob([
+        "cuda/include/**/*.h",
+        "cuda/include/**/*.hpp",
+    ], allow_empty = True),
+    includes = ["cuda/include"],
+    srcs = glob(["cuda/lib/x64/cuda.lib"], allow_empty = True),
+)
+
+cc_library(
     name = "cuda",
     deps = [
         ":cudart",
         ":cupti",
+        ":nvtx",
+        ":cuda_driver",
     ],
 )
 """

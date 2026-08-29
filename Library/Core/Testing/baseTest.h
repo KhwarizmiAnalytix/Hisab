@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,12 +13,12 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
-#ifndef QUARISMA_TEST_H
-#define QUARISMA_TEST_H
+#ifndef XSIGMA_TEST_H
+#define XSIGMA_TEST_H
 
 #include <cstdint>
 #include <iostream>
@@ -50,14 +50,14 @@
 // Just ensure they're available by including gtest.h above
 
 // Google Test main function
-#define QUARISMATEST(module, name) TEST(module, name)
+#define XSIGMATEST(module, name) TEST(module, name)
 
-#define QUARISMATEST_VOID(module, name) TEST(module, name)
+#define XSIGMATEST_VOID(module, name) TEST(module, name)
 
-#define QUARISMATEST_CALL(module, name)
+#define XSIGMATEST_CALL(module, name)
 
 // Fixture-based Google Test macro (TEST_F)
-#define QUARISMATEST_F(fixture, name) TEST_F(fixture, name)
+#define XSIGMATEST_F(fixture, name) TEST_F(fixture, name)
 
 #else
 // Simple assertion macros for non-Google Test builds
@@ -216,21 +216,21 @@
     } while (0)
 
 // Standard test main function
-#define QUARISMATEST(module, testname) \
-    int Test##testname(QUARISMA_UNUSED int argc, QUARISMA_UNUSED char* argv[])
+#define XSIGMATEST(module, testname) \
+    int Test##testname(XSIGMA_UNUSED int argc, XSIGMA_UNUSED char* argv[])
 
-#define QUARISMATEST_VOID(module, testname) \
-    void test_##module##testname(QUARISMA_UNUSED int argc, QUARISMA_UNUSED char* argv[])
+#define XSIGMATEST_VOID(module, testname) \
+    void test_##module##testname(XSIGMA_UNUSED int argc, XSIGMA_UNUSED char* argv[])
 
-#define QUARISMATEST_CALL(module, testname) test_##module##testname(argc, argv);
+#define XSIGMATEST_CALL(module, testname) test_##module##testname(argc, argv);
 
 // No fixture support without Google Test; make it explicit.
-#define QUARISMATEST_F(fixture, name) \
-    static_assert(false, "QUARISMATEST_F requires Google Test (PROJECT_HAS_GTEST=1)")
+#define XSIGMATEST_F(fixture, name) \
+    static_assert(false, "XSIGMATEST_F requires Google Test (PROJECT_HAS_GTEST=1)")
 
 #endif
 
-namespace quarisma
+namespace xsigma
 {
 // Helper function to check memory alignment
 inline bool IsAligned(void* ptr, size_t alignment)
@@ -250,6 +250,6 @@ inline bool ValidateMemory(const void* ptr, size_t size, uint8_t pattern)
     }
     return true;
 }
-}  // namespace quarisma
+}  // namespace xsigma
 
-#endif  // QUARISMA_TEST_H
+#endif  // XSIGMA_TEST_H

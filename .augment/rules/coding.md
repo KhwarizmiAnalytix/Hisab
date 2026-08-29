@@ -2,9 +2,9 @@
 type: "always_apply"
 ---
 
-# Quarisma C++ Coding Standards and Best Practices
+# XSigma C++ Coding Standards and Best Practices
 
-This document defines mandatory coding standards for the Quarisma project. All code contributions must adhere to these rules without exception.
+This document defines mandatory coding standards for the XSigma project. All code contributions must adhere to these rules without exception.
 
 ---
 
@@ -65,7 +65,7 @@ All code must follow these naming conventions consistently:
 | Member Variable | `snake_case_` (trailing underscore) | `int count_;`                | Trailing underscore distinguishes from locals |
 | Local Variable  | `snake_case`                        | `int local_value`            | No trailing underscore |
 | Constant        | `kConstantName` or `CONSTANT_NAME`  | `const int kMaxCount = 100;` | Prefer `kConstantName` for readability |
-| Namespace       | `snake_case`                        | `namespace quarisma`           | All lowercase |
+| Namespace       | `snake_case`                        | `namespace xsigma`           | All lowercase |
 | Enum            | `snake_case`                        | `enum class color_type`      | Use `enum class` for type safety |
 | Enum Value      | `snake_case`                        | `color_type::dark_red`       | All lowercase |
 
@@ -79,7 +79,7 @@ All code must follow these naming conventions consistently:
 
 **REQUIRED:** Use `snake_case` with a trailing underscore (e.g., `count_`, `value_`, `data_ptr_`).
 
-**Rationale:** The trailing underscore clearly distinguishes member variables from local variables and function parameters, improving code readability and preventing naming conflicts. This convention is enforced throughout the entire Quarisma codebase and must be followed in all code reviews and automated linting.
+**Rationale:** The trailing underscore clearly distinguishes member variables from local variables and function parameters, improving code readability and preventing naming conflicts. This convention is enforced throughout the entire XSigma codebase and must be followed in all code reviews and automated linting.
 
 ❌ **Incorrect - Using m_ prefix:**
 
@@ -194,7 +194,7 @@ File location: `Core/xxx/yyy/a.h`
 * Tests must be deterministic, reproducible, and isolated (no flaky tests).
 * Avoid shared state between tests; each test must be independent.
 * Prefer test fixtures or factory patterns for complex setup.
-* Use the `QUARISMATEST` macro exclusively for all tests (not `TEST` or `TEST_F`).
+* Use the `XSIGMATEST` macro exclusively for all tests (not `TEST` or `TEST_F`).
 
 ### 5.2 File Naming & Structure
 
@@ -213,22 +213,22 @@ File location: `Core/xxx/yyy/a.h`
 ✅ **Examples:**
 
 ```cpp
-QUARISMATEST(my_class_test, handles_valid_input) {
+XSIGMATEST(my_class_test, handles_valid_input) {
   my_class obj;
   EXPECT_TRUE(obj.do_something());
 }
 
-QUARISMATEST(my_class_test, handles_invalid_input) {
+XSIGMATEST(my_class_test, handles_invalid_input) {
   my_class obj;
   EXPECT_FALSE(obj.do_something_with(-1));
 }
 
-QUARISMATEST(my_class_test, handles_null_pointer) {
+XSIGMATEST(my_class_test, handles_null_pointer) {
   my_class obj;
   EXPECT_FALSE(obj.process(nullptr));
 }
 
-QUARISMATEST(my_class_test, handles_empty_collection) {
+XSIGMATEST(my_class_test, handles_empty_collection) {
   my_class obj;
   std::vector<int> empty;
   EXPECT_TRUE(obj.process_collection(empty));
@@ -245,18 +245,18 @@ Apply these macros consistently across all public headers to ensure correct symb
 
 | Context                          | Macro               | Description                                | When to Use |
 | -------------------------------- | ------------------- | ------------------------------------------ | ----------- |
-| Function (implemented in `.cpp`) | `QUARISMA_API`        | Mark all externally visible functions      | Before function return type |
-| Class declaration                | `QUARISMA_VISIBILITY` | Required for all public class declarations | Before `class` keyword |
+| Function (implemented in `.cpp`) | `XSIGMA_API`        | Mark all externally visible functions      | Before function return type |
+| Class declaration                | `XSIGMA_VISIBILITY` | Required for all public class declarations | Before `class` keyword |
 
 **IMPORTANT:** Omitting these macros will cause linking errors on Windows and symbol visibility issues on Linux/macOS.
 
 ✅ **Correct Example:**
 
 ```cpp
-class QUARISMA_VISIBILITY my_class {
+class XSIGMA_VISIBILITY my_class {
  public:
-  QUARISMA_API void do_something();
-  QUARISMA_API int calculate(int value);
+  XSIGMA_API void do_something();
+  XSIGMA_API int calculate(int value);
 };
 ```
 
@@ -282,9 +282,9 @@ class QUARISMA_VISIBILITY my_class {
 * Favor **immutability** and **pure functions** (functions without side effects).
 * Use **RAII (Resource Acquisition Is Initialization)** for all resource management (files, sockets, locks, memory).
 * Avoid global mutable state; use dependency injection or singletons sparingly.
-* When declaring unused parameters (e.g., for interface compliance), prefix them with `QUARISMA_UNUSED`:
+* When declaring unused parameters (e.g., for interface compliance), prefix them with `XSIGMA_UNUSED`:
   ```cpp
-  void callback(QUARISMA_UNUSED int unused_param, int used_param) {
+  void callback(XSIGMA_UNUSED int unused_param, int used_param) {
     // only use used_param
   }
   ```
@@ -425,7 +425,7 @@ class thread_safe_counter {
    * @param b Second integer
    * @return Sum of a and b
    */
-  QUARISMA_API int add(int a, int b);
+  XSIGMA_API int add(int a, int b);
   ```
 
 ### 13.2 Review Readiness
@@ -441,7 +441,7 @@ class thread_safe_counter {
 * Using exceptions or `try`/`catch`/`throw`
 * Violating include path rules (starting with `Core/` instead of subfolder)
 * Mixing naming conventions (e.g., `camelCase` with `snake_case`)
-* Omitting required macros (`QUARISMA_API`, `QUARISMA_VISIBILITY`)
+* Omitting required macros (`XSIGMA_API`, `XSIGMA_VISIBILITY`)
 * Submitting untested or low-coverage code (below 98%)
 * Hardcoding values instead of using configuration or constants
 * Creating oversized classes or functions (prefer small, focused units)
@@ -449,7 +449,7 @@ class thread_safe_counter {
 * Ignoring `clang-tidy` and `clang-format` warnings
 * Using raw pointers for ownership (use smart pointers)
 * Exposing mutable shared state without synchronization
-* Using `TEST` or `TEST_F` instead of `QUARISMATEST` macro
+* Using `TEST` or `TEST_F` instead of `XSIGMATEST` macro
 
 ---
 

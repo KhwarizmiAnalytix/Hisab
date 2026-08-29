@@ -26,7 +26,7 @@ try:
     IMPORT_LINE = get_ordered_set_import()
 except Exception:
     # Fallback to default if config loader is not available
-    IMPORT_LINE = "from quarisma.utils._ordered_set import OrderedSet\n\n"
+    IMPORT_LINE = "from xsigma.utils._ordered_set import OrderedSet\n\n"
 
 ERROR = "Builtin `set` is deprecated"
 

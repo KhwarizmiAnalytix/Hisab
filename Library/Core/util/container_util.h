@@ -9,13 +9,13 @@
 
 #include "common/macros.h"
 
-namespace quarisma
+namespace xsigma
 {
 
 //-----------------------------------------------------------------------------
 // Check if a container contains a specific value
 template <typename Container, typename T>
-QUARISMA_FORCE_INLINE bool contains(const Container& container, const T& value)
+XSIGMA_FORCE_INLINE bool contains(const Container& container, const T& value)
 {
     return std::find(std::begin(container), std::end(container), value) != std::end(container);
 }
@@ -23,14 +23,14 @@ QUARISMA_FORCE_INLINE bool contains(const Container& container, const T& value)
 //-----------------------------------------------------------------------------
 // Check if a map contains a specific key
 template <typename Key, typename Value>
-QUARISMA_FORCE_INLINE bool contains_key(const std::map<Key, Value>& map, const Key& key)
+XSIGMA_FORCE_INLINE bool contains_key(const std::map<Key, Value>& map, const Key& key)
 {
     return map.find(key) != map.end();
 }
 
 //-----------------------------------------------------------------------------
 template <typename T>
-QUARISMA_FORCE_INLINE void sort(std::vector<T>& vec)
+XSIGMA_FORCE_INLINE void sort(std::vector<T>& vec)
 {
     std::sort(vec.begin(), vec.end());
     vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
@@ -38,7 +38,7 @@ QUARISMA_FORCE_INLINE void sort(std::vector<T>& vec)
 
 //-----------------------------------------------------------------------------
 template <typename container>
-QUARISMA_FORCE_INLINE void merge(
+XSIGMA_FORCE_INLINE void merge(
     const std::vector<double>& array1, const container& array2, std::vector<double>& ret)
 {
     if (!array1.empty())
@@ -76,7 +76,7 @@ size_t closest_index(const container& element_array, T element)
 //-----------------------------------------------------------------------------
 // Convert a vector to a set
 template <typename T>
-QUARISMA_FORCE_INLINE std::set<T> to_set(const std::vector<T>& vec)
+XSIGMA_FORCE_INLINE std::set<T> to_set(const std::vector<T>& vec)
 {
     return std::set<T>(vec.begin(), vec.end());
 }
@@ -84,7 +84,7 @@ QUARISMA_FORCE_INLINE std::set<T> to_set(const std::vector<T>& vec)
 //-----------------------------------------------------------------------------
 // Convert a set to a vector
 template <typename T>
-QUARISMA_FORCE_INLINE std::vector<T> to_vector(const std::set<T>& set)
+XSIGMA_FORCE_INLINE std::vector<T> to_vector(const std::set<T>& set)
 {
     return std::vector<T>(set.begin(), set.end());
 }
@@ -92,7 +92,7 @@ QUARISMA_FORCE_INLINE std::vector<T> to_vector(const std::set<T>& set)
 //-----------------------------------------------------------------------------
 // Filter elements from a container based on a predicate
 template <typename Container, typename Predicate>
-QUARISMA_FORCE_INLINE Container filter(const Container& container, Predicate pred)
+XSIGMA_FORCE_INLINE Container filter(const Container& container, Predicate pred)
 {
     Container result;
     std::copy_if(container.begin(), container.end(), std::back_inserter(result), pred);
@@ -102,7 +102,7 @@ QUARISMA_FORCE_INLINE Container filter(const Container& container, Predicate pre
 //-----------------------------------------------------------------------------
 // Transform elements in a container using a function
 template <typename Container, typename Function>
-QUARISMA_FORCE_INLINE auto transform(const Container& container, Function func)
+XSIGMA_FORCE_INLINE auto transform(const Container& container, Function func)
 {
     using ResultType = std::invoke_result_t<Function, typename Container::value_type>;
     std::vector<ResultType> result;
@@ -111,4 +111,4 @@ QUARISMA_FORCE_INLINE auto transform(const Container& container, Function func)
     return result;
 }
 
-}  // namespace quarisma
+}  // namespace xsigma

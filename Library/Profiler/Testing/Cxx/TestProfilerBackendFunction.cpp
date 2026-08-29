@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 /*
@@ -42,6 +42,7 @@
 #include <unordered_set>
 
 #include "bespoke/common/record_function.h"
+#include "bespoke/kineto/kineto_client_interface.h"
 #include "bespoke/kineto/profiler_kineto.h"
 #endif
 
@@ -137,10 +138,10 @@ PROFILERTEST(BackendFunction, kineto_profiles_function)
 
     double result = 0.0;
     {
-        RECORD_USER_SCOPE(kFunctionScope);
+        PROFILER_RECORD_USER_SCOPE(kFunctionScope);
         result = profiled_function();
         {
-            RECORD_USER_SCOPE(kNestedScope);
+            PROFILER_RECORD_USER_SCOPE(kNestedScope);
             result += profiled_function();
         }
     }
@@ -295,11 +296,11 @@ PROFILERTEST(BackendFunction, itt_profiles_function)
 
     double result = 0.0;
     {
-        RECORD_USER_SCOPE(kFunctionScope);
+        PROFILER_RECORD_USER_SCOPE(kFunctionScope);
         profiler::profiler_impl::itt_range_push(kFunctionScope);
         result = profiled_function();
         {
-            RECORD_USER_SCOPE(kNestedScope);
+            PROFILER_RECORD_USER_SCOPE(kNestedScope);
             profiler::profiler_impl::itt_range_push(kNestedScope);
             result += profiled_function();
             profiler::profiler_impl::itt_range_pop();
@@ -307,8 +308,10 @@ PROFILERTEST(BackendFunction, itt_profiles_function)
         profiler::profiler_impl::itt_range_pop();
     }
 
-    PROFILER_UNUSED auto profiler_result = profiler::profiler_impl::disableProfiler();
+    auto profiler_result = profiler::profiler_impl::disableProfiler();
     EXPECT_GT(result, 0.0);
+    ASSERT_NE(profiler_result, nullptr);
+    EXPECT_FALSE(profiler_result->save("itt_empty_trace.json"));
     EXPECT_TRUE(saw_name(stub.pushes_, kFunctionScope));
     EXPECT_TRUE(saw_name(stub.pushes_, kNestedScope));
     EXPECT_EQ(stub.pops_, stub.pushes_.size());
@@ -335,16 +338,70 @@ PROFILERTEST(BackendFunction, nvtx_profiles_function)
 
     double result = 0.0;
     {
-        RECORD_USER_SCOPE(kFunctionScope);
+        PROFILER_RECORD_USER_SCOPE(kFunctionScope);
         result = profiled_function();
         {
-            RECORD_USER_SCOPE(kNestedScope);
+            PROFILER_RECORD_USER_SCOPE(kNestedScope);
             result += profiled_function();
         }
     }
 
-    PROFILER_UNUSED auto profiler_result = profiler::profiler_impl::disableProfiler();
+    auto profiler_result = profiler::profiler_impl::disableProfiler();
     EXPECT_GT(result, 0.0);
+    ASSERT_NE(profiler_result, nullptr);
+    EXPECT_FALSE(profiler_result->save("nvtx_empty_trace.json"));
 }
+
+PROFILERTEST(BackendFunction, global_kineto_init_is_callable)
+{
+    profiler::global_kineto_init();
+}
+
+PROFILERTEST(BackendFunction, disable_without_enable_returns_empty)
+{
+    auto first = profiler::profiler_impl::disableProfiler();
+    ASSERT_NE(first, nullptr);
+    EXPECT_TRUE(first->events().empty());
+    EXPECT_FALSE(first->save("disable_without_enable.json"));
+
+    auto second = profiler::profiler_impl::disableProfiler();
+    ASSERT_NE(second, nullptr);
+    EXPECT_FALSE(second->save("disable_without_enable_again.json"));
+}
+
+PROFILERTEST(BackendFunction, privateuse1_without_observer_is_noop)
+{
+    profiler::profiler_impl::ProfilerConfig config(
+        profiler::profiler_impl::ProfilerState::PRIVATEUSE1);
+    profiler::profiler_impl::enableProfiler(
+        config, {profiler::profiler_impl::ActivityType::CPU}, {profiler::RecordScope::USER_SCOPE});
+
+    auto profiler_result = profiler::profiler_impl::disableProfiler();
+    ASSERT_NE(profiler_result, nullptr);
+    EXPECT_TRUE(profiler_result->events().empty());
+    EXPECT_FALSE(profiler_result->save("privateuse1_empty_trace.json"));
+}
+
+PROFILERTEST(BackendFunction, child_thread_join_without_main_is_noop)
+{
+    EXPECT_FALSE(profiler::profiler_impl::isProfilerEnabledInMainThread());
+    profiler::profiler_impl::enableProfilerInChildThread();
+    profiler::profiler_impl::disableProfilerInChildThread();
+    EXPECT_FALSE(profiler::profiler_impl::isProfilerEnabledInMainThread());
+}
+
+#if PROFILER_HAS_KINETO && !PROFILER_HAS_ITT
+PROFILERTEST(BackendFunction, itt_state_without_itt_backend_is_noop)
+{
+    profiler::profiler_impl::ProfilerConfig config(profiler::profiler_impl::ProfilerState::ITT);
+    profiler::profiler_impl::enableProfiler(
+        config, {profiler::profiler_impl::ActivityType::CPU}, {profiler::RecordScope::USER_SCOPE});
+
+    auto profiler_result = profiler::profiler_impl::disableProfiler();
+    ASSERT_NE(profiler_result, nullptr);
+    EXPECT_TRUE(profiler_result->events().empty());
+    EXPECT_FALSE(profiler_result->save("itt_state_without_backend.json"));
+}
+#endif  // PROFILER_HAS_KINETO && !PROFILER_HAS_ITT
 
 #endif  // PROFILER_HAS_KINETO || PROFILER_HAS_ITT

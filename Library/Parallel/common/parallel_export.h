@@ -1,5 +1,5 @@
 /*
- * Quarisma DLL Export/Import Header
+ * XSigma DLL Export/Import Header
  *
  * This file defines macros for symbol visibility control across different
  * platforms and build configurations (static vs shared libraries).

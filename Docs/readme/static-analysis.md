@@ -1,6 +1,6 @@
 # Static Analysis Tools
 
-Quarisma integrates multiple powerful static analysis tools to improve code quality: Clang-Tidy for C++ analysis and automatic fixes, Clang-Format for code formatting, Include-What-You-Use (IWYU) for header dependency management, and Cppcheck for comprehensive static code analysis.
+XSigma integrates multiple powerful static analysis tools to improve code quality: Clang-Tidy for C++ analysis and automatic fixes, Clang-Format for code formatting, Include-What-You-Use (IWYU) for header dependency management, and Cppcheck for comprehensive static code analysis.
 
 ## Table of Contents
 
@@ -17,8 +17,8 @@ Clang-Tidy is a clang-based C++ linter tool that provides static analysis and au
 
 ### Overview
 
-- **CMake option**: `QUARISMA_ENABLE_CLANGTIDY` (default: OFF)
-- **Automatic fixes**: `QUARISMA_ENABLE_AUTOFIX` (enables `--fix-errors` and `--fix`)
+- **CMake option**: `PROJECT_ENABLE_CLANGTIDY` (default: OFF)
+- **Automatic fixes**: `PROJECT_ENABLE_FIX` (enables `--fix-errors` and `--fix`)
 - **Configuration file**: `.clang-tidy` in project root
 - **Output log**: `${CMAKE_BINARY_DIR}/clang-tidy.log`
 - **Third-party code**: Automatically skipped
@@ -54,7 +54,7 @@ choco install llvm
 
 ```bash
 # Configure with Clang-Tidy enabled
-cmake -B build -S . -DQUARISMA_ENABLE_CLANGTIDY=ON
+cmake -B build -S . -DPROJECT_ENABLE_CLANGTIDY=ON
 
 # Build (clang-tidy runs during compilation)
 cmake --build build -j
@@ -68,8 +68,8 @@ less build/clang-tidy.log
 ```bash
 # Enable automatic fixes - WARNING: This modifies source files!
 cmake -B build -S . \
-    -DQUARISMA_ENABLE_CLANGTIDY=ON \
-    -DQUARISMA_ENABLE_AUTOFIX=ON
+    -DPROJECT_ENABLE_CLANGTIDY=ON \
+    -DPROJECT_ENABLE_FIX=ON
 
 cmake --build build -j
 ```
@@ -297,8 +297,8 @@ IWYU helps reduce unnecessary includes and enforces clean header dependencies ac
 
 ### Overview
 
-- **CMake option**: `QUARISMA_ENABLE_IWYU` (default: OFF)
-- **Applies to**: Quarisma targets only (ThirdParty targets are skipped)
+- **CMake option**: `PROJECT_ENABLE_IWYU` (default: OFF)
+- **Applies to**: XSigma targets only (ThirdParty targets are skipped)
 - **Logs**: `build/iwyu.log` with per-file analysis also recorded under `build/iwyu_logs/`
 - **Mapping file** (optional): `Scripts/iwyu_exclusion.imp` (used if present)
 
@@ -328,7 +328,7 @@ Download from https://include-what-you-use.org/ or build from source
 
 ```bash
 # Configure with IWYU enabled
-cmake -B build -S . -DQUARISMA_ENABLE_IWYU=ON
+cmake -B build -S . -DPROJECT_ENABLE_IWYU=ON
 
 # Build (IWYU runs during compilation and writes logs)
 cmake --build build -j
@@ -386,8 +386,8 @@ Cppcheck provides comprehensive static analysis for C/C++ code quality, style, p
 
 ### Overview
 
-- **CMake option**: `QUARISMA_ENABLE_CPPCHECK` (default: OFF)
-- **Optional**: `QUARISMA_ENABLE_AUTOFIX` (WARNING: enables `--fix`, modifies source files!)
+- **CMake option**: `PROJECT_ENABLE_CPPCHECK` (default: OFF)
+- **Optional**: `PROJECT_ENABLE_FIX` (WARNING: enables `--fix`, modifies source files!)
 - **Suppressions file** (optional): `Scripts/cppcheck_suppressions.txt`
 - **Output log**: `${CMAKE_BINARY_DIR}/cppcheckoutput.log`
 - **Third-party code**: Automatically skipped
@@ -424,7 +424,7 @@ winget install cppcheck
 
 ```bash
 # Configure with Cppcheck enabled
-cmake -B build -S . -DQUARISMA_ENABLE_CPPCHECK=ON
+cmake -B build -S . -DPROJECT_ENABLE_CPPCHECK=ON
 
 # Build (cppcheck runs as part of compilation and writes the log file)
 cmake --build build -j
@@ -438,13 +438,13 @@ less build/cppcheckoutput.log
 ```bash
 # Enable automatic fixes - WARNING: This modifies source files!
 cmake -B build -S . \
-    -DQUARISMA_ENABLE_CPPCHECK=ON \
-    -DQUARISMA_ENABLE_AUTOFIX=ON
+    -DPROJECT_ENABLE_CPPCHECK=ON \
+    -DPROJECT_ENABLE_FIX=ON
 
 cmake --build build -j
 ```
 
-**⚠️ Warning**: `QUARISMA_ENABLE_AUTOFIX` will modify your source files automatically. Always commit your changes before enabling this option, and review the changes carefully afterward.
+**⚠️ Warning**: `PROJECT_ENABLE_FIX` will modify your source files automatically. Always commit your changes before enabling this option, and review the changes carefully afterward.
 
 #### Understanding Cppcheck Output
 
@@ -532,8 +532,8 @@ Cppcheck performs various checks:
 1. **Enable tools during development**:
    ```bash
    cmake -B build -S . \
-       -DQUARISMA_ENABLE_IWYU=ON \
-       -DQUARISMA_ENABLE_CPPCHECK=ON
+       -DPROJECT_ENABLE_IWYU=ON \
+       -DPROJECT_ENABLE_CPPCHECK=ON
    ```
 
 2. **Review analysis results regularly**:
@@ -574,8 +574,8 @@ Cppcheck performs various checks:
   run: |
     # Configure with static analysis tools
     cmake -B build -S . \
-        -DQUARISMA_ENABLE_IWYU=ON \
-        -DQUARISMA_ENABLE_CPPCHECK=ON
+        -DPROJECT_ENABLE_IWYU=ON \
+        -DPROJECT_ENABLE_CPPCHECK=ON
 
     # Build (runs analysis)
     cmake --build build -j
@@ -599,7 +599,7 @@ Cppcheck performs various checks:
 
 ```bash
 # Fail build on Cppcheck errors
-cmake -B build -S . -DQUARISMA_ENABLE_CPPCHECK=ON
+cmake -B build -S . -DPROJECT_ENABLE_CPPCHECK=ON
 cmake --build build -j
 
 # Check for errors in output
@@ -617,7 +617,7 @@ fi
 
 **Solutions**:
 1. Install IWYU (see [Installation](#installation))
-2. Disable IWYU: `cmake -B build -S . -DQUARISMA_ENABLE_IWYU=OFF`
+2. Disable IWYU: `cmake -B build -S . -DPROJECT_ENABLE_IWYU=OFF`
 3. Specify IWYU path: `cmake -B build -S . -DIWYU_PATH=/path/to/iwyu`
 
 ### Cppcheck Not Found
@@ -626,7 +626,7 @@ fi
 
 **Solutions**:
 1. Install Cppcheck (see [Installation](#installation))
-2. Disable Cppcheck: `cmake -B build -S . -DQUARISMA_ENABLE_CPPCHECK=OFF`
+2. Disable Cppcheck: `cmake -B build -S . -DPROJECT_ENABLE_CPPCHECK=OFF`
 3. Specify Cppcheck path: `cmake -B build -S . -DCPPCHECK_PATH=/path/to/cppcheck`
 
 ### Too Many False Positives

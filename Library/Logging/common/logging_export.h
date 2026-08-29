@@ -1,5 +1,5 @@
 /*
- * Quarisma Logging library — DLL export/import (same pattern as Parallel).
+ * XSigma Logging library — DLL export/import (same pattern as Parallel).
  */
 #pragma once
 
@@ -39,4 +39,3 @@
 #define LOGGING_IMPORT
 #define LOGGING_HIDDEN
 #endif
-

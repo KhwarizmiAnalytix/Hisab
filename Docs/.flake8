@@ -1,5 +1,5 @@
 [flake8]
-# Quarisma Flake8 Configuration
+# XSigma Flake8 Configuration
 enable-extensions = G
 select = B,C,E,F,G,P,SIM1,SIM911,W,B9
 max-line-length = 120

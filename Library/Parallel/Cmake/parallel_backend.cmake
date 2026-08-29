@@ -3,14 +3,14 @@
 # Selection Configuration
 
 # This module handles the selection of the PARALLEL (Symmetric Multi-Processing) backend for
-# Quarisma. Users can specify which backend to use via: - Command-line: python setup.py config
+# XSigma. Users can specify which backend to use via: - Command-line: python setup.py config
 # --parallel.std (or --parallel.openmp, --parallel.tbb) - CMake directly: cmake
 # -DPARALLEL_BACKEND=std (or openmp, tbb)
 #
 # ARGUMENT FLOW: 1. User runs: python setup.py config --parallel.tbb 2. parse_args() in setup.py
-# converts "--parallel.tbb" to "parallel.tbb" 3. QuarismaFlags.__process_arg_list() processes
+# converts "--parallel.tbb" to "parallel.tbb" 3. XSigmaFlags.__process_arg_list() processes
 # "parallel.tbb" and sets: - self.__value["parallel_backend"] = "tbb" - Adds to builder_suffix:
-# "_parallel_tbb" 4. QuarismaFlags.create_cmake_flags() generates: -DPARALLEL_BACKEND=tbb 5. CMake
+# "_parallel_tbb" 4. XSigmaFlags.create_cmake_flags() generates: -DPARALLEL_BACKEND=tbb 5. CMake
 # receives PARALLEL_BACKEND=tbb and this module processes it 6. This module enables/disables
 # PARALLEL_ENABLE_TBB and PARALLEL_ENABLE_OPENMP 7. compile_definitions.cmake converts these to
 # PARALLEL_HAS_TBB and PARALLEL_HAS_OPENMP
@@ -21,7 +21,7 @@
 # backend Result: PARALLEL_HAS_TBB=1, PARALLEL_HAS_OPENMP=0
 #
 # Only one backend can be active at a time. The selected backend controls which implementation is
-# compiled and linked into the Quarisma Core library.
+# compiled and linked into the XSigma Core library.
 
 include_guard(GLOBAL)
 
@@ -39,11 +39,11 @@ endif()
 
 # Configure backend-specific settings based on selection
 if(_parallel_backend_lower STREQUAL "std")
-  message(STATUS "Quarisma: SMP backend set to std_thread (standard C++ threads)")
+  message(STATUS "XSigma: SMP backend set to std_thread (standard C++ threads)")
   # std_thread is always available, no additional configuration needed
 
 elseif(_parallel_backend_lower STREQUAL "openmp")
-  message(STATUS "Quarisma: SMP backend set to OpenMP")
+  message(STATUS "XSigma: SMP backend set to OpenMP")
   # Enable OpenMP support
   set(PARALLEL_ENABLE_OPENMP ON CACHE BOOL "Enable OpenMP parallel processing support" FORCE)
   # Disable TBB if it was enabled
@@ -52,7 +52,7 @@ elseif(_parallel_backend_lower STREQUAL "openmp")
   )
 
 elseif(_parallel_backend_lower STREQUAL "tbb")
-  message(STATUS "Quarisma: SMP backend set to TBB (Intel Threading Building Blocks)")
+  message(STATUS "XSigma: SMP backend set to TBB (Intel Threading Building Blocks)")
   # Enable TBB support
   set(PARALLEL_ENABLE_TBB ON CACHE BOOL "Enable Intel TBB (Threading Building Blocks) support"
                                    FORCE
@@ -61,4 +61,4 @@ elseif(_parallel_backend_lower STREQUAL "tbb")
   set(PARALLEL_ENABLE_OPENMP OFF CACHE BOOL "Enable OpenMP parallel processing support" FORCE)
 endif()
 
-message(STATUS "Quarisma: SMP backend configuration complete")
+message(STATUS "XSigma: SMP backend configuration complete")

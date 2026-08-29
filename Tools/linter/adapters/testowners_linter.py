@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Test ownership was introduced in https://github.com/QuarismaAnalyitix/Quarisma/issues/66232.
+Test ownership was introduced in https://github.com/KhwarizmiAnalytix/XSigma/issues/66232.
 
 This lint verifies that every Python test file (file that matches test_*.py or *_test.py in the test folder)
 has valid ownership information in a comment header. Valid means:
   - The format of the header follows the pattern "# Owner(s): ["list", "of owner", "labels"]
-  - Each owner label actually exists in Quarisma
+  - Each owner label actually exists in XSigma
   - Each owner label starts with "module: " or "oncall: " or is in ACCEPTABLE_OWNER_LABELS
 """
 
@@ -41,8 +41,8 @@ class LintMessage(NamedTuple):
     description: str | None
 
 
-def get_quarisma_labels() -> Any:
-    url = "https://api.github.com/repos/QuarismaAnalyitix/Quarisma/labels"
+def get_xsigma_labels() -> Any:
+    url = "https://api.github.com/repos/KhwarizmiAnalytix/XSigma/labels"
     try:
         labels = urlopen(url).read().decode("utf-8")
     except urllib.error.URLError:
@@ -57,7 +57,7 @@ def get_quarisma_labels() -> Any:
     return json.loads(labels)
 
 
-QUARISMA_LABELS = get_quarisma_labels()
+XSIGMA_LABELS = get_xsigma_labels()
 # Team/owner labels usually start with "module: " or "oncall: ", but the following are acceptable exceptions
 ACCEPTABLE_OWNER_LABELS = ["NNC", "high priority"]
 OWNERS_PREFIX = "# Owner(s): "
@@ -69,7 +69,7 @@ def check_labels(
 ) -> list[LintMessage]:
     lint_messages = []
     for label in labels:
-        if label not in QUARISMA_LABELS:
+        if label not in XSIGMA_LABELS:
             lint_messages.append(
                 LintMessage(
                     path=filename,
@@ -81,8 +81,8 @@ def check_labels(
                     original=None,
                     replacement=None,
                     description=(
-                        f"{label} is not an Quarisma label "
-                        "(please choose from https://github.com/QuarismaAnalyitix/Quarisma/labels)"
+                        f"{label} is not an XSigma label "
+                        "(please choose from https://github.com/KhwarizmiAnalytix/XSigma/labels)"
                     ),
                 )
             )

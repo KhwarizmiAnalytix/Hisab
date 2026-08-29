@@ -42,14 +42,14 @@ void set_env(const char* name, const char* value, bool overwrite)
     auto full_env_variable = fmt::format("{}={}", name, value);
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     auto err = _putenv(full_env_variable.c_str());
-    LOGGING_CHECK(err == 0, "putenv failed for environment \"", name, "\", the error is: ", err);
+    LOGGING_CHECK(err == 0, "putenv failed for environment \"{}\", the error is: {}", name, err);
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
 #else
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     auto err = setenv(name, value, static_cast<int>(overwrite));
-    LOGGING_CHECK(err == 0, "setenv failed for environment \"", name, "\", the error is: ", err);
+    LOGGING_CHECK(err == 0, "setenv failed for environment \"{}\", the error is: {}", name, err);
 #endif
 }
 
@@ -100,11 +100,9 @@ std::optional<bool> check_env(const char* name)
             return true;
         }
         LOGGING_LOG_WARNING(
-            "Ignoring invalid value for boolean flag ",
+            "Ignoring invalid value for boolean flag {}: {}. Valid values are 0 or 1.",
             name,
-            ": ",
-            *env_opt,
-            "valid values are 0 or 1.");
+            *env_opt);
     }
     return std::nullopt;
 }

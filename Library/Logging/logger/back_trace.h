@@ -135,6 +135,11 @@ LOGGING_API std::string compact(size_t max_frames = 5);
 LOGGING_API void set_stack_trace_on_error(int enable);
 
 /**
+     * @brief Whether exception construction should capture a stack trace
+     */
+LOGGING_API bool capture_on_error();
+
+/**
      * @brief Check if stack trace capture is supported on this platform
      *
      * @return true if backtrace is available, false otherwise

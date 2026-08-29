@@ -1,4 +1,4 @@
-# LeakSanitizer Suppressions for Quarisma
+# LeakSanitizer Suppressions for XSigma
 # ======================================
 # This file contains suppressions for LeakSanitizer to handle known false positives
 # and issues in third-party libraries that cannot be easily fixed.

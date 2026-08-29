@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -41,10 +41,7 @@ double max_diff_2d(const vectorization::tensor<T>& xs, const torch::Tensor& th)
     double            d = 0.0;
     for (std::size_t i = 0; i < rows; ++i)
         for (std::size_t j = 0; j < cols; ++j)
-            d = std::max(
-                d,
-                static_cast<double>(
-                    std::fabs(xs.at(dims_t{(int64_t)i, (int64_t)j}) - p[i * cols + j])));
+            d = std::max(d, static_cast<double>(std::fabs(xs.at(dims_t{i, j}) - p[i * cols + j])));
     return d;
 }
 
@@ -61,7 +58,7 @@ double max_diff_3d(const vectorization::tensor<T>& xs, const torch::Tensor& th)
         for (std::size_t j = 0; j < d1; ++j)
             for (std::size_t k = 0; k < d2; ++k)
             {
-                T xs_v = xs.at(dims_t{(int64_t)i, (int64_t)j, (int64_t)k});
+                T xs_v = xs.at(dims_t{i, j, k});
                 T th_v = p[i * d1 * d2 + j * d2 + k];
                 d      = std::max(d, static_cast<double>(std::fabs(xs_v - th_v)));
             }
@@ -79,7 +76,7 @@ double max_diff_1d(const vectorization::tensor<T>& xs, const torch::Tensor& th)
     const T* p    = reinterpret_cast<const T*>(th_c.data_ptr());
     double   d    = 0.0;
     for (std::size_t i = 0; i < xs.dimension(0); ++i)
-        d = std::max(d, static_cast<double>(std::fabs(xs.at(dims_t{(int64_t)i}) - p[i])));
+        d = std::max(d, static_cast<double>(std::fabs(xs.at(dims_t{i}) - p[i])));
     return d;
 }
 
@@ -89,6 +86,8 @@ double max_diff_1d(const vectorization::tensor<T>& xs, const torch::Tensor& th)
 template <typename T>
 void test_shape_vs_libtorch()
 {
+    using dims_t = typename vectorization::tensor<T>::dimensions_type;
+
     // 1-D
     {
         constexpr std::size_t    n    = 8;
@@ -115,10 +114,11 @@ void test_shape_vs_libtorch()
     }
     // 3-D
     {
-        const std::vector<int64_t> dims = {2, 3, 4};
-        auto                       data = rand_vec<T>(2 * 3 * 4, T(-1), T(1), 42);
+        const dims_t               dims       = {2, 3, 4};
+        const std::vector<int64_t> torch_dims = {2, 3, 4};
+        auto                       data       = rand_vec<T>(2 * 3 * 4, T(-1), T(1), 42);
         vectorization::tensor<T>   xs(data.data(), dims);
-        auto                       th = to_torch_nd(data.data(), dims);
+        auto                       th = to_torch_nd(data.data(), torch_dims);
 
         EXPECT_EQ((int64_t)xs.rank(), th.dim()) << "3D rank";
         for (int i = 0; i < 3; ++i)
@@ -134,6 +134,7 @@ template <typename T>
 void test_element_access_vs_libtorch()
 {
     using tensor_t       = vectorization::tensor<T>;
+    using dims_t         = typename tensor_t::dimensions_type;
     constexpr double tol = std::is_same_v<T, float> ? 1e-6 : 1e-14;
 
     // 1-D flat comparison
@@ -152,10 +153,11 @@ void test_element_access_vs_libtorch()
     }
     // N-D: at(dims_t{i,j,k}) matches torch element
     {
-        const std::vector<int64_t> dims = {2, 3, 4};
-        auto                       data = rand_vec<T>(2 * 3 * 4, T(-5), T(5), 45);
+        const dims_t               dims       = {2, 3, 4};
+        const std::vector<int64_t> torch_dims = {2, 3, 4};
+        auto                       data       = rand_vec<T>(2 * 3 * 4, T(-5), T(5), 45);
         tensor_t                   xs(data.data(), dims);
-        EXPECT_LT(max_diff_3d(xs, to_torch_nd(data.data(), dims)), tol) << "3D values";
+        EXPECT_LT(max_diff_3d(xs, to_torch_nd(data.data(), torch_dims)), tol) << "3D values";
     }
 }
 
@@ -189,12 +191,13 @@ void test_views_vs_libtorch()
 
     // --- permute(): {2,3,4} → order {2,0,1} → shape {4,2,3} ---
     {
-        const std::vector<int64_t> src_dims = {2, 3, 4};
-        auto                       data     = rand_vec<T>(2 * 3 * 4, T(-4), T(4), 47);
-        tensor_t                   nd(data.data(), src_dims);
-        auto                       th = to_torch_nd(data.data(), src_dims);
+        const dims_t               src_dims       = {2, 3, 4};
+        const std::vector<int64_t> torch_src_dims = {2, 3, 4};
+        auto                       data           = rand_vec<T>(2 * 3 * 4, T(-4), T(4), 47);
+        tensor_t                   tmp(data.data(), src_dims);
+        auto                       th = to_torch_nd(data.data(), torch_src_dims);
 
-        auto pv = nd.permute(dims_t{2, 0, 1});
+        auto pv = tmp.permute(dims_t{2, 0, 1});
         auto tp = th.permute({2, 0, 1});
 
         for (int i = 0; i < 3; ++i)
@@ -202,7 +205,7 @@ void test_views_vs_libtorch()
             EXPECT_EQ((int64_t)pv.dimension(i), tp.size(i)) << "permute dim " << i;
             EXPECT_EQ((int64_t)pv.stride(i), tp.stride(i)) << "permute stride " << i;
         }
-        EXPECT_EQ(pv.data(), nd.data()) << "permute shares data";
+        EXPECT_EQ(pv.data(), tmp.data()) << "permute shares data";
         EXPECT_LT(max_diff_3d(pv, tp), tol) << "permute element values";
     }
 

@@ -1,8 +1,18 @@
 # CUDA/HIP Remediation Plan — Memory + Vectorization (Windows & Unix)
 
-Status: Phase 1 (WS1) applied 2026-07-26. Platform policy resolved: **HIP is
-Unix (Linux) only**; Windows gets a clear configure-time error directing
-users to CUDA instead of an untested build attempt. See §10 for the fix log.
+> **Superseded for Memory status (August 2026).** HIP now shares the CUDA
+> caching-allocator translation unit via `gpu/gpu_runtime.h`. The deleted
+> `gpu_device_manager` / `gpu_memory_pool` / tracking layers are not coming
+> back. Current design, client API, and done vs still-open:
+> [`memory_design.md`](memory_design.md) §10.
+>
+> This file is kept as a historical log of the July 2026 Phase 1
+> (`PROJECT_HAS_*` / HIP-on-Windows) work. Do not treat D5–D8 or WS2 as
+> open Memory work.
+
+Status (historical): Phase 1 (WS1) applied 2026-07-26. Platform policy:
+**HIP is Unix (Linux) only**; Windows gets a configure-time error directing
+users to CUDA. See §10 for the fix log.
 Owner: TBD.
 
 ## 1. Executive summary
@@ -41,7 +51,7 @@ CI coverage on both Windows and Unix.
 |---|--------|----------|--------|--------|
 | D1 | `cuda.cmake`/`hip.cmake` read a `PROJECT_GPU_ALLOC` variable that is **never set anywhere in the repo** (the actual cache variable is `MEMORY_GPU_ALLOC`), and define `PROJECT_CUDA_ALLOC_*`/`PROJECT_HIP_ALLOC_*`; all consumers check `MEMORY_CUDA_ALLOC_*`/`MEMORY_HIP_ALLOC_*` | `Library/Memory/Cmake/cuda.cmake:209-221`, `hip.cmake:86-98` vs. `gpu/allocator_gpu.h:113-117,307-311`, `helper/memory_allocator.h:123-127`, `helper/memory_allocator.cpp:273,286,300,342,355,369,431,444,458,488,501,515` | `MEMORY_GPU_ALLOC=SYNC/ASYNC/POOL_ASYNC` had **two independent** reasons to silently have no effect; allocator always fell through to the `#else` default path | **FIXED** — both cuda.cmake and hip.cmake now read `MEMORY_GPU_ALLOC` and emit `MEMORY_{CUDA,HIP}_ALLOC_*` |
 | D2 | Tests guard real GPU calls with `#if PROJECT_HAS_CUDA` / `#if PROJECT_HAS_HIP`, never defined anywhere (only `MEMORY_HAS_CUDA`/`MEMORY_HAS_HIP` exist) | Turned out to span **14 files**, not 2: `Library/Memory/Testing/Cxx/{TestCudaAllocator,TestCudaCachingAllocator,TestCPUMemory,TestGpuDeviceManager,TestGpuAllocatorTracking,TestGpuAllocatorFactory,TestGpuAllocatorBenchmark,TestGpuMemoryTransfer,TestGpuMemoryPool,TestGpuMemoryAlignment,TestTrackingSystemBenchmark,TestGpuResourceTracker,TestGpuMemoryWrapper}.cpp` and `Library/Core/Testing/Cxx/TestEnzymeAD.cpp` | Test bodies dead code on every backend; `TestCudaCachingAllocator.cpp`'s entire body (incl. all `MEMORYTEST` registrations) was excluded, so those tests didn't even exist as far as gtest was concerned | **FIXED** — all 14 files renamed to `MEMORY_HAS_CUDA`/`MEMORY_HAS_HIP`; verified `MEMORY_HAS_CUDA` propagates transitively from `Memory` → `Core` → `CoreCxxTests` via `PUBLIC` compile definitions, so the `TestEnzymeAD.cpp` fix is live there too |
-| D3 | Third, unrelated macro spelling `QUARISMA_CUDA_ALLOC_SYNC`/`QUARISMA_HIP_ALLOC_SYNC`, plus stale `-DQUARISMA_CUDA_ALLOC=...` guidance printed to the user | `Testing/Cxx/TestGpuAllocatorBenchmark.cpp:715-720,741-743` | Diagnostic printout always showed "DEFAULT (SYNC fallback)" regardless of actual strategy; printed guidance referenced a compile define that was never how the strategy is actually selected | **FIXED** — macros renamed to `MEMORY_*_ALLOC_*`; guidance now points at `-DMEMORY_GPU_ALLOC=...` |
+| D3 | Third, unrelated macro spelling `XSIGMA_CUDA_ALLOC_SYNC`/`XSIGMA_HIP_ALLOC_SYNC`, plus stale `-DXSIGMA_CUDA_ALLOC=...` guidance printed to the user | `Testing/Cxx/TestGpuAllocatorBenchmark.cpp:715-720,741-743` | Diagnostic printout always showed "DEFAULT (SYNC fallback)" regardless of actual strategy; printed guidance referenced a compile define that was never how the strategy is actually selected | **FIXED** — macros renamed to `MEMORY_*_ALLOC_*`; guidance now points at `-DMEMORY_GPU_ALLOC=...` |
 | D4 | `hip.cmake` unconditionally appends `--expt-extended-lambda` to `CMAKE_HIP_FLAGS` — this is an **nvcc-only** flag, not recognized by `hipcc`/Clang | `Library/Memory/Cmake/hip.cmake:110` (old) | Would break real ROCm builds; never caught because no HIP CI/tests exist | **FIXED** — flag removed with an explanatory comment |
 | D5 | `cuda_caching_allocator` is explicitly CUDA-only; throws under HIP builds; no `hip_caching_allocator` exists | `Library/Memory/gpu/cuda_caching_allocator.{h,cpp}` (header comment, `Impl` stub at cpp:492-514) | No caching allocator on HIP — falls back to raw `hipMalloc`/`hipFree` via `allocator_gpu.h` with no pooling | Open — WS2, largest remaining item |
 | D6 | `gpu_device_manager` only implements `initialize_cuda()`; `device_enum::HIP` used only for string formatting | `Library/Memory/gpu/gpu_device_manager.cpp:504-527` | No device enumeration/management on HIP | Open — WS2 |
@@ -75,7 +85,7 @@ supported on Apple Silicon"), `ThirdParty/` (never modified, per
 - ~~Rename `PROJECT_CUDA_ALLOC_*`/`PROJECT_HIP_ALLOC_*` → `MEMORY_CUDA_ALLOC_*`/`MEMORY_HIP_ALLOC_*` in `cuda.cmake`/`hip.cmake` (fixes D1)~~ — done; also fixed the underlying `PROJECT_GPU_ALLOC` → `MEMORY_GPU_ALLOC` variable-name bug that made D1 worse than first scoped.
 - ~~Remove `--expt-extended-lambda` from `CMAKE_HIP_FLAGS` (fixes D4)~~ — done.
 - ~~Add a Windows/toolchain gate to `hip.cmake` (fixes D9)~~ — done, as a hard `FATAL_ERROR` (policy: HIP is Unix-only, minimum effort on Windows is "fail clearly"); mirrored in `Library/Vectorization/CMakeLists.txt`'s HIP block too, since it has its own independent `find_package(hip)`/`enable_language(HIP)` path.
-- ~~Replace `PROJECT_HAS_CUDA` with `MEMORY_HAS_CUDA` (fixes D2), and `QUARISMA_CUDA_ALLOC_SYNC`/`QUARISMA_HIP_ALLOC_SYNC` with the corrected macros (fixes D3)~~ — done; scope grew from 2 files to 14 once the same dead macro was found repo-wide (including `Library/Core/Testing/Cxx/TestEnzymeAD.cpp`).
+- ~~Replace `PROJECT_HAS_CUDA` with `MEMORY_HAS_CUDA` (fixes D2), and `XSIGMA_CUDA_ALLOC_SYNC`/`XSIGMA_HIP_ALLOC_SYNC` with the corrected macros (fixes D3)~~ — done; scope grew from 2 files to 14 once the same dead macro was found repo-wide (including `Library/Core/Testing/Cxx/TestEnzymeAD.cpp`).
 
 ### WS2 — HIP feature parity in Memory C/C++ code
 Bring `Library/Memory/gpu/*` up to the branching pattern already used
@@ -196,8 +206,8 @@ Files changed:
   `Library/Core/Testing/Cxx/TestEnzymeAD.cpp`) — `PROJECT_HAS_CUDA` →
   `MEMORY_HAS_CUDA`, `PROJECT_HAS_HIP` → `MEMORY_HAS_HIP`.
 - `Library/Memory/Testing/Cxx/TestGpuAllocatorBenchmark.cpp` — additionally
-  fixed the `QUARISMA_CUDA_ALLOC_SYNC`/`QUARISMA_HIP_ALLOC_SYNC` diagnostic
-  macros and the `-DQUARISMA_CUDA_ALLOC=...` guidance text printed to users.
+  fixed the `XSIGMA_CUDA_ALLOC_SYNC`/`XSIGMA_HIP_ALLOC_SYNC` diagnostic
+  macros and the `-DXSIGMA_CUDA_ALLOC=...` guidance text printed to users.
 
 Verification performed (no CUDA/HIP hardware available in this environment,
 so verification was config-level + CPU-only regression, all via

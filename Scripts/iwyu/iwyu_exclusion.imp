@@ -1,9 +1,9 @@
 [
   # ============================================================================
-  # IWYU Mapping File for Quarisma Project
+  # IWYU Mapping File for XSigma Project
   # ============================================================================
   # This file provides mappings for include-what-you-use (IWYU) to ensure
-  # proper include recommendations for the Quarisma codebase.
+  # proper include recommendations for the XSigma codebase.
   #
   # Format: Each mapping is a JSON object with the following structure:
   # { include: ["<from_header>", "visibility", "<to_header>", "visibility"] }
@@ -13,13 +13,13 @@
   # ============================================================================
 
   # ============================================================================
-  # Quarisma Feature Flag Configuration Headers
+  # XSigma Feature Flag Configuration Headers
   # ============================================================================
-  # Files using QUARISMA_ENABLE_* macros should include common/configure.h
+  # Files using XSIGMA_ENABLE_* macros should include common/configure.h
   # This ensures proper macro definitions before conditional compilation
 
   # Conservative mappings to avoid IWYU crashes - using include mappings instead of symbol mappings
-  { include: ["\"quarisma_features.h\"", "private", "\"common/configure.h\"", "public"] },
+  { include: ["\"xsigma_features.h\"", "private", "\"common/configure.h\"", "public"] },
 
   # ============================================================================
   # macOS / Apple libc++ Internal Headers -> Standard C++ Headers
@@ -407,7 +407,7 @@
   { include: ["<oneapi/tbb/info.h>", "public", "<tbb/info.h>", "public"] },
 
   # ============================================================================
-  # Conservative Quarisma Project Mappings
+  # Conservative XSigma Project Mappings
   # ============================================================================
   # Minimal mappings to avoid IWYU crashes while maintaining functionality
 

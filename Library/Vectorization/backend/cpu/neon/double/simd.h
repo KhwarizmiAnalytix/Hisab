@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  */
@@ -13,10 +13,10 @@
 #include <cstdint>
 #include <type_traits>
 
+#include "backend/cpu/neon/svml.h"
 #include "backend/simd.h"
 #include "common/normal_cdf.h"
 #include "common/vectorization_macros.h"
-#include "backend/cpu/neon/svml.h"
 
 namespace vectorization
 {
@@ -48,10 +48,7 @@ struct simd<double>
 
     inline static uint64x2_t const sign_mask = vdupq_n_u64(0x8000000000000000ULL);
 
-    VECTORIZATION_SIMD_RETURN_TYPE prefetch(const value_t* addr)
-    {
-        __builtin_prefetch(addr, 0, 3);
-    }
+    VECTORIZATION_SIMD_RETURN_TYPE prefetch(const value_t* addr) { __builtin_prefetch(addr, 0, 3); }
 
     VECTORIZATION_SIMD_METHOD simd_t load(const value_t* addr) { return vld1q_f64(addr); }
 
@@ -84,7 +81,10 @@ struct simd<double>
 
     VECTORIZATION_SIMD_METHOD simd_t div(simd_t x, simd_t y) { return vdivq_f64(x, y); }
 
-    VECTORIZATION_SIMD_METHOD simd_t fma(simd_t x, simd_t y, simd_t z) { return vfmaq_f64(z, x, y); }
+    VECTORIZATION_SIMD_METHOD simd_t fma(simd_t x, simd_t y, simd_t z)
+    {
+        return vfmaq_f64(z, x, y);
+    }
 
     VECTORIZATION_SIMD_METHOD simd_t pow(simd_t x, simd_t y) { return vpowq_f64(x, y); }
 
@@ -154,7 +154,8 @@ struct simd<double>
 
     VECTORIZATION_SIMD_METHOD simd_t trunc(simd_t x)
     {
-        return vectorization::detail_neon::map1_f64(x, static_cast<double (*)(double)>(&std::trunc));
+        return vectorization::detail_neon::map1_f64(
+            x, static_cast<double (*)(double)>(&std::trunc));
     }
 
     VECTORIZATION_SIMD_METHOD simd_t invsqrt(simd_t x)
@@ -240,11 +241,11 @@ struct simd<double>
 
     VECTORIZATION_FORCE_INLINE static uint64x2_t u32_mask_to_u64(uint32_t a, uint32_t b)
     {
-        uint64_t la = a ? ~0ULL : 0ULL;
-        uint64_t lb = b ? ~0ULL : 0ULL;
-        uint64x2_t r = vdupq_n_u64(0);
-        r              = vsetq_lane_u64(la, r, 0);
-        r              = vsetq_lane_u64(lb, r, 1);
+        uint64_t   la = a ? ~0ULL : 0ULL;
+        uint64_t   lb = b ? ~0ULL : 0ULL;
+        uint64x2_t r  = vdupq_n_u64(0);
+        r             = vsetq_lane_u64(la, r, 0);
+        r             = vsetq_lane_u64(lb, r, 1);
         return r;
     }
 
@@ -264,10 +265,7 @@ struct simd<double>
         to[1] = vgetq_lane_u64(from, 1) ? 1u : 0u;
     }
 
-    VECTORIZATION_SIMD_RETURN_TYPE store(const mask_t& from, int_t* to)
-    {
-        storeu(from, to);
-    }
+    VECTORIZATION_SIMD_RETURN_TYPE store(const mask_t& from, int_t* to) { storeu(from, to); }
 
     VECTORIZATION_SIMD_METHOD mask_t not_mask(const mask_t& x)
     {

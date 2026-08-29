@@ -1,6 +1,6 @@
 # Usage Examples
 
-This guide provides practical examples of different Quarisma build configurations for various use cases. Each example demonstrates how to configure the build system for specific requirements.
+This guide provides practical examples of different XSigma build configurations for various use cases. Each example demonstrates how to configure the build system for specific requirements.
 
 ## Table of Contents
 
@@ -24,9 +24,9 @@ This guide provides practical examples of different Quarisma build configuration
 # Disable all optional libraries for fastest build
 cmake -B build_minimal -S . \
     -DCMAKE_BUILD_TYPE=Release \
-    -DQUARISMA_ENABLE_MAGICENUM=OFF \
-    -DLOGGING_ENABLE_LOGURU=OFF \
-    -DQUARISMA_VECTORIZATION_TYPE=no
+    -DCORE_ENABLE_MAGICENUM=OFF \
+    -DLOGGING_BACKEND=NATIVE \
+    -DVECTORIZATION_CPU_BACKEND=no
 
 cmake --build build_minimal -j
 ```
@@ -47,10 +47,10 @@ cmake --build build_minimal -j
 # Enable performance libraries with optimizations
 cmake -B build_performance -S . \
     -DCMAKE_BUILD_TYPE=Release \
-    -DQUARISMA_ENABLE_LTO=ON \
-    -DQUARISMA_ENABLE_TBB=ON \
+    -DPROJECT_ENABLE_LTO=ON \
+    -DMEMORY_ENABLE_TBB=ON \
     -DMEMORY_ENABLE_MIMALLOC=ON \
-    -DQUARISMA_VECTORIZATION_TYPE=avx2
+    -DVECTORIZATION_CPU_BACKEND=avx2
 
 cmake --build build_performance -j
 ```
@@ -79,10 +79,10 @@ cmake --build build_performance -j
 cmake -B build_dev -S . \
     -DCMAKE_BUILD_TYPE=Debug \
     -DBUILD_TESTING=ON \
-    -DQUARISMA_ENABLE_GTEST=ON \
-    -DQUARISMA_ENABLE_BENCHMARK=ON \
-    -DQUARISMA_ENABLE_SANITIZER=ON \
-    -DQUARISMA_SANITIZER_TYPE=address
+    -DENABLE_GTEST=ON \
+    -DENABLE_BENCHMARK=ON \
+    -DPROJECT_ENABLE_SANITIZER=ON \
+    -DPROJECT_SANITIZER_TYPE=address
 
 cmake --build build_dev -j
 
@@ -107,9 +107,9 @@ ctest --test-dir build_dev --output-on-failure
 # Use system-installed libraries (faster build)
 cmake -B build_external -S . \
     -DCMAKE_BUILD_TYPE=Release \
-    -DQUARISMA_ENABLE_EXTERNAL=ON \
-    -DQUARISMA_ENABLE_TBB=ON \
-    -DQUARISMA_ENABLE_GTEST=ON
+    -DXSIGMA_ENABLE_EXTERNAL=ON \
+    -DMEMORY_ENABLE_TBB=ON \
+    -DENABLE_GTEST=ON
 
 cmake --build build_external -j
 ```
@@ -142,9 +142,9 @@ sudo dnf install fmt-devel gtest-devel tbb-devel
 cmake -B build_test -S . \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DBUILD_TESTING=ON \
-    -DQUARISMA_GOOGLE_TEST=ON \
-    -DQUARISMA_ENABLE_BENCHMARK=ON \
-    -DQUARISMA_ENABLE_COVERAGE=ON
+    -DXSIGMA_GOOGLE_TEST=ON \
+    -DENABLE_BENCHMARK=ON \
+    -DPROJECT_ENABLE_COVERAGE=ON
 
 cmake --build build_test -j
 
@@ -171,15 +171,15 @@ cmake --build build_test --target coverage-html
 # Production-ready build with all optimizations
 cmake -B build_production -S . \
     -DCMAKE_BUILD_TYPE=Release \
-    -DQUARISMA_ENABLE_LTO=ON \
+    -DPROJECT_ENABLE_LTO=ON \
     -DMEMORY_ENABLE_MIMALLOC=ON \
-    -DQUARISMA_VECTORIZATION_TYPE=avx2 \
+    -DVECTORIZATION_CPU_BACKEND=avx2 \
     -DLOGGING_BACKEND=GLOG
 
 cmake --build build_production -j
 
 # Optional: Strip debug symbols for smaller binary
-strip build_production/bin/quarisma
+strip build_production/bin/xsigma
 ```
 
 **Result**:
@@ -199,16 +199,16 @@ strip build_production/bin/quarisma
 # Debug build with multiple sanitizers and analysis tools
 cmake -B build_debug -S . \
     -DCMAKE_BUILD_TYPE=Debug \
-    -DQUARISMA_ENABLE_SANITIZER=ON \
-    -DQUARISMA_SANITIZER_TYPE=address \
-    -DQUARISMA_ENABLE_IWYU=ON \
-    -DQUARISMA_ENABLE_CPPCHECK=ON \
+    -DPROJECT_ENABLE_SANITIZER=ON \
+    -DPROJECT_SANITIZER_TYPE=address \
+    -DPROJECT_ENABLE_IWYU=ON \
+    -DPROJECT_ENABLE_CPPCHECK=ON \
     -DBUILD_TESTING=ON
 
 cmake --build build_debug -j
 
 # Run with sanitizer
-./build_debug/bin/quarisma
+./build_debug/bin/xsigma
 
 # Check analysis results
 less build_debug/iwyu.log
@@ -232,10 +232,10 @@ less build_debug/cppcheckoutput.log
 # Fast CI build with external libraries and testing
 cmake -B build_ci -S . \
     -DCMAKE_BUILD_TYPE=Release \
-    -DQUARISMA_ENABLE_EXTERNAL=ON \
+    -DXSIGMA_ENABLE_EXTERNAL=ON \
     -DBUILD_TESTING=ON \
-    -DQUARISMA_ENABLE_GTEST=ON \
-    -DQUARISMA_ENABLE_COVERAGE=ON
+    -DENABLE_GTEST=ON \
+    -DPROJECT_ENABLE_COVERAGE=ON
 
 cmake --build build_ci -j
 
@@ -270,7 +270,7 @@ jobs:
           cmake -B build -S . \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DQUARISMA_ENABLE_EXTERNAL=ON \
+            -DXSIGMA_ENABLE_EXTERNAL=ON \
             -DBUILD_TESTING=ON
 
       - name: Build
@@ -326,7 +326,7 @@ using profiler::profiler_impl::impl::ProfilerState;
 ProfilerConfig config(ProfilerState::KINETO);
 enableProfiler(config, {ActivityType::CPU});
 {
-    RECORD_USER_SCOPE("DataProcessing");
+    PROFILER_RECORD_USER_SCOPE("DataProcessing");
     // work
 }
 auto result = disableProfiler();

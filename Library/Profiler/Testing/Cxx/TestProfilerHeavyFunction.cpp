@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,13 +13,14 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 /*
- * Stress / e2e: native profiler_session, Kineto RECORD_USER_SCOPE, and ITT
- * ranges over the same computational workloads (matrix, Monte Carlo, FFT).
+ * Stress / e2e: native profiler_session, Kineto PROFILER_RECORD_USER_SCOPE, ITT
+ * ranges, and (when LibTorch is on) torch::autograd::profiler over the same
+ * computational workloads (matrix, Monte Carlo, FFT).
  *
  * API and pipeline docs: Docs/profiler/profiler.md
  */
@@ -50,7 +51,32 @@
 #include "native/tracing/traceme.h"
 #include "native/tracing/traceme_recorder.h"
 
+#ifndef PROFILER_HAS_LIBTORCH
+#define PROFILER_HAS_LIBTORCH 0
+#endif
+
+#if PROFILER_HAS_LIBTORCH
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4996 4100)
+#endif
+#include <ATen/record_function.h>
+#include <torch/csrc/autograd/profiler.h>
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+#endif
+
 #if PROFILER_HAS_KINETO
+#ifdef SOFT_ASSERT
+#undef SOFT_ASSERT
+#endif
 #include "bespoke/common/record_function.h"
 #include "bespoke/kineto/hotspot_report.h"
 #include "bespoke/kineto/profiler_kineto.h"
@@ -436,7 +462,7 @@ PROFILERTEST(Profiler, heavy_function_comprehensive_computational_profiling)
 // KINETO PROFILER TEST
 // ============================================================================
 // Same heavy workloads as the native case above, instrumented with
-// RECORD_USER_SCOPE and collected via enableProfiler / disableProfiler.
+// PROFILER_RECORD_USER_SCOPE and collected via enableProfiler / disableProfiler.
 // ============================================================================
 
 #if PROFILER_HAS_KINETO
@@ -484,16 +510,16 @@ PROFILERTEST(Profiler, kineto_heavy_function_profiling)
     }
 
     {
-        RECORD_USER_SCOPE("kineto_heavy_workload");
+        PROFILER_RECORD_USER_SCOPE("kineto_heavy_workload");
 
         {
-            RECORD_USER_SCOPE("kineto_matrix_operations");
+            PROFILER_RECORD_USER_SCOPE("kineto_matrix_operations");
             const size_t matrix_size = 50;
             auto         matrix_a    = generate_test_matrix(matrix_size, matrix_size);
             auto         matrix_b    = generate_test_matrix(matrix_size, matrix_size);
             for (int i = 0; i < 2; ++i)
             {
-                RECORD_USER_SCOPE("kineto_matrix_multiply_iteration");
+                PROFILER_RECORD_USER_SCOPE("kineto_matrix_multiply_iteration");
                 auto result = matrix_multiply(matrix_a, matrix_b);
                 EXPECT_EQ(result.size(), matrix_size);
                 EXPECT_EQ(result[0].size(), matrix_size);
@@ -501,14 +527,14 @@ PROFILERTEST(Profiler, kineto_heavy_function_profiling)
         }
 
         {
-            RECORD_USER_SCOPE("kineto_monte_carlo");
+            PROFILER_RECORD_USER_SCOPE("kineto_monte_carlo");
             const double pi_estimate = estimate_pi_monte_carlo(200000);
             EXPECT_GT(pi_estimate, 2.5);
             EXPECT_LT(pi_estimate, 3.8);
         }
 
         {
-            RECORD_USER_SCOPE("kineto_fft_simulation");
+            PROFILER_RECORD_USER_SCOPE("kineto_fft_simulation");
             auto signal = generate_test_signal(256);
             EXPECT_EQ(signal.size(), 256U);
         }
@@ -532,6 +558,15 @@ PROFILERTEST(Profiler, kineto_heavy_function_profiling)
     EXPECT_GT(outer->durationNs(), 0U);
     EXPECT_GE(outer->durationNs(), matrix->durationNs());
 
+    std::cout << "\n=== XSigma Kineto events (" << events.size() << ") ===\n";
+    for (const auto& event : events)
+    {
+        std::cout << event.name() << "\t" << event.durationNs() << " ns\tscope="
+                  << static_cast<int>(event.scope())
+                  << "\tactivity=" << static_cast<int>(event.activityType()) << "\n";
+    }
+    std::cout << std::flush;
+
     if (!profiler_result->event_tree().empty())
     {
         profiler::profiler_impl::hotspot_report const hotspot(*profiler_result);
@@ -543,7 +578,7 @@ PROFILERTEST(Profiler, kineto_heavy_function_profiling)
     }
 
     const std::string trace_filename = "kineto_heavy_function_trace.json";
-    profiler_result->save(trace_filename);
+    ASSERT_TRUE(profiler_result->save(trace_filename));
 
     std::ifstream json_file(trace_filename);
     ASSERT_TRUE(json_file.good()) << "Failed to create Kineto JSON output file";
@@ -556,7 +591,8 @@ PROFILERTEST(Profiler, kineto_heavy_function_profiling)
         << "JSON file missing traceEvents array";
     EXPECT_GT(json_content.size(), 100U) << "JSON should contain meaningful content";
 
-    std::remove(trace_filename.c_str());
+    std::cout << "XSigma Kineto Chrome trace saved: " << trace_filename << " ("
+              << json_content.size() << " bytes)\n";
 }
 
 #endif  // PROFILER_HAS_KINETO
@@ -830,9 +866,147 @@ PROFILERTEST(Profiler, itt_api_heavy_function_profiling)
 #endif  // PROFILER_HAS_ITT
 
 // ============================================================================
+// PYTORCH (LibTorch) PROFILER TEST
+// ============================================================================
+// Same heavy workloads, captured by torch::autograd::profiler when the setup.py
+// `torch` token finds a LibTorch install (PROFILER_HAS_LIBTORCH). Uses ATen
+// RECORD_USER_SCOPE so events land in the PyTorch Kineto trace, not XSigma's
+// PROFILER_RECORD_* macros.
+// ============================================================================
+
+#if PROFILER_HAS_LIBTORCH
+
+namespace
+{
+
+const torch::autograd::profiler::KinetoEvent* find_pytorch_event(
+    const std::vector<torch::autograd::profiler::KinetoEvent>& events, const std::string& name)
+{
+    for (const auto& event : events)
+    {
+        if (event.name() == name)
+        {
+            return &event;
+        }
+    }
+    return nullptr;
+}
+
+}  // namespace
+
+PROFILERTEST(Profiler, pytorch_heavy_function_profiling)
+{
+    using torch::autograd::profiler::disableProfiler;
+    using torch::autograd::profiler::enableProfiler;
+    using torch::autograd::profiler::prepareProfiler;
+    using torch::autograd::profiler::ProfilerConfig;
+    using torch::profiler::impl::ActivityType;
+    using torch::profiler::impl::ProfilerState;
+
+    ProfilerConfig const config(
+        ProfilerState::KINETO,
+        /*report_input_shapes=*/false,
+        /*profile_memory=*/false,
+        /*with_stack=*/false,
+        /*with_flops=*/false,
+        /*with_modules=*/false);
+
+    const std::set<ActivityType> activities{ActivityType::CPU};
+    const std::unordered_set<at::RecordScope> scopes{at::RecordScope::USER_SCOPE};
+
+    try
+    {
+        prepareProfiler(config, activities);
+        enableProfiler(config, activities, scopes);
+    }
+    catch (const std::exception& ex)
+    {
+        GTEST_SKIP() << "PyTorch profiler unavailable: " << ex.what();
+    }
+
+    {
+        RECORD_USER_SCOPE("pytorch_heavy_workload");
+
+        {
+            RECORD_USER_SCOPE("pytorch_matrix_operations");
+            const size_t matrix_size = 50;
+            auto         matrix_a    = generate_test_matrix(matrix_size, matrix_size);
+            auto         matrix_b    = generate_test_matrix(matrix_size, matrix_size);
+            for (int i = 0; i < 2; ++i)
+            {
+                RECORD_USER_SCOPE("pytorch_matrix_multiply_iteration");
+                auto result = matrix_multiply(matrix_a, matrix_b);
+                EXPECT_EQ(result.size(), matrix_size);
+                EXPECT_EQ(result[0].size(), matrix_size);
+            }
+        }
+
+        {
+            RECORD_USER_SCOPE("pytorch_monte_carlo");
+            const double pi_estimate = estimate_pi_monte_carlo(200000);
+            EXPECT_GT(pi_estimate, 2.5);
+            EXPECT_LT(pi_estimate, 3.8);
+        }
+
+        {
+            RECORD_USER_SCOPE("pytorch_fft_simulation");
+            auto signal = generate_test_signal(256);
+            EXPECT_EQ(signal.size(), 256U);
+        }
+    }
+
+    auto profiler_result = disableProfiler();
+    ASSERT_NE(profiler_result, nullptr);
+
+    const auto& events = profiler_result->events();
+    if (events.empty())
+    {
+        GTEST_SKIP() << "PyTorch profiler produced no CPU events in this environment";
+    }
+
+    const auto* outer  = find_pytorch_event(events, "pytorch_heavy_workload");
+    const auto* matrix = find_pytorch_event(events, "pytorch_matrix_operations");
+    const auto* monte  = find_pytorch_event(events, "pytorch_monte_carlo");
+    ASSERT_NE(outer, nullptr);
+    ASSERT_NE(matrix, nullptr);
+    ASSERT_NE(monte, nullptr);
+    EXPECT_GT(outer->durationNs(), 0U);
+    EXPECT_GE(outer->durationNs(), matrix->durationNs());
+
+    std::cout << "\n=== PyTorch profiler events (" << events.size() << ") ===\n";
+    for (const auto& event : events)
+    {
+        std::cout << event.name() << "\t" << event.durationNs() << " ns\tscope="
+                  << static_cast<int>(event.scope())
+                  << "\tactivity=" << static_cast<int>(event.activityType()) << "\n";
+    }
+    std::cout << std::flush;
+
+    const std::string trace_filename = "pytorch_heavy_function_trace.json";
+    profiler_result->save(trace_filename);
+
+    std::ifstream json_file(trace_filename);
+    ASSERT_TRUE(json_file.good()) << "Failed to create PyTorch profiler JSON output file";
+    std::stringstream buffer;
+    buffer << json_file.rdbuf();
+    const std::string json_content = buffer.str();
+    json_file.close();
+
+    EXPECT_NE(json_content.find("\"traceEvents\""), std::string::npos)
+        << "JSON file missing traceEvents array";
+    EXPECT_GT(json_content.size(), 100U) << "JSON should contain meaningful content";
+
+    std::cout << "PyTorch Chrome trace saved: " << trace_filename << " (" << json_content.size()
+              << " bytes)\n";
+}
+
+#endif  // PROFILER_HAS_LIBTORCH
+
+// ============================================================================
 // COMBINED KINETO + ITT PROFILING TEST
 // ============================================================================
 // Backends are mutually exclusive (PROFILER_HAS_KINETO vs PROFILER_HAS_ITT),
 // so a combined Kineto+ITT case cannot compile. Use
 // Profiler.kineto_heavy_function_profiling above for Kineto and the ITT block
-// when PROFILER_HAS_ITT=1.
+// when PROFILER_HAS_ITT=1. PyTorch profiler is independent and runs when
+// PROFILER_HAS_LIBTORCH is 1.

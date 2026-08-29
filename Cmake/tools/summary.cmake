@@ -1,5 +1,5 @@
 # =============================================================================
-# Quarisma
+# XSigma
 # Configuration Summary Module
 #
 # print_configuration_summary — workspace-wide toolchain and CMake metadata only. Per-library CMake
@@ -42,9 +42,9 @@ function(print_configuration_summary)
   endif()
   message("Options:")
   message("  BUILD_SHARED_LIBS        : ${BUILD_SHARED_LIBS}")
-  message("  QUARISMA_ENABLE_EXTERNAL : ${QUARISMA_ENABLE_EXTERNAL}")
-  if(DEFINED QUARISMA_LIBRARY_PROJECT AND NOT QUARISMA_LIBRARY_PROJECT STREQUAL "")
-    message("  QUARISMA_LIBRARY_PROJECT : ${QUARISMA_LIBRARY_PROJECT}")
+  message("  XSIGMA_ENABLE_EXTERNAL : ${XSIGMA_ENABLE_EXTERNAL}")
+  if(DEFINED XSIGMA_LIBRARY_PROJECT AND NOT XSIGMA_LIBRARY_PROJECT STREQUAL "")
+    message("  XSIGMA_LIBRARY_PROJECT : ${XSIGMA_LIBRARY_PROJECT}")
   endif()
   message("")
 endfunction()

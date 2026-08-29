@@ -4,7 +4,7 @@
 # =============================================================================
 # Following cpuinfo's simple pattern for test integration
 
-quarisma_add_googletest()
+xsigma_add_googletest()
 
 # =============================================================================
 # Test Source Files
@@ -73,7 +73,7 @@ add_executable(CoreCxxTests ${TestFiles})
 
 # Compile definitions
 target_compile_definitions(
-  CoreCxxTests PRIVATE QUARISMA_HAS_GTEST=1 QUARISMA_GOOGLE_TEST USE_GTEST _VARIADIC_MAX=10
+  CoreCxxTests PRIVATE XSIGMA_HAS_GTEST=1 XSIGMA_GOOGLE_TEST USE_GTEST _VARIADIC_MAX=10
 )
 
 # Workaround for Clang 20/21.x compiler crash in register allocator The crash occurs in the Greedy
@@ -158,8 +158,8 @@ message(STATUS "  - Working directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 # Output Directory
 # Configuration
 # =============================================================================
-if(COMMAND quarisma_set_target_output_directories)
-  quarisma_set_target_output_directories(CoreCxxTests)
+if(COMMAND xsigma_set_target_output_directories)
+  xsigma_set_target_output_directories(CoreCxxTests)
 endif()
 
 # =============================================================================
@@ -170,7 +170,7 @@ if(CORE_ENABLE_BENCHMARK)
   # --- Google Benchmark setup ---
   if(NOT TARGET benchmark)
     set(_bench_external_found FALSE)
-    if(QUARISMA_ENABLE_EXTERNAL)
+    if(XSIGMA_ENABLE_EXTERNAL)
       find_package(benchmark QUIET)
       if(benchmark_FOUND)
         message(STATUS "Found external Google Benchmark")
@@ -208,7 +208,7 @@ if(CORE_ENABLE_BENCHMARK)
       set(BENCHMARK_USE_BUNDLED_GTEST OFF CACHE BOOL "Don't use bundled gtest for benchmark" FORCE)
       set(BENCHMARK_DOWNLOAD_DEPENDENCIES OFF CACHE BOOL "Don't download dependencies" FORCE)
       add_subdirectory(
-        "${QUARISMA_THIRDPARTY_DIR}/benchmark" "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build"
+        "${XSIGMA_THIRDPARTY_DIR}/benchmark" "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build"
         EXCLUDE_FROM_ALL
       )
       _set_third_party_folder_properties(
@@ -270,10 +270,10 @@ if(CORE_ENABLE_BENCHMARK)
       ${target_name} PROPERTIES FOLDER "Benchmarks" OUTPUT_NAME "${target_name}"
     )
 
-    # Apply Quarisma output directory configuration This ensures benchmarks are placed in
+    # Apply XSigma output directory configuration This ensures benchmarks are placed in
     # ${PROJECT_BINARY_DIR}/bin
-    if(COMMAND quarisma_set_target_output_directories)
-      quarisma_set_target_output_directories(${target_name})
+    if(COMMAND xsigma_set_target_output_directories)
+      xsigma_set_target_output_directories(${target_name})
     else()
       # Fallback: use standard output directories
       set_target_properties(

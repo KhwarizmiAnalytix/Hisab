@@ -1,6 +1,6 @@
 # High-Performance Computing Guide
 
-Quarisma provides comprehensive support for high-performance computing through CPU vectorization (SIMD), GPU acceleration (CUDA/HIP), and multithreading capabilities.
+XSigma provides comprehensive support for high-performance computing through CPU vectorization (SIMD), GPU acceleration (CUDA/HIP/Metal), and multithreading capabilities.
 
 ## Table of Contents
 
@@ -16,12 +16,17 @@ CPU SIMD (Single Instruction, Multiple Data) instruction sets enable parallel pr
 
 ### Supported Instruction Sets
 
-| Instruction Set | Target Processors | Performance | Compatibility |
-|-----------------|-------------------|-------------|----------------|
-| **SSE/SSE2** | Legacy (pre-2005) | Baseline | Oldest systems |
-| **AVX** | Sandy Bridge+ (2011) | 2-4x | Most systems |
-| **AVX2** | Haswell+ (2013) | 4-8x | Modern CPUs (default) |
-| **AVX-512** | Skylake+ (2016) | 8-16x | High-end systems |
+| Instruction Set | Target Processors | Notes |
+|-----------------|-------------------|-------|
+| **SSE/SSE2** | x86-64 | Oldest x86 you still support |
+| **AVX** | Sandy Bridge+ (2011) | |
+| **AVX2** | Haswell+ (2013) | Default on x86 |
+| **AVX-512** | Skylake-X+ (2017) | SIGILL on CPUs without AVX-512 |
+| **NEON** | AArch64 / Apple Silicon | |
+| **SVE** | SVE-capable AArch64 | Fixed 128-bit lanes |
+
+Full ISA table and `setup.py` examples: [vectorization.md](vectorization.md).
+Evaluator / GPU fusion: [vectorization_backends.md](../vectorization_backends.md).
 
 ### Building with Vectorization
 
@@ -37,16 +42,13 @@ python setup.py config.build.ninja.clang.release.avx512
 # Build with SSE (for legacy compatibility)
 python setup.py config.build.ninja.clang.release.sse
 
-# Build with AVX
-python setup.py config.build.ninja.clang.release.avx
+# Apple Silicon
+python setup.py config.build.ninja.clang.release.neon
 ```
 
-### Performance Benefits
-
-- **2-8x speedup** for vectorizable operations
-- **Automatic vectorization** by compiler
-- **Portable** across compatible processors
-- **No code changes** required for basic usage
+ISA is compile-time (`VECTORIZATION_CPU_BACKEND`). `tensor` expressions and
+`simd<T>` use that backend; there is no runtime CPU dispatcher. Wrong ISA for
+the host is an illegal-instruction crash, not a fallback.
 
 ### Vectorization with Other Features
 
@@ -68,7 +70,7 @@ python setup.py config.build.test.ninja.clang.debug.avx2.coverage
 
 ## GPU Acceleration
 
-Quarisma supports NVIDIA CUDA and AMD HIP for GPU-accelerated computing.
+XSigma supports NVIDIA CUDA, AMD HIP, and Apple Metal for GPU-accelerated computing. Expression fusion and the remaining launch-API gaps: [vectorization_backends.md](../vectorization_backends.md).
 
 ### CUDA Support
 
@@ -130,30 +132,30 @@ python setup.py config.build.ninja.clang.release.cuda.tbb
 
 #### CUDA Configuration
 
-**CMake Flag**: `MEMOY_ENABLE_CUDA` (default: OFF)
+**CMake Flag**: `MEMORY_GPU_BACKEND=cuda` (default: `none`)
 
 **GPU Architecture Selection**:
 ```bash
 # Auto-detect GPU architecture (recommended)
-cmake -B build -S . -DMEMOY_ENABLE_CUDA=ON -DQUARISMA_CUDA_ARCH_OPTIONS=native
+cmake -B build -S . -DMEMORY_GPU_BACKEND=cuda -DVECTORIZATION_CUDA_ARCHITECTURES=native
 
 # Specific architecture
-cmake -B build -S . -DMEMOY_ENABLE_CUDA=ON -DQUARISMA_CUDA_ARCH_OPTIONS=ampere
+cmake -B build -S . -DMEMORY_GPU_BACKEND=cuda -DVECTORIZATION_CUDA_ARCHITECTURES=ampere
 
 # Multiple architectures
-cmake -B build -S . -DMEMOY_ENABLE_CUDA=ON -DQUARISMA_CUDA_ARCH_OPTIONS=all
+cmake -B build -S . -DMEMORY_GPU_BACKEND=cuda -DVECTORIZATION_CUDA_ARCHITECTURES=all
 ```
 
 **Memory Allocation Strategy**:
 ```bash
 # Synchronous allocation (default)
-cmake -B build -S . -DMEMOY_ENABLE_CUDA=ON -DQUARISMA_GPU_ALLOC=SYNC
+cmake -B build -S . -DMEMORY_GPU_BACKEND=cuda -DMEMORY_GPU_ALLOC=SYNC
 
 # Asynchronous allocation
-cmake -B build -S . -DMEMOY_ENABLE_CUDA=ON -DQUARISMA_GPU_ALLOC=ASYNC
+cmake -B build -S . -DMEMORY_GPU_BACKEND=cuda -DMEMORY_GPU_ALLOC=ASYNC
 
 # Pool-based asynchronous allocation
-cmake -B build -S . -DMEMOY_ENABLE_CUDA=ON -DQUARISMA_GPU_ALLOC=POOL_ASYNC
+cmake -B build -S . -DMEMORY_GPU_BACKEND=cuda -DMEMORY_GPU_ALLOC=POOL_ASYNC
 ```
 
 #### Performance Metrics
@@ -192,7 +194,7 @@ python setup.py config.build.test.ninja.clang.debug.hip
 
 ## Multithreading
 
-Quarisma provides flexible multithreading options for parallel computing.
+XSigma provides flexible multithreading options for parallel computing.
 
 ### Intel Threading Building Blocks (TBB)
 
@@ -279,7 +281,7 @@ python setup.py config.build.ninja.clang.release.cuda
 
 ## Combining HPC Features
 
-Quarisma allows combining multiple HPC features for maximum performance.
+XSigma allows combining multiple HPC features for maximum performance.
 
 ### Recommended Combinations
 

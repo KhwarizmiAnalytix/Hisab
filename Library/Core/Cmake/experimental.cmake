@@ -1,8 +1,8 @@
 # =============================================================================
-# Quarisma
+# XSigma
 # Experimental Features Configuration Module
 
-# This module configures experimental features for the Quarisma project. Experimental features are
+# This module configures experimental features for the XSigma project. Experimental features are
 # under development and may not be stable or fully tested. They are disabled by default and should
 # only be enabled for development and testing purposes.
 

@@ -42,9 +42,9 @@ def run_autogen() -> None:
             "-m",
             "torchgen.gen",
             "-s",
-            "aten/src/Quarisma",
+            "aten/src/XSigma",
             "-d",
-            "build/aten/src/Quarisma",
+            "build/aten/src/XSigma",
             "--per-operator-headers",
         ]
     )
@@ -54,9 +54,9 @@ def run_autogen() -> None:
             sys.executable,
             "tools/setup_helpers/generate_code.py",
             "--native-functions-path",
-            "aten/src/Quarisma/native/native_functions.yaml",
+            "aten/src/XSigma/native/native_functions.yaml",
             "--tags-path",
-            "aten/src/Quarisma/native/tags.yaml",
+            "aten/src/XSigma/native/tags.yaml",
             "--gen-lazy-ts-backend",
         ]
     )

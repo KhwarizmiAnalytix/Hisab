@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #ifndef __expressions_builder_h__
@@ -181,7 +181,7 @@ MACRO_EXPRESSION_FUNCTION_3_ARG(if_else);
         std::enable_if_t<                                                                         \
             vectorization::is_expression<LHS>::value || vectorization::is_expression<RHS>::value, \
             bool> = true>                                                                         \
-    VECTORIZATION_FUNCTION_ATTRIBUTE auto OPERATOR(symbol)(LHS ref lhs, RHS ref rhs) noexcept     \
+    VECTORIZATION_FUNCTION_ATTRIBUTE auto OPERATOR(symbol)(LHS ref lhs, RHS ref rhs)              \
     {                                                                                             \
         return vectorization::                                                                    \
             binary_expression<LHS, RHS, vectorization::MACRO_EVALUATOR_SUFIX(op)>(lhs, rhs);      \
@@ -195,7 +195,7 @@ MACRO_EXPRESSION_FUNCTION_3_ARG(if_else);
         std::enable_if_t<                                                                         \
             vectorization::is_expression<LHS>::value || vectorization::is_expression<RHS>::value, \
             bool> = true>                                                                         \
-    VECTORIZATION_FUNCTION_ATTRIBUTE auto OPERATOR(symbol)(LHS && lhs, RHS && rhs) noexcept       \
+    VECTORIZATION_FUNCTION_ATTRIBUTE auto OPERATOR(symbol)(LHS && lhs, RHS && rhs)                \
     {                                                                                             \
         return vectorization::                                                                    \
             binary_expression<LHS, RHS, vectorization::MACRO_EVALUATOR_SUFIX(op)>(                \

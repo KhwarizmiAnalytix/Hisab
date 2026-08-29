@@ -27,9 +27,32 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ] + select({
         "//bazel:logging_glog": ["@glog//:glog"],
-        "//bazel:logging_spdlog": ["@spdlog//:spdlog"],
-        "//bazel:logging_native": [],
         "//bazel:logging_loguru": ["@loguru//:loguru"],
-        "//conditions:default": ["@loguru//:loguru"],
+        "//bazel:logging_native": [],
+        "//bazel:logging_spdlog": ["@spdlog//:spdlog"],
+        "//conditions:default": ["@spdlog//:spdlog"],
     }),
 )
+
+# One cc_binary per Benchmark*.cpp — mirrors Testing/Cxx/CMakeLists.txt.
+[
+    cc_binary(
+        name = "benchmark_" + _src[len("Benchmark"):-len(".cpp")].lower(),
+        srcs = [_src],
+        copts = logging_copts(),
+        defines = logging_defines(),
+        linkopts = logging_linkopts(),
+        deps = [
+            "//Library/Logging:Logging",
+            "@com_google_benchmark//:benchmark",
+            "@com_google_benchmark//:benchmark_main",
+        ] + select({
+            "//bazel:logging_glog": ["@glog//:glog"],
+            "//bazel:logging_loguru": ["@loguru//:loguru"],
+            "//bazel:logging_native": [],
+            "//bazel:logging_spdlog": ["@spdlog//:spdlog"],
+            "//conditions:default": ["@spdlog//:spdlog"],
+        }),
+    )
+    for _src in glob(["Benchmark*.cpp"], allow_empty = True)
+]

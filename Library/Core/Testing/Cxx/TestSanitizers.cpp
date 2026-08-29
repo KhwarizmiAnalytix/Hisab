@@ -178,7 +178,7 @@ void test_sanitizer_safe_operations()
 
 int main(int argc, char* argv[])
 {
-    std::cout << "=== Quarisma Sanitizer Test Suite ===\n";
+    std::cout << "=== XSigma Sanitizer Test Suite ===\n";
     std::cout << "This program tests sanitizer functionality by intentionally\n";
     std::cout << "triggering various types of errors that sanitizers should detect.\n\n";
 

@@ -1,6 +1,6 @@
 # Build Configuration
 
-This guide covers Quarisma's build configuration options, including build types, C++ standard selection, and optimization settings.
+This guide covers XSigma's build configuration options, including build types, C++ standard selection, and optimization settings.
 
 ## Table of Contents
 
@@ -13,7 +13,7 @@ This guide covers Quarisma's build configuration options, including build types,
 
 ## Build Types
 
-Quarisma supports four standard CMake build types, each optimized for different use cases:
+XSigma supports four standard CMake build types, each optimized for different use cases:
 
 | Build Type | Description | Optimization | Use Case |
 |------------|-------------|--------------|----------|
@@ -40,17 +40,17 @@ cmake -B build -S . -DCMAKE_BUILD_TYPE=MinSizeRel
 
 ## C++ Standard Selection
 
-Quarisma supports C++17, C++20, and C++23 standards. The default is C++17 for maximum compatibility.
+XSigma supports C++17, C++20, and C++23 standards. The default is C++17 for maximum compatibility.
 
 ```bash
 # C++17 (default)
-cmake -B build -S . -DQUARISMA_CXX_STANDARD=17
+cmake -B build -S . -DPROJECT_CXX_STANDARD=17
 
 # C++20
-cmake -B build -S . -DQUARISMA_CXX_STANDARD=20
+cmake -B build -S . -DPROJECT_CXX_STANDARD=20
 
 # C++23
-cmake -B build -S . -DQUARISMA_CXX_STANDARD=23
+cmake -B build -S . -DPROJECT_CXX_STANDARD=23
 ```
 
 ### Recommendations
@@ -69,12 +69,12 @@ Enable Link-Time Optimization for maximum performance in release builds:
 # Enable LTO (default is ON)
 cmake -B build -S . \
     -DCMAKE_BUILD_TYPE=Release \
-    -DQUARISMA_ENABLE_LTO=ON
+    -DPROJECT_ENABLE_LTO=ON
 
 # Disable LTO
 cmake -B build -S . \
     -DCMAKE_BUILD_TYPE=Release \
-    -DQUARISMA_ENABLE_LTO=OFF
+    -DPROJECT_ENABLE_LTO=OFF
 ```
 
 **Benefits:**
@@ -103,7 +103,7 @@ If LTO fails:
 
 1. **Disable LTO**:
    ```bash
-   cmake -B build -S . -DQUARISMA_ENABLE_LTO=OFF
+   cmake -B build -S . -DPROJECT_ENABLE_LTO=OFF
    ```
 
 2. **Check compiler version** - ensure recent GCC/Clang/MSVC:
@@ -129,7 +129,7 @@ If LTO fails:
    # LTO works best with Release builds
    cmake -B build -S . \
        -DCMAKE_BUILD_TYPE=Release \
-       -DQUARISMA_ENABLE_LTO=ON
+       -DPROJECT_ENABLE_LTO=ON
    ```
 
 ## Advanced Configuration
@@ -153,7 +153,7 @@ Enable testing with Google Test:
 ```bash
 cmake -B build -S . \
     -DBUILD_TESTING=ON \
-    -DQUARISMA_ENABLE_GTEST=ON
+    -DENABLE_GTEST=ON
 
 # Build and run tests
 cmake --build build
@@ -162,7 +162,7 @@ ctest --test-dir build
 
 ## CMake Optimization Modules
 
-Quarisma includes optimized CMake modules that improve configuration speed and runtime performance. These are included automatically by the top-level CMakeLists.txt and require no manual setup.
+XSigma includes optimized CMake modules that improve configuration speed and runtime performance. These are included automatically by the top-level CMakeLists.txt and require no manual setup.
 
 ### Available Modules
 
@@ -188,7 +188,7 @@ Quarisma includes optimized CMake modules that improve configuration speed and r
 cmake -B build -S . \
     -DCMAKE_BUILD_TYPE=Debug \
     -DBUILD_TESTING=ON \
-    -DQUARISMA_ENABLE_GTEST=ON
+    -DENABLE_GTEST=ON
 ```
 
 ### Production Builds
@@ -197,7 +197,7 @@ cmake -B build -S . \
 # Optimized production build
 cmake -B build -S . \
     -DCMAKE_BUILD_TYPE=Release \
-    -DQUARISMA_ENABLE_LTO=ON
+    -DPROJECT_ENABLE_LTO=ON
 ```
 
 ### CI/CD Builds
@@ -205,7 +205,7 @@ cmake -B build -S . \
 ```bash
 # Fast CI build with external libraries
 cmake -B build -S . \
-    -DQUARISMA_ENABLE_EXTERNAL=ON \
+    -DXSIGMA_ENABLE_EXTERNAL=ON \
     -DBUILD_TESTING=ON
 ```
 

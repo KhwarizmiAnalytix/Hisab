@@ -16,7 +16,7 @@ from sysconfig import get_paths as gp
 from typing import NamedTuple
 
 
-# Quarisma directory root
+# XSigma directory root
 def scm_root() -> str:
     path = os.path.abspath(os.getcwd())
     # pyrefly: ignore  # bad-assignment
@@ -32,7 +32,7 @@ def scm_root() -> str:
             raise RuntimeError("Unable to find SCM root")
 
 
-QUARISMA_ROOT = scm_root()
+XSIGMA_ROOT = scm_root()
 
 
 def find_best_build_dir(preferred: str | None) -> Path | None:
@@ -52,12 +52,12 @@ def find_best_build_dir(preferred: str | None) -> Path | None:
     If `preferred` is given and has a compile_commands.json, use it as-is
     (explicit and reproducible, e.g. for a future CI job pinned to one
     build). Otherwise auto-detect: the most recently modified build_ninja*
-    directory under QUARISMA_ROOT that has a compile_commands.json --
+    directory under XSIGMA_ROOT that has a compile_commands.json --
     mirroring the freshness-based selection Scripts/setup.py's own
     BuildDirectoryDetector uses for its --analyze step, so lintrunner checks
     against whatever was built most recently instead of a stale guess.
     """
-    root = Path(QUARISMA_ROOT)
+    root = Path(XSIGMA_ROOT)
 
     if preferred:
         preferred_path = Path(preferred)
@@ -101,7 +101,7 @@ class LintMessage(NamedTuple):
     description: str | None
 
 
-# quarisma/core/DispatchKey.cpp:281:26: error: 'k' used after it was moved [bugprone-use-after-move]
+# xsigma/core/DispatchKey.cpp:281:26: error: 'k' used after it was moved [bugprone-use-after-move]
 RESULTS_RE: re.Pattern[str] = re.compile(
     r"""(?mx)
     ^
@@ -179,21 +179,43 @@ include_args = []
 include_dir = [
     "/usr/lib/llvm-11/include/openmp",
     get_python_include_dir(),
-    os.path.join(QUARISMA_ROOT, "ThirdParty/pybind11/include"),
+    os.path.join(XSIGMA_ROOT, "ThirdParty/pybind11/include"),
 ] + clang_search_dirs()
 for dir in include_dir:
     include_args += ["--extra-arg", f"-I{dir}"]
 
 
-# Mirrors Cmake/tools/clang_tidy.cmake's quarisma_target_clang_tidy() exactly --
+# Mirrors Cmake/tools/clang_tidy.cmake's xsigma_target_clang_tidy() exactly --
 # without --header-filter, clang-tidy only reports diagnostics in the file
 # passed on the command line, not in any header it includes. The
 # build-integrated pass (CXX_CLANG_TIDY) analyzes each .cpp with this filter,
 # so a finding physically located in a header only shows up there if the
 # header's path matches this pattern; keep both in sync if either changes.
-HEADER_FILTER = f"^{re.escape(QUARISMA_ROOT)}/(Library|Cmake|Tools|Examples)/.*"
+HEADER_FILTER = f"^{re.escape(XSIGMA_ROOT)}/(Library|Cmake|Tools|Examples)/.*"
 EXCLUDE_HEADER_FILTER = r".*/(ThirdParty|third_party|3rdparty|third-party)/.*"
 HEADER_EXTENSIONS = (".h", ".hxx", ".hpp")
+# --exclude-header-filter requires LLVM 19+ (Ubuntu 24.04 apt clang-tidy is 18).
+_EXCLUDE_HEADER_FILTER_MIN_MAJOR = 19
+
+
+def clang_tidy_major_version(binary: str) -> int:
+    """Return clang-tidy's major version, or 0 if it cannot be parsed."""
+    cached = getattr(clang_tidy_major_version, "_cache", None)
+    if cached is not None:
+        return cached
+    try:
+        out = subprocess.check_output(
+            [binary, "--version"],
+            text=True,
+            stderr=subprocess.STDOUT,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        clang_tidy_major_version._cache = 0
+        return 0
+    match = re.search(r"version\s+(\d+)", out)
+    major = int(match.group(1)) if match else 0
+    clang_tidy_major_version._cache = major
+    return major
 
 
 def load_compiled_files(build_dir: Path) -> set[str]:
@@ -236,17 +258,17 @@ def check_file(
         )
         return []
     try:
-        proc = run_command(
-            [
-                binary,
-                f"-p={build_dir}",
-                "-warnings-as-errors=*",
-                f"--header-filter={HEADER_FILTER}",
-                f"--exclude-header-filter={EXCLUDE_HEADER_FILTER}",
-                *include_args,
-                filename,
-            ],
-        )
+        tidy_cmd = [
+            binary,
+            f"-p={build_dir}",
+            "-warnings-as-errors=*",
+            f"--header-filter={HEADER_FILTER}",
+        ]
+        if clang_tidy_major_version(binary) >= _EXCLUDE_HEADER_FILTER_MIN_MAJOR:
+            tidy_cmd.append(f"--exclude-header-filter={EXCLUDE_HEADER_FILTER}")
+        tidy_cmd.extend(include_args)
+        tidy_cmd.append(filename)
+        proc = run_command(tidy_cmd)
     except OSError as err:
         return [
             LintMessage(
@@ -272,7 +294,7 @@ def check_file(
         for match in RESULTS_RE.finditer(stdout_text):
             # Convert the reported path to an absolute path.
             abs_path = str(Path(match["file"]).resolve())
-            if not abs_path.startswith(QUARISMA_ROOT):
+            if not abs_path.startswith(XSIGMA_ROOT):
                 continue
             message = LintMessage(
                 path=abs_path,
@@ -296,11 +318,11 @@ def check_file(
     # stale one) for it, so it fell back to a bogus command missing include
     # paths (e.g. "<stddef.h> file not found", printed as "Found compiler
     # error(s)." on stderr). Those errors point at system headers, so the
-    # QUARISMA_ROOT filter above silently drops them, which would otherwise
+    # XSIGMA_ROOT filter above silently drops them, which would otherwise
     # report this file as clean when clang-tidy never actually analyzed it --
     # i.e. a real check failure with zero project-code matches is exactly this
     # case, since genuine warnings-as-errors findings in project code would
-    # have produced a QUARISMA_ROOT-matching entry in lint_messages already.
+    # have produced a XSIGMA_ROOT-matching entry in lint_messages already.
     # Surface it explicitly instead of returning an empty (falsely clean) list.
     if not lint_messages and proc.returncode != 0:
         lint_messages.append(
@@ -416,7 +438,7 @@ def main() -> None:
             replacement=None,
             description=(
                 "No build_ninja* directory with a compile_commands.json was "
-                f"found under {QUARISMA_ROOT}"
+                f"found under {XSIGMA_ROOT}"
                 + (f" (and '{args.build_dir}' has none either)" if args.build_dir else "")
                 + ". Configure/build first (see the xsigma-build skill)."
             ),

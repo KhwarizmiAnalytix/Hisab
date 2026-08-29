@@ -1,0 +1,32 @@
+#!/bin/bash
+# Host-side entry point: builds the docker/ci image (cheap no-op if unchanged)
+# and runs docker/ci/run.sh inside it, with the repo bind-mounted read-write at
+# /workspace and persistent volumes for the sccache/bazel caches.
+#
+# Usage (from anywhere in the repo):
+#   docker/ci/xci --list
+#   docker/ci/xci sanitizer-address
+#   docker/ci/xci bazel-tbb bazel-proj-parallel-openmp
+#   docker/ci/xci --all
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+IMAGE="xsigma-ci:local"
+
+docker build -t "$IMAGE" "$SCRIPT_DIR"
+
+tty_flag=""
+if [ -t 0 ] && [ -t 1 ]; then
+    tty_flag="-it"
+fi
+
+# shellcheck disable=SC2086 # $tty_flag is intentionally unquoted: empty or exactly "-it"
+docker run --rm $tty_flag \
+    -v "$REPO_ROOT":/workspace \
+    -v xsigma-ci-sccache:/root/.cache \
+    -v xsigma-ci-bazel:/root/.cache/bazel \
+    -w /workspace \
+    -e JOBS="${JOBS:-}" \
+    "$IMAGE" \
+    ./docker/ci/run.sh "$@"

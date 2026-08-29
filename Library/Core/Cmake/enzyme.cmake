@@ -1,5 +1,5 @@
 # =============================================================================
-# Quarisma Enzyme
+# XSigma Enzyme
 # Automatic Differentiation Integration Module This module integrates Enzyme AD
 # (https://enzyme.mit.edu/) for automatic differentiation. Enzyme works by loading as an LLVM plugin
 # and requires special compiler flags to enable differentiation capabilities.

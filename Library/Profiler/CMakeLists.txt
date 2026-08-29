@@ -32,7 +32,7 @@ endif()
 # Link-Time Optimization — disabled when PROFILER_ENABLE_COVERAGE or PROFILER_ENABLE_SANITIZER is ON
 # (LTO conflicts with instrumentation / sanitizers).
 include(lto)
-quarisma_lto_compute_default(_lto_default PROFILE SUPPORT)
+xsigma_lto_compute_default(_lto_default PROFILE SUPPORT)
 set(PROFILER_LTO_MODE "${_lto_default}"
     CACHE STRING "LTO mode for Profiler: off | thin | full | ipo | auto"
 )
@@ -44,6 +44,19 @@ option(PROFILER_ENABLE_COVERAGE "Enable coverage instrumentation for Profiler te
 
 # Testing — gates add_subdirectory(Testing/Cxx).
 option(PROFILER_ENABLE_TESTING "Build Profiler test suite" ON)
+
+# LibTorch (PyTorch C++ profiler) in ProfilerCxxTests. setup.py `torch` sets this
+# (and VECTORIZATION_ENABLE_LIBTORCH / MEMORY_ENABLE_LIBTORCH). When the Vectorization
+# flag is already on in a full-tree configure, default to the same value.
+if(DEFINED VECTORIZATION_ENABLE_LIBTORCH)
+  set(_profiler_libtorch_default ${VECTORIZATION_ENABLE_LIBTORCH})
+else()
+  set(_profiler_libtorch_default OFF)
+endif()
+option(PROFILER_ENABLE_LIBTORCH "Enable LibTorch (PyTorch C++) profiler in ProfilerCxxTests"
+       ${_profiler_libtorch_default}
+)
+unset(_profiler_libtorch_default)
 
 # Examples — gates the Profiling examples under Examples/Profiling.
 option(PROFILER_ENABLE_EXAMPLES "Build Profiler example programs" OFF)
@@ -75,11 +88,7 @@ set(PROFILER_SANITIZER_TYPE "address"
 )
 set_property(CACHE PROFILER_SANITIZER_TYPE PROPERTY STRINGS address undefined thread memory leak)
 mark_as_advanced(PROFILER_ENABLE_SANITIZER PROFILER_SANITIZER_TYPE)
-option(
-  PROFILER_ENABLE_SPELL
-  "Enable spell checking with automatic corrections for Profiler (WARNING: modifies source files)"
-  OFF
-)
+option(PROFILER_ENABLE_SPELL "Enable check-only spell checking for Profiler" OFF)
 mark_as_advanced(PROFILER_ENABLE_SPELL)
 option(PROFILER_ENABLE_VALGRIND "Execute Profiler test suite with Valgrind" OFF)
 mark_as_advanced(PROFILER_ENABLE_VALGRIND)
@@ -125,20 +134,10 @@ if(NOT PROFILER_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
   message(FATAL_ERROR "PROFILER_CXX_STANDARD must be one of: 11 14 17 20 23")
 endif()
 
-# --- Section 2: PROFILER_ENABLE_* → PROFILER_HAS_* compile definitions --- Exactly one of
-# KINETO/ITT will be 1, the other 0. Native (traceme/xplane) is always compiled (see
-# PROFILER_ENABLE_NATIVE_PROFILER above) and needs no HAS_* gate.
+# --- Section 2: compile-definition accumulator --- PROFILER_HAS_KINETO / HAS_ITT
+# are appended after dependency discovery (Kineto/ITT may be forced OFF if missing).
+# Native (traceme/xplane) is always compiled and needs no HAS_* gate.
 set(PROFILER_DEPENDENCY_COMPILE_DEFINITIONS ${PROJECT_DEPENDENCY_COMPILE_DEFINITIONS})
-
-if(PROFILER_ENABLE_KINETO)
-  # Kineto — full PyTorch-compatible activity-tracing and timeline recording.
-  list(APPEND PROFILER_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=1 PROFILER_HAS_ITT=0)
-else()
-  # ITT/VTune — Intel instrumentation API; integrates with VTune Amplifier.
-  list(APPEND PROFILER_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=0 PROFILER_HAS_ITT=1)
-endif()
-
-list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS ${PROFILER_COMPILE_DEFINITIONS})
 
 # Native Metal GPU tracer (command-buffer GPUStartTime → `/device:GPU:N`). Independent of
 # Kineto/CUPTI. Matches Memory's MEMORY_GPU_BACKEND=metal gate.
@@ -211,10 +210,41 @@ if(PROFILER_ENABLE_KINETO)
     if(CUDAToolkit_FOUND)
       set(PROFILER_HAS_CUDA 1)
       list(APPEND PROFILER_DEPENDENCY_LIBS CUDA::cudart)
+      set(PROFILER_HAS_NVTX 0)
       if(TARGET CUDA::nvToolsExt)
         list(APPEND PROFILER_DEPENDENCY_LIBS CUDA::nvToolsExt)
+        set(PROFILER_HAS_NVTX 1)
+      elseif(TARGET CUDA::nvtx3)
+        list(APPEND PROFILER_DEPENDENCY_LIBS CUDA::nvtx3)
+        list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_CUDA_USE_NVTX3=1)
+        set(PROFILER_HAS_NVTX 1)
+      else()
+        find_library(
+          PROFILER_NVTOOLSEXT_LIBRARY
+          NAMES nvToolsExt nvToolsExt64_1
+          HINTS ${CUDAToolkit_LIBRARY_DIR} ${CUDAToolkit_LIBRARY_ROOT}
+          PATH_SUFFIXES lib lib64 lib/x64
+        )
+        if(PROFILER_NVTOOLSEXT_LIBRARY)
+          list(APPEND PROFILER_DEPENDENCY_LIBS ${PROFILER_NVTOOLSEXT_LIBRARY})
+          set(PROFILER_HAS_NVTX 1)
+        else()
+          foreach(_nvtx_inc IN LISTS CUDAToolkit_INCLUDE_DIRS)
+            if(EXISTS "${_nvtx_inc}/nvtx3/nvtx3.hpp")
+              list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_CUDA_USE_NVTX3=1)
+              if(CMAKE_DL_LIBS)
+                list(APPEND PROFILER_DEPENDENCY_LIBS ${CMAKE_DL_LIBS})
+              endif()
+              set(PROFILER_HAS_NVTX 1)
+              break()
+            endif()
+          endforeach()
+        endif()
       endif()
-      message(STATUS "Profiler: CUDA Toolkit found -- enabling PROFILER_HAS_CUDA")
+      list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_HAS_NVTX=${PROFILER_HAS_NVTX})
+      message(STATUS "Profiler: CUDA Toolkit found -- enabling PROFILER_HAS_CUDA"
+                     " (NVTX=${PROFILER_HAS_NVTX})"
+      )
     else()
       message(STATUS "Profiler: MEMORY_GPU_BACKEND=cuda but CUDA Toolkit was not found by "
                      "find_package(CUDAToolkit) -- PROFILER_HAS_CUDA stays disabled"
@@ -230,11 +260,36 @@ if(PROFILER_ENABLE_KINETO)
   # exclusive with it since MEMORY_GPU_BACKEND only ever selects one GPU vendor.
   set(PROFILER_HAS_HIP 0)
   if(MEMORY_GPU_BACKEND STREQUAL "hip")
+    include(rocm_prefix)
+    xsigma_setup_rocm_prefix()
     find_package(hip QUIET)
     if(hip_FOUND)
       set(PROFILER_HAS_HIP 1)
       list(APPEND PROFILER_DEPENDENCY_LIBS hip::host)
-      message(STATUS "Profiler: HIP found -- enabling PROFILER_HAS_HIP")
+      find_library(
+        PROFILER_ROCTX_LIBRARY
+        NAMES roctx64 roctx
+        PATHS "$ENV{ROCM_PATH}" "$ENV{HIP_PATH}" "${ROCM_PATH}" "${HIP_ROOT_DIR}" /opt/rocm
+        PATH_SUFFIXES lib lib64
+      )
+      set(PROFILER_HAS_ROCTX 0)
+      if(PROFILER_ROCTX_LIBRARY)
+        list(APPEND PROFILER_DEPENDENCY_LIBS ${PROFILER_ROCTX_LIBRARY})
+        set(PROFILER_HAS_ROCTX 1)
+      endif()
+      find_path(
+        PROFILER_ROCTX_INCLUDE_DIR
+        NAMES roctx.h
+        PATHS "$ENV{ROCM_PATH}" "$ENV{HIP_PATH}" "${ROCM_PATH}" "${HIP_ROOT_DIR}" /opt/rocm
+        PATH_SUFFIXES include include/roctracer include/roctx
+      )
+      if(PROFILER_ROCTX_INCLUDE_DIR)
+        list(APPEND PROFILER_DEPENDENCY_INCLUDE_DIRS ${PROFILER_ROCTX_INCLUDE_DIR})
+      endif()
+      list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_HAS_ROCTX=${PROFILER_HAS_ROCTX})
+      message(STATUS "Profiler: HIP found -- enabling PROFILER_HAS_HIP"
+                     " (ROCTX=${PROFILER_HAS_ROCTX})"
+      )
     else()
       message(STATUS "Profiler: MEMORY_GPU_BACKEND=hip but find_package(hip) failed -- "
                      "PROFILER_HAS_HIP stays disabled"
@@ -246,16 +301,46 @@ if(PROFILER_ENABLE_KINETO)
   if(NOT PROFILER_HAS_HIP)
     set(LIBKINETO_NOROCTRACER ON CACHE STRING "" FORCE)
   else()
-    set(LIBKINETO_NOROCTRACER OFF CACHE STRING "" FORCE)
-    message(STATUS "Using Kineto with Roctracer support")
+    # Kineto's KINETO_BACKEND=rocm path requires ROCM_SOURCE_DIR (or
+    # ROCTRACER_INCLUDE_DIR) plus rocm-core/rocm_version.h. HIP_PATH=/usr from
+    # the apt hipcc wrapper is not an SDK; use the prefix we just resolved.
+    if(NOT ROCM_SOURCE_DIR)
+      if(XSIGMA_ROCM_PREFIX)
+        set(ROCM_SOURCE_DIR "${XSIGMA_ROCM_PREFIX}" CACHE PATH "ROCm SDK root for Kineto roctracer"
+                                                          FORCE
+        )
+      elseif(DEFINED ENV{ROCM_PATH} AND NOT "$ENV{ROCM_PATH}" STREQUAL "/usr")
+        set(ROCM_SOURCE_DIR "$ENV{ROCM_PATH}" CACHE PATH "ROCm SDK root for Kineto roctracer" FORCE)
+      endif()
+    endif()
+    set(_profiler_roctracer_ok FALSE)
+    if(ROCM_SOURCE_DIR AND EXISTS "${ROCM_SOURCE_DIR}/include/roctracer"
+       AND EXISTS "${ROCM_SOURCE_DIR}/include/rocm-core/rocm_version.h"
+    )
+      set(_profiler_roctracer_ok TRUE)
+      set(ROCTRACER_INCLUDE_DIR "${ROCM_SOURCE_DIR}/include/roctracer"
+          CACHE PATH "roctracer headers for Kineto" FORCE
+      )
+    endif()
+    if(_profiler_roctracer_ok)
+      set(LIBKINETO_NOROCTRACER OFF CACHE STRING "" FORCE)
+      set(KINETO_BACKEND "rocm" CACHE STRING "" FORCE)
+      message(STATUS "Using Kineto with Roctracer support (ROCM_SOURCE_DIR=${ROCM_SOURCE_DIR})")
+    else()
+      set(LIBKINETO_NOROCTRACER ON CACHE STRING "" FORCE)
+      message(STATUS "Profiler: HIP found but roctracer/rocm-core headers were not "
+                     "under ${ROCM_SOURCE_DIR} -- Kineto stays CPU-only"
+      )
+    endif()
+    unset(_profiler_roctracer_ok)
   endif()
   if(LIBKINETO_NOCUPTI AND LIBKINETO_NOROCTRACER AND LIBKINETO_NOXPUPTI)
     message(STATUS "Using CPU-only version of Kineto")
   endif()
   set(KINETO_BUILD_TESTS OFF CACHE BOOL "" FORCE)
   set(KINETO_LIBRARY_TYPE "static" CACHE STRING "" FORCE)
-  # Reuse Quarisma's fmt build to avoid duplicate symbols.
-  set(FMT_SOURCE_DIR "${_tpdir}/fmt" CACHE STRING "Use Quarisma's fmt library" FORCE)
+  # Reuse XSigma's fmt build to avoid duplicate symbols.
+  set(FMT_SOURCE_DIR "${_tpdir}/fmt" CACHE STRING "Use XSigma's fmt library" FORCE)
 
   add_third_party_library(
     kineto
@@ -269,7 +354,7 @@ if(PROFILER_ENABLE_KINETO)
     FILTER_FLAGS
     "-flto=thin"
     "-flto=full"
-    QUARISMA_TARGETS
+    XSIGMA_TARGETS
     "Kineto::kineto=kineto"
     INCLUDE_DIR
     "${_tpdir}/kineto/libkineto/include"
@@ -301,7 +386,7 @@ if(PROFILER_ENABLE_KINETO)
 
   if(NOT TARGET Kineto::kineto)
     message(STATUS "Kineto not found — disabling PROFILER_ENABLE_KINETO")
-    set(PROFILER_ENABLE_KINETO OFF CACHE BOOL "Enable Quarisma Kineto profiling library." FORCE)
+    set(PROFILER_ENABLE_KINETO OFF CACHE BOOL "Enable XSigma Kineto profiling library." FORCE)
   endif()
   list(APPEND PROFILER_DEPENDENCY_INCLUDE_DIRS "${_tpdir}/kineto/libkineto/include")
 endif()
@@ -324,6 +409,18 @@ if(PROFILER_ENABLE_ITT)
     set(PROFILER_ENABLE_ITT OFF CACHE BOOL "Enable Intel ITT API for VTune profiling." FORCE)
   endif()
 endif()
+
+# Final HAS_* after dependency discovery. ENABLE_* may have been forced OFF
+# above when Kineto or ITT was requested but not found. Both 0 is allowed
+# (native pipeline still compiles); both 1 is rejected in profiler_export.h.
+if(PROFILER_ENABLE_KINETO)
+  list(APPEND PROFILER_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=1 PROFILER_HAS_ITT=0)
+elseif(PROFILER_ENABLE_ITT)
+  list(APPEND PROFILER_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=0 PROFILER_HAS_ITT=1)
+else()
+  list(APPEND PROFILER_COMPILE_DEFINITIONS PROFILER_HAS_KINETO=0 PROFILER_HAS_ITT=0)
+endif()
+list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS ${PROFILER_COMPILE_DEFINITIONS})
 
 # --- Runtime library wiring ---
 # Kineto's subtree builds fmt as target `fmt` (not `Fmt::fmt`). Profiler TUs
@@ -415,10 +512,9 @@ if(PROFILER_ENABLE_ITT)
     # profiler_kineto.{h,cpp} is the shared enableProfiler/disableProfiler
     # orchestration layer for every backend (Kineto, ITT, NVTX, PRIVATEUSE1) --
     # its ITT dispatch branch is internally guarded by #if PROFILER_HAS_ITT and
-    # does not touch libkineto. kineto_client_interface.* is Kineto-ondemand-only
-    # (its body is wholly `#if PROFILER_HAS_KINETO`) but is harmlessly inert
-    # when compiled without it, so it is included too for parity with the Kineto
-    # backend's file list.
+    # does not touch libkineto. kineto_client_interface.* defines
+    # global_kineto_init() in both builds: the real body when HAS_KINETO=1,
+    # and an empty definition otherwise, so the declared symbol always links.
     file(
       GLOB_RECURSE itt_base_headers
       LIST_DIRECTORIES false
@@ -462,18 +558,18 @@ endif()
 
 # --- Target definition ---
 add_library(Profiler ${profiler_sources} ${profiler_headers})
-quarisma_target_apply_lto(Profiler PROFILER)
+xsigma_target_apply_lto(Profiler PROFILER)
 if(PROFILER_ENABLE_SANITIZER)
-  quarisma_configure_sanitizer(PROFILER)
+  xsigma_configure_sanitizer(PROFILER)
 endif()
-quarisma_find_linker(${PROFILER_LINKER_CHOICE} Profiler PROFILER_LTO_MODE)
-quarisma_target_apply_cache(Profiler PROFILER_ENABLE_CACHE PROFILER_CACHE_BACKEND)
-quarisma_target_optional_icecc(Profiler PROFILER_ENABLE_ICECC)
+xsigma_find_linker(${PROFILER_LINKER_CHOICE} Profiler PROFILER_LTO_MODE)
+xsigma_target_apply_cache(Profiler PROFILER_ENABLE_CACHE PROFILER_CACHE_BACKEND)
+xsigma_target_optional_icecc(Profiler PROFILER_ENABLE_ICECC)
 
 if(BUILD_SHARED_LIBS)
   target_compile_definitions(Profiler PUBLIC PROFILER_SHARED_DEFINE PRIVATE PROFILER_BUILDING_DLL)
-  if(COMMAND quarisma_set_target_output_directories)
-    quarisma_set_target_output_directories(Profiler)
+  if(COMMAND xsigma_set_target_output_directories)
+    xsigma_set_target_output_directories(Profiler)
   endif()
 else()
   target_compile_definitions(Profiler PUBLIC PROFILER_STATIC_DEFINE)
@@ -485,7 +581,7 @@ if(PROFILER_NEEDS_FMT_HEADER_ONLY)
   target_compile_definitions(Profiler PRIVATE FMT_HEADER_ONLY=1)
 endif()
 
-quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
+xsigma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 
 set_target_properties(
   Profiler PROPERTIES CXX_STANDARD ${PROFILER_CXX_STANDARD} CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS
@@ -549,12 +645,12 @@ endif()
 
 if(PROFILER_ENABLE_CLANGTIDY)
   include(clang_tidy)
-  quarisma_target_clang_tidy(Profiler ${PROFILER_ENABLE_FIX})
+  xsigma_target_clang_tidy(Profiler ${PROFILER_ENABLE_FIX})
 endif()
 
 if(PROFILER_ENABLE_IWYU)
   include(iwyu)
-  quarisma_apply_iwyu(Profiler)
+  xsigma_apply_iwyu(Profiler)
 endif()
 
 if(PROFILER_DEPENDENCY_COMPILE_DEFINITIONS)
@@ -576,7 +672,7 @@ if(PROFILER_ENABLE_TESTING)
 endif()
 
 if(PROFILER_ENABLE_VALGRIND AND PROFILER_ENABLE_TESTING)
-  quarisma_apply_valgrind_timeouts()
+  xsigma_apply_valgrind_timeouts()
 endif()
 
 message("")
@@ -590,12 +686,13 @@ message("  Cxx standard     : ${PROFILER_CXX_STANDARD}")
 message("  Cache            : ${PROFILER_ENABLE_CACHE}")
 message("  Cache backend    : ${PROFILER_CACHE_BACKEND}")
 message("  Icecc            : ${PROFILER_ENABLE_ICECC}")
-quarisma_print_lto_linker_summary(PROFILER)
+xsigma_print_lto_linker_summary(PROFILER)
 message("  Coverage         : ${PROFILER_ENABLE_COVERAGE}")
 message("  Testing          : ${PROFILER_ENABLE_TESTING}")
 message("  Examples         : ${PROFILER_ENABLE_EXAMPLES}")
 message("  Gtest            : ${PROFILER_ENABLE_GTEST}")
 message("  Benchmark        : ${PROFILER_ENABLE_BENCHMARK}")
+message("  LibTorch         : ${PROFILER_ENABLE_LIBTORCH}")
 message("  Clang-tidy       : ${PROFILER_ENABLE_CLANGTIDY}")
 message("  Fix              : ${PROFILER_ENABLE_FIX}")
 message("  Iwyu             : ${PROFILER_ENABLE_IWYU}")

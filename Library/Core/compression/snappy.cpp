@@ -1,13 +1,13 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * Original work Copyright 2015 The TensorFlow Authors
- * Modified work Copyright 2025 Quarisma Contributors
+ * Modified work Copyright 2025 XSigma Contributors
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
  * This file contains code modified from TensorFlow (Apache 2.0 licensed)
- * and is part of Quarisma, licensed under a dual-license model:
+ * and is part of XSigma, licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -22,8 +22,8 @@
  * - Added conditional compilation support for optional compression
  * - Enhanced error handling and platform compatibility
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #include "compression/snappy.h"
@@ -39,7 +39,7 @@
 #endif
 #endif
 
-namespace quarisma
+namespace xsigma
 {
 namespace compression
 {
@@ -182,4 +182,4 @@ bool uncompress_to_io_vec(
 
 }  // namespace snappy
 }  // namespace compression
-}  // namespace quarisma
+}  // namespace xsigma

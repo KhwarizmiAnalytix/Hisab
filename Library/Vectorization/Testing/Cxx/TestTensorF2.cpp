@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -66,7 +66,9 @@ void fill_uniform(std::vector<T>& v, std::mt19937& gen, T lo, T hi)
 
 template <typename value_t>
 double scalar_as_double(value_t x)
-{ return static_cast<double>(x); }
+{
+    return static_cast<double>(x);
+}
 
 template <typename T>
 void test_tensor_binary_vs_std()
@@ -150,6 +152,8 @@ VECTORIZATIONTEST(Math, TensorBinary)
 }
 #else
 VECTORIZATIONTEST(Math, TensorBinary)
-{ END_TEST(); }
+{
+    END_TEST();
+}
 
 #endif  // VECTORIZATION_VECTORIZED

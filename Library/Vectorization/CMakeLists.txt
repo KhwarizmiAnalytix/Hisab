@@ -2,15 +2,15 @@
 # Library/Vectorization — CMakeLists.txt
 #
 # Provides the Vectorization library: simd<T> register abstractions, expression templates, and
-# architecture-specific kernels for SSE, AVX, AVX2, and AVX-512.
+# architecture-specific kernels for SSE, AVX, AVX2, AVX-512, NEON, and SVE, plus CUDA/HIP/Metal eval.
 #
 # VECTORIZATION_CPU_BACKEND (cache: no|sse|avx|avx2|avx512|neon|sve) selects the CPU SIMD backend.
-# VECTORIZATION_GPU_BACKEND (cache: none|cuda|hip) selects the GPU backend (independent of CPU type).
+# VECTORIZATION_GPU_BACKEND (cache: none|cuda|hip|metal) selects the GPU backend (independent of CPU type).
 # Both can be active simultaneously — e.g. CPU_TYPE=avx2 + GPU_TYPE=cuda.
 # Optional VECTORIZATION_ENABLE_SVML adds SVML headers.
 #
 # C++ preprocessor defines: sse → HAS_SSE=1; avx/avx2 → HAS_AVX=1; avx2 → HAS_AVX2=1;
-# avx512 → HAS_AVX512=1; cuda → HAS_CUDA=1; hip → HAS_HIP=1.
+# avx512 → HAS_AVX512=1; cuda → HAS_CUDA=1; hip → HAS_HIP=1; metal → HAS_METAL=1.
 # VECTORIZATION_HAS_SVML=1/0   — SVML active in C++ code
 # VECTORIZATION_HAS_GTEST=1/0  — Google Test available to Vectorization tests
 # =============================================================================
@@ -24,25 +24,25 @@ cmake_minimum_required(VERSION 3.16)
 # CACHE for Core (VECTORIZATION_COMPILER_FLAGS, PROJECT_*).
 #
 # VECTORIZATION_CPU_BACKEND selects the CPU SIMD backend (one of: no, sse, avx, avx2, avx512, neon, sve).
-# VECTORIZATION_GPU_BACKEND selects the GPU backend (one of: none, cuda, hip).
+# VECTORIZATION_GPU_BACKEND selects the GPU backend (one of: none, cuda, hip, metal).
 # Both flags are independent — you can combine any CPU backend with any GPU backend.
 # =============================================================================
 # Host-aware default CPU SIMD: x86 family -> avx2, aarch64 -> neon, anything else -> no.
-# Matches the _quarisma_vec_is_x86 / _quarisma_vec_is_aarch64 processor regexes in
+# Matches the _xsigma_vec_is_x86 / _xsigma_vec_is_aarch64 processor regexes in
 # Cmake/utils.cmake, so the default we pick here is exactly what that module will go on to
 # validate. Falling back to "no" (rather than guessing "avx2") on unrecognized processors
 # (ppc64le, riscv64, wasm32, 32-bit arm, s390x, ...) avoids a spurious "unsupported, falling
 # back to no" WARNING later at the auto-downgrade check below.
-string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _quarisma_vec_proc_default)
-if(_quarisma_vec_proc_default MATCHES "^(x86_64|amd64|i686|i386)$")
-  set(_quarisma_vectorization_cpu_default "avx2")
-elseif(_quarisma_vec_proc_default MATCHES "^(aarch64|arm64)$")
-  set(_quarisma_vectorization_cpu_default "neon")
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _xsigma_vec_proc_default)
+if(_xsigma_vec_proc_default MATCHES "^(x86_64|amd64|i686|i386)$")
+  set(_xsigma_vectorization_cpu_default "avx2")
+elseif(_xsigma_vec_proc_default MATCHES "^(aarch64|arm64)$")
+  set(_xsigma_vectorization_cpu_default "neon")
 else()
-  set(_quarisma_vectorization_cpu_default "no")
+  set(_xsigma_vectorization_cpu_default "no")
 endif()
 
-set(VECTORIZATION_CPU_BACKEND "${_quarisma_vectorization_cpu_default}"
+set(VECTORIZATION_CPU_BACKEND "${_xsigma_vectorization_cpu_default}"
     CACHE STRING "CPU SIMD backend. Options: no, sse, avx, avx2, avx512, neon, sve"
 )
 set_property(
@@ -79,7 +79,7 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "metal" AND NOT APPLE)
 endif()
 
 include(lto)
-quarisma_lto_compute_default(_lto_default PROFILE PERFORMANCE)
+xsigma_lto_compute_default(_lto_default PROFILE PERFORMANCE)
 set(VECTORIZATION_LTO_MODE "${_lto_default}"
     CACHE STRING "LTO mode for Vectorization: off | thin | full | ipo | auto"
 )
@@ -122,22 +122,24 @@ option(VECTORIZATION_ENABLE_LIBTORCH
        "Enable LibTorch (PyTorch C++) comparison tests and benchmarks" OFF
 )
 
-# Memory presence — detected from the CMake target; not a user option.
-if(TARGET Memory::Memory)
-  set(_vec_has_memory 1)
-else()
-  set(_vec_has_memory 0)
+# Logging is required — Vectorization log/check/throw macros go through Library/Logging.
+if(NOT TARGET Logging::Logging)
+  message(
+    FATAL_ERROR
+      "Vectorization requires Logging::Logging. Configure Logging in this tree (full build or --project.vectorization, which now enables Logging)."
+  )
 endif()
 
-# Logging presence — detected from the CMake target; not a user option.
-if(TARGET Logging::Logging)
-  set(_vec_has_logging 1)
-else()
-  set(_vec_has_logging 0)
+# Memory is required — allocator, data_ptr, data_view, and device_enum live there.
+if(NOT TARGET Memory::Memory)
+  message(
+    FATAL_ERROR
+      "Vectorization requires Memory::Memory. Configure Memory in this tree (full build or --project.vectorization, which now enables Memory)."
+  )
 endif()
 
 # Profiler presence — detected from the CMake target; not a user option.
-# Lets kernel entry points call the always-safe RECORD_USER_SCOPE shim from
+# Lets kernel entry points call the always-safe PROFILER_RECORD_USER_SCOPE shim from
 # Profiler's common/instrumentation.h (Docs/profiler/profiler.md,
 # Instrumentation) without depending on which PROFILER_BACKEND was selected.
 if(TARGET Profiler::Profiler)
@@ -167,9 +169,7 @@ set_property(
   CACHE VECTORIZATION_SANITIZER_TYPE PROPERTY STRINGS address undefined thread memory leak
 )
 mark_as_advanced(VECTORIZATION_ENABLE_SANITIZER VECTORIZATION_SANITIZER_TYPE)
-option(VECTORIZATION_ENABLE_SPELL
-       "Enable spell checking for Vectorization (WARNING: modifies source files)" OFF
-)
+option(VECTORIZATION_ENABLE_SPELL "Enable check-only spell checking for Vectorization" OFF)
 mark_as_advanced(VECTORIZATION_ENABLE_SPELL)
 option(VECTORIZATION_ENABLE_VALGRIND "Execute Vectorization test suite with Valgrind" OFF)
 mark_as_advanced(VECTORIZATION_ENABLE_VALGRIND)
@@ -258,23 +258,23 @@ endif()
 
 # Other libraries must not include Vectorization CMake modules; expose probes for Core et al.
 if(HAS_EXCEPTION_PTR)
-  set(PROJECT_HAS_EXCEPTION_PTR 1 CACHE INTERNAL
-                                        "Quarisma: std::exception_ptr (Vectorization utils)" FORCE
+  set(PROJECT_HAS_EXCEPTION_PTR 1 CACHE INTERNAL "XSigma: std::exception_ptr (Vectorization utils)"
+                                        FORCE
   )
 else()
-  set(PROJECT_HAS_EXCEPTION_PTR 0 CACHE INTERNAL
-                                        "Quarisma: std::exception_ptr (Vectorization utils)" FORCE
+  set(PROJECT_HAS_EXCEPTION_PTR 0 CACHE INTERNAL "XSigma: std::exception_ptr (Vectorization utils)"
+                                        FORCE
   )
 endif()
 foreach(_simd IN ITEMS SSE AVX AVX2 AVX512 NEON SVE)
   if(HAS_${_simd})
-    set(PROJECT_${_simd} 1 CACHE INTERNAL "Quarisma: SIMD (Vectorization utils)" FORCE)
+    set(PROJECT_${_simd} 1 CACHE INTERNAL "XSigma: SIMD (Vectorization utils)" FORCE)
   else()
-    set(PROJECT_${_simd} 0 CACHE INTERNAL "Quarisma: SIMD (Vectorization utils)" FORCE)
+    set(PROJECT_${_simd} 0 CACHE INTERNAL "XSigma: SIMD (Vectorization utils)" FORCE)
   endif()
 endforeach()
 set(VECTORIZATION_COMPILER_FLAGS "${VECTORIZATION_COMPILER_FLAGS}"
-    CACHE INTERNAL "Quarisma: SIMD flags from Vectorization utils" FORCE
+    CACHE INTERNAL "XSigma: SIMD flags from Vectorization utils" FORCE
 )
 
 message("-- SIMD compiler flags: ${VECTORIZATION_COMPILER_FLAGS}")
@@ -367,8 +367,6 @@ compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_SLEEF)
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_ACCELERATE)
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_MKL)
 compile_definition(VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_ENABLE_GTEST)
-list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_MEMORY=${_vec_has_memory})
-list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_LOGGING=${_vec_has_logging})
 list(APPEND VECTORIZATION_COMPILE_DEFINITIONS VECTORIZATION_HAS_PROFILER=${_vec_has_profiler})
 # VECTORIZATION_VECTORIZED: 1 when any CPU SIMD backend is active (GPU does not affect this).
 if(VECTORIZATION_CPU_BACKEND MATCHES "^(sse|avx|avx2|avx512|neon|sve)$")
@@ -419,7 +417,7 @@ if(VECTORIZATION_ENABLE_SLEEF)
     "${_tpdir}/sleef"
     BINARY_DIR
     "${_sleef_build_dir}"
-    QUARISMA_TARGETS
+    XSIGMA_TARGETS
     "Sleef::sleef=sleef"
     INCLUDE_DIR
     "${CMAKE_BINARY_DIR}/include"
@@ -577,21 +575,21 @@ list(FILTER headers EXCLUDE REGEX ".*/expressions_functors_mkl\\.h$")
 # definition
 # =============================================================================
 add_library(Vectorization ${sources} ${headers} ${templates})
-quarisma_target_apply_lto(Vectorization VECTORIZATION)
+xsigma_target_apply_lto(Vectorization VECTORIZATION)
 if(VECTORIZATION_ENABLE_SANITIZER)
-  quarisma_configure_sanitizer(VECTORIZATION)
+  xsigma_configure_sanitizer(VECTORIZATION)
 endif()
-quarisma_find_linker(${VECTORIZATION_LINKER_CHOICE} Vectorization VECTORIZATION_LTO_MODE)
-quarisma_target_apply_cache(Vectorization VECTORIZATION_ENABLE_CACHE VECTORIZATION_CACHE_BACKEND)
-quarisma_target_optional_icecc(Vectorization VECTORIZATION_ENABLE_ICECC)
+xsigma_find_linker(${VECTORIZATION_LINKER_CHOICE} Vectorization VECTORIZATION_LTO_MODE)
+xsigma_target_apply_cache(Vectorization VECTORIZATION_ENABLE_CACHE VECTORIZATION_CACHE_BACKEND)
+xsigma_target_optional_icecc(Vectorization VECTORIZATION_ENABLE_ICECC)
 
 # --- DLL-export macros (VECTORIZATION_API in source-tree vectorization_export.h) ---
 if(BUILD_SHARED_LIBS)
   target_compile_definitions(
     Vectorization PUBLIC VECTORIZATION_SHARED_DEFINE PRIVATE VECTORIZATION_BUILDING_DLL
   )
-  if(COMMAND quarisma_set_target_output_directories)
-    quarisma_set_target_output_directories(Vectorization)
+  if(COMMAND xsigma_set_target_output_directories)
+    xsigma_set_target_output_directories(Vectorization)
   endif()
 else()
   target_compile_definitions(Vectorization PUBLIC VECTORIZATION_STATIC_DEFINE)
@@ -628,9 +626,11 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "hip")
   endif()
 
   # Locate the HIP package (hip::host / hip::device imported targets) so the
-  # Vectorization target links correctly even when built standalone
-  # (VECTORIZATION_HAS_MEMORY=0), instead of silently depending on
-  # Memory::Memory (Library/Memory/Cmake/hip.cmake) to pull HIP in transitively.
+  # Vectorization target links HIP even when Memory's HIP finder has not run
+  # (e.g. MEMORY_GPU_BACKEND=none). Memory::Memory is always linked, but that
+  # does not pull HIP unless Memory itself was configured with HIP.
+  include(rocm_prefix)
+  xsigma_setup_rocm_prefix()
   find_package(hip QUIET)
   if(NOT hip_FOUND)
     message(
@@ -646,6 +646,14 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "hip")
   set(VECTORIZATION_GPU_ARCHITECTURES "gfx900;gfx906;gfx908;gfx90a;gfx1030;gfx1100"
       CACHE STRING "HIP GPU architectures (gfxXXX for AMD, smXX for CUDA offload via hipcc)"
   )
+  # CI passes -DCMAKE_HIP_ARCHITECTURES=gfx90a (no device at configure time).
+  # Honor that instead of compiling every gfx* default.
+  if(CMAKE_HIP_ARCHITECTURES AND NOT CMAKE_HIP_ARCHITECTURES STREQUAL "native")
+    set(VECTORIZATION_GPU_ARCHITECTURES "${CMAKE_HIP_ARCHITECTURES}"
+        CACHE STRING "HIP GPU architectures (gfxXXX for AMD, smXX for CUDA offload via hipcc)"
+              FORCE
+    )
+  endif()
   set_target_properties(
     Vectorization PROPERTIES HIP_STANDARD ${VECTORIZATION_CXX_STANDARD}
                              HIP_ARCHITECTURES "${VECTORIZATION_GPU_ARCHITECTURES}"
@@ -655,7 +663,7 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "hip")
     target_link_libraries(Vectorization PUBLIC hip::host)
   endif()
   if(TARGET hip::device)
-    target_link_libraries(Vectorization PUBLIC hip::device)
+    target_link_libraries(Vectorization PRIVATE hip::device)
   endif()
   message(
     STATUS "Vectorization: HIP GPU backend enabled (archs: ${VECTORIZATION_GPU_ARCHITECTURES})"
@@ -699,15 +707,6 @@ endif()
 # frameworks. See backend/gpu/metal/metal_dispatch.mm and
 # expressions/expressions_evaluator_metal.h for the rest of the design.
 if(VECTORIZATION_GPU_BACKEND STREQUAL "metal")
-  if(NOT _vec_has_memory)
-    message(
-      FATAL_ERROR
-        "VECTORIZATION_GPU_BACKEND=metal requires VECTORIZATION_HAS_MEMORY=1 — the Metal "
-        "MTLBuffer<->pointer tracking this backend relies on lives in Memory::Memory "
-        "(gpu/metal/metal_buffer_allocator.h), built with MEMORY_GPU_BACKEND=metal."
-    )
-  endif()
-
   enable_language(OBJCXX)
   set(CMAKE_OBJCXX_STANDARD ${VECTORIZATION_CXX_STANDARD})
   set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
@@ -773,13 +772,8 @@ if(VECTORIZATION_DEPENDENCY_INCLUDE_DIRS)
   message(STATUS "Vectorization: extra include dirs: ${VECTORIZATION_DEPENDENCY_INCLUDE_DIRS}")
 endif()
 
-if(_vec_has_logging)
-  target_link_libraries(Vectorization PUBLIC Logging::Logging)
-endif()
-
-if(_vec_has_memory)
-  target_link_libraries(Vectorization PUBLIC Memory::Memory)
-endif()
+target_link_libraries(Vectorization PUBLIC Logging::Logging)
+target_link_libraries(Vectorization PUBLIC Memory::Memory)
 
 if(_vec_has_profiler)
   target_link_libraries(Vectorization PUBLIC Profiler::Profiler)
@@ -854,15 +848,15 @@ endif()
 
 if(VECTORIZATION_ENABLE_CLANGTIDY)
   include(clang_tidy)
-  quarisma_target_clang_tidy(Vectorization ${VECTORIZATION_ENABLE_FIX})
+  xsigma_target_clang_tidy(Vectorization ${VECTORIZATION_ENABLE_FIX})
 endif()
 
 if(VECTORIZATION_ENABLE_IWYU)
   include(iwyu)
-  quarisma_apply_iwyu(Vectorization)
+  xsigma_apply_iwyu(Vectorization)
 endif()
 
-quarisma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
+xsigma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 
 # =============================================================================
 # SECTION 7 —
@@ -891,7 +885,7 @@ if(VECTORIZATION_ENABLE_TESTING)
 endif()
 
 if(VECTORIZATION_ENABLE_VALGRIND AND VECTORIZATION_ENABLE_TESTING)
-  quarisma_apply_valgrind_timeouts()
+  xsigma_apply_valgrind_timeouts()
 endif()
 
 # =============================================================================
@@ -908,14 +902,14 @@ message("  Sleef                : ${VECTORIZATION_ENABLE_SLEEF}")
 message("  Accelerate (vForce)  : ${VECTORIZATION_ENABLE_ACCELERATE}")
 message("  Mkl VML              : ${VECTORIZATION_ENABLE_MKL}")
 message("  LibTorch             : ${VECTORIZATION_ENABLE_LIBTORCH}")
-message("  Memory (HAS)         : ${_vec_has_memory}")
-message("  Logging (HAS)        : ${_vec_has_logging}")
+message("  Memory               : required (Memory::Memory)")
+message("  Logging              : required (Logging::Logging)")
 message("  Profiler (HAS)       : ${_vec_has_profiler}")
 message("  Cxx standard         : ${VECTORIZATION_CXX_STANDARD}")
 message("  Cache                : ${VECTORIZATION_ENABLE_CACHE}")
 message("  Cache backend        : ${VECTORIZATION_CACHE_BACKEND}")
 message("  Icecc                : ${VECTORIZATION_ENABLE_ICECC}")
-quarisma_print_lto_linker_summary(VECTORIZATION)
+xsigma_print_lto_linker_summary(VECTORIZATION)
 message("  Coverage             : ${VECTORIZATION_ENABLE_COVERAGE}")
 message("  Testing              : ${VECTORIZATION_ENABLE_TESTING}")
 message("  Gtest                : ${VECTORIZATION_ENABLE_GTEST}")

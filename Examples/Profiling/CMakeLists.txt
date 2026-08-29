@@ -1,17 +1,17 @@
 # =============================================================================
-# Quarisma
+# XSigma
 # Profiling Examples CMakeLists.txt
 # =============================================================================
-# This CMakeLists.txt configures and builds the Quarisma Profiling example programs that
+# This CMakeLists.txt configures and builds the XSigma Profiling example programs that
 # demonstrate the usage of profiling APIs.
 #
-# Examples included: - example_profiling_basic: Comprehensive profiling example with Quarisma,
+# Examples included: - example_profiling_basic: Comprehensive profiling example with XSigma,
 # Kineto, and ITT
 #
 # Build these examples with: python setup.py config.build.examples.ninja.clang python setup.py
 # config.build.examples.vs22
 #
-# Or manually: cmake -DQUARISMA_ENABLE_EXAMPLES=ON .. cmake --build .
+# Or manually: cmake -DXSIGMA_ENABLE_EXAMPLES=ON .. cmake --build .
 # =============================================================================
 cmake_minimum_required(VERSION 3.16)
 
@@ -31,9 +31,16 @@ foreach(example_source ${example_sources})
   # Create executable
   add_executable(${example_name} ${example_source})
 
-  # Set C++ standard
+  # XSIGMA_CXX_STANDARD is optional (root may only set CMAKE_CXX_STANDARD).
+  if(XSIGMA_CXX_STANDARD)
+    set(_example_cxx_std "${XSIGMA_CXX_STANDARD}")
+  elseif(CMAKE_CXX_STANDARD)
+    set(_example_cxx_std "${CMAKE_CXX_STANDARD}")
+  else()
+    set(_example_cxx_std 20)
+  endif()
   set_target_properties(
-    ${example_name} PROPERTIES CXX_STANDARD ${QUARISMA_CXX_STANDARD} CXX_STANDARD_REQUIRED ON
+    ${example_name} PROPERTIES CXX_STANDARD ${_example_cxx_std} CXX_STANDARD_REQUIRED ON
                                CXX_EXTENSIONS OFF
   )
 
@@ -42,8 +49,8 @@ foreach(example_source ${example_sources})
   target_link_libraries(${example_name} PRIVATE Profiler::Profiler)
 
   # Set output directory
-  if(COMMAND quarisma_set_target_output_directories)
-    quarisma_set_target_output_directories(${example_name})
+  if(COMMAND xsigma_set_target_output_directories)
+    xsigma_set_target_output_directories(${example_name})
   else()
     set_target_properties(
       ${example_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"

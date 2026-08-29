@@ -1,6 +1,6 @@
 #!/bin/bash
-# Quarisma CI - macOS Dependency Installation Script
-# This script installs all required dependencies for building Quarisma on macOS
+# XSigma CI - macOS Dependency Installation Script
+# This script installs all required dependencies for building XSigma on macOS
 # Usage: ./install-deps-macos.sh [--with-cuda] [--with-tbb]
 
 set -e  # Exit on error
@@ -53,6 +53,12 @@ done
 log_info "Starting macOS dependency installation..."
 log_info "CUDA support: $WITH_CUDA"
 log_info "TBB support: $WITH_TBB"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if command -v python3 >/dev/null 2>&1; then
+    log_info "Sanitizing cached ThirdParty CMake trees (workspace path check)..."
+    python3 "${SCRIPT_DIR}/sanitize_thirdparty_cache.py" || log_warning "ThirdParty cache sanitize skipped"
+fi
 
 # Check if Homebrew is installed
 if ! command -v brew &> /dev/null; then
@@ -125,15 +131,16 @@ if [ "$WITH_CUDA" = true ]; then
     log_warning "CUDA support on macOS is limited. Skipping CUDA installation."
 fi
 
-# Python dependencies
+# Python dependencies. Homebrew/macOS Python is PEP 668 managed, so pip
+# needs --break-system-packages on GitHub-hosted runners.
 log_info "Installing Python dependencies..."
-python3 -m pip install --upgrade pip setuptools wheel || {
+python3 -m pip install --upgrade pip setuptools wheel --break-system-packages || {
     log_warning "Failed to upgrade pip"
 }
 
-python3 -m pip install colorama==0.4.6 psutil==6.1.1 || {
+python3 -m pip install colorama==0.4.6 psutil==6.1.1 --break-system-packages || {
     log_warning "Failed to install Python dependencies"
 }
 
 log_success "macOS dependency installation completed successfully!"
-log_info "You can now build Quarisma using: python Scripts/setup.py ninja clang config build test"
+log_info "You can now build XSigma using: python Scripts/setup.py ninja clang config build test"

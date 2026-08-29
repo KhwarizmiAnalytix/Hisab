@@ -93,7 +93,7 @@ init_command = [
     'mccabe==0.7.0',
     'pycodestyle==2.14.0',
     'pyflakes==3.4.0',
-    # Note: torchfix is a Quarisma-compatible linting tool used for Quarisma
+    # Note: torchfix is a XSigma-compatible linting tool used for XSigma
     'torchfix==0.4.0 ; python_version >= "3.10" and python_version < "3.13"',
 ]
 
@@ -713,6 +713,8 @@ include_patterns = [
 exclude_patterns = [
     '.lintrunner.toml',
     'ThirdParty/**',
+    '**/third_party/**',
+    '**/3rdparty/**',
     '**/experimental/**',
     '**/Experimental/**',
     'Tools/**',
@@ -720,6 +722,7 @@ exclude_patterns = [
     '.git/**',
     '.augment/**',
     'Scripts/iwyu/iwyu_configure_detector.py',
+    'Scripts/suppressions/spell_suppressions.txt',
 ]
 init_command = [
     'python3',
@@ -727,7 +730,7 @@ init_command = [
     '--dry-run={{DRYRUN}}',
     'codespell[toml]==2.4.1',
 ]
-is_formatter = true
+is_formatter = false
 
 # usort + ruff-format
 [[linter]]
@@ -844,7 +847,7 @@ command = [
     '--error-name=Confidential Code',
     """--error-description=\
         Proprietary and confidential source code\
-        should not be contributed to Quarisma codebase\
+        should not be contributed to XSigma codebase\
     """,
     '--',
     '@{{PATHSFILE}}'

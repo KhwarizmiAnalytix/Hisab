@@ -61,7 +61,7 @@ def plugin(version: str) -> type[Plugin]:
         print(
             f"""\
 You are using mypy version {version}, which is not supported
-in the Quarisma repo. Please switch to mypy version {correct_version}.
+in the XSigma repo. Please switch to mypy version {correct_version}.
 
 For example, if you installed mypy via pip, run this:
 

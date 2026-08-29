@@ -1,23 +1,27 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  */
 
 #pragma once
 
-#if VECTORIZATION_HAS_NEON
+// backend/cpu/sve/{float,double}/simd.h reuse the NEON specializations below
+// unconditionally (same lane layout at -msve-vector-bits=128), so these
+// wrappers must also be emitted when only VECTORIZATION_HAS_SVE is set.
+#if VECTORIZATION_HAS_NEON || VECTORIZATION_HAS_SVE
 
 #include <arm_neon.h>
+
 #include <cmath>
 
 #include "common/vectorization_macros.h"
 
 #if VECTORIZATION_HAS_ACCELERATE
-#  include <Accelerate/Accelerate.h>
+#include <Accelerate/Accelerate.h>
 #endif
 #if VECTORIZATION_HAS_SLEEF
-#  include <sleef.h>
+#include <sleef.h>
 #endif
 
 // clang-format off
@@ -189,4 +193,4 @@ VECTORIZATION_FORCE_INLINE float64x2_t vexp10q_f64(float64x2_t x)
 
 // clang-format on
 
-#endif  // VECTORIZATION_HAS_NEON
+#endif  // VECTORIZATION_HAS_NEON || VECTORIZATION_HAS_SVE

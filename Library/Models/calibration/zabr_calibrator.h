@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #pragma once
@@ -38,12 +38,12 @@ struct MODELS_VISIBILITY zabr_calibration_result
 // Used as a standalone solver and as a short polish after qa_calibrator.
 // max_iter is the Nelder–Mead iteration cap (default 80).
 MODELS_API std::optional<zabr_calibration_result> calibrate_zabr(
-    const double* market_vols,
-    std::size_t   n_vols,
-    double        forward,
-    double        expiry,
-    double        beta,
-    double        gamma,
+    const double*      market_vols,
+    std::size_t        n_vols,
+    double             forward,
+    double             expiry,
+    double             beta,
+    double             gamma,
     const zabr_params* initial  = nullptr,
     int                max_iter = 80);
 

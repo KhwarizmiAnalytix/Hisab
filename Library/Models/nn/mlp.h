@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #pragma once
@@ -34,7 +34,7 @@ class MODELS_VISIBILITY mlp
 public:
     mlp() = default;
 
-    bool configure(
+    MODELS_API bool configure(
         const int*    layer_sizes,
         std::size_t   n_sizes,
         const double* weights,
@@ -42,11 +42,12 @@ public:
         const double* biases,
         std::size_t   n_biases);
 
-    bool forward(const double* input, std::size_t n_in, double* output, std::size_t n_out) const;
+    MODELS_API bool forward(
+        const double* input, std::size_t n_in, double* output, std::size_t n_out) const;
 
-    int input_size() const;
-    int output_size() const;
-    bool empty() const;
+    MODELS_API int  input_size() const;
+    MODELS_API int  output_size() const;
+    MODELS_API bool empty() const;
 
 private:
     std::vector<int>    sizes_;

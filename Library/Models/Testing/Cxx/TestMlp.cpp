@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #include "ModelsTest.h"
@@ -37,10 +37,10 @@ TEST(Mlp, rejects_bad_configure)
 
 TEST(Mlp, identity_linear_layer)
 {
-    mlp              net;
-    const int        sizes[]   = {2, 2};
-    const double     weights[] = {1.0, 0.0, 0.0, 1.0};
-    const double     biases[]  = {0.1, -0.2};
+    mlp          net;
+    const int    sizes[]   = {2, 2};
+    const double weights[] = {1.0, 0.0, 0.0, 1.0};
+    const double biases[]  = {0.1, -0.2};
     ASSERT_TRUE(net.configure(sizes, 2, weights, 4, biases, 2));
     const double in[] = {1.5, -3.0};
     double       out[2];
@@ -51,10 +51,10 @@ TEST(Mlp, identity_linear_layer)
 
 TEST(Mlp, relu_hides_negative_preactivation)
 {
-    mlp              net;
-    const int        sizes[]   = {1, 1, 1};
-    const double     weights[] = {-1.0, 1.0};
-    const double     biases[]  = {0.0, 0.0};
+    mlp          net;
+    const int    sizes[]   = {1, 1, 1};
+    const double weights[] = {-1.0, 1.0};
+    const double biases[]  = {0.0, 0.0};
     ASSERT_TRUE(net.configure(sizes, 3, weights, 2, biases, 2));
     const double in[] = {2.0};
     double       out[1];
@@ -64,10 +64,10 @@ TEST(Mlp, relu_hides_negative_preactivation)
 
 TEST(Mlp, rejects_size_mismatch)
 {
-    mlp              net;
-    const int        sizes[]   = {2, 1};
-    const double     weights[] = {1.0, 1.0};
-    const double     biases[]  = {0.0};
+    mlp          net;
+    const int    sizes[]   = {2, 1};
+    const double weights[] = {1.0, 1.0};
+    const double biases[]  = {0.0};
     ASSERT_TRUE(net.configure(sizes, 2, weights, 2, biases, 1));
     const double in[] = {1.0, 2.0};
     double       out[1];

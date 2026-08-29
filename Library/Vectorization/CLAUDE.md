@@ -26,14 +26,14 @@ directory.
 ## GPU feature-guard macros — use `MEMORY_HAS_*`, not `PROJECT_HAS_*`
 
 Test/source code must guard GPU-specific code with `MEMORY_HAS_CUDA` /
-`MEMORY_HAS_HIP` (and the equivalent `*_HAS_CUDA`/`*_HAS_HIP` per-module
-macros CMake defines, e.g. `VECTORIZATION_HAS_CUDA`). `PROJECT_HAS_CUDA` /
-`PROJECT_HAS_HIP` look plausible but **are never defined anywhere in this
-repo** — code guarded by them silently compiles out and the GPU path never
-runs, which is exactly the bug fixed in commit `f15cf987` (14 test files
-had this wrong). If you add a new GPU-conditional block, verify the guard
-macro is actually defined by grepping the relevant `Cmake/*.cmake` file
-before trusting it compiles the intended branch.
+`MEMORY_HAS_HIP` / `MEMORY_HAS_METAL` (and the equivalent per-module macros
+CMake defines, e.g. `VECTORIZATION_HAS_CUDA`, `VECTORIZATION_HAS_METAL`).
+`PROJECT_HAS_CUDA` / `PROJECT_HAS_HIP` look plausible but **are never defined
+anywhere in this repo** — code guarded by them silently compiles out and the
+GPU path never runs, which is exactly the bug fixed in commit `f15cf987`
+(14 test files had this wrong). If you add a new GPU-conditional block,
+verify the guard macro is actually defined by grepping the relevant
+`Cmake/*.cmake` file before trusting it compiles the intended branch.
 
 ## HIP is Unix-only
 

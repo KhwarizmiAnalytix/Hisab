@@ -1,11 +1,11 @@
 # =============================================================================
-# Quarisma Core Library Tests BUILD Configuration
+# XSigma Core Library Tests BUILD Configuration
 # =============================================================================
 # Test targets for Core library using GoogleTest
 # Equivalent to Library/Core/Testing/Cxx/CMakeLists.txt (glob + conditional excludes)
 # =============================================================================
 
-load("//bazel:quarisma.bzl", "quarisma_copts", "quarisma_defines", "quarisma_enzyme_copts", "quarisma_enzyme_linkopts", "quarisma_linkopts")
+load("//bazel:xsigma.bzl", "xsigma_copts", "xsigma_defines", "xsigma_enzyme_copts", "xsigma_enzyme_linkopts", "xsigma_linkopts")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -48,26 +48,25 @@ cc_test(
     size = "large",
     timeout = "long",
     srcs = _CORE_TEST_SRCS,
-    copts = quarisma_copts() + quarisma_enzyme_copts(),
-    defines = quarisma_defines() + [
-        "QUARISMA_GOOGLE_TEST",
+    copts = xsigma_copts() + xsigma_enzyme_copts(),
+    defines = xsigma_defines() + [
+        "XSIGMA_GOOGLE_TEST",
         "USE_GTEST",
         "_VARIADIC_MAX=10",
-        "QUARISMA_HAS_GTEST=1",
+        "XSIGMA_HAS_GTEST=1",
     ] + select({
-        "//bazel:enable_cuda": ["QUARISMA_HAS_CUDA=1"],
-        "//conditions:default": ["QUARISMA_HAS_CUDA=0"],
+        "//bazel:enable_cuda": ["XSIGMA_HAS_CUDA=1"],
+        "//conditions:default": ["XSIGMA_HAS_CUDA=0"],
     }) + select({
-        "//bazel:enable_hip": ["QUARISMA_HAS_HIP=1"],
-        "//conditions:default": ["QUARISMA_HAS_HIP=0"],
+        "//bazel:enable_hip": ["XSIGMA_HAS_HIP=1"],
+        "//conditions:default": ["XSIGMA_HAS_HIP=0"],
     }),
     includes = ["."],
-    linkopts = quarisma_linkopts() + quarisma_enzyme_linkopts(),
+    linkopts = xsigma_linkopts() + xsigma_enzyme_linkopts(),
     deps = [
         "//Library/Core:Core",
-        "//Library/Core/Testing:quarismaTest_header",
+        "//Library/Core/Testing:xsigmaTest_header",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
 )
-

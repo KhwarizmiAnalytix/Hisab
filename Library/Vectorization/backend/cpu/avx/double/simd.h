@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #pragma once
@@ -185,7 +185,8 @@ struct simd<double>
     //======================================================================================
     VECTORIZATION_SIMD_METHOD simd_t gather(value_t const* from, int stride)
     {
-        return _mm256_set_pd(from[3 * stride], from[2 * stride], from[1 * stride], from[0 * stride]);
+        return _mm256_set_pd(
+            from[3 * stride], from[2 * stride], from[1 * stride], from[0 * stride]);
     }
 
     VECTORIZATION_SIMD_RETURN_TYPE scatter(simd_t from, int stride, value_t* to)
@@ -205,7 +206,8 @@ struct simd<double>
         auto indices = _mm_loadu_si128(reinterpret_cast<const __m128i*>(strides));
         return _mm256_i32gather_pd(from, indices, 8);
 #else
-        return _mm256_set_pd(from[strides[3]], from[strides[2]], from[strides[1]], from[strides[0]]);
+        return _mm256_set_pd(
+            from[strides[3]], from[strides[2]], from[strides[1]], from[strides[0]]);
 #endif  // __AVX2__
     }
 
@@ -330,5 +332,8 @@ struct simd<double>
         x[2] = _mm256_permute2f128_pd(T1, T3, 49);
     }
 
-    VECTORIZATION_SIMD_METHOD simd_t ploadquad(const double* from) { return _mm256_broadcast_sd(from); }
+    VECTORIZATION_SIMD_METHOD simd_t ploadquad(const double* from)
+    {
+        return _mm256_broadcast_sd(from);
+    }
 };

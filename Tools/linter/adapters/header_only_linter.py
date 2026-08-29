@@ -2,7 +2,7 @@
 """
 Checks that all symbols in Library/Core/header_only_apis.txt are tested in a .cpp
 test file to ensure header-only-ness. The .cpp test file must be built
-without linking against the main Quarisma library.
+without linking against the main XSigma library.
 """
 
 import argparse
@@ -154,6 +154,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     for lint_message in check_file(
-        str(REPO_ROOT) + "/quarisma/header_only_apis.txt", CPP_TEST_GLOBS
+        str(REPO_ROOT) + "/xsigma/header_only_apis.txt", CPP_TEST_GLOBS
     ):
         print(json.dumps(lint_message._asdict()), flush=True)

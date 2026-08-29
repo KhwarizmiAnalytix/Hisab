@@ -1,6 +1,7 @@
 # Library/Vectorization — SIMD layer (headers under ., backends under backend/).
 # Include roots match CMake: "backend/simd.h", "backend/cpu/avx/float/simd.h", etc.
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load(
     "//bazel:vectorization.bzl",
     "vectorization_copts",
@@ -21,8 +22,9 @@ _VEC_SVML_H = "backend/cpu/avx/svml.h"
 
 # Metal GPU backend support (mirrors CMakeLists.txt:690-720's "Metal GPU backend" block).
 
-# Embeds kernels.metal as a C++ string literal via literal @METAL_KERNEL_SOURCE@ substitution
+# Embeds kernels.metal as a C++ string literal via @METAL_KERNEL_SOURCE@ substitution
 # into metal_kernels_source.h.in -- the same substitution CMake's configure_file() does.
+# A dedicated script (not python3 -c) so Windows cmd.exe does not split the command.
 genrule(
     name = "metal_kernels_source_h",
     srcs = [
@@ -30,22 +32,17 @@ genrule(
         "backend/gpu/metal/kernels.metal",
     ],
     outs = ["backend/gpu/metal/metal_kernels_source.h"],
-    cmd = """python3 -c "
-import sys
-tmpl = open('$(location backend/gpu/metal/metal_kernels_source.h.in)').read()
-src = open('$(location backend/gpu/metal/kernels.metal)').read()
-open('$@', 'w').write(tmpl.replace('@METAL_KERNEL_SOURCE@', src))
-"
-""",
+    cmd = "python3 $(location //bazel:embed_metal_kernel.py) $(location backend/gpu/metal/metal_kernels_source.h.in) $(location backend/gpu/metal/kernels.metal) $@",
+    cmd_bat = "python $(location //bazel:embed_metal_kernel.py) $(location backend/gpu/metal/metal_kernels_source.h.in) $(location backend/gpu/metal/kernels.metal) $@",
+    tools = ["//bazel:embed_metal_kernel.py"],
 )
 
 # .mm -> .cc rename workaround for cc_library's lack of native .mm support -- see the matching
 # comment in Library/Memory/BUILD.bazel for the full rationale.
-genrule(
+copy_file(
     name = "metal_dispatch_objcxx",
-    srcs = ["backend/gpu/metal/metal_dispatch.mm"],
-    outs = ["backend/gpu/metal/metal_dispatch_mm.cc"],
-    cmd = "cp $< $@",
+    src = "backend/gpu/metal/metal_dispatch.mm",
+    out = "backend/gpu/metal/metal_dispatch_mm.cc",
 )
 
 # Isolates the -x objective-c++ -fobjc-arc copts to just this one translation unit rather than
@@ -59,7 +56,10 @@ cc_library(
     }),
     hdrs = select({
         "//bazel:vectorization_enable_metal": glob(
-            ["backend/gpu/metal/*.h"],
+            [
+                "backend/gpu/metal/*.h",
+                "common/*.h",
+            ],
             allow_empty = True,
         ) + [":metal_kernels_source_h"],
         "//conditions:default": [],
@@ -152,7 +152,12 @@ cc_library(
                     "**/*.inl",
                     "**/*.hxx",
                 ],
-                exclude = _VEC_TEST + ["backend/**"],
+                # Keep backend/simd.h (empty simd<T> + include dispatcher). Drop
+                # ISA-specific and GPU backend headers that type=no never includes.
+                exclude = _VEC_TEST + [
+                    "backend/cpu/**",
+                    "backend/gpu/**",
+                ],
                 allow_empty = True,
             ),
             "//bazel:vectorization_type_sse": glob(
@@ -294,25 +299,51 @@ cc_library(
 
 # metal_device_probe.mm: tiny Objective-C++ shim TestTensorGpu.cpp calls into for a Metal
 # device-count query (see Testing/Cxx/CMakeLists.txt's "*.mm (not just Test*.mm)" comment).
-genrule(
+copy_file(
     name = "metal_device_probe_objcxx",
-    srcs = ["Testing/Cxx/metal_device_probe.mm"],
-    outs = ["Testing/Cxx/metal_device_probe_mm.cc"],
-    cmd = "cp $< $@",
+    src = "Testing/Cxx/metal_device_probe.mm",
+    out = "Testing/Cxx/metal_device_probe_mm.cc",
 )
 
-# Isolates -x objective-c++ -fobjc-arc to just this one translation unit -- see
+copy_file(
+    name = "test_metal_dispatch_objcxx",
+    src = "Testing/Cxx/TestMetalDispatch.mm",
+    out = "Testing/Cxx/TestMetalDispatch_mm.cc",
+)
+
+# Isolates -x objective-c++ -fobjc-arc to just these translation units -- see
 # vectorization_metal_objcxx above / Library/Memory/BUILD.bazel for the full rationale.
+# alwayslink: TestMetalDispatch registers Google Test cases via static TEST macros.
 cc_library(
     name = "vectorization_test_metal_objcxx",
     srcs = select({
-        "//bazel:vectorization_enable_metal": [":metal_device_probe_objcxx"],
+        "//bazel:vectorization_enable_metal": [
+            ":metal_device_probe_objcxx",
+            ":test_metal_dispatch_objcxx",
+        ],
         "//conditions:default": [],
     }),
+    alwayslink = True,
     copts = vectorization_copts() + select({
         "//bazel:vectorization_enable_metal": ["-x", "objective-c++", "-fobjc-arc"],
         "//conditions:default": [],
     }),
+    defines = [
+        "XSIGMA_HAS_GTEST=1",
+        "XSIGMA_GOOGLE_TEST",
+        "USE_GTEST",
+        "_VARIADIC_MAX=10",
+    ],
+    includes = [
+        "Testing/Cxx",
+        ".",
+        "Testing",
+    ],
+    deps = [
+        ":Vectorization",
+        ":vectorization_test_hdrs",
+        "@com_google_googletest//:gtest",
+    ],
     visibility = ["//Library/Vectorization:__pkg__"],
 )
 
@@ -341,8 +372,8 @@ cc_test(
     }),
     copts = vectorization_copts(),
     defines = vectorization_defines() + [
-        "QUARISMA_HAS_GTEST=1",
-        "QUARISMA_GOOGLE_TEST",
+        "XSIGMA_HAS_GTEST=1",
+        "XSIGMA_GOOGLE_TEST",
         "USE_GTEST",
         "_VARIADIC_MAX=10",
     ],

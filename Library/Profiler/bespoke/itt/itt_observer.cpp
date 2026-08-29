@@ -50,9 +50,10 @@ static std::unique_ptr<profiler::ObserverContext> enterITT(const profiler::Recor
 void pushITTCallbacks(
     const ProfilerConfig& config, const std::unordered_set<profiler::RecordScope>& scopes)
 {
-    // PROFILER_CHECK(
-    // profiler::profiler_impl::impl::ittStubs()->enabled(),
-    // "Can't use ITT profiler - Profiler was compiled without ITT");
+    if (!profiler::profiler_impl::impl::ittStubs()->enabled())
+    {
+        return;
+    }
 
     profiler::thread_local_debug_info::_push(
         profiler::DebugInfoKind::PROFILER_STATE, std::make_shared<ITTThreadLocalState>(config));

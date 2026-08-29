@@ -1,5 +1,5 @@
 # =============================================================================
-# Quarisma Core Library — utilities, intrusive_ptr, compression.
+# XSigma Core Library — utilities, intrusive_ptr, compression.
 # Memory is //Library/Memory; Logging is //Library/Logging (standalone macro headers per module).
 # Parallel is //Library/Parallel; Profiler is //Library/Profiler.
 # =============================================================================
@@ -47,8 +47,8 @@ cc_library(
     }),
     copts = core_copts() + core_enzyme_copts(),
     defines = core_defines() + select({
-        "//bazel:shared_libs": ["QUARISMA_SHARED_DEFINE", "QUARISMA_BUILDING_DLL"],
-        "//conditions:default": ["QUARISMA_STATIC_DEFINE"],
+        "//bazel:shared_libs": ["XSIGMA_SHARED_DEFINE", "XSIGMA_BUILDING_DLL"],
+        "//conditions:default": ["XSIGMA_STATIC_DEFINE"],
     }),
     includes = [
         ".",

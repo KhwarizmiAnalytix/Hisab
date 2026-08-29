@@ -1,5 +1,5 @@
 /*
- * Quarisma Vectorization library — DLL export/import (same pattern as Parallel / Logging).
+ * XSigma Vectorization library — DLL export/import (same pattern as Parallel / Logging).
  */
 #pragma once
 

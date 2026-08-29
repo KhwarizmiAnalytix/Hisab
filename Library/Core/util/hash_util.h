@@ -7,7 +7,7 @@
 
 #include "common/macros.h"
 
-namespace quarisma
+namespace xsigma
 {
 /**
  * @brief Combines a seed hash value with the hash of another value
@@ -21,7 +21,7 @@ namespace quarisma
  * @param v The value to hash and combine
  */
 template <typename T>
-QUARISMA_FORCE_INLINE void hash_combine(std::size_t& seed, const T& v)
+XSIGMA_FORCE_INLINE void hash_combine(std::size_t& seed, const T& v)
 {
     seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
@@ -35,7 +35,7 @@ QUARISMA_FORCE_INLINE void hash_combine(std::size_t& seed, const T& v)
  * @param seed The seed hash value to combine with
  * @param v The hash value to combine
  */
-QUARISMA_FORCE_INLINE void hash_combine(std::size_t& seed, const std::size_t& v)
+XSIGMA_FORCE_INLINE void hash_combine(std::size_t& seed, const std::size_t& v)
 {
     seed ^= v + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
@@ -49,7 +49,7 @@ QUARISMA_FORCE_INLINE void hash_combine(std::size_t& seed, const std::size_t& v)
  * @return Hash value for the pair
  */
 template <typename T1, typename T2>
-QUARISMA_FORCE_INLINE std::size_t hash_pair(const std::pair<T1, T2>& p)
+XSIGMA_FORCE_INLINE std::size_t hash_pair(const std::pair<T1, T2>& p)
 {
     std::size_t seed = std::hash<T1>()(p.first);
     hash_combine(seed, p.second);
@@ -66,7 +66,7 @@ QUARISMA_FORCE_INLINE std::size_t hash_pair(const std::pair<T1, T2>& p)
  * @return Hash value for the pair
  */
 template <typename T1, typename T2>
-QUARISMA_FORCE_INLINE std::size_t hash_pair(const T1& v1, const T2& v2)
+XSIGMA_FORCE_INLINE std::size_t hash_pair(const T1& v1, const T2& v2)
 {
     std::size_t seed = std::hash<T1>()(v1);
     hash_combine(seed, v2);
@@ -82,7 +82,7 @@ QUARISMA_FORCE_INLINE std::size_t hash_pair(const T1& v1, const T2& v2)
  * @return Hash value for the sequence
  */
 template <typename Iterator>
-QUARISMA_FORCE_INLINE std::size_t hash_range(Iterator first, Iterator last)
+XSIGMA_FORCE_INLINE std::size_t hash_range(Iterator first, Iterator last)
 {
     std::size_t seed = 0;
     for (; first != last; ++first)
@@ -102,7 +102,7 @@ QUARISMA_FORCE_INLINE std::size_t hash_range(Iterator first, Iterator last)
  * @return Hash value for all the values
  */
 template <typename T, typename... Rest>
-QUARISMA_FORCE_INLINE std::size_t hash_values(const T& v, const Rest&... rest)
+XSIGMA_FORCE_INLINE std::size_t hash_values(const T& v, const Rest&... rest)
 {
     std::size_t seed = std::hash<T>()(v);
     (hash_combine(seed, rest), ...);
@@ -121,7 +121,7 @@ QUARISMA_FORCE_INLINE std::size_t hash_values(const T& v, const Rest&... rest)
  * @return Hash value for all the values
  */
 template <typename... Rest>
-QUARISMA_FORCE_INLINE std::size_t hash_values(const std::size_t& v, const Rest&... rest)
+XSIGMA_FORCE_INLINE std::size_t hash_values(const std::size_t& v, const Rest&... rest)
 {
     std::size_t seed = v;  // No need to hash, it's already a hash value
     (hash_combine(seed, rest), ...);
@@ -139,7 +139,7 @@ QUARISMA_FORCE_INLINE std::size_t hash_values(const std::size_t& v, const Rest&.
  * @return Combined hash value
  */
 template <typename... Rest>
-QUARISMA_FORCE_INLINE std::size_t hash_values(std::size_t h1, std::size_t h2, Rest... rest)
+XSIGMA_FORCE_INLINE std::size_t hash_values(std::size_t h1, std::size_t h2, Rest... rest)
 {
     std::size_t seed = h1;
     hash_combine(seed, h2);
@@ -159,12 +159,12 @@ QUARISMA_FORCE_INLINE std::size_t hash_values(std::size_t h1, std::size_t h2, Re
  * @param h Hash value
  * @return The same hash value (identity function)
  */
-QUARISMA_FORCE_INLINE std::size_t hash_values(std::size_t h)
+XSIGMA_FORCE_INLINE std::size_t hash_values(std::size_t h)
 {
     return h;
 }
 
-}  // namespace quarisma
+}  // namespace xsigma
 
 // Specializations for std::pair
 namespace std
@@ -172,6 +172,6 @@ namespace std
 template <typename T1, typename T2>
 struct hash<std::pair<T1, T2>>
 {
-    std::size_t operator()(const std::pair<T1, T2>& p) const { return quarisma::hash_pair(p); }
+    std::size_t operator()(const std::pair<T1, T2>& p) const { return xsigma::hash_pair(p); }
 };
 }  // namespace std

@@ -1,6 +1,6 @@
 # Third-Party Dependencies
 
-Quarisma uses a **conditional compilation pattern** where each library is controlled by `QUARISMA_ENABLE_XXX` options. This allows you to customize your build by including only the dependencies you need.
+XSigma uses a **conditional compilation pattern** where each library is controlled by `XSIGMA_ENABLE_XXX` options. This allows you to customize your build by including only the dependencies you need.
 
 ## Table of Contents
 
@@ -29,7 +29,8 @@ These libraries are included by default but can be disabled:
 | Library | Option | Description | Target Alias |
 |---------|--------|-------------|--------------|
 | magic_enum | `CORE_ENABLE_MAGICENUM=ON` | Enum reflection | `MagicEnum::magic_enum` |
-| loguru | `LOGGING_ENABLE_LOGURU=ON` | Lightweight logging | `Loguru::loguru` |
+| spdlog | `LOGGING_BACKEND=SPDLOG` (default) | Fast logging backend | `Spdlog::spdlog` |
+| loguru | `LOGGING_BACKEND=LOGURU` | Lightweight logging | `Loguru::loguru` |
 
 ### Optional Libraries (Disabled by Default)
 
@@ -38,8 +39,8 @@ These libraries must be explicitly enabled:
 | Library | Option | Description | Target Alias |
 |---------|--------|-------------|--------------|
 | mimalloc | `MEMORY_ENABLE_MIMALLOC=OFF` | High-performance allocator | `Mimalloc::mimalloc` |
-| Google Test | `QUARISMA_ENABLE_GTEST=OFF` | Testing framework | `Gtest::gtest` |
-| Benchmark | `QUARISMA_ENABLE_BENCHMARK=OFF` | Microbenchmarking | `Benchmark::benchmark` |
+| Google Test | `ENABLE_GTEST=OFF` | Testing framework | `Gtest::gtest` |
+| Benchmark | `ENABLE_BENCHMARK=OFF` | Microbenchmarking | `Benchmark::benchmark` |
 
 ## Dependency Management Pattern
 
@@ -48,18 +49,18 @@ These libraries must be explicitly enabled:
 For mandatory libraries:
 - Always included in the build
 - Always create namespaced third-party aliases (`Xxx::xxx`)
-- Always add `QUARISMA_HAS_XXX` compile definitions
+- Always add `XSIGMA_HAS_XXX` compile definitions
 - Always linked to Core target
 
-### Optional Libraries (controlled by `QUARISMA_ENABLE_XXX`)
+### Optional Libraries (controlled by `XSIGMA_ENABLE_XXX`)
 
-**When `QUARISMA_ENABLE_XXX=ON`:**
+**When `XSIGMA_ENABLE_XXX=ON`:**
 1. Include the library in the build
 2. Create an `Xxx::xxx` target alias
-3. Add `QUARISMA_HAS_XXX` compile definition
+3. Add `XSIGMA_HAS_XXX` compile definition
 4. Link to Core target
 
-**When `QUARISMA_ENABLE_XXX=OFF`:**
+**When `XSIGMA_ENABLE_XXX=OFF`:**
 1. Skip library completely
 2. No target aliases created
 3. No compile definitions added
@@ -85,7 +86,7 @@ Use system-installed libraries instead of bundled submodules:
 
 ```bash
 # Use system-installed libraries
-cmake -B build -S . -DQUARISMA_ENABLE_EXTERNAL=ON
+cmake -B build -S . -DXSIGMA_ENABLE_EXTERNAL=ON
 ```
 
 **Benefits:**
@@ -107,12 +108,12 @@ cmake -B build -S . -DQUARISMA_ENABLE_EXTERNAL=ON
 cmake -B build -S . -DMEMORY_ENABLE_MIMALLOC=ON
 
 # Disable magic_enum
-cmake -B build -S . -DQUARISMA_ENABLE_MAGICENUM=OFF
+cmake -B build -S . -DCORE_ENABLE_MAGICENUM=OFF
 
 # Enable testing and benchmarking
 cmake -B build -S . \
-    -DQUARISMA_ENABLE_GTEST=ON \
-    -DQUARISMA_ENABLE_BENCHMARK=ON
+    -DENABLE_GTEST=ON \
+    -DENABLE_BENCHMARK=ON
 ```
 
 ### Build Configuration for Third-Party Libraries
@@ -121,7 +122,7 @@ Third-party targets are configured to:
 - Suppress warnings (using `-w` or `/w`)
 - Use the same C++ standard as the main project
 - Avoid altering the main project's compiler/linker settings
-- Provide consistent target aliases with the `Quarisma::` prefix
+- Provide consistent target aliases with the `XSigma::` prefix
 
 ## Using Dependencies in Code
 
@@ -130,10 +131,10 @@ Third-party targets are configured to:
 Use compile definitions to conditionally use libraries:
 
 ```cpp
-#include "quarisma_features.h"
+#include "xsigma_features.h"
 
 void example_function() {
-    #ifdef QUARISMA_HAS_FMT
+    #ifdef XSIGMA_HAS_FMT
         // Use fmt library for formatting
         fmt::print("Hello, {}!\n", "World");
     #else
@@ -141,7 +142,7 @@ void example_function() {
         std::cout << "Hello, World!" << std::endl;
     #endif
 
-    #ifdef QUARISMA_HAS_TBB
+    #ifdef XSIGMA_HAS_TBB
         // Use TBB for parallel algorithms
         tbb::parallel_for(/*...*/);
     #else
@@ -149,7 +150,7 @@ void example_function() {
         std::thread t(/*...*/);
     #endif
 
-    #ifdef QUARISMA_HAS_MIMALLOC
+    #ifdef XSIGMA_HAS_MIMALLOC
         // mimalloc is available as drop-in replacement
         // No code changes needed - just link with Mimalloc::mimalloc
     #endif
@@ -158,14 +159,14 @@ void example_function() {
 
 ## CMake Target Usage
 
-### Linking with Quarisma Libraries
+### Linking with XSigma Libraries
 
 ```cmake
 # Your custom target
 add_executable(my_app main.cpp)
 
-# Link with Quarisma Core (always available)
-target_link_libraries(my_app PRIVATE Quarisma::Core)
+# Link with XSigma Core (always available)
+target_link_libraries(my_app PRIVATE XSigma::Core)
 
 # Conditionally link with third-party libraries
 if(TARGET Fmt::fmt)
@@ -191,12 +192,12 @@ If you see warnings about missing third-party libraries:
 
 2. **Use external libraries**:
    ```bash
-   cmake -B build -S . -DQUARISMA_ENABLE_EXTERNAL=ON
+   cmake -B build -S . -DXSIGMA_ENABLE_EXTERNAL=ON
    ```
 
 3. **Disable unused optional features**:
    ```bash
-   cmake -B build -S . -DQUARISMA_ENABLE_MAGICENUM=OFF
+   cmake -B build -S . -DCORE_ENABLE_MAGICENUM=OFF
    ```
 
 ### Build Performance Issues
@@ -205,21 +206,21 @@ For faster builds:
 
 1. **Use external libraries**:
    ```bash
-   cmake -B build -S . -DQUARISMA_ENABLE_EXTERNAL=ON
+   cmake -B build -S . -DXSIGMA_ENABLE_EXTERNAL=ON
    ```
 
 2. **Disable unused features**:
    ```bash
    cmake -B build -S . \
-       -DQUARISMA_ENABLE_BENCHMARK=OFF \
-       -DQUARISMA_ENABLE_GTEST=OFF
+       -DENABLE_BENCHMARK=OFF \
+       -DENABLE_GTEST=OFF
    ```
 
 ## Notes
 
-- When `QUARISMA_ENABLE_EXTERNAL=ON`, system-installed libraries are preferred over bundled submodules
+- When `XSIGMA_ENABLE_EXTERNAL=ON`, system-installed libraries are preferred over bundled submodules
 - Some libraries may require additional system packages; consult their upstream documentation if `find_package()` fails
-- All third-party libraries use the `Quarisma::` namespace prefix for consistency
+- All third-party libraries use the `XSigma::` namespace prefix for consistency
 
 ## Related Documentation
 

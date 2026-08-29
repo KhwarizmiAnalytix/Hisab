@@ -36,13 +36,19 @@ echo "Using $FMT"
 if [[ "${1:-}" == "--all" ]]; then
   # Find all C++ headers/sources: .cpp, .hxx, .h (exclude vendor/build and VCS dirs)
   echo "Scanning for .cpp, .hxx, .h files under $REPO_ROOT ..."
-  mapfile -d '' FILES < <(find "$REPO_ROOT" \
+  FILES=()
+  while IFS= read -r -d '' file; do
+    FILES+=("$file")
+  done < <(find "$REPO_ROOT" \
     -type d \( -name .git -o -name .vscode -o -name .augment -o -name ThirdParty -o -name venv -o -name build -o -name 'build_*' -o -name dist \) -prune -false -o \
     -type f \( -name "*.cpp" -o -name "*.hxx" -o -name "*.h" \) -print0)
 else
   # Only format files changed relative to HEAD (staged + unstaged)
   echo "Formatting only changed files (use --all to format everything) ..."
-  mapfile -t CHANGED < <(git -C "$REPO_ROOT" diff --name-only HEAD 2>/dev/null; git -C "$REPO_ROOT" diff --name-only 2>/dev/null; git -C "$REPO_ROOT" ls-files --others --exclude-standard 2>/dev/null)
+  CHANGED=()
+  while IFS= read -r line; do
+    CHANGED+=("$line")
+  done < <(git -C "$REPO_ROOT" diff --name-only HEAD 2>/dev/null; git -C "$REPO_ROOT" diff --name-only 2>/dev/null; git -C "$REPO_ROOT" ls-files --others --exclude-standard 2>/dev/null)
   # Deduplicate, filter extensions, make absolute paths, check existence
   declare -A SEEN
   FILES=()

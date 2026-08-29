@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #pragma once
@@ -28,7 +28,7 @@
 
 namespace vectorization
 {
-template <typename value_t, bool clone>
+template <typename value_t>
 class tensor;
 
 template <typename LHS, bool vectorize, bool aligned>
@@ -76,7 +76,8 @@ public:
     // matching evaluate(expr, index) call instead of being buried inside it, so hot loops
     // control prefetch distance explicitly (see expressions_evaluator.h). Mirrors evaluate()'s
     // dispatch so every leaf of a composite expression tree still gets prefetched.
-    VECTORIZATION_FUNCTION_ATTRIBUTE static void prefetch(rmv_lhs const& expr, size_t index) noexcept
+    VECTORIZATION_FUNCTION_ATTRIBUTE static void prefetch(
+        rmv_lhs const& expr, size_t index) noexcept
     {
         if constexpr (vectorization::is_base_expression<rmv_lhs>::value)
         {

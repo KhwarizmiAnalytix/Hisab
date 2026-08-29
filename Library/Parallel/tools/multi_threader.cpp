@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Computational Library
+ * XSigma: High-Performance Computational Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  *
  * Portions of this code are based on VTK (Visualization Toolkit):
 
@@ -153,11 +153,11 @@ multi_threader::multi_threader()
 {
     for (int i = 0; i < PARALLEL_MAX_THREADS; i++)
     {
-        thread_info_array_[i].thread_id         = i;
-        thread_info_array_[i].active_flag       = nullptr;
-        thread_info_array_[i].active_flag_lock  = nullptr;
-        multiple_method_[i]                     = nullptr;
-        spawned_thread_active_flag_[i]          = 0;
+        thread_info_array_[i].thread_id        = i;
+        thread_info_array_[i].active_flag      = nullptr;
+        thread_info_array_[i].active_flag_lock = nullptr;
+        multiple_method_[i]                    = nullptr;
+        spawned_thread_active_flag_[i]         = 0;
         // Allocated eagerly (rather than lazily in spawn_thread()) so that
         // slot reuse never races two threads creating the same mutex.
         spawned_thread_active_flag_lock_[i]     = std::make_unique<std::mutex>();

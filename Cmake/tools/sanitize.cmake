@@ -1,5 +1,5 @@
 # =============================================================================
-# Quarisma
+# XSigma
 # Sanitizer Configuration Module
 #
 # Configures per-module compiler sanitizers for runtime error detection. Supports AddressSanitizer,
@@ -11,15 +11,15 @@
 # option(XXX_ENABLE_SANITIZER "..." OFF) set(XXX_SANITIZER_TYPE "address" CACHE STRING "...")
 # set_property(CACHE XXX_SANITIZER_TYPE PROPERTY STRINGS address undefined thread memory leak)
 # mark_as_advanced(XXX_ENABLE_SANITIZER XXX_SANITIZER_TYPE) ... include(sanitize)
-# quarisma_configure_sanitizer(XXX)
+# xsigma_configure_sanitizer(XXX)
 
 include_guard(GLOBAL)
 
-# quarisma_configure_sanitizer(module_name)
+# xsigma_configure_sanitizer(module_name)
 #
 # Applies sanitizer flags for the given module using that module's XXX_ENABLE_SANITIZER and
 # XXX_SANITIZER_TYPE cache variables. Adding or removing a module requires no change to this file.
-function(quarisma_configure_sanitizer module_name)
+function(xsigma_configure_sanitizer module_name)
   # Compiler check
   set(_is_clang FALSE)
   set(_is_gnu FALSE)
@@ -55,16 +55,18 @@ function(quarisma_configure_sanitizer module_name)
 
   if(_is_clang)
     # Generate the suppression list once (idempotent across multiple module calls)
-    if(NOT _quarisma_sanitizer_blacklist_configured)
+    if(NOT _xsigma_sanitizer_blacklist_configured)
       configure_file(
         "${PROJECT_SOURCE_DIR}/Scripts/suppressions/sanitizer_ignore.txt.in"
         "${PROJECT_BINARY_DIR}/sanitizer_ignore.txt" @ONLY
       )
-      set(_quarisma_sanitizer_blacklist_configured TRUE
+      set(_xsigma_sanitizer_blacklist_configured TRUE
           CACHE INTERNAL "Sanitizer blacklist already configured"
       )
     endif()
-    list(APPEND _san_compile_flags "-fsanitize-blacklist=${PROJECT_BINARY_DIR}/sanitizer_ignore.txt")
+    list(APPEND _san_compile_flags
+         "-fsanitize-blacklist=${PROJECT_BINARY_DIR}/sanitizer_ignore.txt"
+    )
   endif()
 
   list(JOIN _san_compile_flags " " _san_compile_str)
@@ -78,4 +80,22 @@ function(quarisma_configure_sanitizer module_name)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" PARENT_SCOPE)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}" PARENT_SCOPE)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}" PARENT_SCOPE)
+
+  # GTest is configured before library modules. If it was compiled with
+  # -fsanitize, dependents (e.g. ModelsCxxTests) must also link the runtime.
+  if(NOT _xsigma_sanitizer_gtest_link_propagated)
+    foreach(_gtest_tgt IN ITEMS gtest gtest_main GTest::gtest GTest::gtest_main Gtest::gtest
+                                Gtest::gtest_main
+    )
+      if(TARGET ${_gtest_tgt})
+        get_target_property(_gtest_type ${_gtest_tgt} TYPE)
+        if(NOT _gtest_type STREQUAL "INTERFACE_LIBRARY")
+          target_link_options(${_gtest_tgt} INTERFACE "-fsanitize=${_san_type}")
+        endif()
+      endif()
+    endforeach()
+    set(_xsigma_sanitizer_gtest_link_propagated TRUE
+        CACHE INTERNAL "Sanitizer link flags already attached to GTest"
+    )
+  endif()
 endfunction()

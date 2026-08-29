@@ -1,4 +1,4 @@
-# AddressSanitizer Suppressions for Quarisma
+# AddressSanitizer Suppressions for XSigma
 # ===========================================
 # This file contains suppressions for AddressSanitizer to handle known false positives
 # and issues in third-party libraries that cannot be easily fixed.

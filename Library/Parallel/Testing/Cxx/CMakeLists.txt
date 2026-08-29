@@ -2,7 +2,7 @@
 # Parallel Library C++
 # Tests
 # =============================================================================
-quarisma_add_googletest()
+xsigma_add_googletest()
 
 # =============================================================================
 # Test Source Files
@@ -86,7 +86,7 @@ if(PARALLEL_ENABLE_BENCHMARK)
   # --- Google Benchmark setup ---
   if(NOT TARGET benchmark)
     set(_bench_external_found FALSE)
-    if(QUARISMA_ENABLE_EXTERNAL)
+    if(XSIGMA_ENABLE_EXTERNAL)
       find_package(benchmark QUIET)
       if(benchmark_FOUND)
         message(STATUS "Found external Google Benchmark")
@@ -117,7 +117,7 @@ if(PARALLEL_ENABLE_BENCHMARK)
       set(BENCHMARK_USE_BUNDLED_GTEST OFF CACHE BOOL "Don't use bundled gtest for benchmark" FORCE)
       set(BENCHMARK_DOWNLOAD_DEPENDENCIES OFF CACHE BOOL "Don't download dependencies" FORCE)
       add_subdirectory(
-        "${QUARISMA_THIRDPARTY_DIR}/benchmark" "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build"
+        "${XSIGMA_THIRDPARTY_DIR}/benchmark" "${CMAKE_BINARY_DIR}/ThirdParty/benchmark_build"
         EXCLUDE_FROM_ALL
       )
       _set_third_party_folder_properties(

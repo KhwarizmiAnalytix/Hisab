@@ -1,5 +1,5 @@
 # =============================================================================
-# Quarisma Bazel Configuration Settings
+# XSigma Bazel Configuration Settings
 # =============================================================================
 # Config settings for conditional compilation
 # Starlark --define keys mirror CMake cache names: lowercase MODULE_* (e.g. core_enable_mkl,
@@ -12,7 +12,10 @@ load(":vectorization_settings.bzl", "define_vectorization_platform_settings")
 package(default_visibility = ["//visibility:public"])
 
 # Export the helper functions
-exports_files(["quarisma.bzl"])
+exports_files([
+    "xsigma.bzl",
+    "embed_metal_kernel.py",
+])
 
 # =============================================================================
 # Library Type Configuration
@@ -192,7 +195,7 @@ config_setting(
 )
 
 # =============================================================================
-# Enzyme AD (matches CMake CORE_ENABLE_ENZYME / QUARISMA_HAS_ENZYME)
+# Enzyme AD (matches CMake CORE_ENABLE_ENZYME / XSIGMA_HAS_ENZYME)
 # =============================================================================
 
 config_setting(

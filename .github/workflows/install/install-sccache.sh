@@ -1,5 +1,5 @@
 #!/bin/bash
-# Quarisma CI - Sccache Installation Script
+# XSigma CI - Sccache Installation Script
 # This script installs sccache with automatic platform detection
 # Usage: ./install-sccache.sh [VERSION]
 # Example: ./install-sccache.sh 0.7.7

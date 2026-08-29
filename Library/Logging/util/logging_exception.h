@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cstdlib>
 #include <exception>  // for exception
 #include <memory>     // for shared_ptr
 #include <string>     // for string
@@ -249,9 +250,8 @@ private:
         {                                                                               \
             throw logging::exception(loc, msg, logging::exception_category::error_cat); \
         }                                                                               \
-        {                                                                               \
-            LOGGING_LOG_FATAL("Fatal error ({}): {}", #error_cat, msg);                 \
-        }                                                                               \
+        LOGGING_LOG_FATAL("Fatal error ({}): {}", #error_cat, msg);                     \
+        std::abort();                                                                   \
     } while (0)
 
 /**

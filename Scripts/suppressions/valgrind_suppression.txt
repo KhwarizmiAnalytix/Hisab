@@ -1,4 +1,4 @@
-# Valgrind Suppression File for Quarisma Project
+# Valgrind Suppression File for XSigma Project
 # This file contains suppressions for known false positives and third-party library issues
 #
 # Format:
@@ -260,14 +260,14 @@
 }
 
 # ============================================================================
-# Quarisma Specific Suppressions (if needed)
+# XSigma Specific Suppressions (if needed)
 # ============================================================================
 
 # Add project-specific suppressions here as needed
 # Example:
 # {
-#    quarisma_known_issue
+#    xsigma_known_issue
 #    Memcheck:Leak
 #    ...
-#    fun:*quarisma*specific_function*
+#    fun:*xsigma*specific_function*
 # }

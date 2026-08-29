@@ -1,6 +1,6 @@
 """
 This a linter that ensures that jobs that can be triggered by push,
-pull_request, or schedule will check if the repository owner is 'quarisma'.  This
+pull_request, or schedule will check if the repository owner is 'xsigma'.  This
 ensures that forks will not run jobs.
 
 There are some edge cases that might be caught, and this prevents workflows from
@@ -111,10 +111,10 @@ def check_file(filename: str) -> list[LintMessage]:
         else:
             if_statement = str(if_statement)
             valid_checks: list[Callable[[str], bool]] = [
-                lambda x: "github.repository == 'quarisma/quarisma'" in x
-                and "github.event_name != 'schedule' || github.repository == 'quarisma/quarisma'"
+                lambda x: "github.repository == 'xsigma/xsigma'" in x
+                and "github.event_name != 'schedule' || github.repository == 'xsigma/xsigma'"
                 not in x,
-                lambda x: "github.repository_owner == 'quarisma'" in x,
+                lambda x: "github.repository_owner == 'xsigma'" in x,
             ]
             if not any(f(if_statement) for f in valid_checks):
                 bad_jobs[job] = if_statement
@@ -139,7 +139,7 @@ def check_file(filename: str) -> list[LintMessage]:
         if failure_type is None:
             # Just need to add an if statement
             replacement += (
-                f"{line}{re_match.group(1)}  if: github.repository_owner == 'quarisma'\n"
+                f"{line}{re_match.group(1)}  if: github.repository_owner == 'xsigma'\n"
             )
             continue
 
@@ -180,7 +180,7 @@ def check_file(filename: str) -> list[LintMessage]:
 
         if needs_parens:
             internal_statement = f"({internal_statement})"
-        new_line = f"{internal_statement} && github.repository_owner == 'quarisma'"
+        new_line = f"{internal_statement} && github.repository_owner == 'xsigma'"
 
         # I don't actually know if we need the ${{ }} but do it just in case
         new_line = "${{ " + new_line + " }}" + comments
@@ -188,7 +188,7 @@ def check_file(filename: str) -> list[LintMessage]:
         replacement += f"{re_match.group(1)}  if: {new_line}\n"
 
     description = (
-        "Please add checks for if: github.repository_owner == 'quarisma' in the following jobs in this file: "
+        "Please add checks for if: github.repository_owner == 'xsigma' in the following jobs in this file: "
         + ", ".join(job for job in bad_jobs)
     )
 

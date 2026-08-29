@@ -6,7 +6,7 @@ description: "Example description"
 # ✅ Augment Rule: `builder_convention_rule`
 
 **Description**  
-Enforces best practices and conventions for builder classes (`xxx_builder`) to ensure consistency, readability, and correctness within the `quarisma` framework.
+Enforces best practices and conventions for builder classes (`xxx_builder`) to ensure consistency, readability, and correctness within the `xsigma` framework.
 
 ---
 
@@ -41,8 +41,8 @@ Enforces best practices and conventions for builder classes (`xxx_builder`) to e
   💬 _"Each setter method must accept exactly one parameter."_
 
 #### ✔ Return Type
-- **Must** start with `quarisma::`  
-  💬 _"Setter methods must return a type starting with `quarisma::` to support fluent builder chaining."_
+- **Must** start with `xsigma::`  
+  💬 _"Setter methods must return a type starting with `xsigma::` to support fluent builder chaining."_
 
 #### ✔ Comments
 - **Must** include descriptive comments  
@@ -64,6 +64,6 @@ Enforces best practices and conventions for builder classes (`xxx_builder`) to e
 | **`ptr_mutable<xxx>` member**   | Preferred     | Used to hold the object being constructed                     |
 | **Setter method name**          | Must          | Follows `with_<field>` naming                                 |
 | **Setter parameter count**      | Must          | Exactly one parameter                                         |
-| **Setter return type**          | Must          | Starts with `quarisma::`                                        |
+| **Setter return type**          | Must          | Starts with `xsigma::`                                        |
 | **Method comments**             | Must          | Each method must be documented                                |
 | **Class-level comment**         | Must          | Describes the role of the builder                             |

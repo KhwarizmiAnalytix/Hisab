@@ -16,7 +16,7 @@ KINETO_COPTS = [
     # in C++20, causing compilation errors in kineto's usage of fmt
     "-DFMT_USE_CONSTEVAL=0",
 ] + select({
-    "@quarisma//bazel:enable_cuda": ["-DHAS_CUPTI"],
+    "@xsigma//bazel:enable_cuda": ["-DHAS_CUPTI"],
     "//conditions:default": ["-DLIBKINETO_NOCUPTI"],
 }) + select({
     "@platforms//os:windows": [
@@ -76,7 +76,7 @@ cc_library(
         ],
         allow_empty = True,
     ) + select({
-        "@quarisma//bazel:enable_cuda": [
+        "@xsigma//bazel:enable_cuda": [
             # Include CUPTI-specific files when CUDA is enabled. This list mirrors
             # get_libkineto_cupti_srcs() in libkineto/libkineto_defs.bzl exactly (minus
             # Demangle.cpp, always included via the base glob above).
@@ -107,12 +107,15 @@ cc_library(
             "libkineto/src/*.h",
         ],
         allow_empty = True,
-    ) + select({
-        "@quarisma//bazel:enable_cuda": [
-            # CuptiActivity.cpp is included as a header because it's meant to be
-            # #included by CuptiActivityProfiler.cpp (not compiled separately)
-            "libkineto/src/CuptiActivity.cpp",
-        ],
+    ),
+    # CuptiActivity.cpp is #included by CuptiActivityProfiler.cpp, not compiled
+    # as its own TU. textual_hdrs + allow_empty so a missing file does not fail
+    # analysis (older kineto trees omit it).
+    textual_hdrs = select({
+        "@xsigma//bazel:enable_cuda": glob(
+            ["libkineto/src/CuptiActivity.cpp"],
+            allow_empty = True,
+        ),
         "//conditions:default": [],
     }),
     copts = KINETO_COPTS,
@@ -130,7 +133,7 @@ cc_library(
     deps = [
         "@fmt//:fmt",
     ] + select({
-        "@quarisma//bazel:enable_cuda": [
+        "@xsigma//bazel:enable_cuda": [
             "@local_config_cuda//:cupti",
             "@local_config_cuda//:cudart",
         ],

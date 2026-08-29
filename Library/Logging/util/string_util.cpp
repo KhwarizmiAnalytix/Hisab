@@ -3,7 +3,7 @@
  * @brief Implementation of high-performance string utility functions
  *
  * This file contains optimized implementations of string manipulation,
- * conversion, and utility functions for the Quarisma Core library.
+ * conversion, and utility functions for the XSigma Core library.
  *
  * Key design principles:
  * - Performance-first approach for financial computing applications
@@ -11,7 +11,7 @@
  * - Locale-independent behavior for consistent results
  * - Robust error handling with clear failure modes
  *
- * @author Quarisma Development Team
+ * @author XSigma Development Team
  * @version 2.0
  * @date 2024
  */
@@ -19,9 +19,10 @@
 #include "util/string_util.h"
 
 #include <cstdio>   // for snprintf, vsnprintf
-#include <cstdlib>  // for strtod, strtof, abs, strtol
+#include <cstdlib>  // for strtod, strtof, abs, strtol, free
 #include <cstring>  // for strlen, memcpy
-#include <string>   // for char_traits, string, operator<<, allocator, operator==, oper...
+#include <memory>
+#include <string>  // for char_traits, string, operator<<, allocator, operator==, oper...
 #include <string_view>
 
 #include "common/logging_macros.h"   // for LOGGING_UNUSED, LOGGING_HAS_CXA_DEMANGLE
@@ -60,16 +61,16 @@ std::string demangle(const char* name)
 
     std::string ret = name;
 
-#if HAS_DEMANGLE
+#if LOGGING_HAS_CXA_DEMANGLE
     int status = -1;
 
     // Use GCC/Clang ABI demangling function
     // This converts mangled names like "_Z1gv" to readable names like "g()"
     // Reference: https://github.com/gcc-mirror/gcc/blob/master/libstdc%2B%2B-v3/libsupc%2B%2B/cxxabi.h
     // NOTE: __cxa_demangle returns malloc'd memory that must be freed
-    std::unique_ptr<char, std::function<void(char*)>> demangled(
+    std::unique_ptr<char, decltype(&std::free)> demangled(
         abi::__cxa_demangle(name, nullptr, 0, &status),  // NOLINT - C API
-        /*deleter=*/std::free);                          // NOLINT - C API
+        &std::free);
 
     // Demangling may fail for symbols that don't follow the standard C++
     // (Itanium ABI) mangling scheme. Examples include 'main', 'clone', etc.
@@ -78,16 +79,14 @@ std::string demangle(const char* name)
     {
         ret = demangled.get();
     }
-#endif  // HAS_DEMANGLE
+#endif  // LOGGING_HAS_CXA_DEMANGLE
 
     // Clean up common unwanted prefixes and suffixes for better readability
     erase_all_sub_string(ret, CLASS_NAME);  // Remove "class " prefix
     // Collapse nested-template closing brackets ("> > >" -> ">>>"). One pass only
     // merges adjacent pairs, so repeat until a pass makes no more replacements to
     // correctly handle arbitrarily deep nesting.
-    while (replace_all(ret, "> >", ">>") > 0)
-    {
-    }
+    while (replace_all(ret, "> >", ">>") > 0) {}
     erase_all_sub_string(ret, SPACE_LIB1);  // Remove libstdc++ internal namespace
 
     return ret;

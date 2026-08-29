@@ -5,7 +5,7 @@
 
 #include <cstddef>
 
-namespace quarisma
+namespace xsigma
 {
 bool cpu_info::initialize()
 {
@@ -143,4 +143,4 @@ void cpu_info::cpuinfo_cach(
 
     cpuinfo_deinitialize();
 }
-};  // namespace quarisma
+};  // namespace xsigma

@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,12 +13,13 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #include <cmath>
 #include <cstdlib>
+#include <initializer_list>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -59,6 +60,7 @@ void test_tensor()
         EXPECT_EQ(v.stride(0), 1);
         EXPECT_FALSE(v.empty());
         EXPECT_TRUE(v.is_contiguous());
+        EXPECT_EQ(v.contiguous().data(), v.data());
     }
 
     // 1-D linspace
@@ -104,26 +106,40 @@ void test_tensor()
 
     // N-D const ref dims
     {
-        tensor_t nd(dims_t{2, 3, 4});
-        EXPECT_EQ(nd.rank(), 3u);
-        EXPECT_EQ(nd.size(), 24u);
-        EXPECT_EQ(nd.dimension(0), 2u);
-        EXPECT_EQ(nd.dimension(1), 3u);
-        EXPECT_EQ(nd.dimension(2), 4u);
-        EXPECT_EQ(nd.stride(0), 12);
-        EXPECT_EQ(nd.stride(1), 4);
-        EXPECT_EQ(nd.stride(2), 1);
+        tensor_t volume(dims_t{2, 3, 4});
+        EXPECT_EQ(volume.rank(), 3u);
+        EXPECT_EQ(volume.size(), 24u);
+        EXPECT_EQ(volume.dimension(0), 2u);
+        EXPECT_EQ(volume.dimension(1), 3u);
+        EXPECT_EQ(volume.dimension(2), 4u);
+        EXPECT_EQ(volume.stride(0), 12);
+        EXPECT_EQ(volume.stride(1), 4);
+        EXPECT_EQ(volume.stride(2), 1);
+    }
+
+    // Rank > MAX_INLINE_SIZE (5) uses the outline sizes_and_strides path.
+    {
+        tensor_t t6(dims_t{2, 2, 2, 2, 2, 2});
+        EXPECT_EQ(t6.rank(), 6u);
+        EXPECT_EQ(t6.size(), 64u);
+        EXPECT_TRUE(t6.is_contiguous());
+        EXPECT_EQ(t6.stride(5), 1);
+        EXPECT_EQ(t6.stride(0), 32);
+        t6.at(dims_t{1, 1, 1, 1, 1, 1}) = T(9);
+        const T last = static_cast<T>(t6.at(dims_t{1, 1, 1, 1, 1, 1}));
+        EXPECT_EQ(last, T(9));
+        EXPECT_EQ(static_cast<T>(t6[63]), T(9));
     }
 
     // N-D move dims
     {
-        dims_t   d{2, 5};
-        tensor_t nd(std::move(d));
-        EXPECT_EQ(nd.rank(), 2u);
-        EXPECT_EQ(nd.size(), 10u);
+        dims_t   shape{2, 5};
+        tensor_t from_moved_shape(std::move(shape));
+        EXPECT_EQ(from_moved_shape.rank(), 2u);
+        EXPECT_EQ(from_moved_shape.size(), 10u);
     }
 
-    // External data wrap (non-owning, clone=false default)
+    // External data wrap (non-owning borrow)
     {
         std::vector<T> buf(6, T(9));
         tensor_t       ext(buf.data(), dims_t{2, 3});
@@ -133,17 +149,24 @@ void test_tensor()
         EXPECT_EQ(ext.data(), buf.data());
         EXPECT_EQ(static_cast<T>(ext.at(0u, 0u)), T(9));
         EXPECT_EQ(static_cast<T>(ext.at(1u, 2u)), T(9));
+        tensor_t cloned(ext);
+        EXPECT_NE(cloned.data(), ext.data());
+        EXPECT_TRUE(cloned == ext);
+        ext.at(0u, 0u) = T(1);
+        EXPECT_EQ(static_cast<T>(cloned.at(0u, 0u)), T(9));
     }
 
-    // Copy constructor (clone=false: shares data pointer)
+    // Copy constructor: always deep-clones (independent storage)
     {
         tensor_t orig(4u);
         orig = T(7);
         tensor_t cp(orig);
         EXPECT_EQ(cp.size(), orig.size());
         EXPECT_EQ(cp.rank(), orig.rank());
-        EXPECT_EQ(cp.data(), orig.data());
+        EXPECT_NE(cp.data(), orig.data());
         EXPECT_TRUE(cp == orig);
+        orig[0] = T(99);
+        EXPECT_NE(static_cast<T>(cp[0]), T(99));
     }
 
     // Move constructor
@@ -156,14 +179,16 @@ void test_tensor()
         EXPECT_EQ(moved.data(), raw_ptr);
     }
 
-    // Copy assignment (clone=false: redirects pointer, old alloc responsibility stays with source)
+    // Copy assignment: always deep-clones (independent storage)
     {
         tensor_t a(3u), b(3u);
         a = T(1);
         b = T(2);
         a = b;
-        EXPECT_EQ(a.data(), b.data());
+        EXPECT_NE(a.data(), b.data());
         EXPECT_TRUE(a == b);
+        b[0] = T(9);
+        EXPECT_NE(static_cast<T>(a[0]), T(9));
     }
 
     // Move assignment
@@ -257,6 +282,27 @@ void test_tensor()
         // Verify independence: modifying orig doesn't affect dst
         orig[0] = T(99);
         EXPECT_NE(static_cast<T>(dst[0]), T(99));
+
+        tensor_t m(2u, 3u);
+        m            = T(0);
+        m.at(0u, 2u) = T(6);
+        auto packed  = m.t().clone();
+        EXPECT_TRUE(packed.is_contiguous());
+        EXPECT_EQ(packed.dimension(0), 3u);
+        EXPECT_EQ(packed.dimension(1), 2u);
+        EXPECT_EQ(static_cast<T>(packed.at(2u, 0u)), T(6));
+
+        auto cpu = m.t().to_cpu();
+        EXPECT_EQ(cpu.device(), vectorization::device_enum::CPU);
+        EXPECT_TRUE(cpu.is_contiguous());
+        EXPECT_EQ(static_cast<T>(cpu.at(2u, 0u)), T(6));
+        EXPECT_NE(cpu.data(), m.data());
+
+        tensor_t packed_cpu(2u, 3u);
+        packed_cpu = T(4);
+        auto alias = packed_cpu.to_cpu();
+        EXPECT_EQ(alias.data(), packed_cpu.data());
+        EXPECT_TRUE(alias.is_contiguous());
     }
 
     // -----------------------------------------------------------------------
@@ -275,23 +321,25 @@ void test_tensor()
         EXPECT_EQ(tv.stride(1), m.stride(0));
         EXPECT_FALSE(tv.is_contiguous());
         EXPECT_EQ(tv.data(), m.data());
-        // (0,2) in m == (2,0) in tv: access via pointer + stride
-        const T* p = tv.data();
-        EXPECT_EQ(*(p + 2 * tv.stride(0) + 0 * tv.stride(1)), T(6));
+        EXPECT_EQ(tv.at(2u, 0u), T(6));
+        auto packed = tv.contiguous();
+        EXPECT_TRUE(packed.is_contiguous());
+        EXPECT_EQ(packed.at(2u, 0u), T(6));
+        EXPECT_NE(packed.data(), tv.data());
     }
 
     // permute(): reorders axes
     {
-        tensor_t nd(dims_t{2, 3, 4});
-        nd      = T(0);
-        auto pv = nd.permute(dims_t{2, 0, 1});
-        EXPECT_EQ(pv.dimension(0), 4u);
-        EXPECT_EQ(pv.dimension(1), 2u);
-        EXPECT_EQ(pv.dimension(2), 3u);
-        EXPECT_EQ(pv.stride(0), nd.stride(2));
-        EXPECT_EQ(pv.stride(1), nd.stride(0));
-        EXPECT_EQ(pv.stride(2), nd.stride(1));
-        EXPECT_EQ(pv.data(), nd.data());
+        tensor_t volume(dims_t{2, 3, 4});
+        volume          = T(0);
+        auto permuted   = volume.permute(dims_t{2, 0, 1});
+        EXPECT_EQ(permuted.dimension(0), 4u);
+        EXPECT_EQ(permuted.dimension(1), 2u);
+        EXPECT_EQ(permuted.dimension(2), 3u);
+        EXPECT_EQ(permuted.stride(0), volume.stride(2));
+        EXPECT_EQ(permuted.stride(1), volume.stride(0));
+        EXPECT_EQ(permuted.stride(2), volume.stride(1));
+        EXPECT_EQ(permuted.data(), volume.data());
     }
 
     // view(): reinterprets shape with new contiguous strides, shares data
@@ -337,11 +385,183 @@ void test_tensor()
         EXPECT_EQ(*(sl.data() + 0 * sl.stride(0)), T(1));
         EXPECT_EQ(*(sl.data() + 1 * sl.stride(0)), T(4));
         EXPECT_EQ(*(sl.data() + 2 * sl.stride(0)), T(7));
+        EXPECT_EQ(static_cast<T>(sl[0]), T(1));
+        EXPECT_EQ(static_cast<T>(sl[1]), T(4));
+        EXPECT_EQ(static_cast<T>(sl[2]), T(7));
 
         // stop==-1 means to end
         auto sl2 = v.slice(0, 5);
         EXPECT_EQ(sl2.size(), 5u);
         EXPECT_EQ(sl2.data(), v.data() + 5);
+
+        // negative start wraps like Python
+        auto sl3 = v.slice(0, -3);
+        EXPECT_EQ(sl3.size(), 3u);
+        EXPECT_EQ(static_cast<T>(sl3[0]), T(7));
+
+        // empty slice
+        auto sl_empty = v.slice(0, 3, 3);
+        EXPECT_EQ(sl_empty.size(), 0u);
+        EXPECT_TRUE(sl_empty.empty());
+    }
+
+    // 2-D slice: size() is numel, at() uses strides
+    {
+        tensor_t m(4u, 5u);
+        for (size_t i = 0; i < 4; ++i)
+            for (size_t j = 0; j < 5; ++j)
+                m.at(i, j) = static_cast<T>(i * 10 + j);
+        auto sl = m.slice(0, 1, 3);
+        EXPECT_EQ(sl.dimension(0), 2u);
+        EXPECT_EQ(sl.dimension(1), 5u);
+        EXPECT_EQ(sl.size(), 10u);
+        EXPECT_EQ(static_cast<T>(sl.at(0u, 0u)), T(10));
+        EXPECT_EQ(static_cast<T>(sl.at(1u, 4u)), T(24));
+    }
+
+    // -----------------------------------------------------------------------
+    // sizes_and_strides: scalar at()/[] use strides; expressions do not
+    // -----------------------------------------------------------------------
+
+    // t(): every at(i, j) of the view is original at(j, i); storage is shared.
+    {
+        tensor_t m(2u, 3u);
+        for (size_t i = 0; i < 2; ++i)
+        {
+            for (size_t j = 0; j < 3; ++j)
+            {
+                m.at(i, j) = static_cast<T>(10 * i + j);
+            }
+        }
+        auto tv = m.t();
+        EXPECT_EQ(tv.rank(), 2u);
+        EXPECT_EQ(tv.size(), m.size());
+        EXPECT_EQ(tv.data(), m.data());
+        EXPECT_FALSE(tv.is_contiguous());
+        EXPECT_EQ(tv.stride(0), 1);
+        EXPECT_EQ(tv.stride(1), 3);
+        auto const tv_strides = tv.strides();
+        EXPECT_EQ(tv_strides.size(), 2u);
+        EXPECT_EQ(tv_strides[0], 1);
+        EXPECT_EQ(tv_strides[1], 3);
+        for (size_t i = 0; i < 3; ++i)
+        {
+            for (size_t j = 0; j < 2; ++j)
+            {
+                EXPECT_EQ(static_cast<T>(tv.at(i, j)), static_cast<T>(m.at(j, i)))
+                    << "t() at(" << i << "," << j << ")";
+            }
+        }
+        // operator[] walks C-order of the *view* shape through logical_offset.
+        EXPECT_EQ(static_cast<T>(tv[0]), T(0));
+        EXPECT_EQ(static_cast<T>(tv[1]), T(10));
+        EXPECT_EQ(static_cast<T>(tv[2]), T(1));
+        EXPECT_EQ(static_cast<T>(tv[5]), T(12));
+        tv.at(1u, 0u) = T(77);
+        EXPECT_EQ(static_cast<T>(m.at(0u, 1u)), T(77));
+    }
+
+    // permute(): N-D at(dims) follows the remapped axes and strides.
+    {
+        tensor_t volume(dims_t{2, 3, 4});
+        for (size_t i = 0; i < 2; ++i)
+        {
+            for (size_t j = 0; j < 3; ++j)
+            {
+                for (size_t k = 0; k < 4; ++k)
+                {
+                    volume.at(dims_t{i, j, k}) = static_cast<T>(100 * i + 10 * j + k);
+                }
+            }
+        }
+        auto permuted = volume.permute(dims_t{2, 0, 1});
+        EXPECT_EQ(permuted.data(), volume.data());
+        EXPECT_FALSE(permuted.is_contiguous());
+        EXPECT_EQ(permuted.stride(0), volume.stride(2));
+        EXPECT_EQ(permuted.stride(1), volume.stride(0));
+        EXPECT_EQ(permuted.stride(2), volume.stride(1));
+        for (size_t i = 0; i < 2; ++i)
+        {
+            for (size_t j = 0; j < 3; ++j)
+            {
+                for (size_t k = 0; k < 4; ++k)
+                {
+                    const T got      = static_cast<T>(permuted.at(dims_t{k, i, j}));
+                    const T expected = static_cast<T>(volume.at(dims_t{i, j, k}));
+                    EXPECT_EQ(got, expected);
+                }
+            }
+        }
+    }
+
+    // Column slice: dim-1 size shrinks, its stride is multiplied by step.
+    {
+        tensor_t m(3u, 5u);
+        for (size_t i = 0; i < 3; ++i)
+        {
+            for (size_t j = 0; j < 5; ++j)
+            {
+                m.at(i, j) = static_cast<T>(10 * i + j);
+            }
+        }
+        auto cols = m.slice(1, 1, 5, 2);
+        EXPECT_EQ(cols.dimension(0), 3u);
+        EXPECT_EQ(cols.dimension(1), 2u);
+        EXPECT_EQ(cols.size(), 6u);
+        EXPECT_EQ(cols.stride(0), m.stride(0));
+        EXPECT_EQ(cols.stride(1), m.stride(1) * 2);
+        EXPECT_FALSE(cols.is_contiguous());
+        EXPECT_EQ(static_cast<T>(cols.at(0u, 0u)), T(1));
+        EXPECT_EQ(static_cast<T>(cols.at(0u, 1u)), T(3));
+        EXPECT_EQ(static_cast<T>(cols.at(2u, 0u)), T(21));
+        EXPECT_EQ(static_cast<T>(cols.at(2u, 1u)), T(23));
+        EXPECT_EQ(static_cast<T>(cols[0]), T(1));
+        EXPECT_EQ(static_cast<T>(cols[1]), T(3));
+        EXPECT_EQ(static_cast<T>(cols[2]), T(11));
+    }
+
+    // Expressions load packed contiguous memory; a strided view must be packed first.
+    {
+        tensor_t m(2u, 3u);
+        for (size_t i = 0; i < 2; ++i)
+        {
+            for (size_t j = 0; j < 3; ++j)
+            {
+                m.at(i, j) = static_cast<T>(i + j);
+            }
+        }
+        auto packed = m.t().contiguous();
+        EXPECT_TRUE(packed.is_contiguous());
+        EXPECT_EQ(packed.stride(0), 2);
+        EXPECT_EQ(packed.stride(1), 1);
+        EXPECT_EQ(static_cast<T>(packed.at(2u, 1u)), static_cast<T>(m.at(1u, 2u)));
+
+        tensor_t ones = packed.clone();
+        ones          = T(1);
+        // Expression ctor is 1-D (expr.size() only); assign into a shaped clone.
+        tensor_t sum = packed.clone();
+        sum          = packed + ones;
+        EXPECT_TRUE(sum.is_contiguous());
+        EXPECT_EQ(sum.rank(), packed.rank());
+        EXPECT_EQ(sum.size(), packed.size());
+        for (size_t i = 0; i < 3; ++i)
+        {
+            for (size_t j = 0; j < 2; ++j)
+            {
+                EXPECT_NEAR(
+                    static_cast<T>(sum.at(i, j)), static_cast<T>(packed.at(i, j)) + T(1), eps);
+            }
+        }
+    }
+
+    // linspace n==1; empty 2-D initializer
+    {
+        tensor_t one(T(4), T(9), 1u);
+        EXPECT_EQ(one.size(), 1u);
+        EXPECT_NEAR(static_cast<T>(one[0]), T(4), eps);
+
+        tensor_t z(std::initializer_list<std::initializer_list<T>>{});
+        EXPECT_TRUE(z.empty());
     }
 
     // -----------------------------------------------------------------------
@@ -412,15 +632,24 @@ void test_tensor()
         a = T(3);
         b = T(2);
 
+        auto e = a + b;
+        EXPECT_EQ(e.lhs().data(), a.data());
+        EXPECT_EQ(e.rhs().data(), b.data());
+        EXPECT_EQ(e.size(), a.size());
+
         // Expression construction
         tensor_t c = a + b;
         EXPECT_EQ(c.size(), 4u);
         EXPECT_NEAR(static_cast<T>(c[0]), T(5), eps);
 
         // Scalar assignment via expression
-        tensor_t d(4u);
-        d = a + b;
-        EXPECT_NEAR(static_cast<T>(d[0]), T(5), eps);
+        tensor_t sum(4u);
+        sum = a + b;
+        EXPECT_NEAR(static_cast<T>(sum[0]), T(5), eps);
+
+        tensor_t acc = a.clone();
+        acc          = acc + b;
+        EXPECT_NEAR(static_cast<T>(acc[0]), T(5), eps);
 
         // Unary expression
         tensor_t ex = exp(a);

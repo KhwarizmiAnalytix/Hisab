@@ -7,7 +7,7 @@
 #include "common/macros.h"
 #include "util/core_exception.h"
 
-namespace quarisma
+namespace xsigma
 {
 
 /// MaybeOwnedTraits<T> describes how to borrow from T.  Here is how we
@@ -95,7 +95,7 @@ public:
     // with MaybeOwned<T>::borrowed(*rhs) if you wanted it.)
     MaybeOwned(const MaybeOwned& rhs) : isBorrowed_(rhs.isBorrowed_)
     {
-        if QUARISMA_LIKELY (rhs.isBorrowed_)
+        if XSIGMA_LIKELY (rhs.isBorrowed_)
         {
             MaybeOwnedTraits<T>::assignBorrow(borrow_, rhs.borrow_);
         }
@@ -111,7 +111,7 @@ public:
         {
             return *this;
         }
-        if QUARISMA_UNLIKELY (!isBorrowed_)
+        if XSIGMA_UNLIKELY (!isBorrowed_)
         {
             if (rhs.isBorrowed_)
             {
@@ -126,7 +126,7 @@ public:
         }
         else
         {
-            if QUARISMA_LIKELY (rhs.isBorrowed_)
+            if XSIGMA_LIKELY (rhs.isBorrowed_)
             {
                 MaybeOwnedTraits<T>::assignBorrow(borrow_, rhs.borrow_);
             }
@@ -137,7 +137,7 @@ public:
                 isBorrowed_ = false;
             }
         }
-        QUARISMA_CHECK_DEBUG(isBorrowed_ == rhs.isBorrowed_);
+        XSIGMA_CHECK_DEBUG(isBorrowed_ == rhs.isBorrowed_);
         return *this;
     }
 
@@ -146,7 +146,7 @@ public:
         std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_assignable_v<borrow_type>)
         : isBorrowed_(rhs.isBorrowed_)
     {
-        if QUARISMA_LIKELY (rhs.isBorrowed_)
+        if XSIGMA_LIKELY (rhs.isBorrowed_)
         {
             MaybeOwnedTraits<T>::assignBorrow(borrow_, rhs.borrow_);
         }
@@ -166,7 +166,7 @@ public:
         {
             return *this;
         }
-        if QUARISMA_UNLIKELY (!isBorrowed_)
+        if XSIGMA_UNLIKELY (!isBorrowed_)
         {
             if (rhs.isBorrowed_)
             {
@@ -181,7 +181,7 @@ public:
         }
         else
         {
-            if QUARISMA_LIKELY (rhs.isBorrowed_)
+            if XSIGMA_LIKELY (rhs.isBorrowed_)
             {
                 MaybeOwnedTraits<T>::assignBorrow(borrow_, rhs.borrow_);
             }
@@ -212,7 +212,7 @@ public:
         // NOLINTNEXTLINE(*-noexcept-destructor)
         std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<borrow_type>)
     {
-        if QUARISMA_UNLIKELY (!isBorrowed_)
+        if XSIGMA_UNLIKELY (!isBorrowed_)
         {
             own_.~T();
         }
@@ -231,7 +231,7 @@ public:
     {
         if (isBorrowed_)
         {
-            QUARISMA_CHECK_DEBUG(MaybeOwnedTraits<T>::debugBorrowIsValid(borrow_));
+            XSIGMA_CHECK_DEBUG(MaybeOwnedTraits<T>::debugBorrowIsValid(borrow_));
         }
         return (isBorrowed_) ? MaybeOwnedTraits<T>::referenceFromBorrow(borrow_) : own_;
     }
@@ -240,7 +240,7 @@ public:
     {
         if (isBorrowed_)
         {
-            QUARISMA_CHECK_DEBUG(MaybeOwnedTraits<T>::debugBorrowIsValid(borrow_));
+            XSIGMA_CHECK_DEBUG(MaybeOwnedTraits<T>::debugBorrowIsValid(borrow_));
         }
         return (isBorrowed_) ? MaybeOwnedTraits<T>::pointerFromBorrow(borrow_) : &own_;
     }
@@ -253,7 +253,7 @@ public:
     {
         if (isBorrowed_)
         {
-            QUARISMA_CHECK_DEBUG(MaybeOwnedTraits<T>::debugBorrowIsValid(borrow_));
+            XSIGMA_CHECK_DEBUG(MaybeOwnedTraits<T>::debugBorrowIsValid(borrow_));
             return MaybeOwnedTraits<T>::referenceFromBorrow(borrow_);
         }
         else
@@ -263,4 +263,4 @@ public:
     }
 };
 
-}  // namespace quarisma
+}  // namespace xsigma

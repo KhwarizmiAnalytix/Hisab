@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <mutex>
 #include <stdexcept>
 #include <utility>
 
@@ -393,7 +394,20 @@ struct ProfilerStateInfo
     std::shared_ptr<KinetoThreadLocalState>   state_ptr;
     std::unordered_set<profiler::RecordScope> scopes;
 };
+std::mutex                         profiler_state_info_mutex;
 std::shared_ptr<ProfilerStateInfo> profiler_state_info_ptr{nullptr};
+
+std::shared_ptr<ProfilerStateInfo> load_profiler_state_info()
+{
+    std::lock_guard<std::mutex> const lock(profiler_state_info_mutex);
+    return profiler_state_info_ptr;
+}
+
+void store_profiler_state_info(std::shared_ptr<ProfilerStateInfo> state_info)
+{
+    std::lock_guard<std::mutex> const lock(profiler_state_info_mutex);
+    profiler_state_info_ptr = std::move(state_info);
+}
 
 }  // namespace
 
@@ -442,12 +456,7 @@ void prepareProfiler(
     // "Supported only in Kineto profiler");
 
     profiler::profiler_impl::impl::kineto::prepareTrace(
-        /*cpuOnly=*/!(profiler::hasGPU()  //|| profiler::hasXPU() || profiler::hasMTIA() ||
-                      //profiler::get_privateuse1_backend() != "privateuseone"
-                      ),
-        activities,
-        config.experimental_config,
-        config.trace_id);
+        /*cpuOnly=*/!(profiler::hasGPU()), activities, config.experimental_config, config.trace_id);
 
     if (!config.experimental_config.performance_events.empty())
     {
@@ -491,7 +500,12 @@ static void toggleFunctionOpCollectionDynamic(bool enable)
         const auto& config = state_ptr->config();
         if (enable)
         {
-            auto scopes = profiler_state_info_ptr->scopes;
+            auto state_info = load_profiler_state_info();
+            if (state_info == nullptr)
+            {
+                return;
+            }
+            auto scopes = state_info->scopes;
             config.global() ? pushProfilingCallbacks</*global=*/true>(scopes)
                             : pushProfilingCallbacks</*global=*/false>(scopes);
         }
@@ -535,27 +549,11 @@ static void toggleCPUCollectionDynamic(bool enable)
 void toggleCollectionDynamic(
     const bool enable, const std::set<profiler::profiler_impl::impl::ActivityType>& activities)
 {
-    /*if (activities.contains(profiler::profiler_impl::ActivityType::CPU) &&
-        (!activities.contains(profiler::profiler_impl::ActivityType::CUDA) ||
-         !activities.contains(profiler::profiler_impl::ActivityType::XPU)))
-    {
-        //LOG(WARNING)
-        //<< "Toggling CPU activity with GPU activity on may result in traces with GPU events on "
-        //  "artibrary tracks";
-    }
-    else if (
-        (activities.contains(profiler::profiler_impl::ActivityType::CUDA) ||
-         activities.contains(profiler::profiler_impl::ActivityType::XPU)) &&
-        !activities.contains(profiler::profiler_impl::ActivityType::CPU))
-    {
-        //LOG(WARNING)
-        //<< "Toggling GPU activity with CPU activity on may result in traces with incorrect "
-        //   "correlation between CPU and GPU events";
-    }*/
     for (auto act : activities)
     {
         if (act == profiler::profiler_impl::ActivityType::CUDA ||
-            act == profiler::profiler_impl::ActivityType::XPU)
+            act == profiler::profiler_impl::ActivityType::HIP ||
+            act == profiler::profiler_impl::ActivityType::Metal)
         {
             profiler::profiler_impl::impl::kineto::toggleCollectionDynamic(enable);
         }
@@ -598,7 +596,10 @@ void enableProfiler(
     }
     if (config.state == ProfilerState::PRIVATEUSE1)
     {
-        profiler::profiler_impl::impl::pushPRIVATEUSE1CallbacksStub(config, scopes);
+        if (profiler::profiler_impl::impl::pushPRIVATEUSE1CallbacksStub)
+        {
+            profiler::profiler_impl::impl::pushPRIVATEUSE1CallbacksStub(config, scopes);
+        }
         return;
     }
 
@@ -628,22 +629,22 @@ void enableProfiler(
         auto state_info_ptr       = std::make_shared<ProfilerStateInfo>();
         state_info_ptr->state_ptr = state_ptr;
         state_info_ptr->scopes    = scopes;
-        profiler_state_info_ptr   = state_info_ptr;
+        store_profiler_state_info(std::move(state_info_ptr));
     }
 }
 
 bool isProfilerEnabledInMainThread()
 {
-    return profiler_state_info_ptr != nullptr;
+    return load_profiler_state_info() != nullptr;
 }
 
 void enableProfilerInChildThread()
 {
-    auto state_info_ptr = profiler_state_info_ptr;
-    // PROFILER_CHECK(state_info_ptr, "Profiler is not enabled in main thread.");
-    // PROFILER_CHECK(
-    // KinetoThreadLocalState::get(/*global=*/false) == nullptr,
-    // "Profiler is already enabled in this thread.");
+    auto state_info_ptr = load_profiler_state_info();
+    if (state_info_ptr == nullptr || state_info_ptr->state_ptr == nullptr)
+    {
+        return;
+    }
 
     KinetoThreadLocalState::push(state_info_ptr->state_ptr);
     pushProfilingCallbacks</*global=*/false>(state_info_ptr->scopes);
@@ -652,25 +653,24 @@ void enableProfilerInChildThread()
 void disableProfilerInChildThread()
 {
     auto state_ptr = ProfilerStateBase::pop();
-    // PROFILER_CHECK(state_ptr, "Can't disable Kineto profiler when it's not running in this thread");
+    if (state_ptr == nullptr)
+    {
+        return;
+    }
     state_ptr->removeCallback();
 }
 
 std::unique_ptr<ProfilerResult> disableProfiler()
 {
     // releasing to inform child threads to stop profiling
-    profiler_state_info_ptr = nullptr;
+    store_profiler_state_info(nullptr);
 
-    auto        state_ptr = ProfilerStateBase::pop();
-    const auto& config    = state_ptr->config();
-    // PROFILER_CHECK(
-    // state_ptr && (config.state == ProfilerState::KINETO ||
-    // config.state == ProfilerState::KINETO_GPU_FALLBACK ||
-    // config.state == ProfilerState::KINETO_PRIVATEUSE1_FALLBACK ||
-    // config.state == ProfilerState::KINETO_ONDEMAND ||
-    // config.state == ProfilerState::NVTX || config.state == ProfilerState::ITT ||
-    // config.state == ProfilerState::PRIVATEUSE1),
-    // "Can't disable Kineto profiler when it's not running");
+    auto state_ptr = ProfilerStateBase::pop();
+    if (state_ptr == nullptr)
+    {
+        return std::make_unique<ProfilerResult>();
+    }
+    const auto& config = state_ptr->config();
 
     state_ptr->removeCallback();
 
@@ -704,6 +704,10 @@ std::unique_ptr<ProfilerResult> disableProfiler()
             std::move(kineto_state_ptr->eventTree));
     }
 
+    if (result == nullptr)
+    {
+        result = std::make_unique<ProfilerResult>();
+    }
     return result;
 }
 namespace tracer = profiler::profiler_impl::impl::python_tracer;
@@ -913,9 +917,14 @@ ProfilerResult::ProfilerResult(
 ProfilerResult::ProfilerResult()  = default;
 ProfilerResult::~ProfilerResult() = default;
 
-void ProfilerResult::save(const std::string& path)
+bool ProfilerResult::save(const std::string& path)
 {
+    if (trace_ == nullptr)
+    {
+        return false;
+    }
     trace_->save(path);
+    return static_cast<bool>(*trace_);
 }
 
 }  // namespace profiler_impl

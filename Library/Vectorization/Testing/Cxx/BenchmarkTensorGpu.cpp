@@ -1,5 +1,5 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
@@ -106,14 +106,14 @@ namespace
 using namespace vectorization;
 
 #if VECTORIZATION_HAS_CUDA
-constexpr device_enum kActiveGpuDevice   = device_enum::CUDA;
-constexpr bool         kMetalOnlyBackend = false;
+constexpr device_enum kActiveGpuDevice  = device_enum::CUDA;
+constexpr bool        kMetalOnlyBackend = false;
 #elif VECTORIZATION_HAS_HIP
-constexpr device_enum kActiveGpuDevice   = device_enum::HIP;
-constexpr bool         kMetalOnlyBackend = false;
+constexpr device_enum kActiveGpuDevice  = device_enum::HIP;
+constexpr bool        kMetalOnlyBackend = false;
 #elif VECTORIZATION_HAS_METAL
-constexpr device_enum kActiveGpuDevice   = device_enum::METAL;
-constexpr bool         kMetalOnlyBackend = true;
+constexpr device_enum kActiveGpuDevice  = device_enum::METAL;
+constexpr bool        kMetalOnlyBackend = true;
 #endif
 
 template <typename T>
@@ -458,9 +458,8 @@ BENCHMARK_TEMPLATE(LibTorch_MPS_TensorAllocFree, float) BENCH_SIZES;
 //
 // CPU: vectorization::accumulate(a + b * sin(x)) — a single host loop, no
 // device dispatch at all.
-// GPU: three chained elementwise kernels (mul, sin's unary, add — matching
-// the same expression tree run_metal/run_gpu would lower) followed by one
-// single-threadgroup reduction kernel (reduce_sum_float — see kernels.metal;
+// GPU: one fused elementwise kernel (the same `a + b * sin(x)` tree) followed by
+// one single-threadgroup reduction kernel (reduce_sum_float — see kernels.metal;
 // Metal only, CUDA/HIP have no reduction path at all, see the file header).
 // ---------------------------------------------------------------------------
 constexpr size_t kSumN = 512;
@@ -508,8 +507,7 @@ static void GPU_SumAddMulSin_Metal(benchmark::State& state)
 
     for (auto _ : state)
     {
-        // Same expression tree as the CPU path — run_metal lowers this into
-        // sin -> mul -> add kernel dispatches (see expressions_evaluator_metal.h).
+        // Same expression tree as the CPU path — run_metal emits one fused MSL kernel.
         c         = a + b * ::sin(x);
         float sum = vectorization::metal_backend::reduce_sum(c.data(), kSumN);
         benchmark::DoNotOptimize(sum);

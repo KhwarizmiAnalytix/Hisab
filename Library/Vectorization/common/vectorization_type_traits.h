@@ -1,9 +1,9 @@
 /*
- * Quarisma: High-Performance Quantitative Library
+ * XSigma: High-Performance Quantitative Library
  *
  * SPDX-License-Identifier: GPL-3.0-or-later OR Commercial
  *
- * This file is part of Quarisma and is licensed under a dual-license model:
+ * This file is part of XSigma and is licensed under a dual-license model:
  *
  *   - Open-source License (GPLv3):
  *       Free for personal, academic, and research use under the terms of
@@ -13,8 +13,8 @@
  *       A commercial license is required for proprietary, closed-source,
  *       or SaaS usage. Contact us to obtain a commercial agreement.
  *
- * Contact: licensing@quarisma.co.uk
- * Website: https://www.quarisma.co.uk
+ * Contact: licensing@xsigma.co.uk
+ * Website: https://www.xsigma.co.uk
  */
 
 #pragma once
@@ -22,8 +22,15 @@
 #include <array>
 #include <cstdint>
 #include <type_traits>
+#include <utility>
 
 #include "backend/simd.h"
+
+namespace memory
+{
+template <typename value_t>
+struct data_view;
+}
 
 // ---------------------------------------------------------------------------
 // is_packet
@@ -99,6 +106,69 @@ struct remove_cvref
 
 template <typename T>
 using remove_cvref_t = typename remove_cvref<T>::type;
+
+#if __cplusplus >= 202002L
+#define VECTORIZATION_EXPR_HAS_MHS(e) (requires { (e).mhs(); })
+#define VECTORIZATION_EXPR_HAS_LHS(e) (requires { (e).lhs(); })
+#define VECTORIZATION_EXPR_HAS_RHS(e) (requires { (e).rhs(); })
+#define VECTORIZATION_EXPR_HAS_RECORD_STREAM(e, s) (requires { (e).record_stream(s); })
+#else
+// C++17 detection for expression operand accessors (C++20 `requires` equivalent).
+template <typename T, typename = void>
+struct has_mhs : std::false_type
+{
+};
+
+template <typename T>
+struct has_mhs<T, std::void_t<decltype(std::declval<T const&>().mhs())>> : std::true_type
+{
+};
+
+template <typename T, typename = void>
+struct has_lhs : std::false_type
+{
+};
+
+template <typename T>
+struct has_lhs<T, std::void_t<decltype(std::declval<T const&>().lhs())>> : std::true_type
+{
+};
+
+template <typename T, typename = void>
+struct has_rhs : std::false_type
+{
+};
+
+template <typename T>
+struct has_rhs<T, std::void_t<decltype(std::declval<T const&>().rhs())>> : std::true_type
+{
+};
+
+template <typename T, typename Stream, typename = void>
+struct has_record_stream : std::false_type
+{
+};
+
+template <typename T, typename Stream>
+struct has_record_stream<
+    T,
+    Stream,
+    std::void_t<decltype(std::declval<T const&>().record_stream(std::declval<Stream>()))>>
+    : std::true_type
+{
+};
+
+#define VECTORIZATION_EXPR_HAS_MHS(e) \
+    (::vectorization::has_mhs<::vectorization::remove_cvref_t<decltype(e)>>::value)
+#define VECTORIZATION_EXPR_HAS_LHS(e) \
+    (::vectorization::has_lhs<::vectorization::remove_cvref_t<decltype(e)>>::value)
+#define VECTORIZATION_EXPR_HAS_RHS(e) \
+    (::vectorization::has_rhs<::vectorization::remove_cvref_t<decltype(e)>>::value)
+#define VECTORIZATION_EXPR_HAS_RECORD_STREAM(e, s)    \
+    (::vectorization::has_record_stream<              \
+        ::vectorization::remove_cvref_t<decltype(e)>, \
+        ::vectorization::remove_cvref_t<decltype(s)>>::value)
+#endif
 }  // namespace vectorization
 
 // ---------------------------------------------------------------------------
@@ -126,7 +196,7 @@ struct is_fundamental
 namespace vectorization
 {
 
-template <typename value_t, bool clone = false>
+template <typename value_t>
 class tensor;
 
 // Expression node types
@@ -159,6 +229,24 @@ struct is_base_expression<tensor<value_t>>
     static constexpr bool value = true;
 };
 
+template <typename value_t>
+struct is_base_expression<memory::data_view<value_t>>
+{
+    static constexpr bool value = true;
+};
+
+template <typename T>
+struct is_tensor
+{
+    static constexpr bool value = false;
+};
+
+template <typename value_t>
+struct is_tensor<tensor<value_t>>
+{
+    static constexpr bool value = true;
+};
+
 template <typename T>
 struct is_pure_expression
 {
@@ -182,6 +270,7 @@ struct is_pure_expression<trinary_expression<T1, T2, T3, E>>
 {
     static constexpr bool value = true;
 };
+
 template <typename T>
 struct is_expression
 {
@@ -256,6 +345,12 @@ struct scalar_type<scalar_type_mask_t<float>, T>
 // tensor<value_t> — covers former vector<T> and matrix<T> since they alias tensor
 template <typename value_t, typename T>
 struct scalar_type<tensor<value_t>, T>
+{
+    using value = value_t;
+};
+
+template <typename value_t, typename T>
+struct scalar_type<memory::data_view<value_t>, T>
 {
     using value = value_t;
 };

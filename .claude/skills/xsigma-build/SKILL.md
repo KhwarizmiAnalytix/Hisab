@@ -92,7 +92,7 @@ LTO variants: `--lto.thin` (Clang ThinLTO), `--lto.full`, `--lto.ipo`
 
 ## Logging backend
 
-`--logging=NATIVE|LOGURU|GLOG|SPDLOG` (default `LOGURU`):
+`--logging=NATIVE|LOGURU|GLOG|SPDLOG` (default `SPDLOG`):
 ```
 python3 setup.py config.build.test.ninja.clang --logging=GLOG
 ```
@@ -100,7 +100,7 @@ python3 setup.py config.build.test.ninja.clang --logging=GLOG
 ## Spell check / clang-tidy fix
 
 ```
-python3 setup.py config.build.test.ninja.clang.spell   # WARNING: modifies source files
+python3 setup.py config.build.test.ninja.clang.spell   # check-only; skips ThirdParty
 python3 setup.py config.build.test.ninja.clang.fix     # clang-tidy --fix-errors
 ```
 

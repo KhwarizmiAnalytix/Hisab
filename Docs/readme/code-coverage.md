@@ -1,6 +1,6 @@
 # Code Coverage
 
-Comprehensive guide to the Quarisma coverage subsystem, including instrumentation, report generation, and CI integration across every supported compiler toolchain.
+Comprehensive guide to the XSigma coverage subsystem, including instrumentation, report generation, and CI integration across every supported compiler toolchain.
 
 ## Table of Contents
 - [Overview](#overview)
@@ -15,8 +15,8 @@ Comprehensive guide to the Quarisma coverage subsystem, including instrumentatio
 - [Related Documentation](#related-documentation)
 
 ## Overview
-- The coverage system instruments Quarisma builds, runs registered tests, and produces unified HTML/JSON/LCOV reports with consistent filtering across platforms.
-- Instrumentation is controlled by `QUARISMA_ENABLE_COVERAGE`; when enabled it forces non-optimised compilation, disables LTO, and adds compiler-specific flags (`-fprofile-instr-generate`, `-fcoverage-mapping`, or `--coverage`).
+- The coverage system instruments XSigma builds, runs registered tests, and produces unified HTML/JSON/LCOV reports with consistent filtering across platforms.
+- Instrumentation is controlled by `PROJECT_ENABLE_COVERAGE`; when enabled it forces non-optimised compilation, disables LTO, and adds compiler-specific flags (`-fprofile-instr-generate`, `-fcoverage-mapping`, or `--coverage`).
 - Report generation is orchestrated by `Tools/coverage/run_coverage.py`, which auto-detects the active compiler, discovers test executables, and delegates to compiler-specific drivers.
 - Coverage results feed into `Scripts/setup.py` summary output and optional CI gates alongside other quality signals (sanitizers, static analysis, benchmarks).
 
@@ -33,7 +33,7 @@ All coverage tooling lives under `Tools/coverage/`:
 Coverage is first-class in the build helper (`Scripts/setup.py`) and is enabled by adding the `coverage` token to any command sequence.
 
 ### Behaviour
-- Setting `coverage` flips `QUARISMA_ENABLE_COVERAGE=ON`, disables LTO, enforces a Debug build, and schedules the coverage workflow after the build & test phases.
+- Setting `coverage` flips `PROJECT_ENABLE_COVERAGE=ON`, disables LTO, enforces a Debug build, and schedules the coverage workflow after the build & test phases.
 - Reports are emitted into `<build_dir>/coverage_report/` and summarised in the terminal (including overall percentage buckets).
 - Re-running `python setup.py analyze` regenerates reports from existing coverage data without compiling or testing again.
 
@@ -71,10 +71,10 @@ Coverage is first-class in the build helper (`Scripts/setup.py`) and is enabled 
 
 ## Configuration
 - **CMake options**:
-  - `-DQUARISMA_ENABLE_COVERAGE=ON` (primary toggle); enabling coverage automatically disables LTO (`QUARISMA_ENABLE_LTO=OFF`) to avoid linker conflicts.
+  - `-DPROJECT_ENABLE_COVERAGE=ON` (primary toggle); enabling coverage automatically disables LTO (`PROJECT_ENABLE_LTO=OFF`) to avoid linker conflicts.
 
 - **Filtering**:
-  - Use `--exclude-patterns` CLI flag or `QUARISMA_COVERAGE_EXCLUDE_PATTERNS` CMake option for user-provided exclusions.
+  - Use `--exclude-patterns` CLI flag or `XSIGMA_COVERAGE_EXCLUDE_PATTERNS` CMake option for user-provided exclusions.
   - Modify `CONFIG["exclude_patterns"]` or `CONFIG["llvm_ignore_regex"]` in `Tools/coverage/common.py` to customize default exclusions.
 - **CLI arguments** (`python Tools/coverage/run_coverage.py --help`):
   - `--build` (required): Build directory path
@@ -118,7 +118,7 @@ Open `build_ninja_coverage/coverage_report/html/index.html` in a browser to revi
 
 ### GCC workflow with manual tooling
 ```bash
-cmake -B build_gcc_cov -S . -DCMAKE_BUILD_TYPE=Debug -DQUARISMA_ENABLE_COVERAGE=ON -DBUILD_TESTING=ON
+cmake -B build_gcc_cov -S . -DCMAKE_BUILD_TYPE=Debug -DPROJECT_ENABLE_COVERAGE=ON -DBUILD_TESTING=ON
 cmake --build build_gcc_cov --target all
 ctest --test-dir build_gcc_cov --output-on-failure
 python Tools/coverage/run_coverage.py --build=build_gcc_cov --verbose
@@ -177,7 +177,7 @@ The `--exclude-patterns` flag allows you to exclude specific files or folders fr
 
 **CMake integration:**
 ```bash
-cmake -B build -S . -DQUARISMA_ENABLE_COVERAGE=ON -DQUARISMA_COVERAGE_EXCLUDE_PATTERNS="Test,Benchmark,Generated"
+cmake -B build -S . -DPROJECT_ENABLE_COVERAGE=ON -DXSIGMA_COVERAGE_EXCLUDE_PATTERNS="Test,Benchmark,Generated"
 ```
 
 **Default exclusions (always applied):**

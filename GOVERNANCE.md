@@ -1,6 +1,6 @@
-# Quarisma Project Governance
+# XSigma Project Governance
 
-This document describes the governance model for the Quarisma project, including decision-making processes, roles and responsibilities, and contribution guidelines.
+This document describes the governance model for the XSigma project, including decision-making processes, roles and responsibilities, and contribution guidelines.
 
 ## Table of Contents
 
@@ -15,11 +15,11 @@ This document describes the governance model for the Quarisma project, including
 
 ## Project Overview
 
-Quarisma is an open-source quantitative analysis library designed for high-performance CPU and GPU computing. The project is **owned and maintained by QuarismaAnalyitix** and welcomes contributions from the community.
+XSigma is an open-source quantitative analysis library designed for high-performance CPU and GPU computing. The project is **owned and maintained by XSigmaAnalyitix** and welcomes contributions from the community.
 
 ### Project Authority
 
-**QuarismaAnalyitix retains full ownership and control** of the Quarisma project, including:
+**XSigmaAnalyitix retains full ownership and control** of the XSigma project, including:
 
 - **Final decision authority** on all technical, architectural, and strategic matters
 - **Exclusive control** over the project roadmap and feature priorities
@@ -27,7 +27,7 @@ Quarisma is an open-source quantitative analysis library designed for high-perfo
 - **Ultimate authority** over licensing, governance, and project direction
 - **Right to modify or reject** any contribution for any reason
 
-While community input is valued and considered, **QuarismaAnalyitix maintainers have final authority** over all project decisions.
+While community input is valued and considered, **XSigmaAnalyitix maintainers have final authority** over all project decisions.
 
 ### Project Goals
 
@@ -40,11 +40,11 @@ While community input is valued and considered, **QuarismaAnalyitix maintainers 
 
 ### License
 
-Quarisma is dual-licensed under:
+XSigma is dual-licensed under:
 - **GPL-3.0-or-later** for open-source use
-- **Commercial license** for proprietary use (offered exclusively by QuarismaAnalyitix)
+- **Commercial license** for proprietary use (offered exclusively by XSigmaAnalyitix)
 
-**Contributors grant QuarismaAnalyitix the right** to offer commercial licenses for the combined work without additional permission or compensation.
+**Contributors grant XSigmaAnalyitix the right** to offer commercial licenses for the combined work without additional permission or compensation.
 
 See [LICENSE](LICENSE) and [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
@@ -64,9 +64,9 @@ See [LICENSE](LICENSE) and [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 #### Current Maintainers
 
-**QuarismaAnalyitix organization members** are the current maintainers and have **final decision-making authority** on all project matters.
+**XSigmaAnalyitix organization members** are the current maintainers and have **final decision-making authority** on all project matters.
 
-**Lead Maintainer**: QuarismaAnalyitix (organizational authority)
+**Lead Maintainer**: XSigmaAnalyitix (organizational authority)
 
 #### Maintainer Authority
 
@@ -84,15 +84,15 @@ Maintainers have **sole discretion** over:
 
 #### Becoming a Maintainer
 
-Maintainer status is granted **at the sole discretion of QuarismaAnalyitix**. Criteria include:
+Maintainer status is granted **at the sole discretion of XSigmaAnalyitix**. Criteria include:
 
 - Demonstrate sustained, high-quality contributions over time (typically 12+ months)
 - Show deep understanding of the codebase and project goals
 - Exhibit good judgment in code reviews and technical discussions
-- Align with QuarismaAnalyitix's vision and business objectives
-- Be nominated by an existing maintainer and approved by QuarismaAnalyitix leadership
+- Align with XSigmaAnalyitix's vision and business objectives
+- Be nominated by an existing maintainer and approved by XSigmaAnalyitix leadership
 
-**Note**: Maintainer status is a privilege, not a right, and can be revoked at any time by QuarismaAnalyitix.
+**Note**: Maintainer status is a privilege, not a right, and can be revoked at any time by XSigmaAnalyitix.
 
 ### Contributors
 
@@ -105,15 +105,15 @@ Maintainer status is granted **at the sole discretion of QuarismaAnalyitix**. Cr
 - Community support and engagement
 
 **Important**: By contributing, contributors:
-- Grant QuarismaAnalyitix irrevocable rights to use their contributions under GPL-3.0-or-later and commercial licenses
-- Accept that QuarismaAnalyitix has final authority over contribution acceptance
+- Grant XSigmaAnalyitix irrevocable rights to use their contributions under GPL-3.0-or-later and commercial licenses
+- Accept that XSigmaAnalyitix has final authority over contribution acceptance
 - Waive future claims to control how their contributions are used
 
 All contributors must adhere to the [Code of Conduct](CODE_OF_CONDUCT.md) and [Contributing Guidelines](CONTRIBUTING.md).
 
 ### Users
 
-**Users** are individuals or organizations who use Quarisma in their projects. Users are encouraged to:
+**Users** are individuals or organizations who use XSigma in their projects. Users are encouraged to:
 
 - Report bugs and issues
 - Request features and enhancements
@@ -124,7 +124,7 @@ All contributors must adhere to the [Code of Conduct](CODE_OF_CONDUCT.md) and [C
 
 ### Authority Structure
 
-**QuarismaAnalyitix maintainers have final authority** over all project decisions. While community input is valued and considered, **maintainers retain sole discretion** over:
+**XSigmaAnalyitix maintainers have final authority** over all project decisions. While community input is valued and considered, **maintainers retain sole discretion** over:
 
 - Contribution acceptance or rejection
 - Feature prioritization and roadmap
@@ -135,7 +135,7 @@ All contributors must adhere to the [Code of Conduct](CODE_OF_CONDUCT.md) and [C
 
 ### Consensus-Based Decision Making (Among Maintainers)
 
-Quarisma maintainers use a **consensus-based decision-making model** for internal decisions:
+XSigma maintainers use a **consensus-based decision-making model** for internal decisions:
 
 1. **Proposal**: Anyone can propose changes via GitHub Issues or Pull Requests
 2. **Community Discussion**: Community members discuss the proposal, providing feedback and suggestions
@@ -176,30 +176,30 @@ Quarisma maintainers use a **consensus-based decision-making model** for interna
 **Process**:
 - Open a GitHub Issue with detailed proposal
 - Extended discussion period (minimum 14 days)
-- Unanimous consensus among QuarismaAnalyitix maintainers required
+- Unanimous consensus among XSigmaAnalyitix maintainers required
 - Community input strongly considered but not binding
-- **QuarismaAnalyitix retains ultimate authority** over critical decisions
+- **XSigmaAnalyitix retains ultimate authority** over critical decisions
 - Final decision documented in issue and announced to community
 
 ### Voting (When Maintainer Consensus Cannot Be Reached)
 
 If consensus among maintainers cannot be reached after good-faith discussion:
 
-1. **Maintainer Vote**: QuarismaAnalyitix maintainers vote on the proposal
+1. **Maintainer Vote**: XSigmaAnalyitix maintainers vote on the proposal
 2. **Majority Rule**: Simple majority (>50%) of maintainers required for approval
-3. **Tie-Breaking**: In case of a tie, QuarismaAnalyitix leadership makes final decision
+3. **Tie-Breaking**: In case of a tie, XSigmaAnalyitix leadership makes final decision
 4. **Documentation**: Decision and rationale documented in the issue
 
-**Note**: Community members do not vote on project decisions. Only QuarismaAnalyitix maintainers have voting rights.
+**Note**: Community members do not vote on project decisions. Only XSigmaAnalyitix maintainers have voting rights.
 
 ## Contribution Process
 
 ### Contribution Acceptance Policy
 
-**Important**: All contributions are subject to review and approval by QuarismaAnalyitix maintainers. By contributing, you:
+**Important**: All contributions are subject to review and approval by XSigmaAnalyitix maintainers. By contributing, you:
 
-- Grant QuarismaAnalyitix irrevocable rights to use your contribution under GPL-3.0-or-later and commercial licenses
-- Accept that QuarismaAnalyitix has sole discretion over contribution acceptance
+- Grant XSigmaAnalyitix irrevocable rights to use your contribution under GPL-3.0-or-later and commercial licenses
+- Accept that XSigmaAnalyitix has sole discretion over contribution acceptance
 - Waive future claims to control how your contribution is used
 - Acknowledge that submission does not guarantee acceptance
 
@@ -229,7 +229,7 @@ All contributions must meet the following standards:
 - **Testing**: Minimum 98% code coverage with comprehensive tests
 - **Documentation**: Update relevant documentation
 - **Security**: Follow [security policy](SECURITY.md)
-- **Licensing**: Grant irrevocable license to QuarismaAnalyitix (GPL-3.0-or-later OR Commercial)
+- **Licensing**: Grant irrevocable license to XSigmaAnalyitix (GPL-3.0-or-later OR Commercial)
 - **Alignment**: Align with project goals, architecture, and strategic direction
 
 **Maintainers may reject contributions** that don't meet these standards or don't align with project goals, regardless of technical quality.
@@ -294,7 +294,7 @@ See [CONTRIBUTING.md - Release Process](CONTRIBUTING.md#release-process) for det
 
 Violations of the [Code of Conduct](CODE_OF_CONDUCT.md) are handled according to the enforcement guidelines in that document:
 
-1. **Report**: Report to [conduct@quarisma.co.uk](mailto:conduct@quarisma.co.uk)
+1. **Report**: Report to [conduct@xsigma.co.uk](mailto:conduct@xsigma.co.uk)
 2. **Investigation**: Maintainers investigate promptly and fairly
 3. **Action**: Appropriate action taken based on severity (warning, temporary ban, permanent ban)
 4. **Appeal**: Decisions may be appealed to maintainers
@@ -337,10 +337,10 @@ Anyone can propose changes to this governance document:
 
 ## Contact
 
-- **General Inquiries**: [licensing@quarisma.co.uk](mailto:licensing@quarisma.co.uk)
-- **Code of Conduct**: [conduct@quarisma.co.uk](mailto:conduct@quarisma.co.uk)
-- **Security Issues**: [GitHub Security Advisories](https://github.com/QuarismaAnalyitix/Quarisma/security/advisories)
-- **GitHub Issues**: [https://github.com/QuarismaAnalyitix/Quarisma/issues](https://github.com/QuarismaAnalyitix/Quarisma/issues)
+- **General Inquiries**: [licensing@xsigma.co.uk](mailto:licensing@xsigma.co.uk)
+- **Code of Conduct**: [conduct@xsigma.co.uk](mailto:conduct@xsigma.co.uk)
+- **Security Issues**: [GitHub Security Advisories](https://github.com/KhwarizmiAnalytix/XSigma/security/advisories)
+- **GitHub Issues**: [https://github.com/KhwarizmiAnalytix/XSigma/issues](https://github.com/KhwarizmiAnalytix/XSigma/issues)
 
 ## Acknowledgments
 
@@ -350,4 +350,4 @@ This governance model is inspired by best practices from successful open-source 
 
 **Document Version**: 1.0
 **Last Updated**: 2025-11-02
-**Maintained By**: Quarisma Maintainers
+**Maintained By**: XSigma Maintainers

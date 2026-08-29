@@ -10,8 +10,20 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-import colorama
-from colorama import Fore, Style
+
+try:
+    import colorama
+    from colorama import Fore, Style
+
+    colorama.init()
+except ImportError:  # Windows CLI smoke and some CI jobs skip pip install
+
+    class Fore:  # pylint: disable=too-few-public-methods
+        CYAN = GREEN = YELLOW = RED = WHITE = ""
+
+    class Style:  # pylint: disable=too-few-public-methods
+        RESET_ALL = ""
+
 
 # Import helper modules
 from helpers import (
@@ -20,6 +32,7 @@ from helpers import (
     cppcheck as cppcheck_helper,
     test as test_helper,
 )
+from helpers.cpu_isa import runtime_test_skip_reason
 
 
 # Import coverage runner
@@ -28,9 +41,6 @@ sys.path.insert(
 )
 from coverage_tool import get_coverage
 
-
-# Initialize colorama for cross-platform colored output
-colorama.init()
 
 DEBUG_FLAG = False
 
@@ -43,7 +53,7 @@ class ErrorLogger:
         self.log_dir.mkdir(exist_ok=True)
         self.log_file = (
             self.log_dir
-            / f"quarisma_build_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+            / f"xsigma_build_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
         )
         self.errors = []
 
@@ -587,7 +597,7 @@ def debug_print(message):
         print(message)
 
 
-class QuarismaFlags:
+class XSigmaFlags:
     OFF = "OFF"
     ON = "ON"
 
@@ -666,7 +676,7 @@ class QuarismaFlags:
             "use external copies of third party libraries by default",
             "C++ standard: cxx17, cxx20, cxx23",
             "enable cppcheck static analysis",
-            "enable spell checking with automatic corrections",
+            "enable check-only spell checking (does not rewrite sources; skips ThirdParty)",
             "enable clang-tidy fix-errors and fix options",
             "enable Icecream distributed compilation (icecc)",
             "build example programs for all modules",
@@ -677,7 +687,7 @@ class QuarismaFlags:
             "SMP backend: std, openmp, or tbb",
             "Clang/GCC: -march=native for max CPU tuning (binary may not run on older CPUs)",
             "enable SLEEF SIMD math library for NEON/SVE (AArch64; auto-enabled when Accelerate vForce is unavailable)",
-            "enable LibTorch (PyTorch C++) comparison tests/benchmarks in (requires LibTorch in CMAKE_PREFIX_PATH)",
+            "enable LibTorch (PyTorch C++) comparison tests/benchmarks and the Profiler heavy-function PyTorch profiler (requires LibTorch in CMAKE_PREFIX_PATH)",
         ]
 
     def __build_cmake_flag(self):
@@ -697,7 +707,7 @@ class QuarismaFlags:
             "magic_enum": "CORE_ENABLE_MAGICENUM",
             "mimalloc": "MEMORY_ENABLE_MIMALLOC",
             "mimalloc_stats": "MEMORY_ENABLE_MIMALLOC_STATS",
-            "external": "QUARISMA_ENABLE_EXTERNAL",
+            "external": "XSIGMA_ENABLE_EXTERNAL",
             "profiler_type": "PROFILER_BACKEND",
             "enzyme": "CORE_ENABLE_ENZYME",
             "parallel_backend": "PARALLEL_BACKEND",
@@ -764,7 +774,7 @@ class QuarismaFlags:
                 "javasourceversion": 1.8,  # Special case: numeric value
                 "javatargetversion": 1.8,  # Special case: numeric value
                 "cxxstd": "",  # Special case: let CMake decide
-                "logging_backend": "LOGURU",  # Default logging backend
+                "logging_backend": "SPDLOG",  # Default logging backend
                 "cache": self.ON,  # Per-module compiler cache (CMake defaults ON)
                 "cache_type": "none",  # Default cache backend is none
                 "parallel_backend": "std",  # Default SMP backend
@@ -1074,10 +1084,10 @@ class QuarismaFlags:
         else:
             build_type = str(build_enum).capitalize()
 
-        # Always set library scope so omitting --project.* clears a stale QUARISMA_LIBRARY_PROJECT
+        # Always set library scope so omitting --project.* clears a stale XSIGMA_LIBRARY_PROJECT
         # from an earlier configure (empty = full Library/* tree).
         _lp = self.__value.get("library_project") or ""
-        cmake_cmd_flags.append(f"-DQUARISMA_LIBRARY_PROJECT={_lp}")
+        cmake_cmd_flags.append(f"-DXSIGMA_LIBRARY_PROJECT={_lp}")
         # "Profiler" -> "PROFILER". Empty means fan flags to every module.
         _lp_mod = _lp.upper()
 
@@ -1102,7 +1112,7 @@ class QuarismaFlags:
         _GLOBAL_CMAKE_FLAGS = {
             "BUILD_SHARED_LIBS",
             "BUILD_TESTING",
-            "QUARISMA_ENABLE_EXTERNAL",
+            "XSIGMA_ENABLE_EXTERNAL",
         }
 
         def _cmake_flag_in_scope(flag_name):
@@ -1126,6 +1136,19 @@ class QuarismaFlags:
                 if flag_value and flag_value != "" and _cmake_flag_in_scope(flag_name):
                     cmake_cmd_flags.append(f"-D{flag_name}={flag_value}")
 
+        # `torch` maps to VECTORIZATION_ENABLE_LIBTORCH above, which is out of
+        # scope for --project.profiler / --project.memory. Those modules have
+        # their own ENABLE_LIBTORCH options keyed off the same token.
+        _torch_val = self.__value.get("torch")
+        if _torch_val in [self.ON, self.OFF]:
+            _torch_onoff = "ON" if _torch_val == self.ON else "OFF"
+            for _torch_flag in (
+                "MEMORY_ENABLE_LIBTORCH",
+                "PROFILER_ENABLE_LIBTORCH",
+            ):
+                if _cmake_flag_in_scope(_torch_flag):
+                    cmake_cmd_flags.append(f"-D{_torch_flag}={_torch_onoff}")
+
         # Fan C++ standard out to every in-scope module
         if self.__value.get("cxxstd"):
             std_value = self.__value["cxxstd"]
@@ -1148,7 +1171,7 @@ class QuarismaFlags:
         _fan_bool("coverage", "ENABLE_COVERAGE")
 
         # Fan LTO mode to all modules only when the user explicitly set it.
-        # When unset (empty string), CMake uses quarisma_lto_compute_default() — which
+        # When unset (empty string), CMake uses xsigma_lto_compute_default() — which
         # picks thin/ipo/off based on compiler and build type — so we don't override it.
         _lto_val = (self.__value.get("lto") or "").strip().lower()
         if _lto_val in ("on",):
@@ -1207,13 +1230,17 @@ class QuarismaFlags:
         # Profiler CMakeLists reads MEMORY_GPU_BACKEND to set PROFILER_HAS_METAL.
         gpu_val = self.__value.get("gpu_backend")
         if gpu_val and gpu_val != "":
-            if not _lp_mod or _lp_mod in ("MEMORY", "PROFILER"):
+            # Vectorization Metal kernels bind MTLBuffers via Memory's metal
+            # caching allocator, so MEMORY_GPU_BACKEND must match.
+            if not _lp_mod or _lp_mod in ("MEMORY", "PROFILER", "VECTORIZATION"):
                 cmake_cmd_flags.append(f"-DMEMORY_GPU_BACKEND={gpu_val}")
             if not _lp_mod or _lp_mod == "VECTORIZATION":
                 cmake_cmd_flags.append(f"-DVECTORIZATION_GPU_BACKEND={gpu_val}")
 
         # Tune generated code for the host CPU (Clang/GCC; see Library/Vectorization/Cmake/utils.cmake).
-        if self.__value.get("native") == self.ON and (not _lp_mod or _lp_mod == "VECTORIZATION"):
+        if self.__value.get("native") == self.ON and (
+            not _lp_mod or _lp_mod == "VECTORIZATION"
+        ):
             cmake_cmd_flags.append("-DUSE_NATIVE_ARCH=ON")
 
         # Add compilation database generation flag
@@ -1269,7 +1296,7 @@ class QuarismaFlags:
         return None
 
 
-class QuarismaConfiguration:
+class XSigmaConfiguration:
     def __init__(self, args_list):
         # Check dependencies first
         missing_deps = check_dependencies()
@@ -1285,7 +1312,7 @@ class QuarismaConfiguration:
         self.summary_reporter = SummaryReporter()
 
         self.__initialize_values()
-        self.__quarisma_flags = QuarismaFlags(args_list)
+        self.__xsigma_flags = XSigmaFlags(args_list)
         self.__fill_compilation_flags(args_list)
 
     def __initialize_values(self):
@@ -1340,16 +1367,16 @@ class QuarismaConfiguration:
             self.__set_verbose_flags()
 
         if (
-            self.__quarisma_flags.is_coverage()
+            self.__xsigma_flags.is_coverage()
             and "clang" in self.__value["cmake_cxx_compiler"].lower()
         ):
-            self.__quarisma_flags.enable_gtest()
+            self.__xsigma_flags.enable_gtest()
 
     def __set_ninja_flags(self):
         self.__value["cmake_generator"] = "Ninja"
         self.__value["builder"] = "ninja"
         self.__value["build_folder"] = (
-            f"build_ninja{self.__quarisma_flags.builder_suffix}"
+            f"build_ninja{self.__xsigma_flags.builder_suffix}"
         )
 
     def __set_xcode_flags(self):
@@ -1358,7 +1385,7 @@ class QuarismaConfiguration:
                 self.__value["cmake_generator"] = "Xcode"
                 self.__value["builder"] = "xcodebuild"
                 self.__value["build_folder"] = (
-                    f"build_xcode{self.__quarisma_flags.builder_suffix}"
+                    f"build_xcode{self.__xsigma_flags.builder_suffix}"
                 )
                 self.__value["compiler_flags"] = ""
                 # Compilers and TOOLCHAINS both come from Cmake/tools/xcode_toolchain.cmake
@@ -1431,7 +1458,7 @@ class QuarismaConfiguration:
         self.__value["cmake_generator"], base_build_folder = vs_versions[arg]
         self.__value["builder"] = "cmake"
         self.__value["build_folder"] = (
-            f"{base_build_folder}{self.__quarisma_flags.builder_suffix}"
+            f"{base_build_folder}{self.__xsigma_flags.builder_suffix}"
         )
         if not self.__compiler_user_specified:
             # Let Visual Studio decide the native MSVC toolchain unless the user requested otherwise.
@@ -1449,7 +1476,7 @@ class QuarismaConfiguration:
         print_status("Configuring build...", "INFO")
         try:
             cmake_flags = []
-            self.__value["build_enum"] = self.__quarisma_flags.create_cmake_flags(
+            self.__value["build_enum"] = self.__xsigma_flags.create_cmake_flags(
                 cmake_flags, self.__value["build_enum"], self.__value["system"]
             )
             print(f"build enum: {self.__value['build_enum']}")
@@ -1530,7 +1557,7 @@ class QuarismaConfiguration:
 
     def cppcheck(self, source_path, build_path):
         """Run cppcheck static analysis with user-friendly interface."""
-        if self.__value["build"] != "build" or not self.__quarisma_flags.is_cppcheck():
+        if self.__value["build"] != "build" or not self.__xsigma_flags.is_cppcheck():
             return 0
 
         print_status("Starting static code analysis with cppcheck...", "INFO")
@@ -1622,7 +1649,7 @@ class QuarismaConfiguration:
         if self.__value["test"] != "test":
             return 0
 
-        if self.__quarisma_flags.is_valgrind():
+        if self.__xsigma_flags.is_valgrind():
             exit_code = test_helper.run_valgrind_test(
                 source_path, build_path, self.__shell_flag()
             )
@@ -1630,13 +1657,18 @@ class QuarismaConfiguration:
             self.summary_reporter.add_valgrind_report(build_path, exit_code)
             return exit_code
 
+        skip_reason = runtime_test_skip_reason(self.__value.get("cpu_backend", ""))
+        if skip_reason:
+            print_status(skip_reason, "WARNING")
+            return 0
+
         return test_helper.run_ctest(
             self.__value["builder"],
             self.__value["build_enum"],
             self.__value["system"],
             self.__value["verbosity"],
             self.__shell_flag(),
-            sanitizer_type=self.__quarisma_flags.get_sanitizer_type(),
+            sanitizer_type=self.__xsigma_flags.get_sanitizer_type(),
             source_path=source_path,
         )
 
@@ -1650,7 +1682,7 @@ class QuarismaConfiguration:
         Returns:
             Exit code (0 for success, non-zero for failure).
         """
-        if self.__value["build"] != "build" or not self.__quarisma_flags.is_coverage():
+        if self.__value["build"] != "build" or not self.__xsigma_flags.is_coverage():
             return 0
 
         print_status(
@@ -1926,7 +1958,7 @@ def parse_args(args):
             # Parse SMP backend selection flag (--parallel.std, --parallel.openmp, --parallel.tbb)
             # This is the first stage of argument parsing that converts command-line flags
             # into internal argument format. The actual backend selection happens later
-            # in QuarismaFlags.__process_arg_list() which sets CMake variables.
+            # in XSigmaFlags.__process_arg_list() which sets CMake variables.
             #
             # Supported backends:
             # - --parallel.std:     Use standard C++ threads (std_thread)
@@ -2023,7 +2055,7 @@ def main():
         print("  coverage  - Enable coverage (automatically displays summary)")
         print("\nSpecial flags:")
         print(
-            "  spell                      Enable spell checking with automatic corrections (WARNING: modifies source files)"
+            "  spell                      Enable check-only spell checking (skips ThirdParty)"
         )
         print(
             "  fix                        Enable clang-tidy fix-errors and fix options"
@@ -2057,7 +2089,7 @@ def main():
         print("\nLogging backend flags:")
         print("  --logging=BACKEND  Set logging backend")
         print("                             Options: NATIVE, LOGURU, GLOG, SPDLOG")
-        print("                             Default: LOGURU")
+        print("                             Default: SPDLOG")
         print("\nSanitizer flags:")
         print("  --sanitizer.address        Enable AddressSanitizer")
         print("  --sanitizer.undefined      Enable UndefinedBehaviorSanitizer")
@@ -2073,16 +2105,16 @@ def main():
         print("  python setup.py config.build.test.ninja.clang --logging=GLOG")
         print("  # Use NATIVE backend")
         print("  python setup.py config.build.test.ninja.clang --logging=NATIVE")
-        print("  # Use SPDLOG backend")
-        print("  python setup.py config.build.test.ninja.clang --logging=SPDLOG")
-        print("  # Use LOGURU backend (default, no flag needed)")
+        print("  # Use SPDLOG backend (default, no flag needed)")
         print("  python setup.py config.build.test.ninja.clang")
+        print("  # Use LOGURU backend")
+        print("  python setup.py config.build.test.ninja.clang --logging=LOGURU")
         print("\nSanitizer examples:")
         print("  python setup.py config.build.test.vs22 --sanitizer.undefined")
         print("  python setup.py config.build.test.ninja.clang --sanitizer.address")
         print("  python setup.py config.build.test.vs22 --sanitizer-type=thread")
         print("\nSpell checking examples:")
-        print("  # Enable spell checking with automatic corrections")
+        print("  # Enable check-only spell checking (skips ThirdParty)")
         print("  python setup.py config.build.test.ninja.clang.spell")
         print("  python setup.py config.build.test.vs22.spell")
         print("\nCoverage analysis examples:")
@@ -2113,7 +2145,7 @@ def main():
             "  #       Recommended to use with Release build for accurate performance results."
         )
         print("\nAvailable options:")
-        QuarismaFlags([]).helper()
+        XSigmaFlags([]).helper()
         return
 
     try:
@@ -2126,7 +2158,7 @@ def main():
             sys.exit(1)
 
         print_status(f"Starting build configuration for {platform.system()}", "INFO")
-        compilation_calc = QuarismaConfiguration(arg_list)
+        compilation_calc = XSigmaConfiguration(arg_list)
 
         source_path = os.path.dirname(os.getcwd())
         build_path = compilation_calc.move_to_build_folder()

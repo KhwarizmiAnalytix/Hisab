@@ -133,7 +133,7 @@ Links `Crun` and `Cstd` from `/opt/SUNWspro/lib` when building with the Sun C++ 
 
 ### Emscripten (WebAssembly)
 
-All flags below are set on **C, C++, EXE linker, shared linker, and module linker** flags, and propagated via `target_link_options`/`target_compile_options` on the `QUARISMAplatform` interface target so consumers inherit them automatically.
+All flags below are set on **C, C++, EXE linker, shared linker, and module linker** flags, and propagated via `target_link_options`/`target_compile_options` on the `XSigmaPlatform` interface target so consumers inherit them automatically.
 
 | Flag | Applied to | Purpose |
 |---|---|---|

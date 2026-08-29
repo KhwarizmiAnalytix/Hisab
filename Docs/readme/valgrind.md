@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide explains how to set up and use Valgrind for memory checking in the Quarisma project.
+This guide explains how to set up and use Valgrind for memory checking in the XSigma project.
 
 ## Platform Support
 
@@ -132,15 +132,15 @@ All Valgrind options are configured in `Cmake/tools/valgrind.cmake`. The default
 Tests run significantly slower under Valgrind (typically 10-50x slower). The timeout configuration handles this automatically:
 
 **Default Settings:**
-- Timeout multiplier: **20x** (configurable via `QUARISMA_VALGRIND_TIMEOUT_MULTIPLIER`)
+- Timeout multiplier: **20x** (configurable via `XSIGMA_VALGRIND_TIMEOUT_MULTIPLIER`)
 - Global CTest timeout: **1800 seconds** (30 minutes)
 - Individual test timeouts are automatically multiplied
 
 **Customizing Timeouts:**
 ```bash
 # Configure with custom timeout multiplier
-cmake -DQUARISMA_ENABLE_VALGRIND=ON \
-      -DQUARISMA_VALGRIND_TIMEOUT_MULTIPLIER=30 \
+cmake -DXSIGMA_ENABLE_VALGRIND=ON \
+      -DXSIGMA_VALGRIND_TIMEOUT_MULTIPLIER=30 \
       ..
 ```
 
@@ -238,8 +238,8 @@ WORKDIR /workspace
 EOF
 
 # Build and run
-docker build -t quarisma-valgrind .
-docker run -v $(pwd):/workspace -it quarisma-valgrind bash
+docker build -t xsigma-valgrind .
+docker run -v $(pwd):/workspace -it xsigma-valgrind bash
 ```
 
 ## Troubleshooting
@@ -264,8 +264,8 @@ The following tests FAILED:
 1. **Automatic (Recommended)**: The timeout multiplier should handle this automatically. If you still see timeouts:
    ```bash
    # Increase the timeout multiplier
-   cmake -DQUARISMA_ENABLE_VALGRIND=ON \
-         -DQUARISMA_VALGRIND_TIMEOUT_MULTIPLIER=30 \
+   cmake -DXSIGMA_ENABLE_VALGRIND=ON \
+         -DXSIGMA_VALGRIND_TIMEOUT_MULTIPLIER=30 \
          ..
    ```
 
