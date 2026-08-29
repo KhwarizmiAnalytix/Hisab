@@ -690,7 +690,7 @@ struct ProfilerConfig {
     ProfilerState state;       // KINETO, KINETO_GPU_FALLBACK, KINETO_ONDEMAND, NVTX, ITT
     bool report_input_shapes;
     bool profile_memory;
-    bool with_stack;           // raw return addresses via bespoke/common/unwind/
+    bool with_stack;           // source file:line call sites for RecordFunction events
     bool with_flops;
     bool with_modules;
     ExperimentalConfig experimental_config;
@@ -1082,9 +1082,9 @@ Synthetic `"ROOT"` is walked but not emitted as a row.
 
 ### Kineto
 
-Instrumentation-based (not PC sampling). Call stack is the RecordFunction
-parent chain. `config.with_stack` captures raw `void*` addresses;
-symbolizing them into this report is an [open follow-up](#open-follow-ups).
+Instrumentation-based (not PC sampling). Call stack in hotspot reports is the
+RecordFunction parent chain. `config.with_stack` records the source `file:line`
+for `PROFILER_RECORD_FUNCTION` / `PROFILER_RECORD_USER_SCOPE` events.
 
 ```cpp
 auto result = profiler::profiler_impl::disableProfiler();

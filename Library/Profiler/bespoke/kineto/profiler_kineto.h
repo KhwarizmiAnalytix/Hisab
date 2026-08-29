@@ -64,6 +64,7 @@ struct PROFILER_VISIBILITY KinetoEvent
     PROFILER_API int64_t               privateuse1ElapsedUs() const;
     PROFILER_API void getPerfEventCounters(profiler::profiler_impl::perf_counters_t& /*in*/) const;
     PROFILER_API extra_meta_t extraMeta() const;
+    PROFILER_API std::vector<std::string> stack() const;
     PROFILER_API std::string metadataJson() const;
 
 private:

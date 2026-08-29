@@ -162,6 +162,60 @@ PROFILERTEST(BackendFunction, kineto_profiles_function)
     ASSERT_NE(inner_event, nullptr);
     EXPECT_GT(outer_event->durationNs(), 0U);
     EXPECT_GE(outer_event->durationNs(), inner_event->durationNs());
+    EXPECT_TRUE(outer_event->stack().empty());
+}
+
+PROFILERTEST(BackendFunction, kineto_with_stack_records_callsite)
+{
+    constexpr const char* kStackScope = "backend_stack_profiled_function";
+
+    profiler::profiler_impl::ProfilerConfig const config(
+        profiler::profiler_impl::ProfilerState::KINETO,
+        /*report_input_shapes=*/false,
+        /*profile_memory=*/false,
+        /*with_stack=*/true,
+        /*with_flops=*/false,
+        /*with_modules=*/false);
+
+    const std::set<profiler::profiler_impl::ActivityType> activities{
+        profiler::profiler_impl::ActivityType::CPU};
+    const std::unordered_set<profiler::RecordScope> scopes{profiler::RecordScope::USER_SCOPE};
+
+    try
+    {
+        profiler::profiler_impl::prepareProfiler(config, activities);
+        profiler::profiler_impl::enableProfiler(config, activities, scopes);
+    }
+    catch (const std::exception& ex)
+    {
+        GTEST_SKIP() << "Kineto profiler unavailable: " << ex.what();
+    }
+
+    double    result        = 0.0;
+    const int expected_line = __LINE__ + 2;
+    {
+        PROFILER_RECORD_USER_SCOPE(kStackScope);
+        result = profiled_function();
+    }
+
+    auto profiler_result = profiler::profiler_impl::disableProfiler();
+    EXPECT_GT(result, 0.0);
+    ASSERT_NE(profiler_result, nullptr);
+
+    const auto& events = profiler_result->events();
+    if (events.empty())
+    {
+        GTEST_SKIP() << "Kineto backend produced no CPU events in this environment";
+    }
+
+    const auto* event = find_named_event(events, kStackScope);
+    ASSERT_NE(event, nullptr);
+
+    const auto stack = event->stack();
+    ASSERT_FALSE(stack.empty());
+    const std::string expected_file     = "TestProfilerBackendFunction.cpp";
+    const std::string expected_location = expected_file + ":" + std::to_string(expected_line);
+    EXPECT_NE(stack.front().find(expected_location), std::string::npos) << stack.front();
 }
 
 #endif  // PROFILER_HAS_KINETO

@@ -9,6 +9,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "common/profiler_export.h"
 #include "common/small_vector.h"
@@ -313,6 +314,16 @@ struct PROFILER_VISIBILITY RecordFunction
 
     void setDebugHandle(int64_t debug_handle) { debug_handle_ = debug_handle; }
 
+    void setSourceLocation(const char* file, uint32_t line)
+    {
+        source_file_ = file;
+        source_line_ = line;
+    }
+
+    const char* sourceFile() const { return source_file_; }
+
+    uint32_t sourceLine() const { return source_line_; }
+
     // Structured per-call metadata: arbitrary caller-supplied key/value pairs,
     // surfaced downstream via KinetoEvent::extraMeta(). This is the generic
     // replacement for op-specific (tensor/IValue-shaped) argument recording --
@@ -336,6 +347,8 @@ private:
     RecordFunctionHandle                         handle_{0};
     bool                                         is_async_{false};
     int64_t                                      debug_handle_{-1};
+    const char*                                  source_file_{nullptr};
+    uint32_t                                     source_line_{0};
     std::unordered_map<std::string, std::string> metadata_;
 };
 
@@ -347,6 +360,7 @@ PROFILER_API std::optional<StepCallbacks> getStepCallbacksUnlessEmpty(RecordScop
 // ATen/record_function.h macros of the same unprefixed names.
 #define PROFILER_RECORD_FUNCTION_WITH_SCOPE(scope, fn) \
     profiler::RecordFunction guard(scope);             \
+    guard.setSourceLocation(__FILE__, __LINE__);       \
     if (guard.isActive())                              \
     {                                                  \
         guard.before(fn);                              \
@@ -423,8 +437,9 @@ private:
 // without starting it. Chain record_function_metadata_builder(guard_name, fn)
 // .with_metadata(...) immediately after to attach metadata and start it --
 // see the class comment above for why start is deferred to the builder.
-#define PROFILER_RECORD_FUNCTION_WITH_METADATA(guard_name, fn) \
-    profiler::RecordFunction guard_name(profiler::RecordScope::FUNCTION)
+#define PROFILER_RECORD_FUNCTION_WITH_METADATA(guard_name, fn)            \
+    profiler::RecordFunction guard_name(profiler::RecordScope::FUNCTION); \
+    guard_name.setSourceLocation(__FILE__, __LINE__)
 
 /**
  * addThreadLocalCallback adds a thread local callback to run with

@@ -74,6 +74,7 @@ struct activity_type_t
 #endif  // PROFILER_HAS_KINETO
 
 void addMetadata(activity_t* activity, const std::string& key, const std::string& value);
+void addMetadataQuoted(activity_t* activity, const std::string& key, const std::string& value);
 
 // Wraps: libkineto::CpuTraceBuffer
 struct TraceWrapper

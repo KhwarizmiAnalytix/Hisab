@@ -90,6 +90,29 @@ void addMetadata(
 #endif  // PROFILER_HAS_KINETO
 }
 
+void addMetadataQuoted(
+    activity_t*        activity,  // cppcheck-suppress constParameterPointer
+    const std::string& key,
+    const std::string& value)
+{
+#if PROFILER_HAS_KINETO
+    // Suppress false positive from clang static analyzer in fmt library
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-warning-option"
+#pragma clang diagnostic ignored "-Wanalyzer-optin.cplusplus.UninitializedObject"
+#endif
+    activity->addMetadataQuoted(key, value);
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+#else
+    (void)activity;
+    (void)key;
+    (void)value;
+#endif  // PROFILER_HAS_KINETO
+}
+
 TraceWrapper::TraceWrapper(const int64_t start_time, const std::string& name)
 #if PROFILER_HAS_KINETO
     : cpu_trace_(std::make_unique<libkineto::CpuTraceBuffer>())

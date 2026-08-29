@@ -15,9 +15,6 @@ project-excludes = [
     "**/generated/**",
     "build*/**",
     "Scripts/iwyu/**",
-    # mypy-API plugins — meaningless under a non-mypy checker (matches the
-    # MYPY linter's exclusion of the same tree in .lintrunner.toml).
-    "mypy_plugins/**",
     # excluded for the same reason MYPY excludes it: defensive patterns like
     # `if "x" in locals()` guards and re-match re-evaluation false-positive here.
     "Scripts/setup.py",

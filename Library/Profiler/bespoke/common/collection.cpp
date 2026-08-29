@@ -71,6 +71,11 @@ std::unique_ptr<KinetoObserverContext> ThreadLocalSubqueue::begin_op(
 {
     const auto* overload_name =
         config_.experimental_config.capture_overload_names ? fn.overload_name() : "";
+    std::vector<std::string> stack;
+    if (config_.with_stack && fn.sourceFile() != nullptr && fn.sourceLine() != 0)
+    {
+        stack.emplace_back(std::string(fn.sourceFile()) + ":" + std::to_string(fn.sourceLine()));
+    }
     auto [event, corr_id] =
         function_ops_.op_events_.emplace_back(profiler::profiler_impl::impl::FunctionOpBasicFields{
             fn.seqNr(),
@@ -80,7 +85,8 @@ std::unique_ptr<KinetoObserverContext> ThreadLocalSubqueue::begin_op(
             fn.handle(),
             fn.debugHandle(),
             fn.name(),
-            overload_name});
+            overload_name,
+            std::move(stack)});
 
     if (!config_.experimental_config.disable_external_correlation)
     {
@@ -574,6 +580,19 @@ void passEventsToKineto(
         if (activity != nullptr)
         {
             addMetadata(activity, indexKey, std::to_string(i));
+            if (config.with_stack)
+            {
+                e->visit(profiler::overloaded(
+                    [&](const ExtraFields<EventType::FunctionOp>& fields)
+                    {
+                        if (!fields.stack_.empty())
+                        {
+                            addMetadataQuoted(
+                                activity, "Call stack", stacksToStr(fields.stack_, ";"));
+                        }
+                    },
+                    [](const auto&) {}));
+            }
 
             // There is a longstanding regression for initializing
             // on-demand Kineto activity handling. Enabling this path

@@ -64,14 +64,15 @@ struct ExtraFields;
 
 struct FunctionOpBasicFields
 {
-    int64_t               sequence_number_{0};
-    uint64_t              forward_tid_{0};
-    profiler::RecordScope scope_{};
-    bool                  is_async_{false};
-    uint64_t              record_function_id_{0};
-    int64_t               debug_handle_{0};
-    std::string           name_;
-    std::string           overload_name_;
+    int64_t                  sequence_number_{0};
+    uint64_t                 forward_tid_{0};
+    profiler::RecordScope    scope_{};
+    bool                     is_async_{false};
+    uint64_t                 record_function_id_{0};
+    int64_t                  debug_handle_{0};
+    std::string              name_;
+    std::string              overload_name_;
+    std::vector<std::string> stack_;
 
     // Set in the exit callback.
     uint64_t end_tid_{0};

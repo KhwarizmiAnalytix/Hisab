@@ -126,7 +126,7 @@ void test_tensor()
         EXPECT_EQ(t6.stride(5), 1);
         EXPECT_EQ(t6.stride(0), 32);
         t6.at(dims_t{1, 1, 1, 1, 1, 1}) = T(9);
-        const T last = static_cast<T>(t6.at(dims_t{1, 1, 1, 1, 1, 1}));
+        const T last                    = static_cast<T>(t6.at(dims_t{1, 1, 1, 1, 1, 1}));
         EXPECT_EQ(last, T(9));
         EXPECT_EQ(static_cast<T>(t6[63]), T(9));
     }
@@ -331,8 +331,8 @@ void test_tensor()
     // permute(): reorders axes
     {
         tensor_t volume(dims_t{2, 3, 4});
-        volume          = T(0);
-        auto permuted   = volume.permute(dims_t{2, 0, 1});
+        volume        = T(0);
+        auto permuted = volume.permute(dims_t{2, 0, 1});
         EXPECT_EQ(permuted.dimension(0), 4u);
         EXPECT_EQ(permuted.dimension(1), 2u);
         EXPECT_EQ(permuted.dimension(2), 3u);

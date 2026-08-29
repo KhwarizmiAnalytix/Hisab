@@ -450,9 +450,7 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
     if(bench_name STREQUAL "BenchmarkTensorGpu")
       # Processed by nvcc/hipcc to instantiate GPU expression-template kernels
       # (same treatment as TestTensorGpu.cpp in VectorizationCxxTests above).
-      vectorization_tag_gpu_expression_sources(
-        "${_bench_source}" RESULT_LANGUAGE _bench_gpu_lang
-      )
+      vectorization_tag_gpu_expression_sources("${_bench_source}" RESULT_LANGUAGE _bench_gpu_lang)
       if(_bench_gpu_lang)
         set(_bench_is_gpu TRUE)
       endif()
