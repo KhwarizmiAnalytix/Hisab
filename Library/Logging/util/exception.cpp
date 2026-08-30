@@ -8,7 +8,7 @@
 
 #include "back_trace.h"
 #include "logger/logger.h"
-#include "util/logging_exception.h"
+#include "util/exception.h"
 #include "util/string_util.h"
 
 namespace logging

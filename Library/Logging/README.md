@@ -53,7 +53,7 @@ Use `--config=logging_spdlog` (default), `logging_loguru`, `logging_glog`, or
 
 ```cpp
 #include "logger/logger.h"
-#include "util/logging_exception.h"
+#include "util/exception.h"
 
 logging::logger::init();
 logging::logger::set_stderr_verbosity(logging::logger_verbosity_enum::VERBOSITY_INFO);

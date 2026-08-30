@@ -1,6 +1,6 @@
 #include "common/approximate_clock.h"
 
-//#include "util/logging_exception.h"
+//#include "util/exception.h"
 #include "common/irange.h"
 
 namespace profiler

@@ -4,7 +4,7 @@
 
 `Library/Logging` is a compile-time pluggable logging facade. The public
 C++ namespace is `logging`. Include paths are relative to `Library/Logging`
-(`logger/logger.h`, `util/logging_exception.h`).
+(`logger/logger.h`, `util/exception.h`).
 
 Select a backend at configure time with `setup.py --logging=SPDLOG|LOGURU|GLOG|NATIVE`
 (default **SPDLOG**). Application source does not change when you switch backends.
@@ -118,7 +118,7 @@ There is no YAML config file and no `XSIGMA_LOG_*` environment variables.
 
 ```cpp
 #include "logger/logger.h"
-#include "util/logging_exception.h"
+#include "util/exception.h"
 
 LOGGING_LOG_INFO("Application started");
 LOGGING_LOG_DEBUG(INFO, "debug only in non-NDEBUG builds");

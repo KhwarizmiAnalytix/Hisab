@@ -56,7 +56,7 @@
 #endif
 
 // ============================================================================
-// [[unlikely]] / __builtin_expect (used by util/logging_exception.h)
+// [[unlikely]] / __builtin_expect (used by util/exception.h)
 // ============================================================================
 #if defined(__cplusplus) && defined(__has_cpp_attribute)
 #define LOGGING_HAVE_CPP_ATTRIBUTE(x) __has_cpp_attribute(x)

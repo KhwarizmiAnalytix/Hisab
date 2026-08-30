@@ -11,7 +11,7 @@
 #include <shared_mutex>
 
 #include "logger/logger.h"
-#include "util/logging_exception.h"
+#include "util/exception.h"
 
 namespace logging::utils
 {
