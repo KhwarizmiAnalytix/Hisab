@@ -1,0 +1,56 @@
+load("//bazel:graph.bzl", "graph_copts", "graph_defines", "graph_linkopts")
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "graph_hdrs",
+    srcs = glob(
+        [
+            "*.h",
+            "common/*.h",
+        ],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "graph_srcs",
+    srcs = glob(
+        ["*.cpp"],
+        allow_empty = True,
+    ),
+)
+
+cc_library(
+    name = "graph_lib",
+    srcs = [":graph_srcs"],
+    hdrs = [":graph_hdrs"],
+    copts = graph_copts(),
+    defines = graph_defines() + select({
+        "//bazel:shared_libs": ["GRAPH_SHARED_DEFINE"],
+        "//conditions:default": ["GRAPH_STATIC_DEFINE"],
+    }),
+    local_defines = select({
+        "//bazel:shared_libs": ["GRAPH_BUILDING_DLL"],
+        "//conditions:default": [],
+    }),
+    includes = ["."],
+    linkopts = graph_linkopts(),
+    linkstatic = select({
+        "//bazel:shared_libs": False,
+        "//conditions:default": True,
+    }),
+    deps = [
+        "//Library/Parallel:Parallel",
+    ],
+    alwayslink = False,
+    visibility = [
+        "//Library/Graph:__pkg__",
+    ],
+)
+
+cc_library(
+    name = "Graph",
+    deps = [":graph_lib"],
+    visibility = ["//visibility:public"],
+)

@@ -131,7 +131,7 @@ set(XSIGMA_LIBRARY_PROJECT
     ""
     CACHE
       STRING
-      "If non-empty: only this Library module and deps (Logging|Memory|Vectorization|Core|Parallel|Profiler|Models). Empty: all Library/* (default)."
+      "If non-empty: only this Library module and deps (Logging|Memory|Vectorization|Core|Parallel|Profiler|Models|Graph). Empty: all Library/* (default)."
 )
 
 string(TOLOWER "${XSIGMA_LIBRARY_PROJECT}" _xsigma_libproj_lc)
@@ -150,6 +150,9 @@ set(_xsigma_lib_order
     Core
     Parallel
     Models
+    # Graph links Parallel::Parallel (threaded_callback_queue), so it must come
+    # after Parallel in this list.
+    Graph
 )
 
 if(_xsigma_libproj_lc STREQUAL "")
@@ -176,11 +179,13 @@ else()
     set(_xsigma_lib_enabled Profiler)
   elseif(_xsigma_libproj_lc STREQUAL "models")
     set(_xsigma_lib_enabled Models)
+  elseif(_xsigma_libproj_lc STREQUAL "graph")
+    set(_xsigma_lib_enabled Parallel Profiler Graph)
   else()
     message(
       FATAL_ERROR
         "XSIGMA_LIBRARY_PROJECT='${XSIGMA_LIBRARY_PROJECT}' is invalid. "
-        "Use one of: Logging, Memory, Vectorization, Core, Parallel, Profiler, Models, or leave empty for all."
+        "Use one of: Logging, Memory, Vectorization, Core, Parallel, Profiler, Models, Graph, or leave empty for all."
     )
   endif()
 

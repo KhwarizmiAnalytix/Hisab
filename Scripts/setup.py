@@ -687,7 +687,8 @@ class XSigmaFlags:
             "SMP backend: std, openmp, or tbb",
             "Clang/GCC: -march=native for max CPU tuning (binary may not run on older CPUs)",
             "enable SLEEF SIMD math library for NEON/SVE (AArch64; auto-enabled when Accelerate vForce is unavailable)",
-            "enable LibTorch (PyTorch C++) comparison tests/benchmarks and the Profiler heavy-function PyTorch profiler (requires LibTorch in CMAKE_PREFIX_PATH)",
+            "enable LibTorch (PyTorch C++) comparison tests/benchmarks and the Profiler "
+            "heavy-function PyTorch profiler (requires LibTorch in CMAKE_PREFIX_PATH)",
         ]
 
     def __build_cmake_flag(self):
@@ -909,6 +910,7 @@ class XSigmaFlags:
                     "parallel",
                     "profiler",
                     "models",
+                    "graph",
                 )
                 if proj_key not in valid_projects:
                     print_status(
@@ -1105,6 +1107,7 @@ class XSigmaFlags:
             "PROFILER",
             "VECTORIZATION",
             "MODELS",
+            "GRAPH",
         ]
         if _lp_mod:
             ALL_MODULES = [mod for mod in ALL_MODULES if mod == _lp_mod]
@@ -1929,6 +1932,7 @@ def parse_args(args):
                 "parallel",
                 "profiler",
                 "models",
+                "graph",
             )
             if proj not in valid_projects:
                 print_status(
