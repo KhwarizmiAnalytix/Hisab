@@ -38,9 +38,9 @@
 
 #if VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP
 
-#if VECTORIZATION_HAS_CUDA && defined(__CUDACC__)
+#if VECTORIZATION_HAS_CUDA
 #include <cuda_runtime.h>
-#elif VECTORIZATION_HAS_HIP && defined(__HIPCC__)
+#elif VECTORIZATION_HAS_HIP
 #include <hip/hip_runtime.h>
 #endif
 
@@ -50,11 +50,17 @@ namespace vectorization
 {
 
 // ---------------------------------------------------------------------------
-// gpu_stream_t — platform-neutral stream handle alias
+// gpu_stream_t — platform-neutral stream handle alias. cudaStream_t/hipStream_t
+// are ordinary host-visible types declared by the runtime headers included
+// above, so this only needs VECTORIZATION_HAS_CUDA/HIP -- not
+// __CUDACC__/__HIPCC__ -- unlike the kernels/launchers below. Plain .cpp
+// translation units (e.g. Testing/Cxx tests that call gpuStreamCreate /
+// gpuStreamDestroy directly) must see the real type here, not the void*
+// placeholder, or raw CUDA/HIP API calls against it fail to compile.
 // ---------------------------------------------------------------------------
-#if VECTORIZATION_HAS_CUDA && defined(__CUDACC__)
+#if VECTORIZATION_HAS_CUDA
 using gpu_stream_t = cudaStream_t;
-#elif VECTORIZATION_HAS_HIP && defined(__HIPCC__)
+#elif VECTORIZATION_HAS_HIP
 using gpu_stream_t = hipStream_t;
 #else
 // Host-only compilation unit: provide a dummy type so signatures compile.

@@ -581,6 +581,32 @@ if(PROFILER_NEEDS_FMT_HEADER_ONLY)
   target_compile_definitions(Profiler PRIVATE FMT_HEADER_ONLY=1)
 endif()
 
+# The CUPTI runtime DLL (versioned, e.g. cupti64_2026.1.1.dll) lives next to
+# its unversioned import lib under CUDA's extras/CUPTI/lib64 -- that
+# directory is not on PATH by default, so Profiler.dll fails to load at
+# runtime (STATUS_DLL_NOT_FOUND). Stage the DLL beside Profiler.dll instead,
+# same convention as the SVML runtime staging in Vectorization's CMakeLists.
+if(WIN32 AND TARGET CUDA::cupti)
+  get_target_property(_profiler_cupti_implib CUDA::cupti IMPORTED_LOCATION)
+  if(_profiler_cupti_implib)
+    get_filename_component(_profiler_cupti_dir "${_profiler_cupti_implib}" DIRECTORY)
+    file(GLOB _profiler_cupti_dll "${_profiler_cupti_dir}/cupti64_*.dll")
+    if(_profiler_cupti_dll)
+      add_custom_command(
+        TARGET Profiler
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_profiler_cupti_dll}"
+                "$<TARGET_FILE_DIR:Profiler>"
+        COMMENT "Staging CUPTI runtime: ${_profiler_cupti_dll}"
+        VERBATIM
+      )
+    endif()
+  endif()
+  unset(_profiler_cupti_implib)
+  unset(_profiler_cupti_dir)
+  unset(_profiler_cupti_dll)
+endif()
+
 xsigma_module_create_filters("${CMAKE_CURRENT_SOURCE_DIR}")
 
 set_target_properties(

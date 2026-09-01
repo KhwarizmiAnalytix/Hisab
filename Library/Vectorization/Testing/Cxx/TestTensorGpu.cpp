@@ -43,23 +43,12 @@
 
 #if VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP || VECTORIZATION_HAS_METAL
 
-#if VECTORIZATION_HAS_CUDA
-#include <cuda_runtime.h>
-#define gpuGetDeviceCount cudaGetDeviceCount
-#elif VECTORIZATION_HAS_HIP
-#include <hip/hip_runtime.h>
-#define gpuGetDeviceCount hipGetDeviceCount
-#elif VECTORIZATION_HAS_METAL
-// Implemented in metal_device_probe.mm (Objective-C++) — this file stays plain .cpp.
-extern "C" int xsigma_metal_device_count();
-#define gpuGetDeviceCount(pn) (*(pn) = xsigma_metal_device_count())
-#endif
-
 #include <cmath>
 #include <cstddef>
 #include <string>
 #include <vector>
 
+#include "backend/gpu/gpu_stream_compat.h"
 #include "common/scalar_helper_functions.h"
 #include "terminals/tensor.h"
 
@@ -623,6 +612,145 @@ VECTORIZATIONTEST(TensorGpu, FusedCatalogDouble)
     END_TEST();
 }
 
+// --------------------------------------------------------------------------
+// stream_guard — ambient current stream (see terminals/stream_guard.h)
+// --------------------------------------------------------------------------
+VECTORIZATIONTEST(TensorGpu, StreamGuardRedirectsExpressionConstruction)
+{
+#if VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP
+    int ndev = 0;
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
+
+    gpu_stream_t stream = nullptr;
+    ASSERT_EQ(gpuSuccess, gpuStreamCreate(&stream));
+
+    constexpr size_t N = 64;
+    {
+        // a, b, and c (below) must be destroyed -- and any cross-stream events they
+        // recorded against `stream` via record_expression_streams retired -- before
+        // `stream` itself is destroyed at the end of this test; a live tensor can still
+        // reference the stream via the caching allocator's deferred-reuse bookkeeping
+        // (see cuda_caching_allocator.cpp's record_stream/deallocate) even after the
+        // guard that redirected it goes out of scope.
+        tensor<float> a(N, kActiveGpuDevice), b(N, kActiveGpuDevice);
+        a = 1.5f;
+        b = 2.5f;
+        {
+            stream_guard guard(stream, 0);
+            // init_from_expression must allocate and evaluate `c` on the guard's stream,
+            // not the default stream.
+            tensor<float> c = a + b;
+            EXPECT_EQ(stream, c.stream());
+            ASSERT_EQ(gpuSuccess, gpuStreamSynchronize(stream));
+            std::vector<float> got = c.to_host_vector();
+            for (size_t i = 0; i < N; ++i)
+                EXPECT_NEAR(got[i], 4.0f, 5e-6f);
+        }
+        EXPECT_EQ(nullptr, current_stream(0));
+    }
+    ASSERT_EQ(gpuSuccess, gpuStreamDestroy(stream));
+#else
+    GTEST_SKIP() << "stream_guard requires CUDA or HIP (Metal has no stream concept)";
+#endif
+    END_TEST();
+}
+
+VECTORIZATIONTEST(TensorGpu, StreamGuardRedirectsAssignmentIntoExistingTensor)
+{
+#if VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP
+    int ndev = 0;
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
+
+    gpu_stream_t stream = nullptr;
+    ASSERT_EQ(gpuSuccess, gpuStreamCreate(&stream));
+
+    constexpr size_t N = 64;
+    {
+        // a, b, c must be destroyed before `stream` is (see the comment in
+        // StreamGuardRedirectsExpressionConstruction above for why).
+        tensor<float> a(N, kActiveGpuDevice), b(N, kActiveGpuDevice), c(N, kActiveGpuDevice);
+        a = 1.5f;
+        b = 2.5f;
+        {
+            // operator=(E const&) into a pre-existing tensor should also pick up the
+            // ambient stream (and record it with the caching allocator) rather than
+            // always falling back to the default stream.
+            stream_guard guard(stream, 0);
+            c = a + b;
+        }
+        ASSERT_EQ(gpuSuccess, gpuStreamSynchronize(stream));
+        std::vector<float> got = c.to_host_vector();
+        for (size_t i = 0; i < N; ++i)
+            EXPECT_NEAR(got[i], 4.0f, 5e-6f);
+    }
+    ASSERT_EQ(gpuSuccess, gpuStreamDestroy(stream));
+#else
+    GTEST_SKIP() << "stream_guard requires CUDA or HIP (Metal has no stream concept)";
+#endif
+    END_TEST();
+}
+
+VECTORIZATIONTEST(TensorGpu, StreamGuardNestedRestoresPreviousStream)
+{
+#if VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP
+    int ndev = 0;
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
+
+    gpu_stream_t outer = nullptr;
+    gpu_stream_t inner = nullptr;
+    ASSERT_EQ(gpuSuccess, gpuStreamCreate(&outer));
+    ASSERT_EQ(gpuSuccess, gpuStreamCreate(&inner));
+
+    EXPECT_EQ(nullptr, current_stream(0));
+    {
+        stream_guard outer_guard(outer, 0);
+        EXPECT_EQ(outer, current_stream(0));
+        {
+            stream_guard inner_guard(inner, 0);
+            EXPECT_EQ(inner, current_stream(0));
+        }
+        EXPECT_EQ(outer, current_stream(0));
+    }
+    EXPECT_EQ(nullptr, current_stream(0));
+
+    ASSERT_EQ(gpuSuccess, gpuStreamDestroy(outer));
+    ASSERT_EQ(gpuSuccess, gpuStreamDestroy(inner));
+#else
+    GTEST_SKIP() << "stream_guard requires CUDA or HIP (Metal has no stream concept)";
+#endif
+    END_TEST();
+}
+
+VECTORIZATIONTEST(TensorGpu, StreamGuardPerDeviceIndexIsolated)
+{
+#if VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP
+    int ndev = 0;
+    gpuGetDeviceCount(&ndev);
+    if (ndev == 0)
+        GTEST_SKIP() << "No GPU device";
+
+    gpu_stream_t stream = nullptr;
+    ASSERT_EQ(gpuSuccess, gpuStreamCreate(&stream));
+    {
+        stream_guard guard(stream, 0);
+        EXPECT_EQ(stream, current_stream(0));
+        // A guard scoped to device_index 0 must not leak into another index's
+        // ambient stream.
+        EXPECT_EQ(nullptr, current_stream(1));
+    }
+    ASSERT_EQ(gpuSuccess, gpuStreamDestroy(stream));
+#else
+    GTEST_SKIP() << "stream_guard requires CUDA or HIP (Metal has no stream concept)";
+#endif
+    END_TEST();
+}
+
 #else  // !(VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP || VECTORIZATION_HAS_METAL)
 
 VECTORIZATIONTEST(TensorGpu, FillFloat)
@@ -696,6 +824,26 @@ VECTORIZATIONTEST(TensorGpu, CompoundDouble)
     END_TEST();
 }
 VECTORIZATIONTEST(TensorGpu, FusedCatalogDouble)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, StreamGuardRedirectsExpressionConstruction)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, StreamGuardRedirectsAssignmentIntoExistingTensor)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, StreamGuardNestedRestoresPreviousStream)
+{
+    GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
+    END_TEST();
+}
+VECTORIZATIONTEST(TensorGpu, StreamGuardPerDeviceIndexIsolated)
 {
     GTEST_SKIP() << "Test disabled: no GPU backend (CUDA/HIP/Metal) is enabled";
     END_TEST();

@@ -40,6 +40,7 @@
 #include "backend/simd.h"
 #include "expressions/expressions.h"
 #include "sizes_and_strides.h"
+#include "stream_guard.h"
 
 #if VECTORIZATION_HAS_PROFILER
 #include "common/instrumentation.h"
@@ -50,9 +51,7 @@ namespace vectorization
 
 template <typename T>
 inline constexpr bool is_almost_zero(T x, T epsilon = std::numeric_limits<T>::epsilon()) noexcept
-{
-    return (std::fabs(x) < epsilon);
-}
+{ return (std::fabs(x) < epsilon); }
 
 template <typename E>
 VECTORIZATION_HOST_FUNCTION_ATTRIBUTE void record_expression_streams(
@@ -83,11 +82,14 @@ VECTORIZATION_HOST_FUNCTION_ATTRIBUTE void record_expression_streams(
     }
 }
 
+// Device (not stream) placement inferred from an expression's tensor operands. The
+// execution/allocation stream is deliberately not part of this: like PyTorch, it always
+// comes from the ambient stream_guard for `index` (see init_from_expression), never from
+// an operand tensor's own carried stream.
 struct expression_placement
 {
-    device_enum  kind   = device_enum::CPU;
-    int          index  = 0;
-    gpu_stream_t stream = nullptr;
+    device_enum kind  = device_enum::CPU;
+    int         index = 0;
 };
 
 template <typename E>
@@ -117,10 +119,9 @@ VECTORIZATION_HOST_FUNCTION_ATTRIBUTE void accumulate_expression_placement(
     {
         if (!seen)
         {
-            out.kind   = expr.device();
-            out.index  = expr.device_index();
-            out.stream = expr.stream();
-            seen       = true;
+            out.kind  = expr.device();
+            out.index = expr.device_index();
+            seen      = true;
         }
         else
         {
@@ -230,9 +231,7 @@ public:
 
     VECTORIZATION_FORCE_INLINE static size_type last_aligned(
         size_type aligned_start, size_type size, size_type packet_size)
-    {
-        return aligned_start + ((size - aligned_start) / packet_size) * packet_size;
-    }
+    { return aligned_start + ((size - aligned_start) / packet_size) * packet_size; }
 
     // SIMD stride — identical for every rank; used by expression_loader.
     // One simd<value_t> register per step (no manual unroll).
@@ -247,9 +246,7 @@ public:
 
     /// First element index where CPU SIMD lanes are memory-aligned (scalar prologue is \c [0, align_start) ).
     VECTORIZATION_FUNCTION_ATTRIBUTE std::size_t align_start() const noexcept
-    {
-        return align_start_;
-    }
+    { return align_start_; }
 
     /// Exclusive end index: for \c i in <tt>[align_start, align_end)</tt> at stride \ref length(), use \c load / \c store.
     VECTORIZATION_FUNCTION_ATTRIBUTE std::size_t align_end() const noexcept { return align_end_; }
@@ -288,8 +285,9 @@ public:
         device_enum  type         = device_enum::CPU,
         int          device_index = 0,
         gpu_stream_t stream       = nullptr) noexcept
-        : view_(view_t::borrow(
-              ptr, n, type, device_index, static_cast<typename view_t::stream_t>(stream)))
+        : view_(
+              view_t::borrow(
+                  ptr, n, type, device_index, static_cast<typename view_t::stream_t>(stream)))
     {
         sizes_and_strides_.size_at_unchecked(0)   = static_cast<int64_t>(n);
         sizes_and_strides_.stride_at_unchecked(0) = 1;
@@ -305,8 +303,13 @@ public:
         device_enum  type         = device_enum::CPU,
         int          device_index = 0,
         gpu_stream_t stream       = nullptr) noexcept
-        : view_(view_t::borrow(
-              ptr, rows * cols, type, device_index, static_cast<typename view_t::stream_t>(stream)))
+        : view_(
+              view_t::borrow(
+                  ptr,
+                  rows * cols,
+                  type,
+                  device_index,
+                  static_cast<typename view_t::stream_t>(stream)))
     {
         sizes_and_strides_.resize(2);
         sizes_and_strides_.size_at_unchecked(0)   = static_cast<int64_t>(rows);
@@ -382,7 +385,7 @@ public:
         device_enum                                           type = device_enum::CPU)
         : tensor(
               static_cast<size_type>(list.size()),
-              list.size() == 0 ? size_type(0) : static_cast<size_type>(list.begin()->size()),
+              list.size() == 0 ? size_type(0) : static_cast<size_type>(list.begin() -> size()),
               type)
     {
         if (empty())
@@ -456,12 +459,13 @@ public:
         device_enum            type         = device_enum::CPU,
         int                    device_index = 0,
         gpu_stream_t           stream       = nullptr)
-        : view_(view_t::borrow(
-              data,
-              compute_total(dims),
-              type,
-              device_index,
-              static_cast<typename view_t::stream_t>(stream)))
+        : view_(
+              view_t::borrow(
+                  data,
+                  compute_total(dims),
+                  type,
+                  device_index,
+                  static_cast<typename view_t::stream_t>(stream)))
     {
         set_shape(dims);
         recompute_cpu_simd_alignment_state();
@@ -475,9 +479,7 @@ public:
 
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(tensor const& rhs)
         : sizes_and_strides_(rhs.sizes_and_strides_), owner_(rhs.view_), view_(owner_.view())
-    {
-        recompute_cpu_simd_alignment_state();
-    }
+    { recompute_cpu_simd_alignment_state(); }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(tensor&& rhs) noexcept
         : sizes_and_strides_(std::move(rhs.sizes_and_strides_)),
@@ -613,7 +615,11 @@ public:
 #if VECTORIZATION_HAS_PROFILER
         PROFILER_RECORD_USER_SCOPE("vectorization::tensor::assign");
 #endif
-        evaluator::template run<E, tensor>(expr, *this);
+        // Ambient stream set by a stream_guard on the calling thread, if any -- nullptr
+        // (default stream) otherwise, matching the previous always-default-stream behavior.
+        auto const stream = resolve_ambient_stream(expr, device_index());
+        evaluator::template run<E, tensor>(expr, *this, stream);
+        record_stream_if_redirected(stream);
         return *this;
     }
 
@@ -625,7 +631,10 @@ public:
 #if VECTORIZATION_HAS_PROFILER
         PROFILER_RECORD_USER_SCOPE("vectorization::tensor::assign");
 #endif
-        evaluator::template run<E, tensor>(static_cast<E const&>(expr), *this);
+        auto const& cexpr  = static_cast<E const&>(expr);
+        auto const  stream = resolve_ambient_stream(cexpr, device_index());
+        evaluator::template run<E, tensor>(cexpr, *this, stream);
+        record_stream_if_redirected(stream);
         return *this;
     }
 
@@ -637,7 +646,9 @@ public:
 #if VECTORIZATION_HAS_PROFILER
         PROFILER_RECORD_USER_SCOPE("vectorization::tensor::assign_scalar");
 #endif
-        evaluator::template fill<value_t, tensor>(static_cast<value_t>(value), *this);
+        auto const stream = current_stream(device_index());
+        evaluator::template fill<value_t, tensor>(static_cast<value_t>(value), *this, stream);
+        record_stream_if_redirected(stream);
         return *this;
     }
 
@@ -678,21 +689,15 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE device_enum device() const noexcept { return view_.device(); }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE int device_index() const noexcept
-    {
-        return view_.device_index();
-    }
+    { return view_.device_index(); }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE gpu_stream_t stream() const noexcept
-    {
-        return static_cast<gpu_stream_t>(view_.stream());
-    }
+    { return static_cast<gpu_stream_t>(view_.stream()); }
 
     // Mark this tensor's storage as in-use on @p stream so the caching allocator
     // will not recycle the block until that stream completes (PyTorch recordStream).
     VECTORIZATION_HOST_FUNCTION_ATTRIBUTE void record_stream(gpu_stream_t stream) const
-    {
-        view_.record_stream(static_cast<typename view_t::stream_t>(stream));
-    }
+    { view_.record_stream(static_cast<typename view_t::stream_t>(stream)); }
 
     // -----------------------------------------------------------------------
     // Host ↔ device transfer helpers
@@ -759,9 +764,7 @@ public:
 
     // Convenience overload — uploads from a std::vector on the given stream.
     void copy_from_host(const std::vector<value_t>& src, gpu_stream_t stream)
-    {
-        copy_from_host(src.data(), src.size(), stream);
-    }
+    { copy_from_host(src.data(), src.size(), stream); }
 
     // Owned contiguous CPU tensor with the same logical values (C-order).
     // Already on CPU and packed: borrow this buffer (no copy).
@@ -817,46 +820,30 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE reverse_iterator rbegin() { return reverse_iterator(end()); }
     VECTORIZATION_FUNCTION_ATTRIBUTE reverse_iterator rend() { return reverse_iterator(begin()); }
     VECTORIZATION_FUNCTION_ATTRIBUTE const_reverse_iterator crbegin() const
-    {
-        return const_reverse_iterator(end());
-    }
+    { return const_reverse_iterator(end()); }
     VECTORIZATION_FUNCTION_ATTRIBUTE const_reverse_iterator crend() const
-    {
-        return const_reverse_iterator(begin());
-    }
+    { return const_reverse_iterator(begin()); }
 
     // -----------------------------------------------------------------------
     // Shape / rank
     // -----------------------------------------------------------------------
 
     VECTORIZATION_FUNCTION_ATTRIBUTE size_t rank() const noexcept
-    {
-        return sizes_and_strides_.size();
-    }
+    { return sizes_and_strides_.size(); }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE span<const int64_t> dimensions() const noexcept
-    {
-        return sizes_and_strides_.sizes_arrayref();
-    }
+    { return sizes_and_strides_.sizes_arrayref(); }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE size_t dimension(size_t n) const noexcept
-    {
-        return static_cast<size_t>(sizes_and_strides_.size_at_unchecked(n));
-    }
+    { return static_cast<size_t>(sizes_and_strides_.size_at_unchecked(n)); }
 
     // Per-dimension size and stride
     VECTORIZATION_FUNCTION_ATTRIBUTE int64_t size(size_t dim) const noexcept
-    {
-        return sizes_and_strides_.size_at_unchecked(dim);
-    }
+    { return sizes_and_strides_.size_at_unchecked(dim); }
     VECTORIZATION_FUNCTION_ATTRIBUTE int64_t stride(size_t dim) const noexcept
-    {
-        return sizes_and_strides_.stride_at_unchecked(dim);
-    }
+    { return sizes_and_strides_.stride_at_unchecked(dim); }
     VECTORIZATION_FUNCTION_ATTRIBUTE span<const int64_t> strides() const noexcept
-    {
-        return sizes_and_strides_.strides_arrayref();
-    }
+    { return sizes_and_strides_.strides_arrayref(); }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE bool is_aligned() const noexcept { return view_.is_aligned(); }
 
@@ -869,22 +856,14 @@ public:
 
     // Flat indexed access (1-D semantic, element by element)
     VECTORIZATION_FUNCTION_ATTRIBUTE const value_t& operator[](size_type i) const noexcept
-    {
-        return data()[logical_offset(i)];
-    }
+    { return data()[logical_offset(i)]; }
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t& operator[](size_type i) noexcept
-    {
-        return data()[logical_offset(i)];
-    }
+    { return data()[logical_offset(i)]; }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t at(size_type i) const noexcept
-    {
-        return data()[logical_offset(i)];
-    }
+    { return data()[logical_offset(i)]; }
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t& at(size_type i) noexcept
-    {
-        return data()[logical_offset(i)];
-    }
+    { return data()[logical_offset(i)]; }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t at(size_type i, size_type j) const
     {
@@ -903,13 +882,9 @@ public:
 
     // N-D element by multi-index
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t at(const dimensions_type& indices) const
-    {
-        return data()[linearized_index(indices)];
-    }
+    { return data()[linearized_index(indices)]; }
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t& at(const dimensions_type& indices)
-    {
-        return data()[linearized_index(indices)];
-    }
+    { return data()[linearized_index(indices)]; }
 
     // -----------------------------------------------------------------------
     // Views — metadata-only transforms (no data copy)
@@ -997,9 +972,9 @@ public:
         sizes_and_strides sas        = sizes_and_strides_;
         sas.size_at_unchecked(dim)   = new_size;
         sas.stride_at_unchecked(dim) = sizes_and_strides_.stride_at_unchecked(dim) * step;
-        const size_t offset          = static_cast<size_t>(start) *
-                              static_cast<size_t>(sizes_and_strides_.stride_at_unchecked(dim));
-        value_t*     new_ptr      = data() + offset;
+        const size_t offset  = static_cast<size_t>(start) *
+                               static_cast<size_t>(sizes_and_strides_.stride_at_unchecked(dim));
+        value_t*     new_ptr = data() + offset;
         const size_t storage_size = view_.size() > offset ? view_.size() - offset : 0;
         return tensor(new_ptr, storage_size, sas, device(), view_.device_index(), view_.stream());
     }
@@ -1274,9 +1249,7 @@ private:
         typename view_t::stream_t stream       = nullptr)
         : sizes_and_strides_(std::move(sas)),
           view_(view_t::borrow(ptr, storage_size, type, device_index, stream))
-    {
-        recompute_cpu_simd_alignment_state();
-    }
+    { recompute_cpu_simd_alignment_state(); }
 
     // -----------------------------------------------------------------------
     // Helpers
@@ -1341,17 +1314,51 @@ private:
         return ret;
     }
 
+    // Resolves the ambient stream for device_index (see stream_guard.h) and, only when
+    // non-null, records expr's GPU tensor operands as touched on it so the caching
+    // allocator won't recycle their storage until that stream's work completes (same
+    // bookkeeping assign_async does, just sourced from the ambient guard instead of a
+    // caller-supplied stream). Shared by operator=/init_from_expression so this contract
+    // can't drift between call sites.
+    template <typename E>
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE static gpu_stream_t resolve_ambient_stream(
+        E const& expr, int device_index)
+    {
+        auto const stream = current_stream(device_index);
+        if (stream != nullptr)
+        {
+            record_expression_streams(expr, stream);
+        }
+        return stream;
+    }
+
+    // Companion to resolve_ambient_stream(): records *this as touched on `stream` after
+    // an evaluation that used it. No-op for the default stream.
+    VECTORIZATION_HOST_FUNCTION_ATTRIBUTE void record_stream_if_redirected(
+        gpu_stream_t stream) const
+    {
+        if (stream != nullptr)
+        {
+            record_stream(stream);
+        }
+    }
+
     template <typename E>
     void init_from_expression(E const& expr)
     {
         auto const p = infer_expression_placement(expr);
-        owner_       = owner_t(
-            expr.size(), p.kind, p.index, static_cast<typename owner_t::stream_t>(p.stream));
+        // Allocate directly on the stream that will evaluate the expression (the ambient
+        // stream_guard stream for the inferred device, or nullptr/default) rather than
+        // whatever stream the first operand happened to carry -- otherwise a freshly
+        // constructed tensor could be allocated on one stream and evaluated on another.
+        auto const stream = resolve_ambient_stream(expr, p.index);
+        owner_ =
+            owner_t(expr.size(), p.kind, p.index, static_cast<typename owner_t::stream_t>(stream));
         view_                                     = owner_.view();
         sizes_and_strides_.size_at_unchecked(0)   = static_cast<int64_t>(expr.size());
         sizes_and_strides_.stride_at_unchecked(0) = 1;
         recompute_cpu_simd_alignment_state();
-        evaluator::template run<E, tensor>(expr, *this);
+        evaluator::template run<E, tensor>(expr, *this, stream);
     }
 
     void stamp_contiguous_shape(tensor const& src)

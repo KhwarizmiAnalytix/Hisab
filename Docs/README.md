@@ -1,22 +1,35 @@
-# Docs
+# XSigma Documentation
 
-This directory contains maintained project documentation. Historical one-off
-analysis, completion reports, and stale status snapshots have been removed to
-keep this tree useful as a reference.
+The documents below describe the current checked-out source. The build scripts,
+`.bazelrc`, and module `CMakeLists.txt` files are the implementation authority
+when a new option is added.
 
-## Current Documents
+## Build documentation
 
-- [PROJECT_DEPENDENCIES.md](PROJECT_DEPENDENCIES.md) - Library dependency graph and optional links.
-- [PROJECT_FLAGS.md](PROJECT_FLAGS.md) - Project CMake cache flags.
-- [flags.md](flags.md) - `Cmake/flags` module reference.
-- [BAZEL_USER_GUIDE.md](BAZEL_USER_GUIDE.md) - Bazel build usage, configs, and known gaps.
-- [CUDA_HIP_REMEDIATION_PLAN.md](CUDA_HIP_REMEDIATION_PLAN.md) - Older CUDA/HIP remediation notes (several Memory items are done; current Memory status is `memory_design.md` §10).
-- [memory_design.md](memory_design.md) - Memory library design: CPU/GPU paths, `data_ptr`/`data_view`, caching-allocator client API, done vs still open.
-- [vectorization_backends.md](vectorization_backends.md) - Current CPU / CUDA / HIP / Metal evaluator contracts. Fusion is done; launch signatures, streams, and reductions still differ. SIMD ISA chooser: [readme/vectorization.md](readme/vectorization.md).
-- [profiler/profiler.md](profiler/profiler.md) - Profiler user and architecture guide.
+- [CMake setup guide](readme/setup.md) - `Scripts/setup.py` actions, tokens,
+  and direct CMake equivalents.
+- [Build configuration](readme/build/build-configuration.md) - CMake build
+  types, module-scoped options, LTO, testing, and backend selection.
+- [Build examples](readme/usage-examples.md) - Current commands for development,
+  release, diagnostics, parallelism, and GPU builds.
+- [CMake option reference](PROJECT_FLAGS.md) - Public cache variables and their
+  module prefixes.
+- [Bazel guide](BAZEL_USER_GUIDE.md) - Bazel `8.4.2` usage, configurations, and
+  known feature gaps.
 
-## README-Backed Guides
+## Library documentation
 
-The `readme/` subtree holds extended guides linked from the root
-[README.md](../README.md), including setup, build configuration, vectorization,
-sanitizers, coverage, static analysis, caching, logging, and coding standards.
+- [Memory design](memory_design.md) - CPU/GPU allocation model and caching
+  allocator status.
+- [Vectorization backends](vectorization_backends.md) - CPU, CUDA, HIP, and
+  Metal evaluator contracts.
+- [Profiler guide](profiler/profiler.md) - Native, Kineto, and ITT profiling.
+- [Vectorization SIMD guide](readme/vectorization.md) - CPU backend selection.
+- [Project dependencies](PROJECT_DEPENDENCIES.md) - Library dependency graph.
+
+## Supporting guides
+
+The `readme/` directory also contains focused guides for sanitizers, coverage,
+static analysis, compiler caching, logging, Valgrind, coding standards, and
+cross-platform builds. Those guides use the same module-scoped CMake option
+model documented in [PROJECT_FLAGS.md](PROJECT_FLAGS.md).

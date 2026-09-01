@@ -1,3 +1,9 @@
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#endif
+
 #include <sstream>
 
 #include "bespoke/base/base.h"
@@ -31,7 +37,7 @@ namespace profiler::profiler_impl::impl
 namespace
 {
 
-static void cudaCheck(cudaError_t result, const char* file, int line)
+void cudaCheck(cudaError_t result, const char* file, int line)
 {
     if (result != cudaSuccess)
     {

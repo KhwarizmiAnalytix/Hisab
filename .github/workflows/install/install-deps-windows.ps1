@@ -81,7 +81,7 @@ try {
 Write-Info "Installing buildcache compiler cache..."
 $buildcacheVersion = $env:BUILDCACHE_VERSION
 if ([string]::IsNullOrWhiteSpace($buildcacheVersion)) {
-    $buildcacheVersion = "0.33.0"
+    $buildcacheVersion = "0.28.4"
 }
 try {
     $buildcacheRoot = Join-Path $env:USERPROFILE ".local\bin"
@@ -213,7 +213,13 @@ if ($WithTbb) {
 # CUDA Toolkit (optional)
 if ($WithCuda) {
     Write-Info "Installing CUDA Toolkit..."
-    Write-Warning "CUDA installation skipped - typically pre-installed in CI environment"
+    $installCudaScript = Join-Path $PSScriptRoot "install-cuda-windows.ps1"
+    if (Test-Path $installCudaScript) {
+        & $installCudaScript
+    } else {
+        Write-Error "install-cuda-windows.ps1 not found next to install-deps-windows.ps1"
+        exit 1
+    }
 }
 
 # Python dependencies

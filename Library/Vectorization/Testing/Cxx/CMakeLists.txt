@@ -10,52 +10,79 @@ xsigma_add_googletest()
 
 file(GLOB_RECURSE test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cpp")
 
-# Include CUDA simd unit tests when the CUDA GPU backend is active.
-if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
-  # Clang as CUDA compiler: Clang 20 + CUDA 13.x has texture-intrinsics
-  # incompatibilities (missing texture_fetch_functions.h, __tex_op_hash
-  # host-only constexpr called from device code). All Test*.cu files fail.
-  # TestTensorGpu.cpp also fails (tensor<T> uses std::vector in device code).
-  # Exclude all CUDA-specific test sources when using Clang as the compiler.
-  if(CMAKE_CUDA_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    # TestTensorGpu.cpp is in the Test*.cpp glob above; remove it so it is not
-    # linked into VectorizationCxxTests. Without LANGUAGE CUDA its GPU kernels
-    # would be absent and any TensorGpu test would segfault at runtime.
-    list(REMOVE_ITEM test_sources "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
-    message(STATUS "VectorizationCxxTests: CUDA-specific tests (Test*.cu, TestTensorGpu.cpp) "
-                   "excluded — Clang ${CMAKE_CXX_COMPILER_VERSION} + CUDA ${CUDAToolkit_VERSION} "
-                   "texture-intrinsics incompatibility"
+# Include CUDA/HIP unit tests when a GPU backend is active, and compile every
+# Test*.cpp that touches tensor<T> expressions as that backend's device
+# language — not just the files literally named *Gpu*.
+#
+# Why more than *Gpu* files: tensor<T> is device-polymorphic at RUNTIME
+# (device is a field, not part of the type), so the exact same expression-tree
+# type (e.g. binary_expression<tensor<float>,tensor<float>,add_evaluator>)
+# gets instantiated by expressions_evaluator::run<E,T>()/fill<E,T>() from both
+# GPU-touching files (TestTensorGpu.cpp) and plain CPU-only files (TestTensor.cpp,
+# TestTensorF2.cpp, ...) alike. run()'s compiled body depends on whether
+# __CUDACC__/__HIPCC__ is defined in the compiling TU (see
+# expressions_evaluator.h): with only TestTensorGpu.cpp tagged, that
+# preprocessor state — and thus the compiled body — differed across
+# translation units for the SAME template instantiation. That's a real ODR
+# violation: two definitions of the same external-linkage symbol disagree,
+# and the linker silently keeps only one. In practice it always kept the
+# CPU-only body, so any GPU-tensor expression whose type was *also* used by
+# a plain .cpp file elsewhere in the binary silently fell through to
+# check_cpu_reachable() and threw at runtime instead of dispatching to the
+# GPU kernel — confirmed via dumpbin: TestTensor.cpp.obj contained its own
+# (CPU-only) definition of run<binary_expression<tensor<float>,tensor<float>,
+# add_evaluator>, tensor<float>> that the linker preferred over
+# TestTensorGpu.cpp.obj's GPU-dispatching one.
+#
+# Why NOT literally every Test*.cpp: files that never touch tensor<T> (e.g.
+# TestSimdUtility.cpp, which exercises simd<T> packet intrinsics directly)
+# don't instantiate run<E,T>/fill<E,T> at all, so they carry no ODR risk —
+# and tagging them as CUDA anyway actively breaks them, since simd<T>'s
+# host-only AVX/SSE members (copy/broadcast/ptranspose/...) aren't available
+# under __CUDACC__. Select by content (grep for "tensor<") rather than a
+# hardcoded file list so a new tensor-touching test file is covered
+# automatically instead of silently reintroducing the ODR gap.
+#
+# The historical "Clang + CUDA 13.x texture-intrinsics incompatibility"
+# exclusion for Test*.cu/TestTensorGpu.cpp no longer reproduces on the
+# current toolchain (Clang 22 + CUDA 13.2): both compile and pass cleanly.
+if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda" OR VECTORIZATION_GPU_BACKEND STREQUAL "hip")
+  set(_vec_tensor_test_sources "")
+  foreach(_vec_src IN LISTS test_sources)
+    file(STRINGS "${_vec_src}" _vec_tensor_hit REGEX "tensor<" LIMIT_COUNT 1)
+    if(_vec_tensor_hit)
+      list(APPEND _vec_tensor_test_sources "${_vec_src}")
+    endif()
+    unset(_vec_tensor_hit)
+  endforeach()
+  unset(_vec_src)
+
+  file(GLOB_RECURSE cuda_test_sources LIST_DIRECTORIES false
+       "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cu"
+  )
+  list(APPEND test_sources ${cuda_test_sources})
+  list(APPEND _vec_tensor_test_sources ${cuda_test_sources})
+  vectorization_tag_gpu_expression_sources(${_vec_tensor_test_sources})
+
+  if(VECTORIZATION_GPU_BACKEND STREQUAL "hip")
+    # NOTE: unverified on Windows this session — HIP is Unix-only by project
+    # policy (Library/Vectorization/CLAUDE.md); mirrors the CUDA branch above
+    # for when this is next built on Linux/ROCm. No longer split into a
+    # separate executable (the old rationale was to avoid tagging unrelated
+    # host SIMD tests with LANGUAGE HIP / --offload-arch; content-based
+    # selection above already excludes them).
+    message(STATUS "VectorizationCxxTests: tensor<T>-touching sources compiled as HIP "
+                   "(ODR-safety requirement — see comment above; unverified on Windows)"
     )
   else()
-    file(GLOB_RECURSE cuda_test_sources LIST_DIRECTORIES false
-         "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cu"
+    message(STATUS "VectorizationCxxTests: tensor<T>-touching sources compiled as CUDA "
+                   "(ODR-safety requirement — see comment above)"
     )
-    list(APPEND test_sources ${cuda_test_sources})
-
-    # TestTensorGpu.cpp: processed by nvcc to instantiate GPU expression-template kernels.
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
-      vectorization_tag_gpu_expression_sources("${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
-    endif()
   endif()
-endif()
-
-# HIP GPU tests must live in a separate executable. CMake applies a target's
-# HIP_ARCHITECTURES to every source in that target, so mixing LANGUAGE HIP
-# files (Test*.cu, TestTensorGpu.cpp) into VectorizationCxxTests compiles
-# host SIMD tests (TestSimdUtility.cpp etc.) with --offload-arch and fails.
-if(VECTORIZATION_GPU_BACKEND STREQUAL "hip")
-  file(GLOB_RECURSE hip_test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cu")
-  foreach(_hip_test_src IN LISTS hip_test_sources)
-    set_source_files_properties("${_hip_test_src}" PROPERTIES LANGUAGE HIP)
-  endforeach()
-  unset(_hip_test_src)
-  list(REMOVE_ITEM test_sources "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
-  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
-    vectorization_tag_gpu_expression_sources("${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp")
-  endif()
-  message(STATUS "VectorizationCxxTests: HIP GPU tests split out of host executable "
-                 "(Test*.cu, TestTensorGpu.cpp) — mixed CXX+HIP leaks --offload-arch"
-  )
+  # NOTE: _vec_tensor_test_sources stays set past this block — the CUDA-specific
+  # properties section below (heavy-template -O1 crash workaround) needs the same
+  # list, since every file in it is compiled as CUDA and can hit the same
+  # expression-template ICEs, not just TestTensorGpu.cpp. Unset there instead.
 endif()
 
 # Include Metal Objective-C++ unit tests when the Metal GPU backend is active. Unlike
@@ -220,25 +247,52 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND _vectorization_has_cuda_gpu_tes
   set_target_properties(
     VectorizationCxxTests PROPERTIES CUDA_ARCHITECTURES "${VECTORIZATION_CUDA_ARCHITECTURES}"
   )
-  # Clang CUDA + MSVC C++20: std::lerp is constexpr, so Clang implicitly marks it
-  # __host__ __device__, making the internal std::fma call ambiguous (both host and
-  # device versions are in std:: via __clang_cuda_math_forward_declares.h).
-  # -fno-cuda-host-device-constexpr disables the implicit annotation.
   # CMAKE_CUDA_COMPILER_ID is "unknown" when CMAKE_CUDA_COMPILER_FORCED=TRUE (the
   # Clang+CMake 3.28 workaround in cuda.cmake skips the compiler probe). Use
   # CMAKE_CXX_COMPILER_ID as the reliable fallback: when Clang is the CUDA compiler
   # it is always also the CXX compiler, so CMAKE_CXX_COMPILER_ID is always "Clang".
   if(CMAKE_CUDA_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(
-      VectorizationCxxTests PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xclang
-                                    -fno-cuda-host-device-constexpr>
-    )
-    # Clang 22 + -O3 crashes in the always-inline pass when compiling
-    # TestTensorGpu.cpp (heavy tensor.h expression templates).  -O1 is sufficient
-    # for integration tests and avoids the ICE.
+    # The CUDA_ARCHITECTURES property set above is a no-op for flag generation here:
+    # CMAKE_CUDA_COMPILER_FORCED (see cuda.cmake) skips the compiler-probe step that
+    # would normally load Clang's CUDA arch-flag-generation rules, so CMake never
+    # translates CUDA_ARCHITECTURES into --cuda-gpu-arch flags. Without them Clang
+    # falls back to its own default (sm_35), which CUDA 12+ toolkits reject outright.
+    # Emit the flags directly instead of relying on the property.
+    foreach(_vectorization_cuda_arch IN LISTS VECTORIZATION_CUDA_ARCHITECTURES)
+      target_compile_options(
+        VectorizationCxxTests
+        PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--cuda-gpu-arch=sm_${_vectorization_cuda_arch}>
+      )
+    endforeach()
+    unset(_vectorization_cuda_arch)
+
+    # `-Xclang -fno-cuda-host-device-constexpr` used to be applied here as a
+    # target-wide flag to work around a Clang CUDA + C++20 ambiguity where
+    # std::lerp's implicit __host__ __device__ annotation collided with the
+    # device-only std::fma overloads from __clang_cuda_math_forward_declares.h.
+    # That was pulled after it broke __clang_cuda_texture_intrinsics.h
+    # (included unconditionally by __clang_cuda_runtime_wrapper.h for every
+    # CUDA TU) target-wide. On Clang 22.1.2 + CUDA 13.2 the lerp/fma ambiguity
+    # reproduces again (confirmed: TestTensor.cpp, TestTensorF1/F2/F3.cpp,
+    # TestTensorGpu.cpp, TestTensorGpuKineto.cpp, TestGpuSimd.cu all fail with
+    # "call to 'fma' is ambiguous" instantiating std::_Linear_for_lerp<long
+    # double> from MSVC's <cmath>), so it's back — scoped via
+    # set_source_files_properties() to just _vec_tensor_test_sources as
+    # planned above, instead of target-wide, so it doesn't reach any other
+    # CUDA TU in this target that might rely on texture intrinsics.
+    #
+    # Clang -O3 crashes (ICE in the always-inline / GVN passes, confirmed on both
+    # Clang 20 and Clang 22) when compiling heavy tensor.h expression templates.
+    # -O1 is sufficient for integration tests and avoids the ICE. This applies to
+    # every source in _vec_tensor_test_sources, not just TestTensorGpu.cpp — the
+    # ODR-safety tagging above (see comment at the top of this file) compiles
+    # TestTensor.cpp, TestTensorF2.cpp, etc. as CUDA too, and they instantiate the
+    # same expression-tree templates, so they're equally exposed to the crash.
     set_source_files_properties(
-      "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp" PROPERTIES COMPILE_OPTIONS
-                                                                 "$<$<COMPILE_LANGUAGE:CUDA>:-O1>"
+      ${_vec_tensor_test_sources}
+      PROPERTIES
+        COMPILE_OPTIONS
+        "$<$<COMPILE_LANGUAGE:CUDA>:-Xclang>;$<$<COMPILE_LANGUAGE:CUDA>:-fno-cuda-host-device-constexpr>"
     )
     # Clang on Windows does not populate CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES,
     # so lld-link cannot find cudadevrt.lib / cudart_static.lib that Clang
@@ -273,12 +327,16 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND _vectorization_has_cuda_gpu_tes
     # both are the compiler backends choking on the generated code volume
     # (the flattened intermediate translation units run 150k+ lines across
     # 5 GPU architectures), not a source-level bug. -O1 is sufficient for
-    # integration tests and avoids both crashes.
+    # integration tests and avoids both crashes. Applies to every source in
+    # _vec_tensor_test_sources (already includes TestGpuSimd.cu via the Test*.cu
+    # glob), not just TestTensorGpu.cpp — see the ODR-safety comment at the top
+    # of this file for why TestTensor.cpp/TestTensorF2.cpp/etc. are equally
+    # exposed once they're tagged as CUDA sources.
     set_source_files_properties(
-      "${CMAKE_CURRENT_SOURCE_DIR}/TestTensorGpu.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/TestGpuSimd.cu"
-      PROPERTIES COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:CUDA>:-O1>"
+      ${_vec_tensor_test_sources} PROPERTIES COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:CUDA>:-O1>"
     )
   endif()
+  unset(_vec_tensor_test_sources)
   message(
     STATUS
       "VectorizationCxxTests: CUDA simd tests enabled (archs: ${VECTORIZATION_CUDA_ARCHITECTURES})"
@@ -413,20 +471,13 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
     )
   endif()
 
-  # BenchmarkTensorGpu.cpp instantiates GPU expression-template kernels the same
-  # way TestTensorGpu.cpp does, so it inherits the same Clang+CUDA13
-  # texture-intrinsics incompatibility (see the TestTensorGpu.cpp exclusion
-  # above). Without LANGUAGE CUDA the tensor<T> device-dispatch branch in
-  # expressions_evaluator.h is silently compiled out (no __CUDACC__), which
-  # would make the benchmark dereference device pointers from host code.
-  if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND (CMAKE_CUDA_COMPILER_ID STREQUAL "Clang"
-                                                    OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  )
-    list(FILTER bench_sources EXCLUDE REGEX ".*BenchmarkTensorGpu\\.cpp$")
-    message(STATUS "Vectorization: BenchmarkTensorGpu.cpp excluded — Clang CUDA compiler "
-                   "incompatibility (matches TestTensorGpu.cpp exclusion)"
-    )
-  endif()
+  # BenchmarkTensorGpu.cpp used to be excluded here for the same (now-stale,
+  # see the VectorizationCxxTests comment above) Clang+CUDA13 texture-
+  # intrinsics report. Unlike VectorizationCxxTests, each benchmark below is
+  # its own single-source executable (add_executable(${target_name}
+  # "${_bench_source}")), so there is no cross-file ODR concern here — the
+  # existing per-file vectorization_tag_gpu_expression_sources() call further
+  # down (bench_name STREQUAL "BenchmarkTensorGpu") is sufficient on its own.
 
   # LibTorch comparison benchmark requires LibTorch; skip building it entirely
   # (no benchmark_tensorlibtorch target at all) when disabled, instead of
@@ -473,6 +524,41 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
         PRIVATE
           $<$<COMPILE_LANGUAGE:CUDA>:-include${CMAKE_CURRENT_SOURCE_DIR}/cuda_fmt_int128_fix.h>
       )
+      # Same Clang CUDA + MSVC C++20 std::fma ambiguity as VectorizationCxxTests
+      # above (see the detailed comment there) — Clang implicitly marks
+      # std::lerp's internal std::fma call __host__ __device__, colliding with
+      # the device-only overloads pulled in via __clang_cuda_math_forward_declares.h.
+      if(CMAKE_CUDA_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        # CUDA_ARCHITECTURES set above is a no-op for flag generation here -- same
+        # CMAKE_CUDA_COMPILER_FORCED issue as VectorizationCxxTests above. Emit the
+        # flags directly instead of relying on the property.
+        foreach(_vectorization_cuda_arch IN LISTS VECTORIZATION_CUDA_ARCHITECTURES)
+          target_compile_options(
+            ${target_name}
+            PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--cuda-gpu-arch=sm_${_vectorization_cuda_arch}>
+          )
+        endforeach()
+        unset(_vectorization_cuda_arch)
+
+        target_compile_options(
+          ${target_name} PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xclang
+                                 -fno-cuda-host-device-constexpr>
+        )
+        # Same Clang -O3 ICE (always-inline / GVN passes, confirmed on both Clang 20
+        # and Clang 22) as VectorizationCxxTests' _vec_tensor_test_sources above —
+        # BenchmarkTensorGpu.cpp instantiates the same heavy tensor.h expression
+        # templates. -O1 is sufficient for benchmarking and avoids the ICE.
+        #target_compile_options(${target_name} PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-O1>)
+        if(WIN32)
+          target_link_directories(
+            ${target_name} PRIVATE "${CMAKE_CUDA_COMPILER_TOOLKIT_LIBRARY_ROOT}/lib/x64"
+          )
+        else()
+          target_link_directories(
+            ${target_name} PRIVATE "${CMAKE_CUDA_COMPILER_TOOLKIT_LIBRARY_ROOT}/lib64"
+          )
+        endif()
+      endif()
     elseif(_bench_is_gpu AND _bench_gpu_lang STREQUAL "HIP")
       set_target_properties(
         ${target_name} PROPERTIES HIP_STANDARD ${VECTORIZATION_CXX_STANDARD}

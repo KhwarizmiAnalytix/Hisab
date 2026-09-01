@@ -1,400 +1,139 @@
-# Usage Examples
+# Build Examples
 
-This guide provides practical examples of different XSigma build configurations for various use cases. Each example demonstrates how to configure the build system for specific requirements.
+These examples use the current CMake helper and option names. Run them from the
+repository root. `Scripts/setup.py --help` remains the executable reference for
+available helper tokens.
 
-## Table of Contents
-
-- [Minimal Build](#minimal-build)
-- [High-Performance Build](#high-performance-build)
-- [Development Build](#development-build)
-- [External Libraries Build](#external-libraries-build)
-- [Testing and Benchmarking Build](#testing-and-benchmarking-build)
-- [Production Build](#production-build)
-- [Debugging Build](#debugging-build)
-- [CI/CD Build](#cicd-build)
-- [Profiler](#profiler-libraryprofiler)
-
-## Minimal Build
-
-**Goal**: Fastest build time, smallest binary, core functionality only
-
-**Use Case**: Quick testing, embedded systems, resource-constrained environments
+## Daily development
 
 ```bash
-# Disable all optional libraries for fastest build
-cmake -B build_minimal -S . \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCORE_ENABLE_MAGICENUM=OFF \
-    -DLOGGING_BACKEND=NATIVE \
-    -DVECTORIZATION_CPU_BACKEND=no
+# Debug configuration, build, and run the test suite.
+python Scripts/setup.py config.build.test.ninja.clang.debug
 
-cmake --build build_minimal -j
+# Debug configuration for one module and its CMake dependencies.
+python Scripts/setup.py config.build.test.ninja.clang.debug --project.core
 ```
 
-**Result**:
-- ✅ Fastest build time
-- ✅ Smallest binary size
-- ✅ Core functionality only
-- ✅ No external dependencies (except mandatory: fmt, cpuinfo)
+Library tests and GoogleTest support are enabled by default. The `test` action
+runs the CTest suite after building.
 
-## High-Performance Build
-
-**Goal**: Maximum runtime performance with parallel processing and optimized memory allocation
-
-**Use Case**: Production deployments, performance-critical applications, data processing
+## Release CPU build
 
 ```bash
-# Enable performance libraries with optimizations
-cmake -B build_performance -S . \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DPROJECT_ENABLE_LTO=ON \
-    -DMEMORY_ENABLE_TBB=ON \
-    -DMEMORY_ENABLE_MIMALLOC=ON \
-    -DVECTORIZATION_CPU_BACKEND=avx2
+# Portable, explicit AVX2 binary.
+python Scripts/setup.py config.build.test.ninja.clang.release.cxx20.avx2
 
-cmake --build build_performance -j
+# Request uniform automatic LTO and build benchmark targets.
+python Scripts/setup.py config.build.ninja.clang.release.avx2.lto.benchmark
+
+# Tune generated code for the local CPU only.
+python Scripts/setup.py config.build.ninja.clang.release.native
 ```
 
-**Result**:
-- ✅ Maximum runtime performance
-- ✅ Link-Time Optimization enabled
-- ✅ Intel TBB for parallel processing
-- ✅ mimalloc for optimized memory allocation
-- ✅ AVX2 vectorization
+On CMake Release and RelWithDebInfo configurations, modules use
+`*_LTO_MODE=auto` by default. `lto` makes that request explicit; Debug,
+sanitizer, and coverage configurations do not apply LTO.
 
-**Performance Gains**:
-- 5-15% improvement from LTO
-- 2-4x speedup from TBB parallelization
-- 10-20% improvement from mimalloc
-- 8-16x speedup from AVX2 vectorization
-
-## Development Build
-
-**Goal**: Full development environment with testing, benchmarking, and debugging capabilities
-
-**Use Case**: Active development, debugging, testing
+## Diagnostics
 
 ```bash
-# Enable testing and debugging tools
-cmake -B build_dev -S . \
-    -DCMAKE_BUILD_TYPE=Debug \
-    -DBUILD_TESTING=ON \
-    -DENABLE_GTEST=ON \
-    -DENABLE_BENCHMARK=ON \
-    -DPROJECT_ENABLE_SANITIZER=ON \
-    -DPROJECT_SANITIZER_TYPE=address
+# AddressSanitizer (Clang or GCC).
+python Scripts/setup.py config.build.test.ninja.clang.debug --sanitizer.address
 
-cmake --build build_dev -j
+# UndefinedBehaviorSanitizer.
+python Scripts/setup.py config.build.test.ninja.clang.debug --sanitizer.undefined
 
-# Run tests
-ctest --test-dir build_dev --output-on-failure
+# Coverage instrumentation and coverage workflow.
+python Scripts/setup.py config.build.test.ninja.clang.debug.coverage
+
+# Static-analysis integrations.
+python Scripts/setup.py config.build.ninja.clang.debug.clangtidy.iwyu.cppcheck
 ```
 
-**Result**:
-- ✅ Debug symbols enabled
-- ✅ Google Test framework
-- ✅ Benchmarking support
-- ✅ AddressSanitizer for memory debugging
-- ✅ No optimization (faster compilation)
+The helper fans sanitizer, coverage, clang-tidy, and IWYU choices out to the
+loaded CMake modules. `cppcheck` is a post-build helper action, not a CMake
+cache variable.
 
-## External Libraries Build
-
-**Goal**: Faster build using pre-installed system libraries
-
-**Use Case**: Development with system-installed dependencies, CI/CD with cached libraries
+## Parallelism and allocation
 
 ```bash
-# Use system-installed libraries (faster build)
-cmake -B build_external -S . \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DXSIGMA_ENABLE_EXTERNAL=ON \
-    -DMEMORY_ENABLE_TBB=ON \
-    -DENABLE_GTEST=ON
+# Select the OpenMP execution backend.
+python Scripts/setup.py config.build.test.ninja.clang.release --parallel.openmp
 
-cmake --build build_external -j
+# Select the TBB execution backend and enable the Memory TBB allocator.
+python Scripts/setup.py config.build.test.ninja.clang.release --parallel.tbb
+
+# Use a compiler cache backend.
+python Scripts/setup.py config.build.ninja.clang.release.ccache
 ```
 
-**Prerequisites**:
-```bash
-# Ubuntu/Debian
-sudo apt-get install libfmt-dev libgtest-dev libtbb-dev
+`parallel.std`, `parallel.openmp`, and `parallel.tbb` are exclusive choices.
+The `cache` token disables compiler-cache launchers because they are enabled by
+default; use `none`, `ccache`, `sccache`, or `buildcache` to choose a backend.
 
-# macOS
-brew install fmt googletest tbb
-
-# Fedora/RHEL
-sudo dnf install fmt-devel gtest-devel tbb-devel
-```
-
-**Result**:
-- ✅ Faster build (libraries already compiled)
-- ✅ Smaller repository size
-- ✅ Shared libraries across projects
-
-## Testing and Benchmarking Build
-
-**Goal**: Comprehensive testing and performance benchmarking
-
-**Use Case**: Quality assurance, performance testing, regression testing
+## Logging and profiling
 
 ```bash
-# Enable all testing and benchmarking features
-cmake -B build_test -S . \
-    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DBUILD_TESTING=ON \
-    -DXSIGMA_GOOGLE_TEST=ON \
-    -DENABLE_BENCHMARK=ON \
-    -DPROJECT_ENABLE_COVERAGE=ON
-
-cmake --build build_test -j
-
-# Run tests with coverage
-ctest --test-dir build_test --output-on-failure
-
-# Generate coverage report
-cmake --build build_test --target coverage-html
+python Scripts/setup.py config.build.test.ninja.clang.release --logging=SPDLOG
+python Scripts/setup.py config.build.test.ninja.clang.release --logging=GLOG
+python Scripts/setup.py config.build.test.ninja.clang.release --profiler.kineto
+python Scripts/setup.py config.build.test.ninja.clang.release --profiler.itt
 ```
 
-**Result**:
-- ✅ Optimized code with debug symbols
-- ✅ Unit testing with Google Test
-- ✅ Performance benchmarking
-- ✅ Code coverage analysis
+SPDLOG and Kineto are the defaults. The native profiler pipeline is always
+compiled, so `--profiler.native` is not a backend selection.
 
-## Production Build
-
-**Goal**: Optimized, stable build for production deployment
-
-**Use Case**: Production servers, release distributions, customer deployments
+## GPU Vectorization
 
 ```bash
-# Production-ready build with all optimizations
-cmake -B build_production -S . \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DPROJECT_ENABLE_LTO=ON \
-    -DMEMORY_ENABLE_MIMALLOC=ON \
-    -DVECTORIZATION_CPU_BACKEND=avx2 \
-    -DLOGGING_BACKEND=GLOG
+# CUDA backend for Memory and Vectorization.
+python Scripts/setup.py config.build.test.ninja.clang.release.cuda --project.vectorization
 
-cmake --build build_production -j
+# HIP backend. Use Linux or another supported Unix environment.
+python Scripts/setup.py config.build.test.ninja.clang.release.hip --project.vectorization
 
-# Optional: Strip debug symbols for smaller binary
-strip build_production/bin/xsigma
+# Metal backend on Apple platforms.
+python Scripts/setup.py config.build.test.ninja.clang.release.metal --project.vectorization
 ```
 
-**Result**:
-- ✅ Maximum optimization
-- ✅ Production-grade logging (GLOG)
-- ✅ High-performance memory allocator
-- ✅ SIMD vectorization
-- ✅ Smallest possible binary (after stripping)
+The helper forwards a matching GPU backend to Memory and Vectorization. CUDA,
+HIP, and Metal are compile-time exclusive. HIP is not supported on Windows, and
+Metal requires an Apple platform.
 
-## Debugging Build
-
-**Goal**: Maximum debugging information with sanitizers and analysis tools
-
-**Use Case**: Debugging crashes, memory issues, undefined behavior
+## Direct CMake
 
 ```bash
-# Debug build with multiple sanitizers and analysis tools
-cmake -B build_debug -S . \
-    -DCMAKE_BUILD_TYPE=Debug \
-    -DPROJECT_ENABLE_SANITIZER=ON \
-    -DPROJECT_SANITIZER_TYPE=address \
-    -DPROJECT_ENABLE_IWYU=ON \
-    -DPROJECT_ENABLE_CPPCHECK=ON \
-    -DBUILD_TESTING=ON
-
-cmake --build build_debug -j
-
-# Run with sanitizer
-./build_debug/bin/xsigma
-
-# Check analysis results
-less build_debug/iwyu.log
-less build_debug/cppcheckoutput.log
+cmake -S . -B build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DLOGGING_BACKEND=SPDLOG \
+  -DPROFILER_BACKEND=KINETO \
+  -DVECTORIZATION_CPU_BACKEND=avx2 \
+  -DMEMORY_GPU_BACKEND=none \
+  -DVECTORIZATION_GPU_BACKEND=none
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
 ```
 
-**Result**:
-- ✅ Full debug symbols
-- ✅ AddressSanitizer for memory errors
-- ✅ Include-What-You-Use analysis
-- ✅ Cppcheck static analysis
-- ✅ No optimization for accurate debugging
+For direct instrumentation, use module-scoped variables such as
+`CORE_ENABLE_SANITIZER`, `CORE_SANITIZER_TYPE`, or
+`VECTORIZATION_ENABLE_COVERAGE`. Do not use removed `PROJECT_ENABLE_*`,
+`ENABLE_GTEST`, `ENABLE_BENCHMARK`, or `XSIGMA_GOOGLE_TEST` variables.
 
-## CI/CD Build
-
-**Goal**: Fast, reproducible builds for continuous integration
-
-**Use Case**: GitHub Actions, GitLab CI, Jenkins, automated testing
+## Bazel
 
 ```bash
-# Fast CI build with external libraries and testing
-cmake -B build_ci -S . \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DXSIGMA_ENABLE_EXTERNAL=ON \
-    -DBUILD_TESTING=ON \
-    -DENABLE_GTEST=ON \
-    -DPROJECT_ENABLE_COVERAGE=ON
-
-cmake --build build_ci -j
-
-# Run tests
-ctest --test-dir build_ci --output-on-failure
-
-# Generate coverage report
-cmake --build build_ci --target coverage-html
+python Scripts/setup_bazel.py build.test
+python Scripts/setup_bazel.py build.test.release.avx2 --profiler.itt
+python Scripts/setup_bazel.py build.test.debug.asan
+bazel test --config=release //Library/Core/Testing/Cxx:CoreCxxTests
 ```
 
-**CI Configuration Example** (GitHub Actions):
-```yaml
-name: CI Build
+See [the Bazel guide](../BAZEL_USER_GUIDE.md) for Bazel-specific configuration
+names and feature limitations.
 
-on: [push, pull_request]
+## Related documentation
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libfmt-dev libgtest-dev ninja-build
-
-      - name: Configure
-        run: |
-          cmake -B build -S . \
-            -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DXSIGMA_ENABLE_EXTERNAL=ON \
-            -DBUILD_TESTING=ON
-
-      - name: Build
-        run: cmake --build build -j
-
-      - name: Test
-        run: ctest --test-dir build --output-on-failure
-```
-
-**Result**:
-- ✅ Fast build with cached dependencies
-- ✅ Automated testing
-- ✅ Code coverage reporting
-- ✅ Reproducible builds
-
-## Profiler (`Library/Profiler`)
-
-**Goal**: CPU timelines, native Metal GPU planes, Kineto GPU correlation, ITT/VTune ranges
-
-**Use Case**: Performance analysis, Chrome/Perfetto traces, hotspot tables
-
-Canonical guide: [Docs/profiler/profiler.md](../profiler/profiler.md).
-
-Native session:
-
-```cpp
-#include "native/session/profiler.h"
-
-using namespace profiler;
-
-profiler_session session;
-session.start();
-{
-    PROFILER_PROFILE_SCOPE("DataProcessing");
-    // work
-}
-session.stop();
-session.write_chrome_trace("native_trace.json");
-std::cout << session.generate_hotspot_report()->table();
-```
-
-Kineto (`RECORD_*` + optional CUDA correlation):
-
-```cpp
-#include "bespoke/kineto/profiler_kineto.h"
-#include "common/instrumentation.h"
-
-using namespace profiler::profiler_impl;
-using profiler::profiler_impl::impl::ActivityType;
-using profiler::profiler_impl::impl::ProfilerConfig;
-using profiler::profiler_impl::impl::ProfilerState;
-
-ProfilerConfig config(ProfilerState::KINETO);
-enableProfiler(config, {ActivityType::CPU});
-{
-    PROFILER_RECORD_USER_SCOPE("DataProcessing");
-    // work
-}
-auto result = disableProfiler();
-result->save("kineto_trace.json");
-```
-
-Build and test:
-
-```bash
-cd Scripts
-python3 setup.py config.build.test.native.ninja --project.profiler
-python3 setup.py config.build.test.native.ninja.metal --project.profiler
-```
-
-Tests live in `Library/Profiler/Testing/Cxx/` (see the list in profiler.md).
-There is no `TestEnhancedProfiler.cpp`.
-
-## Comparison Table
-
-| Configuration | Build Time | Binary Size | Performance | Use Case |
-|---------------|------------|-------------|-------------|----------|
-| **Minimal** | Fastest | Smallest | Baseline | Quick testing, embedded |
-| **High-Performance** | Medium | Medium | Maximum | Production, data processing |
-| **Development** | Slow | Large | Low | Active development |
-| **External** | Fast | Small | Good | Development with system libs |
-| **Testing** | Medium | Large | Good | QA, regression testing |
-| **Production** | Medium | Small | Maximum | Production deployment |
-| **Debugging** | Slow | Largest | Lowest | Debugging, analysis |
-| **CI/CD** | Fast | Small | Good | Automated builds |
-
-## Best Practices
-
-### Choosing the Right Configuration
-
-1. **Development**: Use Development Build for daily work
-2. **Testing**: Use Testing Build before commits
-3. **Debugging**: Use Debugging Build when investigating issues
-4. **Production**: Use Production Build for releases
-5. **CI/CD**: Use CI/CD Build for automated pipelines
-
-### Multiple Build Directories
-
-Keep separate build directories for different configurations:
-
-```bash
-# Development
-cmake -B build_dev -S . -DCMAKE_BUILD_TYPE=Debug
-
-# Release
-cmake -B build_release -S . -DCMAKE_BUILD_TYPE=Release
-
-# Testing
-cmake -B build_test -S . -DBUILD_TESTING=ON
-```
-
-### Switching Configurations
-
-```bash
-# Clean and reconfigure
-rm -rf build
-cmake -B build -S . [new options]
-cmake --build build -j
-```
-
-## Related Documentation
-
-- [Build Configuration](build/build-configuration.md) - Detailed build options
-- [Third-Party Dependencies](third-party-dependencies.md) - Dependency management
-- [Sanitizers](sanitizer.md) - Memory debugging tools
-- [Code Coverage](code-coverage.md) - Coverage analysis
-- [Cross-Platform Building](cross-platform-building.md) - Platform-specific instructions
+- [CMake setup](setup.md)
+- [Build configuration](build/build-configuration.md)
+- [Project option reference](../PROJECT_FLAGS.md)
+- [Profiler](../profiler/profiler.md)

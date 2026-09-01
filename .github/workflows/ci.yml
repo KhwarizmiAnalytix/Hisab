@@ -20,7 +20,7 @@ env:
   BUILD_TYPE: Release
   CACHE_VERSION: v3  # v3: invalidate caches from the Hisab repo rename (absolute CMakeCache paths)
   SCCACHE_VERSION: "0.7.7"  # Version of sccache to use
-  BUILDCACHE_VERSION: "0.33.0"  # Version of buildcache to use on Windows
+  BUILDCACHE_VERSION: "0.28.4"  # Version of buildcache to use on Windows
 
 jobs:
   # ============================================================================
@@ -846,6 +846,8 @@ jobs:
           -DPROFILER_SANITIZER_TYPE=${{ matrix.sanitizer }} \
           -DMODELS_ENABLE_SANITIZER=ON \
           -DMODELS_SANITIZER_TYPE=${{ matrix.sanitizer }} \
+          -DGRAPH_ENABLE_SANITIZER=ON \
+          -DGRAPH_SANITIZER_TYPE=${{ matrix.sanitizer }} \
           -DBUILD_TESTING=ON \
           -DPARALLEL_ENABLE_TBB=ON \
           -DMEMORY_ENABLE_TBB=ON \
@@ -2155,9 +2157,11 @@ jobs:
 
   # ============================================================================
   # CMake GPU backends — CUDA / HIP / Metal
-  # Hosted runners have no NVIDIA/AMD GPU. CUDA/HIP jobs compile the GPU path
-  # and run the CPU test suite; device tests GTEST_SKIP when cudaGetDeviceCount
-  # is 0. Metal runs on real macOS GPU hardware.
+  # Hosted runners have no NVIDIA/AMD GPU. CUDA (Linux) and HIP jobs compile
+  # the GPU path and run the CPU test suite; device tests GTEST_SKIP when
+  # cudaGetDeviceCount is 0. CUDA (Windows) is build-only (see matrix comment
+  # below — no driver-less nvcuda.dll stub exists for Windows). Metal runs on
+  # real macOS GPU hardware.
   # ============================================================================
   cmake-gpu-backend-tests:
     name: "CMake GPU - ${{ matrix.backend }} — ${{ matrix.os }}"
@@ -2169,6 +2173,15 @@ jobs:
         include:
           - backend: cuda
             os: ubuntu-latest
+            extra_cmake: "-DMEMORY_GPU_BACKEND=cuda -DVECTORIZATION_GPU_BACKEND=cuda"
+          # Windows CUDA is build-only: NVIDIA ships a driver stub (libcuda.so)
+          # for Linux CI but not an equivalent nvcuda.dll for Windows, so a
+          # CUDA-linked .exe compiles/links fine here but cannot load on a
+          # driver-less runner. This still catches real compile/link
+          # regressions (e.g. windows.h macro pollution via NVTX headers,
+          # missing CUPTI runtime DLL staging) without a flaky test step.
+          - backend: cuda
+            os: windows-latest
             extra_cmake: "-DMEMORY_GPU_BACKEND=cuda -DVECTORIZATION_GPU_BACKEND=cuda"
           - backend: hip
             os: ubuntu-latest
@@ -2198,6 +2211,12 @@ jobs:
         chmod +x .github/workflows/install/install-deps-macos.sh
         ./.github/workflows/install/install-deps-macos.sh --with-tbb
 
+    - name: Install dependencies (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        & .\.github\workflows\install\install-deps-windows.ps1 -WithCuda
+
     - name: Setup macOS linker environment
       if: runner.os == 'macOS'
       run: |
@@ -2208,6 +2227,12 @@ jobs:
     - name: Configure (CMake ${{ matrix.backend }})
       shell: bash
       run: |
+        # TBB is tested separately on Windows (see build-matrix); this job's
+        # Windows install step doesn't provision it.
+        tbb_flags="-DPARALLEL_ENABLE_TBB=ON -DMEMORY_ENABLE_TBB=ON"
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          tbb_flags="-DPARALLEL_ENABLE_TBB=OFF -DMEMORY_ENABLE_TBB=OFF"
+        fi
         cmake -B build \
           -C .github/cmake/configure_cache.cmake \
           -S . \
@@ -2224,14 +2249,14 @@ jobs:
           -DVECTORIZATION_ENABLE_BENCHMARK=OFF \
           -DPARALLEL_ENABLE_BENCHMARK=OFF \
           -DPROFILER_ENABLE_BENCHMARK=OFF \
-          -DPARALLEL_ENABLE_TBB=ON \
-          -DMEMORY_ENABLE_TBB=ON \
+          $tbb_flags \
           ${{ matrix.extra_cmake }}
 
     - name: Build
       run: cmake --build build -j 2
 
     - name: Test
+      if: runner.os != 'Windows'
       working-directory: ${{ github.workspace }}/build
       run: |
         # Toolkit install has no NVIDIA driver; DT_NEEDED libcuda.so.1 must

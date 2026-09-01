@@ -40,7 +40,9 @@
       "Bash(pip3 install *)",
       "Bash(PYTHONPATH=src python3 -m pytest tests/test_html_report.py -q)",
       "Bash(python3 -)",
-      "Bash(PYTHONPATH=src python3 -m pytest tests/ -v)"
+      "Bash(PYTHONPATH=src python3 -m pytest tests/ -v)",
+      "Bash(python3 setup.py build.TEST.native.cuda.avx2.vv)",
+      "Bash(tee /tmp/claude-1000/-home-toufik-dev-XSigma/49a7efe1-cb78-46c1-aea2-facc14940d56/scratchpad/build_log.txt)"
     ]
   },
   "skipDangerousModePermissionPrompt": true,

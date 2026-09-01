@@ -1,217 +1,135 @@
 # Build Configuration
 
-This guide covers XSigma's build configuration options, including build types, C++ standard selection, and optimization settings.
+This guide describes the current CMake configuration model. XSigma does not
+have a project-wide C++ standard, LTO, sanitizer, coverage, or test framework
+switch. Those choices belong to the library modules and are named with a
+module prefix, such as `CORE_LTO_MODE` or `MEMORY_ENABLE_SANITIZER`.
 
-## Table of Contents
+For whole-project builds, use [the setup helper](../setup.md). It fans a single
+intent across the loaded modules and avoids stale cache-variable combinations.
 
-- [Build Types](#build-types)
-- [C++ Standard Selection](#c-standard-selection)
-- [Optimization Options](#optimization-options)
-- [Link-Time Optimization (LTO)](#link-time-optimization-lto)
-- [Advanced Configuration](#advanced-configuration)
-- [CMake Optimization Modules](#cmake-optimization-modules)
+## Build types
 
-## Build Types
-
-XSigma supports four standard CMake build types, each optimized for different use cases:
-
-| Build Type | Description | Optimization | Use Case |
-|------------|-------------|--------------|----------|
-| `Debug` | Development build | No optimization, debug info | Active development, debugging |
-| `Release` | Production build | Full optimization | Production deployments |
-| `RelWithDebInfo` | Release with debug info | Optimized + debug symbols | Performance profiling, production debugging |
-| `MinSizeRel` | Size-optimized build | Optimize for size | Embedded systems, size-constrained environments |
-
-### Usage
+| CMake build type | Intended use | LTO default |
+|---|---|---|
+| `Debug` | Debugging and development | `off` |
+| `Release` | Optimized builds | `auto` for performance-profiled modules |
+| `RelWithDebInfo` | Optimized builds with debug information | `auto` for performance-profiled modules |
 
 ```bash
-# Debug build (default)
-cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug
-
-# Release build
-cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
-
-# Release with debug info
-cmake -B build -S . -DCMAKE_BUILD_TYPE=RelWithDebInfo
-
-# Minimal size build
-cmake -B build -S . -DCMAKE_BUILD_TYPE=MinSizeRel
+cmake -S . -B build-debug -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake -S . -B build-release -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B build-relwithdebinfo -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build-release --parallel
 ```
 
-## C++ Standard Selection
+With Visual Studio or another multi-config generator, select the configuration
+at build time:
 
-XSigma supports C++17, C++20, and C++23 standards. The default is C++17 for maximum compatibility.
+```powershell
+cmake -S . -B build-vs -G "Visual Studio 17 2022"
+cmake --build build-vs --config Release --parallel
+ctest --test-dir build-vs -C Release --output-on-failure
+```
+
+## C++ standard
+
+Each library defaults to C++20 and accepts `11`, `14`, `17`, `20`, or `23` in
+its `<MODULE>_CXX_STANDARD` cache variable. The helper applies `cxx17`,
+`cxx20`, or `cxx23` to every loaded module.
 
 ```bash
-# C++17 (default)
-cmake -B build -S . -DPROJECT_CXX_STANDARD=17
+python Scripts/setup.py config.build.test.ninja.clang.release.cxx20
 
-# C++20
-cmake -B build -S . -DPROJECT_CXX_STANDARD=20
-
-# C++23
-cmake -B build -S . -DPROJECT_CXX_STANDARD=23
+# Direct CMake for a single library.
+cmake -S . -B build-core -G Ninja \
+  -DXSIGMA_LIBRARY_PROJECT=Core \
+  -DCORE_CXX_STANDARD=23
 ```
 
-### Recommendations
+## LTO and linkers
 
-- **C++17**: Maximum compatibility, stable features
-- **C++20**: Modern features like concepts, ranges, coroutines
-- **C++23**: Latest features, may require recent compiler versions
+LTO is controlled by `<MODULE>_LTO_MODE`, not `PROJECT_ENABLE_LTO`. Supported
+modes are `off`, `thin`, `full`, `ipo`, and `auto`.
 
-## Optimization Options
-
-### Link-Time Optimization (LTO)
-
-Enable Link-Time Optimization for maximum performance in release builds:
+- `auto` picks ThinLTO for a Clang GNU-style driver and IPO for GCC or the
+  MSVC link model.
+- CMake selects `auto` for a non-Debug performance build and `off` for Debug.
+- Coverage and sanitizer configurations prevent LTO from being applied to the
+  affected target.
+- `<MODULE>_LINKER_CHOICE` accepts `default`, `lld`, `mold`, `gold`, and
+  `lld-link`.
 
 ```bash
-# Enable LTO (default is ON)
-cmake -B build -S . \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DPROJECT_ENABLE_LTO=ON
+python Scripts/setup.py config.build.ninja.clang.release.lto
+python Scripts/setup.py config.build.ninja.clang.release --lto.thin
 
-# Disable LTO
-cmake -B build -S . \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DPROJECT_ENABLE_LTO=OFF
+cmake -S . -B build-vectorization -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DXSIGMA_LIBRARY_PROJECT=Vectorization \
+  -DVECTORIZATION_LTO_MODE=thin \
+  -DVECTORIZATION_LINKER_CHOICE=lld
 ```
 
-**Benefits:**
-- Improved runtime performance (5-15% typical)
-- Better inlining across translation units
-- Dead code elimination
-- Reduced binary size in some cases
+## Testing, benchmarks, and instrumentation
 
-**Considerations:**
-- Increased build time (10-30% longer)
-- Higher memory usage during linking
-- Requires recent compiler versions
-
-**Compiler-Specific Implementation:**
-
-| Compiler | Flags | Tools |
-|----------|-------|-------|
-| GCC | `-flto` | `gcc-ar`, `gcc-ranlib` |
-| Clang | `-flto` | `llvm-ar`, `llvm-ranlib` (optional) |
-| Apple Clang | `-flto` | System tools |
-| MSVC | `/GL` (compile), `/LTCG` (link) | Built-in |
-
-### Troubleshooting LTO
-
-If LTO fails:
-
-1. **Disable LTO**:
-   ```bash
-   cmake -B build -S . -DPROJECT_ENABLE_LTO=OFF
-   ```
-
-2. **Check compiler version** - ensure recent GCC/Clang/MSVC:
-   - GCC 7.0+
-   - Clang 5.0+
-   - Apple Clang 9.0+
-   - MSVC 19.14+ (Visual Studio 2017 15.7+)
-
-3. **Increase available memory** - LTO can be memory-intensive:
-   ```bash
-   # On Linux/macOS, increase available memory or use swap
-   # On Windows, ensure sufficient RAM is available
-   ```
-
-4. **Check for LTO support**:
-   ```bash
-   # The CMake configuration will verify LTO support
-   # Check the CMake output for "LTO support verified"
-   ```
-
-5. **Use with specific build types**:
-   ```bash
-   # LTO works best with Release builds
-   cmake -B build -S . \
-       -DCMAKE_BUILD_TYPE=Release \
-       -DPROJECT_ENABLE_LTO=ON
-   ```
-
-## Advanced Configuration
-
-### Custom Compiler Flags
-
-Override optimization flags for specific requirements:
+Library test subtrees and GoogleTest support are on by default. Configure only
+the modules that need a different policy:
 
 ```bash
-# Custom optimization flags
-cmake -B build -S . -DCMAKE_CXX_FLAGS_RELEASE="-O3 -march=native -DNDEBUG"
-
-# Add additional flags
-cmake -B build -S . -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic"
+cmake -S . -B build-minimal -G Ninja \
+  -DCORE_ENABLE_TESTING=OFF \
+  -DLOGGING_ENABLE_TESTING=OFF \
+  -DMEMORY_ENABLE_TESTING=OFF \
+  -DPARALLEL_ENABLE_TESTING=OFF \
+  -DPROFILER_ENABLE_TESTING=OFF \
+  -DVECTORIZATION_ENABLE_TESTING=OFF
 ```
 
-### Testing Configuration
-
-Enable testing with Google Test:
+For sanitizers and coverage, the helper is clearer because it applies the
+matching per-module pair:
 
 ```bash
-cmake -B build -S . \
-    -DBUILD_TESTING=ON \
-    -DENABLE_GTEST=ON
-
-# Build and run tests
-cmake --build build
-ctest --test-dir build
+python Scripts/setup.py config.build.test.ninja.clang.debug --sanitizer.address
+python Scripts/setup.py config.build.test.ninja.clang.debug.coverage
+python Scripts/setup.py config.build.ninja.clang.release.benchmark
 ```
 
-## CMake Optimization Modules
-
-XSigma includes optimized CMake modules that improve configuration speed and runtime performance. These are included automatically by the top-level CMakeLists.txt and require no manual setup.
-
-### Available Modules
-
-| Module | Purpose | Location |
-|--------|---------|----------|
-| `build_type.cmake` | Optimized build-type flags, LTO handling, MSVC runtime selection | `Cmake/flags/build_type.cmake` |
-| `checks.cmake` | Fast, cached platform/compiler validation and C++17 feature checks | `Cmake/flags/checks.cmake` |
-| `platform.cmake` | Platform-specific optimizations, vectorization flags, parallel builds | `Cmake/flags/platform.cmake` |
-
-### Features
-
-- **Automatic optimization**: Compiler-specific flags applied automatically
-- **Cached checks**: Platform and compiler checks cached for faster reconfiguration
-- **Safe flag application**: Flags tested before application to avoid build failures
-- **Parallel build support**: Automatic detection and configuration of parallel compilation
-
-## Best Practices
-
-### Development Workflow
+Direct CMake uses the module prefix:
 
 ```bash
-# Development build with testing
-cmake -B build -S . \
-    -DCMAKE_BUILD_TYPE=Debug \
-    -DBUILD_TESTING=ON \
-    -DENABLE_GTEST=ON
+cmake -S . -B build-memory-asan -G Ninja \
+  -DXSIGMA_LIBRARY_PROJECT=Memory \
+  -DMEMORY_ENABLE_SANITIZER=ON \
+  -DMEMORY_SANITIZER_TYPE=address
 ```
 
-### Production Builds
+Sanitizers require Clang or GCC. Google Benchmark defaults to `ON` in most
+modules, but `setup.py` only enables it when the `benchmark` token is present.
+
+## Hardware and runtime backends
 
 ```bash
-# Optimized production build
-cmake -B build -S . \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DPROJECT_ENABLE_LTO=ON
+# Explicit CPU SIMD tier.
+cmake -S . -B build-avx2 -G Ninja -DVECTORIZATION_CPU_BACKEND=avx2
+
+# CUDA or HIP requires matching Memory and Vectorization backend values.
+cmake -S . -B build-cuda -G Ninja \
+  -DMEMORY_GPU_BACKEND=cuda \
+  -DVECTORIZATION_GPU_BACKEND=cuda
+
+# Select the complete parallel execution backend.
+cmake -S . -B build-tbb -G Ninja -DPARALLEL_BACKEND=tbb
+cmake -S . -B build-openmp -G Ninja -DPARALLEL_BACKEND=openmp
 ```
 
-### CI/CD Builds
+`VECTORIZATION_CPU_BACKEND` defaults according to the host architecture. CUDA,
+HIP, and Metal are exclusive GPU selections; Metal requires Apple platforms and
+HIP is not supported on Windows in this project.
 
-```bash
-# Fast CI build with external libraries
-cmake -B build -S . \
-    -DXSIGMA_ENABLE_EXTERNAL=ON \
-    -DBUILD_TESTING=ON
-```
+## Related documentation
 
-## Related Documentation
-
-- [Vectorization Support](../vectorization.md) - CPU SIMD optimization
-- [Sanitizers](../sanitizer.md) - Memory debugging and analysis
-- [Code Coverage](../code-coverage.md) - Test coverage analysis
-- [Cross-Platform Building](../cross-platform-building.md) - Platform-specific instructions
+- [Setup helper reference](../setup.md)
+- [Project CMake options](../../PROJECT_FLAGS.md)
+- [Usage examples](../usage-examples.md)
+- [Cross-platform building](../cross-platform-building.md)

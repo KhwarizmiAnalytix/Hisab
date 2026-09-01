@@ -1,393 +1,99 @@
-# High-Performance Computing Guide
+# High-Performance Computing
 
-XSigma provides comprehensive support for high-performance computing through CPU vectorization (SIMD), GPU acceleration (CUDA/HIP/Metal), and multithreading capabilities.
+XSigma's performance model combines a compile-time CPU SIMD choice, an optional
+compile-time GPU backend, and an exclusive parallel-execution backend. Measure
+the target workload before selecting an aggressive configuration.
 
-## Table of Contents
+## CPU SIMD
 
-- [Vectorization (SIMD)](#vectorization-simd)
-- [GPU Acceleration](#gpu-acceleration)
-- [Multithreading](#multithreading)
-- [Combining HPC Features](#combining-hpc-features)
-- [Performance Tuning](#performance-tuning)
+Vectorization compiles one CPU ISA per binary through
+`VECTORIZATION_CPU_BACKEND`:
 
-## Vectorization (SIMD)
+| Backend | Use case |
+|---|---|
+| `no` | Maximum portability or scalar debugging. |
+| `sse` | Older x86 targets. |
+| `avx`, `avx2`, `avx512` | Compatible x86 targets only. |
+| `neon`, `sve` | Compatible AArch64 targets only. |
 
-CPU SIMD (Single Instruction, Multiple Data) instruction sets enable parallel processing on modern processors.
-
-### Supported Instruction Sets
-
-| Instruction Set | Target Processors | Notes |
-|-----------------|-------------------|-------|
-| **SSE/SSE2** | x86-64 | Oldest x86 you still support |
-| **AVX** | Sandy Bridge+ (2011) | |
-| **AVX2** | Haswell+ (2013) | Default on x86 |
-| **AVX-512** | Skylake-X+ (2017) | SIGILL on CPUs without AVX-512 |
-| **NEON** | AArch64 / Apple Silicon | |
-| **SVE** | SVE-capable AArch64 | Fixed 128-bit lanes |
-
-Full ISA table and `setup.py` examples: [vectorization.md](vectorization.md).
-Evaluator / GPU fusion: [vectorization_backends.md](../vectorization_backends.md).
-
-### Building with Vectorization
+The default is host-dependent: AVX2 on recognised x86, NEON on AArch64, and
+`no` otherwise. There is no runtime ISA dispatcher; an incompatible binary can
+fail with an illegal instruction.
 
 ```bash
-cd Scripts
-
-# Build with AVX2 (recommended for modern CPUs)
-python setup.py config.build.ninja.clang.release.avx2
-
-# Build with AVX-512 (for latest high-end systems)
-python setup.py config.build.ninja.clang.release.avx512
-
-# Build with SSE (for legacy compatibility)
-python setup.py config.build.ninja.clang.release.sse
-
-# Apple Silicon
-python setup.py config.build.ninja.clang.release.neon
+python Scripts/setup.py config.build.test.ninja.clang.release.avx2
+python Scripts/setup.py config.build.test.ninja.clang.release.neon
+python Scripts/setup.py config.build.test.ninja.clang.release.avx512
 ```
 
-ISA is compile-time (`VECTORIZATION_CPU_BACKEND`). `tensor` expressions and
-`simd<T>` use that backend; there is no runtime CPU dispatcher. Wrong ISA for
-the host is an illegal-instruction crash, not a fallback.
+## GPU execution
 
-### Vectorization with Other Features
+Memory and Vectorization choose one of `none`, `cuda`, `hip`, or `metal` at
+configure time. Keep the two selectors equal when using GPU Vectorization:
 
 ```bash
-cd Scripts
+python Scripts/setup.py config.build.test.ninja.clang.release.cuda --project.vectorization
 
-# Vectorization with LTO optimization (LTO enabled by default)
-python setup.py config.build.ninja.clang.release.avx2
-
-# Vectorization with compiler caching
-python setup.py config.build.ninja.clang.release.avx2.ccache
-
-# Vectorization with testing
-python setup.py config.build.test.ninja.clang.release.avx2
-
-# Vectorization with code coverage
-python setup.py config.build.test.ninja.clang.debug.avx2.coverage
+cmake -S . -B build-metal -G Ninja \
+  -DMEMORY_GPU_BACKEND=metal \
+  -DVECTORIZATION_GPU_BACKEND=metal
 ```
 
-## GPU Acceleration
+CUDA, HIP, and Metal are mutually exclusive in one binary. Metal requires
+Apple platforms. HIP is unsupported on Windows in this project. The GPU
+evaluator contract and remaining backend differences are documented in
+[vectorization_backends.md](../vectorization_backends.md).
 
-XSigma supports NVIDIA CUDA, AMD HIP, and Apple Metal for GPU-accelerated computing. Expression fusion and the remaining launch-API gaps: [vectorization_backends.md](../vectorization_backends.md).
+## Parallel execution
 
-### CUDA Support
-
-NVIDIA GPU acceleration for massive parallel computing.
-
-#### Requirements
-
-- **NVIDIA GPU** with compute capability 3.5 or higher
-- **CUDA Toolkit** 11.0 or later
-- **cuDNN** (optional, for deep learning operations)
-- **Supported Platforms**: Linux, Windows, macOS (with external GPU)
-
-#### GPU Architectures Supported
-
-| Architecture | GPU Examples | Compute Capability |
-|--------------|--------------|-------------------|
-| **Fermi** | GTX 400/500 | 2.0 |
-| **Kepler** | GTX 600/700 | 3.0-3.5 |
-| **Maxwell** | GTX 750/950 | 5.0-5.3 |
-| **Pascal** | GTX 1000 series | 6.0-6.2 |
-| **Volta** | Tesla V100 | 7.0 |
-| **Turing** | RTX 2000 series | 7.5 |
-| **Ampere** | RTX 3000 series, A100 | 8.0-8.6 |
-| **Ada** | RTX 4000 series | 8.9-9.0 |
-| **Hopper** | H100 | 9.0 |
-
-#### Building with CUDA
+`PARALLEL_BACKEND` has three exclusive values: `std`, `openmp`, and `tbb`.
+Select them through the helper:
 
 ```bash
-cd Scripts
-
-# Basic CUDA support
-python setup.py config.build.ninja.clang.cuda
-
-# CUDA with optimizations
-python setup.py config.build.ninja.clang.release.cuda
-
-# CUDA with testing
-python setup.py config.build.test.ninja.clang.debug.cuda
-
-# CUDA with code coverage
-python setup.py config.build.test.ninja.clang.debug.cuda.coverage
-
-# CUDA with sanitizers (use dot notation: sanitizer.address)
-python setup.py config.build.test.ninja.clang.debug.cuda --sanitizer.address
-
-# CUDA with compiler caching
-python setup.py config.build.ninja.clang.release.cuda.ccache
-
-# CUDA with LTO (LTO enabled by default)
-python setup.py config.build.ninja.clang.release.cuda
-
-# CUDA with vectorization
-python setup.py config.build.ninja.clang.release.cuda.avx2
-
-# CUDA with TBB multithreading
-python setup.py config.build.ninja.clang.release.cuda.tbb
+python Scripts/setup.py config.build.test.ninja.clang.release --parallel.std
+python Scripts/setup.py config.build.test.ninja.clang.release --parallel.openmp
+python Scripts/setup.py config.build.test.ninja.clang.release --parallel.tbb
 ```
 
-#### CUDA Configuration
+The TBB parallel backend also enables the separate Memory TBB allocator when
+configured through `setup.py`. `MEMORY_ENABLE_TBB` by itself only concerns the
+Memory allocator.
 
-**CMake Flag**: `MEMORY_GPU_BACKEND=cuda` (default: `none`)
-
-**GPU Architecture Selection**:
-```bash
-# Auto-detect GPU architecture (recommended)
-cmake -B build -S . -DMEMORY_GPU_BACKEND=cuda -DVECTORIZATION_CUDA_ARCHITECTURES=native
-
-# Specific architecture
-cmake -B build -S . -DMEMORY_GPU_BACKEND=cuda -DVECTORIZATION_CUDA_ARCHITECTURES=ampere
-
-# Multiple architectures
-cmake -B build -S . -DMEMORY_GPU_BACKEND=cuda -DVECTORIZATION_CUDA_ARCHITECTURES=all
-```
-
-**Memory Allocation Strategy**:
-```bash
-# Synchronous allocation (default)
-cmake -B build -S . -DMEMORY_GPU_BACKEND=cuda -DMEMORY_GPU_ALLOC=SYNC
-
-# Asynchronous allocation
-cmake -B build -S . -DMEMORY_GPU_BACKEND=cuda -DMEMORY_GPU_ALLOC=ASYNC
-
-# Pool-based asynchronous allocation
-cmake -B build -S . -DMEMORY_GPU_BACKEND=cuda -DMEMORY_GPU_ALLOC=POOL_ASYNC
-```
-
-#### Performance Metrics
-
-- **10-100x speedup** for GPU-accelerated operations
-- **Bandwidth**: 100-900 GB/s depending on GPU
-- **Throughput**: Thousands of parallel threads
-
-### HIP Support (AMD GPUs)
-
-AMD GPU acceleration through HIP (Heterogeneous-compute Interface for Portability).
-
-#### Requirements
-
-- **AMD GPU** with RDNA or CDNA architecture
-- **ROCm** 4.0 or later
-- **CMake** 3.21 or later
-- **Supported Platforms**: Linux (primary), Windows (experimental)
-
-#### Building with HIP
+## Release configuration
 
 ```bash
-cd Scripts
+# Explicit CPU tier and Release defaults.
+python Scripts/setup.py config.build.test.ninja.clang.release.avx2
 
-# Basic HIP support
-python setup.py config.build.ninja.clang.hip
+# Explicit automatic LTO plus benchmarks.
+python Scripts/setup.py config.build.ninja.clang.release.avx2.lto.benchmark
 
-# HIP with optimizations
-python setup.py config.build.ninja.clang.release.hip
-
-# HIP with testing
-python setup.py config.build.test.ninja.clang.debug.hip
+# Compiler cache for iterative builds.
+python Scripts/setup.py config.build.ninja.clang.release.avx2.ccache
 ```
 
-**Note**: CUDA and HIP are mutually exclusive. Enable only one GPU backend.
+Release and RelWithDebInfo CMake configurations choose per-module
+`*_LTO_MODE=auto`; Debug defaults to `off`. Coverage and sanitizer builds skip
+LTO. Do not use a removed project-wide `PROJECT_ENABLE_LTO` variable.
 
-## Multithreading
+## Profiling
 
-XSigma provides flexible multithreading options for parallel computing.
-
-### Intel Threading Building Blocks (TBB)
-
-High-level parallel programming framework with task-based parallelism.
-
-#### Features
-
-- **Task-based parallelism**: Automatic load balancing
-- **Scalability**: Efficient scaling across multiple cores
-- **Thread-safe containers**: Concurrent data structures
-- **Performance**: Near-linear scaling with core count
-
-#### Building with TBB
+The native TraceMe/XPlane profiler pipeline is always included. Kineto is the
+default instrumentation layer, with ITT available when needed:
 
 ```bash
-cd Scripts
-
-# Basic TBB support
-python setup.py config.build.ninja.clang.tbb
-
-# TBB with optimizations
-python setup.py config.build.ninja.clang.release.tbb
-
-# TBB with testing
-python setup.py config.build.test.ninja.clang.debug.tbb
-
-# TBB with CUDA
-python setup.py config.build.ninja.clang.release.cuda.tbb
-
-# TBB with vectorization
-python setup.py config.build.ninja.clang.release.avx2.tbb
+python Scripts/setup.py config.build.test.ninja.clang.release --profiler.kineto
+python Scripts/setup.py config.build.test.ninja.clang.release --profiler.itt
 ```
 
-#### Use Cases
+See [the profiler guide](../profiler/profiler.md) for API and trace-output
+details.
 
-- Complex parallel algorithms
-- Dynamic workload distribution
-- Nested parallelism
-- Heterogeneous computing
+## Practical guidance
 
-### Native C++ Threading
-
-Standard C++17/20 threading with `std::thread`, `std::async`, and `std::future`.
-
-#### Features
-
-- **No external dependencies**: Uses standard library only
-- **Lightweight**: Minimal overhead
-- **Portable**: Works on all platforms
-- **Flexible**: Full control over thread management
-
-#### Building with Native Threading
-
-```bash
-cd Scripts
-
-# Default build (uses native C++ threading)
-python setup.py config.build.ninja.clang.release
-
-# With testing
-python setup.py config.build.test.ninja.clang.debug
-
-# With CUDA
-python setup.py config.build.ninja.clang.release.cuda
-```
-
-#### Use Cases
-
-- Simple parallel tasks
-- I/O-bound operations
-- Minimal overhead requirements
-- Cross-platform compatibility
-
-### Comparison: TBB vs Native C++
-
-| Feature | TBB | Native C++ |
-|---------|-----|-----------|
-| **Ease of Use** | High (task-based) | Medium (manual) |
-| **Performance** | Excellent (optimized) | Good (standard) |
-| **Scalability** | Excellent | Good |
-| **Dependencies** | External library | None |
-| **Learning Curve** | Moderate | Low |
-| **Best For** | Complex algorithms | Simple tasks |
-
-## Combining HPC Features
-
-XSigma allows combining multiple HPC features for maximum performance.
-
-### Recommended Combinations
-
-#### Maximum Performance (CPU)
-
-```bash
-cd Scripts
-python setup.py config.build.ninja.clang.release.avx2.ccache
-```
-
-Features: AVX2 vectorization + LTO (enabled by default) + compiler caching
-
-#### Maximum Performance (GPU + CPU)
-
-```bash
-cd Scripts
-python setup.py config.build.ninja.clang.release.cuda.avx2.ccache
-```
-
-Features: CUDA + AVX2 + LTO (enabled by default) + compiler caching
-
-#### Development with GPU
-
-```bash
-cd Scripts
-python setup.py config.build.test.ninja.clang.debug.cuda.coverage
-```
-
-Features: CUDA + testing + code coverage
-
-#### Production Build
-
-```bash
-cd Scripts
-python setup.py config.build.ninja.clang.release.cuda.avx2.tbb
-```
-
-Features: CUDA + AVX2 + LTO (enabled by default) + TBB multithreading
-
-## Performance Tuning
-
-### CPU Optimization Tips
-
-1. **Choose appropriate vectorization**: AVX2 for most systems, AVX-512 for high-end
-2. **Enable LTO**: 10-30% improvement in release builds
-3. **Use compiler caching**: 50-80% faster incremental builds
-4. **Select faster linker**: 5-15% improvement in link time
-
-### GPU Optimization Tips
-
-1. **Match GPU architecture**: Use native detection or specify exact architecture
-2. **Choose allocation strategy**: SYNC for simplicity, ASYNC for performance
-3. **Combine with CPU optimization**: Use vectorization + CUDA together
-4. **Profile your code**: Identify GPU-accelerated bottlenecks
-
-### Multithreading Optimization Tips
-
-1. **Use TBB for complex algorithms**: Better load balancing
-2. **Use native threading for simple tasks**: Lower overhead
-3. **Combine with CUDA**: Offload compute to GPU, use threads for I/O
-4. **Monitor thread scaling**: Ensure near-linear scaling with core count
-
-### Build Time Optimization
-
-```bash
-cd Scripts
-
-# Fastest incremental builds
-python setup.py config.build.ninja.clang.ccache
-
-# Fastest clean builds
-python setup.py config.build.ninja.clang.release  # (LTO enabled by default in release builds)
-
-# Balanced approach
-python setup.py config.build.ninja.clang.release.ccache  # (LTO enabled by default in release builds)
-```
-
-## Troubleshooting
-
-### CUDA Issues
-
-**Problem**: CUDA not found
-- Install CUDA Toolkit 11.0+
-- Set `CUDA_PATH` environment variable
-- Verify GPU driver is installed
-
-**Problem**: GPU architecture mismatch
-- Use `native` option for auto-detection
-- Check GPU compute capability: `nvidia-smi`
-
-### Vectorization Issues
-
-**Problem**: Vectorization not working
-- Verify CPU supports instruction set
-- Check compiler optimization flags
-- Use profiler to confirm vectorization
-
-### Multithreading Issues
-
-**Problem**: TBB not found
-- Install TBB development package
-- Set `TBB_ROOT` environment variable
-- Use system package manager
-
-## Related Documentation
-
-- [Setup Guide](setup.md) - Build configuration
-- [Build Configuration](build/build-configuration.md) - CMake options
-- [Compiler Caching](cache.md) - Build speed optimization
+- Build with the lowest SIMD tier required by every deployment target.
+- Use `native` only for binaries that stay on the build machine or homogeneous
+  fleet.
+- Treat GPU, CPU SIMD, allocator, and parallel choices as workload-specific;
+  benchmark the target use case instead of relying on generic speedup claims.
+- Keep sanitizer and coverage builds separate from performance measurements.

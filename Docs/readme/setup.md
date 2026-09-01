@@ -1,261 +1,166 @@
-# XSigma Setup Guide
+# CMake Setup Guide
 
-## Overview
+`Scripts/setup.py` is XSigma's CMake configuration helper. It accepts dotted
+arguments such as `config.build.test.release.avx2` and selected long options.
+It translates those choices into the module-scoped CMake cache variables used
+by the current `Library/*/CMakeLists.txt` files.
 
-The `Scripts/setup.py` script provides a convenient interface for configuring and building XSigma with various options. This guide explains how to use the script and documents all available CMake flags.
+Run `python Scripts/setup.py --help` to inspect the command surface supplied by
+the checked-out version of the helper.
 
-## Basic Usage
+## Quick start
 
-### Syntax
-
-```bash
-cd Scripts
-python setup.py config.build.test.[builder].[compiler].[options]
-```
-
-### Components
-
-- **config**: Configure the build
-- **build**: Build the project
-- **test**: Run tests
-- **builder**: `ninja`, `vs22`, `xcode`, `cmake`
-- **compiler**: `clang`, `gcc`, `msvc` (compiler-specific)
-- **options**: Various feature flags (see below)
-
-### Examples
+Run commands from the repository root:
 
 ```bash
-# Debug build with Clang
-python setup.py config.build.ninja.clang.debug
+# Configure, build, and run tests in a Debug configuration.
+python Scripts/setup.py config.build.test.ninja.clang.debug
 
-# Release build with optimizations (LTO enabled by default)
-python setup.py config.build.ninja.clang.release.avx2
+# Configure a Release build and run the test suite.
+python Scripts/setup.py config.build.test.ninja.clang.release
 
-# With testing enabled
-python setup.py config.build.test.ninja.clang.debug
+# Build one library and its CMake dependencies.
+python Scripts/setup.py config.build.test.ninja.clang.release --project.memory
 
-# MSVC with coverage
-python setup.py config.build.vs22.debug.coverage
+# Print the resolved configuration without building.
+python Scripts/setup.py config.release.avx2
 ```
-## Build Directory Naming Convention
 
-The `setup.py` script automatically generates build directory names based on the flags you provide. This allows you to maintain multiple build configurations simultaneously without conflicts.
+`config`, `build`, and `test` are actions. `test` runs the configured CTest
+suite after the build. The library test and GoogleTest options are enabled by
+default; the action controls whether tests are executed by this invocation.
 
-**Base Naming Pattern:**
-- `build_[builder]` - Base directory name determined by the build system
-  - `build_ninja` - Ninja build system
-  - `build_vs22` - Visual Studio 2022
-  - `build_xcode` - Xcode (macOS)
-  - `build_eclipse` - Eclipse IDE
+## Common selections
 
-**With Feature Suffixes:**
-- `build_[builder]_[suffix]` - Additional suffixes are appended for special configurations
-  - `build_ninja_coverage` - Ninja with code coverage enabled
-  - `build_ninja_address` - Ninja with AddressSanitizer
-  - `build_ninja_avx2` - Ninja with AVX2 vectorization
-  - `build_ninja_lto` - Ninja with Link-Time Optimization
-  - `build_vs22_debug_coverage` - Visual Studio with debug and coverage
+| Intent | Helper form | CMake effect |
+|---|---|---|
+| Build type | `debug`, `release`, `relwithdebinfo` | `CMAKE_BUILD_TYPE` |
+| C++ standard | `cxx17`, `cxx20`, `cxx23` | Fans `*_CXX_STANDARD` to loaded modules |
+| CPU SIMD | `no`, `sse`, `avx`, `avx2`, `avx512`, `neon`, `sve` | `VECTORIZATION_CPU_BACKEND` |
+| GPU backend | `cuda`, `hip`, `metal`, or `--gpu_backend.<name>` | Matching `MEMORY_GPU_BACKEND` and `VECTORIZATION_GPU_BACKEND` |
+| Logging | `--logging=SPDLOG|LOGURU|GLOG|NATIVE` | `LOGGING_BACKEND` |
+| Profiler instrumentation | `--profiler.kineto` or `--profiler.itt` | `PROFILER_BACKEND` |
+| Parallel backend | `--parallel.std`, `--parallel.openmp`, `--parallel.tbb` | `PARALLEL_BACKEND`; TBB also enables the Memory TBB allocator |
+| LTO | `lto`, `--lto.auto`, `--lto.thin`, `--lto.full`, `--lto.ipo`, `--lto.off` | Fans `*_LTO_MODE` to loaded modules |
+| Sanitizer | `--sanitizer.address`, `.undefined`, `.thread`, `.memory`, `.leak` | Fans `*_ENABLE_SANITIZER` and `*_SANITIZER_TYPE` |
+| Coverage | `coverage` | Fans `*_ENABLE_COVERAGE=ON` |
+| Benchmark targets | `benchmark` | Fans `*_ENABLE_BENCHMARK=ON` |
+| Compiler cache | `none`, `ccache`, `sccache`, `buildcache` | Fans `*_CACHE_BACKEND` |
+| Host CPU tuning | `native` | `USE_NATIVE_ARCH=ON` for Vectorization on Clang/GCC |
 
-**Multiple Suffixes:**
-When multiple feature flags are used, they are concatenated:
-- `build_ninja_debug_coverage_avx2` - Ninja with debug, coverage, and AVX2
-- `build_vs22_release_lto` - Visual Studio with release and LTO
+`gtest`, `magic_enum`, `mimalloc`, and `cache` are inverse toggles because
+their corresponding CMake defaults are `ON`: adding one disables the feature.
+In particular, do not add `gtest` to a normal test build. `benchmark` is not an
+inverse toggle: direct CMake defaults it to `ON` per module, while `setup.py`
+sets it `OFF` unless the `benchmark` token is supplied.
 
-**Examples of Build Directory Names:**
+## Examples
 
-| Command | Build Directory | Purpose |
-|---------|-----------------|---------|
-| `config.build.ninja.clang.debug` | `build_ninja` | Standard debug build |
-| `config.build.ninja.clang.release` | `build_ninja` | Standard release build |
-| `config.build.test.ninja.clang.debug.coverage` | `build_ninja_coverage` | Debug with code coverage |
-| `config.build.test.ninja.clang.debug --sanitizer.address` | `build_ninja_address` | Debug with AddressSanitizer |
-| `config.build.ninja.clang.release.avx2` | `build_ninja_avx2` | Release with AVX2 vectorization |
-| `config.build.vs22.debug` | `build_vs22` | MSVC debug build |
-| `config.build.vs22.debug.coverage` | `build_vs22_coverage` | MSVC with code coverage |
-| `config.build.test.xcode.release.lto` | `build_xcode_lto` | Xcode release with LTO |
-
-**Benefits of This Approach:**
-- ✅ **Multiple Configurations**: Keep debug, release, coverage, and sanitizer builds simultaneously
-- ✅ **Easy Cleanup**: Remove specific build configurations by deleting their directories
-- ✅ **Clear Organization**: Directory names clearly indicate what configuration they contain
-- ✅ **No Conflicts**: Different configurations don't interfere with each other
-- ✅ **Reproducibility**: Same command always produces the same directory name
-
-## CMake Flags Reference
-
-### Build Type Flags
-
-| Flag | CMake Variable | Description | Default |
-|------|----------------|-------------|---------|
-| `debug` | `CMAKE_BUILD_TYPE` | Debug build with symbols | - |
-| `release` | `CMAKE_BUILD_TYPE` | Release build with optimizations | - |
-| `relwithdebinfo` | `CMAKE_BUILD_TYPE` | Release with debug symbols | - |
-| `minsizerel` | `CMAKE_BUILD_TYPE` | Minimal size release | - |
-
-### Compiler Flags
-
-| Flag | CMake Variable | Description |
-|------|----------------|-------------|
-| `clang` | `CMAKE_CXX_COMPILER` | Use Clang compiler |
-| `gcc` | `CMAKE_CXX_COMPILER` | Use GCC compiler |
-| `msvc` | `CMAKE_CXX_COMPILER` | Use MSVC compiler |
-
-### Optimization Flags
-
-| Flag | CMake Variable | Description | Default |
-|------|----------------|-------------|---------|
-| `lto` | `PROJECT_ENABLE_LTO` | Link-Time Optimization | ON |
-| `avx2` | `VECTORIZATION_CPU_BACKEND` | AVX2 vectorization | x86 default |
-| `avx` | `VECTORIZATION_CPU_BACKEND` | AVX vectorization | - |
-| `avx512` | `VECTORIZATION_CPU_BACKEND` | AVX-512 vectorization | - |
-| `sse` | `VECTORIZATION_CPU_BACKEND` | SSE vectorization | - |
-| `neon` | `VECTORIZATION_CPU_BACKEND` | AArch64 NEON | Apple Silicon default |
-| `sve` | `VECTORIZATION_CPU_BACKEND` | AArch64 SVE (128-bit) | - |
-
-### Feature Flags
-
-| Flag | CMake Variable | Description | Default |
-|------|----------------|-------------|---------|
-| `cuda` | `MEMORY_GPU_BACKEND` | GPU acceleration with CUDA | OFF |
-| `tbb` | `MEMORY_ENABLE_TBB` | Intel Threading Building Blocks | OFF |
-| `mkl` | `CORE_ENABLE_MKL` | Intel Math Kernel Library | OFF |
-| `numa` | `MEMORY_ENABLE_NUMA` | NUMA support | OFF |
-| `memkind` | `MEMORY_ENABLE_MEMKIND` | Memory kind support | OFF |
-| `external` | `XSIGMA_ENABLE_EXTERNAL` | Use external system libraries | ON |
-
-### Testing Flags
-
-| Flag | CMake Variable | Description | Default |
-|------|----------------|-------------|---------|
-| `test` | `BUILD_TESTING` | Enable testing | ON |
-| `gtest` | `ENABLE_GTEST` | Google Test framework | ON |
-| `benchmark` | `ENABLE_BENCHMARK` | Benchmark library | OFF |
-
-### Analysis Flags
-
-| Flag | CMake Variable | Description | Default |
-|------|----------------|-------------|---------|
-| `coverage` | `PROJECT_ENABLE_COVERAGE` | Code coverage analysis | OFF |
-| `sanitizer` | `PROJECT_ENABLE_SANITIZER` | Enable sanitizers | OFF |
-| `sanitizer.address` | `PROJECT_SANITIZER_TYPE` | Address Sanitizer | - |
-| `sanitizer.thread` | `PROJECT_SANITIZER_TYPE` | Thread Sanitizer | - |
-| `sanitizer.undefined` | `PROJECT_SANITIZER_TYPE` | Undefined Behavior Sanitizer | - |
-| `sanitizer.memory` | `PROJECT_SANITIZER_TYPE` | Memory Sanitizer | - |
-| `valgrind` | `XSIGMA_ENABLE_VALGRIND` | Valgrind support | OFF |
-| `clangtidy` | `PROJECT_ENABLE_CLANGTIDY` | Clang-Tidy analysis | OFF |
-| `iwyu` | `PROJECT_ENABLE_IWYU` | Include-What-You-Use | OFF |
-| `cppcheck` | `PROJECT_ENABLE_CPPCHECK` | Cppcheck analysis | OFF |
-
-### Logging Flags
-
-| Flag | CMake Variable | Description | Default |
-|------|----------------|-------------|---------|
-| `--logging=spdlog` (default) | `LOGGING_BACKEND` | spdlog backend | SPDLOG |
-| `--logging=loguru` | `LOGGING_BACKEND` | Loguru backend | - |
-| `--logging=glog` | `LOGGING_BACKEND` | GLOG backend | - |
-| `--logging=native` | `LOGGING_BACKEND` | Native (fmt) backend | - |
-
-### Library Flags
-
-| Flag | CMake Variable | Description | Default |
-|------|----------------|-------------|---------|
-| `magic_enum` | `CORE_ENABLE_MAGICENUM` | Magic enum library | ON |
-| `mimalloc` | `MEMORY_ENABLE_MIMALLOC` | mimalloc allocator | ON |
-
-### Caching Flags
-
-| Flag | CMake Variable | Description | Default |
-|------|----------------|-------------|---------|
-| `ccache` | `XSIGMA_CACHE_BACKEND` | Use ccache compiler cache | - |
-| `sccache` | `XSIGMA_CACHE_BACKEND` | Use sccache distributed cache | - |
-| `buildcache` | `XSIGMA_CACHE_BACKEND` | Use buildcache | - |
-| `none` | `XSIGMA_CACHE_BACKEND` | Disable caching | - |
-
-### C++ Standard Flags
-
-| Flag | CMake Variable | Description |
-|------|----------------|-------------|
-| `cxxstd=17` | `PROJECT_CXX_STANDARD` | C++17 standard |
-| `cxxstd=20` | `PROJECT_CXX_STANDARD` | C++20 standard |
-| `cxxstd=23` | `PROJECT_CXX_STANDARD` | C++23 standard |
-
-## Common Build Configurations
-
-### Development Build
+### Development and tests
 
 ```bash
-python setup.py config.build.test.ninja.clang.debug
+python Scripts/setup.py config.build.test.ninja.clang.debug
+python Scripts/setup.py config.build.test.ninja.clang.debug --sanitizer.address
+python Scripts/setup.py config.build.test.ninja.clang.debug --parallel.tbb
 ```
 
-### Release Build
+Sanitizers require Clang or GCC. A sanitizer or coverage build suppresses LTO
+for the affected targets.
+
+### Release and performance
 
 ```bash
-python setup.py config.build.ninja.clang.release.avx2
+# Release uses each module's automatic LTO policy unless overridden.
+python Scripts/setup.py config.build.test.ninja.clang.release.avx2
+
+# Request a uniform auto LTO mode explicitly and enable benchmarks.
+python Scripts/setup.py config.build.test.ninja.clang.release.avx2.lto.benchmark
+
+# Tune for this build machine only; the binary may not run on older CPUs.
+python Scripts/setup.py config.build.ninja.clang.release.native
 ```
 
-### With Coverage
+For CMake, an explicit non-Debug build makes the per-module LTO default `auto`.
+`auto` resolves to ThinLTO for a Clang GNU-style driver and IPO for GCC or the
+MSVC link model. Debug builds default to `off`.
+
+### GPU backends
 
 ```bash
-python setup.py config.build.ninja.clang.debug.coverage
+# CUDA evaluator and matching Memory backend.
+python Scripts/setup.py config.build.test.ninja.clang.release.cuda --project.vectorization
+
+# Metal is supported only on Apple platforms.
+python Scripts/setup.py config.build.test.ninja.clang.release.metal --project.vectorization
+
+# HIP is unsupported on Windows in this project.
+python Scripts/setup.py config.build.test.ninja.clang.release.hip --project.vectorization
 ```
 
-### With Sanitizers
+CUDA, HIP, and Metal are mutually exclusive in one binary. The helper keeps the
+Memory and Vectorization selectors aligned; use the same values when invoking
+CMake directly.
+
+### Backends and analysis
 
 ```bash
-python setup.py config.build.test.ninja.clang.debug --sanitizer.address
+python Scripts/setup.py config.build.test.ninja.clang.release --logging=GLOG
+python Scripts/setup.py config.build.test.ninja.clang.release --profiler.itt
+python Scripts/setup.py config.build.test.ninja.clang.debug.coverage
+python Scripts/setup.py config.build.ninja.clang.release.ccache
 ```
 
-### Minimal Build
+The native TraceMe/XPlane profiler pipeline always compiles. `PROFILER_BACKEND`
+only selects the Kineto or ITT instrumentation layer, so `--profiler.native` is
+a no-op.
+
+## Direct CMake
+
+The helper is not required. Use the real cache variables from the owning
+module, for example:
 
 ```bash
-python setup.py config.build.ninja.clang.release
+cmake -S . -B build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DLOGGING_BACKEND=SPDLOG \
+  -DPROFILER_BACKEND=KINETO \
+  -DVECTORIZATION_CPU_BACKEND=avx2 \
+  -DMEMORY_GPU_BACKEND=none \
+  -DVECTORIZATION_GPU_BACKEND=none
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
 ```
 
-## Build Directory Naming
+For a single module, use `-DXSIGMA_LIBRARY_PROJECT=Memory` (or `Core`,
+`Logging`, `Parallel`, `Profiler`, `Vectorization`, `Models`, or `Graph`).
 
-The build directory is automatically named based on the configuration:
+The option families are deliberately module-scoped:
 
-- `build_ninja` - Ninja builder
-- `build_ninja_coverage` - Ninja with coverage
-- `build_vs22` - Visual Studio 2022
-- `build_xcode` - Xcode
+```bash
+# AddressSanitizer for a Core-only configuration.
+cmake -S . -B build-core -G Ninja \
+  -DXSIGMA_LIBRARY_PROJECT=Core \
+  -DCORE_ENABLE_SANITIZER=ON \
+  -DCORE_SANITIZER_TYPE=address
 
-Suffixes are added for special configurations (e.g., `_coverage`, `_sanitizer`).
+# Explicit LTO policy for a Vectorization-only Release configuration.
+cmake -S . -B build-vectorization -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DXSIGMA_LIBRARY_PROJECT=Vectorization \
+  -DVECTORIZATION_LTO_MODE=thin
+```
+
+There are no project-wide `PROJECT_ENABLE_LTO`, `PROJECT_ENABLE_SANITIZER`,
+`PROJECT_CXX_STANDARD`, `ENABLE_GTEST`, or `ENABLE_BENCHMARK` settings in the
+current configuration. See [PROJECT_FLAGS.md](../PROJECT_FLAGS.md) for the
+complete supported cache-variable families.
 
 ## Troubleshooting
 
-### Build fails with missing dependencies
-
-Ensure all submodules are initialized:
-```bash
-git submodule update --init --recursive
-```
-
-### Compiler not found
-
-Verify the compiler is installed and in PATH:
-```bash
-which clang++  # Linux/macOS
-where clang++  # Windows
-```
-
-### Cache not working
-
-Verify cache tool is installed:
-```bash
-which ccache
-which sccache
-```
-
-## Advanced Configuration
-
-For more control, use CMake directly:
-
-```bash
-mkdir build && cd build
-cmake -DCMAKE_BUILD_TYPE=Release \
-      -DPROJECT_ENABLE_LTO=ON \
-      -DVECTORIZATION_CPU_BACKEND=avx2 \
-      ..
-cmake --build . --parallel
-```
+- Initialise submodules before configuring: `git submodule update --init --recursive`.
+- Use a fresh, differently named build directory when changing a generator,
+  compiler, or GPU backend.
+- Run `python Scripts/setup.py --help` after updating the repository; it is the
+  authoritative list of helper tokens.
+- Use `cmake --build <dir> --parallel` instead of shell-specific `-j` forms for
+  portable commands.
