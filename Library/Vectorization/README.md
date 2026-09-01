@@ -20,7 +20,7 @@
 
 | CMake variable | Default | Summary |
 |----------------|---------|---------|
-| `VECTORIZATION_CPU_BACKEND` | `avx2` | `no`, `sse`, `avx`, `avx2`, `avx512`, `neon`, `sve` — which CPU backend tree is compiled |
+| `VECTORIZATION_CPU_BACKEND` | host-dependent | `no`, `sse`, `avx`, `avx2`, `avx512`, `neon`, `sve`; AVX2 on recognised x86, NEON on AArch64, otherwise `no` |
 | `VECTORIZATION_GPU_BACKEND` | `none` | `none`, `cuda`, `hip`, `metal` — which GPU runtime the evaluator compiles against; independent of `VECTORIZATION_CPU_BACKEND`, both can be active at once |
 | `VECTORIZATION_CXX_STANDARD` | `20` | `11`, `14`, `17`, `20`, `23` |
 
@@ -38,8 +38,8 @@
 `setup.py` accepts `cuda` / `hip` / `metal` as chained tokens and forwards `-DVECTORIZATION_GPU_BACKEND=...` and `-DMEMORY_GPU_BACKEND=...` together (the two libraries have independent but must-agree GPU backend selectors). Example:
 
 ```
-python3 setup.py build.TEST.native.avx2.cuda.config --project.vectorization
-python3 setup.py build.TEST.native.avx2.config --project.vectorization --gpu_backend.metal
+python3 setup.py config.build.test.ninja.clang.avx2.cuda --project.vectorization
+python3 setup.py config.build.test.ninja.clang.avx2.metal --project.vectorization
 ```
 
 GPU unit tests (`Testing/Cxx/TestGpuSimd.cu`, `TestTensorGpu.cpp`, `TestMetalDispatch.mm`) and the `benchmark_tensorgpu` target skip themselves at runtime (`GTEST_SKIP`) when no GPU device is present. CUDA-with-Clang builds currently exclude the CUDA sources at configure time (nvcc-only texture-intrinsics incompatibility — see `Testing/Cxx/CMakeLists.txt`).
@@ -48,7 +48,7 @@ GPU unit tests (`Testing/Cxx/TestGpuSimd.cu`, `TestTensorGpu.cpp`, `TestMetalDis
 
 | CMake variable | Default | Summary |
 |----------------|---------|---------|
-| `VECTORIZATION_ENABLE_LTO` / `VECTORIZATION_ENABLE_COVERAGE` | OFF | LTO / coverage |
+| `VECTORIZATION_LTO_MODE` / `VECTORIZATION_ENABLE_COVERAGE` | build-type dependent / OFF | LTO mode (`off`, `thin`, `full`, `ipo`, `auto`) / coverage |
 | `VECTORIZATION_ENABLE_TESTING` | ON | Test subtree |
 | `VECTORIZATION_ENABLE_EXAMPLES` | OFF | Examples |
 | `VECTORIZATION_ENABLE_GTEST` | ON | GoogleTest |

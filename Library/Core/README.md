@@ -17,7 +17,7 @@ Shared **Core** library: utilities, ownership helpers, compile-time traits, nume
 
 | CMake variable | Default | Summary |
 |----------------|---------|---------|
-| `CORE_ENABLE_LTO` | OFF | Link-time optimization |
+| `CORE_LTO_MODE` | Build-type dependent | `off`, `thin`, `full`, `ipo`, or `auto`; non-Debug performance builds default to `auto` |
 | `CORE_ENABLE_COVERAGE` | OFF | Coverage instrumentation |
 | `CORE_ENABLE_TESTING` | ON | `add_subdirectory(Testing/Cxx)` |
 | `CORE_ENABLE_EXAMPLES` | OFF | Examples subtree |

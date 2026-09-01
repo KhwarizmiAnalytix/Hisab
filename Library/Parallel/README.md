@@ -25,7 +25,7 @@ See `Library/Parallel/Cmake/parallel_backend.cmake` for how flags are forced whe
 
 | CMake variable | Default | Summary |
 |----------------|---------|---------|
-| `PARALLEL_ENABLE_LTO` | OFF | LTO |
+| `PARALLEL_LTO_MODE` | Build-type dependent | `off`, `thin`, `full`, `ipo`, or `auto`; non-Debug performance builds default to `auto` |
 | `PARALLEL_ENABLE_COVERAGE` | OFF | Coverage |
 | `PARALLEL_ENABLE_TESTING` | ON | Tests |
 | `PARALLEL_ENABLE_EXAMPLES` | OFF | Examples |

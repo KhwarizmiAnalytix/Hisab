@@ -9,8 +9,8 @@ GPU expression evaluation (CUDA, HIP, Metal) is a separate compile-time
 backend on the same `tensor` API. Contracts, fusion, and launch-interface
 gaps: [vectorization_backends.md](../vectorization_backends.md).
 
-Configure, build, and test through `Scripts/setup.py` — do not invoke CMake
-directly. CMake cache names below are what `setup.py` forwards.
+`Scripts/setup.py` is the recommended whole-project entry point. Direct CMake
+is supported; the cache names below are what the helper forwards.
 
 ## Table of Contents
 
@@ -29,7 +29,7 @@ directly. CMake cache names below are what `setup.py` forwards.
 | `no` | none | none | any |
 | `sse` | `-msse -msse2` | `/arch:SSE2` | x86-64 (Pentium 4+) |
 | `avx` | `-mavx` | `/arch:AVX` | Sandy Bridge+ (2011+) |
-| `avx2` | `-mavx -mavx2` | `/arch:AVX2` | Haswell+ (2013+) — **default** |
+| `avx2` | `-mavx -mavx2` | `/arch:AVX2` | Haswell+ (2013+); default on recognised x86 hosts |
 | `avx512` | `-mavx -mavx2 -mavx512f` | `/arch:AVX512` | Skylake-X+ (2017+) |
 | `neon` | `-march=armv8-a` | — | Apple Silicon, Linux AArch64 |
 | `sve` | `-march=armv8-a+sve -msve-vector-bits=128` | — | SVE-capable AArch64 |
@@ -46,27 +46,27 @@ CMake: `-DVECTORIZATION_CPU_BACKEND=<token>`. Bazel:
 From `Scripts/`:
 
 ```bash
-# AVX2 (default on x86)
-python3 setup.py config.build.test.native.avx2 --project.vectorization
+# AVX2 (default on recognised x86 hosts)
+python3 setup.py config.build.test.ninja.clang.avx2 --project.vectorization
 
 # Older x86
-python3 setup.py config.build.test.sse --project.vectorization
+python3 setup.py config.build.test.ninja.clang.sse --project.vectorization
 
 # Apple Silicon / AArch64
-python3 setup.py config.build.test.neon --project.vectorization
+python3 setup.py config.build.test.ninja.clang.neon --project.vectorization
 
 # AVX-512
-python3 setup.py config.build.test.avx512 --project.vectorization
+python3 setup.py config.build.test.ninja.clang.avx512 --project.vectorization
 
 # Scalar (no SIMD backend)
-python3 setup.py config.build.test.no --project.vectorization
+python3 setup.py config.build.test.ninja.clang.no --project.vectorization
 ```
 
 GPU backends are independent of the CPU ISA (one GPU backend per binary):
 
 ```bash
-python3 setup.py config.build.test.native.avx2.cuda --project.vectorization
-python3 setup.py config.build.test.native.avx2 --project.vectorization --gpu_backend.metal
+python3 setup.py config.build.test.ninja.clang.avx2.cuda --project.vectorization
+python3 setup.py config.build.test.ninja.clang.avx2.metal --project.vectorization
 ```
 
 `setup.py` forwards CPU and GPU selectors to both Vectorization and Memory
@@ -79,7 +79,7 @@ so the two libraries agree.
 `build_*` directory.
 
 ```bash
-python3 setup.py config.build.test.native.avx2.psize8 --project.vectorization
+python3 setup.py config.build.test.ninja.clang.avx2.psize8 --project.vectorization
 ```
 
 ## Choosing an ISA

@@ -70,10 +70,11 @@ those two is selected.
 
 ## Backends and build
 
-Use [`Scripts/setup.py`](../../Scripts/setup.py) — do not invoke CMake/ninja
-directly. The `--profiler.X` flag is a **separate argument**, not a dotted
-token in the main chain (`profiler.itt` chained into `config.build.test…`
-does not work).
+Use [`Scripts/setup.py`](../../Scripts/setup.py) for the recommended
+whole-project workflow; direct CMake with `PROFILER_BACKEND=KINETO|ITT` is also
+supported. The `--profiler.X` flag is a **separate argument**, not a dotted
+token in the main chain (`profiler.itt` chained into `config.build.test…` does
+not work).
 
 ### Native (always compiled)
 
@@ -84,8 +85,9 @@ does not work).
   `profiler_scope`, `hotspot_report`). Scope macros: `PROFILER_PROFILE_SCOPE`,
   `PROFILER_PROFILE_FUNCTION`, `PROFILER_PROFILE_BLOCK`
 
-`--profiler.native` / `profiler_native` are accepted as no-ops (with a
-warning) for older invocations that used to select a native-only backend.
+`--profiler.native` is accepted as a no-op (with a warning) for older
+invocations that selected a native-only backend. The native pipeline is already
+compiled regardless of the Kineto or ITT instrumentation selection.
 
 ### Kineto (default)
 
@@ -93,7 +95,7 @@ Sets `PROFILER_HAS_KINETO=1`, links libkineto, compiles `bespoke/kineto`.
 
 ```bash
 cd Scripts
-python3 setup.py config.build.test.native.ninja --project.profiler
+python3 setup.py config.build.test.ninja.clang --project.profiler
 ```
 
 - **CMake:** `-DPROFILER_BACKEND=KINETO` (default)
@@ -103,7 +105,7 @@ python3 setup.py config.build.test.native.ninja --project.profiler
 
 ```bash
 cd Scripts
-python3 setup.py config.build.test.native.ninja --project.profiler --profiler.itt
+python3 setup.py config.build.test.ninja.clang --project.profiler --profiler.itt
 ```
 
 - **CMake:** `-DPROFILER_BACKEND=ITT`
