@@ -51,7 +51,9 @@ namespace vectorization
 
 template <typename T>
 inline constexpr bool is_almost_zero(T x, T epsilon = std::numeric_limits<T>::epsilon()) noexcept
-{ return (std::fabs(x) < epsilon); }
+{
+    return (std::fabs(x) < epsilon);
+}
 
 template <typename E>
 VECTORIZATION_HOST_FUNCTION_ATTRIBUTE void record_expression_streams(
@@ -231,7 +233,9 @@ public:
 
     VECTORIZATION_FORCE_INLINE static size_type last_aligned(
         size_type aligned_start, size_type size, size_type packet_size)
-    { return aligned_start + ((size - aligned_start) / packet_size) * packet_size; }
+    {
+        return aligned_start + ((size - aligned_start) / packet_size) * packet_size;
+    }
 
     // SIMD stride — identical for every rank; used by expression_loader.
     // One simd<value_t> register per step (no manual unroll).
@@ -246,7 +250,9 @@ public:
 
     /// First element index where CPU SIMD lanes are memory-aligned (scalar prologue is \c [0, align_start) ).
     VECTORIZATION_FUNCTION_ATTRIBUTE std::size_t align_start() const noexcept
-    { return align_start_; }
+    {
+        return align_start_;
+    }
 
     /// Exclusive end index: for \c i in <tt>[align_start, align_end)</tt> at stride \ref length(), use \c load / \c store.
     VECTORIZATION_FUNCTION_ATTRIBUTE std::size_t align_end() const noexcept { return align_end_; }
@@ -285,9 +291,8 @@ public:
         device_enum  type         = device_enum::CPU,
         int          device_index = 0,
         gpu_stream_t stream       = nullptr) noexcept
-        : view_(
-              view_t::borrow(
-                  ptr, n, type, device_index, static_cast<typename view_t::stream_t>(stream)))
+        : view_(view_t::borrow(
+              ptr, n, type, device_index, static_cast<typename view_t::stream_t>(stream)))
     {
         sizes_and_strides_.size_at_unchecked(0)   = static_cast<int64_t>(n);
         sizes_and_strides_.stride_at_unchecked(0) = 1;
@@ -303,13 +308,8 @@ public:
         device_enum  type         = device_enum::CPU,
         int          device_index = 0,
         gpu_stream_t stream       = nullptr) noexcept
-        : view_(
-              view_t::borrow(
-                  ptr,
-                  rows * cols,
-                  type,
-                  device_index,
-                  static_cast<typename view_t::stream_t>(stream)))
+        : view_(view_t::borrow(
+              ptr, rows * cols, type, device_index, static_cast<typename view_t::stream_t>(stream)))
     {
         sizes_and_strides_.resize(2);
         sizes_and_strides_.size_at_unchecked(0)   = static_cast<int64_t>(rows);
@@ -399,6 +399,13 @@ public:
             value_t* dst = data();
             for (auto const& row : list)
             {
+                // Not VECTORIZATION_CHECK_IF_NOT_ON_CUDA: this constructor takes a
+                // std::initializer_list, which is only ever constructed from host code,
+                // so it is host-only in practice despite the __host__ __device__ tag on
+                // the constructor itself (needed only so tensor<T> remains usable from
+                // other host-device-tagged contexts). Per the macro's own doc comment,
+                // host-only-in-practice checks must stay VECTORIZATION_CHECK so this
+                // jagged-row validation still fires.
                 VECTORIZATION_CHECK(row.size() == cols, "2-D initializer_list has jagged rows");
                 std::copy(row.begin(), row.end(), dst + i * cols);
                 ++i;
@@ -459,13 +466,12 @@ public:
         device_enum            type         = device_enum::CPU,
         int                    device_index = 0,
         gpu_stream_t           stream       = nullptr)
-        : view_(
-              view_t::borrow(
-                  data,
-                  compute_total(dims),
-                  type,
-                  device_index,
-                  static_cast<typename view_t::stream_t>(stream)))
+        : view_(view_t::borrow(
+              data,
+              compute_total(dims),
+              type,
+              device_index,
+              static_cast<typename view_t::stream_t>(stream)))
     {
         set_shape(dims);
         recompute_cpu_simd_alignment_state();
@@ -479,7 +485,9 @@ public:
 
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(tensor const& rhs)
         : sizes_and_strides_(rhs.sizes_and_strides_), owner_(rhs.view_), view_(owner_.view())
-    { recompute_cpu_simd_alignment_state(); }
+    {
+        recompute_cpu_simd_alignment_state();
+    }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor(tensor&& rhs) noexcept
         : sizes_and_strides_(std::move(rhs.sizes_and_strides_)),
@@ -689,15 +697,21 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE device_enum device() const noexcept { return view_.device(); }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE int device_index() const noexcept
-    { return view_.device_index(); }
+    {
+        return view_.device_index();
+    }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE gpu_stream_t stream() const noexcept
-    { return static_cast<gpu_stream_t>(view_.stream()); }
+    {
+        return static_cast<gpu_stream_t>(view_.stream());
+    }
 
     // Mark this tensor's storage as in-use on @p stream so the caching allocator
     // will not recycle the block until that stream completes (PyTorch recordStream).
     VECTORIZATION_HOST_FUNCTION_ATTRIBUTE void record_stream(gpu_stream_t stream) const
-    { view_.record_stream(static_cast<typename view_t::stream_t>(stream)); }
+    {
+        view_.record_stream(static_cast<typename view_t::stream_t>(stream));
+    }
 
     // -----------------------------------------------------------------------
     // Host ↔ device transfer helpers
@@ -764,7 +778,9 @@ public:
 
     // Convenience overload — uploads from a std::vector on the given stream.
     void copy_from_host(const std::vector<value_t>& src, gpu_stream_t stream)
-    { copy_from_host(src.data(), src.size(), stream); }
+    {
+        copy_from_host(src.data(), src.size(), stream);
+    }
 
     // Owned contiguous CPU tensor with the same logical values (C-order).
     // Already on CPU and packed: borrow this buffer (no copy).
@@ -798,52 +814,72 @@ public:
     // Not noexcept: VECTORIZATION_CHECK_DEBUG throws in debug (MSVC C4297 /WX).
     VECTORIZATION_FUNCTION_ATTRIBUTE iterator begin()
     {
-        VECTORIZATION_CHECK_DEBUG(is_contiguous(), "begin/end require a contiguous tensor");
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(
+            is_contiguous(), "begin/end require a contiguous tensor");
         return data();
     }
     VECTORIZATION_FUNCTION_ATTRIBUTE iterator end()
     {
-        VECTORIZATION_CHECK_DEBUG(is_contiguous(), "begin/end require a contiguous tensor");
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(
+            is_contiguous(), "begin/end require a contiguous tensor");
         return data() + size();
     }
     VECTORIZATION_FUNCTION_ATTRIBUTE const_iterator begin() const
     {
-        VECTORIZATION_CHECK_DEBUG(is_contiguous(), "begin/end require a contiguous tensor");
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(
+            is_contiguous(), "begin/end require a contiguous tensor");
         return data();
     }
     VECTORIZATION_FUNCTION_ATTRIBUTE const_iterator end() const
     {
-        VECTORIZATION_CHECK_DEBUG(is_contiguous(), "begin/end require a contiguous tensor");
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(
+            is_contiguous(), "begin/end require a contiguous tensor");
         return data() + size();
     }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE reverse_iterator rbegin() { return reverse_iterator(end()); }
     VECTORIZATION_FUNCTION_ATTRIBUTE reverse_iterator rend() { return reverse_iterator(begin()); }
     VECTORIZATION_FUNCTION_ATTRIBUTE const_reverse_iterator crbegin() const
-    { return const_reverse_iterator(end()); }
+    {
+        return const_reverse_iterator(end());
+    }
     VECTORIZATION_FUNCTION_ATTRIBUTE const_reverse_iterator crend() const
-    { return const_reverse_iterator(begin()); }
+    {
+        return const_reverse_iterator(begin());
+    }
 
     // -----------------------------------------------------------------------
     // Shape / rank
     // -----------------------------------------------------------------------
 
     VECTORIZATION_FUNCTION_ATTRIBUTE size_t rank() const noexcept
-    { return sizes_and_strides_.size(); }
+    {
+        return sizes_and_strides_.size();
+    }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE span<const int64_t> dimensions() const noexcept
-    { return sizes_and_strides_.sizes_arrayref(); }
+    {
+        return sizes_and_strides_.sizes_arrayref();
+    }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE size_t dimension(size_t n) const noexcept
-    { return static_cast<size_t>(sizes_and_strides_.size_at_unchecked(n)); }
+    {
+        return static_cast<size_t>(sizes_and_strides_.size_at_unchecked(n));
+    }
 
     // Per-dimension size and stride
     VECTORIZATION_FUNCTION_ATTRIBUTE int64_t size(size_t dim) const noexcept
-    { return sizes_and_strides_.size_at_unchecked(dim); }
+    {
+        return sizes_and_strides_.size_at_unchecked(dim);
+    }
     VECTORIZATION_FUNCTION_ATTRIBUTE int64_t stride(size_t dim) const noexcept
-    { return sizes_and_strides_.stride_at_unchecked(dim); }
+    {
+        return sizes_and_strides_.stride_at_unchecked(dim);
+    }
     VECTORIZATION_FUNCTION_ATTRIBUTE span<const int64_t> strides() const noexcept
-    { return sizes_and_strides_.strides_arrayref(); }
+    {
+        return sizes_and_strides_.strides_arrayref();
+    }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE bool is_aligned() const noexcept { return view_.is_aligned(); }
 
@@ -856,35 +892,47 @@ public:
 
     // Flat indexed access (1-D semantic, element by element)
     VECTORIZATION_FUNCTION_ATTRIBUTE const value_t& operator[](size_type i) const noexcept
-    { return data()[logical_offset(i)]; }
+    {
+        return data()[logical_offset(i)];
+    }
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t& operator[](size_type i) noexcept
-    { return data()[logical_offset(i)]; }
+    {
+        return data()[logical_offset(i)];
+    }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t at(size_type i) const noexcept
-    { return data()[logical_offset(i)]; }
+    {
+        return data()[logical_offset(i)];
+    }
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t& at(size_type i) noexcept
-    { return data()[logical_offset(i)]; }
+    {
+        return data()[logical_offset(i)];
+    }
 
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t at(size_type i, size_type j) const
     {
-        VECTORIZATION_CHECK_DEBUG(rank() >= 2, "at(i,j) requires rank >= 2");
-        VECTORIZATION_CHECK_DEBUG(i < dimension(0), "row index out of range");
-        VECTORIZATION_CHECK_DEBUG(j < dimension(1), "column index out of range");
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(rank() >= 2, "at(i,j) requires rank >= 2");
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(i < dimension(0), "row index out of range");
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(j < dimension(1), "column index out of range");
         return data()[i * static_cast<size_t>(stride(0)) + j * static_cast<size_t>(stride(1))];
     }
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t& at(size_type i, size_type j)
     {
-        VECTORIZATION_CHECK_DEBUG(rank() >= 2, "at(i,j) requires rank >= 2");
-        VECTORIZATION_CHECK_DEBUG(i < dimension(0), "row index out of range");
-        VECTORIZATION_CHECK_DEBUG(j < dimension(1), "column index out of range");
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(rank() >= 2, "at(i,j) requires rank >= 2");
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(i < dimension(0), "row index out of range");
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(j < dimension(1), "column index out of range");
         return data()[i * static_cast<size_t>(stride(0)) + j * static_cast<size_t>(stride(1))];
     }
 
     // N-D element by multi-index
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t at(const dimensions_type& indices) const
-    { return data()[linearized_index(indices)]; }
+    {
+        return data()[linearized_index(indices)];
+    }
     VECTORIZATION_FUNCTION_ATTRIBUTE value_t& at(const dimensions_type& indices)
-    { return data()[linearized_index(indices)]; }
+    {
+        return data()[linearized_index(indices)];
+    }
 
     // -----------------------------------------------------------------------
     // Views — metadata-only transforms (no data copy)
@@ -895,7 +943,7 @@ public:
 
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor t() const
     {
-        VECTORIZATION_CHECK_DEBUG(rank() == 2, "t() requires a rank-2 tensor");
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(rank() == 2, "t() requires a rank-2 tensor");
         sizes_and_strides sas = sizes_and_strides_;
         std::swap(sas.size_at_unchecked(0), sas.size_at_unchecked(1));
         std::swap(sas.stride_at_unchecked(0), sas.stride_at_unchecked(1));
@@ -905,16 +953,17 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor permute(const dimensions_type& order) const
     {
         const size_t n = rank();
-        VECTORIZATION_CHECK_DEBUG(order.size() == n, "permute: order length must equal rank");
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(
+            order.size() == n, "permute: order length must equal rank");
         sizes_and_strides sas;
         sas.resize(n);
         for (size_t i = 0; i < n; ++i)
         {
             auto const src = order[i];
-            VECTORIZATION_CHECK_DEBUG(src < n, "permute: axis out of range");
+            VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(src < n, "permute: axis out of range");
             for (size_t j = 0; j < i; ++j)
             {
-                VECTORIZATION_CHECK_DEBUG(order[j] != src, "permute: repeated axis");
+                VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(order[j] != src, "permute: repeated axis");
             }
             sas.size_at_unchecked(i)   = sizes_and_strides_.size_at_unchecked(src);
             sas.stride_at_unchecked(i) = sizes_and_strides_.stride_at_unchecked(src);
@@ -924,8 +973,9 @@ public:
 
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor view(const dimensions_type& new_dims) const
     {
-        VECTORIZATION_CHECK_DEBUG(is_contiguous(), "view() requires a contiguous tensor");
-        VECTORIZATION_CHECK_DEBUG(
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(
+            is_contiguous(), "view() requires a contiguous tensor");
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(
             compute_total(new_dims) == size(), "view: element count must not change");
         sizes_and_strides sas;
         make_contiguous_sas(sas, new_dims);
@@ -934,9 +984,9 @@ public:
 
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor reshape(const dimensions_type& new_dims) const
     {
-        VECTORIZATION_CHECK_DEBUG(
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(
             is_contiguous(), "reshape: call contiguous() first for non-contiguous tensors");
-        VECTORIZATION_CHECK_DEBUG(
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(
             compute_total(new_dims) == size(), "reshape: element count must not change");
         sizes_and_strides sas;
         make_contiguous_sas(sas, new_dims);
@@ -948,8 +998,8 @@ public:
     VECTORIZATION_FUNCTION_ATTRIBUTE tensor
     slice(size_t dim, int64_t start, int64_t stop = -1, int64_t step = 1) const
     {
-        VECTORIZATION_CHECK_DEBUG(dim < rank(), "slice: dim out of range");
-        VECTORIZATION_CHECK_DEBUG(step != 0, "slice: step must not be zero");
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(dim < rank(), "slice: dim out of range");
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(step != 0, "slice: step must not be zero");
         const int64_t dim_size = sizes_and_strides_.size_at_unchecked(dim);
         if (start < 0)
         {
@@ -972,9 +1022,9 @@ public:
         sizes_and_strides sas        = sizes_and_strides_;
         sas.size_at_unchecked(dim)   = new_size;
         sas.stride_at_unchecked(dim) = sizes_and_strides_.stride_at_unchecked(dim) * step;
-        const size_t offset  = static_cast<size_t>(start) *
-                               static_cast<size_t>(sizes_and_strides_.stride_at_unchecked(dim));
-        value_t*     new_ptr = data() + offset;
+        const size_t offset          = static_cast<size_t>(start) *
+                              static_cast<size_t>(sizes_and_strides_.stride_at_unchecked(dim));
+        value_t*     new_ptr      = data() + offset;
         const size_t storage_size = view_.size() > offset ? view_.size() - offset : 0;
         return tensor(new_ptr, storage_size, sas, device(), view_.device_index(), view_.stream());
     }
@@ -1249,7 +1299,9 @@ private:
         typename view_t::stream_t stream       = nullptr)
         : sizes_and_strides_(std::move(sas)),
           view_(view_t::borrow(ptr, storage_size, type, device_index, stream))
-    { recompute_cpu_simd_alignment_state(); }
+    {
+        recompute_cpu_simd_alignment_state();
+    }
 
     // -----------------------------------------------------------------------
     // Helpers
@@ -1305,7 +1357,7 @@ private:
     {
         const size_t n = sizes_and_strides_.size();
         const size_t m = indices.size();
-        VECTORIZATION_CHECK_DEBUG(m <= n, "number of indices exceeds tensor rank");
+        VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(m <= n, "number of indices exceeds tensor rank");
 
         size_t ret = 0;
         for (size_t i = 0; i < m; ++i)

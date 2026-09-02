@@ -176,10 +176,28 @@ static_assert(VECTORIZATION_PACKET_SIZE >= 1, "VECTORIZATION_PACKET_SIZE must be
 #define VECTORIZATION_FATAL(format_string, ...) LOGGING_LOG_FATAL(format_string, ##__VA_ARGS__)
 
 #define VECTORIZATION_CHECK(cond, ...) LOGGING_CHECK(cond, ##__VA_ARGS__)
+// For functions tagged VECTORIZATION_FUNCTION_ATTRIBUTE / VECTORIZATION_CUDA_FUNCTION_TYPE
+// (__host__ __device__) whose check is only meaningful on the host (e.g. validating
+// an initializer_list before a host-side copy) -- expands to nothing under the
+// CUDA/HIP device compiler instead of trying to make VECTORIZATION_CHECK itself
+// device-safe. See LOGGING_CHECK_IF_NOT_ON_CUDA for the full rationale (mirrors
+// PyTorch's TORCH_CHECK_IF_NOT_ON_CUDA). Do not use in functions that are
+// host-only in practice -- use VECTORIZATION_CHECK there so the check still fires.
+#define VECTORIZATION_CHECK_IF_NOT_ON_CUDA(cond, ...) \
+    LOGGING_CHECK_IF_NOT_ON_CUDA(cond, ##__VA_ARGS__)
 #ifndef NDEBUG
 #define VECTORIZATION_CHECK_DEBUG(cond, ...) LOGGING_CHECK_DEBUG(cond, ##__VA_ARGS__)
 #else
 #define VECTORIZATION_CHECK_DEBUG(cond, ...) ((void)0)
+#endif
+// Debug-only counterpart to VECTORIZATION_CHECK_IF_NOT_ON_CUDA -- same rule: use in
+// functions tagged VECTORIZATION_FUNCTION_ATTRIBUTE / VECTORIZATION_CUDA_FUNCTION_TYPE
+// (__host__ __device__), not in functions that are host-only in practice.
+#ifndef NDEBUG
+#define VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(cond, ...) \
+    LOGGING_CHECK_DEBUG_IF_NOT_ON_CUDA(cond, ##__VA_ARGS__)
+#else
+#define VECTORIZATION_CHECK_DEBUG_IF_NOT_ON_CUDA(cond, ...) ((void)0)
 #endif
 #define VECTORIZATION_THROW(format_str, ...) LOGGING_THROW(format_str, ##__VA_ARGS__)
 #define VECTORIZATION_NOT_IMPLEMENTED(format_str, ...) \

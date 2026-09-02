@@ -31,10 +31,18 @@
 //
 // ThirdParty/ is vendored and must never be edited (see CLAUDE.md). Supply
 // the missing operator here instead, in fmt's own namespace so ADL finds it
-// at the point format_hexfloat<long double> is instantiated. Force-included
-// ahead of every nvcc-compiled translation unit (see the `-include` compile
-// option on CUDA sources in Testing/Cxx/CMakeLists.txt) so it is visible
-// before that instantiation happens.
+// at the point format_hexfloat<long double> is instantiated.
+//
+// Not force-included via -include on the nvcc command line: nvcc reapplies
+// -include when it recompiles its own flattened cudafe1.cpp intermediate,
+// which would duplicate all of <fmt> with no header guards left and corrupt
+// the parser's namespace state. Instead this header is pulled in, guarded by
+// `#if VECTORIZATION_HAS_CUDA`, from the top of VectorizationTest.h.in (see
+// Testing/VectorizationTest.h.in) so every GTest-based file under Testing/Cxx
+// gets it for free via its existing `#include "VectorizationTest.h"` instead
+// of each one repeating this block. BenchmarkTensorGpu.cpp doesn't use
+// VectorizationTest.h (it's Google Benchmark, not GTest), so it still
+// includes this header directly.
 #include "fmt/format.h"
 
 namespace fmt

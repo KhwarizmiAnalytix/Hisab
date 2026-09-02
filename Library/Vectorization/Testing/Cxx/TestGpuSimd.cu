@@ -12,16 +12,9 @@
  * not require a GPU.
  */
 
-#if VECTORIZATION_HAS_CUDA
-// nvcc (cicc) forces fmt's FMT_USE_INT128 fallback (fmt::detail::uint128, no
-// operator~) even for host-only formatting of long double. #include-d here
-// (rather than force-included via -include on the nvcc command line) because
-// nvcc reapplies -include when it recompiles its own flattened cudafe1.cpp
-// intermediate, which would duplicate all of <fmt> with no header guards
-// left and corrupt the parser's namespace state. See cuda_fmt_int128_fix.h.
-#include "cuda_fmt_int128_fix.h"
-#endif
-
+// VectorizationTest.h pulls in the nvcc fmt/int128 ADL shim itself (guarded
+// by VECTORIZATION_HAS_CUDA) -- see Testing/VectorizationTest.h.in and
+// cuda_fmt_int128_fix.h for the full explanation.
 #include "VectorizationTest.h"
 
 #if VECTORIZATION_HAS_CUDA || VECTORIZATION_HAS_HIP

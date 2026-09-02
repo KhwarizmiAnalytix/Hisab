@@ -330,6 +330,34 @@ inline std::string format_check_msg(const char* cond_str)
         }                                                                               \
     } while (0)
 
+/**
+ * @brief LOGGING_CHECK, but compiled to nothing under the CUDA/HIP device
+ * compiler.
+ *
+ * fmt's own header (fmt/base.h) disables FMT_USE_INT128 whenever __NVCC__ is
+ * defined -- for the whole translation unit, host-compiled portion included,
+ * not just device-code passes -- and its fallback fmt::detail::uint128 is
+ * missing operator~, which format_hexfloat<long double> needs. That breaks
+ * ordinary LOGGING_CHECK usage in code nvcc/Clang-CUDA processes. It is also
+ * simply illegal for a function actually compiled for the GPU to throw at
+ * all ("device code does not support exception handling").
+ *
+ * Mirrors PyTorch's TORCH_CHECK_IF_NOT_ON_CUDA (c10/util/Exception.h): for
+ * functions shared between host and device (annotated __host__ __device__),
+ * use this instead of LOGGING_CHECK so the check -- and with it, any need for
+ * fmt's formatting machinery -- is entirely absent from the device-compiled
+ * pass, rather than working around fmt's nvcc quirk after the fact. Does
+ * nothing under __CUDACC__/__HIPCC__; expands to plain LOGGING_CHECK
+ * otherwise. Do NOT use this for functions that are host-only in practice
+ * (plain, unattributed functions, or ones using VECTORIZATION_HOST_FUNCTION_ATTRIBUTE
+ * or equivalent) -- use LOGGING_CHECK there so the check still fires.
+ */
+#if defined(__CUDACC__) || defined(__HIPCC__)
+#define LOGGING_CHECK_IF_NOT_ON_CUDA(cond, ...)
+#else
+#define LOGGING_CHECK_IF_NOT_ON_CUDA(cond, ...) LOGGING_CHECK(cond, ##__VA_ARGS__)
+#endif
+
 #define LOGGING_CHECK_ALL_POSITIVE(V)                                  \
     LOGGING_CHECK(                                                     \
         std::all_of(V.begin(), V.end(), [](auto x) { return x > 0; }), \
@@ -398,6 +426,25 @@ inline std::string format_check_msg(const char* cond_str)
     {                                            \
         LOGGING_CHECK(condition, ##__VA_ARGS__); \
     } while (0)
+#endif
+
+/**
+ * @brief LOGGING_CHECK_DEBUG, but compiled to nothing under the CUDA/HIP
+ * device compiler.
+ *
+ * Same rationale as LOGGING_CHECK_IF_NOT_ON_CUDA (mirrors PyTorch's
+ * TORCH_CHECK_IF_NOT_ON_CUDA): for functions shared between host and device
+ * (__host__ __device__), use this instead of LOGGING_CHECK_DEBUG so the
+ * debug check is entirely absent from the device-compiled pass. In a
+ * !NDEBUG, non-CUDA build this behaves exactly like LOGGING_CHECK_DEBUG. Do
+ * NOT use this for functions that are host-only in practice -- use
+ * LOGGING_CHECK_DEBUG there so the check still fires in debug builds.
+ */
+#if defined(__CUDACC__) || defined(__HIPCC__)
+#define LOGGING_CHECK_DEBUG_IF_NOT_ON_CUDA(condition, ...)
+#else
+#define LOGGING_CHECK_DEBUG_IF_NOT_ON_CUDA(condition, ...) \
+    LOGGING_CHECK_DEBUG(condition, ##__VA_ARGS__)
 #endif
 
 #define LOGGING_WARN_ONCE(msg)                  \
