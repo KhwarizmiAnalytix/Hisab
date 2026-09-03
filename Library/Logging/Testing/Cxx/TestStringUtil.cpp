@@ -251,6 +251,44 @@ void testFormatHex()
     EXPECT_EQ(hex5, "0f");
 }
 
+void testFormat()
+{
+    // Zero placeholders / zero arguments
+    EXPECT_EQ(logging::strings::format("no placeholders"), "no placeholders");
+
+    // Ordinary substitution
+    EXPECT_EQ(logging::strings::format("{} + {}", 1, 2), "1 + 2");
+    EXPECT_EQ(logging::strings::format("{}", std::string("text")), "text");
+    EXPECT_EQ(logging::strings::format("{}", "literal"), "literal");
+    EXPECT_EQ(logging::strings::format("{}", std::string_view("view")), "view");
+
+    // A null const char* contributes an empty placeholder rather than crashing
+    const char* null_str = nullptr;
+    EXPECT_EQ(logging::strings::format("[{}]", null_str), "[]");
+
+    // bool must render as true/false, not as 1/0
+    EXPECT_EQ(logging::strings::format("{} {}", true, false), "true false");
+
+    // Floating point must not be truncated to the stream default of 6
+    // significant digits.
+    EXPECT_EQ(logging::strings::format("{}", 3.14159265358979), "3.14159265358979");
+    EXPECT_EQ(logging::strings::format("{}", 0.1), "0.1");
+    EXPECT_EQ(logging::strings::format("{}", 1.5F), "1.5");
+
+    // More arguments than the std::format dispatch binds directly: every value
+    // must still appear in the result.
+    const std::string many =
+        logging::strings::format("{} {} {} {} {} {} {} {}", 1, 2, 3, 4, 5, 6, 7, 8);
+    EXPECT_EQ(many, "1 2 3 4 5 6 7 8");
+
+    const std::string more =
+        logging::strings::format("{} {} {} {} {} {} {} {} {} {}", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    EXPECT_EQ(more, "1 2 3 4 5 6 7 8 9 10");
+
+    // Brace escapes survive substitution
+    EXPECT_EQ(logging::strings::format("{{{}}}", 7), "{7}");
+}
+
 void testToLower()
 {
     // Test to_lower with uppercase
@@ -412,6 +450,7 @@ void testAllFunctions()
     testStringAppend();
     testStringContains();
     testFormatHex();
+    testFormat();
     testToLower();
     testDemangleFunction();
     testReplaceAllEdgeCases();

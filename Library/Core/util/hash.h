@@ -12,7 +12,7 @@
 #include <vector>
 
 //#include "util/array_ref.h"
-#include "util/core_exception.h"
+#include "util/exception.h"
 //#include "util/complex.h"
 
 namespace xsigma
@@ -197,7 +197,7 @@ private:
             }
             else
             {
-                XSIGMA_CHECK(false, "sha1 too many bytes");
+                LOGGING_CHECK(false, "sha1 too many bytes");
             }
         }
     }

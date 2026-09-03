@@ -84,7 +84,6 @@ via `data_ptr` (same contract as `data_ptr` itself). Wrap constructors and
 | `profiler/unified_memory_stats.{h,cpp}` | `unified_cache_stats` — GPU cache metrics |
 | `profiler/gpu_memory_snapshot.h` | GPU segment snapshot + history ring (`_snapshot` / `_record_memory_history`) |
 | `profiler/profiled_cpu_memory_reporter.{h,cpp}` | CPU alloc/free/OOM → profiler (gated) |
-| `util/memory_exception.h` | `MEMORY_CHECK`/`MEMORY_LOG_*` macros |
 
 ---
 
@@ -118,7 +117,7 @@ not "empty".
 
 ### Behavior notes
 
-- **Validation**: `MEMORY_CHECK` rejects `nbytes == 0`; debug builds also
+- **Validation**: `LOGGING_CHECK` rejects `nbytes == 0`; debug builds also
   assert power-of-two alignment ≥ `sizeof(void*)`.
 - **NUMA** (`MEMORY_HAS_NUMA`, Linux only): after allocation, `NUMAMove(ptr,
   nbytes, GetCurrentNUMANode())` applies first-touch policy. Free needs no
@@ -156,7 +155,7 @@ sets `MEMORY_HAS_MIMALLOC_STATS=1`. Two consumption routes:
   `MIMALLOC_VERBOSE=1` prints init messages.
 - **API** (`helper/memory_allocator.h`): `has_stats()` (compile-time
   availability), `stats_print()` (`mi_stats_merge` + line dump via
-  `MEMORY_LOG_INFO`), `process_info(process_memory_info&)` (RSS / commit /
+  `LOGGING_LOG_INFO`), `process_info(process_memory_info&)` (RSS / commit /
   page faults).
 
 Because mimalloc is linked with `MI_OVERRIDE=OFF`, the stats cover only
@@ -382,7 +381,7 @@ does not reuse a source buffer still in flight on another stream.
   throws on a foreign pointer / double free. Because `~data_ptr()` is
   implicitly `noexcept`, that bug terminates rather than corrupting
   silently.
-- `MEMORY_CHECK` backs internal invariants with formatted messages.
+- `LOGGING_CHECK` backs internal invariants with formatted messages.
 
 ---
 
@@ -395,7 +394,7 @@ does not reuse a source buffer still in flight on another stream.
 | TBB malloc | `MEMORY_ENABLE_TBB` | `memory_enable_tbb` | Backend #2 |
 | NUMA | `MEMORY_ENABLE_NUMA` (Linux) | `memory_enable_numa` | First-touch in CPU allocate |
 | memkind | `MEMORY_ENABLE_MEMKIND` (Linux, OFF) | `memory_enable_memkind` | Extended-memory support |
-| Logging | always linked | — | `MEMORY_LOG_*` forwards to `LOGGING_LOG_*` |
+| Logging | always linked | — | `LOGGING_LOG_*` / `LOGGING_CHECK` used directly |
 
 The old `MEMORY_GPU_ALLOC` strategy knob and `MEMORY_HAS_ALLOCATION_STATS`
 were removed with the machinery that consumed them.

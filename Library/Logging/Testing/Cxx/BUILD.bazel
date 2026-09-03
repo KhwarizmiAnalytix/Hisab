@@ -30,7 +30,7 @@ cc_test(
         "//bazel:logging_loguru": ["@loguru//:loguru"],
         "//bazel:logging_native": [],
         "//bazel:logging_spdlog": ["@spdlog//:spdlog"],
-        "//conditions:default": ["@spdlog//:spdlog"],
+        "//conditions:default": ["@loguru//:loguru"],
     }),
 )
 
@@ -51,7 +51,7 @@ cc_test(
             "//bazel:logging_loguru": ["@loguru//:loguru"],
             "//bazel:logging_native": [],
             "//bazel:logging_spdlog": ["@spdlog//:spdlog"],
-            "//conditions:default": ["@spdlog//:spdlog"],
+            "//conditions:default": ["@loguru//:loguru"],
         }),
     )
     for _src in glob(["Benchmark*.cpp"], allow_empty = True)

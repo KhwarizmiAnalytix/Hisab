@@ -302,7 +302,7 @@ class BazelConfiguration:
         self.subprocess_timeout: int = 600
 
         # Default backends (matching CMake defaults)
-        self.logging_backend = "spdlog"  # Default: SPDLOG (matches CMake)
+        self.logging_backend = "loguru"  # Default: LOGURU (matches CMake)
         self.profiler_backend = "kineto"  # Default: KINETO (matches CMake)
 
         # Compiler and build tool configuration

@@ -7,7 +7,7 @@
 
 #include "common/export.h"
 #include "common/maybe_owned.h"
-#include "util/core_exception.h"
+#include "util/exception.h"
 
 namespace pybind11
 {
@@ -206,7 +206,7 @@ protected:
 #pragma GCC diagnostic ignored "-Wterminate"
 #pragma GCC diagnostic ignored "-Wexceptions"
 #endif
-        XSIGMA_CHECK_DEBUG(
+        LOGGING_CHECK_DEBUG(
             // Second condition is there to accommodate
             // unsafe_adapt_non_heap_allocated: since we are doing our own
             // deallocation in that case, it is correct for each
@@ -219,9 +219,9 @@ protected:
             // will not dip below kImpracticallyHugeReferenceCount regardless.
             refcount() == 0 || refcount() >= detail::kImpracticallyHugeReferenceCount,
             "Tried to destruct an intrusive_ptr_target that still has intrusive_ptr to it; "
-            "refcount was ",
+            "refcount was {}",
             refcount());
-        XSIGMA_CHECK_DEBUG(
+        LOGGING_CHECK_DEBUG(
             // See ~intrusive_ptr for optimization that will frequently result in 1
             // at destruction time.
             weakcount() == 1 || weakcount() == 0 ||
@@ -326,7 +326,7 @@ private:
         {
             XSIGMA_UNUSED uint32_t new_refcount =
                 detail::atomic_refcount_increment(target_->combined_refcount_);
-            XSIGMA_CHECK_DEBUG(
+            LOGGING_CHECK_DEBUG(
                 new_refcount != 1,
                 "intrusive_ptr: Cannot increase refcount after it reached zero.");
         }
@@ -391,7 +391,7 @@ private:
             // (On x86_64, a store with memory_order_relaxed generates a plain old
             // `mov`, whereas an atomic increment does a lock-prefixed `add`, which is
             // much more expensive: https://godbolt.org/z/eKPzj8.)
-            XSIGMA_CHECK_DEBUG(
+            LOGGING_CHECK_DEBUG(
                 target_->combined_refcount_.load(std::memory_order_relaxed) == 0,
                 "intrusive_ptr: Newly-created target had non-zero refcounts. Does its "
                 "constructor do something strange like incref or create an "
@@ -549,7 +549,7 @@ public:
    */
     static intrusive_ptr reclaim(TTarget* owning_ptr)
     {
-        XSIGMA_CHECK_DEBUG(
+        LOGGING_CHECK_DEBUG(
             owning_ptr == NullType::singleton() || owning_ptr->refcount() == 0 ||
                 owning_ptr->weakcount(),
             "TTarget violates the invariant that refcount > 0  =>  weakcount > 0");
@@ -642,7 +642,7 @@ public:
     static intrusive_ptr unsafe_reclaim_from_nonowning(TTarget* raw_ptr)
     {
         // See Note [Stack allocated intrusive_ptr_target safety]
-        XSIGMA_CHECK_DEBUG(
+        LOGGING_CHECK_DEBUG(
             raw_ptr == NullType::singleton() || raw_ptr->refcount() > 0,
             "intrusive_ptr: Can only reclaim pointers that are owned by someone");
         auto ptr = reclaim(raw_ptr);  // doesn't increase refcount
@@ -779,7 +779,7 @@ private:
         {
             XSIGMA_UNUSED uint32_t new_weakcount =
                 detail::atomic_weakcount_increment(target_->combined_refcount_);
-            XSIGMA_CHECK_DEBUG(
+            LOGGING_CHECK_DEBUG(
                 new_weakcount != 1,
                 "weak_intrusive_ptr: Cannot increase weakcount after it reached zero.");
         }
@@ -990,7 +990,7 @@ public:
         // if refcount > 0, weakcount must be >1 for weak references to exist.
         // see weak counting explanation at top of this file.
         // if refcount == 0, weakcount only must be >0.
-        XSIGMA_CHECK_DEBUG(
+        LOGGING_CHECK_DEBUG(
             owning_weak_ptr == NullType::singleton() || owning_weak_ptr->weakcount() > 1 ||
                 (owning_weak_ptr->refcount() == 0 && owning_weak_ptr->weakcount() > 0),
             "weak_intrusive_ptr: Can only weak_intrusive_ptr::reclaim() owning pointers that were "

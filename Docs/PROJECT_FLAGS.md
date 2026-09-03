@@ -55,7 +55,7 @@ the obsolete aggregate names `PROJECT_ENABLE_LTO`, `PROJECT_ENABLE_COVERAGE`,
 
 | Variable | Default | Supported values |
 |---|---|---|
-| `LOGGING_BACKEND` | `SPDLOG` | `NATIVE`, `LOGURU`, `GLOG`, `SPDLOG`. |
+| `LOGGING_BACKEND` | `LOGURU` | `NATIVE`, `LOGURU`, `GLOG`, `SPDLOG`. |
 | `PROFILER_BACKEND` | `KINETO` | `KINETO`, `ITT`. The native TraceMe/XPlane pipeline is always compiled. |
 | `MEMORY_GPU_BACKEND` | `none` | `none`, `cuda`, `hip`, `metal`. Metal requires Apple platforms. HIP is not supported on Windows in this project. |
 | `VECTORIZATION_GPU_BACKEND` | `none` | `none`, `cuda`, `hip`, `metal`. Keep it equal to `MEMORY_GPU_BACKEND` for GPU Vectorization. |

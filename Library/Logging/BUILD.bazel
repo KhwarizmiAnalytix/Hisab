@@ -62,7 +62,7 @@ cc_library(
         "//bazel:logging_loguru": ["@loguru//:loguru"],
         "//bazel:logging_native": [],
         "//bazel:logging_spdlog": ["@spdlog//:spdlog"],
-        "//conditions:default": ["@spdlog//:spdlog"],
+        "//conditions:default": ["@loguru//:loguru"],
     }),
     alwayslink = False,
     visibility = [

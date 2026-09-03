@@ -31,8 +31,15 @@
 
 namespace
 {
+
+// The tensor test body is split into several noinline helpers: as one function
+// it is large enough to trip an internal compiler error in GCC 13's basic-block
+// reordering pass, and keeping the helpers out-of-line stops the compiler from
+// merging them back together.
+
+/// @brief Construction, copy/move semantics, and external-data borrowing.
 template <typename T>
-void test_tensor()
+VECTORIZATION_NOINLINE void test_tensor_construction()
 {
     using tensor_t = vectorization::tensor<T>;
     using dims_t   = typename tensor_t::dimensions_type;
@@ -200,6 +207,15 @@ void test_tensor()
         EXPECT_EQ(a.size(), 4u);
         EXPECT_EQ(a.data(), raw_ptr);
     }
+}
+
+/// @brief Shape metadata, element access, cloning, and view creation.
+template <typename T>
+VECTORIZATION_NOINLINE void test_tensor_shape_access()
+{
+    using tensor_t = vectorization::tensor<T>;
+    using dims_t   = typename tensor_t::dimensions_type;
+    const T eps    = std::is_same<T, float>::value ? T(1e-5) : T(1e-10);
 
     // -----------------------------------------------------------------------
     // Shape metadata
@@ -341,6 +357,15 @@ void test_tensor()
         EXPECT_EQ(permuted.stride(2), volume.stride(1));
         EXPECT_EQ(permuted.data(), volume.data());
     }
+}
+
+/// @brief Slicing, permutation, and expression assignment into views.
+template <typename T>
+VECTORIZATION_NOINLINE void test_tensor_views_slices()
+{
+    using tensor_t = vectorization::tensor<T>;
+    using dims_t   = typename tensor_t::dimensions_type;
+    const T eps    = std::is_same<T, float>::value ? T(1e-5) : T(1e-10);
 
     // permute() moving a size-1 axis must not spuriously break contiguity: a singleton
     // dimension's stride is never read by any valid index, so relocating it can't change
@@ -608,6 +633,14 @@ void test_tensor()
         tensor_t z(std::initializer_list<std::initializer_list<T>>{});
         EXPECT_TRUE(z.empty());
     }
+}
+
+/// @brief Shape/state predicates and expression evaluation.
+template <typename T>
+VECTORIZATION_NOINLINE void test_tensor_predicates()
+{
+    using tensor_t = vectorization::tensor<T>;
+    const T eps    = std::is_same<T, float>::value ? T(1e-5) : T(1e-10);
 
     // -----------------------------------------------------------------------
     // Predicates
@@ -701,6 +734,14 @@ void test_tensor()
         EXPECT_EQ(ex.size(), 4u);
         EXPECT_NEAR(static_cast<T>(ex[0]), std::exp(T(3)), T(1e-4));
     }
+}
+
+/// @brief Contiguity semantics and stream formatting.
+template <typename T>
+VECTORIZATION_NOINLINE void test_tensor_contiguity()
+{
+    using tensor_t = vectorization::tensor<T>;
+    using dims_t   = typename tensor_t::dimensions_type;
 
     // -----------------------------------------------------------------------
     // Contiguity semantics -- see Docs/vectorization_tensor_contiguity.md.
@@ -878,6 +919,17 @@ void test_tensor()
         oss << v;
         EXPECT_EQ(oss.str(), s);
     }
+}
+
+/// @brief Runs the full tensor test suite for element type @p T.
+template <typename T>
+void test_tensor()
+{
+    test_tensor_construction<T>();
+    test_tensor_shape_access<T>();
+    test_tensor_views_slices<T>();
+    test_tensor_predicates<T>();
+    test_tensor_contiguity<T>();
 }
 }  // namespace
 

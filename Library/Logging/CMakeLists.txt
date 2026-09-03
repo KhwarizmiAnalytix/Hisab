@@ -3,7 +3,7 @@
 # CMakeLists.txt
 #
 # Structured log levels, back-trace capture, and pluggable backend support
-# (spdlog default, Loguru, GLog, Native).
+# (Loguru default, spdlog, GLog, Native).
 #
 # Public compile definitions: LOGGING_HAS_SPDLOG=1/0 — spdlog backend active
 # LOGGING_HAS_LOGURU=1/0 — Loguru backend active LOGGING_HAS_GLOG=1/0 —
@@ -12,7 +12,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # --- Section 1: Feature flags (LOGGING_ENABLE_*) and backend selector ---
-set(LOGGING_BACKEND "SPDLOG"
+set(LOGGING_BACKEND "LOGURU"
     CACHE STRING "Logging backend to use. Options are NATIVE, LOGURU, GLOG, or SPDLOG"
 )
 set_property(CACHE LOGGING_BACKEND PROPERTY STRINGS NATIVE LOGURU GLOG SPDLOG)

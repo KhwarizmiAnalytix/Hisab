@@ -88,8 +88,12 @@ function(xsigma_configure_sanitizer module_name)
                                 Gtest::gtest_main
     )
       if(TARGET ${_gtest_tgt})
+        # GTest::gtest and friends are ALIAS targets; target_link_options() rejects
+        # aliases outright. The real names (gtest / gtest_main) are already in this
+        # list, so skipping the alias loses nothing.
+        get_target_property(_gtest_alias ${_gtest_tgt} ALIASED_TARGET)
         get_target_property(_gtest_type ${_gtest_tgt} TYPE)
-        if(NOT _gtest_type STREQUAL "INTERFACE_LIBRARY")
+        if(NOT _gtest_alias AND NOT _gtest_type STREQUAL "INTERFACE_LIBRARY")
           target_link_options(${_gtest_tgt} INTERFACE "-fsanitize=${_san_type}")
         endif()
       endif()

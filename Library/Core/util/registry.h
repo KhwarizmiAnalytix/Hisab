@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "common/macros.h"
-#include "util/core_exception.h"
+#include "util/exception.h"
 #include "util/flat_hash.h"
 
 template <typename T>
@@ -39,14 +39,14 @@ public:
     template <class Arg1, class Arg2, class... Args>
     auto run(const KeyType& key, Arg1& arg1, Arg2* arg2, Args... args)
     {
-        XSIGMA_CHECK_DEBUG(registry_.count(key) != 0, "key ", key, " was not found");
+        LOGGING_CHECK_DEBUG(registry_.count(key) != 0, "key {} was not found", key);
         return registry_[key](arg1, arg2, args...);
     }
 
     template <class Arg1, class Arg2, class... Args>
     auto run(const KeyType& key, Arg1& arg1, Arg2& arg2, Args... args)
     {
-        XSIGMA_CHECK_DEBUG(registry_.count(key) != 0, "key ", key, " was not found");
+        LOGGING_CHECK_DEBUG(registry_.count(key) != 0, "key {} was not found", key);
         return registry_[key](arg1, arg2, args...);
     }
 

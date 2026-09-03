@@ -122,7 +122,7 @@ module, for example:
 ```bash
 cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
-  -DLOGGING_BACKEND=SPDLOG \
+  -DLOGGING_BACKEND=LOGURU \
   -DPROFILER_BACKEND=KINETO \
   -DVECTORIZATION_CPU_BACKEND=avx2 \
   -DMEMORY_GPU_BACKEND=none \

@@ -399,14 +399,18 @@ public:
             value_t* dst = data();
             for (auto const& row : list)
             {
-                // Not VECTORIZATION_CHECK_IF_NOT_ON_CUDA: this constructor takes a
-                // std::initializer_list, which is only ever constructed from host code,
-                // so it is host-only in practice despite the __host__ __device__ tag on
-                // the constructor itself (needed only so tensor<T> remains usable from
-                // other host-device-tagged contexts). Per the macro's own doc comment,
-                // host-only-in-practice checks must stay VECTORIZATION_CHECK so this
-                // jagged-row validation still fires.
-                VECTORIZATION_CHECK(row.size() == cols, "2-D initializer_list has jagged rows");
+                // Must be VECTORIZATION_CHECK_IF_NOT_ON_CUDA, not a plain
+                // VECTORIZATION_CHECK: this constructor is tagged __host__ __device__,
+                // and nvcc compiles a device pass for every such function that is
+                // instantiated -- whether or not device code ever calls it. A plain
+                // VECTORIZATION_CHECK throws, and "device code does not support
+                // exception handling" is a hard error in that pass, so the whole TU
+                // fails to compile. IF_NOT_ON_CUDA expands to nothing only in that
+                // device pass; it is *not* VECTORIZATION_CHECK_DEBUG, which would also
+                // drop the check from release host builds, where a jagged row would
+                // then run std::copy past the end of the allocation.
+                VECTORIZATION_CHECK_IF_NOT_ON_CUDA(
+                    row.size() == cols, "2-D initializer_list has jagged rows");
                 std::copy(row.begin(), row.end(), dst + i * cols);
                 ++i;
             }
@@ -416,7 +420,8 @@ public:
         value_t* dst = packed.data();
         for (auto const& row : list)
         {
-            VECTORIZATION_CHECK(row.size() == cols, "2-D initializer_list has jagged rows");
+            VECTORIZATION_CHECK_IF_NOT_ON_CUDA(
+                row.size() == cols, "2-D initializer_list has jagged rows");
             std::copy(row.begin(), row.end(), dst + i * cols);
             ++i;
         }

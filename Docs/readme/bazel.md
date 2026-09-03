@@ -16,7 +16,7 @@ Use Bazelisk. The pinned version is `8.4.2` in `.bazelversion`.
 
 ## Current defaults
 
-- Logging: SPDLOG.
+- Logging: LOGURU.
 - Profiler instrumentation: Kineto; the native TraceMe/XPlane pipeline is
   always built.
 - C++ standard: C++20.

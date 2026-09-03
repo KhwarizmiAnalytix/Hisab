@@ -226,7 +226,7 @@ Always-vendored under `ThirdParty/` — do not edit those trees.
 
 | Library | Typical third-party / system deps |
 |---|---|
-| Logging | fmt; one of spdlog / loguru / glog (`LOGGING_BACKEND`, default **SPDLOG**) |
+| Logging | fmt; one of loguru / spdlog / glog (`LOGGING_BACKEND`, default **LOGURU**) |
 | Profiler | fmt; kineto **or** ittapi; CUDA / HIP / Metal+Foundation when that GPU backend is on |
 | Memory | fmt, cpuinfo; optional mimalloc, tbbmalloc, numa, CUDA / HIP / Metal |
 | Vectorization | Logging/Memory/Profiler as above; optional SLEEF, SVML, MKL, Accelerate, LibTorch (tests), CUDA / HIP / Metal |

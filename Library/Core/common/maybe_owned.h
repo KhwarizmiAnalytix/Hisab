@@ -5,7 +5,7 @@
 #include <utility>
 
 #include "common/macros.h"
-#include "util/core_exception.h"
+#include "util/exception.h"
 
 namespace xsigma
 {
@@ -137,7 +137,7 @@ public:
                 isBorrowed_ = false;
             }
         }
-        XSIGMA_CHECK_DEBUG(isBorrowed_ == rhs.isBorrowed_);
+        LOGGING_CHECK_DEBUG(isBorrowed_ == rhs.isBorrowed_);
         return *this;
     }
 
@@ -231,7 +231,7 @@ public:
     {
         if (isBorrowed_)
         {
-            XSIGMA_CHECK_DEBUG(MaybeOwnedTraits<T>::debugBorrowIsValid(borrow_));
+            LOGGING_CHECK_DEBUG(MaybeOwnedTraits<T>::debugBorrowIsValid(borrow_));
         }
         return (isBorrowed_) ? MaybeOwnedTraits<T>::referenceFromBorrow(borrow_) : own_;
     }
@@ -240,7 +240,7 @@ public:
     {
         if (isBorrowed_)
         {
-            XSIGMA_CHECK_DEBUG(MaybeOwnedTraits<T>::debugBorrowIsValid(borrow_));
+            LOGGING_CHECK_DEBUG(MaybeOwnedTraits<T>::debugBorrowIsValid(borrow_));
         }
         return (isBorrowed_) ? MaybeOwnedTraits<T>::pointerFromBorrow(borrow_) : &own_;
     }
@@ -253,7 +253,7 @@ public:
     {
         if (isBorrowed_)
         {
-            XSIGMA_CHECK_DEBUG(MaybeOwnedTraits<T>::debugBorrowIsValid(borrow_));
+            LOGGING_CHECK_DEBUG(MaybeOwnedTraits<T>::debugBorrowIsValid(borrow_));
             return MaybeOwnedTraits<T>::referenceFromBorrow(borrow_);
         }
         else

@@ -775,7 +775,7 @@ class XSigmaFlags:
                 "javasourceversion": 1.8,  # Special case: numeric value
                 "javatargetversion": 1.8,  # Special case: numeric value
                 "cxxstd": "",  # Special case: let CMake decide
-                "logging_backend": "SPDLOG",  # Default logging backend
+                "logging_backend": "LOGURU",  # Default logging backend
                 "cache": self.ON,  # Per-module compiler cache (CMake defaults ON)
                 "cache_type": "none",  # Default cache backend is none
                 "parallel_backend": "std",  # Default SMP backend
@@ -1116,6 +1116,8 @@ class XSigmaFlags:
             "BUILD_SHARED_LIBS",
             "BUILD_TESTING",
             "XSIGMA_ENABLE_EXTERNAL",
+            # Logging is a dependency of scoped modules such as Memory.
+            "LOGGING_BACKEND",
         }
 
         def _cmake_flag_in_scope(flag_name):
@@ -2093,7 +2095,7 @@ def main():
         print("\nLogging backend flags:")
         print("  --logging=BACKEND  Set logging backend")
         print("                             Options: NATIVE, LOGURU, GLOG, SPDLOG")
-        print("                             Default: SPDLOG")
+        print("                             Default: LOGURU")
         print("\nSanitizer flags:")
         print("  --sanitizer.address        Enable AddressSanitizer")
         print("  --sanitizer.undefined      Enable UndefinedBehaviorSanitizer")
@@ -2109,10 +2111,10 @@ def main():
         print("  python setup.py config.build.test.ninja.clang --logging=GLOG")
         print("  # Use NATIVE backend")
         print("  python setup.py config.build.test.ninja.clang --logging=NATIVE")
-        print("  # Use SPDLOG backend (default, no flag needed)")
+        print("  # Use LOGURU backend (default, no flag needed)")
         print("  python setup.py config.build.test.ninja.clang")
-        print("  # Use LOGURU backend")
-        print("  python setup.py config.build.test.ninja.clang --logging=LOGURU")
+        print("  # Use SPDLOG backend")
+        print("  python setup.py config.build.test.ninja.clang --logging=SPDLOG")
         print("\nSanitizer examples:")
         print("  python setup.py config.build.test.vs22 --sanitizer.undefined")
         print("  python setup.py config.build.test.ninja.clang --sanitizer.address")

@@ -17,13 +17,16 @@
 
 #include <algorithm>  // for transform
 #include <cctype>
+#include <charconv>     // for to_chars (shortest round-trip floats)
 #include <cstddef>      // for size_t
 #include <cstdint>      // for int64_t, uint64_t, uint32_t, int32_t
 #include <filesystem>   // for path (C++17)
 #include <iomanip>      // for setfill, setw, hex
+#include <limits>       // for numeric_limits
 #include <sstream>      // for ostream, ostringstream, stringstream
 #include <string>       // for string, allocator, char_traits, stoi, to_string
 #include <string_view>  // for string_view
+#include <type_traits>  // for is_floating_point
 #include <typeinfo>
 #include <vector>  // for vector
 
@@ -233,6 +236,44 @@ namespace strings
 {
 
 /**
+ * @brief Substitute pre-converted arguments into "{}" placeholders
+ *
+ * The single point in the project where message formatting is implemented
+ * (string_util.cpp). Taking the arguments already converted to strings keeps
+ * every formatting library out of this header -- and therefore out of every
+ * header and translation unit that uses LOGGING_CHECK / LOGGING_THROW /
+ * LOGGING_LOG_*, such as Core's intrusive_ptr.h. Swapping the implementation
+ * for fmt::vformat or std::vformat is a change to that one function only.
+ *
+ * @param format_str Format string whose "{}" placeholders are substituted
+ * @param args Arguments, already converted to strings (may be null if count is 0)
+ * @param count Number of arguments in args
+ * @return The formatted string
+ */
+LOGGING_API std::string vformat(std::string_view format_str, const std::string* args, size_t count);
+
+/**
+ * @brief Format a message by substituting "{}" placeholders in order
+ *
+ * Supports exactly one feature: a "{}" placeholder per argument, filled in
+ * argument order. There are no format specifiers ({:x}, {:.2f}) and no
+ * indexed or named placeholders ({0}, {name}) -- "{}" is all any call site
+ * in this project uses. Arguments are converted with operator<<, the same
+ * conversion str_cat() uses, so any streamable type works.
+ *
+ * @tparam Args Types of the format arguments
+ * @param format_str Format string with "{}" placeholders
+ * @param args Values to substitute, in order
+ * @return The formatted string
+ * @example
+ * @code
+ * auto msg = format("Check failed: {} - {}", cond_str, user_msg);
+ * @endcode
+ */
+template <typename... Args>
+std::string format(std::string_view format_str, const Args&... args);
+
+/**
  * @brief Padding specification for hexadecimal formatting
  */
 enum class hex_pad
@@ -328,9 +369,12 @@ inline bool str_contains(std::string_view haystack, char needle) noexcept
 
 namespace internal
 {
-// Helper to convert a value to string
+// Helper to convert a value to string. Floating-point types are excluded here
+// and handled by the dedicated overload below, which would otherwise be
+// ambiguous against this one.
 template <typename T>
-inline void to_string_helper(std::ostringstream& oss, const T& value)
+inline std::enable_if_t<!std::is_floating_point_v<T>> to_string_helper(
+    std::ostringstream& oss, const T& value)
 {
     oss << value;
 }
@@ -349,7 +393,58 @@ inline void to_string_helper(std::ostringstream& oss, const char* value)
         oss << value;
     }
 }
+
+// Overload for bool: operator<< would print 1/0, which is not what a log
+// message wants (and not what the fmt-based formatter this replaced printed).
+inline void to_string_helper(std::ostringstream& oss, bool value)
+{
+    oss << (value ? "true" : "false");
+}
+
+// Overload for floating point: operator<<'s default precision is 6 significant
+// digits, which silently truncates (3.14159265358979 -> "3.14159"). Emit the
+// shortest representation that round-trips instead.
+template <typename T>
+inline std::enable_if_t<std::is_floating_point_v<T>> to_string_helper(
+    std::ostringstream& oss, T value)
+{
+#if defined(__cpp_lib_to_chars) && __cpp_lib_to_chars >= 201611L
+    char       buffer[64];
+    const auto result = std::to_chars(buffer, buffer + sizeof(buffer), value);
+    if (result.ec == std::errc())
+    {
+        oss << std::string_view(buffer, static_cast<size_t>(result.ptr - buffer));
+        return;
+    }
+#endif
+    const auto previous = oss.precision(std::numeric_limits<T>::max_digits10);
+    oss << value;
+    oss.precision(previous);
+}
+
+// Convert a single value to its string form, for format()'s placeholders
+template <typename T>
+inline std::string to_string_one(const T& value)
+{
+    std::ostringstream oss;
+    to_string_helper(oss, value);
+    return oss.str();
+}
 }  // namespace internal
+
+template <typename... Args>
+std::string format(std::string_view format_str, const Args&... args)
+{
+    if constexpr (sizeof...(Args) == 0)
+    {
+        return vformat(format_str, nullptr, 0);
+    }
+    else
+    {
+        const std::string arg_strings[] = {internal::to_string_one(args)...};
+        return vformat(format_str, arg_strings, sizeof...(Args));
+    }
+}
 
 template <typename Int>
 std::string format_hex(Int value, hex_pad padding)

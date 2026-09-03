@@ -664,6 +664,8 @@ const char             kXProfMetadataTransfers[]       = "transfers";
 const char             kXProfMetadataBufferSize[]      = "buffer_size";
 
 // String constants for threadpool_listener
+// PROFILER_API here must match the extern declarations in xplane_schema.h --
+// dropping it on the definition side gives inconsistent dll linkage on Windows.
 PROFILER_API const std::string_view kThreadpoolListenerRecord = "ThreadpoolListener::Record";
 PROFILER_API const std::string_view kThreadpoolListenerStartRegion =
     "ThreadpoolListener::StartRegion";

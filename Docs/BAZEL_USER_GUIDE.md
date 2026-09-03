@@ -45,7 +45,7 @@ The helper adds these configurations unless a different one is selected:
 |---|---|
 | Build type | `debug` when no build-type token is supplied |
 | C++ standard | C++20 through platform and library settings |
-| Logging backend | `SPDLOG` (`--config=logging_spdlog`) |
+| Logging backend | `LOGURU` (`--config=logging_loguru`) |
 | Profiler instrumentation | `KINETO` (`--config=kineto`) |
 | Native profiler pipeline | Always compiled; not a selectable backend |
 | Parallel backend | `std` |

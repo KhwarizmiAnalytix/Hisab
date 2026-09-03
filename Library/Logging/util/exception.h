@@ -1,14 +1,13 @@
 #pragma once
 
-#include <fmt/format.h>
-
 #include <algorithm>
 #include <atomic>
 #include <cstdlib>
-#include <exception>  // for exception
-#include <memory>     // for shared_ptr
-#include <string>     // for string
-#include <vector>     // for vector
+#include <exception>    // for exception
+#include <memory>       // for shared_ptr
+#include <string>       // for string
+#include <string_view>  // for string_view
+#include <vector>       // for vector
 
 #include "common/logging_macros.h"
 #include "logger/logger.h"
@@ -269,7 +268,7 @@ private:
  * ```
  */
 #define LOGGING_THROW(format_str, ...) \
-    LOGGING_THROW_IMPL(GENERIC, fmt::format(FMT_STRING(format_str), ##__VA_ARGS__))
+    LOGGING_THROW_IMPL(GENERIC, logging::strings::format(format_str, ##__VA_ARGS__))
 
 // ============================================================================
 // Exception Check Macros
@@ -284,21 +283,20 @@ namespace details
 
 // Helper to format check messages with optional arguments
 template <typename... Args>
-inline std::string format_check_msg(
-    const char* cond_str, fmt::format_string<Args...> fmt, Args&&... args)
+inline std::string format_check_msg(const char* cond_str, std::string_view fmt, const Args&... args)
 {
-    std::string user_msg = fmt::format(fmt, std::forward<Args>(args)...);
+    std::string user_msg = logging::strings::format(fmt, args...);
     if (user_msg.empty())
     {
-        return fmt::format(FMT_STRING("Check failed: {}"), cond_str);
+        return logging::strings::format("Check failed: {}", cond_str);
     }
-    return fmt::format(FMT_STRING("Check failed: {} - {}"), cond_str, user_msg);
+    return logging::strings::format("Check failed: {} - {}", cond_str, user_msg);
 }
 
 // Overload for no arguments
 inline std::string format_check_msg(const char* cond_str)
 {
-    return fmt::format(FMT_STRING("Check failed: {}"), cond_str);
+    return logging::strings::format("Check failed: {}", cond_str);
 }
 }  // namespace details
 }  // namespace logging
@@ -401,7 +399,7 @@ inline std::string format_check_msg(const char* cond_str)
  * ```
  */
 #define LOGGING_NOT_IMPLEMENTED(format_str, ...) \
-    LOGGING_THROW_IMPL(NOT_IMPLEMENTED, fmt::format(FMT_STRING(format_str), ##__VA_ARGS__))
+    LOGGING_THROW_IMPL(NOT_IMPLEMENTED, logging::strings::format(format_str, ##__VA_ARGS__))
 
 /**
  * @brief Debug-only version of LOGGING_CHECK

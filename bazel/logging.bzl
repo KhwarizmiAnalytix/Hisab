@@ -14,7 +14,7 @@ def logging_defines():
     """
     defines = xsigma_defines()
 
-    # Logging backend — mutually exclusive; default SPDLOG (matches CMake LOGGING_BACKEND default)
+    # Logging backend — mutually exclusive; default LOGURU (matches CMake LOGGING_BACKEND default)
     defines += select({
         "//bazel:logging_glog": [
             "LOGGING_HAS_LOGURU=0",
@@ -41,12 +41,11 @@ def logging_defines():
             "LOGGING_HAS_SPDLOG=1",
             "SPDLOG_FMT_EXTERNAL=1",
         ],
-        "//conditions:default": [  # SPDLOG when no --define=logging_backend (matches CMake default)
-            "LOGGING_HAS_LOGURU=0",
+        "//conditions:default": [  # LOGURU when no --define=logging_backend (matches CMake default)
+            "LOGGING_HAS_LOGURU=1",
             "LOGGING_HAS_GLOG=0",
             "LOGGING_HAS_NATIVE=0",
-            "LOGGING_HAS_SPDLOG=1",
-            "SPDLOG_FMT_EXTERNAL=1",
+            "LOGGING_HAS_SPDLOG=0",
         ],
     })
 

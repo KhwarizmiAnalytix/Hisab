@@ -7,12 +7,12 @@ C++ namespace is `logging`. Include paths are relative to `Library/Logging`
 (`logger/logger.h`, `util/exception.h`).
 
 Select a backend at configure time with `setup.py --logging=SPDLOG|LOGURU|GLOG|NATIVE`
-(default **SPDLOG**). Application source does not change when you switch backends.
+(default **LOGURU**). Application source does not change when you switch backends.
 
 Memory, Vectorization, and Core **always** link `Logging::Logging`. There is
-no `MEMORY_HAS_LOGGING` / `VECTORIZATION_HAS_LOGGING` opt-out: `MEMORY_LOG_*`
-and `VECTORIZATION_LOGF` / `VECTORIZATION_CHECK` / `VECTORIZATION_THROW`
-forward to the Logging macros.
+no `MEMORY_HAS_LOGGING` / `VECTORIZATION_HAS_LOGGING` opt-out: Memory calls
+`LOGGING_LOG_*` / `LOGGING_CHECK` directly, and `VECTORIZATION_LOGF` /
+`VECTORIZATION_CHECK` / `VECTORIZATION_THROW` forward to the Logging macros.
 
 The library is **host/CPU only**. Do not call these macros from `__device__` code.
 
@@ -20,15 +20,15 @@ The library is **host/CPU only**. Do not call these macros from `__device__` cod
 
 | Backend | When to use | Notes |
 |---------|-------------|--------|
-| **SPDLOG** (default) | Fast sinks, colored stderr, file + callback | Best throughput in the comparison below. No process signal handlers |
-| **LOGURU** | Development and full-featured diagnostics | Scopes, callbacks, files, optional signal traces |
+| **LOGURU** (default) | Development and full-featured diagnostics | Scopes, callbacks, files, optional signal traces |
+| **SPDLOG** | Fast sinks, colored stderr, file + callback | Best throughput in the comparison below. No process signal handlers |
 | **GLOG** | Google-style severity logging | Callbacks are not supported; signal handlers honor `enable_unsafe_signal_handler` |
 | **NATIVE** | Minimal dependency (fmt only) | stderr + files + callbacks; `LOGGING_LOG_FATAL` still aborts |
 
 ```bash
 cd Scripts
-python3 setup.py config.build.ninja.clang                  # SPDLOG (default)
-python3 setup.py config.build.ninja.clang --logging=LOGURU
+python3 setup.py config.build.ninja.clang                  # LOGURU (default)
+python3 setup.py config.build.ninja.clang --logging=SPDLOG
 python3 setup.py config.build.ninja.clang --logging=GLOG
 python3 setup.py config.build.ninja.clang --logging=NATIVE
 ```
@@ -41,9 +41,9 @@ binaries of the same `benchmark_logging_logger` target. Source:
 
 ```bash
 cd Scripts
-python3 setup.py config.build.ninja.clang.release.benchmark --project.logging --logging=SPDLOG
-# binary: build_ninja_project_logging_logging_spdlog/bin/benchmark_logging_logger
-# then reconfigure with --logging=LOGURU|GLOG|NATIVE (separate build dirs)
+python3 setup.py config.build.ninja.clang.release.benchmark --project.logging
+# binary: build_ninja_project_logging_logging_loguru/bin/benchmark_logging_logger
+# then reconfigure with --logging=SPDLOG|GLOG|NATIVE (separate build dirs)
 ```
 
 Run the binary **without** `--benchmark_min_time=0.01s` (that filter is only
@@ -140,7 +140,7 @@ Consumers:
 
 ```cpp
 // Memory
-MEMORY_LOG_INFO("allocated {} bytes", n);
+LOGGING_LOG_INFO("allocated {} bytes", n);
 
 // Vectorization (host only)
 VECTORIZATION_LOGF(INFO, "packet size {}", VECTORIZATION_PACKET_SIZE);

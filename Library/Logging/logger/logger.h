@@ -5,8 +5,8 @@
 
 #include "common/logging_export.h"
 #include "common/logging_macros.h"
-#include "fmt/format.h"
 #include "logger_verbosity_enum.h"
+#include "util/string_util.h"
 
 #if defined(__clang__) || defined(__GNUC__)
 #define LOGGING_PRINTF_LIKE(fmtarg, firstvararg) \
@@ -193,18 +193,18 @@ private:
 };
 }  // namespace logging
 
-#define LOGGING_LOG(verbosity_name, format_string, ...)                         \
-    do                                                                          \
-    {                                                                           \
-        if (logging::logger_verbosity_enum::VERBOSITY_##verbosity_name <=       \
-            logging::logger::get_current_verbosity_cutoff())                    \
-        {                                                                       \
-            logging::logger::log(                                               \
-                logging::logger_verbosity_enum::VERBOSITY_##verbosity_name,     \
-                __FILE__,                                                       \
-                __LINE__,                                                       \
-                fmt::format(FMT_STRING(format_string), ##__VA_ARGS__).c_str()); \
-        }                                                                       \
+#define LOGGING_LOG(verbosity_name, format_string, ...)                          \
+    do                                                                           \
+    {                                                                            \
+        if (logging::logger_verbosity_enum::VERBOSITY_##verbosity_name <=        \
+            logging::logger::get_current_verbosity_cutoff())                     \
+        {                                                                        \
+            logging::logger::log(                                                \
+                logging::logger_verbosity_enum::VERBOSITY_##verbosity_name,      \
+                __FILE__,                                                        \
+                __LINE__,                                                        \
+                logging::strings::format(format_string, ##__VA_ARGS__).c_str()); \
+        }                                                                        \
     } while (0)
 
 #ifndef NDEBUG
@@ -214,18 +214,18 @@ private:
 #define LOGGING_LOG_DEBUG(verbosity_name, format_string, ...)
 #endif
 
-#define LOGGING_VLOG_IF(level, cond, format_string, ...)                        \
-    do                                                                          \
-    {                                                                           \
-        if ((cond) && static_cast<logging::logger_verbosity_enum>(level) <=     \
-                          logging::logger::get_current_verbosity_cutoff())      \
-        {                                                                       \
-            logging::logger::log(                                               \
-                static_cast<logging::logger_verbosity_enum>(level),             \
-                __FILE__,                                                       \
-                __LINE__,                                                       \
-                fmt::format(FMT_STRING(format_string), ##__VA_ARGS__).c_str()); \
-        }                                                                       \
+#define LOGGING_VLOG_IF(level, cond, format_string, ...)                         \
+    do                                                                           \
+    {                                                                            \
+        if ((cond) && static_cast<logging::logger_verbosity_enum>(level) <=      \
+                          logging::logger::get_current_verbosity_cutoff())       \
+        {                                                                        \
+            logging::logger::log(                                                \
+                static_cast<logging::logger_verbosity_enum>(level),              \
+                __FILE__,                                                        \
+                __LINE__,                                                        \
+                logging::strings::format(format_string, ##__VA_ARGS__).c_str()); \
+        }                                                                        \
     } while (0)
 
 #define LOGGING_LOG_IF(verbosity_name, cond, format_string, ...)                    \
@@ -238,7 +238,7 @@ private:
                 logging::logger_verbosity_enum::VERBOSITY_##verbosity_name,         \
                 __FILE__,                                                           \
                 __LINE__,                                                           \
-                fmt::format(FMT_STRING(format_string), ##__VA_ARGS__).c_str());     \
+                logging::strings::format(format_string, ##__VA_ARGS__).c_str());    \
         }                                                                           \
     } while (0)
 

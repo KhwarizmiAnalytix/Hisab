@@ -74,13 +74,13 @@ default; use `none`, `ccache`, `sccache`, or `buildcache` to choose a backend.
 ## Logging and profiling
 
 ```bash
-python Scripts/setup.py config.build.test.ninja.clang.release --logging=SPDLOG
+python Scripts/setup.py config.build.test.ninja.clang.release
 python Scripts/setup.py config.build.test.ninja.clang.release --logging=GLOG
 python Scripts/setup.py config.build.test.ninja.clang.release --profiler.kineto
 python Scripts/setup.py config.build.test.ninja.clang.release --profiler.itt
 ```
 
-SPDLOG and Kineto are the defaults. The native profiler pipeline is always
+LOGURU and Kineto are the defaults. The native profiler pipeline is always
 compiled, so `--profiler.native` is not a backend selection.
 
 ## GPU Vectorization
@@ -105,7 +105,7 @@ Metal requires an Apple platform.
 ```bash
 cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
-  -DLOGGING_BACKEND=SPDLOG \
+  -DLOGGING_BACKEND=LOGURU \
   -DPROFILER_BACKEND=KINETO \
   -DVECTORIZATION_CPU_BACKEND=avx2 \
   -DMEMORY_GPU_BACKEND=none \

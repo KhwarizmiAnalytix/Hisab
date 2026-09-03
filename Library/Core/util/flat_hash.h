@@ -28,7 +28,6 @@
 #include <utility>
 
 #include "common/macros.h"
-#include "util/core_exception.h"
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #pragma warning(push)

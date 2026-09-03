@@ -1,7 +1,7 @@
 # Logging (`Library/Logging`)
 
 **Structured logging**: levels, lazy evaluation, back traces, and a pluggable backend —
-**spdlog** (default), **Loguru**, **glog**, or **native** (fmt-based).
+**Loguru** (default), **spdlog**, **glog**, or **native** (fmt-based).
 
 ## Layout
 
@@ -13,8 +13,9 @@
 
 Public C++ namespace: `logging`. Macros: `LOGGING_LOG_*`, `LOGGING_CHECK`, `LOGGING_THROW`.
 
-Memory, Vectorization, and Core always link this library. `MEMORY_LOG_*` and
-`VECTORIZATION_LOGF` / `VECTORIZATION_CHECK` / `VECTORIZATION_THROW` forward here.
+Memory, Vectorization, and Core always link this library. Memory and Core use
+`LOGGING_LOG_*` / `LOGGING_CHECK` directly; `VECTORIZATION_LOGF` /
+`VECTORIZATION_CHECK` / `VECTORIZATION_THROW` forward here.
 
 ## CMake options
 
@@ -22,7 +23,7 @@ Memory, Vectorization, and Core always link this library. `MEMORY_LOG_*` and
 
 | CMake variable | Default | Values |
 |----------------|---------|--------|
-| `LOGGING_BACKEND` | `SPDLOG` | `NATIVE`, `LOGURU`, `GLOG`, `SPDLOG` — exactly one `LOGGING_HAS_*=1` |
+| `LOGGING_BACKEND` | `LOGURU` | `NATIVE`, `LOGURU`, `GLOG`, `SPDLOG` — exactly one `LOGGING_HAS_*=1` |
 
 Unknown values fail configure (`FATAL_ERROR`).
 
@@ -42,11 +43,11 @@ Starlark: [`bazel/logging.bzl`](../../bazel/logging.bzl).
 
 | Define | Effect |
 |--------|--------|
-| *(unset)* | spdlog |
+| *(unset)* | loguru |
 | `logging_backend=glog\|loguru\|native\|spdlog` | Matching `LOGGING_HAS_*` |
 | `disable_magic_enum` | `LOGGING_HAS_MAGICENUM=0` |
 
-Use `--config=logging_spdlog` (default), `logging_loguru`, `logging_glog`, or
+Use `--config=logging_loguru` (default), `logging_spdlog`, `logging_glog`, or
 `logging_native` from `.bazelrc`.
 
 ## Public API (abridged)
@@ -74,8 +75,8 @@ Environment: `LOGGING_EXCEPTION_MODE=THROW|LOG_FATAL`.
 cd Scripts
 python3 setup.py config.build.ninja.clang.release.benchmark --project.logging
 # from repo root:
-build_ninja_project_logging_logging_spdlog/bin/benchmark_logging_logger --benchmark_min_time=0.5s
+build_ninja_project_logging_logging_loguru/bin/benchmark_logging_logger --benchmark_min_time=0.5s
 ```
 
-Reconfigure with `--logging=LOGURU|GLOG|NATIVE` to compare backends. Numbers and
+Reconfigure with `--logging=SPDLOG|GLOG|NATIVE` to compare backends. Numbers and
 methodology: [Docs/readme/logging.md](../../Docs/readme/logging.md).

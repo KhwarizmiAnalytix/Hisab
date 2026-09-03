@@ -80,7 +80,7 @@ python Scripts/setup_bazel.py build.test.release.avx2 --profiler.itt
 bazel test --config=release //Library/Core/Testing/Cxx:CoreCxxTests
 ```
 
-Bazel defaults to the SPDLOG logging backend and the Kineto instrumentation
+Bazel defaults to the LOGURU logging backend and the Kineto instrumentation
 backend. The native TraceMe/XPlane profiler pipeline is compiled independently
 of that choice. GPU configuration flags exist in Bazel, but CMake remains the
 recommended path for CUDA/HIP device-language development and tests.
@@ -97,7 +97,7 @@ configurations and known limitations.
 - A Release CMake configuration selects per-module `*_LTO_MODE=auto`; Debug,
   coverage, and sanitizer configurations do not apply LTO. The `lto` token
   explicitly requests `auto` mode.
-- The default CMake logging backend is `SPDLOG`. Profiler instrumentation is
+- The default CMake logging backend is `LOGURU`. Profiler instrumentation is
   selected with `PROFILER_BACKEND=KINETO|ITT`; `native` is not a selectable
   backend because the native pipeline is always built.
 - CPU SIMD defaults are host-dependent: AVX2 on recognised x86 hosts, NEON on
@@ -111,7 +111,7 @@ configurations and known limitations.
 | Library | Purpose |
 |---|---|
 | `Library/Core` | Core utilities, algorithms, and optional MKL/Enzyme integrations. |
-| `Library/Logging` | Logging facade with SPDLOG, Loguru, glog, and native backends. |
+| `Library/Logging` | Logging facade with Loguru, spdlog, glog, and native backends. |
 | `Library/Memory` | CPU allocators plus CUDA/HIP/Metal caching allocators. |
 | `Library/Parallel` | Standard-thread, OpenMP, and TBB execution backends. |
 | `Library/Profiler` | Always-on native traces plus Kineto or ITT instrumentation. |

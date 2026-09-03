@@ -1,5 +1,7 @@
 #include "logger/logger.h"
 
+#include <fmt/format.h>
+
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -34,7 +36,6 @@
 #include <glog/logging.h>
 #elif LOGGING_HAS_NATIVE
 #include <fmt/color.h>
-#include <fmt/format.h>
 
 #include <chrono>
 #elif LOGGING_HAS_SPDLOG
