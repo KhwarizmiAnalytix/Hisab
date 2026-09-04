@@ -172,6 +172,28 @@ config_setting(
     define_values = {"logging_backend": "spdlog"},
 )
 
+# Logging code-generation switches. Their names mirror the corresponding
+# CMake cache variables; unset values retain CMake's defaults.
+config_setting(
+    name = "disable_logging_cxa_demangle",
+    define_values = {"logging_enable_cxa_demangle": "false"},
+)
+
+config_setting(
+    name = "logging_portable_float_format",
+    define_values = {"logging_enable_portable_float_format": "true"},
+)
+
+config_setting(
+    name = "logging_std_format",
+    define_values = {"logging_format_use_std": "true"},
+)
+
+config_setting(
+    name = "logging_default_log_fatal",
+    define_values = {"logging_default_exception_mode": "log_fatal"},
+)
+
 # Compiler-wrapper caching (ccache/sccache/buildcache) is CMake-only.
 # Configure Bazel caching via remote execution or toolchains instead.
 

@@ -1,3 +1,5 @@
+#include "util/exception.h"
+
 #include <atomic>
 #include <cstdlib>  // for getenv
 #include <functional>
@@ -8,7 +10,6 @@
 
 #include "back_trace.h"
 #include "logger/logger.h"
-#include "util/exception.h"
 #include "util/string_util.h"
 
 namespace logging
@@ -21,7 +22,7 @@ namespace
 {
 // Global exception mode with atomic access for thread safety
 std::atomic<exception_mode> g_exception_mode_{
-#ifdef LOGGING_DEFAULT_EXCEPTION_MODE_LOG_FATAL
+#if LOGGING_DEFAULT_EXCEPTION_MODE_LOG_FATAL
     exception_mode::LOG_FATAL
 #else
     exception_mode::THROW

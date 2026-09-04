@@ -86,16 +86,44 @@
 #endif
 
 // ============================================================================
-// __cxa_demangle availability (util/string_util.cpp)
+// Build feature defaults
+//
+// CMake and Bazel define these explicitly for Logging targets. Keeping source
+// defaults makes direct compilation of the public headers well-defined too.
 // ============================================================================
+#ifndef LOGGING_FORMAT_USE_STD
+#define LOGGING_FORMAT_USE_STD 0
+#endif
+
+#ifndef LOGGING_HAS_MAGICENUM
+#define LOGGING_HAS_MAGICENUM 0
+#endif
+
+#ifndef LOGGING_PORTABLE_FLOAT_FORMAT
+#define LOGGING_PORTABLE_FLOAT_FORMAT 0
+#endif
+
+#ifndef LOGGING_DEFAULT_EXCEPTION_MODE_LOG_FATAL
+#define LOGGING_DEFAULT_EXCEPTION_MODE_LOG_FATAL 0
+#endif
+
+// __cxa_demangle availability (util/string_util.cpp). CMake probes this
+// capability and Bazel supplies a platform-specific definition. Retain the
+// compiler-based fallback for consumers that compile the headers directly.
+#ifndef LOGGING_HAS_CXA_DEMANGLE
 #if defined(__ANDROID__) && (defined(__i386__) || defined(__x86_64__))
 #define LOGGING_HAS_CXA_DEMANGLE 0
-#elif (__GNUC__ >= 4 || (__GNUC__ >= 3 && __GNUC_MINOR__ >= 4)) && !defined(__mips__)
-#define LOGGING_HAS_CXA_DEMANGLE 1
 #elif defined(__clang__) && !defined(_MSC_VER)
+#define LOGGING_HAS_CXA_DEMANGLE 1
+#elif defined(__GNUC__)
+#if (__GNUC__ >= 4 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4)) && !defined(__mips__)
 #define LOGGING_HAS_CXA_DEMANGLE 1
 #else
 #define LOGGING_HAS_CXA_DEMANGLE 0
+#endif
+#else
+#define LOGGING_HAS_CXA_DEMANGLE 0
+#endif
 #endif
 
 // ============================================================================

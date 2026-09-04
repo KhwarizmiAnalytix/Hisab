@@ -12,6 +12,22 @@
 cmake_minimum_required(VERSION 3.16)
 
 # --- Section 1: Feature flags (LOGGING_ENABLE_*) and backend selector ---
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles(
+  "
+  #include <cxxabi.h>
+  #include <cstdlib>
+  int main() {
+    int status = 0;
+    char* result = abi::__cxa_demangle(\"_Z1fv\", nullptr, nullptr, &status);
+    std::free(result);
+    return status;
+  }
+  "
+  LOGGING_HAS_CXA_DEMANGLE_AVAILABLE
+)
+mark_as_advanced(LOGGING_HAS_CXA_DEMANGLE_AVAILABLE)
+
 set(LOGGING_BACKEND "LOGURU"
     CACHE STRING "Logging backend to use. Options are NATIVE, LOGURU, GLOG, or SPDLOG"
 )
@@ -44,6 +60,29 @@ option(LOGGING_ENABLE_BENCHMARK "Enable Google Benchmark for Logging" ON)
 
 # magic_enum — enum ↔ string helpers in util/string_util.h
 option(LOGGING_ENABLE_MAGICENUM "Enable magic_enum static reflection for Logging" ON)
+
+option(
+  LOGGING_ENABLE_CXA_DEMANGLE
+  "Enable Itanium ABI symbol demangling when the toolchain supports it"
+  ${LOGGING_HAS_CXA_DEMANGLE_AVAILABLE}
+)
+option(
+  LOGGING_ENABLE_PORTABLE_FLOAT_FORMAT
+  "Use the portable floating-point formatter instead of std::to_chars"
+  OFF
+)
+option(LOGGING_FORMAT_USE_STD "Use C++20 std::format instead of fmt" OFF)
+set(
+  LOGGING_DEFAULT_EXCEPTION_MODE "THROW" CACHE STRING
+  "Default exception mode for Logging: THROW or LOG_FATAL"
+)
+set_property(CACHE LOGGING_DEFAULT_EXCEPTION_MODE PROPERTY STRINGS THROW LOG_FATAL)
+if(NOT LOGGING_DEFAULT_EXCEPTION_MODE MATCHES "^(THROW|LOG_FATAL)$")
+  message(FATAL_ERROR "LOGGING_DEFAULT_EXCEPTION_MODE must be THROW or LOG_FATAL")
+endif()
+if(LOGGING_ENABLE_CXA_DEMANGLE AND NOT LOGGING_HAS_CXA_DEMANGLE_AVAILABLE)
+  message(FATAL_ERROR "LOGGING_ENABLE_CXA_DEMANGLE requires a toolchain with <cxxabi.h>")
+endif()
 
 # Icecream distributed compilation launcher (rarely needed; hidden by default).
 option(LOGGING_ENABLE_ICECC "Use Icecream (icecc) distributed compiler for Logging" OFF)
@@ -87,6 +126,26 @@ set_property(CACHE LOGGING_CXX_STANDARD PROPERTY STRINGS 11 14 17 20 23)
 if(NOT LOGGING_CXX_STANDARD MATCHES "^(11|14|17|20|23)$")
   message(FATAL_ERROR "LOGGING_CXX_STANDARD must be one of: 11 14 17 20 23")
 endif()
+if(LOGGING_FORMAT_USE_STD AND LOGGING_CXX_STANDARD LESS 20)
+  message(FATAL_ERROR "LOGGING_FORMAT_USE_STD requires LOGGING_CXX_STANDARD to be at least 20")
+endif()
+if(LOGGING_FORMAT_USE_STD)
+  set(CMAKE_CXX_STANDARD ${LOGGING_CXX_STANDARD})
+  check_cxx_source_compiles(
+    "
+    #include <format>
+    #include <string>
+    int main() {
+      return std::vformat(\"{}\", std::make_format_args(1)) == \"1\" ? 0 : 1;
+    }
+    "
+    LOGGING_HAS_STD_FORMAT_AVAILABLE
+  )
+  mark_as_advanced(LOGGING_HAS_STD_FORMAT_AVAILABLE)
+  if(NOT LOGGING_HAS_STD_FORMAT_AVAILABLE)
+    message(FATAL_ERROR "LOGGING_FORMAT_USE_STD requires a standard library with std::format")
+  endif()
+endif()
 
 # --- Section 2: LOGGING_ENABLE_* → LOGGING_HAS_* compile definitions --- Exactly one HAS_* will be
 # 1; the others 0.
@@ -129,12 +188,31 @@ if(LOGGING_ENABLE_MAGICENUM)
 else()
   list(APPEND LOGGING_DEPENDENCY_COMPILE_DEFINITIONS LOGGING_HAS_MAGICENUM=0)
 endif()
+if(LOGGING_ENABLE_CXA_DEMANGLE)
+  list(APPEND LOGGING_DEPENDENCY_COMPILE_DEFINITIONS LOGGING_HAS_CXA_DEMANGLE=1)
+else()
+  list(APPEND LOGGING_DEPENDENCY_COMPILE_DEFINITIONS LOGGING_HAS_CXA_DEMANGLE=0)
+endif()
+if(LOGGING_ENABLE_PORTABLE_FLOAT_FORMAT)
+  list(APPEND LOGGING_DEPENDENCY_COMPILE_DEFINITIONS LOGGING_PORTABLE_FLOAT_FORMAT=1)
+else()
+  list(APPEND LOGGING_DEPENDENCY_COMPILE_DEFINITIONS LOGGING_PORTABLE_FLOAT_FORMAT=0)
+endif()
+if(LOGGING_FORMAT_USE_STD)
+  list(APPEND LOGGING_DEPENDENCY_COMPILE_DEFINITIONS LOGGING_FORMAT_USE_STD=1)
+else()
+  list(APPEND LOGGING_DEPENDENCY_COMPILE_DEFINITIONS LOGGING_FORMAT_USE_STD=0)
+endif()
+if(LOGGING_DEFAULT_EXCEPTION_MODE STREQUAL "LOG_FATAL")
+  list(APPEND LOGGING_DEPENDENCY_COMPILE_DEFINITIONS LOGGING_DEFAULT_EXCEPTION_MODE_LOG_FATAL=1)
+else()
+  list(APPEND LOGGING_DEPENDENCY_COMPILE_DEFINITIONS LOGGING_DEFAULT_EXCEPTION_MODE_LOG_FATAL=0)
+endif()
 
 # --- Section 3: CMake module includes --- Order: introspection → toolchain helpers →
 # coverage/sanitizer → LTO/linker.
 
 # a) Standard CMake introspection
-include(CheckCXXSourceCompiles)
 include(CheckCXXSourceRuns)
 include(CheckSymbolExists)
 
@@ -412,8 +490,9 @@ if(LOGGING_DEPENDENCY_COMPILE_DEFINITIONS)
   target_compile_definitions(Logging PUBLIC ${LOGGING_DEPENDENCY_COMPILE_DEFINITIONS})
 endif()
 
-if(WIN32 AND NOT MSVC)
-  target_link_libraries(Logging PRIVATE -ldbghelp)
+if(WIN32)
+  # Own the DbgHelp dependency in the build system; do not rely on a source pragma.
+  target_link_libraries(Logging PRIVATE dbghelp)
 endif()
 
 # --- Installation ---
@@ -469,6 +548,10 @@ message("  Examples         : ${LOGGING_ENABLE_EXAMPLES}")
 message("  Gtest            : ${LOGGING_ENABLE_GTEST}")
 message("  Benchmark        : ${LOGGING_ENABLE_BENCHMARK}")
 message("  Magic enum       : ${LOGGING_ENABLE_MAGICENUM}")
+message("  Cxa demangle     : ${LOGGING_ENABLE_CXA_DEMANGLE}")
+message("  Portable floats  : ${LOGGING_ENABLE_PORTABLE_FLOAT_FORMAT}")
+message("  Std format       : ${LOGGING_FORMAT_USE_STD}")
+message("  Exception mode   : ${LOGGING_DEFAULT_EXCEPTION_MODE}")
 message("  Clang-tidy       : ${LOGGING_ENABLE_CLANGTIDY}")
 message("  Fix              : ${LOGGING_ENABLE_FIX}")
 message("  Iwyu             : ${LOGGING_ENABLE_IWYU}")

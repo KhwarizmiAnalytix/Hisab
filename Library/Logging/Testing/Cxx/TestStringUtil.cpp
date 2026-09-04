@@ -274,6 +274,7 @@ void testFormat()
     EXPECT_EQ(logging::strings::format("{}", 3.14159265358979), "3.14159265358979");
     EXPECT_EQ(logging::strings::format("{}", 0.1), "0.1");
     EXPECT_EQ(logging::strings::format("{}", 1.5F), "1.5");
+    EXPECT_EQ(logging::strings::format("{}", 1.5L), "1.5");
 
     // More arguments than the std::format dispatch binds directly: every value
     // must still appear in the result.

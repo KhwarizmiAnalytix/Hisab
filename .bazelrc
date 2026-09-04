@@ -336,6 +336,10 @@ build:logging_glog --define=logging_backend=glog
 build:logging_loguru --define=logging_backend=loguru
 build:logging_native --define=logging_backend=native
 build:logging_spdlog --define=logging_backend=spdlog
+build:logging_portable_float_format --define=logging_enable_portable_float_format=true
+build:logging_std_format --define=logging_format_use_std=true
+build:logging_default_log_fatal --define=logging_default_exception_mode=log_fatal
+build:logging_no_cxa_demangle --define=logging_enable_cxa_demangle=false
 
 # =============================================================================
 # Bazel --batch (manual use)

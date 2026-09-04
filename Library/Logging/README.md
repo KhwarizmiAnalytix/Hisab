@@ -32,6 +32,10 @@ Unknown values fail configure (`FATAL_ERROR`).
 | CMake variable | Default | Summary |
 |----------------|---------|---------|
 | `LOGGING_ENABLE_MAGICENUM` | ON | `LOGGING_HAS_MAGICENUM` for enum ↔ string helpers |
+| `LOGGING_ENABLE_CXA_DEMANGLE` | toolchain-dependent | Itanium ABI demangling; CMake verifies `<cxxabi.h>` |
+| `LOGGING_ENABLE_PORTABLE_FLOAT_FORMAT` | OFF | Avoid floating-point `std::to_chars` overloads |
+| `LOGGING_FORMAT_USE_STD` | OFF | Use `std::format`; requires C++20 and a supporting standard library |
+| `LOGGING_DEFAULT_EXCEPTION_MODE` | `THROW` | `THROW` or `LOG_FATAL` before any runtime configuration |
 | `LOGGING_ENABLE_TESTING` | ON | Tests |
 | `LOGGING_ENABLE_GTEST` | ON | GoogleTest |
 | `LOGGING_ENABLE_BENCHMARK` | ON | `benchmark_logging_logger` |
@@ -46,9 +50,15 @@ Starlark: [`bazel/logging.bzl`](../../bazel/logging.bzl).
 | *(unset)* | loguru |
 | `logging_backend=glog\|loguru\|native\|spdlog` | Matching `LOGGING_HAS_*` |
 | `disable_magic_enum` | `LOGGING_HAS_MAGICENUM=0` |
+| `logging_enable_cxa_demangle=false` | `LOGGING_HAS_CXA_DEMANGLE=0` |
+| `logging_enable_portable_float_format=true` | Portable floating-point formatter |
+| `logging_format_use_std=true` | C++20 `std::format` formatter |
+| `logging_default_exception_mode=log_fatal` | Default exception mode is `LOG_FATAL` |
 
 Use `--config=logging_loguru` (default), `logging_spdlog`, `logging_glog`, or
-`logging_native` from `.bazelrc`.
+`logging_native` from `.bazelrc`; the feature defines above also have matching
+`logging_portable_float_format`, `logging_std_format`, `logging_default_log_fatal`,
+and `logging_no_cxa_demangle` configs.
 
 ## Public API (abridged)
 

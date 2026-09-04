@@ -25,7 +25,6 @@
 #endif
 #ifdef _WIN32
 #include <dbghelp.h>
-#pragma comment(lib, "Dbghelp.lib")
 #define SUPPORTS_BACKTRACE 1
 #elif defined(__unix__) || defined(__APPLE__)
 #include <execinfo.h>

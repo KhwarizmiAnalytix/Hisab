@@ -18,6 +18,8 @@
 
 #include "util/string_util.h"
 
+#include "common/logging_macros.h"
+
 // The project's single formatting-backend dependency. Confined to this file
 // on purpose: see strings::vformat() below.
 #if LOGGING_FORMAT_USE_STD
@@ -40,8 +42,7 @@
 #include <string>  // for char_traits, string, operator<<, allocator, operator==, oper...
 #include <string_view>
 
-#include "common/logging_macros.h"  // for LOGGING_UNUSED, LOGGING_HAS_CXA_DEMANGLE
-#include "util/exception.h"         // for LOGGING_CHECK_DEBUG, LOGGING_CHECK, LOGGING_CHECK_VALUE
+#include "util/exception.h"  // for LOGGING_CHECK_DEBUG, LOGGING_CHECK, LOGGING_CHECK_VALUE
 
 // =============================================================================
 // PLATFORM-SPECIFIC CONFIGURATION
@@ -240,22 +241,34 @@ int print_fixed(char* buffer, size_t size, int decimals, long double value)
     return std::snprintf(buffer, size, "%.*Lf", decimals, value);
 }
 
-// Defining LOGGING_PORTABLE_FLOAT_FORMAT=1 forces the emulation even where
-// std::to_chars is available, so the path macOS actually takes can be exercised
-// (and diffed against std::to_chars) on any platform.
-#if !defined(LOGGING_PORTABLE_FLOAT_FORMAT)
-#define LOGGING_PORTABLE_FLOAT_FORMAT 0
-#endif
+template <typename T, typename = void>
+struct has_floating_to_chars : std::false_type
+{
+};
+
+template <typename T>
+struct has_floating_to_chars<
+    T,
+    std::void_t<decltype(std::to_chars(
+        static_cast<char*>(nullptr), static_cast<char*>(nullptr), T{}))>> : std::true_type
+{
+};
 
 template <typename T>
 std::string shortest_round_trip_impl(T value)
 {
-#if !LOGGING_PORTABLE_FLOAT_FORMAT && defined(__cpp_lib_to_chars) && __cpp_lib_to_chars >= 201611L
-    char       buffer[64];
-    const auto result = std::to_chars(buffer, buffer + sizeof(buffer), value);
-    if (result.ec == std::errc())
+#if !LOGGING_PORTABLE_FLOAT_FORMAT
+    // Some standard libraries advertise <charconv> support but still omit
+    // certain floating overloads (notably long double). Probe the exact type
+    // before instantiating the call so Windows/macOS fall back cleanly.
+    if constexpr (has_floating_to_chars<T>::value)
     {
-        return std::string(buffer, static_cast<size_t>(result.ptr - buffer));
+        char       buffer[64];
+        const auto result = std::to_chars(buffer, buffer + sizeof(buffer), value);
+        if (result.ec == std::errc())
+        {
+            return std::string(buffer, static_cast<size_t>(result.ptr - buffer));
+        }
     }
 #endif
     if (!std::isfinite(value))
