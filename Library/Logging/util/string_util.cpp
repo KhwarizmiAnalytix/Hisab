@@ -21,15 +21,21 @@
 // The project's single formatting-backend dependency. Confined to this file
 // on purpose: see strings::vformat() below.
 #if LOGGING_FORMAT_USE_STD
+#if __cplusplus < 202002L
+#error "LOGGING_FORMAT_USE_STD=1 needs C++20; build with -DCMAKE_CXX_STANDARD=20 or drop the flag."
+#endif
 #include <format>
 #else
 #include <fmt/args.h>
 #include <fmt/format.h>
 #endif
 
-#include <cstdio>   // for snprintf, vsnprintf
-#include <cstdlib>  // for strtod, strtof, abs, strtol, free
-#include <cstring>  // for strlen, memcpy
+#include <charconv>  // for to_chars (shortest round-trip floats, where available)
+#include <cmath>     // for isfinite
+#include <cstdio>    // for snprintf, vsnprintf
+#include <cstdlib>   // for strtod, strtof, abs, strtol, free
+#include <cstring>   // for strlen, memcpy
+#include <limits>    // for numeric_limits
 #include <memory>
 #include <string>  // for char_traits, string, operator<<, allocator, operator==, oper...
 #include <string_view>
@@ -178,6 +184,146 @@ namespace logging
 {
 namespace strings
 {
+namespace
+{
+// -----------------------------------------------------------------------------
+// Shortest round-trip float rendering
+//
+// std::to_chars is the right tool, but its floating-point overloads are not
+// available everywhere the project builds (libc++ on macOS does not define
+// __cpp_lib_to_chars), and the obvious substitutes are both wrong: the stream
+// default of 6 significant digits truncates (3.14159265358979 -> "3.14159"),
+// while max_digits10 over-prints (0.1 -> "0.10000000000000001"). Either one
+// would make log messages and check failures differ between platforms.
+//
+// The emulation below reproduces std::to_chars' plain-format contract: the
+// shortest digit string that parses back to the same value, printed fixed or
+// scientific -- whichever is shorter, fixed winning ties.
+// -----------------------------------------------------------------------------
+
+bool round_trips(const char* text, float value)
+{
+    return std::strtof(text, nullptr) == value;
+}
+bool round_trips(const char* text, double value)
+{
+    return std::strtod(text, nullptr) == value;
+}
+bool round_trips(const char* text, long double value)
+{
+    return std::strtold(text, nullptr) == value;
+}
+
+int print_scientific(char* buffer, size_t size, int decimals, float value)
+{
+    return std::snprintf(buffer, size, "%.*e", decimals, static_cast<double>(value));
+}
+int print_scientific(char* buffer, size_t size, int decimals, double value)
+{
+    return std::snprintf(buffer, size, "%.*e", decimals, value);
+}
+int print_scientific(char* buffer, size_t size, int decimals, long double value)
+{
+    return std::snprintf(buffer, size, "%.*Le", decimals, value);
+}
+
+int print_fixed(char* buffer, size_t size, int decimals, float value)
+{
+    return std::snprintf(buffer, size, "%.*f", decimals, static_cast<double>(value));
+}
+int print_fixed(char* buffer, size_t size, int decimals, double value)
+{
+    return std::snprintf(buffer, size, "%.*f", decimals, value);
+}
+int print_fixed(char* buffer, size_t size, int decimals, long double value)
+{
+    return std::snprintf(buffer, size, "%.*Lf", decimals, value);
+}
+
+// Defining LOGGING_PORTABLE_FLOAT_FORMAT=1 forces the emulation even where
+// std::to_chars is available, so the path macOS actually takes can be exercised
+// (and diffed against std::to_chars) on any platform.
+#if !defined(LOGGING_PORTABLE_FLOAT_FORMAT)
+#define LOGGING_PORTABLE_FLOAT_FORMAT 0
+#endif
+
+template <typename T>
+std::string shortest_round_trip_impl(T value)
+{
+#if !LOGGING_PORTABLE_FLOAT_FORMAT && defined(__cpp_lib_to_chars) && __cpp_lib_to_chars >= 201611L
+    char       buffer[64];
+    const auto result = std::to_chars(buffer, buffer + sizeof(buffer), value);
+    if (result.ec == std::errc())
+    {
+        return std::string(buffer, static_cast<size_t>(result.ptr - buffer));
+    }
+#endif
+    if (!std::isfinite(value))
+    {
+        // "inf" / "-inf" / "nan": no digits to shorten, and the round-trip test
+        // below never converges for NaN.
+        std::ostringstream oss;
+        oss << value;
+        return oss.str();
+    }
+
+    // Fewest digits after the point in scientific form that still round-trips.
+    constexpr int kMaxDecimals = std::numeric_limits<T>::max_digits10;
+    char          scientific[64];
+    int           decimals = 0;
+    for (; decimals <= kMaxDecimals; ++decimals)
+    {
+        const int written = print_scientific(scientific, sizeof(scientific), decimals, value);
+        if (written <= 0 || static_cast<size_t>(written) >= sizeof(scientific))
+        {
+            break;
+        }
+        if (round_trips(scientific, value))
+        {
+            break;
+        }
+    }
+    if (decimals > kMaxDecimals)
+    {
+        decimals = kMaxDecimals;
+        print_scientific(scientific, sizeof(scientific), decimals, value);
+    }
+
+    // Same digits in fixed form; keep it when it is no longer than scientific.
+    const char* exponent_text  = std::strchr(scientific, 'e');
+    const int   exponent       = (exponent_text != nullptr)
+                                     ? static_cast<int>(std::strtol(exponent_text + 1, nullptr, 10))
+                                     : 0;
+    const int   fixed_decimals = decimals - exponent;
+
+    char      fixed[512];
+    const int written =
+        print_fixed(fixed, sizeof(fixed), fixed_decimals > 0 ? fixed_decimals : 0, value);
+    if (written > 0 && static_cast<size_t>(written) < sizeof(fixed) &&
+        std::strlen(fixed) <= std::strlen(scientific) && round_trips(fixed, value))
+    {
+        return fixed;
+    }
+    return scientific;
+}
+}  // namespace
+
+namespace internal
+{
+std::string shortest_round_trip(float value)
+{
+    return shortest_round_trip_impl(value);
+}
+std::string shortest_round_trip(double value)
+{
+    return shortest_round_trip_impl(value);
+}
+std::string shortest_round_trip(long double value)
+{
+    return shortest_round_trip_impl(value);
+}
+}  // namespace internal
+
 #if LOGGING_FORMAT_USE_STD
 // Minimal {}/{N} substitution used only by the std::format fallback path below.
 // Handles the "{{" / "}}" escapes; a placeholder with no matching argument is

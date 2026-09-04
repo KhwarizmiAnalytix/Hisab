@@ -17,12 +17,10 @@
 
 #include <algorithm>  // for transform
 #include <cctype>
-#include <charconv>     // for to_chars (shortest round-trip floats)
 #include <cstddef>      // for size_t
 #include <cstdint>      // for int64_t, uint64_t, uint32_t, int32_t
 #include <filesystem>   // for path (C++17)
 #include <iomanip>      // for setfill, setw, hex
-#include <limits>       // for numeric_limits
 #include <sstream>      // for ostream, ostringstream, stringstream
 #include <string>       // for string, allocator, char_traits, stoi, to_string
 #include <string_view>  // for string_view
@@ -401,25 +399,22 @@ inline void to_string_helper(std::ostringstream& oss, bool value)
     oss << (value ? "true" : "false");
 }
 
+// Shortest decimal text that parses back to exactly this value, implemented in
+// string_util.cpp so the platform differences stay in one translation unit.
+LOGGING_API std::string shortest_round_trip(float value);
+LOGGING_API std::string shortest_round_trip(double value);
+LOGGING_API std::string shortest_round_trip(long double value);
+
 // Overload for floating point: operator<<'s default precision is 6 significant
-// digits, which silently truncates (3.14159265358979 -> "3.14159"). Emit the
-// shortest representation that round-trips instead.
+// digits, which silently truncates (3.14159265358979 -> "3.14159"), while
+// max_digits10 over-prints (0.1 -> "0.10000000000000001"). Use the shortest
+// round-tripping form, which is also what the fmt formatter this replaced
+// produced.
 template <typename T>
 inline std::enable_if_t<std::is_floating_point_v<T>> to_string_helper(
     std::ostringstream& oss, T value)
 {
-#if defined(__cpp_lib_to_chars) && __cpp_lib_to_chars >= 201611L
-    char       buffer[64];
-    const auto result = std::to_chars(buffer, buffer + sizeof(buffer), value);
-    if (result.ec == std::errc())
-    {
-        oss << std::string_view(buffer, static_cast<size_t>(result.ptr - buffer));
-        return;
-    }
-#endif
-    const auto previous = oss.precision(std::numeric_limits<T>::max_digits10);
-    oss << value;
-    oss.precision(previous);
+    oss << shortest_round_trip(value);
 }
 
 // Convert a single value to its string form, for format()'s placeholders
