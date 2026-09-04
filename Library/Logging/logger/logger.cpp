@@ -766,14 +766,14 @@ static void loguru_pop_scope(const char* id)
 }  // namespace detail
 
 //=============================================================================
-LOGGING_API bool      logger::enable_unsafe_signal_handler = true;
-LOGGING_API bool      logger::enable_sigabrt_handler       = false;
-LOGGING_API bool      logger::enable_sigbus_handler        = false;
-LOGGING_API bool      logger::enable_sigfpe_handler        = false;
-LOGGING_API bool      logger::enable_sigill_handler        = false;
-LOGGING_API bool      logger::enable_sigint_handler        = false;
-LOGGING_API bool      logger::enable_sigsegv_handler       = false;
-LOGGING_API bool      logger::enable_sigterm_handler       = false;
+bool                  logger::enable_unsafe_signal_handler = true;
+bool                  logger::enable_sigabrt_handler       = false;
+bool                  logger::enable_sigbus_handler        = false;
+bool                  logger::enable_sigfpe_handler        = false;
+bool                  logger::enable_sigill_handler        = false;
+bool                  logger::enable_sigint_handler        = false;
+bool                  logger::enable_sigsegv_handler       = false;
+bool                  logger::enable_sigterm_handler       = false;
 logger_verbosity_enum logger::internal_verbosity_level_    = logger_verbosity_enum::VERBOSITY_INFO;
 
 logger::logger()  = default;

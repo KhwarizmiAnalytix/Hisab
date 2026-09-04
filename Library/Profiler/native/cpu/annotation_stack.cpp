@@ -157,7 +157,7 @@ void annotation_stack::enable(bool enable)
 
 // annotation_stack::generation_ implementation must be lock-free for faster
 // execution of the scoped annotation API.
-PROFILER_API std::atomic<int> annotation_stack::generation_{0};
+std::atomic<int> annotation_stack::generation_{0};
 static_assert(ATOMIC_INT_LOCK_FREE == 2, "Assumed atomic<int> was lock free");
 
 }  // namespace profiler::profiler_impl

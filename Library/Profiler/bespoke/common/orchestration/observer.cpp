@@ -174,7 +174,7 @@ bool profilerEnabled()
     return (state_ptr != nullptr) && !state_ptr->config().disabled();
 }
 
-PROFILER_API ActiveProfilerType profilerType()
+ActiveProfilerType profilerType()
 {
     auto* state_ptr = ProfilerStateBase::get(/*global=*/false);
     return state_ptr == nullptr ? ActiveProfilerType::NONE : state_ptr->profilerType();

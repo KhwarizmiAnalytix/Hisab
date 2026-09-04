@@ -62,10 +62,8 @@ static inline std::string get_thread_name()
 namespace internal
 {
 
-// DLL imported variables cannot be initialized on Windows. This file is
-// included only on DLL exports.
-PROFILER_API std::atomic<int> g_trace_level(traceme_recorder::kTracingDisabled);
-PROFILER_API std::atomic<uint64_t> g_trace_filter_bitmap{(std::numeric_limits<uint64_t>::max)()};
+std::atomic<int>      g_trace_level(traceme_recorder::kTracingDisabled);
+std::atomic<uint64_t> g_trace_filter_bitmap{(std::numeric_limits<uint64_t>::max)()};
 
 // g_trace_level implementation must be lock-free for faster execution of the
 // TraceMe API. This can be commented (if compilation is failing) but execution
