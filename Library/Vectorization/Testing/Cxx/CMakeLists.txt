@@ -261,8 +261,14 @@ set_target_properties(
 # on Clang 22.1.8 + CUDA 13.1 with a real RTX 4060 Ti present. Force CUDA mode
 # explicitly via these tokens rather than relying on the (silently ineffective)
 # CMAKE_CUDA_COMPILE_OBJECT override.
+# CMAKE_CUDA_COMPILER_FORCED skips CMake's normal CUDA_STANDARD → -std= flag
+# emission, and Ninja often omits CMAKE_CUDA_FLAGS from these tagged .cpp CUDA
+# TUs. Emit -std explicitly so gtest (u16string_view / optional) and project
+# headers that need C++20 compile correctly — CI's -DCMAKE_CXX_STANDARD=17 must
+# not leave these TUs on C++17.
 set(_vectorization_clang_cuda_x_flags
     "$<$<COMPILE_LANGUAGE:CUDA>:-x>" "$<$<COMPILE_LANGUAGE:CUDA>:cuda>"
+    "$<$<COMPILE_LANGUAGE:CUDA>:-std=c++${VECTORIZATION_CXX_STANDARD}>"
 )
 
 # CUDA 13 dropped texture_fetch_functions.h (legacy bound-texture-reference API,
@@ -323,6 +329,13 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND _vectorization_has_cuda_gpu_tes
       )
     endforeach()
     unset(_vectorization_cuda_arch)
+
+    # Same FORCED-compiler gap as above: CUDA_STANDARD target property does not
+    # emit -std=. Apply it target-wide for every CUDA TU (.cu and tagged .cpp).
+    target_compile_options(
+      VectorizationCxxTests
+      PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-std=c++${VECTORIZATION_CXX_STANDARD}>
+    )
 
     # CUDA 13 dropped texture_fetch_functions.h; see vectorization_apply_cuda_texture_fetch_shim()
     # above (shared with the BenchmarkTensorGpu.cpp block further down this file) for

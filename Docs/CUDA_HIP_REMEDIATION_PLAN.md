@@ -34,14 +34,16 @@ actual CUDA/HIP maturity is very different:
   files, and two confirmed macro-naming bugs mean the CUDA allocation-strategy
   option and the CUDA allocator tests are currently non-functional even on
   CUDA-only builds.
-- **CI has no live CUDA or HIP coverage today.** Every `cuda_enabled: ON` CI
-  job is commented out (`.github/workflows/ci.yml:80-200`), and no HIP job
-  exists at all. Any remediation work is currently unverified by CI and must
-  be locally validated with `Scripts/setup.py`.
+- **CI GPU coverage (updated 2026-09):** `cmake-gpu-backend-tests` in
+  `.github/workflows/ci.yml` builds CUDA on Ubuntu (compile + ctest with
+  driver stub) and Windows (build-only — no `nvcuda.dll` stub), HIP on
+  Ubuntu, and Metal on macOS. Legacy `build-matrix` `cuda_enabled: ON`
+  entries remain commented; the active path uses `MEMORY_GPU_BACKEND` /
+  `VECTORIZATION_GPU_BACKEND`, not the obsolete `MEMORY_ENABLE_CUDA`.
 
 This plan sequences the work to bring Memory up to Vectorization's level of
-CUDA/HIP parity, fix the confirmed build-system bugs, and re-establish real
-CI coverage on both Windows and Unix.
+CUDA/HIP parity, fix the confirmed build-system bugs, and keep CI coverage
+aligned with the current GPU backend flags.
 
 ## 2. Confirmed baseline defects
 
@@ -58,7 +60,7 @@ CI coverage on both Windows and Unix.
 | D7 | `gpu_memory_transfer`, `gpu_memory_pool`, `gpu_allocator_tracking`, `gpu_resource_tracker` are CUDA-only (`gpu_stream::create` throws for non-CUDA device types) | `Library/Memory/gpu/gpu_memory_transfer.cpp`, `gpu_memory_pool.cpp`, `gpu_allocator_tracking.cpp`, `gpu_resource_tracker.cpp` | Streams, pooling, tracking unavailable on HIP | Open — WS2 |
 | D8 | No `TestHip*.cpp` files exist; generic `TestGpu*.cpp` files are internally CUDA-specific | `Library/Memory/Testing/Cxx/` | Zero runtime verification of the HIP path, ever | Open — WS4, blocked on WS2 |
 | D9 | `hip.cmake` had no Windows/toolchain gate analogous to `cuda.cmake`'s MinGW/MSYS2 exclusion (`cuda.cmake:13`) | `Library/Memory/Cmake/hip.cmake`, `Library/Vectorization/CMakeLists.txt:602` | On Windows, `find_package(hip REQUIRED)`/`find_package(hip QUIET)` would either fail with a confusing generic CMake error or (if a Windows HIP SDK happened to be present) attempt a build path that had never been validated | **FIXED** — both files now `FATAL_ERROR` immediately on `WIN32` with a message pointing to CUDA as the Windows GPU backend; §8's open question is resolved as "HIP is Unix-only, hard error on Windows" |
-| D10 | CI has no active CUDA jobs (all commented out) and no HIP jobs at all | `.github/workflows/ci.yml:80-200` (CUDA), entire file (HIP) | No regression protection for any GPU code path on any platform | Open — WS6 |
+| D10 | CI has no active CUDA jobs (all commented out) and no HIP jobs at all | `.github/workflows/ci.yml:80-200` (CUDA), entire file (HIP) | No regression protection for any GPU code path on any platform | **FIXED (2026-09)** — `cmake-gpu-backend-tests` covers CUDA Ubuntu (build+test), CUDA Windows (build-only), HIP Ubuntu, Metal macOS. Legacy commented `build-matrix` CUDA rows are superseded; flags use `MEMORY_GPU_BACKEND` / `VECTORIZATION_GPU_BACKEND` |
 
 ## 3. Scope
 
@@ -109,10 +111,11 @@ correctly in `helper/memory_allocator.cpp` and `allocator_gpu.h`
 - Extend `TestGpuAllocatorBenchmark.cpp` and Vectorization's `BenchmarkTensorGpu.cpp` to run under the HIP backend once WS2 lands, so caching-allocator-vs-raw-alloc performance is comparable across CUDA/HIP.
 - Capture baseline numbers on both Linux and Windows CUDA before/after WS1 fixes (the allocation-strategy bug in D1 means current benchmark numbers may not reflect the intended SYNC/ASYNC/POOL_ASYNC strategy at all).
 
-### WS6 — CI re-enablement
-- Investigate why the Windows CUDA jobs were disabled (`ci.yml:80-200`, likely CUDA Toolkit installer flakiness per the commented-out chocolatey/installer script) and re-enable at least one Linux + one Windows CUDA job.
-- Add a new Linux HIP CI job (ROCm has official Docker images) — none exist today.
-- Decide and document Windows HIP CI feasibility per the WS3/§8 decision; if unsupported, add an explicit `message(STATUS "HIP on Windows: unsupported, see Docs/CUDA_HIP_REMEDIATION_PLAN.md")`-style guard rather than leaving it ambiguous.
+### WS6 — CI re-enablement — ✅ DONE (2026-09)
+- ~~Investigate why the Windows CUDA jobs were disabled and re-enable at least one Linux + one Windows CUDA job.~~ — superseded by `cmake-gpu-backend-tests` (Ubuntu CUDA build+test with stub; Windows CUDA build-only).
+- ~~Add a new Linux HIP CI job.~~ — covered by the same matrix (`backend: hip` on `ubuntu-latest`).
+- ~~Windows HIP CI feasibility.~~ — policy already enforced: `FATAL_ERROR` on `WIN32` for HIP (D9); no Windows HIP CI job by design.
+- Remaining hygiene (optional): delete or rewrite the commented legacy `build-matrix` `cuda_enabled: ON` blocks so they cannot be re-enabled with the obsolete `-DMEMORY_ENABLE_CUDA` flag.
 
 ## 6. Phased execution
 
@@ -121,7 +124,8 @@ correctly in `helper/memory_allocator.cpp` and `allocator_gpu.h`
 3. **Phase 3 — Testing (WS4)**, immediately following each WS2 sub-piece rather than all at the end, so each new HIP code path gets a test before the next one is built on top of it.
 4. **Phase 4 — Vectorization verification (WS3)**, can run in parallel with Phase 2/3 since no code changes are anticipated there.
 5. **Phase 5 — Benchmarking (WS5)**, after Phase 2/3 land, so numbers reflect corrected allocation-strategy behavior.
-6. **Phase 6 — CI re-enablement (WS6)**, last, once local Windows+Linux, CUDA+HIP builds are all green, so new CI jobs go green on first run rather than becoming another disabled/flaky job.
+6. **Phase 6 — CI re-enablement (WS6).** ✅ Done via `cmake-gpu-backend-tests`
+   (see §5 WS6). Legacy commented `build-matrix` CUDA rows are optional cleanup.
 
 ## 7. Local verification matrix
 
@@ -231,5 +235,19 @@ so verification was config-level + CPU-only regression, all via
   or `=hip` build/test run on real hardware. This should be the first thing
   done on a CUDA- or ROCm-capable Linux machine before proceeding to WS2.
 
-Remaining open items: D5–D8 (WS2, HIP feature parity in Memory's C/C++ code)
-and D10 (WS6, CI re-enablement) — unchanged from §2.
+Remaining open items: D5–D8 (WS2, HIP feature parity in Memory's C/C++ code).
+D10 / WS6 CI coverage is closed via `cmake-gpu-backend-tests` (see §2 / §5).
+
+### 2026-09-05 — CUDA CMake hygiene (D10 doc + arch sync + flag cleanup)
+
+- `.github/workflows/ci.yml` — replaced obsolete `-DMEMORY_ENABLE_CUDA=…`
+  with `-DMEMORY_GPU_BACKEND=none|cuda` (matrix expression maps ON→cuda).
+- `Library/Memory/README.md` — documents `MEMORY_GPU_BACKEND` instead of
+  `MEMORY_ENABLE_CUDA` / `MEMORY_ENABLE_HIP`.
+- `Library/Memory/Cmake/cuda.cmake` — dropped pre-sm_75 arch options
+  (fermi…volta); `all` / forced defaults use shared
+  `XSIGMA_CUDA_ARCHITECTURES_DEFAULT` (`75;80;86;89;90`).
+- `Library/Vectorization/CMakeLists.txt` — inherits
+  `CMAKE_CUDA_ARCHITECTURES` from Memory when set; re-caches Clang CUDA
+  implicit includes after the second `enable_language(CUDA)`.
+- This file — D10 / WS6 marked fixed; executive summary CI bullet updated.

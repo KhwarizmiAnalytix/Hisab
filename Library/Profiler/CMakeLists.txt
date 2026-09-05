@@ -11,6 +11,53 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.16)
 
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  project(
+    XSigmaProfiler
+    VERSION 1.0.0
+    DESCRIPTION "Standalone XSigma Profiler"
+    LANGUAGES CXX C
+  )
+  set(PROFILER_STANDALONE ON)
+else()
+  set(PROFILER_STANDALONE OFF)
+endif()
+
+get_filename_component(XSIGMA_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
+set(XSIGMA_ROOT_DIR "${XSIGMA_ROOT_DIR}" CACHE PATH "XSigma repository root")
+
+if(PROFILER_STANDALONE)
+  list(APPEND CMAKE_MODULE_PATH "${XSIGMA_ROOT_DIR}/Cmake/tools")
+  list(APPEND CMAKE_MODULE_PATH "${XSIGMA_ROOT_DIR}/Cmake/flags")
+  list(APPEND CMAKE_MODULE_PATH "${XSIGMA_ROOT_DIR}/Cmake/packages")
+
+  include(CTest)
+  enable_testing()
+
+  option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+  option(XSIGMA_ENABLE_EXTERNAL "Use external copies of third party libraries by default" ON)
+
+  set(BUILD_TESTING OFF CACHE BOOL "Disable testing for third-party libraries" FORCE)
+  set(BUILD_EXAMPLES OFF CACHE BOOL "Disable examples for third-party libraries" FORCE)
+  set(BUILD_BENCHMARKS OFF CACHE BOOL "Disable benchmarks for third-party libraries" FORCE)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+
+  if(NOT COMMAND add_third_party_library)
+    add_subdirectory("${XSIGMA_ROOT_DIR}/ThirdParty" "${CMAKE_BINARY_DIR}/ThirdParty")
+  endif()
+endif()
+
+if(NOT DEFINED PROJECT_DEPENDENCY_COMPILE_DEFINITIONS)
+  set(PROJECT_DEPENDENCY_COMPILE_DEFINITIONS "")
+endif()
+
+set(MEMORY_GPU_BACKEND "none"
+    CACHE STRING "GPU backend used for Profiler GPU tracing: none, cuda, hip, metal"
+)
+set_property(CACHE MEMORY_GPU_BACKEND PROPERTY STRINGS none cuda hip metal)
+
 # --- Early-exit gate --- When PROFILER_INCLUDE_GATE_ONLY=ON, only set PROFILER_ENABLE_KINETO and
 # return early so the root can gate ThirdParty/Kineto before add_subdirectory runs.
 if(PROFILER_INCLUDE_GATE_ONLY)
@@ -184,7 +231,11 @@ elseif(MSVC)
 endif()
 
 # --- Third-party dependencies owned by Profiler ---
-set(_tpdir "${CMAKE_SOURCE_DIR}/ThirdParty")
+if(XSIGMA_THIRDPARTY_DIR)
+  set(_tpdir "${XSIGMA_THIRDPARTY_DIR}")
+else()
+  set(_tpdir "${XSIGMA_ROOT_DIR}/ThirdParty")
+endif()
 
 set(BUILD_TESTING OFF CACHE BOOL "Disable testing for third-party libraries" FORCE)
 set(BUILD_EXAMPLES OFF CACHE BOOL "Disable examples for third-party libraries" FORCE)
@@ -214,32 +265,43 @@ if(PROFILER_ENABLE_KINETO)
       if(TARGET CUDA::nvToolsExt)
         list(APPEND PROFILER_DEPENDENCY_LIBS CUDA::nvToolsExt)
         set(PROFILER_HAS_NVTX 1)
-      elseif(TARGET CUDA::nvtx3)
-        list(APPEND PROFILER_DEPENDENCY_LIBS CUDA::nvtx3)
-        list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_CUDA_USE_NVTX3=1)
-        set(PROFILER_HAS_NVTX 1)
       else()
-        find_library(
-          PROFILER_NVTOOLSEXT_LIBRARY
-          NAMES nvToolsExt nvToolsExt64_1
-          HINTS ${CUDAToolkit_LIBRARY_DIR} ${CUDAToolkit_LIBRARY_ROOT}
-          PATH_SUFFIXES lib lib64 lib/x64
-        )
-        if(PROFILER_NVTOOLSEXT_LIBRARY)
-          list(APPEND PROFILER_DEPENDENCY_LIBS ${PROFILER_NVTOOLSEXT_LIBRARY})
+        # CMake's FindCUDAToolkit creates CUDA::nvtx3 unconditionally whenever
+        # CUDA >= 10.0 is found -- it does not verify that nvtx3/nvtx3.hpp
+        # actually exists on disk (some Windows installs, e.g. the network
+        # installer's silent full install, can omit the NVTX headers). Check
+        # for the header ourselves before trusting the target.
+        set(_profiler_nvtx3_header_found 0)
+        foreach(_nvtx_inc IN LISTS CUDAToolkit_INCLUDE_DIRS)
+          if(EXISTS "${_nvtx_inc}/nvtx3/nvtx3.hpp")
+            set(_profiler_nvtx3_header_found 1)
+            break()
+          endif()
+        endforeach()
+        unset(_nvtx_inc)
+        if(TARGET CUDA::nvtx3 AND _profiler_nvtx3_header_found)
+          list(APPEND PROFILER_DEPENDENCY_LIBS CUDA::nvtx3)
+          list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_CUDA_USE_NVTX3=1)
           set(PROFILER_HAS_NVTX 1)
         else()
-          foreach(_nvtx_inc IN LISTS CUDAToolkit_INCLUDE_DIRS)
-            if(EXISTS "${_nvtx_inc}/nvtx3/nvtx3.hpp")
-              list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_CUDA_USE_NVTX3=1)
-              if(CMAKE_DL_LIBS)
-                list(APPEND PROFILER_DEPENDENCY_LIBS ${CMAKE_DL_LIBS})
-              endif()
-              set(PROFILER_HAS_NVTX 1)
-              break()
+          find_library(
+            PROFILER_NVTOOLSEXT_LIBRARY
+            NAMES nvToolsExt nvToolsExt64_1
+            HINTS ${CUDAToolkit_LIBRARY_DIR} ${CUDAToolkit_LIBRARY_ROOT}
+            PATH_SUFFIXES lib lib64 lib/x64
+          )
+          if(PROFILER_NVTOOLSEXT_LIBRARY)
+            list(APPEND PROFILER_DEPENDENCY_LIBS ${PROFILER_NVTOOLSEXT_LIBRARY})
+            set(PROFILER_HAS_NVTX 1)
+          elseif(_profiler_nvtx3_header_found)
+            list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_CUDA_USE_NVTX3=1)
+            if(CMAKE_DL_LIBS)
+              list(APPEND PROFILER_DEPENDENCY_LIBS ${CMAKE_DL_LIBS})
             endif()
-          endforeach()
+            set(PROFILER_HAS_NVTX 1)
+          endif()
         endif()
+        unset(_profiler_nvtx3_header_found)
       endif()
       list(APPEND PROFILER_DEPENDENCY_COMPILE_DEFINITIONS PROFILER_HAS_NVTX=${PROFILER_HAS_NVTX})
       message(STATUS "Profiler: CUDA Toolkit found -- enabling PROFILER_HAS_CUDA"
@@ -686,9 +748,7 @@ endif()
 
 # --- Examples ---
 if(PROFILER_ENABLE_EXAMPLES)
-  add_subdirectory(
-    "${CMAKE_SOURCE_DIR}/Examples/Profiling" "${CMAKE_BINARY_DIR}/Examples/Profiling"
-  )
+  add_subdirectory("${XSIGMA_ROOT_DIR}/Examples/Profiling" "${CMAKE_BINARY_DIR}/Examples/Profiling")
   message(STATUS "Profiling Examples enabled")
 endif()
 

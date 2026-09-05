@@ -706,11 +706,38 @@ endif()
 if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
   enable_language(CUDA)
 
-  # sm_70 (Volta) was removed in CUDA 12.8; CUDA 13.x starts at sm_75.
-  # Force-update to evict any stale cached value that contains sm_70.
-  set(VECTORIZATION_CUDA_ARCHITECTURES "75;80;86;89;90"
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # enable_language reloads CMakeCUDACompiler.cmake here. With the forced
+    # Clang compiler its empty implicit include list shadows Memory's cached
+    # fallback. Restore it in this scope (and re-cache) so system TBB's
+    # /usr/include is not emitted ahead of libstdc++, breaking cmath's
+    # include_next <math.h>.
+    list(APPEND CMAKE_CUDA_IMPLICIT_INCLUDE_DIRECTORIES ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+    list(REMOVE_DUPLICATES CMAKE_CUDA_IMPLICIT_INCLUDE_DIRECTORIES)
+    set(CMAKE_CUDA_IMPLICIT_INCLUDE_DIRECTORIES "${CMAKE_CUDA_IMPLICIT_INCLUDE_DIRECTORIES}"
+        CACHE INTERNAL "CUDA implicit host include directories" FORCE
+    )
+  endif()
+
+  # Prefer arches already chosen by Memory/cuda.cmake; otherwise the shared
+  # Turing+ default (sm_70 removed in CUDA 12.8; CUDA 13.x starts at sm_75).
+  # FORCE evicts any stale cache entry that still contains sm_70.
+  if(DEFINED CMAKE_CUDA_ARCHITECTURES
+     AND NOT CMAKE_CUDA_ARCHITECTURES STREQUAL ""
+     AND NOT CMAKE_CUDA_ARCHITECTURES STREQUAL "native"
+  )
+    set(_vectorization_cuda_archs "${CMAKE_CUDA_ARCHITECTURES}")
+  else()
+    if(DEFINED XSIGMA_CUDA_ARCHITECTURES_DEFAULT)
+      set(_vectorization_cuda_archs "${XSIGMA_CUDA_ARCHITECTURES_DEFAULT}")
+    else()
+      set(_vectorization_cuda_archs "75;80;86;89;90")
+    endif()
+  endif()
+  set(VECTORIZATION_CUDA_ARCHITECTURES "${_vectorization_cuda_archs}"
       CACHE STRING "CUDA compute capability list (e.g. 75;80;86 for Turing/Ampere/Ada)" FORCE
   )
+  unset(_vectorization_cuda_archs)
   set_target_properties(
     Vectorization
     PROPERTIES CUDA_STANDARD ${VECTORIZATION_CXX_STANDARD}
@@ -720,6 +747,10 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda")
   )
   if(CMAKE_CUDA_COMPILER_ID STREQUAL "Clang")
     target_compile_options(Vectorization PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-ffast-math>)
+    # CMAKE_CUDA_COMPILER_FORCED skips CUDA_STANDARD → -std= emission.
+    target_compile_options(
+      Vectorization PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-std=c++${VECTORIZATION_CXX_STANDARD}>
+    )
   else()
     target_compile_options(
       Vectorization PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--use_fast_math -Xcompiler=-fPIC>
