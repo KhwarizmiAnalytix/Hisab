@@ -5,13 +5,16 @@ xsigma_add_googletest()
 
 file(GLOB_RECURSE test_sources LIST_DIRECTORIES false "${CMAKE_CURRENT_SOURCE_DIR}/Test*.cpp")
 
-add_executable(GraphCxxTests ${test_sources})
+# Custom main (not Gtest::gtest_main) -- see GraphTestMain.cpp for why: on macOS+ASan this
+# binary needs to bypass a known third-party (TBB) static-destructor crash at exit that is
+# unrelated to anything these tests check.
+add_executable(GraphCxxTests ${test_sources} GraphTestMain.cpp)
 
 target_compile_definitions(
   GraphCxxTests PRIVATE GRAPH_HAS_GTEST=1 GRAPH_GOOGLE_TEST USE_GTEST _VARIADIC_MAX=10
 )
 
-target_link_libraries(GraphCxxTests PRIVATE Gtest::gtest Gtest::gtest_main Graph::Graph)
+target_link_libraries(GraphCxxTests PRIVATE Gtest::gtest Graph::Graph)
 
 set_target_properties(
   GraphCxxTests PROPERTIES FOLDER "Tests" VS_DEBUGGER_WORKING_DIRECTORY

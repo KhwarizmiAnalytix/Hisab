@@ -5,10 +5,13 @@ package(default_visibility = ["//visibility:public"])
 cc_test(
     name = "GraphCxxTests",
     size = "large",
+    # Custom main (GraphTestMain.cpp, not gtest_main) -- see that file for why: on
+    # macOS+ASan this binary needs to bypass a known third-party (TBB) static-destructor
+    # crash at exit that is unrelated to anything these tests check.
     srcs = glob(
         ["Test*.cpp"],
         allow_empty = True,
-    ),
+    ) + ["GraphTestMain.cpp"],
     copts = graph_copts(),
     defines = graph_defines() + [
         "GRAPH_GOOGLE_TEST",
@@ -22,6 +25,5 @@ cc_test(
         "//Library/Graph:Graph",
         "//Library/Graph/Testing:graphTest_header",
         "@com_google_googletest//:gtest",
-        "@com_google_googletest//:gtest_main",
     ],
 )
