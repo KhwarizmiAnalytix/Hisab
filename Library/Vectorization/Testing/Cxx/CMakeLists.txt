@@ -271,6 +271,66 @@ set(_vectorization_clang_cuda_x_flags
     "$<$<COMPILE_LANGUAGE:CUDA>:-std=c++${VECTORIZATION_CXX_STANDARD}>"
 )
 
+# Windows MSVC-runtime-library (CRT) flags for CUDA-tagged .cpp files.
+# Library/Memory/Cmake/cuda.cmake appends the equivalent -D_MT/-D_DLL/
+# --dependent-lib flags to CMAKE_CUDA_FLAGS so Clang-CUDA TUs pick the same
+# CRT as ordinary CXX TUs (CMAKE_MSVC_RUNTIME_LIBRARY's automatic
+# translation only applies to the CXX/CUDA compiler-probe path, which
+# CMAKE_CUDA_COMPILER_FORCED skips) -- but CMAKE_CUDA_FLAGS is a plain
+# directory-scoped variable set in Library/Memory's scope, and (like -x cuda
+# / -std= above) Ninja's per-source rule for these LANGUAGE-CUDA-tagged .cpp
+# files never consults it, so it never reaches this directory. Confirmed via
+# lld-link: "mismatch detected for 'RuntimeLibrary'" — TestTensor.cpp.obj
+# (tagged CUDA, no _MT/_DLL defined during compilation) came back
+# MT_StaticRelease while sibling CXX objects in the same executable came
+# back MD_DynamicRelease (CMake's normal MSVC_RUNTIME_LIBRARY translation).
+# Re-derive the same flags here, in the scope where they actually apply.
+set(_vectorization_clang_cuda_crt_flags "")
+if(WIN32)
+  # Ninja is a single-config generator here, so CMAKE_BUILD_TYPE is fixed at
+  # configure time -- use it (not the $<CONFIG:Debug> generator expression)
+  # for BOTH the -D_DEBUG define and the --dependent-lib name below. Mixing
+  # the two (case-sensitive STREQUAL vs. $<CONFIG:...>'s case-insensitive
+  # match) would let them disagree whenever CMAKE_BUILD_TYPE is spelled
+  # differently than "Debug" case-wise (e.g. setup.py's --sanitizer/
+  # --valgrind/--coverage path sets "DEBUG"), re-creating the exact
+  # RuntimeLibrary-mismatch class of bug this block exists to fix: one
+  # decision would pick the debug dependent-lib name while the other skipped
+  # -D_DEBUG, or vice versa.
+  set(_vectorization_clang_cuda_crt_is_debug FALSE)
+  if(CMAKE_BUILD_TYPE MATCHES "^[Dd][Ee][Bb][Uu][Gg]$")
+    set(_vectorization_clang_cuda_crt_is_debug TRUE)
+  endif()
+  if(DEFINED CMAKE_MSVC_RUNTIME_LIBRARY AND NOT CMAKE_MSVC_RUNTIME_LIBRARY MATCHES "DLL")
+    if(_vectorization_clang_cuda_crt_is_debug)
+      set(_vectorization_clang_cuda_crt_dependent_lib "libcmtd")
+    else()
+      set(_vectorization_clang_cuda_crt_dependent_lib "libcmt")
+    endif()
+    set(_vectorization_clang_cuda_crt_flags "$<$<COMPILE_LANGUAGE:CUDA>:-D_MT>")
+  else()
+    if(_vectorization_clang_cuda_crt_is_debug)
+      set(_vectorization_clang_cuda_crt_dependent_lib "msvcrtd")
+    else()
+      set(_vectorization_clang_cuda_crt_dependent_lib "msvcrt")
+    endif()
+    set(_vectorization_clang_cuda_crt_flags
+        "$<$<COMPILE_LANGUAGE:CUDA>:-D_MT>" "$<$<COMPILE_LANGUAGE:CUDA>:-D_DLL>"
+    )
+  endif()
+  if(_vectorization_clang_cuda_crt_is_debug)
+    list(APPEND _vectorization_clang_cuda_crt_flags "$<$<COMPILE_LANGUAGE:CUDA>:-D_DEBUG>")
+  endif()
+  list(
+    APPEND
+    _vectorization_clang_cuda_crt_flags
+    "$<$<COMPILE_LANGUAGE:CUDA>:-Xclang>"
+    "$<$<COMPILE_LANGUAGE:CUDA>:--dependent-lib=${_vectorization_clang_cuda_crt_dependent_lib}>"
+  )
+  unset(_vectorization_clang_cuda_crt_dependent_lib)
+  unset(_vectorization_clang_cuda_crt_is_debug)
+endif()
+
 # CUDA 13 dropped texture_fetch_functions.h (legacy bound-texture-reference API,
 # superseded by texture objects / texture_indirect_functions.h, which CUDA 13 still
 # ships), but this Clang's <__clang_cuda_runtime_wrapper.h> unconditionally `#include`s
@@ -386,7 +446,7 @@ if(VECTORIZATION_GPU_BACKEND STREQUAL "cuda" AND _vectorization_has_cuda_gpu_tes
         ${_vec_tensor_test_sources}
         PROPERTIES
           COMPILE_OPTIONS
-          "${_vectorization_clang_cuda_x_flags};$<$<COMPILE_LANGUAGE:CUDA>:-Xclang>;$<$<COMPILE_LANGUAGE:CUDA>:-fno-cuda-host-device-constexpr>;$<$<COMPILE_LANGUAGE:CUDA>:-O1>"
+          "${_vectorization_clang_cuda_x_flags};${_vectorization_clang_cuda_crt_flags};$<$<COMPILE_LANGUAGE:CUDA>:-Xclang>;$<$<COMPILE_LANGUAGE:CUDA>:-fno-cuda-host-device-constexpr>;$<$<COMPILE_LANGUAGE:CUDA>:-O1>"
       )
     else()
       set_source_files_properties(
@@ -672,6 +732,13 @@ if(VECTORIZATION_ENABLE_BENCHMARK)
         # `-x cuda`: same Ninja-generator gap as VectorizationCxxTests above; see
         # _vectorization_clang_cuda_x_flags there for the full explanation.
         target_compile_options(${target_name} PRIVATE ${_vectorization_clang_cuda_x_flags})
+
+        # Windows CRT (RuntimeLibrary) flags: this target's single CUDA-tagged
+        # source links against Vectorization.lib/Memory.lib etc. built as
+        # ordinary CXX, so it needs the same _MT/_DLL/--dependent-lib flags as
+        # VectorizationCxxTests' _vec_tensor_test_sources — see
+        # _vectorization_clang_cuda_crt_flags above for the full explanation.
+        target_compile_options(${target_name} PRIVATE ${_vectorization_clang_cuda_crt_flags})
 
         # Same Clang -O3 ICE (always-inline / GVN passes, confirmed on both Clang 20
         # and Clang 22) as VectorizationCxxTests' _vec_tensor_test_sources above —
